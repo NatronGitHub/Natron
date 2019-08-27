@@ -19,66 +19,55 @@
 
 
 # List here the repositories
-GIT_URL_OPENFX_OPENCV_GITHUB=https://github.com/NatronGitHub/openfx-opencv.git
-GIT_URL_NATRON_GITHUB=https://github.com/NatronGitHub/Natron.git
-GIT_URL_NATRON_GFORGE=git+ssh://natron-ci@scm.gforge.inria.fr/gitroot/natron/natron.git
-GIT_URL_NATRON_BITBUCKET=git@bitbucket.org:NatronGitHub/comper.git
-GIT_URL_OPENFX_IO_GITHUB=https://github.com/NatronGitHub/openfx-io.git
-GIT_URL_OPENFX_MISC_GITHUB=https://github.com/NatronGitHub/openfx-misc.git
-GIT_URL_OPENFX_ARENA_GITHUB=https://github.com/NatronGitHub/openfx-arena.git
-GIT_URL_OPENFX_GMIC_GITHUB=https://github.com/NatronGitHub/openfx-gmic.git
-GIT_URL_NATRON_TESTS_GITHUB=https://github.com/NatronGitHub/Natron-Tests.git
+GIT_URL_OPENFX_OPENCV_GITHUB=${GIT_URL_OPENFX_OPENCV_GITHUB:-https://github.com/NatronGitHub/openfx-opencv.git}
+GIT_URL_NATRON_GITHUB=${GIT_URL_NATRON_GITHUB:-https://github.com/NatronGitHub/Natron.git}
+GIT_URL_NATRON_GFORGE=${GIT_URL_NATRON_GFORGE:-git+ssh://natron-ci@scm.gforge.inria.fr/gitroot/natron/natron.git}
+GIT_URL_OPENFX_IO_GITHUB=${GIT_URL_OPENFX_IO_GITHUB:-https://github.com/NatronGitHub/openfx-io.git}
+GIT_URL_OPENFX_MISC_GITHUB==${GIT_URL_OPENFX_MISC_GITHUB:-https://github.com/NatronGitHub/openfx-misc.git}
+GIT_URL_OPENFX_ARENA_GITHUB=${GIT_URL_OPENFX_ARENA_GITHUB:-https://github.com/NatronGitHub/openfx-arena.git}
+GIT_URL_OPENFX_GMIC_GITHUB=${GIT_URL_OPENFX_GMIC_GITHUB:-https://github.com/NatronGitHub/openfx-gmic.git}
+GIT_URL_NATRON_TESTS_GITHUB=${GIT_URL_NATRON_TESTS_GITHUB:-https://github.com/NatronGitHub/Natron-Tests.git}
 
 # List of known Natron repositories
 KNOWN_NATRON_REPOSITORIES="$GIT_URL_NATRON_GITHUB $GIT_URL_NATRON_GFORGE $GIT_URL_NATRON_BITBUCKET"
 
 function setGitUrlsForNatronUrl() {
     GIT_URL_NATRON="$1"
-    if [ "$GIT_URL_NATRON" = "$GIT_URL_NATRON_GITHUB" ]; then
-        GIT_URL_OPENFX_IO=$GIT_URL_OPENFX_IO_GITHUB
-        GIT_URL_OPENFX_ARENA=$GIT_URL_OPENFX_ARENA_GITHUB
-        GIT_URL_OPENFX_GMIC=$GIT_URL_OPENFX_GMIC_GITHUB
-        GIT_URL_OPENFX_MISC=$GIT_URL_OPENFX_MISC_GITHUB
-        GIT_URL_OPENFX_OPENCV=$GIT_URL_OPENFX_OPENCV_GITHUB
-        return 0
-    elif [ "$GIT_URL_NATRON" = "$GIT_URL_NATRON_GFORGE" ]; then
-        GIT_URL_OPENFX_IO=$GIT_URL_OPENFX_IO_GITHUB
-        GIT_URL_OPENFX_ARENA=$GIT_URL_OPENFX_ARENA_GITHUB
-        GIT_URL_OPENFX_GMIC=$GIT_URL_OPENFX_GMIC_GITHUB
-        GIT_URL_OPENFX_MISC=$GIT_URL_OPENFX_MISC_GITHUB
-        GIT_URL_OPENFX_OPENCV=$GIT_URL_OPENFX_OPENCV_GITHUB
-        return 0
-    elif [ "$GIT_URL_NATRON" = "$GIT_URL_NATRON_BITBUCKET" ]; then
-        GIT_URL_OPENFX_IO=$GIT_URL_OPENFX_IO_GITHUB
-        GIT_URL_OPENFX_ARENA=$GIT_URL_OPENFX_ARENA_GITHUB
-        GIT_URL_OPENFX_GMIC=$GIT_URL_OPENFX_GMIC_GITHUB
-        GIT_URL_OPENFX_MISC=$GIT_URL_OPENFX_MISC_GITHUB
-        GIT_URL_OPENFX_OPENCV=$GIT_URL_OPENFX_OPENCV_GITHUB
-        return 0
+    if [ "$GIT_URL_NATRON" = "$GIT_URL_NATRON_GFORGE" ]; then
+        GIT_URL_OPENFX_IO="$GIT_URL_OPENFX_IO_GITHUB"
+        GIT_URL_OPENFX_ARENA="$GIT_URL_OPENFX_ARENA_GITHUB"
+        GIT_URL_OPENFX_GMIC="$GIT_URL_OPENFX_GMIC_GITHUB"
+        GIT_URL_OPENFX_MISC="$GIT_URL_OPENFX_MISC_GITHUB"
+        GIT_URL_OPENFX_OPENCV="$GIT_URL_OPENFX_OPENCV_GITHUB"
+    else # GIT_URL_NATRON_GITHUB or other
+        GIT_URL_OPENFX_IO="$GIT_URL_OPENFX_IO_GITHUB"
+        GIT_URL_OPENFX_ARENA="$GIT_URL_OPENFX_ARENA_GITHUB"
+        GIT_URL_OPENFX_GMIC="$GIT_URL_OPENFX_GMIC_GITHUB"
+        GIT_URL_OPENFX_MISC="$GIT_URL_OPENFX_MISC_GITHUB"
+        GIT_URL_OPENFX_OPENCV="$GIT_URL_OPENFX_OPENCV_GITHUB"
     fi
-    return 1
 }
 
 function setGitUrlsForPluginCI() {
-    GIT_URL_NATRON=$GIT_URL_NATRON_GITHUB
-    GIT_URL_OPENFX_IO=$GIT_URL_OPENFX_IO_GITHUB
-    GIT_URL_OPENFX_ARENA=$GIT_URL_OPENFX_ARENA_GITHUB
-    GIT_URL_OPENFX_GMIC=$GIT_URL_OPENFX_GMIC_GITHUB
-    GIT_URL_OPENFX_MISC=$GIT_URL_OPENFX_MISC_GITHUB
-    GIT_URL_OPENFX_OPENCV=$GIT_URL_OPENFX_OPENCV_GITHUB
+    GIT_URL_NATRON="$GIT_URL_NATRON_GITHUB"
+    GIT_URL_OPENFX_IO="$GIT_URL_OPENFX_IO_GITHUB"
+    GIT_URL_OPENFX_ARENA="$GIT_URL_OPENFX_ARENA_GITHUB"
+    GIT_URL_OPENFX_GMIC="$GIT_URL_OPENFX_GMIC_GITHUB"
+    GIT_URL_OPENFX_MISC="$GIT_URL_OPENFX_MISC_GITHUB"
+    GIT_URL_OPENFX_OPENCV="$GIT_URL_OPENFX_OPENCV_GITHUB"
 }
 
 # Function to determine if a git url is a known Natron repository
 # Usage:
-# IS_GIT_URL_NATRON_REPO=0
-# isNatronRepo "$GIT_URL" || IS_GIT_URL_NATRON_REPO=1
+# GIT_URL_IS_NATRON=0
+# isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
 function isNatronRepo() {
     for i in $KNOWN_NATRON_REPOSITORIES;do
         if [ "$i" = "$1" ]; then
-            return 1
+            return 0
         fi
     done
-    return 0
+    return 1
 }
 
 

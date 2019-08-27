@@ -41,6 +41,7 @@ set -u # Treat unset variables as an error when substituting.
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
 #
 # GIT_URL, GIT_BRANCH, GIT_COMMIT are set from the git jenkins plug-in automatically
+# If GIT_URL is an unknown Natron repository, GIT_URL_IS_NATRON=1 can be used to force a Natron build.
 # BUILD_NUMBER is also given by jenkins, see https://wiki.jenkins-ci.org/display/JENKINS/Building+a+software+project#Buildingasoftwareproject-JenkinsSetEnvironmentVariables
 # The above options must be set if calling this script manually. If GIT_COMMIT is omitted, the latest commit of GIT_BRANCH is actually built
 #
@@ -94,6 +95,7 @@ echo "BUILD_NUMBER                      : \"${BUILD_NUMBER:-}\""
 echo "BUILD_NAME                        : \"${BUILD_NAME:-}\""
 echo "WORKSPACE                         : \"${WORKSPACE:-}\""
 echo "GIT_URL                           : \"${GIT_URL:-}\""
+echo "GIT_URL_IS_NATRON                 : \"${GIT_URL_IS_NATRON:-}\""
 echo "GIT_BRANCH                        : \"${GIT_BRANCH:-}\""
 echo "GIT_COMMIT                        : \"${GIT_COMMIT:-}\""
 echo "RELEASE_TAG                       : \"${RELEASE_TAG:-}\""
@@ -200,12 +202,14 @@ if [ -n "${WORKSPACE:-}" ]; then
     fi
 fi
 
-# Do we need to build Natron ? No if the script was not invoked from a Natron project
-IS_GIT_URL_NATRON_REPO=0
-isNatronRepo "$GIT_URL" || IS_GIT_URL_NATRON_REPO=1
+# Do we need to build Natron ? No if the script was not invoked from a Natron CI project
+if [ -n "${GIT_URL_IS_NATRON:-}" ]; then
+    GIT_URL_IS_NATRON=1
+    isNatronRepo "$GIT_URL" || GIT_URL_IS_NATRON=0
+fi
 
 
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if [ "$GIT_URL_IS_NATRON" = "1" ]; then
     # Set the git urls from the Natron url in gitRepositories.sh
     setGitUrlsForNatronUrl "$GIT_URL"
 else
@@ -269,7 +273,7 @@ setBuildOption "BUILD_ARCHIVE_DIRECTORY" "$BUILD_ARCHIVE_DIRECTORY"
 
 # Determine Natron build type
 NATRON_BUILD_CONFIG=""
-if [ "$IS_GIT_URL_NATRON_REPO" != "1" ]; then
+if [ "$GIT_URL_IS_NATRON" != "1" ]; then
     TYPE="PLUGIN_CI"
 else
     if [ -n "${RELEASE_TAG:-}" ]; then
@@ -300,7 +304,7 @@ setBuildOption "NATRON_EXTRA_QMAKE_FLAGS" "${NATRON_EXTRA_QMAKE_FLAGS:-}"
 setBuildOption "BUILD_TYPE" "$TYPE"
 
 # Set the url for Natron to GIT_URL if this is the build that triggered it, otherwise use Github by default
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if [ "$GIT_URL_IS_NATRON" = "1" ]; then
     setBuildOption "NATRON_GIT_URL" "$GIT_URL"
 else
     setBuildOption "NATRON_GIT_URL" "$GIT_NATRON"
@@ -418,7 +422,7 @@ FAIL=0
 source checkout-repository.sh
 
 # Checkout Natron git
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if [ "$GIT_URL_IS_NATRON" = "1" ]; then
     if $BUILD_1; then
         checkoutRepository "$GIT_URL_NATRON" "Natron" "$NATRON_GIT_BRANCH" "$NATRON_GIT_COMMIT" "NATRON_GIT_COMMIT" "$TAR_SOURCES" || FAIL=$?
     fi
@@ -547,7 +551,7 @@ if [ "$FAIL" -ne "0" ]; then
 fi
 
 # Build Natron
-if $BUILD_3 && [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_3 && [ "$FAIL" = "0" ] && [ "$GIT_URL_IS_NATRON" = "1" ]; then
     bash "build-natron.sh" || FAIL=$?
 fi
 if [ "$FAIL" -ne "0" ]; then
@@ -557,7 +561,7 @@ fi
 
 # build installer(s)
 #
-if $BUILD_4 && [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_4 && [ "$FAIL" = "0" ] && [ "$GIT_URL_IS_NATRON" = "1" ]; then
     printStatusMessage "Creating installer..."
     bash "build-${PKGOS}-installer.sh" || FAIL=$?
 fi
@@ -571,7 +575,7 @@ UNIT_TESTS_FAIL=0
 if $BUILD_5 && [ "$FAIL" = "0" ]; then
     echo "Build finished! Files are located in $BUILD_ARCHIVE_DIRECTORY"
     # unit tests
-    if [ "$IS_GIT_URL_NATRON_REPO" = "1" ] && [ "$DO_UTEST" = "1" ]; then
+    if [ "$GIT_URL_IS_NATRON" = "1" ] && [ "$DO_UTEST" = "1" ]; then
 
         env bash runUnitTests.sh || UNIT_TESTS_FAIL=$?
         if [ "$UNIT_TESTS_FAIL" = "0" ]; then
