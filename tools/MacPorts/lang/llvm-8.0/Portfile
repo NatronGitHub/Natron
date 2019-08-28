@@ -313,7 +313,19 @@ compiler.blacklist *gcc* {clang < 602}
 
 # clang older than 3.5 fail due to https://llvm.org/bugs/show_bug.cgi?id=25753
 # new llvms build with clang-3.4 but have codegen issues resulting compiler crashes
-compiler.blacklist-append macports-clang-3.3 macports-clang-3.4
+
+# Override the normal compiler fallback list entirely since we have
+# such specific requirements.
+compiler.fallback   clang
+# Use each macports-clang version only if already installed, to avoid
+# dependency cycles or chaining (8.0 depends on 7.0 depends on 6.0...)
+foreach ver {8.0 7.0 6.0 5.0} {
+    if {[file exists ${prefix}/bin/clang-mp-${ver}]} {
+        compiler.fallback-append macports-clang-${ver}
+    }
+}
+# 3.7 is already needed to bootstrap cmake, so is a good last resort
+# when the system clang is too old.
 if {${os.platform} eq "darwin" && ${os.major} < 18} {
     compiler.fallback-append macports-clang-3.7
 }
@@ -321,14 +333,6 @@ if {${os.platform} eq "darwin" && ${os.major} < 18} {
 if {${subport} eq "lldb-${llvm_version}"} {
     # Xcode 6.4's clang (602.0.53) fails to build lldb with 'thread-local storage is not supported for the current target'
     compiler.blacklist-append {clang < 700}
-}
-
-# blacklist current and future versions if they're not available in order to
-# help break potential dependency cycles.
-foreach ver {8.0 devel} {
-    if {![file exists ${prefix}/bin/clang-mp-${ver}]} {
-        compiler.blacklist-append macports-clang-${ver}
-    }
 }
 
 # I'm not sure the exact version of Xcode that has a good enough libtool, but 3.2.6 seems to get past this when 3.1.4 doesn't:

@@ -9,7 +9,7 @@ PortGroup conflicts_build 1.0
 name                gcc5
 epoch               2
 version             5.5.0
-revision            4
+revision            5
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -78,6 +78,8 @@ patchfiles-append   patch-libisl.diff
 post-extract {
     ln -s ${prefix}/libexec/isl18/include/isl ${worksrcpath}/gcc
 }
+
+patchfiles-append   patch-gcj-unwind.diff
 
 if {[vercmp ${xcodeversion} 10.2] >= 0} {
     # https://trac.macports.org/ticket/58260

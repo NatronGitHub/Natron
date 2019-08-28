@@ -8,11 +8,11 @@ PortGroup                       xcodeversion 1.0
 name                            graphviz
 set my_name                     graphviz
 version                         2.40.1
-revision                        1
+revision                        2
 set thisbranch                  [strsed ${name} "g/^${my_name}//"]
 set otherbranch                 [expr {${thisbranch} eq {} ? {-devel} : {}}]
 categories                      graphics
-maintainers                     ryandesign
+maintainers                     {ryandesign @ryandesign}
 license                         EPL-1
 homepage                        http://www.graphviz.org/
 master_sites                    ${homepage}pub/graphviz/stable/SOURCES/
@@ -39,7 +39,7 @@ checksums                       rmd160  8fc103fc519e07e9db522ec2f748838571c71acf
 minimum_xcodeversions           {9 3.1.2}
 
 if {${name} eq ${subport}} {
-revision                        1
+revision                        2
 
 conflicts                       graphviz${otherbranch}
 
@@ -294,8 +294,8 @@ livecheck.regex                 ${my_name}-(\[0-9\]+\\.\[0-9\]*\[02468\](\\.\[0-
 subport graphviz-gui${thisbranch} {
     PortGroup                   xcode 1.0
     
-    revision                    0
-    
+    revision                    1
+
     conflicts                   graphviz-gui${otherbranch} graphviz-oldgui
     
     categories-append           aqua
@@ -343,8 +343,8 @@ subport gvedit${thisbranch} {
     PortGroup                   app 1.0
     PortGroup                   qt4 1.0
     
-    revision                    0
-    
+    revision                    1
+
     conflicts                   gvedit${otherbranch}
     
     description                 Qt-based GUI for Graphviz

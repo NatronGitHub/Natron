@@ -10,8 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.1.4
-revision            1
+version             4.2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -53,16 +52,13 @@ master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  73f8e5f363a5803f6e11992f2c112a09e0abd04f \
-                    sha256  f1f049a82fcfbf156564e73a3935d7e750891fab2abf302e735104fd4050a7e1 \
-                    size    8896056
+checksums           rmd160  f72555485c2cd2d23917f4a33ae17166bc1c1da3 \
+                    sha256  023f10831a97ad93d798f53a3640e55cd564abfeba807ecbe8524dac4fedecd5 \
+                    size    9088756
 
 depends_build       port:pkgconfig \
                     port:gmake \
                     port:texinfo
-
-# libvpx 1.7.0 now provides a shared library
-# move dependency from depends_build to depends_lib
 
 depends_lib         port:lame \
                     port:libiconv \

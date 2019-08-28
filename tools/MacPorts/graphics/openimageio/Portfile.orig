@@ -7,8 +7,8 @@ PortGroup           cmake 1.1
 PortGroup           cxx11 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.0.8
-revision            1
+github.setup        OpenImageIO oiio 2.0.10
+revision            0
 name                openimageio
 categories          graphics
 license             BSD
@@ -17,9 +17,9 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  2b47ff1879a0d7cd359dab80b8120164bde9e0fd \
-                    sha256  3c4794b0e8674728389363de291bada25ff86b4a6f5582380ed2def1ca2e07ae \
-                    size    29799717
+checksums           rmd160  6b06311640a74263513654c2312a05e61e09d18a \
+                    sha256  b9c4cb3754cfcf2b03707331c23d5b799a185deccbbc7b8768e0d4e10a535375 \
+                    size    29841455
 
 github.master_sites ${github.homepage}/archive
 distname            Release-${version}
