@@ -3,13 +3,13 @@
 # Install gcc
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/gcc.html
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=9.1.0
-#GCC_VERSION=8.1.0 # GCC 8.1 breaks the timeline GUI on Linux, see https://github.com/NatronGitHub/Natron/issues/279
+GCC_VERSION=9.2.0
+#GCC_VERSION=8.1.0
 #GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
-GCC_SITE="ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${GCC_VERSION}"
+GCC_SITE="http://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}"
 
 # Install gcc
 MPC_VERSION=1.1.0
