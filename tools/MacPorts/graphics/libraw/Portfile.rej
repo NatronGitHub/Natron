@@ -1,0 +1,102 @@
+***************
+*** 3,36 ****
+  PortSystem 1.0
+  
+  name                libraw
+- version             0.19.3
+- revision            0
+  description         library for RAW images manipulation
+  long_description    a library for reading RAW files obtained from digital photo \
+                      cameras (CRW/CR2, NEF, RAF, DNG, and others)
+  categories          graphics
+  platforms           darwin
+- license             {LGPL-2.1 CDDL}
+  maintainers         nomaintainer
+  
+  homepage            https://www.libraw.org
+  master_sites        ${homepage}/data/
+  distname            LibRaw-${version}
+  
+- checksums           rmd160  ef5a36835187bb699ba8b5b991f5d080952cce2a \
+-                     sha256  fd96d6188b8539e0724c89cfa9de392eb28ea71db117ef0661846d76cdc24177 \
+-                     size    1302745
+  
+  depends_build       port:pkgconfig
+  
+  depends_lib         port:jasper \
+-                     port:jpeg \
+                      port:lcms2
+  
+  post-destroot {
+      set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+      xinstall -d -m 0755 ${htmlDir}
+      xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
+  }
+  
+  livecheck.type      regex
+--- 3,67 ----
+  PortSystem 1.0
+  
+  name                libraw
++ version             0.18.13
++ set demosaicversion 0.18.8
+  description         library for RAW images manipulation
+  long_description    a library for reading RAW files obtained from digital photo \
+                      cameras (CRW/CR2, NEF, RAF, DNG, and others)
+  categories          graphics
+  platforms           darwin
++ license             LGPL-2.1 CDDL GPL-2+ GPL-3+
+  maintainers         nomaintainer
+  
+  homepage            https://www.libraw.org
+  master_sites        ${homepage}/data/
+  distname            LibRaw-${version}
+  
++ checksums \
++     LibRaw-${version}${extract.suffix} \
++         rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
++         sha256  cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca \
++         size    1287631 \
++     LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
++         rmd160  b86ee8d0e790b2976f90ac7adecf8df4a3d92cd4 \
++         sha256  0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da \
++         size    30868 \
++     LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix} \
++         rmd160  a83d4886ea3455425ec305160c04baf7a617db60 \
++         sha256  ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701 \
++         size    39002
++ 
++ patchfiles          libraw_x3f.diff
+  
+  depends_build       port:pkgconfig
+  
+  depends_lib         port:jasper \
++                     path:lib/libjpeg.dylib:jpeg \
+                      port:lcms2
+  
+  post-destroot {
+      set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+      xinstall -d -m 0755 ${htmlDir}
+      xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
++     if {${configure.cxx_stdlib} eq "libc++"} {
++         # fix pkg-config files, which contains many references to libstdc++
++         reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
++         reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
++     }
++ }
++ 
++ variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
++     distfiles-append \
++         LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
++ 
++     license                 GPL-2+
++ }
++ 
++ variant gpl3 requires gpl2 description {Enable GPL demosaic pack, license will be GPL-3+} {
++     distfiles-append \
++         LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
++ 
++     license                 GPL-3+
+  }
+  
+  livecheck.type      regex

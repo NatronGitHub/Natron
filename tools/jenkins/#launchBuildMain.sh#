@@ -203,9 +203,9 @@ if [ -n "${WORKSPACE:-}" ]; then
 fi
 
 # Do we need to build Natron ? No if the script was not invoked from a Natron CI project
-if [ -z "${GIT_URL_IS_NATRON:-}" ]; then
-    GIT_URL_IS_NATRON=0
-    isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
+if [ -n "${GIT_URL_IS_NATRON:-}" ]; then
+    GIT_URL_IS_NATRON=1
+    isNatronRepo "$GIT_URL" || GIT_URL_IS_NATRON=0
 fi
 
 
@@ -307,7 +307,7 @@ setBuildOption "BUILD_TYPE" "$TYPE"
 if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     setBuildOption "NATRON_GIT_URL" "$GIT_URL"
 else
-    setBuildOption "NATRON_GIT_URL" "$GIT_URL_NATRON"
+    setBuildOption "NATRON_GIT_URL" "$GIT_NATRON"
 fi
 
 

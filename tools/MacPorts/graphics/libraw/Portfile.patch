@@ -1,17 +1,53 @@
---- Portfile.orig	2018-06-15 11:26:50.000000000 +0200
-+++ Portfile	2018-06-15 11:28:11.000000000 +0200
-@@ -17,10 +17,6 @@
+--- Portfile.orig	2019-08-24 19:31:15.000000000 -0700
++++ Portfile	2019-08-24 19:32:01.000000000 -0700
+@@ -1,38 +1,67 @@
+ # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+ 
+-PortSystem          1.0
++PortSystem 1.0
+ 
+ name                libraw
+-version             0.19.5
+-revision            0
+-
+-description         Library for RAW image manipulation
+-long_description    A library for reading RAW files obtained from digital photo \
+-                    cameras (CRW/CR2, NEF, RAF, DNG, and others).
+-
++version             0.18.13
++set demosaicversion 0.18.8
++description         library for RAW images manipulation
++long_description    a library for reading RAW files obtained from digital photo \
++                    cameras (CRW/CR2, NEF, RAF, DNG, and others)
+ categories          graphics
+ platforms           darwin
+-license             {LGPL-2.1 CDDL}
++license             LGPL-2.1 CDDL GPL-2+ GPL-3+
+ maintainers         nomaintainer
+ 
+ homepage            https://www.libraw.org
  master_sites        ${homepage}/data/
  distname            LibRaw-${version}
  
--distfiles-append \
--    LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
--    LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
--
- checksums \
-     LibRaw-${version}${extract.suffix} \
-         rmd160  b946c4dc480b166299137b82ec4b0a313a31038d \
-@@ -39,13 +35,32 @@
+-checksums           rmd160  051642cfdf713e1d981a1790f4d872d89ff6f02a \
+-                    sha256  40a262d7cc71702711a0faec106118ee004f86c86cc228281d12d16da03e02f5 \
+-                    size    1303806
++checksums \
++    LibRaw-${version}${extract.suffix} \
++        rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
++        sha256  cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca \
++        size    1287631 \
++    LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
++        rmd160  b86ee8d0e790b2976f90ac7adecf8df4a3d92cd4 \
++        sha256  0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da \
++        size    30868 \
++    LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix} \
++        rmd160  a83d4886ea3455425ec305160c04baf7a617db60 \
++        sha256  ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701 \
++        size    39002
++
++patchfiles          libraw_x3f.diff
+ 
  depends_build       port:pkgconfig
  
  depends_lib         port:jasper \

@@ -1,9 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem                      1.0
+PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.65.1
+version                         7.65.3
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +27,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  bbd3437e70b34bd577b6cb09020ca667d3723e18 \
-                                sha256  f6c22074877f235aebc7c53057dbc7ee82358f8ae58bfb767e955c18c859a77a \
-                                size    2392672
+                                rmd160  20861c6d94be47e2228b67433ede00d02b106a0a \
+                                sha256  f2d98854813948d157f6a91236ae34ca4a1b4cb302617cebad263d79b0235fea \
+                                size    2392472
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0

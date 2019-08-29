@@ -1,26 +1,34 @@
---- Portfile.orig	2019-07-08 21:12:12.000000000 -0700
-+++ Portfile	2019-07-08 21:41:51.000000000 -0700
-@@ -8,7 +8,7 @@
+--- Portfile.orig	2019-08-24 19:27:32.000000000 -0700
++++ Portfile	2019-08-25 21:16:40.000000000 -0700
+@@ -2,13 +2,13 @@
+ 
+ PortSystem          1.0
+ PortGroup           github 1.0
+-PortGroup           qt5 1.0
++#PortGroup           qt5 1.0
+ PortGroup           cmake 1.1
+ PortGroup           cxx11 1.1
  PortGroup           active_variants 1.1
  
- github.setup        OpenImageIO oiio 2.0.8
--revision            1
-+revision            2
+ github.setup        OpenImageIO oiio 2.0.10
+-revision            0
++revision            100
  name                openimageio
  categories          graphics
  license             BSD
-@@ -25,6 +25,10 @@
+@@ -25,6 +25,11 @@
  distname            Release-${version}
  worksrcdir          oiio-Release-${version}
  
 +patch.pre_args  -p1
 +patchfiles \
-+    oiio-2.0.8-invalidatespec.patch
++    oiio-2.0.8-invalidatespec.patch \
++    oiio-2.0.8-atomic-load.patch
 +
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
  configure.args-append \
-@@ -39,19 +43,104 @@
+@@ -39,19 +44,104 @@
      port:zlib \
      port:bzip2 \
      port:boost \
@@ -37,7 +45,7 @@
 +configure.args-append \
 +    -DOIIO_BUILD_TESTS:BOOL=FALSE \
 +    -DBOOST_ROOT=${prefix} \
-+    -DUSE_QT:BOOL=TRUE \
++    -DUSE_QT:BOOL=FALSE \
 +    -DUSE_PYTHON:BOOL=FALSE \
 +    -DUSE_PYTHON3:BOOL=FALSE \
 +    -DUSE_FIELD3D:BOOL=FALSE \
@@ -104,7 +112,7 @@
 -#    -DUSE_QT=OFF
 -qt5.depends_component qtbase
 -qt5.min_version       5.6
-+default_variants    +opencolorio +openjpeg +qt5 +freetype
++default_variants    +opencolorio +openjpeg +freetype
 +
 +variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
 +    if {${configure.cxx_stdlib} eq "libstdc++"} {
@@ -131,7 +139,20 @@
  
  variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 {
      depends_lib-append \
-@@ -95,63 +184,55 @@
+@@ -83,9 +173,9 @@
+         -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/3.7/lib/python3.7
+ }
+ 
+-if {![variant_isset python36] && ![variant_isset python37]} {
+-    default_variants +python27
+-}
++#if {![variant_isset python36] && ![variant_isset python37]} {
++#    default_variants +python27
++#}
+ 
+ if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37]} {
+     configure.args-append \
+@@ -95,63 +185,55 @@
          port:pybind11
  }
  
@@ -148,8 +169,8 @@
 -    -DUSE_JPEGTURBO=OFF
 -#depends_lib-append port:libjpeg-turbo
 +variant qt5 description {Build the Qt-based image viewer.} {
-+    qt5.depends_component qtbase
-+    qt5.min_version       5.6
++#    qt5.depends_component qtbase
++#    qt5.min_version       5.6
 +    configure.args-delete -DUSE_QT:BOOL=FALSE
 +    configure.args-append -DUSE_QT:BOOL=TRUE
 +    configure.args-delete -DUSE_OPENGL:BOOL=FALSE

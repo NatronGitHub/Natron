@@ -1,13 +1,15 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
-PortSystem 1.0
+PortSystem          1.0
 
 name                libraw
-version             0.19.3
+version             0.19.5
 revision            0
-description         library for RAW images manipulation
-long_description    a library for reading RAW files obtained from digital photo \
-                    cameras (CRW/CR2, NEF, RAF, DNG, and others)
+
+description         Library for RAW image manipulation
+long_description    A library for reading RAW files obtained from digital photo \
+                    cameras (CRW/CR2, NEF, RAF, DNG, and others).
+
 categories          graphics
 platforms           darwin
 license             {LGPL-2.1 CDDL}
@@ -17,9 +19,9 @@ homepage            https://www.libraw.org
 master_sites        ${homepage}/data/
 distname            LibRaw-${version}
 
-checksums           rmd160  ef5a36835187bb699ba8b5b991f5d080952cce2a \
-                    sha256  fd96d6188b8539e0724c89cfa9de392eb28ea71db117ef0661846d76cdc24177 \
-                    size    1302745
+checksums           rmd160  051642cfdf713e1d981a1790f4d872d89ff6f02a \
+                    sha256  40a262d7cc71702711a0faec106118ee004f86c86cc228281d12d16da03e02f5 \
+                    size    1303806
 
 depends_build       port:pkgconfig
 
