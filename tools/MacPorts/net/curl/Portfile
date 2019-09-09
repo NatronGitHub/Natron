@@ -34,7 +34,7 @@ checksums                       ${curl_distfile} \
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               port:pkgconfig
 
@@ -210,7 +210,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
