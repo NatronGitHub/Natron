@@ -237,11 +237,14 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch92" # -p1 -b .gcc6
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch93" # -p1 -b .alsa1.1
     if version_gt "$OPENSSL_VERSION" 1.0.9999; then
-	patch -Np1 -i "$INC_PATH/patches/Qt/$Patch94" # -p1 -b .openssl1.1
+        # Fedora patch from https://src.fedoraproject.org/rpms/qt/tree/master
+	    #patch -Np1 -i "$INC_PATH/patches/Qt/$Patch94" # -p1 -b .openssl1.1
+        # The following patch is from MacPorts and fixes a few type issues
+	    patch -Np0 -i "$INC_PATH/patches/Qt/patch-qt4-openssl111.diff" # -p1 -b .openssl1.1
     fi
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch95" # -p1 -b .icu59
     if vergion_gt "$SYSTEM_GCC_VERSION" 7.99; then
-	patch -Np1 -i "$INC_PATH/patches/Qt/$Patch96" # -p1 -b .gcc8_qtscript
+	    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch96" # -p1 -b .gcc8_qtscript
     fi
 
 
@@ -320,10 +323,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     patch -Np1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
 
-    # workaround FTBFS with gcc9 (from fedora package 4.8.7-46)
-    if version_gt "$SYSTEM_GCC_VERSION" 8.99; then
-	QT_CONF+=("-no-javascript-jit")
-    fi
+    # workaround FTBFS with gcc9 (from fedora package 4.8.7-46, was disabled in 4.8.7-49)
+    #if version_gt "$SYSTEM_GCC_VERSION" 8.99; then
+	#    QT_CONF+=("-no-javascript-jit")
+    #fi
 
     ./configure -prefix "$SDK_HOME/installer" "${QT_CONF[@]}" -v
 
