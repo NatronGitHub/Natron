@@ -2,7 +2,7 @@
 
 # install gdb (requires xz, zlib ncurses, python2, texinfo)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/gdb.html
-GDB_VERSION=8.3
+GDB_VERSION=8.3.1
 GDB_TAR="gdb-${GDB_VERSION}.tar.xz" # when using the sdk during debug we get a conflict with native gdb, so bundle our own
 GDB_SITE="ftp://ftp.gnu.org/gnu/gdb"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/gdb" ]; }; }; then

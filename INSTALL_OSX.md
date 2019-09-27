@@ -52,7 +52,16 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
 #### Notes for OS X 10.6 Snow Leopard
 
-On older systems such as 10.6, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end. Also add the following to `/opt/local/etc/macports/variants.conf`:
+On older systems such as 10.6, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end.
+This means that `/opt/local/etc/macports/macports.conf` should contain the following:
+```
+cxx_stdlib         libc++
+buildfromsource    always
+delete_la_files    yes
+default_compilers  macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-3.7 macports-clang-3.4 llvm-gcc-4.2 clang gcc-4.2 apple-gcc-4.2 gcc-4.0
+```
+
+Also add the following to `/opt/local/etc/macports/variants.conf`:
 
     -llvm34 -llvm37 -llvm39 -llvm40 -llvm50 -llvm60 -llvm70 +llvm80
     -ld64_97 -ld64_127 -ld64_236

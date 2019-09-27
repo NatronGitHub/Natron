@@ -276,7 +276,7 @@ if {${subport} eq "llvm-${llvm_version}"} {
 	    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
     }
 
-    if {${os.major} <= 14} {
+    if {${os.major} <= 15} {
         # XRAY uses TLS, MAP_ANONYMOUS, and clock_gettime, so disable it
         # on systems that don't currently support these features
         # see https://trac.macports.org/ticket/57130

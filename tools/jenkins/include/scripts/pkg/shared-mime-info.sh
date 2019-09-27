@@ -2,7 +2,7 @@
 
 # Install shared-mime-info (required by gdk-pixbuf)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/shared-mime-info.html
-SHAREDMIMEINFO_VERSION=1.12
+SHAREDMIMEINFO_VERSION=1.14
 SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.xz"
 #SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
 SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/80c7f1afbcad2769f38aeb9ba6317a51"

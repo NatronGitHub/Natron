@@ -1,3 +1,5 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
 # TODO:
 #  * Update clang and lldb subports to build against installed libLLVM/libclang
 
@@ -10,11 +12,12 @@ PortGroup cmake         1.0
 set llvm_version        8.0
 set llvm_version_no_dot 80
 set clang_executable_version 8
-set lldb_executable_version 8.0.0
+set llvm_patch_revision 1
+set lldb_executable_version 8.0.${llvm_patch_revision}
 name                    llvm-${llvm_version}
-revision                1
-subport                 clang-${llvm_version} { revision 1 }
-subport                 lldb-${llvm_version} { revision 1 }
+revision                0
+subport                 clang-${llvm_version} { }
+subport                 lldb-${llvm_version} { }
 set suffix              mp-${llvm_version}
 set sub_prefix          ${prefix}/libexec/llvm-${llvm_version}
 dist_subdir             llvm
@@ -100,10 +103,10 @@ if {${subport} eq "llvm-${llvm_version}"} {
 #default_variants-append +assertions
 #default_variants-append +debug
 
-version                 ${llvm_version}.0
+version                 ${llvm_version}.${llvm_patch_revision}
 epoch                   1
-master_sites            https://releases.llvm.org/${version}
-#master_sites            https://prereleases.llvm.org/${llvm_version}.0/rc2
+#master_sites            https://releases.llvm.org/${version}
+master_sites            https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}
 use_xz                  yes
 extract.suffix          .tar.xz
 distfiles               llvm-${version}.src${extract.suffix}
@@ -121,34 +124,34 @@ if {${distfiles} ne ""} {
     }
 }
 
-checksums           llvm-8.0.0.src.tar.xz \
-                    rmd160  a0740d83ae981506ddb7cfd389cafc52b7f317b2 \
-                    sha256  8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c \
-                    size    30503732 \
-                    cfe-8.0.0.src.tar.xz \
-                    rmd160  bd4dd523edcde136156b773cc66bfad1fc52dbc4 \
-                    sha256  084c115aab0084e63b23eee8c233abb6739c399e29966eaeccfc6e088e0b736b \
-                    size    12868468 \
-                    compiler-rt-8.0.0.src.tar.xz \
-                    rmd160  f86ba4b009bef2c95727ced20ea44afef6650ae2 \
-                    sha256  b435c7474f459e71b2831f1a4e3f1d21203cb9c0172e94e9d9b69f50354f21b1 \
-                    size    1903020 \
-                    libcxx-8.0.0.src.tar.xz \
-                    rmd160  bc1e240208c88e1718a4892932f40b299628301a \
-                    sha256  c2902675e7c84324fb2c1e45489220f250ede016cc3117186785d9dc291f9de2 \
-                    size    1752308 \
-                    clang-tools-extra-8.0.0.src.tar.xz \
-                    rmd160  326bfe3cbcdf701f3a9f6722823877d00679626f \
-                    sha256  4f00122be408a7482f2004bcf215720d2b88cf8dc78b824abb225da8ad359d4b \
-                    size    1996156 \
-                    lldb-8.0.0.src.tar.xz \
-                    rmd160  8f48d590075479cd131874855a951450ac5a4c72 \
-                    sha256  49918b9f09816554a20ac44c5f85a32dc0a7a00759b3259e78064d674eac0373 \
-                    size    19602332 \
-                    polly-8.0.0.src.tar.xz \
-                    rmd160  ed2a61a4cf5431792b0b02d31cc973bdb0fcb676 \
-                    sha256  e3f5a3d6794ef8233af302c45ceb464b74cdc369c1ac735b6b381b21e4d89df4 \
-                    size    8706068
+checksums           llvm-8.0.1.src.tar.xz \
+                    rmd160  6cedbb2b11ec5a4bba3d1b974fb3165a44f762c0 \
+                    sha256  44787a6d02f7140f145e2250d56c9f849334e11f9ae379827510ed72f12b75e7 \
+                    size    30477608 \
+                    cfe-8.0.1.src.tar.xz \
+                    rmd160  8bec1ef0e0e49000886d8caed5ef42fb56a418b2 \
+                    sha256  70effd69f7a8ab249f66b0a68aba8b08af52aa2ab710dfb8a0fba102685b1646 \
+                    size    12810056 \
+                    compiler-rt-8.0.1.src.tar.xz \
+                    rmd160  54aaf2d395a3206b3f373e75df2d1cac600ddff2 \
+                    sha256  11828fb4823387d820c6715b25f6b2405e60837d12a7469e7a8882911c721837 \
+                    size    1954204 \
+                    libcxx-8.0.1.src.tar.xz \
+                    rmd160  caebe333a79c719ade136fad3bf9ec9333e46c3c \
+                    sha256  7f0652c86a0307a250b5741ab6e82bb10766fb6f2b5a5602a63f30337e629b78 \
+                    size    1739524 \
+                    clang-tools-extra-8.0.1.src.tar.xz \
+                    rmd160  f9d1192759b699cc1902eca8f0c71a3a9b0a06ad \
+                    sha256  187179b617e4f07bb605cc215da0527e64990b4a7dd5cbcc452a16b64e02c3e1 \
+                    size    1994068 \
+                    lldb-8.0.1.src.tar.xz \
+                    rmd160  063b9faece0d5f4dadb0ed44e499581a631d17d9 \
+                    sha256  e8a79baa6d11dd0650ab4a1b479f699dfad82af627cbbcd49fa6f2dc14e131d7 \
+                    size    19586288 \
+                    polly-8.0.1.src.tar.xz \
+                    rmd160  d753179e2464812fe7da5e62471ad17819936ed5 \
+                    sha256  e8a1f7e8af238b32ce39ab5de1f3317a2e3f7d71a8b1b8bbacbd481ac76fd2d1 \
+                    size    8711692
 
 patch.pre_args  -p1
 patchfiles \
@@ -277,7 +280,7 @@ if {${subport} eq "llvm-${llvm_version}"} {
 	    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
     }
 
-    if {${os.major} <= 14} {
+    if {${os.major} <= 15} {
         # XRAY uses TLS, MAP_ANONYMOUS, and clock_gettime, so disable it
         # on systems that don't currently support these features
         # see https://trac.macports.org/ticket/57130
