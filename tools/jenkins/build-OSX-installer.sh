@@ -266,9 +266,10 @@ STRIP=1
 # macdeployqt only works if the package name has the same name as the executable inside:
 # ERROR: Could not find bundle binary for "/Users/devernay/Development/workspace/tmp/tmp_deploy/Natron-RB-2.3-201909281526-05aaefe-64-no-installer.app"
 # ERROR: "error: otool: can't open file:  (No such file or directory)
-app_for_macdeployqt="$(dirname "${package}")/${INSTALLER_BASENAME}.app"
+app_for_macdeployqt="$(dirname "${package}")/Natron.app"
 [ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
 ln -s "${package}" "${app_for_macdeployqt}"
+echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
 "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
 rm  "${app_for_macdeployqt}"
 
