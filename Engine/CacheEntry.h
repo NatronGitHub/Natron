@@ -37,6 +37,8 @@
 #include <fstream>
 #endif
 #include <sstream> // stringstream
+#include <algorithm>
+#include <utility>
 
 #ifdef __NATRON_WIN32__
 #include <windows.h>

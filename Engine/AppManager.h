@@ -29,6 +29,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 #include "Global/GlobalDefines.h"
 

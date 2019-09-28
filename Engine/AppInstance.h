@@ -29,8 +29,11 @@
 
 #include <vector>
 #include <list>
+#include <string>
+#include <utility>
 #include <climits>              // for INT_MAX, INT_MIN
 #include <cstddef>              // for NULL
+
 #include <QtCore/QtGlobal>      // for Q_UNUSED
 #include <QtCore/QObject>  // for Q_OBJECT, Q_SIGNALS, Q_SLOTS
 #include <QtCore/QMutex>

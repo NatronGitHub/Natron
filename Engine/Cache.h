@@ -36,6 +36,8 @@
 #include <cstddef>
 #include <utility>
 #include <algorithm> // min, max
+#include <string>
+#include <stdexcept>
 
 #include "Global/GlobalDefines.h"
 #include "Global/StrUtils.h"

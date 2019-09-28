@@ -27,6 +27,11 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+#include <set>
+#include <cstddef>
+#include <stdexcept>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
