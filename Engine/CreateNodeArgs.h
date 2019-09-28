@@ -28,6 +28,7 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
+#include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
