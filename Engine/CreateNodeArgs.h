@@ -28,8 +28,12 @@
 
 #include "Global/Macros.h"
 
-#include "Engine/PropertiesHolder.h"
+#include <map>
+#include <vector>
+#include <stdexcept>
+#include <string>
 
+#include "Engine/PropertiesHolder.h"
 
 #include "Engine/EngineFwd.h"
 

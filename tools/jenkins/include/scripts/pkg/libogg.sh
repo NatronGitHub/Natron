@@ -2,7 +2,7 @@
 
 # Install libogg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libogg.html
-LIBOGG_VERSION=1.3.3
+LIBOGG_VERSION=1.3.4
 LIBOGG_TAR="libogg-${LIBOGG_VERSION}.tar.gz"
 LIBOGG_SITE="http://downloads.xiph.org/releases/ogg"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ogg.pc" ] || [ "$(pkg-config --modversion ogg)" != "$LIBOGG_VERSION" ]; }; }; then

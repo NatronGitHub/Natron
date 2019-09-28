@@ -11,7 +11,7 @@ PortGroup           compiler_blacklist_versions 1.0
 
 name                qt4-mac
 version             4.8.7
-revision            8
+revision            9
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
@@ -349,6 +349,10 @@ patchfiles-append patch-src_corelib_io_qsettings.cpp.diff
 # (I think). Without this fix, the build errors out on Clang 5.
 
 patchfiles-append patch-src_gui_text_qfontengine_coretext.mm.diff
+
+# fix build against openssl 1.1.1
+# see https://trac.macports.org/ticket/58205
+patchfiles-append patch-qt4-openssl111.diff
 
 # error out if trying to build on a new OSX version (> 10.15).
 

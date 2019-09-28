@@ -56,7 +56,7 @@ EffectOpenGLContextData::EffectOpenGLContextData(bool isGPUContext)
 
 EffectOpenGLContextData::~EffectOpenGLContextData()
 {
-    
+
 }
 
 bool

@@ -2,7 +2,7 @@
 
 # Install expat
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/expat.html
-EXPAT_VERSION=2.2.7
+EXPAT_VERSION=2.2.8
 EXPAT_TAR="expat-${EXPAT_VERSION}.tar.bz2"
 EXPAT_SITE="https://sourceforge.net/projects/expat/files/expat/${EXPAT_VERSION}"
 if build_step && { force_build || { [ "${REBUILD_EXPAT:-}" = "1" ]; }; }; then
