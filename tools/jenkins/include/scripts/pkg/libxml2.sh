@@ -20,7 +20,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     else
         icu_flag=--without-icu
     fi
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --without-python --with-lzma --with-threads
+    # note: python module is necessary for itstool
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --with-python="$SDK_HOME/bin/python3" --with-lzma --with-threads
     make -j${MKJOBS}
     make install
     popd

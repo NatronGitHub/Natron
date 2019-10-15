@@ -96,7 +96,7 @@ destroot.args       verbose=1
 if {[string match {macports-clang-3.[5-9]} ${configure.compiler}] ||
     [string match {macports-clang-[4-9].*} ${configure.compiler}] ||
     [string match {macports-clang-[1-9][0-9].*} ${configure.compiler}] ||
-    (${configure.compiler} eq "clang" && [compiler_blacklist_versions._get_compiler_version ${configure.compiler}] > 602)} {
+    (${configure.compiler} eq "clang" && [compiler.command_line_tools_version ${configure.compiler}] > 602)} {
         build.args-append CFLAGS_S=-fno-integrated-as
 }
 

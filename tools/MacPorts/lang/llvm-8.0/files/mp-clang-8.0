@@ -8,10 +8,16 @@ bin/scan-view-mp-8.0
 bin/clang-apply-replacements-mp-8.0
 bin/clang-check-mp-8.0
 bin/clang-cl-mp-8.0
--
+bin/clang-mp-8.0
 bin/clang-query-mp-8.0
 bin/clang-rename-mp-8.0
 bin/clang-tidy-mp-8.0
+libexec/llvm-8.0/libexec/clang-format/clang-format-diff.py
+libexec/llvm-8.0/share/clang/clang-tidy-diff.py
+bin/clangd-mp-8.0
+bin/git-clang-format-mp-8.0
+libexec/llvm-8.0/share/clang/run-clang-tidy.py
+bin/sancov-mp-8.0
 -
 -
 -
@@ -26,9 +32,3 @@ bin/clang-tidy-mp-8.0
 -
 -
 -
--
--
--
--
--
-

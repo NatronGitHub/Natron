@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       active_variants 1.1
 
 name            gnutls
-version         3.6.9
+version         3.6.10
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -30,9 +30,9 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  2771adabb5342b24fbebcb69b324924ee2b56513 \
-                sha256  4331fca55817ecdd74450b908a6c29b4f05bb24dd13144c6284aa34d872e1fcb \
-                size    5773928
+checksums       rmd160  fe2df3aead55853711a0dbd80ef5dd648a4e09a7 \
+                sha256  b1f3ca67673b05b746a961acf2243eaae0ffe658b6a6494265c648e7c7812293 \
+                size    5795984
 
 use_xz          yes
 
@@ -45,7 +45,6 @@ conflicts_build autogen
 
 depends_build-append \
                 port:gettext \
-                port:gtk-doc \
                 port:pkgconfig
 
 depends_lib-append \
@@ -104,6 +103,9 @@ if {[variant_isset dane] && ![file exists ${prefix}/var/run/unbound/root.key]} {
 variant doc description {Build documentation} {
     configure.args-delete   --disable-doc
 
+    depends_build-append \
+                port:gtk-doc
+
     post-destroot {
         move ${destroot}${prefix}/share/man/man1/certtool.1 ${destroot}${prefix}/share/man/man1/gnutls-certtool.1
     }
@@ -154,13 +156,6 @@ if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
     # ld: symbol(s) not found for architecture x86_64
     compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
     compiler.fallback-append  macports-clang-8.0 macports-clang-7.0 
-}
-
-# Workaround for Darwin 19 (beta). To be reviewed come final release.
-# ld: warning: cannot export hidden symbol __gnutls_x86_cpuid_s from accelerated/.libs/libaccelerated.a(x86-common.o)
-# ld: weak import of symbol '____chkstk_darwin' not supported because of option: -no_weak_imports for architecture x86_64
-if { ${os.major} >= 19 } {
-    compiler.blacklist-append {clang > 1099}
 }
 
 # needs a TLS supporting compiler on older systems

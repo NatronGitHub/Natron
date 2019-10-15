@@ -11,6 +11,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.2.1
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -288,11 +289,7 @@ if {[variant_isset universal]} {
     lappend merger_configure_args(x86_64) --enable-x86asm
 } else {
     configure.args-append --arch=${configure.build_arch}
-    if {[vercmp [macports_version] 2.5.99] >= 0} {
     configure.env-append  ASFLAGS=[get_canonical_archflags]
-    } else {
-    configure.env-append  ASFLAGS='[get_canonical_archflags]'
-    }
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
         depends_build-append port:nasm
         configure.args-append --enable-x86asm

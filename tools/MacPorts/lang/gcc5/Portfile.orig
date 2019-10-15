@@ -239,21 +239,12 @@ variant universal {
     configure.args-delete --disable-multilib
 }
 # the generated compiler doesn't accept -arch
-if {[vercmp [macports_version] 2.5.99] >= 0} {
 configure.env-append \
     "CPP=${configure.cc} -E" \
     "CXXCPP=${configure.cxx} -E"
 build.env-append \
     "CPP=${configure.cc} -E" \
     "CXXCPP=${configure.cxx} -E"
-} else {
-configure.env-append \
-    CPP="${configure.cc} -E" \
-    CXXCPP="${configure.cxx} -E"
-build.env-append \
-    CPP="${configure.cc} -E" \
-    CXXCPP="${configure.cxx} -E"
-}
 configure.cc-append [get_canonical_archflags]
 configure.cc_archflags
 configure.cxx-append ${configure.cxx_archflags}

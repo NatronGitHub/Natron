@@ -10,7 +10,7 @@ PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.80.0
+version             0.81.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -24,9 +24,9 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  9529c999b8ce0674c4fad0a1018c9dc51c4eac3e \
-                    sha256  4d3ca6b79bc13b8e24092e34f83ef5f387f3bb0bbd7359a6c078e09c696d104f \
-                    size    1548908
+checksums           rmd160  3eb610e4dd3f7b2baca949c99c4425f24a552cf0 \
+                    sha256  212d020b035b67b36c9666bd08ac778dff3222d85c01c338787d546f0f9bfe02 \
+                    size    1548944
 
 depends_build-append \
                     port:pkgconfig
@@ -121,7 +121,7 @@ if {${subport} ne ${name}} {
     }
 } else {
     # generation of Poppler-0.18.gir fails if previous version of poppler is active
-    # appropriate for main poppler port only
+    # and new symbols are introduced, appropriate for main poppler port only
     conflicts_build ${name}
 }
 

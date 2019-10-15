@@ -522,8 +522,13 @@ post-patch {
 # this blacklist.
 #
 
-compiler.blacklist-append { clang <= 318.0.61 } \
-    gcc-3.3 *gcc-4.0 macports-gcc*
+# does not build against libc++ with Apple clangs up to 10.8
+# does not build against macports-clang-7+
+# not certain about macports-clang-6.0 at present
+
+compiler.blacklist-append { clang <= 503 } \
+    gcc-3.3 *gcc-4.0 macports-gcc* \
+    { macports-clang-[6-9].0 }
 
 # --prefix is not recognized
 
