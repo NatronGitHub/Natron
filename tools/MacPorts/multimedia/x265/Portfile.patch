@@ -1,17 +1,17 @@
---- Portfile.orig	2019-07-31 09:35:04.000000000 -0700
-+++ Portfile	2019-07-31 09:48:59.000000000 -0700
-@@ -7,7 +7,7 @@
+--- Portfile.orig	2019-11-04 22:48:59.000000000 -0800
++++ Portfile	2019-11-04 22:50:45.000000000 -0800
+@@ -8,7 +8,7 @@
  
  name                x265
- version             3.1.1
--revision            0
-+revision            1
+ version             3.2
+-revision            1
++revision            2
  
- checksums           rmd160  680fdd3eedc00a8a10ffbd71b21c942bd4cfb809 \
-                     sha256  827900c7cc0a0105b8a96460fab7cd22b97afa7b2835b5cb979c44bddaa3c8d0 \
-@@ -34,15 +34,27 @@
- 
- compiler.blacklist  *llvm-gcc-4.2
+ checksums           rmd160  f9069ae6504a9f04702a5e3ea78cf1985cd63646 \
+                     sha256  364d79bcd56116a9e070fdeb1d9d2aaef1a786b4970163fb56ff0991a183133b \
+@@ -40,15 +40,27 @@
+ # To be reviewed once Xcode 11.2 comes out.
+ compiler.blacklist-append {clang > 1099}
  
 +configure.env-append CONFIGURE='${configure.cmd}' BUILD='${build.cmd}'
 +build.env-append     BUILD='${build.cmd}'

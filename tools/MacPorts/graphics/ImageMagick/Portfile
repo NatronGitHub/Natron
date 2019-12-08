@@ -9,9 +9,9 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.9-40
-revision                    6
+version                     6.9.10-71
 set reasonable_version      [lindex [split ${version} -] 0]
+revision                    0
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
@@ -42,9 +42,9 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  d01d39b0da259c1296acaa37867f1a428928b72e \
-                            sha256  62f25d46bfbcffe00b84e167994d593868a9a47d4defc489a429cae1d6aab9f7 \
-                            size    8919136
+checksums                   rmd160  4bc81090ea861f92900a33aea310c4306be5785a \
+                            sha256  fec2d279c067ab2cf453589dd225e1cb7d5cfaffb7acfec529f911fc72bf9c4f \
+                            size    9071596
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -111,7 +111,8 @@ configure.args              --enable-shared \
                             --without-lqr \
                             --without-pango \
                             --without-x \
-                            --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
+                            --with-gs-font-dir=${prefix}/share/fonts/urw-fonts \
+                            --disable-openmp
 
 if {${os.platform} eq "darwin" && ${os.major} < 11} {
     configure.args-append   --disable-opencl

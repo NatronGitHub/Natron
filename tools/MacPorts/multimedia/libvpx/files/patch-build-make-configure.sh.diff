@@ -1,5 +1,5 @@
---- build/make/configure.sh.orig	2019-02-09 23:18:41.000000000 -0800
-+++ build/make/configure.sh	2019-02-09 23:29:38.000000000 -0800
+--- build/make/configure.sh.orig	2019-09-25 18:56:09.000000000 -0400
++++ build/make/configure.sh	2019-09-25 18:44:14.000000000 -0400
 @@ -767,37 +767,9 @@
  
      # detect tgt_os
@@ -40,6 +40,15 @@
          ;;
        x86_64*mingw32*)
          tgt_os=win64
+@@ -882,7 +854,7 @@
+       fi
+       ;;
+     x86*-darwin*)
+-      osx_sdk_dir="$(show_darwin_sdk_path macosx)"
++      osx_sdk_dir="$(configure.sdkroot)"
+       if [ -d "${osx_sdk_dir}" ]; then
+         add_cflags  "-isysroot ${osx_sdk_dir}"
+         add_ldflags "-isysroot ${osx_sdk_dir}"
 @@ -890,58 +862,6 @@
        ;;
    esac

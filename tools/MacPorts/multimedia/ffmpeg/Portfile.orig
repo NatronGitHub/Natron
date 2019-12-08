@@ -5,13 +5,15 @@ PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 PortGroup           compiler_blacklist_versions 1.0
 PortGroup           active_variants 1.1
+# https://trac.macports.org/ticket/59246
+PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.2.1
-revision            1
+revision            2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -59,6 +61,7 @@ checksums           rmd160  581749bb22f25357ccae1ea504a65ffc5e1cfe75 \
 
 depends_build       port:pkgconfig \
                     port:gmake \
+                    port:ld64 \
                     port:texinfo
 
 depends_lib         port:lame \

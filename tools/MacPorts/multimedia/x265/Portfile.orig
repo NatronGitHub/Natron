@@ -4,14 +4,15 @@ PortSystem          1.0
 
 PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
+PortGroup           xcode_workaround 1.0
 
 name                x265
-version             3.1.1
-revision            0
+version             3.2
+revision            1
 
-checksums           rmd160  680fdd3eedc00a8a10ffbd71b21c942bd4cfb809 \
-                    sha256  827900c7cc0a0105b8a96460fab7cd22b97afa7b2835b5cb979c44bddaa3c8d0 \
-                    size    1419826
+checksums           rmd160  f9069ae6504a9f04702a5e3ea78cf1985cd63646 \
+                    sha256  364d79bcd56116a9e070fdeb1d9d2aaef1a786b4970163fb56ff0991a183133b \
+                    size    1425689
 
 categories          multimedia
 platforms           darwin
@@ -32,7 +33,10 @@ depends_build-append \
                     port:gmake \
                     port:nasm
 
-compiler.blacklist  *llvm-gcc-4.2
+compiler.blacklist-append *llvm-gcc-4.2
+
+# https://trac.macports.org/ticket/59246
+xcode_workaround.fixed_xcode_version 11.2
 
 #    error: illegal text-relocation to '_x265_pw_1'
 #   report: https://mailman.videolan.org/pipermail/x265-devel/2014-May/004476.html

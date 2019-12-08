@@ -528,7 +528,7 @@ post-patch {
 
 compiler.blacklist-append { clang <= 503 } \
     gcc-3.3 *gcc-4.0 macports-gcc* \
-    { macports-clang-[6-9].0 }
+    {macports-clang-[6-9].0}
 
 # --prefix is not recognized
 

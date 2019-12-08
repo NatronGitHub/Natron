@@ -195,6 +195,21 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
+# Currently only gcc9 builds on Darwin19+. See
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835
+# for more background on the issue.
+# Hopefully addressed in a future Xcode release (>11.1) but
+# for now just error out.
+if { ${os.major} >= 19 } {
+    known_fail  yes
+    pre-fetch {
+        ui_error "${name} ${version} is (currently) not supported on Darwin ${os.major}"
+        ui_error "See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835 for more details"
+        ui_error "Until the issue is addressed in Xcode, please instead install gcc9 / libgcc9"
+        return -code error "incompatible OS X version"
+    }
+}
+
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir
 
