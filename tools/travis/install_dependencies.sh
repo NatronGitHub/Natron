@@ -344,7 +344,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
-    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew
+    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
