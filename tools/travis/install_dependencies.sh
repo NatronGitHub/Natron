@@ -84,8 +84,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ "$CC" = "$TEST_CC" ]; then
+        if [ `lsb_release -cs` = "bionic" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4; #4.2.1
         if [ `lsb_release -cs` = "xenial" ]; then
-            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4; #4.1.3
         elif [ `lsb_release -cs` = "trusty" ]; then
             sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
         elif [ `lsb_release -cs` = "precise" ]; then
