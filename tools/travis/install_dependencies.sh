@@ -320,7 +320,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
     brew tap cartr/qt4
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
-    brew tap-pin cartr/qt4
+    #brew tap-pin cartr/qt4 # obsolete since homebres 2.1.0 https://brew.sh/2019/04/04/homebrew-2.1.0/
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
 
     # Upgrade the essential packages
@@ -344,7 +344,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
-    brew install qt@4 expat cairo gnu-sed glew
+    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
@@ -362,7 +362,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #PATH="/usr/local/opt/python@2/bin:$PATH"
     #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     # Python 2 pyside comes precompiled!
-    brew install pyside@1.2 shiboken@1.2
+    brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
         brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw openimageio seexpr openvdb
