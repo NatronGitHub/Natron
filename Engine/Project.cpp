@@ -349,6 +349,17 @@ Project::loadProjectInternal(const QString & path,
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
 
+    // set new default format (if needed)
+    const std::vector<Format> & appFormats = appPTR->getFormats();
+    for (U32 i = 0; i < appFormats.size(); ++i) {
+        if (f == appFormats[i]) {
+            if (_imp->formatKnob->getDefaultValue(0) != i) {
+                _imp->formatKnob->setDefaultValue(i, 0);
+            }
+            break;
+        }
+    }
+
     _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
