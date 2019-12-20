@@ -110,9 +110,11 @@ addons:
 matrix:
   include:
     - os: linux
+      dist: bionic
       sudo: required
       compiler: gcc
     - os: linux
+      dist: bionic
       sudo: required
       compiler: clang
     - os: osx
