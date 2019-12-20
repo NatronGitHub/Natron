@@ -81,7 +81,7 @@ addons:
     - libyaml-cpp-dev
     #- libopenexr-dev
     #- libilmbase-dev
-    - libopenjpeg-dev
+    - libopenjp2-7-dev
     - libtiff-dev
     - libjpeg-dev
     - libpng-dev
