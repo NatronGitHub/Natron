@@ -643,6 +643,12 @@ GuiPrivate::restoreGuiGeometry()
         QRect screen = desktop->screenGeometry();
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
+    if ( settings.contains( QString::fromUtf8("maximized")) ) {
+        bool maximized = settings.value( QString::fromUtf8("maximized") ).toBool();
+        if (maximized) {
+            _gui->showMaximized();
+        }
+    }
     if ( settings.contains( QString::fromUtf8("fullScreen") ) ) {
         bool fs = settings.value( QString::fromUtf8("fullScreen") ).toBool();
         if (fs) {
@@ -707,6 +713,7 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue( QString::fromUtf8("pos"), _gui->pos() );
     settings.setValue( QString::fromUtf8("size"), _gui->size() );
     settings.setValue( QString::fromUtf8("fullScreen"), _gui->isFullScreen() );
+    settings.setValue( QString::fromUtf8("maximized"), _gui->isMaximized() );
     settings.setValue( QString::fromUtf8("ToolbarHidden"), leftToolBarDisplayedOnHoverOnly);
     settings.endGroup();
 
