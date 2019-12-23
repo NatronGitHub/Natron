@@ -263,7 +263,15 @@ qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerC
 #qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
 STRIP=1
 
-"$QTDIR"/bin/macdeployqt "${package}" -no-strip
+# macdeployqt only works if the package name has the same name as the executable inside:
+# ERROR: Could not find bundle binary for "/Users/devernay/Development/workspace/tmp/tmp_deploy/Natron-RB-2.3-201909281526-05aaefe-64-no-installer.app"
+# ERROR: "error: otool: can't open file:  (No such file or directory)
+app_for_macdeployqt="$(dirname "${package}")/Natron.app"
+[ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+ln -s "${package}" "${app_for_macdeployqt}"
+echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
+"$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
+rm  "${app_for_macdeployqt}"
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
@@ -297,6 +305,7 @@ cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resourc
 rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Python"
 cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
 cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/include" "$pkglib/Python.framework/Versions/${PYVER}/"
+chmod -R u+w "$pkglib/Python.framework" # fixes ERROR: "error: install_name_tool: can't open input file: /Users/devernay/Development/workspace/tmp/tmp_deploy/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib for writing (Permission denied)
 chmod 755 "$pkglib/Python.framework/Versions/${PYVER}/Python"
 install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
 ln -sf "Versions/${PYVER}/Python" "$pkglib/Python.framework/Python"

@@ -37,7 +37,6 @@ supported_archs     x86_64 i386
 depends_build-append port:yasm
 
 patchfiles          patch-build-make-configure.sh.diff \
-                    patch-configure.diff \
                     patch-Makefile.diff
 
 # clang 425.0.28 with libvpx-1.4.0:
@@ -96,7 +95,7 @@ destroot.args       verbose=1
 if {[string match {macports-clang-3.[5-9]} ${configure.compiler}] ||
     [string match {macports-clang-[4-9].*} ${configure.compiler}] ||
     [string match {macports-clang-[1-9][0-9].*} ${configure.compiler}] ||
-    (${configure.compiler} eq "clang" && [compiler_blacklist_versions._get_compiler_version ${configure.compiler}] > 602)} {
+    (${configure.compiler} eq "clang" && [compiler.command_line_tools_version ${configure.compiler}] > 602)} {
         build.args-append CFLAGS_S=-fno-integrated-as
 }
 
@@ -112,14 +111,14 @@ set my_targets(x86_64)  x86_64
 foreach my_arch {i386 x86_64} {
     set merger_host(${my_arch}) ""
     if {[info exists my_targets(${my_arch})]} {
-        set merger_configure_args(${my_arch}) --target=$my_targets(${my_arch})-${os.platform}-gcc
+        set merger_configure_args(${my_arch}) --force-target=$my_targets(${my_arch})-${os.platform}-gcc
     }
 }
 if {![variant_isset universal]} {
     if {[info exists merger_configure_args(${build_arch})]} {
         configure.args-append $merger_configure_args(${build_arch})
     } else {
-        configure.args-append --target=${os.arch}-${os.platform}-gcc
+        configure.args-append --force-target=${os.arch}-${os.platform}-gcc
     }
 }
 

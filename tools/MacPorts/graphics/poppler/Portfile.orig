@@ -3,14 +3,13 @@
 PortSystem          1.0
 PortGroup           compiler_blacklist_versions 1.0
 PortGroup           conflicts_build 1.0
-PortGroup           cxx11 1.1
 PortGroup           gobject_introspection 1.0
 PortGroup           cmake 1.1
 PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.80.0
+version             0.83.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -24,9 +23,9 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  9529c999b8ce0674c4fad0a1018c9dc51c4eac3e \
-                    sha256  4d3ca6b79bc13b8e24092e34f83ef5f387f3bb0bbd7359a6c078e09c696d104f \
-                    size    1548908
+checksums           rmd160  2ffc9fe5b5198e677d2f33d0f52d1ef89e07bce5 \
+                    sha256  685c650d9771e1c340ea222b57c8bd3f7502e2191ccfe8adeb9e638dcb0b799b \
+                    size    1555456
 
 depends_build-append \
                     port:pkgconfig
@@ -56,6 +55,7 @@ configure.ldflags-append -liconv
 gobject_introspection yes
 
 # C++14, thread_local
+compiler.cxx_standard 2014
 configure.cxxflags-append -std=c++14
 compiler.blacklist-append {clang < 800.0.38}
 
@@ -121,7 +121,7 @@ if {${subport} ne ${name}} {
     }
 } else {
     # generation of Poppler-0.18.gir fails if previous version of poppler is active
-    # appropriate for main poppler port only
+    # and new symbols are introduced, appropriate for main poppler port only
     conflicts_build ${name}
 }
 

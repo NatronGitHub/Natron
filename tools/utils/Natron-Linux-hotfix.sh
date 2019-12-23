@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 #
 # Natron Linux hotfix script
 # Will fix broken symlinks in a release

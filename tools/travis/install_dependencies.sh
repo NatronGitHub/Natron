@@ -83,8 +83,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ "$CC" = "$TEST_CC" ]; then
-        if [ `lsb_release -cs` = "xenial" ]; then
-            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
+        if [ `lsb_release -cs` = "bionic" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4; #4.2.1
+        elif [ `lsb_release -cs` = "xenial" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4; #4.1.3
         elif [ `lsb_release -cs` = "trusty" ]; then
             sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
         elif [ `lsb_release -cs` = "precise" ]; then
@@ -198,9 +200,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         fi
         # - openimageio
         if [ ! -d "$HOME/oiio/lib" ]; then
-            wget https://github.com/OpenImageIO/oiio/archive/Release-2.0.8.tar.gz -O /tmp/oiio.tgz;
+            wget https://github.com/OpenImageIO/oiio/archive/Release-2.0.13.tar.gz -O /tmp/oiio.tgz;
             tar -xvzf /tmp/oiio.tgz -C $HOME;
-            pushd $HOME/oiio-Release-2.0.8;
+            pushd $HOME/oiio-Release-2.0.13;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_ROOT_DIR=$HOME/openexr -DOPENEXR_ROOT_DIR=$HOME/openexr -DOCIO_HOME=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
             make $J && make install;
@@ -318,7 +320,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
     brew tap cartr/qt4
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
-    brew tap-pin cartr/qt4
+    #brew tap-pin cartr/qt4 # obsolete since homebres 2.1.0 https://brew.sh/2019/04/04/homebrew-2.1.0/
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
 
     # Upgrade the essential packages
@@ -342,7 +344,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
-    brew install qt@4 expat cairo gnu-sed glew
+    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
@@ -360,7 +362,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #PATH="/usr/local/opt/python@2/bin:$PATH"
     #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     # Python 2 pyside comes precompiled!
-    brew install pyside@1.2 shiboken@1.2
+    brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
         brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw openimageio seexpr openvdb

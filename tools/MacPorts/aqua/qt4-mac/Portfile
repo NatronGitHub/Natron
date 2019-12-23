@@ -11,7 +11,7 @@ PortGroup           compiler_blacklist_versions 1.0
 
 name                qt4-mac
 version             4.8.7
-revision            9
+revision            10
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
@@ -30,8 +30,12 @@ distname            qt-everywhere-opensource-src-${version}
 master_sites        http://download.qt.io/official_releases/qt/${branch}/${version}/
 
 checksums           rmd160 afb5e5a99388e6429faca59cb5000054feffd166 \
-                    sha256 e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0
+                    sha256 e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0 \
+                    size   241075567
 
+if {[info exists use_xcode]} {
+    use_xcode           yes
+}
 minimum_xcodeversions   {8 2.5}
 
 depends_lib-append  port:zlib \
@@ -40,7 +44,7 @@ depends_lib-append  port:zlib \
                     port:tiff \
                     port:libpng \
                     port:libmng \
-                    path:lib/libjpeg.dylib:jpeg 
+                    path:lib/libjpeg.dylib:jpeg
 
 # find a way to specify the OS MINOR version.  For OSX 10.X, this
 # value will be X.  The type is this variable is integer, so we can
@@ -354,6 +358,24 @@ patchfiles-append patch-src_gui_text_qfontengine_coretext.mm.diff
 # see https://trac.macports.org/ticket/58205
 patchfiles-append patch-qt4-openssl111.diff
 
+# newer versions of MacPorts Clang default to newer C++ standards
+# see https://trac.macports.org/ticket/57751
+if {![variant_isset cxx11]} {
+    patchfiles-append patch-compiler_standard.diff
+}
+
+# the configure script uses the compiler version to determine if QtXmlPatterns and QtWebKit can be built
+# the logic does not work for newer versions of GCC or Clang (masquerading as GCC)
+patchfiles-append patch-test_compiler_version.diff
+
+# the version header file is part of C++20
+# newer versions of Clang find VERSION instead
+post-extract {
+    move \
+        ${worksrcpath}/src/3rdparty/javascriptcore/VERSION \
+        ${worksrcpath}/src/3rdparty/javascriptcore/VERSION.txt
+}
+
 # fix building with clang > 5.0
 # see https://trac.macports.org/ticket/57751
 patchfiles-append \
@@ -546,8 +568,13 @@ post-patch {
 # this blacklist.
 #
 
-compiler.blacklist-append { clang <= 318.0.61 } \
-    gcc-3.3 *gcc-4.0 macports-gcc*
+# does not build against libc++ with Apple clangs up to 10.8
+# does not build against macports-clang-7+
+# not certain about macports-clang-6.0 at present
+
+compiler.blacklist-append { clang <= 503 } \
+    gcc-3.3 *gcc-4.0 macports-gcc* \
+    {macports-clang-[6-8].0}
 
 # --prefix is not recognized
 
@@ -643,6 +670,12 @@ foreach driver {db2 ibase oci tds} {
 
 foreach driver {mysql odbc psql sqlite sqlite2} {
     configure.args-append -no-sql-${driver}
+}
+
+# on older systems, /usr/include/rpcsvc/yp_prot.h redefines bool unless BOOL_DEFINED is defined
+if {${os.major} < 11} {
+    configure.args-append {-D BOOL_DEFINED}
+    patchfiles-append     patch-nis.diff
 }
 
 pre-configure {
@@ -1112,6 +1145,17 @@ post-destroot {
     ln -s ${qt_frameworks_dir}/QtGui.framework/Resources \
         ${dr_qt_libs_dir}
 
+    # link pkg-config files to where they will be found automatically
+    if {${qt_libs_dir} ne "${prefix}/lib"} {
+
+        set qt_pc_dir ${qt_libs_dir}/pkgconfig
+        set dr_lib_pc_dir ${destroot}${prefix}/lib/pkgconfig
+        xinstall -d -m 0755 ${destroot}${qt_pc_dir}
+        foreach pcfile [glob -nocomplain -tails -directory ${destroot}${qt_pc_dir} *.pc] {
+            ln -s ${qt_pc_dir}/${pcfile} ${dr_lib_pc_dir}
+        }
+
+    }
 }
 
 variant odbc description {Enable iODBC SQL Driver} {

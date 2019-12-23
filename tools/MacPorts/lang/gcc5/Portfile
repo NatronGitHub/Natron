@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
-PortSystem 1.0
-PortGroup select 1.0
+PortSystem                            1.0
+PortGroup select                      1.0
 PortGroup compiler_blacklist_versions 1.0
-PortGroup xcodeversion 1.0
-PortGroup conflicts_build 1.0
+PortGroup xcodeversion                1.0
+PortGroup conflicts_build             1.0
 
 name                gcc5
 epoch               2
@@ -196,6 +196,23 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
+# On Darwin19+ fails to build for Xcode < 11.3
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835
+# https://trac.macports.org/ticket/59351
+# for more background on the issue.
+if { ${os.major} >= 19 } {
+    if {[vercmp ${xcodeversion} 11.3] < 0} {
+        known_fail  yes
+        pre-fetch {
+            ui_error "${name} ${version} is (currently) not supported on Darwin ${os.major} Xcode ${xcodeversion}"
+            ui_error "See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835 and"
+            ui_error "    https://trac.macports.org/ticket/59351 for more details"
+            ui_error "To install this port upgrade Xcode to 11.3 or newer"
+            return -code error "incompatible Xcode version"
+        }
+    }
+}
+
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir
 
@@ -240,21 +257,12 @@ variant universal {
     configure.args-delete --disable-multilib
 }
 # the generated compiler doesn't accept -arch
-if {[vercmp [macports_version] 2.5.99] >= 0} {
 configure.env-append \
     "CPP=${configure.cc} -E" \
     "CXXCPP=${configure.cxx} -E"
 build.env-append \
     "CPP=${configure.cc} -E" \
     "CXXCPP=${configure.cxx} -E"
-} else {
-configure.env-append \
-    CPP="${configure.cc} -E" \
-    CXXCPP="${configure.cxx} -E"
-build.env-append \
-    CPP="${configure.cc} -E" \
-    CXXCPP="${configure.cxx} -E"
-}
 configure.cc-append [get_canonical_archflags]
 configure.cc_archflags
 configure.cxx-append ${configure.cxx_archflags}

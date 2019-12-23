@@ -46,9 +46,10 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Fix bugs in DenoiseSharpen that caused crashes #300
 - Add support for chromatic aberration correction when reading RAW files #309
-- Update CImg and G'MIC to 2.7.2 and fix several issues in GMIC plugins (which are still beta)
+- Update CImg and G'MIC to 2.7.4 and fix several issues in GMIC plugins (which are still beta)
 - Many new GMIC plugins, including GMIC Custom Code
 - FrameRange: New options "Loop" and "Bounce" #411
+- Fix reading multi-view EXRs #429
 
 
 ## Version 2.3.14

@@ -518,6 +518,7 @@ build libxml2
 build libxslt # (required by glib)
 build dbus # (for QtDBus and glib)
 build glib
+build itstool # (required by shared-mime-info)
 build boost
 
 checkpoint

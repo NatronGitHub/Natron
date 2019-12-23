@@ -4,7 +4,7 @@
 CPPUNIT_VERSION=1.13.2 # does not require c++11
 CPPUNIT_SITE="http://dev-www.libreoffice.org/src/cppunit"
 if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
-    CPPUNIT_VERSION=1.14.0 # 1.14.0 is the first version to require c++11
+    CPPUNIT_VERSION=1.15.0 # 1.14.0 is the first version to require c++11
     CPPUNIT_SITE="http://dev-www.libreoffice.org/src"
 fi
 CPPUNIT_TAR="cppunit-${CPPUNIT_VERSION}.tar.gz"

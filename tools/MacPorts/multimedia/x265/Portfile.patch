@@ -1,21 +1,21 @@
---- Portfile.orig	2019-07-31 09:35:04.000000000 -0700
-+++ Portfile	2019-07-31 09:48:59.000000000 -0700
-@@ -7,7 +7,7 @@
+--- Portfile.orig	2019-12-20 23:19:18.000000000 -0800
++++ Portfile	2019-12-22 19:53:18.000000000 -0800
+@@ -8,7 +8,7 @@
  
  name                x265
- version             3.1.1
+ version             3.2.1
 -revision            0
 +revision            1
  
- checksums           rmd160  680fdd3eedc00a8a10ffbd71b21c942bd4cfb809 \
-                     sha256  827900c7cc0a0105b8a96460fab7cd22b97afa7b2835b5cb979c44bddaa3c8d0 \
-@@ -34,15 +34,27 @@
+ checksums           rmd160  7386c00a49a2fc143cd3c8cea657872235a8ba77 \
+                     sha256  fb9badcf92364fd3567f8b5aa0e5e952aeea7a39a2b864387cec31e3b58cbbcc \
+@@ -38,15 +38,27 @@
+ # https://trac.macports.org/ticket/59246
+ xcode_workaround.fixed_xcode_version 11.2
  
- compiler.blacklist  *llvm-gcc-4.2
- 
-+configure.env-append CONFIGURE='${configure.cmd}' BUILD='${build.cmd}'
-+build.env-append     BUILD='${build.cmd}'
-+destroot.env-append  BUILD='${build.cmd}' ARCH=none
++configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
++build.env-append     BUILD=${build.cmd}
++destroot.env-append  BUILD=${build.cmd} ARCH=none
 +configure.cmd        ${portpath}/${filesdir}/configure.sh
 +build.cmd            ${portpath}/${filesdir}/build.sh
 +
@@ -25,8 +25,8 @@
  if {[variant_exists universal] && [variant_isset universal]} {
      lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
 +    foreach arch ${configure.universal_archs} {
-+        lappend merger_configure_env(${arch}) ARCH='${arch}'
-+        lappend merger_build_env(${arch}) ARCH='${arch}'
++        lappend merger_configure_env(${arch}) ARCH=${arch}
++        lappend merger_build_env(${arch}) ARCH=${arch}
 +    }
  } else {
      if {${build_arch} eq "i386"} {

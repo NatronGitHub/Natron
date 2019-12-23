@@ -1,15 +1,24 @@
---- Portfile.orig	2017-09-10 23:50:18.000000000 +0200
-+++ Portfile	2017-09-14 19:20:48.000000000 +0200
+--- Portfile.orig	2019-12-20 23:15:41.000000000 -0800
++++ Portfile	2019-12-22 19:36:04.000000000 -0800
+@@ -48,7 +48,7 @@
+                             port:djvulibre \
+                             port:xz \
+                             port:jbigkit \
+-                            port:jpeg \
++                            path:lib/libjpeg.dylib:jpeg \
+                             port:lcms2 \
+                             port:libpng \
+                             port:libraw \
 @@ -67,6 +67,8 @@
-                             port:expat \
-                             port:libxml2
+                             port:libxml2 \
+                             port:libheif
  
 +patchfiles noclparser.patch
 +
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -93,11 +95,13 @@
+@@ -86,11 +88,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -23,9 +32,9 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -115,6 +119,78 @@
-                             --without-x \
-                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
+@@ -123,6 +127,78 @@
+     }
+ }
  
 +variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
 +    if {${configure.cxx_stdlib} eq "libstdc++"} {
@@ -102,7 +111,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -122,6 +198,23 @@
+@@ -130,6 +206,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -126,7 +135,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -156,6 +249,11 @@
+@@ -164,6 +257,11 @@
  
  default_variants            +x11
  
@@ -135,6 +144,6 @@
 +    configure.args-delete   --without-x
 +}
 +
- livecheck.version           ${reasonable_version}
  livecheck.type              regex
  livecheck.url               [lindex ${master_sites} 0]
+ livecheck.regex             ${name}-(6(?:\\.\\d+)+(?:-\\d+)?)\.tar
