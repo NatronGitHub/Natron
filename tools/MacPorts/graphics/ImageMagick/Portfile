@@ -9,10 +9,12 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.10-71
-set reasonable_version      [lindex [split ${version} -] 0]
-revision                    0
-homepage                    http://www.imagemagick.org/
+version                     6.9.10-78
+revision                    1
+checksums                   rmd160  de36eb0634ca80f8ded6cbf50dbc9a1858a59cc0 \
+                            sha256  1801df8a4f64ef040ba9d8040ad4128c26d72b6245e818c0e65070904f541a9d \
+                            size    9063344
+
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
 license                     Apache-2
@@ -36,21 +38,17 @@ long_description            ImageMagick is a robust collection of tools and \
                             supported, including GIF, JPEG, JPEG 2000, PNG, PDF, \
                             PhotoCD and TIFF.
 
-master_sites                http://www.imagemagick.org/download/ \
+homepage                    https://imagemagick.org
+master_sites                https://imagemagick.org/download/ \
                             http://mirror.checkdomain.de/imagemagick/ \
                             ftp://ftp.u-aizu.ac.jp/pub/graphics/image/ImageMagick/imagemagick.org/ \
-                            ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
-                            ftp://sunsite.icm.edu.pl/packages/ImageMagick
-
-checksums                   rmd160  4bc81090ea861f92900a33aea310c4306be5785a \
-                            sha256  fec2d279c067ab2cf453589dd225e1cb7d5cfaffb7acfec529f911fc72bf9c4f \
-                            size    9071596
+                            ftp://sunsite.icm.edu.pl/packages/ImageMagick/
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
                             port:xz \
                             port:jbigkit \
-                            port:jpeg \
+                            path:lib/libjpeg.dylib:jpeg \
                             port:lcms2 \
                             port:libpng \
                             port:libraw \
@@ -66,7 +64,8 @@ depends_lib                 port:bzip2 \
                             port:openjpeg \
                             port:openexr \
                             port:expat \
-                            port:libxml2
+                            port:libxml2 \
+                            port:libheif
 
 patchfiles noclparser.patch
 
@@ -103,6 +102,8 @@ configure.args              --enable-shared \
                             --with-zlib \
                             --with-modules \
                             --with-xml \
+                            --with-heic \
+                            --without-gcc-arch \
                             --without-perl \
                             --without-fpx \
                             --without-wmf \
@@ -111,6 +112,7 @@ configure.args              --enable-shared \
                             --without-lqr \
                             --without-pango \
                             --without-x \
+                            --without-zstd \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts \
                             --disable-openmp
 
@@ -260,7 +262,6 @@ variant xquartz {
     configure.args-delete   --without-x
 }
 
-livecheck.version           ${reasonable_version}
 livecheck.type              regex
 livecheck.url               [lindex ${master_sites} 0]
-livecheck.regex             ${name}-(6(?:\\.\\d+)*)(?:-\\d+)?
+livecheck.regex             ${name}-(6(?:\\.\\d+)+(?:-\\d+)?)\.tar

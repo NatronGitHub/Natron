@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
-PortSystem 1.0
-PortGroup select 1.0
+PortSystem                            1.0
+PortGroup select                      1.0
 PortGroup compiler_blacklist_versions 1.0
-PortGroup xcodeversion 1.0
-PortGroup conflicts_build 1.0
+PortGroup xcodeversion                1.0
+PortGroup conflicts_build             1.0
 
 name                gcc5
 epoch               2
@@ -196,18 +196,20 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
-# Currently only gcc9 builds on Darwin19+. See
+# On Darwin19+ fails to build for Xcode < 11.3
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835
+# https://trac.macports.org/ticket/59351
 # for more background on the issue.
-# Hopefully addressed in a future Xcode release (>11.1) but
-# for now just error out.
 if { ${os.major} >= 19 } {
-    known_fail  yes
-    pre-fetch {
-        ui_error "${name} ${version} is (currently) not supported on Darwin ${os.major}"
-        ui_error "See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835 for more details"
-        ui_error "Until the issue is addressed in Xcode, please instead install gcc9 / libgcc9"
-        return -code error "incompatible OS X version"
+    if {[vercmp ${xcodeversion} 11.3] < 0} {
+        known_fail  yes
+        pre-fetch {
+            ui_error "${name} ${version} is (currently) not supported on Darwin ${os.major} Xcode ${xcodeversion}"
+            ui_error "See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90835 and"
+            ui_error "    https://trac.macports.org/ticket/59351 for more details"
+            ui_error "To install this port upgrade Xcode to 11.3 or newer"
+            return -code error "incompatible Xcode version"
+        }
     }
 }
 

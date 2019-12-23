@@ -2,7 +2,7 @@
 
 # Install PostgreSQL (for the Qt postgresql plugin and the python postgresql adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/postgresql.html
-POSTGRESQL_VERSION=11.5
+POSTGRESQL_VERSION=12.1
 POSTGRESQL_TAR="postgresql-${POSTGRESQL_VERSION}.tar.bz2"
 POSTGRESQL_SITE="http://ftp.postgresql.org/pub/source/v${POSTGRESQL_VERSION}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; }; }; then

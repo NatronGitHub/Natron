@@ -1,0 +1,17 @@
+--- Portfile.orig	2019-12-21 12:36:49.000000000 -0800
++++ Portfile	2019-12-21 12:43:02.000000000 -0800
+@@ -2,12 +2,13 @@
+ PortSystem          1.0
+ PortGroup           cmake 1.1
+ PortGroup           github 1.0
++PortGroup           muniversal 1.0
+ 
+ github.setup        libjpeg-turbo libjpeg-turbo 2.0.3
+ checksums           rmd160  38a5e2c32fa6d80cb262a3f5b88be28bc62ccbd2 \
+                     sha256  29775dbacf51bcdd53227697c10b69b626f393536e0ea72604db9ae491ca8b32 \
+                     size    2161385
+-revision            0
++revision            1
+ 
+ conflicts           jpeg mozjpeg
+ 

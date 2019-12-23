@@ -1,0 +1,43 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+PortSystem          1.0
+PortGroup           cmake 1.1
+PortGroup           github 1.0
+PortGroup           muniversal 1.0
+
+github.setup        libjpeg-turbo libjpeg-turbo 2.0.3
+checksums           rmd160  38a5e2c32fa6d80cb262a3f5b88be28bc62ccbd2 \
+                    sha256  29775dbacf51bcdd53227697c10b69b626f393536e0ea72604db9ae491ca8b32 \
+                    size    2161385
+revision            1
+
+conflicts           jpeg mozjpeg
+
+categories          graphics
+platforms           darwin
+license             BSD
+maintainers         {larryv @larryv}
+
+description         SIMD-accelerated libjpeg-compatible JPEG codec \
+                    library
+long_description    libjpeg-turbo is a JPEG image codec that uses SIMD \
+                    instructions (MMX, SSE2, NEON) to accelerate \
+                    baseline JPEG compression and decompression on \
+                    x86, x86-64, and ARM systems. On such systems, \
+                    libjpeg-turbo is generally 2-6x as fast as \
+                    libjpeg, all else being equal. On other types of \
+                    systems, libjpeg-turbo can still outperform \
+                    libjpeg by a significant amount, by virtue of its \
+                    highly-optimized Huffman coding routines. In many \
+                    cases, the performance of libjpeg-turbo rivals \
+                    that of proprietary high-speed JPEG codecs.
+homepage            http://www.${name}.org
+
+depends_build-append \
+    port:nasm
+
+configure.env       ASM_NASM=${prefix}/bin/nasm
+configure.args      -DWITH_JPEG8=1
+
+# disabled because tests fail with linking problems and MD5 failure
+test.run            no
+test.env            CTEST_OUTPUT_ON_FAILURE=1

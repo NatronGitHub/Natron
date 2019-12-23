@@ -7,12 +7,12 @@ PortGroup           cmake 1.1
 PortGroup           xcode_workaround 1.0
 
 name                x265
-version             3.2
-revision            1
+version             3.2.1
+revision            0
 
-checksums           rmd160  f9069ae6504a9f04702a5e3ea78cf1985cd63646 \
-                    sha256  364d79bcd56116a9e070fdeb1d9d2aaef1a786b4970163fb56ff0991a183133b \
-                    size    1425689
+checksums           rmd160  7386c00a49a2fc143cd3c8cea657872235a8ba77 \
+                    sha256  fb9badcf92364fd3567f8b5aa0e5e952aeea7a39a2b864387cec31e3b58cbbcc \
+                    size    1426255
 
 categories          multimedia
 platforms           darwin
