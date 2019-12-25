@@ -25,6 +25,7 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += python
+PKGCONFIG += gettext # fix "linking natron-python" "ld: library not found for -lintl" on MacPorts
 
 TEMPLATE = app
 
