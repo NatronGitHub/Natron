@@ -6,6 +6,11 @@ PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
 PortGroup           xcode_workaround 1.0
 
+# https://trac.macports.org/ticket/59875
+PortGroup           legacysupport 1.0
+
+legacysupport.newest_darwin_requires_legacy 9
+
 name                x265
 version             3.2.1
 revision            0

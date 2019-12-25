@@ -14,7 +14,7 @@ description     OpenEXR Graphics Library
 long_description \
     OpenEXR is a high dynamic-range (HDR) image file format developed \
     by Industrial Light & Magic for use in computer imaging applications.
-homepage        http://www.openexr.com
+homepage        https://www.openexr.com
 platforms       darwin
 github.tarball_from releases
 
@@ -90,11 +90,12 @@ subport ilmbase {
     patchfiles-append patch-configure.diff
 }
 
-set python_versions {27 34 35 36 37}
+set python_versions {27 35 36 37}
 
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
+
         revision    3
         distname    pyilmbase-${version}
         checksums   rmd160  127329978f2fd5793a267d1c7c46d5514d1d46b7 \
