@@ -141,7 +141,6 @@ variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron ve
         }
     }
     configure.args-append --enable-openmp
-    patchfiles-append pango-align-hack.diff
     depends_lib-delete      port:ghostscript
     configure.args-replace  --with-dps --without-dps
     configure.args-replace  --with-gslib --without-gslib
