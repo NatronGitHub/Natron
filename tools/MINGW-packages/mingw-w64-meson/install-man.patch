@@ -1,0 +1,11 @@
+--- meson-0.48.0/setup.py.orig	2018-09-22 15:22:03.000000000 +0200
++++ meson-0.48.0/setup.py	2018-09-23 13:48:10.509756600 +0200
+@@ -36,7 +36,7 @@
+             'mesonbuild.scripts',
+             'mesonbuild.wrap']
+ data_files = []
+-if sys.platform != 'win32':
++if sys.platform != 'win32' or 1:
+     # Only useful on UNIX-like systems
+     data_files = [('share/man/man1', ['man/meson.1']),
+                   ('share/polkit-1/actions', ['data/com.mesonbuild.install.policy'])]

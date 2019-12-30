@@ -1,0 +1,11 @@
+--- pango-1.42.2/utils/meson.build.orig	2018-07-19 11:27:55.321110000 +0300
++++ pango-1.42.2/utils/meson.build	2018-07-19 11:28:16.552747300 +0300
+@@ -40,7 +40,7 @@
+ help2man = find_program('help2man', required: false)
+ # help2man has to run pango-view to generate the man page, which it can't do if
+ # we're cross building. We also can't tell help2man what exe wrapper to use.
+-if help2man.found() and not meson.is_cross_build()
++if help2man.found() and not meson.is_cross_build() and get_option('default_library') != 'static'
+   help2man_opts = [
+     '--no-info',
+     '--section=1',

@@ -1,0 +1,26 @@
+--- a/src/include/OpenImageIO/typedesc.h.orig	2014-01-12 23:34:55.402417300 +0000
++++ b/src/include/OpenImageIO/typedesc.h	2014-01-12 23:35:17.974708400 +0000
+@@ -76,12 +76,23 @@
+ struct OIIO_API TypeDesc {
+     /// BASETYPE is a simple enum for the C/C++ built-in types.
+     ///
++// ansidecl.h contains:
++// #if defined (__STDC__) || defined(__cplusplus) .. || defined(_WIN32)
++// "#define PTR		void *"
++#ifdef PTR
++#define PTR_OLD_DEFINE PTR
++#undef PTR
++#endif
+     enum BASETYPE { UNKNOWN, NONE, 
+                     UCHAR, UINT8=UCHAR, CHAR, INT8=CHAR,
+                     USHORT, UINT16=USHORT, SHORT, INT16=SHORT,
+                     UINT, UINT32=UINT, INT, INT32=INT,
+                     ULONGLONG, UINT64=ULONGLONG, LONGLONG, INT64=LONGLONG,
+                     HALF, FLOAT, DOUBLE, STRING, PTR, LASTBASE };
++// Set PTR back what it previously contained.
++#ifdef PTR_OLD_DEFINE
++#define PTR PTR_OLD_DEFINE
++#endif
+     /// AGGREGATE describes whether our type is a simple scalar of
+     /// one of the BASETYPE's, or one of several simple aggregates.
+     enum AGGREGATE { SCALAR=1, VEC2=2, VEC3=3, VEC4=4, MATRIX44=16 };

@@ -1,0 +1,11 @@
+--- gnutls-3.6.7.orig/doc/Makefile.am	2019-04-16 15:03:55.667121200 -0400
++++ gnutls-3.6.7/doc/Makefile.am	2019-04-16 15:04:50.182446100 -0400
+@@ -32,7 +32,7 @@
+ 	gnutls-logo.png gnutls-x509.png	\
+ 	pkcs11-vision.png
+ 
+-SUBDIRS = examples scripts credentials latex
++SUBDIRS = scripts credentials latex
+ if ENABLE_GTK_DOC
+ SUBDIRS += reference
+ endif

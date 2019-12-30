@@ -1,0 +1,49 @@
+--- openjpeg-2.1.2/src/lib/openmj2/openjpeg.h.orig	2016-10-02 12:10:38.105864300 -0400
++++ openjpeg-2.1.2/src/lib/openmj2/openjpeg.h	2016-10-02 12:12:33.009046900 -0400
+@@ -44,6 +44,11 @@
+    Compiler directives
+ ==========================================================
+ */
++#if defined(_WIN32)
++#define OPJ_CALLCONV __stdcall
++#else
++#define OPJ_CALLCONV
++#endif
+ 
+ #if defined(OPJ_STATIC) || !defined(_WIN32)
+ /* http://gcc.gnu.org/wiki/Visibility */
+@@ -54,9 +59,7 @@
+ #define OPJ_API
+ #define OPJ_LOCAL
+ #endif
+-#define OPJ_CALLCONV
+ #else
+-#define OPJ_CALLCONV __stdcall
+ /*
+ The following ifdef block is the standard way of creating macros which make exporting 
+ from a DLL simpler. All files within this DLL are compiled with the OPJ_EXPORTS
+--- openjpeg-2.1.2/src/lib/openjp2/openjpeg.h.orig	2016-09-28 14:18:16.000000000 -0400
++++ openjpeg-2.1.2/src/lib/openjp2/openjpeg.h	2016-10-01 09:57:29.318921200 -0400
+@@ -76,6 +76,12 @@
+ 	#define OPJ_DEPRECATED(func) func
+ #endif
+ 
++#if defined(_WIN32) || defined(WIN32)
++#define OPJ_CALLCONV __stdcall
++#else
++#define OPJ_CALLCONV
++#endif
++
+ #if defined(OPJ_STATIC) || !defined(_WIN32)
+ /* http://gcc.gnu.org/wiki/Visibility */
+ #	if __GNUC__ >= 4
+@@ -89,9 +95,7 @@
+ #		define OPJ_API
+ #		define OPJ_LOCAL
+ #	endif
+-#	define OPJ_CALLCONV
+ #else
+-#	define OPJ_CALLCONV __stdcall
+ /*
+ The following ifdef block is the standard way of creating macros which make exporting 
+ from a DLL simpler. All files within this DLL are compiled with the OPJ_EXPORTS

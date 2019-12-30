@@ -1,0 +1,42 @@
+# Maintainer: wirx6 <wirx654@gmail.com>
+
+_realname=aom
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='AV1 codec library(mingw-w64)'
+arch=('any')
+url="https://aomedia.org/"
+license=('BSD')
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=("perl" "git"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-yasm"
+             "${MINGW_PACKAGE_PREFIX}-python3")
+source=("git+https://aomedia.googlesource.com/aom#tag=v${pkgver}")
+sha256sums=('SKIP')
+
+build() {
+  [[ -d ${srcdir}/build-${CARCH} ]] && rm -rf ${srcdir}/build-${CARCH}
+  mkdir -p ${srcdir}/build-${CARCH} && cd ${srcdir}/build-${CARCH}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DENABLE_TESTS=OFF \
+    ../${_realname}
+
+  make
+}
+
+package() {
+  cd ${srcdir}/build-${CARCH}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 ${srcdir}/${_realname}/LICENSE ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE
+  install -Dm644 ${srcdir}/${_realname}/PATENTS ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/PATENTS
+}

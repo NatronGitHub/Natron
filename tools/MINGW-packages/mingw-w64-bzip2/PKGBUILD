@@ -1,0 +1,65 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=bzip2
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.0.8
+pkgrel=1
+pkgdesc="A high-quality data compression program (mingw-w64)"
+arch=('any')
+url="http://www.bzip.org"
+license=("custom")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc")
+options=('strip' 'staticlibs')
+source=("https://sourceware.org/pub/bzip2/bzip2-${pkgver}.tar.gz"
+        "bzip2-cygming-1.0.6.src.all.patch"
+        "bzip2-buildsystem.all.patch"
+        "bzip2-1.0.6-progress.all.patch")
+sha256sums=('ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269'
+            '7e67f77172b19f3e6c1f0875b1d3e9cb79211f8e1c752794ef9afd3704f928cf'
+            'e519a50a4adaf05b18650d3e9d644badc66e80ca86063681ffe9a2c2226319d0'
+            'f93e6b50082a8e880ee8436c7ec6a65a8f01e9282436af77f95bb259b1c7f7f7')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  # remove files that are created by patches.
+  rm -rf README.CYGMING | true
+  rm -rf aclocal.m4 | true
+  rm -rf configure.ac | true
+  rm -rf libbz2.def.in | true
+  rm -rf bzip2.pc.in | true
+  rm -rf Makefile.in | true
+
+  patch -p1 -i "$srcdir/"bzip2-cygming-1.0.6.src.all.patch
+  patch -p1 -i "$srcdir/"bzip2-buildsystem.all.patch
+  patch -p1 -i "$srcdir/"bzip2-1.0.6-progress.all.patch
+
+  autoreconf -fi
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${CARCH}"
+  cd "${srcdir}/build-${CARCH}"
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --enable-shared
+
+  make all-dll-shared
+}
+
+check() {
+  cd "${srcdir}/build-${CARCH}"
+  make -k check
+}
+
+package() {
+  cd "${srcdir}/build-${CARCH}"
+  make DESTDIR="${pkgdir}" install
+  # rm "${pkgdir}${MINGW_PREFIX}/bin/bz"{diff,grep,more}
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+}

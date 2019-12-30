@@ -1,0 +1,645 @@
+--- bzip2-1.0.6/Makefile.in	1970-01-01 04:00:00 +0400
++++ bzip2-1.0.6/Makefile.in	2011-05-21 23:10:44 +0400
+@@ -0,0 +1,386 @@
++# @configure_input@
++# ------------------------------------------------------------------
++# This file is part of bzip2/libbzip2, a program and library for
++# lossless, block-sorting data compression.
++#
++# bzip2/libbzip2 version 1.0.6 of 6 September 2010
++# Copyright (C) 1996-2010 Julian Seward <jseward@bzip.org>
++#
++# File: Makefile.in for autoconf configuration
++# Contributed by Keith Marshall <keithmarshall@users.sourceforge.net>
++#
++# Please read the WARNING, DISCLAIMER and PATENTS sections in the 
++# README file.
++#
++# This program is released under the terms of the license contained
++# in the file LICENSE.
++# ------------------------------------------------------------------
++
++PACKAGE	   =	@PACKAGE_TARNAME@
++VERSION	   =	@PACKAGE_VERSION@
++
++# If building libbz2 as a shared library, we use these version tags,
++SO_VER	   =	1
++SO_AGE	   =    0
++SO_REV	   =	6
++#
++# This yields a shared object library name below, following the
++# normal naming rules -- most linux distributions patch Julian's
++# original makefile to do something similar.
++#
++SO_MAJOR   :=   $(shell expr $(SO_VER) - $(SO_AGE))
++SONAME	   =	libbz2.so.$(SO_MAJOR)
++SOFULL     =    $(SONAME).$(SO_AGE).$(SO_REV)
++
++# For MS-Windows hosts, Julian's original build strategy, (and that
++# still adopted for building with MSVC), creates an unversioned DLL,
++# exporting functions using the __stdcall (WINAPI) calling convention.
++# Conversly, MinGW developers have chosen to sanitise the libbz2 ABI,
++# avoiding the use of the __stdcall calling convention, in favour of
++# the more GNU/Linux-alike __cdecl convention.
++#
++# To permit MinGW builds of libbz2.dll to co-exist, in the developer
++# universe, with MSVC builds, the MinGW Project has specified a scheme
++# for distribution of versioned DLLs, unambiguously named libbz2-N.dll,
++# where N is an ABI version number, nominally computed as:
++#
++#   SO_VER - SO_AGE	(ignoring SO_REV)
++#
++# Unfortunately, at an early stage in the evolution of the MinGW
++# versioned libbz2-N.dll, at a time when this version paradigm would
++# have yielded N = 1, a libbz2-1.dll was released, which employed the
++# __stdcall calling convention.  Thus, to avoid potential confusion
++# with this early release, and specific to the case of libbz2-N.dll,
++# the DLLVER for the __cdecl releases, as computed by the configure
++# script will lead the nominal value by one, becoming effectively:
++#
++#   1 + SO_VER - SO_AGE
++#
++# Note that for cygwin, a similar scheme (SO_VER - SO_AGE) is used,
++# but on that platform the extra +1 is not needed.
++DLLVER     =    @DLLVER@
++DLLNAME    =    @DLLNAME@
++LIBNAME    =    libbz2
++
++
++# Shell used by make...
++#
++SHELL     =    @SHELL@
++
++# Where to find the sources...
++#
++VPATH     =    ${srcdir}
++srcdir    =    @srcdir@
++
++# To assist in cross-compiling...
++#
++CC    =    @CC@
++AR    =    @AR@
++RANLIB    =    @RANLIB@
++LN_S      =    @LN_S@
++
++OBJEXT    =    @OBJEXT@
++EXEEXT    =    @EXEEXT@
++
++BIGFILES  =    -D_FILE_OFFSET_BITS=64
++CFLAGS    =    @CFLAGS@ $(BIGFILES)
++LDFLAGS   =    @LDFLAGS@
++ARFLAGS   =    @ARFLAGS@
++
++# Where you want it installed when you do 'make install'
++#
++PREFIX    =    @prefix@
++
++OBJS= blocksort.$(OBJEXT)  \
++      huffman.$(OBJEXT)    \
++      crctable.$(OBJEXT)   \
++      randtable.$(OBJEXT)  \
++      compress.$(OBJEXT)   \
++      decompress.$(OBJEXT) \
++      bzlib.$(OBJEXT)
++
++# Default build goals...
++#
++all: all-libs bzip2$(EXEEXT) bzip2recover$(EXEEXT)
++all-libs: libbz2.a @enable_shared@
++
++bzip2$(EXEEXT): libbz2.a bzip2.$(OBJEXT)
++	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ bzip2.$(OBJEXT) -L. -lbz2
++
++bzip2recover$(EXEEXT): bzip2recover.$(OBJEXT)
++	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
++
++libbz2.a: $(OBJS)
++	rm -f $@
++	$(AR) $(ARFLAGS) $@ $(OBJS)
++	$(RANLIB) $@
++
++blocksort.$(OBJEXT): blocksort.c
++	@cat ${srcdir}/words0
++	$(CC) $(CFLAGS) -c -o $@ $^
++
++%.$(OBJEXT): %.c
++	$(CC) $(CFLAGS) -c -o$@ $<
++
++# Building using a shared library, for dynamic linking on GNU/Linux...
++# (Invoked when configured with `--enable-shared' for a non-Win32 host).
++#
++# This is incorporated from Julian's original Makefile-libbz2_so.
++# It is reported to work successfully on x86-Linux (Red Hat 7.2), with
++# gcc-2.96 20000731 (Red Hat Linux 7.1 2.96-98); YMMV.
++#
++# Please refer to README, for important information regarding building
++# libbz2 as a shared library, in this manner.
++#
++PICFLAGS = -fpic -fPIC -Wall -Winline $(CFLAGS)
++
++all-bzip2-shared: bzip2-shared$(EXEEXT)
++bzip2-shared$(EXEEXT): bzip2.c $(SOFULL)
++	$(CC) $(PICFLAGS) -o $@ $^
++	
++$(SOFULL): $(OBJS:.$(OBJEXT)=-pic.$(OBJEXT))
++	$(CC) -shared -Wl,-soname -Wl,$(SONAME) -o $@ $^
++	rm -f $(SONAME); $(LN_S) $@ $(SONAME)
++	rm -f $(SONAME).$(SO_AGE); $(LN_S) $@ $(SONAME).$(SO_AGE)
++
++%-pic.$(OBJEXT): %.c
++	$(CC) $(PICFLAGS) -c -o $@ $<
++
++# Building using a shared library, for dynamic linking on MS-Windows
++# and cygwin...
++# (Invoked when configured with `--enable-shared' for a Win32/cygwin host)
++
++all-dll-shared: $(LIBNAME).dll.a
++
++$(LIBNAME).dll.a: $(DLLNAME)-$(DLLVER).dll
++
++$(DLLNAME)-$(DLLVER).dll: libbz2.def $(OBJS)
++	$(CC) -shared -o $@ $(LDFLAGS) -Wl,--out-implib=$(LIBNAME).dll.a $(OBJS)
++
++libbz2.def: libbz2.def.in
++	sed -e s,%DLLNAME%,$(DLLNAME), -e s,%DLLVER%,$(DLLVER), $^ > $@
++
++# Build validation...
++#
++check: test
++test: bzip2$(EXEEXT)
++	@cat ${srcdir}/words1
++	./bzip2$(EXEEXT) -1  < ${srcdir}/sample1.ref > sample1.rb2
++	./bzip2$(EXEEXT) -2  < ${srcdir}/sample2.ref > sample2.rb2
++	./bzip2$(EXEEXT) -3  < ${srcdir}/sample3.ref > sample3.rb2
++	./bzip2$(EXEEXT) -d  < ${srcdir}/sample1.bz2 > sample1.tst
++	./bzip2$(EXEEXT) -d  < ${srcdir}/sample2.bz2 > sample2.tst
++	./bzip2$(EXEEXT) -ds < ${srcdir}/sample3.bz2 > sample3.tst
++	cmp ${srcdir}/sample1.bz2 sample1.rb2 
++	cmp ${srcdir}/sample2.bz2 sample2.rb2
++	cmp ${srcdir}/sample3.bz2 sample3.rb2
++	cmp sample1.tst ${srcdir}/sample1.ref
++	cmp sample2.tst ${srcdir}/sample2.ref
++	cmp sample3.tst ${srcdir}/sample3.ref
++	@cat ${srcdir}/words3
++
++# GNU Standard Specifications for Installation Directories...
++#
++prefix = $(PREFIX)
++exec_prefix = @exec_prefix@
++
++bindir = @bindir@
++datarootdir = @datarootdir@
++includedir = @includedir@
++libdir = @libdir@
++
++# `man' Documentation Hierarchy, in Terms of GNU Standards...
++#
++# FIXME: Julian's original distribution wasn't fully compliant
++# with current GNU Standards; to achieve compliance, we must use
++# this autotool standard definition:
++#
++#   mandir = @mandir@
++#
++# in place of:
++#
++#   mandir = $(PREFIX)/man
++#
++# which preserves Julian's original configuration.
++#
++mandir = $(PREFIX)/share/man
++man1dir = ${mandir}/man1
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = bzip2.pc
++
++# Installation...
++#
++FORCE:
++${bindir} ${includedir} ${libdir} ${man1dir} ${pkgconfigdir}: FORCE
++	test -d ${DESTDIR}$@ || mkdir -p ${DESTDIR}$@
++
++install: all ${bindir} ${includedir} ${libdir} ${man1dir} ${pkgconfigdir}
++	cp -f ${pkgconfig_DATA} ${DESTDIR}${pkgconfigdir}/${pkgconfig_DATA}
++	cp -f bzip2$(EXEEXT) ${DESTDIR}${bindir}/bzip2$(EXEEXT)
++	cp -f bzip2$(EXEEXT) ${DESTDIR}${bindir}/bunzip2$(EXEEXT)
++	cp -f bzip2$(EXEEXT) ${DESTDIR}${bindir}/bzcat$(EXEEXT)
++	cp -f bzip2recover$(EXEEXT) ${DESTDIR}${bindir}/bzip2recover$(EXEEXT)
++	if test -f $(DLLNAME)-$(DLLVER).dll; \
++	then \
++	  cp -f $(DLLNAME)-$(DLLVER).dll ${DESTDIR}${bindir}/$(DLLNAME)-$(DLLVER).dll; \
++	  chmod a+rx ${DESTDIR}${bindir}/$(DLLNAME)-$(DLLVER).dll; \
++	fi
++	chmod a+x ${DESTDIR}${bindir}/bzip2$(EXEEXT)
++	chmod a+x ${DESTDIR}${bindir}/bunzip2$(EXEEXT)
++	chmod a+x ${DESTDIR}${bindir}/bzcat$(EXEEXT)
++	chmod a+x ${DESTDIR}${bindir}/bzip2recover$(EXEEXT)
++	cp -f ${srcdir}/bzlib.h ${DESTDIR}${includedir}
++	chmod a+r ${DESTDIR}${includedir}/bzlib.h
++	cp -f libbz2.a ${DESTDIR}${libdir}
++	if test -f $(LIBNAME).dll.a; \
++	then \
++	  cp -f $(LIBNAME).dll.a ${DESTDIR}${libdir}/$(LIBNAME).dll.a; \
++	  chmod a+r ${DESTDIR}${libdir}/$(LIBNAME).dll.a; \
++	fi
++	chmod a+r ${DESTDIR}${libdir}/libbz2.a
++	if test -f $(SOFULL); \
++	then \
++	  cp -f $(SOFULL) ${DESTDIR}${libdir}; \
++	  cd ${DESTDIR}${libdir}; rm -f $(SO_NAME).$(SO_AGE) $(SONAME); \
++	  $(LN_S) $(SOFULL) $(SONAME).$(SO_AGE); \
++	  $(LN_S) $(SOFULL) $(SONAME); \
++	  chmod a+r $(SOFULL); \
++	fi
++	cp -f ${srcdir}/bzgrep ${DESTDIR}${bindir}/bzgrep
++	cd ${DESTDIR}${bindir}; $(LN_S) -f bzgrep bzegrep
++	cd ${DESTDIR}${bindir}; $(LN_S) -f bzgrep bzfgrep
++	chmod a+x ${DESTDIR}${bindir}/bzgrep
++	cp -f ${srcdir}/bzmore ${DESTDIR}${bindir}/bzmore
++	cd ${DESTDIR}${bindir}; $(LN_S) -f bzmore bzless
++	chmod a+x ${DESTDIR}${bindir}/bzmore
++	cp -f ${srcdir}/bzdiff ${DESTDIR}${bindir}/bzdiff
++	cd ${DESTDIR}${bindir}; $(LN_S) -f bzdiff bzcmp
++	chmod a+x ${DESTDIR}${bindir}/bzdiff
++	cd ${srcdir}; cp -f bzip2.1 bzgrep.1 bzmore.1 bzdiff.1 ${DESTDIR}${man1dir}
++	chmod a+r ${DESTDIR}${man1dir}/bzip2.1
++	chmod a+r ${DESTDIR}${man1dir}/bzgrep.1
++	chmod a+r ${DESTDIR}${man1dir}/bzmore.1
++	chmod a+r ${DESTDIR}${man1dir}/bzdiff.1
++	echo ".so man1/bzgrep.1" > ${DESTDIR}${man1dir}/bzegrep.1
++	echo ".so man1/bzgrep.1" > ${DESTDIR}${man1dir}/bzfgrep.1
++	echo ".so man1/bzmore.1" > ${DESTDIR}${man1dir}/bzless.1
++	echo ".so man1/bzdiff.1" > ${DESTDIR}${man1dir}/bzcmp.1
++
++ldconfig:
++	ldconfig -n ${DESTDIR}${libdir}
++
++# Housekeeping...
++#
++clean: 
++	cmp > /dev/null 2>&1 ${srcdir}/libbz2.def libbz2.def \
++	  || rm -f libbz2.def
++	rm -f *.$(OBJEXT) libbz2*.a $(DLLNAME)*.dll  \
++	bzip2$(EXEEXT) bzip2recover$(EXEEXT) \
++	sample1.rb2 sample2.rb2 sample3.rb2 \
++	sample1.tst sample2.tst sample3.tst
++
++distclean: clean
++	rm -f config.status config.log Makefile
++
++# NOTE: Julian's original Makefile had these in `distclean'.
++# Since they are `distributables', that might have surprised
++# users expecting GNU standard behaviour; they rightfully
++# belong in `maintainer-clean'.
++#
++maintainer-clean: clean
++	rm -f manual.ps manual.html manual.pdf
++
++# Distribution...
++#
++DISTNAME = $(PACKAGE)-$(VERSION)
++#
++# FIXME: this method of creating a source distribution works fine
++# on systems which fully support symbolic links between directories;
++# it cannot be used reliably, on MS-Windows hosts running MSYS.
++#
++dist: manual
++	rm -f $(DISTNAME) $(DISTNAME)$(SNAPSHOT).*
++	$(LN_S) -f ${srcdir} $(DISTNAME)
++	tar cvf $(DISTNAME)$(SNAPSHOT).tar \
++	   $(DISTNAME)/aclocal.m4 \
++	   $(DISTNAME)/configure \
++	   $(DISTNAME)/configure.ac \
++	   $(DISTNAME)/Makefile.in \
++	   $(DISTNAME)/blocksort.c \
++	   $(DISTNAME)/huffman.c \
++	   $(DISTNAME)/crctable.c \
++	   $(DISTNAME)/randtable.c \
++	   $(DISTNAME)/compress.c \
++	   $(DISTNAME)/decompress.c \
++	   $(DISTNAME)/bzlib.c \
++	   $(DISTNAME)/bzip2.c \
++	   $(DISTNAME)/bzip2recover.c \
++	   $(DISTNAME)/bzlib.h \
++	   $(DISTNAME)/bzlib_private.h \
++	   $(DISTNAME)/LICENSE \
++	   $(DISTNAME)/bzip2.1 \
++	   $(DISTNAME)/bzip2.1.preformatted \
++	   $(DISTNAME)/bzip2.pc.in \
++	   $(DISTNAME)/bzip2.txt \
++	   $(DISTNAME)/words0 \
++	   $(DISTNAME)/words1 \
++	   $(DISTNAME)/words2 \
++	   $(DISTNAME)/words3 \
++	   $(DISTNAME)/sample1.ref \
++	   $(DISTNAME)/sample2.ref \
++	   $(DISTNAME)/sample3.ref \
++	   $(DISTNAME)/sample1.bz2 \
++	   $(DISTNAME)/sample2.bz2 \
++	   $(DISTNAME)/sample3.bz2 \
++	   $(DISTNAME)/dlltest.c \
++	   $(DISTNAME)/manual.html \
++	   $(DISTNAME)/manual.pdf \
++	   $(DISTNAME)/manual.ps \
++	   $(DISTNAME)/README \
++	   $(DISTNAME)/README.COMPILATION.PROBLEMS \
++	   $(DISTNAME)/README.XML.STUFF \
++	   $(DISTNAME)/CHANGES \
++	   $(DISTNAME)/libbz2.def \
++	   $(DISTNAME)/libbz2.def.in \
++	   $(DISTNAME)/libbz2.dsp \
++	   $(DISTNAME)/dlltest.dsp \
++	   $(DISTNAME)/makefile.msc \
++	   $(DISTNAME)/unzcrash.c \
++	   $(DISTNAME)/spewG.c \
++	   $(DISTNAME)/mk251.c \
++	   $(DISTNAME)/bzdiff \
++	   $(DISTNAME)/bzdiff.1 \
++	   $(DISTNAME)/bzmore \
++	   $(DISTNAME)/bzmore.1 \
++	   $(DISTNAME)/bzgrep \
++	   $(DISTNAME)/bzgrep.1 \
++	   $(DISTNAME)/Makefile-libbz2_so \
++	   $(DISTNAME)/bz-common.xsl \
++	   $(DISTNAME)/bz-fo.xsl \
++	   $(DISTNAME)/bz-html.xsl \
++	   $(DISTNAME)/bzip.css \
++	   $(DISTNAME)/entities.xml \
++	   $(DISTNAME)/manual.xml \
++	   $(DISTNAME)/format.pl \
++	   $(DISTNAME)/xmlproc.sh
++	gzip -v $(DISTNAME)$(SNAPSHOT).tar
++	rm -f $(DISTNAME)
++
++# For rebuilding the manual from sources on Julian's SuSE 9.1 box
++#
++MANUAL_SRCS  =  bz-common.xsl bz-fo.xsl bz-html.xsl bzip.css \
++		entities.xml manual.xml 
++
++manual: manual.html manual.ps manual.pdf
++
++manual.ps: $(MANUAL_SRCS)
++	${srcdir}/xmlproc.sh -ps manual.xml
++
++manual.pdf: $(MANUAL_SRCS)
++	${srcdir}/xmlproc.sh -pdf manual.xml
++
++manual.html: $(MANUAL_SRCS)
++	${srcdir}/xmlproc.sh -html manual.xml
++
++# Makefile: end of file
+--- bzip2-1.0.6/README.CYGMING	1970-01-01 04:00:00 +0400
++++ bzip2-1.0.6/README.CYGMING	2011-09-02 05:22:32 +0400
+@@ -0,0 +1,49 @@
++This distribution was built using an alternate build system. The original
++distribution used a simple Makefile, which had to be heavily customized to
++meet the needs of modern cygwin and MinGW systems.  Furthermore, it was
++wholly unsuited for building the distribution in a cross-hosted environment.
++
++Keith Marshall <keithmarshall@users.sf.net> implemented an autoconf-based
++build system, to facilitate cross-hosted building for use with MinGW.  This
++build system consists of the following original files:
++	configure.ac
++	Makefile.in
++	aclocal.m4
++	libbz2.def.in
++found in the 'cygming-autotools-buildfiles.tar.gz' tarball included within
++the bzip2-$VER-$REL-mingw-src tarball.
++
++The source preparation phase of the build runs autoconf, which creates the
++following file(s):
++	configure
++In addition, the source preparation phase explicitly removes the original
++Makefile from the $srcdir, as a new Makefile will be generated in the
++$builddir by the configure phase of the build.
++
++This configure script is NOT distributed in this package; it is assumed that
++the 'autoconf' tool is available.  The proper (non-automated) procedure is:
++
++	unpack bzip2-$VER-$REL-mingw-src.tar.gz
++
++This will create a number of new files, included several additional
++tarballs and patches.
++
++	unpack the upstream source tarball bzip2-$VER.tar.gz
++	unpack the extra 'cygming-autotools-buildfiles.tar.gz' tarball
++	cd bzip2-$VER
++	autoconf
++	mkdir ../build
++	cd ../build
++	../bzip2-$VER/configure [various options]
++	make
++
++However, the automated procedure, which can be used to exactly reproduce
++the official mingw package, is:
++
++	mgwport bzip2-${VER}-${REL}.mgwport all
++
++which performs all of the above steps, as well as applying various additional
++patches (from Debian and elsewhere), installing into a local staging area,
++and generating the mingw-get compatible installation packages.  See
++MINGW-PATCHES/bzip2.README for more information.
++
+--- bzip2-1.0.6/aclocal.m4	1970-01-01 04:00:00 +0400
++++ bzip2-1.0.6/aclocal.m4	2011-05-21 22:21:23 +0400
+@@ -0,0 +1,115 @@
++# aclocal.m4 -*- Autoconf -*- vim: filetype=config
++# ------------------------------------------------------------------
++# This file is part of bzip2/libbzip2, a program and library for
++# lossless, block-sorting data compression.
++#
++# bzip2/libbzip2 version 1.0.5 of 10 December 2007
++# Copyright (C) 1996-2007 Julian Seward <jseward@bzip.org>
++#
++# File: aclocal.m4 for autoconf configuration
++# Contributed by Keith Marshall <keithmarshall@users.sourceforge.net>
++#
++# Please read the WARNING, DISCLAIMER and PATENTS sections in the 
++# README file.
++#
++# This program is released under the terms of the license contained
++# in the file LICENSE.
++# ------------------------------------------------------------------
++
++# BZIP2_AC_WINDOWS_HOST
++# ---------------------
++# Check if the runtime platform is a native MS-Windows host.
++# FIXME: is checking _WIN64 an appropriate choice, for 64-bit Windows?
++# Because we only need to know whether the host is (native) win32
++# or not, we can avoid the expensive AC_CANONICAL_HOST checks.
++#
++AC_DEFUN([BZIP2_AC_WINDOWS_HOST],
++[AC_CACHE_CHECK([whether we are building for an MS-Windows host],
++ [bzip2_cv_windows_host],
++ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
++@%:@if defined _WIN32 || defined _WIN64
++ choke me
++@%:@endif]])],
++[bzip2_cv_windows_host=no], [bzip2_cv_windows_host=yes]))dnl
++])# BZIP2_AC_WINDOWS_HOST
++
++# BZIP2_AC_CYGWIN_HOST
++# ---------------------
++# Check if the runtime platform is a cygwin host.
++# Because we only need to know whether the host is cygwin
++# or not, we can avoid the expensive AC_CANONICAL_HOST checks.
++#
++AC_DEFUN([BZIP2_AC_CYGWIN_HOST],
++[AC_CACHE_CHECK([whether we are building for a cygwin host],
++ [bzip2_cv_cygwin_host],
++ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
++@%:@if defined __CYGWIN__
++ choke me
++@%:@endif]])],
++[bzip2_cv_cygwin_host=no], [bzip2_cv_cygwin_host=yes]))dnl
++])# BZIP2_AC_CYGWIN_HOST
++
++# BZIP2_AC_ENABLE_SHARED
++# ----------------------
++# Check if the user is configuring with `--enable-shared';
++# if yes, activate shared library build support as appropriate,
++# for the host on which this build is to be deployed.
++#
++AC_DEFUN([BZIP2_AC_ENABLE_SHARED],
++[AC_REQUIRE([BZIP2_AC_WINDOWS_HOST])dnl
++ AC_REQUIRE([BZIP2_AC_CYGWIN_HOST])dnl
++ AC_MSG_CHECKING([for make goal to build shared libraries])
++ AC_ARG_ENABLE([shared],
++ [AS_HELP_STRING([--enable-shared],
++  [enable building as a shared library @<:@default=no@:>@])],
++ [if test "x$enable_shared" = xyes
++  then
++    if test "x${bzip2_cv_windows_host}" = xyes ||
++       test "x${bzip2_cv_cygwin_host}" = xyes
++    then
++      enable_shared="all-dll-shared"
++    else
++      enable_shared="all-bzip2-shared"
++    fi
++  else
++    enable_shared="none"
++  fi
++ ], [enable_shared="none"])dnl
++ AC_MSG_RESULT([${enable_shared}])
++ [test "x$enable_shared" = xnone && enable_shared=""]
++ AC_SUBST([enable_shared])dnl
++])# BZIP2_AC_ENABLE_SHARED
++
++# BZIP2_AC_SUBST_DLLVER
++# ---------------------
++# Establish the ABI version number for MS-Windows shared libraries;
++# this is derived from the universal SO_VER and SO_AGE properties, as
++# specified in `Makefile.in'; (nominally, it is SO_VER - SO_AGE, but
++# see the note in `Makefile.in', explaining why, in this instance,
++# we use one more than that nominal value for $host = mingw32)
++#
++AC_DEFUN([BZIP2_AC_SUBST_DLLVER],
++[AC_REQUIRE([BZIP2_AC_WINDOWS_HOST])dnl
++ AC_MSG_CHECKING([for API version of DLL shared libraries])
++ [SO_VER=`FS=' 	';sed -n "/^[$FS]*SO_VER[$FS]*=[$FS]*/s///p" ${srcdir}/Makefile.in`]
++ [SO_AGE=`FS=' 	';sed -n "/^[$FS]*SO_AGE[$FS]*=[$FS]*/s///p" ${srcdir}/Makefile.in`]
++ [dllver=`expr ${SO_VER} - ${SO_AGE}`
++  test "x$bzip2_cv_windows_host" = xyes && dllver=`expr ${SO_VER} - ${SO_AGE}`]
++ AC_SUBST([DLLVER], [${dllver}])
++ AC_MSG_RESULT([${dllver}])dnl
++])# BZIP2_AC_SUBST_DLLVER
++
++# BZIP2_AC_SUBST_DLLNAME
++# ----------------------
++# Establish the base name MS-Windows or cygwin shared libraries;
++#
++AC_DEFUN([BZIP2_AC_SUBST_DLLNAME],
++[AC_REQUIRE([BZIP2_AC_WINDOWS_HOST])dnl
++ AC_MSG_CHECKING([for base name of DLL shared libraries])
++ [dllname=cygbz2
++  test "x$bzip2_cv_windows_host" = xyes && dllname=libbz2]
++ AC_SUBST([DLLNAME], [${dllname}])
++ AC_MSG_RESULT([${dllname}])dnl
++])# BZIP2_AC_SUBST_DLLNAME
++
++# aclocal.m4: end of file
+--- bzip2-1.0.6/configure.ac	1970-01-01 04:00:00 +0400
++++ bzip2-1.0.6/configure.ac	2011-05-21 08:35:18 +0400
+@@ -0,0 +1,39 @@
++AC_INIT([bzip2],[1.0.6])
++# ------------------------------------------------------------------
++# This file is part of bzip2/libbzip2, a program and library for
++# lossless, block-sorting data compression.
++#
++# bzip2/libbzip2 version 1.0.6 of 6 September 2010
++# Copyright (C) 1996-2010 Julian Seward <jseward@bzip.org>
++#
++# File: configure.ac for autoconf configuration
++# Contributed by Keith Marshall <keithmarshall@users.sourceforge.net>
++#
++# Please read the WARNING, DISCLAIMER and PATENTS sections in the 
++# README file.
++#
++# This program is released under the terms of the license contained
++# in the file LICENSE.
++# ------------------------------------------------------------------
++AC_PROG_CC
++AC_PROG_LN_S
++
++BZIP2_AC_ENABLE_SHARED
++BZIP2_AC_SUBST_DLLVER
++BZIP2_AC_SUBST_DLLNAME
++
++AC_ARG_VAR([AR],[Archive librarian command])
++AC_ARG_VAR([ARFLAGS],[Archive librarian control flags, e.g. cq])
++AC_ARG_VAR([RANLIB],[Archive library indexing command])
++
++AC_CHECK_TOOL([AR],[ar],[ar])
++AC_CHECK_TOOL([RANLIB],[ranlib],[true])
++
++AC_MSG_CHECKING([for flags to pass to ${AR}])
++AC_SUBST([ARFLAGS],[${ARFLAGS-cq}])
++AC_MSG_RESULT([${ARFLAGS}])
++
++AC_CONFIG_FILES([Makefile bzip2.pc])
++AC_OUTPUT
++
++# configure.ac: end of file
+--- bzip2-1.0.6/libbz2.def.in	1970-01-01 04:00:00 +0400
++++ bzip2-1.0.6/libbz2.def.in	2011-05-21 08:35:45 +0400
+@@ -0,0 +1,27 @@
++LIBRARY			%DLLNAME%-%DLLVER%
++DESCRIPTION		"libbzip2: library for data compression"
++EXPORTS
++	BZ2_bzCompressInit
++	BZ2_bzCompress
++	BZ2_bzCompressEnd
++	BZ2_bzDecompressInit
++	BZ2_bzDecompress
++	BZ2_bzDecompressEnd
++	BZ2_bzReadOpen
++	BZ2_bzReadClose
++	BZ2_bzReadGetUnused
++	BZ2_bzRead
++	BZ2_bzWriteOpen
++	BZ2_bzWrite
++	BZ2_bzWriteClose
++	BZ2_bzWriteClose64
++	BZ2_bzBuffToBuffCompress
++	BZ2_bzBuffToBuffDecompress
++	BZ2_bzlibVersion
++	BZ2_bzopen
++	BZ2_bzdopen
++	BZ2_bzread
++	BZ2_bzwrite
++	BZ2_bzflush
++	BZ2_bzclose
++	BZ2_bzerror
+--- bzip2-1.0.6/bzip2.pc.in.orig	1970-01-01 01:00:00.000000000 +0100
++++ bzip2-1.0.6/bzip2.pc.in	2009-11-03 18:48:28.000000000 +0100
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++bindir=@bindir@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bzip2
++Description: Lossless, block-sorting data compression
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -lbz2
++Cflags: -I${includedir}

@@ -1,0 +1,22 @@
+From d6c5f14af2f9368032efbcfd0928b73d98379c92 Mon Sep 17 00:00:00 2001
+From: Alexey Pavlov <alexey.pawlow@gmail.com>
+Date: Tue, 28 Oct 2014 14:15:56 +0300
+Subject: [PATCH 3/3] Add bzip2 library to pkg-config file.
+
+---
+ minizip.pc.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/minizip.pc.in b/minizip.pc.in
+index 69b5b7f..2cc4787 100644
+--- a/minizip.pc.in
++++ b/minizip.pc.in
+@@ -8,5 +8,5 @@ Description: Minizip zip file manipulation library
+ Requires:
+ Version: @PACKAGE_VERSION@
+ Libs: -L${libdir} -lminizip
+-Libs.private: -lz
++Libs.private: -lz -lbz2
+ Cflags: -I${includedir}
+-- 
+2.1.2

@@ -1,0 +1,82 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Maintainer: Ray Donnelly <mingw.android@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=gdk-pixbuf2
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.38.1
+pkgrel=1
+pkgdesc="An image loading library (mingw-w64)"
+arch=('any')
+url="https://www.gtk.org/"
+license=(LGPL2)
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+             "${MINGW_PACKAGE_PREFIX}-gtk-doc"
+             "${MINGW_PACKAGE_PREFIX}-meson")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-glib2>=2.37.2"
+         "${MINGW_PACKAGE_PREFIX}-jasper"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-libtiff")
+options=('emptydirs')
+install=${_realname}-${CARCH}.install
+source=("https://download.gnome.org/sources/gdk-pixbuf/${pkgver%.*}/gdk-pixbuf-${pkgver}.tar.xz"
+        0003-fix-dllmain.patch
+        0004-build-all-loaders-plus-gdi.patch
+        fix-missing-meson-dep.patch)
+noextract=("gdk-pixbuf-${pkgver}.tar.xz")
+sha256sums=('f19ff836ba991031610dcc53774e8ca436160f7d981867c8c3a37acfe493ab3a'
+            '21bd9b2ba1447267c84f1b445cbcf50c62299254856c1c227cc7ba4babc9f27e'
+            '1863341d4b4f9c52c92438b275aed1acb5c2cd3018c5e75a61a6cd9415d2f621'
+            '3d3350dbb437a675e1bdfbc45ad7701634516cd95508411dfb33005b28c01044')
+
+prepare() {
+  cd ${srcdir}/
+  tar --exclude tests/test-images/reftests/tga -xf "gdk-pixbuf-${pkgver}.tar.xz"
+  cd ${srcdir}/gdk-pixbuf-${pkgver}
+
+  msg2 "0003-fix-dllmain.patch"
+  patch -p1 -i "${srcdir}"/0003-fix-dllmain.patch
+  patch -p1 -i "${srcdir}"/fix-missing-meson-dep.patch
+
+  # build all loaders + all gdi loaders static and just don't register
+  # the gdi loaders we don't need so the external ones get used
+  # (everything except wmf/emf atm)
+  patch -p1 -i "${srcdir}"/0004-build-all-loaders-plus-gdi.patch
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  meson \
+    --buildtype=plain \
+    -Dx11=false \
+    -Dinstalled_tests=false \
+    -Drelocatable=true \
+    -Djasper=true \
+    -Ddocs=true \
+    -Dnative_windows_loaders=true \
+    -Dbuiltin_loaders=windows \
+    "../gdk-pixbuf-${pkgver}"
+
+  ninja
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  DESTDIR="${pkgdir}${MINGW_PREFIX}" ninja install
+
+  sed -s "s|$(cygpath -m ${MINGW_PREFIX})|${MINGW_PREFIX}|g" -i "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/gdk-pixbuf-2.0.pc
+  sed -s "s|$(cygpath -m ${MINGW_PREFIX})|${MINGW_PREFIX}|g" -i "${pkgdir}${MINGW_PREFIX}"/share/thumbnailers/gdk-pixbuf-thumbnailer.thumbnailer
+  # https://github.com/Alexpux/MINGW-packages/issues/4726
+  sed -s "s| -lstaticpixbufloader-gdiplus||g" -i "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/gdk-pixbuf-2.0.pc
+
+  install -Dm644 "${srcdir}/gdk-pixbuf-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+}

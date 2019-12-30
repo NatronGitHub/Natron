@@ -1,0 +1,357 @@
+--- a/zlib-1.2.8/contrib/minizip/ioapi.c	2012-01-21 19:58:45.000000000 +0000
++++ b/zlib-1.2.8/contrib/minizip/ioapi.c	2014-09-18 02:14:59.470188700 +0100
+@@ -59,7 +59,7 @@
+     else
+     {
+         uLong tell_uLong = (*(pfilefunc->ztell32_file))(pfilefunc->zfile_func64.opaque,filestream);
+-        if ((tell_uLong) == MAXU32)
++        if ((tell_uLong) == ((uLong)-1))
+             return (ZPOS64_T)-1;
+         else
+             return tell_uLong;
+@@ -221,8 +221,7 @@
+     return ret;
+ }
+ 
+-void fill_fopen_filefunc (pzlib_filefunc_def)
+-  zlib_filefunc_def* pzlib_filefunc_def;
++void fill_fopen_filefunc (zlib_filefunc_def* pzlib_filefunc_def)
+ {
+     pzlib_filefunc_def->zopen_file = fopen_file_func;
+     pzlib_filefunc_def->zread_file = fread_file_func;
+
+--- a/zlib-1.2.8/contrib/minizip/ioapi.h	2012-01-17 02:51:31.000000000 +0000
++++ b/zlib-1.2.8/contrib/minizip/ioapi.h	2014-09-18 02:14:59.492277700 +0100
+@@ -82,7 +82,7 @@
+ #include "mz64conf.h"
+ #endif
+ 
+-/* a type choosen by DEFINE */
++/* a type chosen by DEFINE */
+ #ifdef HAVE_64BIT_INT_CUSTOM
+ typedef  64BIT_INT_CUSTOM_TYPE ZPOS64_T;
+ #else
+@@ -91,8 +91,6 @@
+ typedef uint64_t ZPOS64_T;
+ #else
+ 
+-/* Maximum unsigned 32-bit value used as placeholder for zip64 */
+-#define MAXU32 0xffffffff
+ 
+ #if defined(_MSC_VER) || defined(__BORLANDC__)
+ typedef unsigned __int64 ZPOS64_T;
+
+--- a/zlib-1.2.8/contrib/minizip/unzip.c	2013-02-24 07:32:30.000000000 +0000
++++ b/zlib-1.2.8/contrib/minizip/unzip.c	2014-09-18 02:04:40.283083400 +0100
+@@ -153,7 +153,7 @@
+     ZPOS64_T rest_read_compressed; /* number of byte to be decompressed */
+     ZPOS64_T rest_read_uncompressed;/*number of byte to be obtained after decomp*/
+     zlib_filefunc64_32_def z_filefunc;
+-    voidpf filestream;        /* io structore of the zipfile */
++    voidpf filestream;        /* io structure of the zipfile */
+     uLong compression_method;   /* compression method (0==store) */
+     ZPOS64_T byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
+     int   raw;
+@@ -166,7 +166,7 @@
+ {
+     zlib_filefunc64_32_def z_filefunc;
+     int is64bitOpenFunction;
+-    voidpf filestream;        /* io structore of the zipfile */
++    voidpf filestream;        /* io structure of the zipfile */
+     unz_global_info64 gi;       /* public global information */
+     ZPOS64_T byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
+     ZPOS64_T num_file;             /* number of the current file in the zipfile*/
+@@ -188,7 +188,7 @@
+ 
+ #    ifndef NOUNCRYPT
+     unsigned long keys[3];     /* keys defining the pseudo-random sequence */
+-    const z_crc_t* pcrc_32_tab;
++    const unsigned long* pcrc_32_tab;
+ #    endif
+ } unz64_s;
+ 
+@@ -380,14 +380,14 @@
+ 
+ /*
+    Compare two filename (fileName1,fileName2).
+-   If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
+-   If iCaseSenisivity = 2, comparision is not case sensitivity (like strcmpi
++   If iCaseSenisivity = 1, comparison is case sensitivity (like strcmp)
++   If iCaseSenisivity = 2, comparison is not case sensitivity (like strcmpi
+                                                                 or strcasecmp)
+-   If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
++   If iCaseSenisivity = 0, case sensitivity is default of your operating system
+         (like 1 on Unix, 2 on Windows)
+ 
+ */
+-extern int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
++int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
+                                                  const char*  fileName2,
+                                                  int iCaseSensitivity)
+ 
+@@ -591,9 +591,9 @@
+     uLong   uL;
+ 
+     uLong number_disk;          /* number of the current dist, used for
+-                                   spaning ZIP, unsupported, always 0*/
++                                   spanning ZIP, unsupported, always 0*/
+     uLong number_disk_with_CD;  /* number the the disk with central dir, used
+-                                   for spaning ZIP, unsupported, always 0*/
++                                   for spanning ZIP, unsupported, always 0*/
+     ZPOS64_T number_entry_CD;      /* total number of entries in
+                                    the central dir
+                                    (same than number_entry on nospan) */
+@@ -801,9 +801,9 @@
+ }
+ 
+ /*
+-  Close a ZipFile opened with unzOpen.
+-  If there is files inside the .Zip opened with unzOpenCurrentFile (see later),
+-    these files MUST be closed with unzCloseCurrentFile before call unzClose.
++  Close a ZipFile opened with unzipOpen.
++  If there is files inside the .Zip opened with unzipOpenCurrentFile (see later),
++    these files MUST be closed with unzipCloseCurrentFile before call unzipClose.
+   return UNZ_OK if there is no problem. */
+ extern int ZEXPORT unzClose (unzFile file)
+ {
+@@ -847,7 +847,7 @@
+     return UNZ_OK;
+ }
+ /*
+-   Translate date/time from Dos format to tm_unz (readable more easilty)
++   Translate date/time from Dos format to tm_unz (readable more easily)
+ */
+ local void unz64local_DosDateToTmuDate (ZPOS64_T ulDosDate, tm_unz* ptm)
+ {
+@@ -1038,31 +1038,31 @@
+             /* ZIP64 extra fields */
+             if (headerId == 0x0001)
+             {
+-                                                        uLong uL;
++                uLong uL2;
+ 
+-                                                                if(file_info.uncompressed_size == MAXU32)
++                if (file_info.uncompressed_size == (ZPOS64_T)(unsigned long)-1)
+                                                                 {
+                                                                         if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info.uncompressed_size) != UNZ_OK)
+                                                                                         err=UNZ_ERRNO;
+                                                                 }
+ 
+-                                                                if(file_info.compressed_size == MAXU32)
++                if (file_info.compressed_size == (ZPOS64_T)(unsigned long)-1)
+                                                                 {
+                                                                         if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info.compressed_size) != UNZ_OK)
+                                                                                   err=UNZ_ERRNO;
+                                                                 }
+ 
+-                                                                if(file_info_internal.offset_curfile == MAXU32)
++                if (file_info_internal.offset_curfile == (ZPOS64_T)(unsigned long)-1)
+                                                                 {
+                                                                         /* Relative Header offset */
+                                                                         if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info_internal.offset_curfile) != UNZ_OK)
+                                                                                 err=UNZ_ERRNO;
+                                                                 }
+ 
+-                                                                if(file_info.disk_num_start == MAXU32)
++                if(file_info.disk_num_start == (unsigned long)-1)
+                                                                 {
+                                                                         /* Disk Start Number */
+-                                                                        if (unz64local_getLong(&s->z_filefunc, s->filestream,&uL) != UNZ_OK)
++                    if (unz64local_getLong(&s->z_filefunc, s->filestream, &uL2) != UNZ_OK)
+                                                                                 err=UNZ_ERRNO;
+                                                                 }
+ 
+@@ -1171,11 +1171,16 @@
+     }
+     return err;
+ }
++
+ /*
+-  Set the current file of the zipfile to the first file.
++  Set the current file of the zipfile to the first file
++  with retrieving an information about the file.
+   return UNZ_OK if there is no problem
+ */
+-extern int ZEXPORT unzGoToFirstFile (unzFile file)
++extern int ZEXPORT unzGoToFirstFile64 (unzFile file,
++                        unz_file_info64 *pfile_info,
++                        char *szFileName,
++                        uLong fileNameBufferSize)
+ {
+     int err=UNZ_OK;
+     unz64_s* s;
+@@ -1186,17 +1191,32 @@
+     s->num_file=0;
+     err=unz64local_GetCurrentFileInfoInternal(file,&s->cur_file_info,
+                                              &s->cur_file_info_internal,
+-                                             NULL,0,NULL,0,NULL,0);
++                                             szFileName,fileNameBufferSize,NULL,0,NULL,0);
+     s->current_file_ok = (err == UNZ_OK);
++    if (pfile_info)
++        *pfile_info = s->cur_file_info;
+     return err;
+ }
+ 
+ /*
+-  Set the current file of the zipfile to the next file.
++  Set the current file of the zipfile to the first file.
++  return UNZ_OK if there is no problem
++*/
++extern int ZEXPORT unzGoToFirstFile (unzFile file)
++{
++    return unzGoToFirstFile64(file, NULL, NULL, 0);
++}
++
++/*
++  Set the current file of the zipfile to the next file
++  with retrieving an information about the file.
+   return UNZ_OK if there is no problem
+   return UNZ_END_OF_LIST_OF_FILE if the actual file was the latest.
+ */
+-extern int ZEXPORT unzGoToNextFile (unzFile  file)
++extern int ZEXPORT unzGoToNextFile64 (unzFile file,
++                       unz_file_info64 *pfile_info,
++                       char *szFileName,
++                       uLong fileNameBufferSize)
+ {
+     unz64_s* s;
+     int err;
+@@ -1215,15 +1235,27 @@
+     s->num_file++;
+     err = unz64local_GetCurrentFileInfoInternal(file,&s->cur_file_info,
+                                                &s->cur_file_info_internal,
+-                                               NULL,0,NULL,0,NULL,0);
++                                               szFileName,fileNameBufferSize,NULL,0,NULL,0);
+     s->current_file_ok = (err == UNZ_OK);
++    if (pfile_info)
++        *pfile_info = s->cur_file_info;
+     return err;
+ }
+ 
++/*
++  Set the current file of the zipfile to the next file.
++  return UNZ_OK if there is no problem
++  return UNZ_END_OF_LIST_OF_FILE if the actual file was the latest.
++*/
++extern int ZEXPORT unzGoToNextFile (unzFile  file)
++{
++    return unzGoToNextFile64(file, NULL, NULL, 0);
++}
++
+ 
+ /*
+   Try locate the file szFileName in the zipfile.
+-  For the iCaseSensitivity signification, see unzStringFileNameCompare
++  For the iCaseSensitivity signification, see unzipStringFileNameCompare
+ 
+   return value :
+   UNZ_OK if the file is found. It becomes the current file.
+@@ -1676,7 +1708,7 @@
+   buf contain buffer where data must be copied
+   len the size of buf.
+ 
+-  return the number of byte copied if somes bytes are copied
++  return the number of byte copied if some bytes are copied
+   return 0 if the end of file was reached
+   return <0 with error code if there is an error
+     (UNZ_ERRNO for IO error, or zLib error for uncompress error)
+@@ -1998,7 +2030,7 @@
+ }
+ 
+ /*
+-  Close the file in zip opened with unzOpenCurrentFile
++  Close the file in zip opened with unzipOpenCurrentFile
+   Return UNZ_CRCERROR if all the file was read but the CRC is not good
+ */
+ extern int ZEXPORT unzCloseCurrentFile (unzFile file)
+
+--- a/zlib-1.2.8/contrib/minizip/unzip.h	2012-07-09 00:34:08.000000000 +0100
++++ b/zlib-1.2.8/contrib/minizip/unzip.h	2014-09-18 01:57:10.757680100 +0100
+@@ -155,10 +155,10 @@
+                                                  int iCaseSensitivity));
+ /*
+    Compare two filename (fileName1,fileName2).
+-   If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
+-   If iCaseSenisivity = 2, comparision is not case sensitivity (like strcmpi
++   If iCaseSenisivity = 1, comparison is case sensitivity (like strcmp)
++   If iCaseSenisivity = 2, comparison is not case sensitivity (like strcmpi
+                                 or strcasecmp)
+-   If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
++   If iCaseSenisivity = 0, case sensitivity is default of your operating system
+     (like 1 on Unix, 2 on Windows)
+ */
+ 
+@@ -197,9 +197,9 @@
+ 
+ extern int ZEXPORT unzClose OF((unzFile file));
+ /*
+-  Close a ZipFile opened with unzOpen.
++  Close a ZipFile opened with unzipOpen.
+   If there is files inside the .Zip opened with unzOpenCurrentFile (see later),
+-    these files MUST be closed with unzCloseCurrentFile before call unzClose.
++    these files MUST be closed with unzipCloseCurrentFile before call unzipClose.
+   return UNZ_OK if there is no problem. */
+ 
+ extern int ZEXPORT unzGetGlobalInfo OF((unzFile file,
+@@ -227,11 +227,22 @@
+ /* Unzip package allow you browse the directory of the zipfile */
+ 
+ extern int ZEXPORT unzGoToFirstFile OF((unzFile file));
++
+ /*
+   Set the current file of the zipfile to the first file.
+   return UNZ_OK if there is no problem
+ */
+ 
++extern int ZEXPORT unzGoToFirstFile64 OF((unzFile file,
++                        unz_file_info64 *pfile_info,
++                        char *szFileName,
++                        uLong fileNameBufferSize));
++/*
++  Set the current file of the zipfile to the first file
++  with retrieving an information about the file.
++  return UNZ_OK if there is no problem
++*/
++
+ extern int ZEXPORT unzGoToNextFile OF((unzFile file));
+ /*
+   Set the current file of the zipfile to the next file.
+@@ -239,6 +250,17 @@
+   return UNZ_END_OF_LIST_OF_FILE if the actual file was the latest.
+ */
+ 
++extern int ZEXPORT unzGoToNextFile64 OF((unzFile file,
++                       unz_file_info64 *pfile_info,
++                       char *szFileName,
++                       uLong fileNameBufferSize));
++/*
++  Set the current file of the zipfile to the next file
++  with retrieving an information about the file.
++  return UNZ_OK if there is no problem
++  return UNZ_END_OF_LIST_OF_FILE if the actual file was the latest.
++*/
++
+ extern int ZEXPORT unzLocateFile OF((unzFile file,
+                      const char *szFileName,
+                      int iCaseSensitivity));
+@@ -304,9 +326,9 @@
+                          uLong commentBufferSize));
+ /*
+   Get Info about the current file
+-  if pfile_info!=NULL, the *pfile_info structure will contain somes info about
++  if pfile_info!=NULL, the *pfile_info structure will contain some info about
+         the current file
+-  if szFileName!=NULL, the filemane string will be copied in szFileName
++  if szFileName!=NULL, the filename string will be copied in szFileName
+             (fileNameBufferSize is the size of the buffer)
+   if extraField!=NULL, the extra field information will be copied in extraField
+             (extraFieldBufferSize is the size of the buffer).
+@@ -384,7 +406,7 @@
+   buf contain buffer where data must be copied
+   len the size of buf.
+ 
+-  return the number of byte copied if somes bytes are copied
++  return the number of byte copied if some bytes are copied
+   return 0 if the end of file was reached
+   return <0 with error code if there is an error
+     (UNZ_ERRNO for IO error, or zLib error for uncompress error)

@@ -1,0 +1,62 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=fribidi
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.0.8
+pkgrel=1
+pkgdesc="A Free Implementation of the Unicode Bidirectional Algorithm (mingw-w64)"
+arch=('any')
+license=('LGPL')
+url="https://fribidi.org/"
+depends=()
+options=('strip' '!libtool' 'staticlibs')
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-meson")
+source=("https://github.com/fribidi/fribidi/releases/download/v${pkgver}/${_realname}-${pkgver}.tar.bz2")
+sha256sums=('94c7b68d86ad2a9613b4dcffe7bbeb03523d63b5b37918bdf2e4ef34195c1e6c')
+
+build() {
+  mkdir -p build-${MINGW_CHOST}-static
+  cd build-${MINGW_CHOST}-static
+
+  meson \
+      --buildtype plain \
+      --prefix=${MINGW_PREFIX} \
+       -Ddocs=false \
+       --default-library static \
+      ../${_realname}-${pkgver}
+
+  ninja
+
+  cd ..
+  mkdir -p build-${MINGW_CHOST}-shared
+  cd build-${MINGW_CHOST}-shared
+
+  meson \
+      --buildtype plain \
+      --prefix=${MINGW_PREFIX} \
+       -Ddocs=false \
+       --default-library shared \
+      ../${_realname}-${pkgver}
+
+  ninja
+}
+
+check() {
+  cd build-${MINGW_CHOST}-shared
+
+  meson test
+}
+
+package() {
+  cd ${srcdir}/build-${MINGW_CHOST}-static
+  DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
+
+  cd ${srcdir}/build-${MINGW_CHOST}-shared
+  DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
+
+  sed -s "s|$(cygpath -m ${MINGW_PREFIX})|${MINGW_PREFIX}|g" -i "${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/${_realname}.pc"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+}

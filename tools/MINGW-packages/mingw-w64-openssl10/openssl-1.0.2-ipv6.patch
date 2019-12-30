@@ -1,0 +1,611 @@
+http://rt.openssl.org/Ticket/Display.html?id=2051&user=guest&pass=guest
+
+--- openssl-1.0.2/apps/s_apps.h
++++ openssl-1.0.2/apps/s_apps.h
+@@ -154,7 +154,7 @@
+ int do_server(int port, int type, int *ret,
+               int (*cb) (char *hostname, int s, int stype,
+                          unsigned char *context), unsigned char *context,
+-              int naccept);
++              int naccept, int use_ipv4, int use_ipv6);
+ #ifdef HEADER_X509_H
+ int MS_CALLBACK verify_callback(int ok, X509_STORE_CTX *ctx);
+ #endif
+@@ -167,7 +167,8 @@
+ int ssl_print_curves(BIO *out, SSL *s, int noshared);
+ #endif
+ int ssl_print_tmp_key(BIO *out, SSL *s);
+-int init_client(int *sock, char *server, int port, int type);
++int init_client(int *sock, char *server, int port, int type,
++		int use_ipv4, int use_ipv6);
+ int should_retry(int i);
+ int extract_port(char *str, short *port_ptr);
+ int extract_host_port(char *str, char **host_ptr, unsigned char *ip,
+--- openssl-1.0.2/apps/s_client.c
++++ openssl-1.0.2/apps/s_client.c
+@@ -302,6 +302,10 @@
+ {
+     BIO_printf(bio_err, "usage: s_client args\n");
+     BIO_printf(bio_err, "\n");
++    BIO_printf(bio_err, " -4             - use IPv4 only\n");
++#if OPENSSL_USE_IPV6
++    BIO_printf(bio_err, " -6             - use IPv6 only\n");
++#endif
+     BIO_printf(bio_err, " -host host     - use -connect instead\n");
+     BIO_printf(bio_err, " -port port     - use -connect instead\n");
+     BIO_printf(bio_err,
+@@ -658,6 +662,7 @@
+     int sbuf_len, sbuf_off;
+     fd_set readfds, writefds;
+     short port = PORT;
++    int use_ipv4, use_ipv6;
+     int full_log = 1;
+     char *host = SSL_HOST_NAME;
+     char *cert_file = NULL, *key_file = NULL, *chain_file = NULL;
+@@ -709,7 +714,11 @@
+ #endif
+     char *sess_in = NULL;
+     char *sess_out = NULL;
+-    struct sockaddr peer;
++#if OPENSSL_USE_IPV6
++    struct sockaddr_storage peer;
++#else
++    struct sockaddr_in peer;
++#endif
+     int peerlen = sizeof(peer);
+     int fallback_scsv = 0;
+     int enable_timeouts = 0;
+@@ -737,6 +746,12 @@
+ 
+     meth = SSLv23_client_method();
+ 
++    use_ipv4 = 1;
++#if OPENSSL_USE_IPV6
++    use_ipv6 = 1;
++#else
++    use_ipv6 = 0;
++#endif
+     apps_startup();
+     c_Pause = 0;
+     c_quiet = 0;
+@@ -1096,6 +1111,16 @@
+             jpake_secret = *++argv;
+         }
+ #endif
++	else if (strcmp(*argv,"-4") == 0) {
++	    use_ipv4 = 1;
++	    use_ipv6 = 0;
++	}
++#if OPENSSL_USE_IPV6
++	else if (strcmp(*argv,"-6") == 0) {
++	    use_ipv4 = 0;
++	    use_ipv6 = 1;
++	}
++#endif
+ #ifndef OPENSSL_NO_SRTP
+         else if (strcmp(*argv, "-use_srtp") == 0) {
+             if (--argc < 1)
+@@ -1421,7 +1446,7 @@
+ 
+  re_start:
+ 
+-    if (init_client(&s, host, port, socket_type) == 0) {
++    if (init_client(&s, host, port, socket_type, use_ipv4, use_ipv6) == 0) {
+         BIO_printf(bio_err, "connect:errno=%d\n", get_last_socket_error());
+         SHUTDOWN(s);
+         goto end;
+@@ -1444,7 +1469,7 @@
+     if (socket_type == SOCK_DGRAM) {
+ 
+         sbio = BIO_new_dgram(s, BIO_NOCLOSE);
+-        if (getsockname(s, &peer, (void *)&peerlen) < 0) {
++        if (getsockname(s, (struct sockaddr *)&peer, (void *)&peerlen) < 0) {
+             BIO_printf(bio_err, "getsockname:errno=%d\n",
+                        get_last_socket_error());
+             SHUTDOWN(s);
+--- openssl-1.0.2/apps/s_server.c
++++ openssl-1.0.2/apps/s_server.c
+@@ -643,6 +643,10 @@
+     BIO_printf(bio_err,
+                " -alpn arg  - set the advertised protocols for the ALPN extension (comma-separated list)\n");
+ #endif
++    BIO_printf(bio_err, " -4            - use IPv4 only\n");
++#if OPENSSL_USE_IPV6
++    BIO_printf(bio_err, " -6            - use IPv6 only\n");
++#endif
+     BIO_printf(bio_err,
+                " -keymatexport label   - Export keying material using label\n");
+     BIO_printf(bio_err,
+@@ -1070,6 +1074,7 @@
+     int state = 0;
+     const SSL_METHOD *meth = NULL;
+     int socket_type = SOCK_STREAM;
++    int use_ipv4, use_ipv6;
+     ENGINE *e = NULL;
+     char *inrand = NULL;
+     int s_cert_format = FORMAT_PEM, s_key_format = FORMAT_PEM;
+@@ -1111,6 +1116,12 @@
+ 
+     meth = SSLv23_server_method();
+ 
++    use_ipv4 = 1;
++#if OPENSSL_USE_IPV6
++    use_ipv6 = 1;
++#else
++    use_ipv6 = 0;
++#endif
+     local_argc = argc;
+     local_argv = argv;
+ 
+@@ -1503,6 +1514,16 @@
+             jpake_secret = *(++argv);
+         }
+ #endif
++	else if (strcmp(*argv,"-4") == 0) {
++	    use_ipv4 = 1;
++	    use_ipv6 = 0;
++	}
++#if OPENSSL_USE_IPV6
++	else if (strcmp(*argv,"-6") == 0) {
++	    use_ipv4 = 0;
++	    use_ipv6 = 1;
++	}
++#endif
+ #ifndef OPENSSL_NO_SRTP
+         else if (strcmp(*argv, "-use_srtp") == 0) {
+             if (--argc < 1)
+@@ -2023,13 +2044,13 @@
+     (void)BIO_flush(bio_s_out);
+     if (rev)
+         do_server(port, socket_type, &accept_socket, rev_body, context,
+-                  naccept);
++                  naccept, use_ipv4, use_ipv6);
+     else if (www)
+         do_server(port, socket_type, &accept_socket, www_body, context,
+-                  naccept);
++                  naccept, use_ipv4, use_ipv6);
+     else
+         do_server(port, socket_type, &accept_socket, sv_body, context,
+-                  naccept);
++                  naccept, use_ipv4, use_ipv6);
+     print_stats(bio_s_out, ctx);
+     ret = 0;
+  end:
+--- openssl-1.0.2/apps/s_socket.c
++++ openssl-1.0.2/apps/s_socket.c
+@@ -101,16 +101,16 @@
+ #  include "netdb.h"
+ # endif
+ 
+-static struct hostent *GetHostByName(char *name);
++static struct hostent *GetHostByName(char *name, int domain);
+ # if defined(OPENSSL_SYS_WINDOWS) || (defined(OPENSSL_SYS_NETWARE) && !defined(NETWARE_BSDSOCK))
+ static void ssl_sock_cleanup(void);
+ # endif
+ static int ssl_sock_init(void);
+-static int init_client_ip(int *sock, unsigned char ip[4], int port, int type);
+-static int init_server(int *sock, int port, int type);
+-static int init_server_long(int *sock, int port, char *ip, int type);
++static int init_client_ip(int *sock, unsigned char *ip, int port, int type, int domain);
++static int init_server(int *sock, int port, int type, int use_ipv4, int use_ipv6);
++static int init_server_long(int *sock, int port, char *ip, int type, int use_ipv4, int use_ipv6);
+ static int do_accept(int acc_sock, int *sock, char **host);
+-static int host_ip(char *str, unsigned char ip[4]);
++static int host_ip(char *str, unsigned char *ip, int domain);
+ 
+ # ifdef OPENSSL_SYS_WIN16
+ #  define SOCKET_PROTOCOL 0     /* more microsoft stupidity */
+@@ -231,38 +231,68 @@
+     return (1);
+ }
+ 
+-int init_client(int *sock, char *host, int port, int type)
++int init_client(int *sock, char *host, int port, int type, int use_ipv4, int use_ipv6)
+ {
++# if OPENSSL_USE_IPV6
++    unsigned char ip[16];
++# else
+     unsigned char ip[4];
++# endif
+ 
+-    memset(ip, '\0', sizeof ip);
+-    if (!host_ip(host, &(ip[0])))
+-        return 0;
+-    return init_client_ip(sock, ip, port, type);
+-}
+-
+-static int init_client_ip(int *sock, unsigned char ip[4], int port, int type)
+-{
+-    unsigned long addr;
++    if (use_ipv4)
++	if (host_ip(host, ip, AF_INET))
++	    return(init_client_ip(sock, ip, port, type, AF_INET));
++# if OPENSSL_USE_IPV6
++    if (use_ipv6)
++	if (host_ip(host, ip, AF_INET6))
++	    return(init_client_ip(sock, ip, port, type, AF_INET6));
++# endif
++    return 0;
++}
++
++static int init_client_ip(int *sock, unsigned char ip[4], int port, int type, int domain)
++{
++# if OPENSSL_USE_IPV6
++    struct sockaddr_storage them;
++    struct sockaddr_in *them_in = (struct sockaddr_in *)&them;
++    struct sockaddr_in6 *them_in6 = (struct sockaddr_in6 *)&them;
++# else
+     struct sockaddr_in them;
++    struct sockaddr_in *them_in = &them;
++# endif
++    socklen_t addr_len;
+     int s, i;
+ 
+     if (!ssl_sock_init())
+         return (0);
+ 
+     memset((char *)&them, 0, sizeof(them));
+-    them.sin_family = AF_INET;
+-    them.sin_port = htons((unsigned short)port);
+-    addr = (unsigned long)
+-        ((unsigned long)ip[0] << 24L) |
+-        ((unsigned long)ip[1] << 16L) |
+-        ((unsigned long)ip[2] << 8L) | ((unsigned long)ip[3]);
+-    them.sin_addr.s_addr = htonl(addr);
++    if (domain == AF_INET) {
++	addr_len = (socklen_t)sizeof(struct sockaddr_in);
++	them_in->sin_family=AF_INET;
++	them_in->sin_port=htons((unsigned short)port);
++# ifndef BIT_FIELD_LIMITS
++	memcpy(&them_in->sin_addr.s_addr, ip, 4);
++# else
++	memcpy(&them_in->sin_addr, ip, 4);
++# endif
++    }
++    else
++# if OPENSSL_USE_IPV6
++    {
++	addr_len = (socklen_t)sizeof(struct sockaddr_in6);
++	them_in6->sin6_family=AF_INET6;
++	them_in6->sin6_port=htons((unsigned short)port);
++	memcpy(&(them_in6->sin6_addr), ip, sizeof(struct in6_addr));
++    }
++# else
++	return(0);
++# endif
+ 
+     if (type == SOCK_STREAM)
+-        s = socket(AF_INET, SOCK_STREAM, SOCKET_PROTOCOL);
++        s = socket(domain, SOCK_STREAM, SOCKET_PROTOCOL);
+     else                        /* ( type == SOCK_DGRAM) */
+-        s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
++        s = socket(domain, SOCK_DGRAM, IPPROTO_UDP);
+ 
+     if (s == INVALID_SOCKET) {
+         perror("socket");
+@@ -280,7 +310,7 @@
+     }
+ # endif
+ 
+-    if (connect(s, (struct sockaddr *)&them, sizeof(them)) == -1) {
++    if (connect(s, (struct sockaddr *)&them, addr_len) == -1) {
+         closesocket(s);
+         perror("connect");
+         return (0);
+@@ -292,14 +322,14 @@
+ int do_server(int port, int type, int *ret,
+               int (*cb) (char *hostname, int s, int stype,
+                          unsigned char *context), unsigned char *context,
+-              int naccept)
++              int naccept, int use_ipv4, int use_ipv6)
+ {
+     int sock;
+     char *name = NULL;
+     int accept_socket = 0;
+     int i;
+ 
+-    if (!init_server(&accept_socket, port, type))
++    if (!init_server(&accept_socket, port, type, use_ipv4, use_ipv6))
+         return (0);
+ 
+     if (ret != NULL) {
+@@ -328,32 +358,41 @@
+     }
+ }
+ 
+-static int init_server_long(int *sock, int port, char *ip, int type)
++static int init_server_long(int *sock, int port, char *ip, int type, int use_ipv4, int use_ipv6)
+ {
+     int ret = 0;
++    int domain;
++# if OPENSSL_USE_IPV6
++    struct sockaddr_storage server;
++    struct sockaddr_in *server_in = (struct sockaddr_in *)&server;
++    struct sockaddr_in6 *server_in6 = (struct sockaddr_in6 *)&server;
++# else
+     struct sockaddr_in server;
++    struct sockaddr_in *server_in = &server;
++# endif
++    socklen_t addr_len;
+     int s = -1;
+ 
++    if (!use_ipv4 && !use_ipv6)
++	goto err;
++# if OPENSSL_USE_IPV6
++    /* we are fine here */
++# else
++    if (use_ipv6)
++	goto err;
++# endif
+     if (!ssl_sock_init())
+         return (0);
+ 
+-    memset((char *)&server, 0, sizeof(server));
+-    server.sin_family = AF_INET;
+-    server.sin_port = htons((unsigned short)port);
+-    if (ip == NULL)
+-        server.sin_addr.s_addr = INADDR_ANY;
+-    else
+-/* Added for T3E, address-of fails on bit field (beckman@acl.lanl.gov) */
+-# ifndef BIT_FIELD_LIMITS
+-        memcpy(&server.sin_addr.s_addr, ip, 4);
++#if OPENSSL_USE_IPV6
++    domain = use_ipv6 ? AF_INET6 : AF_INET;
+ # else
+-        memcpy(&server.sin_addr, ip, 4);
++    domain = AF_INET;
+ # endif
+-
+     if (type == SOCK_STREAM)
+-        s = socket(AF_INET, SOCK_STREAM, SOCKET_PROTOCOL);
+-    else                        /* type == SOCK_DGRAM */
+-        s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
++	s=socket(domain, SOCK_STREAM, SOCKET_PROTOCOL);
++    else /* type == SOCK_DGRAM */
++	s=socket(domain, SOCK_DGRAM, IPPROTO_UDP);
+ 
+     if (s == INVALID_SOCKET)
+         goto err;
+@@ -363,7 +402,42 @@
+         setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&j, sizeof j);
+     }
+ # endif
+-    if (bind(s, (struct sockaddr *)&server, sizeof(server)) == -1) {
++# if OPENSSL_USE_IPV6
++    if ((use_ipv4 == 0) && (use_ipv6 == 1)) {
++	const int on = 1;
++
++	setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY,
++		    (const void *) &on, sizeof(int));
++    }
++# endif
++    if (domain == AF_INET) {
++	addr_len = (socklen_t)sizeof(struct sockaddr_in);
++	memset(server_in, 0, sizeof(struct sockaddr_in));
++	server_in->sin_family=AF_INET;
++	server_in->sin_port = htons((unsigned short)port);
++	if (ip == NULL)
++	    server_in->sin_addr.s_addr = htonl(INADDR_ANY);
++	else
++/* Added for T3E, address-of fails on bit field (beckman@acl.lanl.gov) */
++# ifndef BIT_FIELD_LIMITS
++	    memcpy(&server_in->sin_addr.s_addr, ip, 4);
++# else
++	    memcpy(&server_in->sin_addr, ip, 4);
++# endif
++    }
++# if OPENSSL_USE_IPV6
++    else {
++	addr_len = (socklen_t)sizeof(struct sockaddr_in6);
++	memset(server_in6, 0, sizeof(struct sockaddr_in6));
++	server_in6->sin6_family = AF_INET6;
++	server_in6->sin6_port = htons((unsigned short)port);
++	if (ip == NULL)
++	    server_in6->sin6_addr = in6addr_any;
++	else
++	    memcpy(&server_in6->sin6_addr, ip, sizeof(struct in6_addr));
++    }
++# endif
++    if (bind(s, (struct sockaddr *)&server, addr_len) == -1) {
+ # ifndef OPENSSL_SYS_WINDOWS
+         perror("bind");
+ # endif
+@@ -381,16 +455,23 @@
+     return (ret);
+ }
+ 
+-static int init_server(int *sock, int port, int type)
++static int init_server(int *sock, int port, int type, int use_ipv4, int use_ipv6)
+ {
+-    return (init_server_long(sock, port, NULL, type));
++    return (init_server_long(sock, port, NULL, type, use_ipv4, use_ipv6));
+ }
+ 
+ static int do_accept(int acc_sock, int *sock, char **host)
+ {
+     int ret;
+     struct hostent *h1, *h2;
+-    static struct sockaddr_in from;
++#if OPENSSL_USE_IPV6
++    struct sockaddr_storage from;
++    struct sockaddr_in *from_in = (struct sockaddr_in *)&from;
++    struct sockaddr_in6 *from_in6 = (struct sockaddr_in6 *)&from;
++#else
++    struct sockaddr_in from;
++    struct sockaddr_in *from_in = &from;
++#endif
+     int len;
+ /*      struct linger ling; */
+ 
+@@ -440,14 +521,25 @@
+ 
+     if (host == NULL)
+         goto end;
++# if OPENSSL_USE_IPV6
++    if (from.ss_family == AF_INET)
++# else
++    if (from.sin_family == AF_INET)
++# endif
+ # ifndef BIT_FIELD_LIMITS
+-    /* I should use WSAAsyncGetHostByName() under windows */
+-    h1 = gethostbyaddr((char *)&from.sin_addr.s_addr,
+-                       sizeof(from.sin_addr.s_addr), AF_INET);
++	/* I should use WSAAsyncGetHostByName() under windows */
++	h1 = gethostbyaddr((char *)&from_in->sin_addr.s_addr,
++                	    sizeof(from_in->sin_addr.s_addr), AF_INET);
+ # else
+-    h1 = gethostbyaddr((char *)&from.sin_addr,
+-                       sizeof(struct in_addr), AF_INET);
++	h1 = gethostbyaddr((char *)&from_in->sin_addr,
++            		    sizeof(struct in_addr), AF_INET);
++# endif
++# if OPENSSL_USE_IPV6
++    else
++	h1 = gethostbyaddr((char *)&from_in6->sin6_addr,
++			    sizeof(struct in6_addr), AF_INET6);
+ # endif
++	    
+     if (h1 == NULL) {
+         BIO_printf(bio_err, "bad gethostbyaddr\n");
+         *host = NULL;
+@@ -460,14 +552,22 @@
+         }
+         BUF_strlcpy(*host, h1->h_name, strlen(h1->h_name) + 1);
+ 
+-        h2 = GetHostByName(*host);
++# if OPENSSL_USE_IPV6
++	h2=GetHostByName(*host, from.ss_family);
++# else
++	h2=GetHostByName(*host, from.sin_family);
++# endif
+         if (h2 == NULL) {
+             BIO_printf(bio_err, "gethostbyname failure\n");
+             closesocket(ret);
+             return (0);
+         }
+-        if (h2->h_addrtype != AF_INET) {
+-            BIO_printf(bio_err, "gethostbyname addr is not AF_INET\n");
++# if OPENSSL_USE_IPV6
++	if (h2->h_addrtype != from.ss_family) {
++# else
++	if (h2->h_addrtype != from.sin_family) {
++# endif
++            BIO_printf(bio_err, "gethostbyname addr is not correct\n");
+             closesocket(ret);
+             return (0);
+         }
+@@ -483,14 +583,14 @@
+     char *h, *p;
+ 
+     h = str;
+-    p = strchr(str, ':');
++    p = strrchr(str, ':');
+     if (p == NULL) {
+         BIO_printf(bio_err, "no port defined\n");
+         return (0);
+     }
+     *(p++) = '\0';
+ 
+-    if ((ip != NULL) && !host_ip(str, ip))
++    if ((ip != NULL) && !host_ip(str, ip, AF_INET))
+         goto err;
+     if (host_ptr != NULL)
+         *host_ptr = h;
+@@ -502,44 +602,51 @@
+     return (0);
+ }
+ 
+-static int host_ip(char *str, unsigned char ip[4])
++static int host_ip(char *str, unsigned char *ip, int domain)
+ {
+     unsigned int in[4];
++    unsigned long l;
+     int i;
+ 
+-    if (sscanf(str, "%u.%u.%u.%u", &(in[0]), &(in[1]), &(in[2]), &(in[3])) ==
+-        4) {
++    if ((domain == AF_INET) && (sscanf(str, "%u.%u.%u.%u", &(in[0]), &(in[1]), &(in[2]), &(in[3])) == 4)) {
+         for (i = 0; i < 4; i++)
+             if (in[i] > 255) {
+                 BIO_printf(bio_err, "invalid IP address\n");
+                 goto err;
+             }
+-        ip[0] = in[0];
+-        ip[1] = in[1];
+-        ip[2] = in[2];
+-        ip[3] = in[3];
+-    } else {                    /* do a gethostbyname */
++	l=htonl((in[0]<<24L)|(in[1]<<16L)|(in[2]<<8L)|in[3]);
++	memcpy(ip, &l, 4);
++	return 1;
++    }
++# if OPENSSL_USE_IPV6
++    else if ((domain == AF_INET6) && (inet_pton(AF_INET6, str, ip) == 1))
++	return 1;
++# endif
++    else {                    /* do a gethostbyname */
+         struct hostent *he;
+ 
+         if (!ssl_sock_init())
+             return (0);
+ 
+-        he = GetHostByName(str);
++        he = GetHostByName(str, domain);
+         if (he == NULL) {
+             BIO_printf(bio_err, "gethostbyname failure\n");
+             goto err;
+         }
+         /* cast to short because of win16 winsock definition */
+-        if ((short)he->h_addrtype != AF_INET) {
+-            BIO_printf(bio_err, "gethostbyname addr is not AF_INET\n");
++        if ((short)he->h_addrtype != domain) {
++            BIO_printf(bio_err, "gethostbyname addr is not correct\n");
+             return (0);
+         }
+-        ip[0] = he->h_addr_list[0][0];
+-        ip[1] = he->h_addr_list[0][1];
+-        ip[2] = he->h_addr_list[0][2];
+-        ip[3] = he->h_addr_list[0][3];
++	if (domain == AF_INET)
++	    memset(ip, 0, 4);
++# if OPENSSL_USE_IPV6
++	else
++	    memset(ip, 0, 16);
++# endif
++	memcpy(ip, he->h_addr_list[0], he->h_length);
++	return 1;
+     }
+-    return (1);
+  err:
+     return (0);
+ }
+@@ -573,7 +680,7 @@
+ static unsigned long ghbn_hits = 0L;
+ static unsigned long ghbn_miss = 0L;
+ 
+-static struct hostent *GetHostByName(char *name)
++static struct hostent *GetHostByName(char *name, int domain)
+ {
+     struct hostent *ret;
+     int i, lowi = 0;
+@@ -585,13 +692,18 @@
+             lowi = i;
+         }
+         if (ghbn_cache[i].order > 0) {
+-            if (strncmp(name, ghbn_cache[i].name, 128) == 0)
++            if ((strncmp(name, ghbn_cache[i].name, 128) == 0) && (ghbn_cache[i].ent.h_addrtype == domain))
+                 break;
+         }
+     }
+     if (i == GHBN_NUM) {        /* no hit */
+         ghbn_miss++;
+-        ret = gethostbyname(name);
++        if (domain == AF_INET)
++    	    ret = gethostbyname(name);
++# if OPENSSL_USE_IPV6
++	else
++	    ret = gethostbyname2(name, AF_INET6);
++# endif
+         if (ret == NULL)
+             return (NULL);
+         /* else add to cache */

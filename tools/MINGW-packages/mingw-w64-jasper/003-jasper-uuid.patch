@@ -1,0 +1,245 @@
+diff -ruN a/src/libjasper/jp2/jp2_cod.c b/src/libjasper/jp2/jp2_cod.c
+--- a/src/libjasper/jp2/jp2_cod.c	2007-01-20 05:43:05.000000000 +0800
++++ b/src/libjasper/jp2/jp2_cod.c	2007-03-06 21:49:58.000000000 +0800
+@@ -5,6 +5,11 @@
+  * All rights reserved.
+  */
+ 
++/*
++ * Modified by Andrey Kiselev <dron at ak4719.spb.edu> to properly handle UUID
++ * box.
++ */
++
+ /* __START_OF_JASPER_LICENSE__
+  * 
+  * JasPer License Version 2.0
+@@ -127,6 +132,9 @@
+ static int jp2_pclr_getdata(jp2_box_t *box, jas_stream_t *in);
+ static int jp2_pclr_putdata(jp2_box_t *box, jas_stream_t *out);
+ static void jp2_pclr_dumpdata(jp2_box_t *box, FILE *out);
++static void jp2_uuid_destroy(jp2_box_t *box);
++static int jp2_uuid_getdata(jp2_box_t *box, jas_stream_t *in);
++static int jp2_uuid_putdata(jp2_box_t *box, jas_stream_t *out);
+ 
+ /******************************************************************************\
+ * Local data.
+@@ -164,7 +172,7 @@
+ 	{JP2_BOX_XML, "XML", 0,
+ 	  {0, 0, 0, 0, 0}},
+ 	{JP2_BOX_UUID, "UUID", 0,
+-	  {0, 0, 0, 0, 0}},
++	  {0, jp2_uuid_destroy, jp2_uuid_getdata, jp2_uuid_putdata, 0}},
+ 	{JP2_BOX_UINF, "UINF", JP2_BOX_SUPER,
+ 	  {0, 0, 0, 0, 0}},
+ 	{JP2_BOX_ULST, "ULST", 0,
+@@ -271,7 +279,7 @@
+ 	} else {
+ 		box->datalen = box->len - JP2_BOX_HDRLEN(false);
+ 	}
+-	if (box->len != 0 && box->len < 8) {
++	if (box->len != 0 && box->len < JP2_BOX_HDRLEN(false)) {
+ 		goto error;
+ 	}
+ 
+@@ -876,6 +884,56 @@
+ 	}
+ }
+ 
++static void jp2_uuid_destroy(jp2_box_t *box)
++{
++	jp2_uuid_t *uuid = &box->data.uuid;
++	if (uuid->data)
++	{
++	    jas_free(uuid->data);
++	    uuid->data = NULL;
++	}
++}
++
++static int jp2_uuid_getdata(jp2_box_t *box, jas_stream_t *in)
++{
++	jp2_uuid_t *uuid = &box->data.uuid;
++	int i;
++	
++	for (i = 0; i < 16; i++)
++	{
++	    if (jp2_getuint8(in, &uuid->uuid[i]))
++		return -1;
++	}
++	
++	uuid->datalen = box->datalen - 16;
++	uuid->data = jas_malloc(uuid->datalen * sizeof(uint_fast8_t));
++	for (i = 0; i < uuid->datalen; i++)
++	{
++	    if (jp2_getuint8(in, &uuid->data[i]))
++		return -1;
++	}
++	return 0;
++}
++
++static int jp2_uuid_putdata(jp2_box_t *box, jas_stream_t *out)
++{
++	jp2_uuid_t *uuid = &box->data.uuid;
++	int i;
++	
++	for (i = 0; i < 16; i++)
++	{
++	    if (jp2_putuint8(out, uuid->uuid[i]))
++		return -1;
++	}
++	
++	for (i = 0; i < uuid->datalen; i++)
++	{
++	    if (jp2_putuint8(out, uuid->data[i]))
++		return -1;
++	}
++	return 0;
++}
++
+ static int jp2_getint(jas_stream_t *in, int s, int n, int_fast32_t *val)
+ {
+ 	int c;
+diff -ruN a/src/libjasper/jp2/jp2_cod.h b/src/libjasper/jp2/jp2_cod.h
+--- a/src/libjasper/jp2/jp2_cod.h	2007-01-20 05:43:05.000000000 +0800
++++ b/src/libjasper/jp2/jp2_cod.h	2007-03-06 21:49:58.000000000 +0800
+@@ -5,6 +5,11 @@
+  * All rights reserved.
+  */
+ 
++/*
++ * Modified by Andrey Kiselev <dron at ak4719.spb.edu> to properly handle UUID
++ * box.
++ */
++
+ /* __START_OF_JASPER_LICENSE__
+  * 
+  * JasPer License Version 2.0
+@@ -229,6 +234,12 @@
+ 	jp2_cmapent_t *ents;
+ } jp2_cmap_t;
+ 
++typedef struct {
++	uint_fast32_t datalen;
++	uint_fast8_t uuid[16];
++	uint_fast8_t *data;
++} jp2_uuid_t;
++
+ #define	JP2_CMAP_DIRECT		0
+ #define	JP2_CMAP_PALETTE	1
+ 
+@@ -257,6 +268,7 @@
+ 		jp2_pclr_t pclr;
+ 		jp2_cdef_t cdef;
+ 		jp2_cmap_t cmap;
++		jp2_uuid_t uuid;
+ 	} data;
+ 
+ } jp2_box_t;
+diff -ruN a/src/libjasper/jp2/jp2_enc.c b/src/libjasper/jp2/jp2_enc.c
+--- a/src/libjasper/jp2/jp2_enc.c	2007-01-20 05:43:05.000000000 +0800
++++ b/src/libjasper/jp2/jp2_enc.c	2007-03-06 21:49:58.000000000 +0800
+@@ -5,6 +5,11 @@
+  * All rights reserved.
+  */
+ 
++/*
++ * Modified by Andrey Kiselev <dron at ak4719.spb.edu> to properly handle UUID
++ * box.
++ */
++
+ /* __START_OF_JASPER_LICENSE__
+  * 
+  * JasPer License Version 2.0
+@@ -86,7 +91,7 @@
+ * Functions.
+ \******************************************************************************/
+ 
+-int jp2_encode(jas_image_t *image, jas_stream_t *out, const char *optstr)
++int jp2_write_header(jas_image_t *image, jas_stream_t *out)
+ {
+ 	jp2_box_t *box;
+ 	jp2_ftyp_t *ftyp;
+@@ -97,8 +102,6 @@
+ 	long len;
+ 	uint_fast16_t cmptno;
+ 	jp2_colr_t *colr;
+-	char buf[4096];
+-	uint_fast32_t overhead;
+ 	jp2_cdefchan_t *cdefchanent;
+ 	jp2_cdef_t *cdef;
+ 	int i;
+@@ -326,6 +329,26 @@
+ 	jas_stream_close(tmpstream);
+ 	tmpstream = 0;
+ 
++	return 0;
++	abort();
++
++error:
++
++	if (box) {
++		jp2_box_destroy(box);
++	}
++	if (tmpstream) {
++		jas_stream_close(tmpstream);
++	}
++	return -1;
++}
++
++int jp2_write_codestream(jas_image_t *image, jas_stream_t *out, const char *optstr)
++{
++	jp2_box_t *box;
++	char buf[4096];
++	uint_fast32_t overhead;
++
+ 	/*
+ 	 * Output the contiguous code stream box.
+ 	 */
+@@ -358,12 +381,34 @@
+ 	if (box) {
+ 		jp2_box_destroy(box);
+ 	}
+-	if (tmpstream) {
+-		jas_stream_close(tmpstream);
+-	}
+ 	return -1;
+ }
+ 
++int jp2_encode(jas_image_t *image, jas_stream_t *out, const char *optstr)
++{
++	if (jp2_write_header(image, out) < 0)
++		return -1;
++	if (jp2_write_codestream(image, out, optstr) < 0)
++		return -1;
++
++	return 0;
++}
++
++int jp2_encode_uuid(jas_image_t *image, jas_stream_t *out,
++		    const char *optstr, jp2_box_t *uuid)
++{
++	if (jp2_write_header(image, out) < 0)
++		return -1;
++	if (uuid) {
++		if (jp2_box_put(uuid, out))
++			return -1;
++	}
++	if (jp2_write_codestream(image, out, optstr) < 0)
++		return -1;
++
++	return 0;
++}
++
+ static uint_fast32_t jp2_gettypeasoc(int colorspace, int ctype)
+ {
+ 	int type;
+diff -Naur a/src/libjasper/include/jasper/jas_image.h b/src/libjasper/include/jasper/jas_image.h
+--- a/src/libjasper/include/jasper/jas_image.h	2017-05-19 03:21:50.000000000 +0300
++++ b/src/libjasper/include/jasper/jas_image.h	2017-09-11 08:56:10.654417700 +0300
+@@ -552,6 +552,7 @@
+ JAS_DLLEXPORT jas_image_t *jp2_decode(jas_stream_t *in, const char *optstr);
+ JAS_DLLEXPORT int jp2_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+ JAS_DLLEXPORT int jp2_validate(jas_stream_t *in);
++JAS_DLLEXPORT int jp2_encode_uuid(jas_image_t *image, jas_stream_t *out, const char *optstr, jp2_box_t *uuid);
+ #endif
+ 
+ #if !defined(EXCLUDE_JPC_SUPPORT)

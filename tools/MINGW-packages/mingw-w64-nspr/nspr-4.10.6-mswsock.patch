@@ -1,0 +1,11 @@
+--- nspr/tools/Makefile.in.orig	2014-06-06 01:42:08.000000000 +0400
++++ nspr/tools/Makefile.in	2014-07-10 12:19:41.479000000 +0400
+@@ -167,7 +167,7 @@
+ 	echo winsock.lib     >>w16link
+ 	wlink @w16link.
+ else
+-	link $(LDOPTS) $< $(LIBPR) $(LIBPLC) ws2_32.lib -out:$@
++	link $(LDOPTS) $< $(LIBPR) $(LIBPLC) ws2_32.lib mswsock.lib -out:$@
+ endif
+ else
+ ifeq ($(OS_ARCH),OS2)

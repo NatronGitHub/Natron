@@ -1,0 +1,24 @@
+diff -Naur zlib-1.2.11-pure/zconf.h.in zlib-1.2.11/zconf.h.in
+--- zlib-1.2.11-pure/zconf.h.in	2013-04-28 23:57:11.000000000 +0100
++++ zlib-1.2.11/zconf.h.in	2015-03-15 22:45:37.900299300 +0000
+@@ -481,7 +481,7 @@
+ #  define z_off_t long
+ #endif
+ 
+-#if !defined(_WIN32) && defined(Z_LARGE64)
++#if (defined(_WIN32) && defined(__GNUC__) && defined(_LARGEFILE64_SOURCE)) || defined(Z_LARGE64)
+ #  define z_off64_t off64_t
+ #else
+ #  if defined(_WIN32) && !defined(__GNUC__) && !defined(Z_SOLO)
+diff -Naur zlib-1.2.11-pure/zconf.h.cmakein zlib-1.2.11/zconf.h.cmakein
+--- zlib-1.2.11-pure/zconf.h.cmakein	2013-04-28 23:57:11.000000000 +0100
++++ zlib-1.2.11/zconf.h.cmakein	2015-03-15 22:45:37.900299300 +0000
+@@ -481,7 +481,7 @@
+ #  define z_off_t long
+ #endif
+ 
+-#if !defined(_WIN32) && defined(Z_LARGE64)
++#if (defined(_WIN32) && defined(__GNUC__) && defined(_LARGEFILE64_SOURCE)) || defined(Z_LARGE64)
+ #  define z_off64_t off64_t
+ #else
+ #  if defined(_WIN32) && !defined(__GNUC__) && !defined(Z_SOLO)

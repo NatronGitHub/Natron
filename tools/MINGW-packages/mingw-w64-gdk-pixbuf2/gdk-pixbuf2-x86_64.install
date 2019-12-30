@@ -1,0 +1,11 @@
+post_install() {
+  mingw64/bin/gdk-pixbuf-query-loaders --update-cache
+}
+
+post_upgrade() {
+  post_install
+}
+
+pre_remove() {
+  rm -f mingw64/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+}
