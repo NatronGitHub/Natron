@@ -260,6 +260,7 @@ mingw-w64-seexpr-git
 mingw-w64-shiboken-qt4
 mingw-w64-pyside-qt4
 mingw-w64-sox
+mingw-w64-osmesa
 "
 for pkg in $PKGS; do
 cd $CWD/$pkg

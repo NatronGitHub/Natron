@@ -1,0 +1,56 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_osmesa=17.1.10
+_glu=9.0.0
+_llvm=3.9.1
+_demos=8.3.0
+_mkjobs=4
+_realname=osmesa-install
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-osmesa"
+gitcommit=471db69
+pkgver=111.471db69.17.1.10.3.9.1
+pkgrel=1
+pkgdesc="OSMesa"
+arch=('any')
+url="https://github.com/devernay/osmesa-install"
+license=('BSD')
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+makedepends=("git")
+options=('strip')
+source=("${_realname}"::"git+https://github.com/devernay/osmesa-install#commit=${gitcommit}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/${_realname}"
+  printf "%s.%s.%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)" "${_osmesa}" "${_llvm}"
+}
+
+build() {
+  cd "${srcdir}/${_realname}"
+  [[ -d "build" ]] && rm -rf "build"
+  mkdir -p build && cd build
+
+  if [ -d "${MINGW_PREFIX}/llvm" ] || [ -d "${MINGW_PREFIX}/osmesa" ]; then
+    echo "Please remove existing OSMesa!"
+    exit 1
+  fi
+
+  wget ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x/mesa-${_osmesa}.tar.gz
+  wget ftp://ftp.freedesktop.org/pub/mesa/glu/glu-${_glu}.tar.gz
+  wget ftp://ftp.freedesktop.org/pub/mesa/demos/${_demos}/mesa-demos-${_demos}.tar.gz
+  wget http://releases.llvm.org/${_llvm}/llvm-${_llvm}.src.tar.xz
+
+  mkdir -p ${MINGW_PREFIX}/{llvm,osmesa}
+
+  env OSMESA_DRIVER=3 OSMESA_PREFIX="${MINGW_PREFIX}/osmesa" OSMESA_VERSION="${_osmesa}" \
+  LLVM_PREFIX="${MINGW_PREFIX}/llvm" LLVM_VERSION="${_llvm}" MKJOBS="${_mkjobs}" LLVM_BUILD=1 \
+  ../osmesa-install.sh
+}
+
+package() {
+  mkdir -p ${pkgdir}/mingw64
+  mv ${MINGW_PREFIX}/llvm ${pkgdir}/mingw64/
+  mv ${MINGW_PREFIX}/osmesa ${pkgdir}/mingw64/
+}
