@@ -2,7 +2,7 @@
 
 # Install Texinfo (for gdb)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/texinfo.html
-TEXINFO_VERSION=6.6
+TEXINFO_VERSION=6.7
 TEXINFO_TAR="texinfo-${TEXINFO_VERSION}.tar.gz"
 TEXINFO_SITE="https://ftp.gnu.org/gnu/texinfo"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/makeinfo" ]; }; }; then

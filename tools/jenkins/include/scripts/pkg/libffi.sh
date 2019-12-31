@@ -2,7 +2,7 @@
 
 # Install libffi
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/libffi.html
-FFI_VERSION=3.2.1
+FFI_VERSION=3.3
 FFI_TAR="libffi-${FFI_VERSION}.tar.gz"
 FFI_SITE="ftp://sourceware.org/pub/libffi"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion libffi)" != "$FFI_VERSION" ]; }; }; then

@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                libraw
 version             0.19.5
-revision            0
+revision            1
 
 description         Library for RAW image manipulation
 long_description    A library for reading RAW files obtained from digital photo \
@@ -28,6 +28,12 @@ depends_build       port:pkgconfig
 depends_lib         port:jasper \
                     port:jpeg \
                     port:lcms2
+
+# disable openmp as it is not consistently applicable in MacPorts at present
+configure.args-append --disable-openmp
+
+# don't hardcode a link against libstc++
+patchfiles-append   patch-libraw-no-libstdcxx.diff
 
 post-destroot {
     set htmlDir ${destroot}${prefix}/share/doc/${name}/html

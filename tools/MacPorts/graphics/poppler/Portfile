@@ -9,7 +9,7 @@ PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.82.0
+version             0.83.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -23,9 +23,9 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  2cb18eb954256bab80b7232da3e615e068ec5183 \
-                    sha256  234f8e573ea57fb6a008e7c1e56bfae1af5d1adf0e65f47555e1ae103874e4df \
-                    size    1553336
+checksums           rmd160  2ffc9fe5b5198e677d2f33d0f52d1ef89e07bce5 \
+                    sha256  685c650d9771e1c340ea222b57c8bd3f7502e2191ccfe8adeb9e638dcb0b799b \
+                    size    1555456
 
 depends_build-append \
                     port:pkgconfig

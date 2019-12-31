@@ -9,10 +9,12 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.10-71
-set reasonable_version      [lindex [split ${version} -] 0]
+version                     6.9.10-81
 revision                    0
-homepage                    http://www.imagemagick.org/
+checksums                   rmd160  e036833bdb82d42fb993552b6b99ae6ce385ca6f \
+                            sha256  9b3129f0453d1fbe2f4b89fb29f163df1a7c0bfc6ed6131951d93f06baa884b0 \
+                            size    9075360
+
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
 license                     Apache-2
@@ -36,15 +38,11 @@ long_description            ImageMagick is a robust collection of tools and \
                             supported, including GIF, JPEG, JPEG 2000, PNG, PDF, \
                             PhotoCD and TIFF.
 
-master_sites                http://www.imagemagick.org/download/ \
+homepage                    https://imagemagick.org
+master_sites                https://imagemagick.org/download/ \
                             http://mirror.checkdomain.de/imagemagick/ \
                             ftp://ftp.u-aizu.ac.jp/pub/graphics/image/ImageMagick/imagemagick.org/ \
-                            ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
-                            ftp://sunsite.icm.edu.pl/packages/ImageMagick
-
-checksums                   rmd160  4bc81090ea861f92900a33aea310c4306be5785a \
-                            sha256  fec2d279c067ab2cf453589dd225e1cb7d5cfaffb7acfec529f911fc72bf9c4f \
-                            size    9071596
+                            ftp://sunsite.icm.edu.pl/packages/ImageMagick/
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -66,7 +64,8 @@ depends_lib                 port:bzip2 \
                             port:openjpeg \
                             port:openexr \
                             port:expat \
-                            port:libxml2
+                            port:libxml2 \
+                            port:libheif
 
 # Magick-config etc. use pkg-config
 depends_lib-append          port:pkgconfig
@@ -99,6 +98,8 @@ configure.args              --enable-shared \
                             --with-zlib \
                             --with-modules \
                             --with-xml \
+                            --with-heic \
+                            --without-gcc-arch \
                             --without-perl \
                             --without-fpx \
                             --without-wmf \
@@ -107,6 +108,7 @@ configure.args              --enable-shared \
                             --without-lqr \
                             --without-pango \
                             --without-x \
+                            --without-zstd \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts \
                             --disable-openmp
 
@@ -162,7 +164,6 @@ variant x11 {
 
 default_variants            +x11
 
-livecheck.version           ${reasonable_version}
 livecheck.type              regex
 livecheck.url               [lindex ${master_sites} 0]
-livecheck.regex             ${name}-(6(?:\\.\\d+)*)(?:-\\d+)?
+livecheck.regex             ${name}-(6(?:\\.\\d+)+(?:-\\d+)?)\.tar

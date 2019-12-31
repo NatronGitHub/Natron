@@ -1,6 +1,6 @@
---- Portfile.orig	2019-08-24 19:31:15.000000000 -0700
-+++ Portfile	2019-08-24 19:32:01.000000000 -0700
-@@ -1,38 +1,67 @@
+--- Portfile.orig	2019-12-20 23:17:22.000000000 -0800
++++ Portfile	2019-12-20 23:17:56.000000000 -0800
+@@ -1,44 +1,67 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
 -PortSystem          1.0
@@ -8,7 +8,7 @@
  
  name                libraw
 -version             0.19.5
--revision            0
+-revision            1
 -
 -description         Library for RAW image manipulation
 -long_description    A library for reading RAW files obtained from digital photo \
@@ -55,6 +55,12 @@
 +                    path:lib/libjpeg.dylib:jpeg \
                      port:lcms2
  
+-# disable openmp as it is not consistently applicable in MacPorts at present
+-configure.args-append --disable-openmp
+-
+-# don't hardcode a link against libstc++
+-patchfiles-append   patch-libraw-no-libstdcxx.diff
+-
  post-destroot {
      set htmlDir ${destroot}${prefix}/share/doc/${name}/html
      xinstall -d -m 0755 ${htmlDir}

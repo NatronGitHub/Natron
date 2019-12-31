@@ -54,14 +54,13 @@ Features
 - OpenFX: Currently almost all features of OpenFX v1.4 are supported
 
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user
-interface.  It is possible to customize and separate on any number of screens the graphical user interface.
-You can re-use your layouts and share your layout files (.nl)
+interface.  It is possible to customize and separate the graphical user interface on any number of screens.
+You can re-use your layouts and share your layout files (.nl).
 
-- Performances:  Never wait for anything to be rendered, in Natron anything you do produces
-real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e:
-the render pipeline can be computed at lower res to speed-up rendering).
+- Performance:  Never wait for anything to be rendered. In Natron, anything you do produces
+real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e the render pipeline can be computed at lower res to speed-up rendering).
 
-- Multi-task: Natron can render multiple graphs at the same time, it can also be used
+- Multi-task: Natron can render multiple graphs at the same time. It can also be used
 as a background process in command-line mode without any display support (e.g. for render farm purpose).
 
 - Recover easily from bugs: Natron sometimes crashes. Fear not, an  auto-save system
