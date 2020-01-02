@@ -1,0 +1,38 @@
+diff -Naur jasper-version-2.0.10-orig/CMakeLists.txt jasper-version-2.0.10/CMakeLists.txt
+--- jasper-version-2.0.10-orig/CMakeLists.txt	2016-12-30 19:40:24.000000000 +0300
++++ jasper-version-2.0.10/CMakeLists.txt	2017-02-22 13:25:53.443469100 +0300
+@@ -319,11 +319,12 @@
+ # Check for the Math library.
+ ################################################################################
+ 
+-find_library(MATH_LIBRARY m)
+-if (NOT MATH_LIBRARY)
+-	set(MATH_LIBRARY "")
++if(NOT WIN32)
++    find_library(MATH_LIBRARY m)
++    if (NOT MATH_LIBRARY)
++        set(MATH_LIBRARY "")
++    endif()
+ endif()
+-
+ ################################################################################
+ #
+ ################################################################################
+diff -Naur jasper-version-2.0.10-orig/src/libjasper/CMakeLists.txt jasper-version-2.0.10/src/libjasper/CMakeLists.txt
+--- jasper-version-2.0.10-orig/src/libjasper/CMakeLists.txt	2016-12-30 19:40:24.000000000 +0300
++++ jasper-version-2.0.10/src/libjasper/CMakeLists.txt	2017-02-22 13:28:15.983985500 +0300
+@@ -145,6 +145,14 @@
+ )
+ 
+ set_target_properties(libjasper PROPERTIES OUTPUT_NAME jasper)
++
++if (MINGW)
++    set_target_properties(libjasper
++                          PROPERTIES
++                          OUTPUT_NAME jasper
++                          RUNTIME_OUTPUT_NAME jasper-${JAS_SO_VERSION}
++                          ARCHIVE_OUTPUT_NAME jasper)
++endif()
+ set_target_properties(libjasper PROPERTIES LINKER_LANGUAGE C)
+ 
+ if (UNIX)

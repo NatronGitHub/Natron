@@ -1,0 +1,11 @@
+--- gdk-pixbuf-2.38.0/gdk-pixbuf/meson.build.orig	2018-10-28 11:18:07.521967800 +0100
++++ gdk-pixbuf-2.38.0/gdk-pixbuf/meson.build	2018-10-28 11:18:22.153804700 +0100
+@@ -135,7 +135,7 @@
+ 
+ # List of formats supported by the native Windows components-based loader(s)
+ windows_native_loader_formats = [ 'bmp', 'emf', 'gif', 'ico', 'jpeg', 'tiff', 'wmf' ]
+-windows_base_loader_sources = [ 'io-gdip-utils.c', 'io-gdip-animation.c' ]
++windows_base_loader_sources = [ 'io-gdip-utils.c', 'io-gdip-animation.c' ] + gdkpixbuf_enums
+ 
+ # Build the loaders using native Windows components as static modules, if requested
+ if native_windows_loaders

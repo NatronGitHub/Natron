@@ -1,0 +1,23 @@
+--- a/src/libjasper/include/jasper/jas_config.h.in
++++ b/src/libjasper/include/jasper/jas_config.h.in
+@@ -0,6 +0,8 @@
+ #ifndef JAS_CONFIG_H
+ #define JAS_CONFIG_H
+ 
++#ifndef JAS_DLL
+ #cmakedefine JAS_DLL 1
++#endif
+ 
+ #include <jasper/jas_dll.h>
+ 
+--- a/src/libjasper/include/jasper/jas_dll.h
++++ b/src/libjasper/include/jasper/jas_dll.h
+@@ -0,7 +0,7 @@
+ #ifndef JAS_DLL_H
+ #define JAS_DLL_H
+ 
+-#if defined(JAS_DLL)
++#if JAS_DLL
+ 	#if defined(_WIN32)
+ 		#if defined(JAS_BUILDING_DLL)
+ 			#define JAS_DLLEXPORT __declspec(dllexport)

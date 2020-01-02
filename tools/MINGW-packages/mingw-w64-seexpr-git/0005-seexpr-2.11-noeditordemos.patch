@@ -1,0 +1,20 @@
+--- SeExpr-2.11/CMakeLists.txt.orig	2017-12-01 16:12:26.000000000 +0100
++++ SeExpr-2.11/CMakeLists.txt	2017-12-01 16:13:10.000000000 +0100
+@@ -84,10 +84,8 @@
+ ## Make modules able to see seexpr library
+ # Setup environment variable to link seexpr
+ SET( SEEXPR_LIBRARIES SeExpr )
+-SET( SEEXPR_EDITOR_LIBRARIES SeExprEditor )
+ # make it so seexpr can be found
+ INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/src/SeExpr )
+-INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/src/SeExprEditor )
+ 
+ # The library directory is configured by setting CMAKE_INSTALL_LIBDIR.
+ # Otherwise, the defaults set here are used.
+@@ -99,6 +97,4 @@
+ 
+ ## Traverse subdirectories
+ ADD_SUBDIRECTORY (src/SeExpr)
+-ADD_SUBDIRECTORY (src/SeExprEditor)
+ ADD_SUBDIRECTORY (src/doc)
+-ADD_SUBDIRECTORY (src/demos)

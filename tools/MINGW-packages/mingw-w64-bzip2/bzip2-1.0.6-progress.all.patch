@@ -1,0 +1,163 @@
+Ripped from Mandrake
+
+http://bugs.gentoo.org/82192
+
+--- bzip2-1.0.6/bzip2.1
++++ bzip2-1.0.6/bzip2.1
+@@ -235,6 +235,10 @@
+ Suppress non-essential warning messages.  Messages pertaining to
+ I/O errors and other critical events will not be suppressed.
+ .TP
++.B \-p \-\-show\-progress
++Show percentage of input\-file done and while compressing show the percentage
++of the original file the new file is.
++.TP
+ .B \-v --verbose
+ Verbose mode -- show the compression ratio for each file processed.
+ Further \-v's increase the verbosity level, spewing out lots of
+--- bzip2-1.0.6/bzip2.c
++++ bzip2-1.0.6/bzip2.c
+@@ -145,6 +145,7 @@
+ #include <signal.h>
+ #include <math.h>
+ #include <errno.h>
++#include <time.h>
+ #include <ctype.h>
+ #include "bzlib.h"
+ 
+@@ -301,6 +302,7 @@
+ Char    progNameReally[FILE_NAME_LEN];
+ FILE    *outputHandleJustInCase;
+ Int32   workFactor;
++Char    showProgress;
+ 
+ static void    panic                 ( Char* )   NORETURN;
+ static void    ioError               ( void )    NORETURN;
+@@ -425,6 +427,12 @@
+    UInt32  nbytes_in_lo32, nbytes_in_hi32;
+    UInt32  nbytes_out_lo32, nbytes_out_hi32;
+    Int32   bzerr, bzerr_dummy, ret;
++   double  fileSize = 0; /* initialized to make the compiler stop crying */
++                         /* double because big files might otherwhise give
++                          * overflows. not long long since not all compilers
++                          * support that one
++                          */
++   time_t  startTime, currentTime;
+ 
+    SET_BINARY_MODE(stream);
+    SET_BINARY_MODE(zStream);
+@@ -432,12 +440,21 @@
+    if (ferror(stream)) goto errhandler_io;
+    if (ferror(zStream)) goto errhandler_io;
+ 
++   if ((srcMode == SM_F2F || srcMode == SM_F2O) && showProgress == True) {
++      (void)fseek(stream, 0, SEEK_END);
++      fileSize = ftello(stream);
++      rewind(stream);
++      if (verbosity >= 1)
++         fprintf(stderr, "Input-file size: %ld\n", (long)fileSize);
++   }
++
+    bzf = BZ2_bzWriteOpen ( &bzerr, zStream, 
+                            blockSize100k, verbosity, workFactor );   
+    if (bzerr != BZ_OK) goto errhandler;
+ 
+    if (verbosity >= 2) fprintf ( stderr, "\n" );
+ 
++   time(&startTime);
+    while (True) {
+ 
+       if (myfeof(stream)) break;
+@@ -446,6 +463,22 @@
+       if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );
+       if (bzerr != BZ_OK) goto errhandler;
+ 
++      if ((srcMode == SM_F2F || srcMode == SM_F2O) && showProgress == True) {
++         time(&currentTime);
++
++         if ((currentTime - startTime) > 1) { /* show progress every 2 seconds */
++            double curInPos = ftello(stream);
++            double curOutPos = ftello(zStream);
++
++            startTime = currentTime;
++
++            fprintf(stderr, "%.2f%% done", (curInPos * 100.0) / fileSize);
++            if (srcMode == SM_F2F)
++               fprintf(stderr, ", new size: %.2f%%", (curOutPos * 100.0) / curInPos);
++
++            fprintf(stderr, "    \r");
++         }
++      }
+    }
+ 
+    BZ2_bzWriteClose64 ( &bzerr, bzf, 0, 
+@@ -526,6 +559,8 @@
+    UChar   unused[BZ_MAX_UNUSED];
+    Int32   nUnused;
+    UChar*  unusedTmp;
++   double  fileSize = 0; /* initialized to make the compiler stop crying */
++   time_t  startTime, currentTime;
+ 
+    nUnused = 0;
+    streamNo = 0;
+@@ -533,9 +568,19 @@
+    SET_BINARY_MODE(stream);
+    SET_BINARY_MODE(zStream);
+ 
++   if ((srcMode == SM_F2F || srcMode == SM_F2O) && showProgress == True) {
++      off_t dummy = ftello(zStream);
++      (void)fseeko(zStream, 0, SEEK_END);
++      fileSize = ftello(zStream);
++      (void)fseeko(zStream, dummy, SEEK_SET);
++      if (verbosity >= 1)
++         fprintf(stderr, "Input-file size: %ld\n", (long)fileSize);
++   }
++
+    if (ferror(stream)) goto errhandler_io;
+    if (ferror(zStream)) goto errhandler_io;
+ 
++   time(&startTime);
+    while (True) {
+ 
+       bzf = BZ2_bzReadOpen ( 
+@@ -551,6 +596,16 @@
+          if ((bzerr == BZ_OK || bzerr == BZ_STREAM_END) && nread > 0)
+             fwrite ( obuf, sizeof(UChar), nread, stream );
+          if (ferror(stream)) goto errhandler_io;
++
++         if ((srcMode == SM_F2F || srcMode == SM_F2O) && showProgress == True) {
++            time(&currentTime);
++            if ((currentTime - startTime) >= 2) {
++               double curInPos = ftello(zStream);
++               startTime = currentTime;
++
++               fprintf(stderr, "%.2f%% done\r", (curInPos * 100.0) / fileSize);
++            }
++         }
+       }
+       if (bzerr != BZ_STREAM_END) goto errhandler;
+ 
+@@ -1872,6 +1927,7 @@
+    deleteOutputOnInterrupt = False;
+    exitValue               = 0;
+    i = j = 0; /* avoid bogus warning from egcs-1.1.X */
++   showProgress            = False;
+ 
+    /*-- Set up signal handlers for mem access errors --*/
+    signal (SIGSEGV, mySIGSEGVorSIGBUScatcher);
+@@ -1949,6 +2005,7 @@
+                case 'k': keepInputFiles   = True; break;
+                case 's': smallMode        = True; break;
+                case 'q': noisy            = False; break;
++               case 'p': showProgress     = True; break;
+                case '1': blockSize100k    = 1; break;
+                case '2': blockSize100k    = 2; break;
+                case '3': blockSize100k    = 3; break;
+@@ -1985,6 +2042,7 @@
+       if (ISFLAG("--keep"))              keepInputFiles   = True;    else
+       if (ISFLAG("--small"))             smallMode        = True;    else
+       if (ISFLAG("--quiet"))             noisy            = False;   else
++      if (ISFLAG("--show-progress"))     showProgress     = True;    else
+       if (ISFLAG("--version"))           license();                  else
+       if (ISFLAG("--license"))           license();                  else
+       if (ISFLAG("--exponential"))       workFactor = 1;             else 

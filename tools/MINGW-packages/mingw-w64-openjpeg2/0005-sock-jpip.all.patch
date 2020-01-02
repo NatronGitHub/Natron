@@ -1,0 +1,11 @@
+--- openjpeg-2.3.1/src/lib/openjpip/sock_manager.c.orig	2019-04-04 03:29:40.223754700 -0400
++++ openjpeg-2.3.1/src/lib/openjpip/sock_manager.c	2019-04-04 03:35:01.793021400 -0400
+@@ -29,6 +29,8 @@
+  */
+ 
+ #ifdef _WIN32
++#include <winsock2.h>
++#include <ws2tcpip.h>
+ #include <windows.h>
+ #ifdef _MSC_VER
+ typedef SSIZE_T ssize_t;

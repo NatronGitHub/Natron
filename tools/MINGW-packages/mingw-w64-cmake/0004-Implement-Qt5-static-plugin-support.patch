@@ -1,0 +1,378 @@
+From 34b900087c505d65b54a429abcba7f7526ce1ba4 Mon Sep 17 00:00:00 2001
+From: Ray Donnelly <mingw.android@gmail.com>
+Date: Mon, 3 Aug 2015 22:00:16 +0100
+Subject: [PATCH 4/8] Implement Qt5 static plugin support
+
+Enabled via a new target property "AUTOSTATICPLUGINS".
+
+At CMake execution time, a C++ file is created to link the
+static plugins. For this to work, patches for Qt5-static
+from [1] are necessary [2], [3] and [4]
+
+[1] https://github.com/Alexpux/MINGW-packages/tree/master/mingw-w64-qt5-static
+[2] 0038-qt-5.4.0-Make-it-possible-to-use-static-builds-of-Qt-with-CMa.patch
+[3] 0039-qt-5.4.0-Generate-separated-libraries-in-prl-files-for-CMake.patch
+[4] 0041-qt-5.4.0-static-cmake-also-link-plugins-and-plugin-deps.patch
+
+.. and also some more minor ones that aren't strictly related to Qt5 static
+CMake but are necessary for this to work on MinGW-w64 (0040- for example).
+---
+ Source/cmQtAutoGenGlobalInitializer.h   | 2  ++
+ Source/cmQtAutoGenGlobalInitializer.cxx | 18 +++++++++++++-----
+ Source/cmGlobalGenerator.cxx            |  6 ++--
+ Source/cmQtAutoGen.h                    |  3 +-
+ Source/cmQtAutoGenInitializer.cxx       | 65 ++++++++++++++++++++++++++++++++++++-
+ Source/cmQtAutoGenInitializer.h         |  2 ++
+ Source/cmTarget.cxx                     |  1 +
+ Source/cmTargetPropertyComputer.cxx     |  1 +
+ 8 files changed, 86 insertions(+), 9 deletions(-)
+
+diff --git a/Source/cmQtAutoGenGlobalInitializer.h b/Source/cmQtAutoGenGlobalInitializer.h
+index c805b98d7..aa50eebc8 100644
+--- a/Source/cmQtAutoGenGlobalInitializer.h
++++ b/Source/cmQtAutoGenGlobalInitializer.h
+@@ -28,10 +28,12 @@
+     std::string AUTOMOC;
+     std::string AUTOUIC;
+     std::string AUTORCC;
++    std::string AUTOSTATICPLUGINS;
+ 
+     std::string AUTOMOC_EXECUTABLE;
+     std::string AUTOUIC_EXECUTABLE;
+     std::string AUTORCC_EXECUTABLE;
++    std::string AUTOSTATICPLUGINS_EXECUTABLE;
+ 
+     std::string SKIP_AUTOGEN;
+     std::string SKIP_AUTOMOC;
+diff --git a/Source/cmQtAutoGenGlobalInitializer.cxx b/Source/cmQtAutoGenGlobalInitializer.cxx
+index c805b98d7..aa50eebc8 100644
+--- a/Source/cmQtAutoGenGlobalInitializer.cxx
++++ b/Source/cmQtAutoGenGlobalInitializer.cxx
+@@ -24,9 +24,11 @@
+   : AUTOMOC("AUTOMOC")
+   , AUTOUIC("AUTOUIC")
+   , AUTORCC("AUTORCC")
++  , AUTOSTATICPLUGINS("AUTOSTATICPLUGINS")
+   , AUTOMOC_EXECUTABLE("AUTOMOC_EXECUTABLE")
+   , AUTOUIC_EXECUTABLE("AUTOUIC_EXECUTABLE")
+   , AUTORCC_EXECUTABLE("AUTORCC_EXECUTABLE")
++  , AUTOSTATICPLUGINS_EXECUTABLE("AUTOSTATICPLUGINS_EXECUTABLE")
+   , SKIP_AUTOGEN("SKIP_AUTOGEN")
+   , SKIP_AUTOMOC("SKIP_AUTOMOC")
+   , SKIP_AUTOUIC("SKIP_AUTOUIC")
+@@ -77,13 +77,16 @@ cmQtAutoGenGlobalInitializer::cmQtAutoGenGlobalInitializer(
+       bool const moc = target->GetPropertyAsBool(kw().AUTOMOC);
+       bool const uic = target->GetPropertyAsBool(kw().AUTOUIC);
+       bool const rcc = target->GetPropertyAsBool(kw().AUTORCC);
+-      if (moc || uic || rcc) {
++      bool const staticPlugins = target->GetPropertyAsBool(kw().AUTOSTATICPLUGINS);
++      if (moc || uic || rcc || staticPlugins) {
+         std::string const mocExec =
+           target->GetSafeProperty(kw().AUTOMOC_EXECUTABLE);
+         std::string const uicExec =
+           target->GetSafeProperty(kw().AUTOUIC_EXECUTABLE);
+         std::string const rccExec =
+           target->GetSafeProperty(kw().AUTORCC_EXECUTABLE);
++        std::string const staticPluginsExec =
++          target->GetSafeProperty(kw().AUTOSTATICPLUGINS_EXECUTABLE);
+ 
+         // We support Qt4, Qt5 and Qt6
+         auto qtVersion = cmQtAutoGenInitializer::GetQtVersion(target);
+@@ -93,18 +96,21 @@ cmQtAutoGenGlobalInitializer::cmQtAutoGenGlobalInitializer(
+         bool const mocAvailable = (validQt || !mocExec.empty());
+         bool const uicAvailable = (validQt || !uicExec.empty());
+         bool const rccAvailable = (validQt || !rccExec.empty());
++        bool const staticPluginsAvailable = (validQt || !staticPluginsExec.empty());
+         bool const mocIsValid = (moc && mocAvailable);
+         bool const uicIsValid = (uic && uicAvailable);
+         bool const rccIsValid = (rcc && rccAvailable);
++        bool const staticPluginsIsValid = (staticPlugins && staticPluginsAvailable);
+         // Disabled AUTOMOC/UIC/RCC warning
+         bool const mocDisabled = (moc && !mocAvailable);
+         bool const uicDisabled = (uic && !uicAvailable);
+         bool const rccDisabled = (rcc && !rccAvailable);
+-        if (mocDisabled || uicDisabled || rccDisabled) {
++        bool const staticPluginsDisabled = (staticPlugins && !staticPluginsAvailable);
++        if (mocDisabled || uicDisabled || rccDisabled || staticPluginsDisabled) {
+           std::string msg = "AUTOGEN: No valid Qt version found for target ";
+           msg += target->GetName();
+           msg += ". ";
+-          msg += cmQtAutoGen::Tools(mocDisabled, uicDisabled, rccDisabled);
++          msg += cmQtAutoGen::Tools(mocDisabled, uicDisabled, rccDisabled, staticPluginsDisabled);
+           msg += " disabled.  Consider adding:\n";
+           {
+             std::string version = (qtVersion.second == 0)
+@@ -120,10 +126,10 @@ cmQtAutoGenGlobalInitializer::cmQtAutoGenGlobalInitializer(
+           msg += "to your CMakeLists.txt file.";
+           target->Makefile->IssueMessage(MessageType::AUTHOR_WARNING, msg);
+         }
+-        if (mocIsValid || uicIsValid || rccIsValid) {
++        if (mocIsValid || uicIsValid || rccIsValid || staticPluginsIsValid) {
+           // Create autogen target initializer
+           Initializers_.emplace_back(cm::make_unique<cmQtAutoGenInitializer>(
+-            this, target, qtVersion.first, mocIsValid, uicIsValid, rccIsValid,
++            this, target, qtVersion.first, mocIsValid, uicIsValid, rccIsValid, staticPluginsIsValid,
+             globalAutoGenTarget, globalAutoRccTarget));
+         }
+       }
+diff --git a/Source/cmQtAutoGen.cxx b/Source/cmQtAutoGen.cxx
+index 653caf75..680f7822 100644
+--- a/Source/cmQtAutoGen.cxx
++++ b/Source/cmQtAutoGen.cxx
+@@ -82,6 +82,7 @@ std::string const genNameGen = "AutoGen";
+   static const std::string AutoMoc("AutoMoc");
+   static const std::string AutoUic("AutoUic");
+   static const std::string AutoRcc("AutoRcc");
++  static const std::string AutoStaticPlugins("AutoStaticPlugins");
+ 
+   switch (genType) {
+     case GenT::GEN:
+@@ -91,6 +92,8 @@ std::string const& cmQtAutoGen::GeneratorName(GenT genType)
+       return AutoUic;
+     case GenT::RCC:
+       return AutoRcc;
++    case GenT::STATICPLUGINS:
++      return AutoStaticPlugins;
+   }
+   return AutoGen;
+ }
+@@ -102,6 +102,7 @@
+   static const std::string AUTOMOC("AUTOMOC");
+   static const std::string AUTOUIC("AUTOUIC");
+   static const std::string AUTORCC("AUTORCC");
++  static const std::string STATICPLUGINS("AUTOSTATICPLUGINS");
+ 
+   switch (genType) {
+     case GenT::GEN:
+@@ -112,11 +112,13 @@
+       return AUTOUIC;
+     case GenT::RCC:
+       return AUTORCC;
++    case GenT::STATICPLUGINS:
++      return STATICPLUGINS;
+   }
+   return AUTOGEN;
+ }
+ 
+-std::string cmQtAutoGen::Tools(bool moc, bool uic, bool rcc)
++std::string cmQtAutoGen::Tools(bool moc, bool uic, bool rcc, bool staticPlugins)
+ {
+   std::string res;
+   std::vector<std::string> lst;
+@@ -113,6 +116,9 @@ std::string cmQtAutoGen::Tools(bool moc, bool uic, bool rcc)
+   if (rcc) {
+     lst.emplace_back("AUTORCC");
+   }
++  if (staticPlugins) {
++    lst.emplace_back("AUTOSTATICPLUGINS");
++  }
+   switch (lst.size()) {
+     case 1:
+       res += lst.at(0);
+@@ -129,6 +135,15 @@ std::string cmQtAutoGen::Tools(bool moc, bool uic, bool rcc)
+       res += " and ";
+       res += lst.at(2);
+       break;
++    case 4:
++      res += lst.at(0);
++      res += ", ";
++      res += lst.at(1);
++      res += ", ";
++      res += lst.at(2);
++      res += " and ";
++      res += lst.at(3);
++      break;
+     default:
+       break;
+   }
+diff --git a/Source/cmQtAutoGen.h b/Source/cmQtAutoGen.h
+index 4118dc7..aae5f2f 100644
+--- a/Source/cmQtAutoGen.h
++++ b/Source/cmQtAutoGen.h
+@@ -25,7 +25,8 @@ public:
+     GEN, // AUTOGEN
+     MOC, // AUTOMOC
+     UIC, // AUTOUIC
+-    RCC  // AUTORCC
++    RCC, // AUTORCC
++    STATICPLUGINS
+   };
+ 
+   /// @brief Nested lists separator
+@@ -61,7 +61,7 @@ public:
+   static std::string GeneratorNameUpper(GenT genType);
+ 
+   /// @brief Returns a string with the requested tool names
+-  static std::string Tools(bool moc, bool uic, bool rcc);
++  static std::string Tools(bool moc, bool uic, bool rcc, bool staticPlugins);
+ 
+   /// @brief Returns the string escaped and enclosed in quotes
+   static std::string Quoted(std::string const& text);
+diff --git a/Source/cmQtAutoGenInitializer.cxx b/Source/cmQtAutoGenInitializer.cxx
+index 93c78b5bd..9e7349baa 100644
+--- a/Source/cmQtAutoGenInitializer.cxx
++++ b/Source/cmQtAutoGenInitializer.cxx
+@@ -217,7 +217,7 @@ void cmQtAutoGenInitializer::InfoWriter::WriteNestedLists(
+ cmQtAutoGenInitializer::cmQtAutoGenInitializer(
+   cmQtAutoGenGlobalInitializer* globalInitializer, cmGeneratorTarget* target,
+   IntegerVersion const& qtVersion, bool mocEnabled, bool uicEnabled,
+-  bool rccEnabled, bool globalAutogenTarget, bool globalAutoRccTarget)
++  bool rccEnabled, bool staticPluginsEnabled, bool globalAutogenTarget, bool globalAutoRccTarget)
+   : GlobalInitializer(globalInitializer)
+   , Target(target)
+   , QtVersion(qtVersion)
+@@ -226,6 +226,7 @@ cmQtAutoGenInitializer::cmQtAutoGenInitializer(
+   Moc.Enabled = mocEnabled;
+   Uic.Enabled = uicEnabled;
+   Rcc.Enabled = rccEnabled;
++  StaticPlugins.Enabled = staticPluginsEnabled;
+   Rcc.GlobalTarget = globalAutoRccTarget;
+ }
+ 
+@@ -853,7 +853,7 @@
+         msg += '\n';
+       }
+       msg += "from processing by ";
+-      msg += cmQtAutoGen::Tools(this->Moc.Enabled, this->Uic.Enabled, false);
++      msg += cmQtAutoGen::Tools(this->Moc.Enabled, this->Uic.Enabled, false, false);
+       msg += ". If any of the files should be processed, set CMP0071 to NEW. "
+              "If any of the files should not be processed, "
+              "explicitly exclude them by setting the source file property ";
+@@ -979,6 +979,13 @@ bool cmQtAutoGenInitializer::InitAutogenTarget()
+     autogenProvides.push_back(this->Moc.MocsCompilation);
+   }
+ 
++
++  // Add AutoStaticPlugins import to generated files list
++  if (this->StaticPlugins.Enabled) {
++    std::string staticPluginsComp = this->Dir.Build + "/plugin_import.cpp";
++    this->AddGeneratedSource(staticPluginsComp, GenT::STATICPLUGINS);
++  }
++
+   // Compose target comment
+   std::string autogenComment;
+   {
+@@ -1441,6 +1441,59 @@ bool cmQtAutoGenInitializer::SetupCustomTargets()
+     return false;
+   }
+ 
++  // Generate plugin static-link source files
++  if (this->StaticPlugins.Enabled)
++  {
++    /* in qt5-static/lib/cmake/Qt5Core/Qt5CoreConfig.cmake,
++     * macro(_populate_Core_plugin_properties ..), we'd have:
++     * set_property(TARGET PROPERTY AUTOSTATICPLUGINS True) // Not currently needed
++     * as defaults to "ON"
++     * set_property(TARGET Qt5::Core APPEND PROPERTY STATIC_PLUGINS ${Plugin})
++     */
++
++    std::vector<const cmGeneratorTarget*> libTargets =
++      this->Target->GetLinkImplementationClosure("");
++    std::vector<cmGeneratorTarget const*>::const_iterator li;
++    std::vector<std::string> staticPlugins;
++    for (li = libTargets.begin(); li != libTargets.end(); ++li) {
++      cmGeneratorTarget const* tgt = *li;
++      const char* staticPluginsProp = tgt->GetProperty("STATIC_PLUGINS");
++      if (staticPluginsProp) {
++        std::vector<std::string> staticPluginsTgt =
++          cmSystemTools::tokenize(staticPluginsProp, ";");
++        for (std::vector<std::string>::const_iterator spti =
++               staticPluginsTgt.begin();
++             spti != staticPluginsTgt.end(); ++spti) {
++          if (std::find(staticPlugins.begin(), staticPlugins.end(), *spti) ==
++              staticPlugins.end()) {
++            staticPlugins.push_back(*spti);
++          }
++        }
++      }
++    }
++
++    std::string static_plugins_output_file = this->Dir.Build + "/plugin_import.cpp";
++    cmGeneratedFileStream staticPluginsFileStream(
++      static_plugins_output_file.c_str());
++    if (staticPluginsFileStream) {
++      staticPluginsFileStream << "// This file is autogenerated by cmake. "
++                                 "It imports static plugin classes for"
++                              << std::endl;
++      staticPluginsFileStream
++        << "// static plugins specified using QTPLUGIN and "
++           "QT_PLUGIN_CLASS.<plugin> variables."
++        << std::endl;
++      staticPluginsFileStream << "#include <QtPlugin>" << std::endl;
++      for (std::vector<std::string>::const_iterator spti =
++             staticPlugins.begin();
++           spti != staticPlugins.end(); ++spti) {
++        staticPluginsFileStream << "Q_IMPORT_PLUGIN(" << *spti << ")"
++                                << std::endl;
++      }
++      staticPluginsFileStream.Close();
++    }
++  }
++
+   return true;
+ }
+ 
+diff --git a/Source/cmQtAutoGenInitializer.h b/Source/cmQtAutoGenInitializer.h
+index 2a47e46a4..1f21b3476 100644
+--- a/Source/cmQtAutoGenInitializer.h
++++ b/Source/cmQtAutoGenInitializer.h
+@@ -116,7 +116,7 @@ public:
+   cmQtAutoGenInitializer(cmQtAutoGenGlobalInitializer* globalInitializer,
+                          cmGeneratorTarget* target,
+                          IntegerVersion const& qtVersion, bool mocEnabled,
+-                         bool uicEnabled, bool rccEnabled,
++                         bool uicEnabled, bool rccEnabled, bool staticPluginsEnabled,
+                          bool globalAutogenTarget, bool globalAutoRccTarget);
+ 
+   bool InitCustomTargets();
+@@ -126,7 +126,7 @@
+   /// @brief If moc or uic is enabled, the autogen target will be generated
+   bool MocOrUicEnabled() const
+   {
+-    return (this->Moc.Enabled || this->Uic.Enabled);
++    return (this->Moc.Enabled || this->Uic.Enabled || this->StaticPlugins.Enabled);
+   }
+ 
+   bool InitMoc();
+@@ -236,6 +236,14 @@ private:
+     RccT()
+       : GenVarsT(GenT::RCC){};
+   } Rcc;
++
++  /// @brief StaticPlugins only variables
++  struct StaticPluginsT : public GenVarsT
++  {
++   /// @brief Constructor
++   StaticPluginsT()
++     : GenVarsT(GenT::STATICPLUGINS){};
++  } StaticPlugins;
+ };
+ 
+ #endif
+diff --git a/Source/cmTarget.cxx b/Source/cmTarget.cxx
+index cd11c4b14..1b0bfbdcd 100644
+--- a/Source/cmTarget.cxx
++++ b/Source/cmTarget.cxx
+@@ -287,6 +287,7 @@ cmTarget::cmTarget(std::string const& name, cmStateEnums::TargetType type,
+     InitProperty("AUTOMOC", nullptr);
+     InitProperty("AUTOUIC", nullptr);
+     InitProperty("AUTORCC", nullptr);
++    InitProperty("AUTOSTATICPLUGINS", nullptr);
+     InitProperty("AUTOGEN_ORIGIN_DEPENDS", nullptr);
+     InitProperty("AUTOGEN_PARALLEL", nullptr);
+     InitProperty("AUTOMOC_COMPILER_PREDEFINES", nullptr);
+diff --git a/Source/cmTargetPropertyComputer.cxx b/Source/cmTargetPropertyComputer.cxx
+index 06ce0b1e6..0e7ccb34e 100644
+--- a/Source/cmTargetPropertyComputer.cxx
++++ b/Source/cmTargetPropertyComputer.cxx
+@@ -68,6 +68,7 @@ bool cmTargetPropertyComputer::WhiteListedInterfaceProperty(
+     builtIns.insert("IMPORTED_GLOBAL");
+     builtIns.insert("MANUALLY_ADDED_DEPENDENCIES");
+     builtIns.insert("NAME");
++    builtIns.insert("STATIC_PLUGINS");
+     builtIns.insert("PRIVATE_HEADER");
+     builtIns.insert("PUBLIC_HEADER");
+     builtIns.insert("TYPE");
+-- 
+2.16.2.windows.1
+

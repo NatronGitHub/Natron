@@ -1,0 +1,11 @@
+--- srt-1.3.2/CMakeLists.txt.orig	2018-09-25 10:49:17.307164900 +0300
++++ srt-1.3.2/CMakeLists.txt	2018-09-25 10:57:40.362248600 +0300
+@@ -541,7 +541,7 @@
+ 	if (MICROSOFT)
+ 		target_link_libraries(${TARGET_srt}_shared PRIVATE ws2_32.lib)
+ 	elseif (MINGW)
+-		target_link_libraries(${TARGET_srt}_shared PRIVATE wsock32.lib ws2_32.lib)
++		target_link_libraries(${TARGET_srt}_shared PRIVATE wsock32 ws2_32)
+ 	elseif (APPLE)
+ 		set_property(TARGET ${TARGET_srt}_shared PROPERTY MACOSX_RPATH ON)
+ 	endif()

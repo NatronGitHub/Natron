@@ -1,0 +1,26 @@
+--- libmng-2.0.3/cmake/libmng.pc.cmake.orig	2015-07-14 14:58:28.186600000 +0300
++++ libmng-2.0.3/cmake/libmng.pc.cmake	2015-07-14 14:58:41.977000000 +0300
+@@ -8,4 +8,4 @@
+ Version: @MNG_VERSION@
+ Libs: -L${libdir} -lmng
+ Libs.private: @MNG_LIBS_PRIVATE@
+-Cflags: -I${includedir}
++Cflags: -I${includedir} @MNG_DEFINES@
+--- libmng-2.0.3/CMakeLists.txt.orig	2012-07-29 23:28:11.000000000 +0400
++++ libmng-2.0.3/CMakeLists.txt	2015-07-14 14:59:15.095800000 +0300
+@@ -342,6 +342,7 @@
+ #
+ #------------------ STATIC ---------------------
+ IF(BUILD_STATIC_LIBS)
++ SET(MNG_DEFINES "")
+  ADD_LIBRARY(${MNG_LIBRARY_NAME} STATIC
+   ${TARGET_FILES})
+  #
+@@ -387,6 +388,7 @@
+  IF(WIN32)
+ #-DMNG_BUILD_DLL or -DMNG_DLL or  -DMNG_USE_DLL : cnf. libmng_types.h
+   ADD_DEFINITIONS(-DMNG_BUILD_DLL)
++  SET(MNG_DEFINES "-DMNG_USE_DLL")
+  ENDIF(WIN32)
+ 
+  ADD_LIBRARY(${MNG_LIBRARY_NAME}-shared 

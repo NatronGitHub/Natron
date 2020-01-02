@@ -1,0 +1,37 @@
+--- pr/src/md/windows/ntdllmn.c	Tue Nov 12 04:52:34 2013
++++ pr/src/md/windows/ntdllmn.c	Tue Nov 26 11:22:28 2013
+@@ -30,6 +30,7 @@
+ 
+     switch (fdwReason) {
+         case DLL_PROCESS_ATTACH:
++#ifdef _MSC_VER
+             /*
+              * If lpvReserved is NULL, we are dynamically loaded
+              * and therefore can't use static thread-local storage.
+@@ -39,6 +40,13 @@
+             } else {
+                 _pr_use_static_tls = TRUE;
+             }
++#else
++            /* 
++             * No __declspec(thread) on mingw, so just use
++             * the Tls* API always.
++             */
++            _pr_use_static_tls = FALSE;
++#endif
+             break;
+         case DLL_THREAD_ATTACH:
+             break;
+--- pr/src/md/windows/w95cv.c	Tue Nov 12 04:52:34 2013
++++ pr/src/md/windows/w95cv.c	Tue Nov 26 11:31:18 2013
+@@ -18,7 +18,9 @@
+  */
+  
+ #include "primpl.h"
+-
++#if defined (__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
++#define CRITICAL_SECTION_NO_DEBUG_INFO 0x01000000
++#endif
+ /*
+  * AddThreadToCVWaitQueueInternal --
+  *

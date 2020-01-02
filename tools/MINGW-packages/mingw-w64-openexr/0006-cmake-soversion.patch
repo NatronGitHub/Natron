@@ -1,0 +1,266 @@
+--- a/IlmBase/CMakeLists.txt	2018-10-23 15:53:38.693870300 +0300
++++ b/IlmBase/CMakeLists.txt	2018-10-23 15:53:51.080292100 +0300
+@@ -173,7 +173,7 @@
+   include/OpenEXR
+ )
+ 
+-IF ( NOT WIN32 )
++IF ( NOT MSVC )
+   FILE ( WRITE ${CMAKE_BINARY_DIR}/IlmBase.pc "prefix=${CMAKE_INSTALL_PREFIX}\n" )
+   FILE ( APPEND ${CMAKE_BINARY_DIR}/IlmBase.pc "exec_prefix=\${prefix}
+ libdir=\${exec_prefix}/lib
+@@ -183,8 +183,8 @@
+ Name: IlmBase
+ Description: Base math and exception libraries
+ Version: ${ILMBASE_VERSION}
+-Libs: -L\${libdir} -lImath${ILMBASE_LIBSUFFIX} -lIexMath${ILMBASE_LIBSUFFIX} -lHalf${ILMBASE_LIBSUFFIX} -lIex${ILMBASE_LIBSUFFIX} -lIlmThread${ILMBASE_LIBSUFFIX} -pthread
+-Cflags: -pthread -I\${OpenEXR_includedir}
++Libs: -L\${libdir} -lImath -lIexMath -lHalf -lIex -lIlmThread
++Cflags: -I\${OpenEXR_includedir}
+ ")
+ 
+   INSTALL ( FILES
+--- a/IlmBase/Half/CMakeLists.txt	2018-10-23 15:55:14.752839600 +0300
++++ b/IlmBase/Half/CMakeLists.txt	2018-10-23 15:56:08.901534700 +0300
+@@ -44,7 +44,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "Half${ILMBASE_LIBSUFFIX}"
++    OUTPUT_NAME Half
++    RUNTIME_OUTPUT_NAME "Half${ILMBASE_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME Half
+     )
+ 
+   ADD_DEPENDENCIES ( Half toFloat eLut )
+@@ -60,7 +62,7 @@
+   SET_TARGET_PROPERTIES ( Half_static
+     PROPERTIES
+     VERSION ${ILMBASE_VERSION_MAJOR}.${ILMBASE_VERSION_MINOR}.${ILMBASE_VERSION_PATCH}
+-    OUTPUT_NAME "Half${ILMBASE_LIBSUFFIX}_s"
++    OUTPUT_NAME "Half"
+     )
+ 
+   ADD_DEPENDENCIES ( Half_static toFloat eLut )
+--- a/IlmBase/Iex/CMakeLists.txt	2018-10-23 15:57:06.950036500 +0300
++++ b/IlmBase/Iex/CMakeLists.txt	2018-10-23 15:58:28.045378300 +0300
+@@ -19,7 +19,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "Iex${ILMBASE_LIBSUFFIX}"
++    OUTPUT_NAME Iex
++    RUNTIME_OUTPUT_NAME "Iex${ILMBASE_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME Iex
+     )
+ ENDIF()
+ 
+@@ -34,7 +36,7 @@
+   SET_TARGET_PROPERTIES ( Iex_static
+     PROPERTIES
+     VERSION ${ILMBASE_VERSION_MAJOR}.${ILMBASE_VERSION_MINOR}.${ILMBASE_VERSION_PATCH}
+-    OUTPUT_NAME "Iex${ILMBASE_LIBSUFFIX}_s"
++    OUTPUT_NAME "Iex"
+     )
+ ENDIF()
+ 
+--- a/IlmBase/IexMath/CMakeLists.txt	2018-10-23 15:57:52.651716400 +0300
++++ b/IlmBase/IexMath/CMakeLists.txt	2018-10-23 15:59:26.779481500 +0300
+@@ -21,7 +21,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "IexMath${ILMBASE_LIBSUFFIX}"
++    OUTPUT_NAME IexMath
++    RUNTIME_OUTPUT_NAME "IexMath${ILMBASE_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME IexMath
+     )
+ ENDIF ()
+ 
+@@ -36,7 +38,7 @@
+   SET_TARGET_PROPERTIES ( IexMath_static
+     PROPERTIES
+     VERSION ${ILMBASE_VERSION_MAJOR}.${ILMBASE_VERSION_MINOR}.${ILMBASE_VERSION_PATCH}
+-    OUTPUT_NAME "IexMath${ILMBASE_LIBSUFFIX}_s"
++    OUTPUT_NAME "IexMath"
+     )
+ ENDIF( )
+ 
+--- a/IlmBase/IlmThread/CMakeLists.txt	2018-10-23 15:00:28.454066100 +0300
++++ b/IlmBase/IlmThread/CMakeLists.txt	2018-10-23 16:00:36.355603700 +0300
+@@ -37,7 +37,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "IlmThread${ILMBASE_LIBSUFFIX}"
++    OUTPUT_NAME IlmThread
++    RUNTIME_OUTPUT_NAME "IlmThread${ILMBASE_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME IlmThread
+     )
+ ENDIF ()
+ 
+@@ -49,7 +51,7 @@
+   SET_TARGET_PROPERTIES ( IlmThread_static
+     PROPERTIES
+     VERSION ${ILMBASE_VERSION_MAJOR}.${ILMBASE_VERSION_MINOR}.${ILMBASE_VERSION_PATCH}
+-    OUTPUT_NAME "IlmThread${ILMBASE_LIBSUFFIX}_s"
++    OUTPUT_NAME "IlmThread"
+     )
+ ENDIF ()
+ 
+--- a/IlmBase/Imath/CMakeLists.txt	2018-10-23 15:00:28.454066100 +0300
++++ b/IlmBase/Imath/CMakeLists.txt	2018-10-23 16:01:33.202103600 +0300
+@@ -25,7 +25,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "Imath${ILMBASE_LIBSUFFIX}"
++    OUTPUT_NAME Imath
++    RUNTIME_OUTPUT_NAME "Imath${ILMBASE_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME Imath
+     )
+ ENDIF ()
+ 
+@@ -37,7 +39,7 @@
+   SET_TARGET_PROPERTIES ( Imath_static
+     PROPERTIES
+     VERSION ${ILMBASE_VERSION_MAJOR}.${ILMBASE_VERSION_MINOR}.${ILMBASE_VERSION_PATCH}
+-    OUTPUT_NAME "Imath${ILMBASE_LIBSUFFIX}_s"
++    OUTPUT_NAME "Imath"
+     )
+ ENDIF ()
+ 
+diff -Naur a/OpenEXR/CMakeLists.txt b/OpenEXR/CMakeLists.txt
+--- a/OpenEXR/CMakeLists.txt	2013-11-25 23:49:53.000000000 +0400
++++ b/OpenEXR/CMakeLists.txt	2014-05-28 16:55:20.527800000 +0400
+@@ -235,3 +235,24 @@
+   DESTINATION
+   ${CMAKE_INSTALL_PREFIX}/share/doc/OpenEXR-${OPENEXR_VERSION}/examples
+   )
++
++FILE ( WRITE ${CMAKE_BINARY_DIR}/OpenEXR.pc "prefix=${CMAKE_INSTALL_PREFIX}\n" )
++FILE ( APPEND ${CMAKE_BINARY_DIR}/OpenEXR.pc "exec_prefix=\${prefix}
++libdir=\${exec_prefix}/lib
++includedir=\${prefix}/include
++OpenEXR_includedir=\${prefix}/include/OpenEXR
++
++Name: OpenEXR
++Description: OpenEXR image library
++Version: ${OPENEXR_VERSION}
++Libs: -L\${libdir} -lIlmImf
++Cflags: -I\${OpenEXR_includedir}
++Requires: IlmBase
++Libs.private: -lz
++")
++
++INSTALL ( FILES
++  ${CMAKE_BINARY_DIR}/OpenEXR.pc
++  DESTINATION
++  ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
++)
+diff -Naur a/OpenEXR/IlmImf/CMakeLists.txt b/OpenEXR/IlmImf/CMakeLists.txt
+--- a/OpenEXR/IlmImf/CMakeLists.txt	2013-11-25 23:49:53.000000000 +0400
++++ b/OpenEXR/IlmImf/CMakeLists.txt	2014-05-28 16:55:20.527800000 +0400
+@@ -213,7 +213,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "IlmImf${OPENEXR_LIBSUFFIX}"
++    OUTPUT_NAME IlmImf
++    RUNTIME_OUTPUT_NAME "IlmImf${OPENEXR_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME IlmImf
+     )
+ 
+   IF (BUILD_DWALOOKUPS)
+@@ -234,7 +234,7 @@
+   SET_TARGET_PROPERTIES ( IlmImf_static
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
+-    OUTPUT_NAME "IlmImf${OPENEXR_LIBSUFFIX}_s"
++    OUTPUT_NAME "IlmImf"
+     )
+     SET_ILMBASE_INCLUDE_DIRS(IlmImf_static)
+ 
+diff -Naur a/OpenEXR/IlmImfUtil/CMakeLists.txt b/OpenEXR/IlmImfUtil/CMakeLists.txt
+--- a/OpenEXR/IlmImfUtil/CMakeLists.txt	2013-11-25 23:49:53.000000000 +0400
++++ b/OpenEXR/IlmImfUtil/CMakeLists.txt	2014-05-28 16:55:20.527800000 +0400
+@@ -45,7 +45,9 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "IlmImfUtil${OPENEXR_LIBSUFFIX}"
++    OUTPUT_NAME IlmImfUtil
++    RUNTIME_OUTPUT_NAME "IlmImfUtil${OPENEXR_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME IlmImfUtil
+     )
+ ENDIF()
+ 
+@@ -60,7 +60,7 @@
+     PROPERTIES
+     VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
+     SOVERSION ${OPENEXR_SOVERSION}
+-    OUTPUT_NAME "IlmImfUtil${OPENEXR_LIBSUFFIX}_s"
++    OUTPUT_NAME "IlmImfUtil"
+     )
+ ENDIF()
+ 
+diff -Naur a/PyIlmBase/PyIex/CMakeLists.txt b/PyIlmBase/PyIex/CMakeLists.txt
+--- a/PyIlmBase/PyIex/CMakeLists.txt	2013-11-25 23:49:53.000000000 +0400
++++ b/PyIlmBase/PyIex/CMakeLists.txt	2014-05-28 16:55:20.527800000 +0400
+@@ -1,6 +1,14 @@
+ 
+ ADD_LIBRARY ( PyIex ${LIB_TYPE} PyIex.cpp)
+ 
++SET_TARGET_PROPERTIES(PyIex
++    PROPERTIES
++    VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
++    OUTPUT_NAME PyIex
++    RUNTIME_OUTPUT_NAME "PyIex${OPENEXR_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME PyIex
++)
++
+ target_compile_definitions( PyIex PRIVATE PYIEX_BUILD )
+ 
+ IF (WIN32)
+@@ -17,8 +17,9 @@
+ )
+ 
+ INSTALL ( TARGETS PyIex
+-	DESTINATION
+-	lib
++   ARCHIVE DESTINATION lib
++   LIBRARY DESTINATION lib
++   RUNTIME DESTINATION bin
+ )
+ 
+ INSTALL (
+diff -Naur a/PyIlmBase/PyImath/CMakeLists.txt b/PyIlmBase/PyImath/CMakeLists.txt
+--- a/PyIlmBase/PyImath/CMakeLists.txt	2013-11-25 23:49:53.000000000 +0400
++++ b/PyIlmBase/PyImath/CMakeLists.txt	2014-05-28 16:55:20.527800000 +0400
+@@ -31,6 +31,14 @@
+     PyImathVec4si.cpp
+ )
+ 
++SET_TARGET_PROPERTIES(PyImath
++    PROPERTIES
++    VERSION ${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR}.${OPENEXR_VERSION_PATCH}
++    OUTPUT_NAME PyImath
++    RUNTIME_OUTPUT_NAME "PyImath${OPENEXR_LIBSUFFIX}"
++    ARCHIVE_OUTPUT_NAME PyImath
++)
++
+ target_compile_definitions( PyImath PRIVATE -DPYIMATH_BUILD )
+ 
+ IF (WIN32)
+@@ -53,8 +53,9 @@
+ )
+ 
+ INSTALL ( TARGETS PyImath
+-	DESTINATION
+-	lib
++   ARCHIVE DESTINATION lib
++   LIBRARY DESTINATION lib
++   RUNTIME DESTINATION bin
+ )
+ 
+ INSTALL (DIRECTORY ./

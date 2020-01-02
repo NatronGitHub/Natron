@@ -1,0 +1,9 @@
+--- a/zlib-1.2.7/zlib.pc.in.orig	2013-03-31 22:30:40 +0400
++++ b/zlib-1.2.7/zlib.pc.in	2013-04-03 02:06:26 +0400
+@@ -9,5 +9,5 @@
+ Version: @VERSION@
+ 
+ Requires:
+-Libs: -L${libdir} -L${sharedlibdir} -lz
++Libs: -L${libdir} -lz
+ Cflags: -I${includedir}

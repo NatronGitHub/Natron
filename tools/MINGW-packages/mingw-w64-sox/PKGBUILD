@@ -1,0 +1,47 @@
+# Maintainer: ole.andre.rodlie@gmil.com
+
+_realname=sox
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=14.4.2
+pkgrel=1
+pkgdesc="Swiss Army Knife of sound processing utilities (mingw-w64)"
+arch=('any')
+url="https://sourceforge.net/projects/sox"
+license=("LGPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             #"${MINGW_PACKAGE_PREFIX}-cmake"
+             )
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2")
+sha256sums=('81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c')
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  ../${_realname}-${pkgver}/configure \
+      --prefix=${MINGW_PREFIX} \
+      --build=${MINGW_CHOST} \
+      --host=${MINGW_CHOST} \
+      --target=${MINGW_CHOST} \
+      --without-png --without-ladspa --without-mad --without-id3tag --without-lame --without-twolame \
+      --with-oggvorbis=no --with-opus=no --with-flac=no --with-amrwb=no --with-amrnb=no --with-wavpack=no --with-sndio=no \
+      --with-coreaudio=no --with-alsa=no --with-ao=no --with-pulseaudio=no --with-waveaudio=no \
+      --with-sndfile=no --with-oss=no --with-sunaudio=no --with-mp3=no --with-gsm=no --with-lpc10=no --program-prefix=""
+  # I would prefer to use cmake but I can't enable/disable third-party!
+  #MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  #${MINGW_PREFIX}/bin/cmake \
+  #-G"MSYS Makefiles" \
+  #-DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+  #-DCMAKE_BUILD_TYPE=Release \
+  #../${_realname}-$pkgver
+  
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR=${pkgdir} install
+}

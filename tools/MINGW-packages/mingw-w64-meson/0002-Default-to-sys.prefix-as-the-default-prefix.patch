@@ -1,0 +1,25 @@
+From 57501a9213a2327ebd6cf35351d4409ddad99857 Mon Sep 17 00:00:00 2001
+From: Christoph Reiter <reiter.christoph@gmail.com>
+Date: Sun, 28 Jan 2018 06:45:03 +0100
+Subject: [PATCH 2/3] Default to sys.prefix as the default prefix
+
+---
+ mesonbuild/mesonlib.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mesonbuild/mesonlib.py b/mesonbuild/mesonlib.py
+index 4871bf7b..f72eab15 100644
+--- a/mesonbuild/mesonlib.py
++++ b/mesonbuild/mesonlib.py
+@@ -470,6 +470,8 @@ def default_libexecdir():
+     return 'libexec'
+ 
+ def default_prefix():
++    if is_windows() and 'MSYSTEM' in os.environ:
++        return sys.prefix
+     return 'c:/' if is_windows() else '/usr/local'
+ 
+ def get_library_dirs():
+-- 
+2.16.1
+

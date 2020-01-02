@@ -1,0 +1,25 @@
+From 2e24fbb53c90dcb7112f1b0b6c49a93559afee44 Mon Sep 17 00:00:00 2001
+From: Ray Donnelly <mingw.android@gmail.com>
+Date: Tue, 14 Feb 2017 09:30:36 -0600
+Subject: [PATCH 5/8] Do not install Qt bundle in cmake-gui
+
+---
+ Source/QtDialog/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Source/QtDialog/CMakeLists.txt b/Source/QtDialog/CMakeLists.txt
+index 330b74729..ac25d23a9 100644
+--- a/Source/QtDialog/CMakeLists.txt
++++ b/Source/QtDialog/CMakeLists.txt
+@@ -242,7 +242,7 @@ if(APPLE)
+   " ${COMPONENT})
+ endif()
+ 
+-if(CMake_INSTALL_DEPENDENCIES AND (APPLE OR WIN32))
++if(CMake_INSTALL_DEPENDENCIES AND (APPLE OR WIN32) AND NOT MINGW)
+   # install rules for including 3rd party libs such as Qt
+   # if a system Qt is used (e.g. installed in /usr/lib/), it will not be included in the installation
+   set(fixup_exe "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/cmake-gui${CMAKE_EXECUTABLE_SUFFIX}")
+-- 
+2.16.2.windows.1
+
