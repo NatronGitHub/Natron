@@ -137,7 +137,6 @@ int main(int argc, char *argv[])
 
   // append "-driver" to the program name
   strncat(exec_path, "-driver", PATH_MAX - strlen(exec_path) - 1);
-  printf("buf = %s\n", exec_path);
   char *dyldLibraryPathDef = 0;
   char *programDir = dirname(exec_path);
 #if defined(LIBGCC)
