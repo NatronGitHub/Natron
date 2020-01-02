@@ -279,6 +279,6 @@ subport curl-ca-bundle {
 
     livecheck.type              regexm
     livecheck.url               https://hg.mozilla.org/mozilla-central/log/default/${certdata_path}
-    livecheck.version           ${certdata_commit}
-    livecheck.regex             {/rev/([0-9a-f]+)"}
+    livecheck.version           [regsub {(....)(..)(..)} ${certdata_date} {\1-\2-\3}]
+    livecheck.regex             {[0-9a-f]+<br/>created <i>[^<]+</i>\n<br/>pushed <i>([0-9-]+)}
 }
