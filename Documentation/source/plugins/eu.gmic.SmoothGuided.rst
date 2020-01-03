@@ -12,7 +12,7 @@ G’MIC Smooth Guided node
 Description
 -----------
 
-Author: David Tschumperle. Latest Update: 2014/29/10.
+Author: David Tschumperle. Latest Update: 2019/10/02.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
@@ -35,6 +35,11 @@ Controls
 +-----------------------------------------------+---------+---------------+-------------------------------------+
 | Parameter / script name                       | Type    | Default       | Function                            |
 +===============================================+=========+===============+=====================================+
+| Guide As / ``Guide_As``                       | Choice  | Self          | |                                   |
+|                                               |         |               | | **Self**                          |
+|                                               |         |               | | **Top Layer**                     |
+|                                               |         |               | | **Bottom Layer**                  |
++-----------------------------------------------+---------+---------------+-------------------------------------+
 | Radius / ``Radius``                           | Integer | 5             |                                     |
 +-----------------------------------------------+---------+---------------+-------------------------------------+
 | Smoothness / ``Smoothness``                   | Double  | 30            |                                     |

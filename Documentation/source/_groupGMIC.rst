@@ -198,7 +198,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.MandelbrotJuliaSets.rst
     plugins/eu.gmic.Marble.rst
     plugins/eu.gmic.Maze.rst
-    plugins/eu.gmic.MessWithBits.rst
+    plugins/eu.gmic.MesswithBits.rst
     plugins/eu.gmic.MightyDetails.rst
     plugins/eu.gmic.MineralMosaic.rst
     plugins/eu.gmic.Ministeck.rst
@@ -323,6 +323,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.StereographicProjection.rst
     plugins/eu.gmic.Streak.rst
     plugins/eu.gmic.Stroke.rst
+    plugins/eu.gmic.Stylize.rst
     plugins/eu.gmic.SuperPixels.rst
     plugins/eu.gmic.Superformula.rst
     plugins/eu.gmic.Symmetric2DShape.rst

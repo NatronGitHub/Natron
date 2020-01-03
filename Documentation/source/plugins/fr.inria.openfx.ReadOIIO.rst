@@ -38,6 +38,8 @@ GIF (*.gif)
 
 HDR/RGBE (*.hdr)
 
+HEIC/HEIF (*.heic \*.heif)
+
 ICO (*.ico)
 
 IFF (*.iff)

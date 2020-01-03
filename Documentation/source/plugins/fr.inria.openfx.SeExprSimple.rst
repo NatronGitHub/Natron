@@ -71,7 +71,7 @@ The first input has index i=1.
 -  3: Keys - (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*)
 -  4: Simon - Some smoothing, plus medium sharpening (*)
 -  5: Rifman - Some smoothing, plus significant sharpening (*)
--  6: Mitchell - Some smoothing, plus blurring to hide pixelation (*+)
+-  6: Mitchell - Some smoothing, plus blurring to hide pixelation (*)(+)
 -  7: Parzen - (cubic B-spline) Greatest smoothing of all filters (+)
 -  8: notch - Flat smoothing (which tends to hide moire’ patterns) (+)
 

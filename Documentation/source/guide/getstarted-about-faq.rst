@@ -32,7 +32,7 @@ Our original motives were to create a tool for people who needed it and that may
 * Students who want to learn compositing at home
 * Schools that may not be able to buy expensive software licenses
 
-Another reason why we develop Natron here at `INRIA <http://www.inria.fr/en>`_ is because a compositing software is a playground that enables scientists in computer vision/graphics to develop, test exchange and publish results easily  on such platform.
+Another reason why Natron was developped mainly at `INRIA <http://www.inria.fr/en>`_ is because a compositing software is a playground that enables scientists in computer vision/graphics to develop, test exchange and publish results easily  on such platform.
 
 One great mission of a free open-source software is to aim to create common practises so everyone can benefit of it.
 

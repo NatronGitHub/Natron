@@ -138,8 +138,6 @@ See also:
 -  “Primacy of the B Feed” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Primacy_of_the_B_Feed
 -  grain-extract and grain-merge are described in http://docs.gimp.org/en/gimp-concepts-layer-modes.html
 
-bla bla bla
-
 Inputs
 ------
 

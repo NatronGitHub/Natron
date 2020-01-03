@@ -43,11 +43,15 @@ Controls
 |                              |         |                  | | **Original (original)**: Return the original frame from the source, even if it is out of the frame range. |
 |                              |         |                  | | **Hold (hold)**: Return the nearest frame within the frame range.                                         |
 |                              |         |                  | | **Black (black)**: Return an empty frame.                                                                 |
+|                              |         |                  | | **Loop (loop)**: Substitutes an equal number of frames, effectively creating a clip loop.                 |
+|                              |         |                  | | **Bounce (loop)**: Substitutes a reversed equal number of frames, creating a clip bounce.                 |
 +------------------------------+---------+------------------+-------------------------------------------------------------------------------------------------------------+
 | After / ``after``            | Choice  | Black            | | What the plugin should return for frames after the last frame.                                            |
 |                              |         |                  | | **Original (original)**: Return the original frame from the source, even if it is out of the frame range. |
 |                              |         |                  | | **Hold (hold)**: Return the nearest frame within the frame range.                                         |
 |                              |         |                  | | **Black (black)**: Return an empty frame.                                                                 |
+|                              |         |                  | | **Loop (loop)**: Substitutes an equal number of frames, effectively creating a clip loop.                 |
+|                              |         |                  | | **Bounce (loop)**: Substitutes a reversed equal number of frames, creating a clip bounce.                 |
 +------------------------------+---------+------------------+-------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.FrameRange.png
