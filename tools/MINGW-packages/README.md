@@ -261,6 +261,8 @@ mingw-w64-shiboken-qt4
 mingw-w64-pyside-qt4
 mingw-w64-sox
 mingw-w64-osmesa
+mingw-w64-libde265
+mingw-w64-libheif
 "
 for pkg in $PKGS; do
 cd $CWD/$pkg

@@ -1,0 +1,22 @@
+From e5b8e2e703d608777afadc54955bd396e4211da0 Mon Sep 17 00:00:00 2001
+From: Dirk Farin <farin@struktur.de>
+Date: Thu, 19 Apr 2018 13:15:18 +0200
+Subject: [PATCH] use new FFMPEG enum names
+
+---
+ sherlock265/VideoDecoder.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sherlock265/VideoDecoder.cc b/sherlock265/VideoDecoder.cc
+index 119f6152..b829e1c7 100644
+--- a/sherlock265/VideoDecoder.cc
++++ b/sherlock265/VideoDecoder.cc
+@@ -237,7 +237,7 @@ void VideoDecoder::convert_frame_swscale(const de265_image* img, QImage & qimg)
+     }
+     width = img->get_width();
+     height = img->get_height();
+-    sws = sws_getContext(width, height, PIX_FMT_YUV420P, width, height, PIX_FMT_BGRA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
++    sws = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_BGRA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+   }
+ 
+   int stride[3];
