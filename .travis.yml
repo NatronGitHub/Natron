@@ -37,8 +37,8 @@ addons:
     # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1) or ppa:spvkgn/ffmpeg-dev(2.8.6)
     # NOT WHITELISTED
     #- sourceline: 'ppa:spvkgn/ffmpeg-dev'
-    # this one is for trusty ffmpeg
-    - sourceline: 'ppa:jonathonf/ffmpeg-3'
+    # this one is for xenial ffmpeg
+    - sourceline: 'ppa:jonathonf/ffmpeg-4'
     #- kalakris-cmake
     - pythonxy-devel
     packages:
@@ -56,13 +56,13 @@ addons:
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev
-    #- libboost1.55-dev
-    #- libboost-math1.55-dev
-    #- libboost-serialization1.55-dev
-    #- libboost-filesystem1.55-dev
-    #- libboost-regex1.55-dev
-    #- libboost-thread1.55-dev
-    #- libboost-system1.55-dev
+    #- libboost-dev
+    #- libboost-math-dev
+    #- libboost-serialization-dev
+    #- libboost-filesystem-dev
+    #- libboost-regex-dev
+    #- libboost-thread-dev
+    #- libboost-system-dev
     - libexpat1-dev
     - gdb
     - libcairo2-dev
@@ -81,8 +81,8 @@ addons:
     - libyaml-cpp-dev
     #- libopenexr-dev
     #- libilmbase-dev
-    - libopenjpeg-dev
-    - libtiff4-dev
+    - libopenjp2-7-dev
+    - libtiff-dev
     - libjpeg-dev
     - libpng-dev
     - libwebp-dev
@@ -110,25 +110,25 @@ addons:
 matrix:
   include:
     - os: linux
-      dist: trusty
+      dist: bionic
       sudo: required
       compiler: gcc
     - os: linux
-      dist: trusty
+      dist: bionic
       sudo: required
       compiler: clang
     - os: osx
       # see https://docs.travis-ci.com/user/osx-ci-environment/
-      # we use macOS 10.12 to get the precompiled pyside bottles from
+      # we use macOS 10.14 (Mojave) to get the precompiled pyside bottles from
       # https://github.com/cartr/homebrew-qt4
       # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
-      osx_image: xcode9.2
+      osx_image: xcode11.2
       compiler: clang
   exclude:
     - os: osx
       compiler: gcc
-#  allow_failures:
-#    - os: osx # if we exceed the time limit
+  allow_failures:
+    - os: osx # if we exceed the time limit, if if qt4 is still using openssl 1.0
   fast_finish: true
 
 

@@ -2851,6 +2851,8 @@ static bool
 catchErrors(PyObject* mainModule,
             std::string* error)
 {
+    PythonGILLocker pgl;
+
     if ( PyErr_Occurred() ) {
         PyErr_Print();
         ///Gui session, do stdout, stderr redirection
@@ -2899,6 +2901,8 @@ KnobHelper::executeExpression(const std::string& expr,
                               PyObject** ret,
                               std::string* error)
 {
+    PythonGILLocker pgl;
+
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -5901,7 +5905,7 @@ KnobHolder::slaveAllKnobs(KnobHolder* other,
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true, other);
 
-    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
+    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separately
     ///will reslave it correctly if needed
     if (!restore) {
         beginChanges();

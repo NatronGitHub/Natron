@@ -1,0 +1,132 @@
+diff -Naur jasper-version-2.0.13-orig/src/libjasper/include/jasper/jas_image.h jasper-version-2.0.13/src/libjasper/include/jasper/jas_image.h
+--- jasper-version-2.0.13-orig/src/libjasper/include/jasper/jas_image.h	2017-05-19 03:21:50.000000000 +0300
++++ jasper-version-2.0.13/src/libjasper/include/jasper/jas_image.h	2017-09-11 08:56:10.654417700 +0300
+@@ -492,14 +492,14 @@
+ 
+ 
+ #define	jas_image_cmprof(image)	((image)->cmprof_)
+-int jas_image_ishomosamp(jas_image_t *image);
+-int jas_image_sampcmpt(jas_image_t *image, int cmptno, int newcmptno,
++JAS_DLLEXPORT int jas_image_ishomosamp(jas_image_t *image);
++JAS_DLLEXPORT int jas_image_sampcmpt(jas_image_t *image, int cmptno, int newcmptno,
+   jas_image_coord_t ho, jas_image_coord_t vo, jas_image_coord_t hs,
+   jas_image_coord_t vs, int sgnd, int prec);
+-int jas_image_writecmpt2(jas_image_t *image, int cmptno, jas_image_coord_t x,
++JAS_DLLEXPORT int jas_image_writecmpt2(jas_image_t *image, int cmptno, jas_image_coord_t x,
+   jas_image_coord_t y, jas_image_coord_t width, jas_image_coord_t height,
+   long *buf);
+-int jas_image_readcmpt2(jas_image_t *image, int cmptno, jas_image_coord_t x,
++JAS_DLLEXPORT int jas_image_readcmpt2(jas_image_t *image, int cmptno, jas_image_coord_t x,
+   jas_image_coord_t y, jas_image_coord_t width, jas_image_coord_t height,
+   long *buf);
+ 
+@@ -514,58 +514,58 @@
+ 
+ #if !defined(EXCLUDE_JPG_SUPPORT)
+ /* Format-dependent operations for JPG support. */
+-jas_image_t *jpg_decode(jas_stream_t *in, const char *optstr);
+-int jpg_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int jpg_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *jpg_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int jpg_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int jpg_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_MIF_SUPPORT)
+ /* Format-dependent operations for MIF support. */
+-jas_image_t *mif_decode(jas_stream_t *in, const char *optstr);
+-int mif_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int mif_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *mif_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int mif_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int mif_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_PNM_SUPPORT)
+ /* Format-dependent operations for PNM support. */
+-jas_image_t *pnm_decode(jas_stream_t *in, const char *optstr);
+-int pnm_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int pnm_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *pnm_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int pnm_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int pnm_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_RAS_SUPPORT)
+ /* Format-dependent operations for Sun Rasterfile support. */
+-jas_image_t *ras_decode(jas_stream_t *in, const char *optstr);
+-int ras_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int ras_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *ras_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int ras_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int ras_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_BMP_SUPPORT)
+ /* Format-dependent operations for BMP support. */
+-jas_image_t *bmp_decode(jas_stream_t *in, const char *optstr);
+-int bmp_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int bmp_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *bmp_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int bmp_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int bmp_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_JP2_SUPPORT)
+ /* Format-dependent operations for JP2 support. */
+-jas_image_t *jp2_decode(jas_stream_t *in, const char *optstr);
+-int jp2_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int jp2_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *jp2_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int jp2_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int jp2_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_JPC_SUPPORT)
+ /* Format-dependent operations for JPEG-2000 code stream support. */
+-jas_image_t *jpc_decode(jas_stream_t *in, const char *optstr);
+-int jpc_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int jpc_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *jpc_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int jpc_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int jpc_validate(jas_stream_t *in);
+ #endif
+ 
+ #if !defined(EXCLUDE_PGX_SUPPORT)
+ /* Format-dependent operations for PGX support. */
+-jas_image_t *pgx_decode(jas_stream_t *in, const char *optstr);
+-int pgx_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
+-int pgx_validate(jas_stream_t *in);
++JAS_DLLEXPORT jas_image_t *pgx_decode(jas_stream_t *in, const char *optstr);
++JAS_DLLEXPORT int pgx_encode(jas_image_t *image, jas_stream_t *out, const char *optstr);
++JAS_DLLEXPORT int pgx_validate(jas_stream_t *in);
+ #endif
+ 
+ #ifdef __cplusplus
+diff -Naur jasper-version-2.0.13-orig/src/libjasper/jp2/jp2_cod.h jasper-version-2.0.13/src/libjasper/jp2/jp2_cod.h
+--- jasper-version-2.0.13-orig/src/libjasper/jp2/jp2_cod.h	2017-09-11 09:36:23.281414800 +0300
++++ jasper-version-2.0.13/src/libjasper/jp2/jp2_cod.h	2017-09-11 13:16:28.075347800 +0300
+@@ -296,10 +296,10 @@
+ * Box class.
+ \******************************************************************************/
+ 
+-jp2_box_t *jp2_box_create(int type);
+-void jp2_box_destroy(jp2_box_t *box);
+-jp2_box_t *jp2_box_get(jas_stream_t *in);
+-int jp2_box_put(jp2_box_t *box, jas_stream_t *out);
++JAS_DLLEXPORT jp2_box_t *jp2_box_create(int type);
++JAS_DLLEXPORT void jp2_box_destroy(jp2_box_t *box);
++JAS_DLLEXPORT jp2_box_t *jp2_box_get(jas_stream_t *in);
++JAS_DLLEXPORT int jp2_box_put(jp2_box_t *box, jas_stream_t *out);
+ 
+ #define JP2_DTYPETOBPC(dtype) \
+   ((JAS_IMAGE_CDT_GETSGND(dtype) << 7) | (JAS_IMAGE_CDT_GETPREC(dtype) - 1))
+@@ -310,7 +310,7 @@
+ #define ICC_CS_YCBCR	0x59436272
+ #define ICC_CS_GRAY	0x47524159
+ 
+-jp2_cdefchan_t *jp2_cdef_lookup(jp2_cdef_t *cdef, int channo);
++JAS_DLLEXPORT jp2_cdefchan_t *jp2_cdef_lookup(jp2_cdef_t *cdef, int channo);
+ 
+ 
+ #endif

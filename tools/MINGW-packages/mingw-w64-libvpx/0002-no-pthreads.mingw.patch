@@ -1,7 +1,7 @@
-diff -aur libvpx-1.6.0-orig/configure libvpx-1.6.0/configure
---- libvpx-1.6.0-orig/configure	2016-07-21 04:15:41.000000000 +0300
-+++ libvpx-1.6.0/configure	2016-07-28 18:48:29.189940600 +0300
-@@ -256,7 +256,6 @@
+diff -Naur libvpx-1.8.0.orig/configure libvpx-1.8.0/configure
+--- libvpx-1.8.0.orig/configure	2019-04-04 20:21:43.685074600 -0400
++++ libvpx-1.8.0/configure	2019-04-04 20:23:43.924370800 -0400
+@@ -265,7 +265,6 @@
  HAVE_LIST="
      ${ARCH_EXT_LIST}
      vpx_ports
@@ -9,18 +9,22 @@ diff -aur libvpx-1.6.0-orig/configure libvpx-1.6.0/configure
      unistd_h
  "
  EXPERIMENT_LIST="
-@@ -563,7 +562,6 @@
- int main(void) {return 0;}
- EOF
-     # check system headers
--    check_header pthread.h
+@@ -582,11 +581,6 @@
+ 
+     # Use both check_header and check_lib here, since check_lib
+     # could be a stub that always returns true.
+-    check_header pthread.h && check_lib -lpthread <<EOF || disable_feature pthread_h
+-#include <pthread.h>
+-#include <stddef.h>
+-int main(void) { return pthread_create(NULL, NULL, NULL, NULL); }
+-EOF
      check_header unistd.h # for sysconf(3) and friends.
  
      check_header vpx/vpx_integer.h -I${source_path} && enable_feature vpx_ports
-diff -aur libvpx-1.6.0-orig/vp8/common/generic/systemdependent.c libvpx-1.6.0/vp8/common/generic/systemdependent.c
---- libvpx-1.6.0-orig/vp8/common/generic/systemdependent.c	2016-07-21 04:15:41.000000000 +0300
-+++ libvpx-1.6.0/vp8/common/generic/systemdependent.c	2016-07-28 18:45:18.419686400 +0300
-@@ -22,7 +22,8 @@
+diff -Naur libvpx-1.8.0.orig/vp8/common/generic/systemdependent.c libvpx-1.8.0/vp8/common/generic/systemdependent.c
+--- libvpx-1.8.0.orig/vp8/common/generic/systemdependent.c	2019-04-04 20:21:43.903881700 -0400
++++ libvpx-1.8.0/vp8/common/generic/systemdependent.c	2019-04-04 20:24:40.116494200 -0400
+@@ -23,7 +23,8 @@
  #if CONFIG_MULTITHREAD
  #if HAVE_UNISTD_H && !defined(__OS2__)
  #include <unistd.h>
@@ -28,5 +32,5 @@ diff -aur libvpx-1.6.0-orig/vp8/common/generic/systemdependent.c libvpx-1.6.0/vp
 +#endif
 +#if defined(_WIN32)
  #include <windows.h>
- typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
+ typedef void(WINAPI *PGNSI)(LPSYSTEM_INFO);
  #elif defined(__OS2__)

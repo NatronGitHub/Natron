@@ -200,11 +200,13 @@ The maximum size that may be used by the playback cache on disk (in GiB)
 
 The maximum size that may be used by the DiskCache node on disk (in GiB)
 
-**Disk cache path (empty = default)**
+**Disk cache path**
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used.
+This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overriden by the value of the environment variable NATRON_DISK_CACHE_PATH.
+
+If the parameter is left empty or the location set is invalid, the default location will be used.
 
 **Wipe Disk Cache**
 
@@ -354,7 +356,7 @@ The default beforeNodeRemoval callback that will be set for new projects.
 
 **Load PyPlugs in projects from .py if possible**
 
-When checked, if a project contains a PyPlug, it will try to first load the PyPlug from the .py file. If the version of the PyPlug has changed Natron will ask you whether you want to upgrade to the new version of the PyPlug in your project. If the .py file is not found, it will fallback to the same behavior as when this option is unchecked. When unchecked the PyPlug will load as a regular group with the informations embedded in the project file.
+When checked, if a project contains a PyPlug, it will try to first load the PyPlug from the .py file. If the version of the PyPlug has changed Natron will ask you whether you want to upgrade to the new version of the PyPlug in your project. If the .py file is not found, it will fallback to the same behavior as when this option is unchecked. When unchecked the PyPlug will load as a regular group with the information embedded in the project file.
 
 **Print auto-declared variables in the Script Editor**
 

@@ -4,11 +4,10 @@ PortSystem          1.0
 PortGroup           github 1.0
 PortGroup           qt5 1.0
 PortGroup           cmake 1.1
-PortGroup           cxx11 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.0.8
-revision            1
+github.setup        OpenImageIO oiio 2.1.9.0
+revision            0
 name                openimageio
 categories          graphics
 license             BSD
@@ -17,9 +16,11 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  2b47ff1879a0d7cd359dab80b8120164bde9e0fd \
-                    sha256  3c4794b0e8674728389363de291bada25ff86b4a6f5582380ed2def1ca2e07ae \
-                    size    29799717
+checksums           rmd160  74e2e80c485e5320333d0849d42119a28c7d0993 \
+                    sha256  eb6776afd7a8c290c55c57878b3979c25184e45465b137956fe85ad0d17df014 \
+                    size    29104303
+
+compiler.cxx_standard   2011
 
 github.master_sites ${github.homepage}/archive
 distname            Release-${version}
@@ -53,46 +54,43 @@ depends_lib-append \
 qt5.depends_component qtbase
 qt5.min_version       5.6
 
-variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 {
-    depends_lib-append \
-        port:python27 \
-        port:py27-numpy
-    configure.args-append \
-        -DPYTHON_VERSION=2.7 \
-        -DPYTHON_EXECUTABLE=${prefix}/bin/python2.7 \
-        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/2.7/lib/python2.7
+configure.args-append   -DUSE_PYTHON=OFF
+
+set pythons_suffixes    {27 36 37 38}
+
+set pythons_ports       {}
+foreach s ${pythons_suffixes} {
+    lappend pythons_ports python${s}
 }
 
-variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 {
-    depends_lib-append \
-        port:python36 \
-        port:py36-numpy
-    configure.args-append \
-        -DPYTHON_VERSION=3.6 \
-        -DPYTHON_EXECUTABLE=${prefix}/bin/python3.6 \
-        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/3.6/lib/python3.6
+foreach s ${pythons_suffixes} {
+    set p python${s}
+    set v [string index ${s} 0].[string index ${s} 1]
+    set i [lsearch -exact ${pythons_ports} ${p}]
+    set c [lreplace ${pythons_ports} ${i} ${i}]
+    variant ${p} description "Build the Python ${v} bindings" conflicts {*}${c} "
+        depends_build-append    port:pybind11
+        depends_lib-append      port:${p} \
+                                port:py${s}-numpy
+
+        configure.args-delete   -DUSE_PYTHON=OFF
+
+        configure.args-append   -DPYTHON_VERSION=${v} \
+                                -DPYTHON_EXECUTABLE=${prefix}/bin/python${v} \
+                                -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/${v}/lib/python${v}
+    "
 }
 
-variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 {
-    depends_lib-append \
-        port:python37 \
-        port:py37-numpy
-    configure.args-append \
-        -DPYTHON_VERSION=3.7 \
-        -DPYTHON_EXECUTABLE=${prefix}/bin/python3.7 \
-        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/3.7/lib/python3.7
+set set_python_default  yes
+foreach s ${pythons_suffixes} {
+    if {[variant_isset python${s}]} {
+        set set_python_default  no
+    }
 }
-
-if {![variant_isset python36] && ![variant_isset python37]} {
-    default_variants +python27
-}
-
-if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37]} {
-    configure.args-append \
-        -DUSE_PYTHON=OFF
-} else {
-    depends_build-append \
-        port:pybind11
+# this default version should stay synchronized with python_get_default_version
+#    in the python PortGroup
+if {${set_python_default}} {
+    default_variants        +python37
 }
 
 #configure.args-append \
@@ -127,6 +125,10 @@ depends_lib-append port:freetype
 #configure.args-append \
 #    -DUSE_GIF=OFF
 depends_lib-append port:giflib
+
+#configure.args-append \
+#    -DUSE_HEIF=OFF
+depends_lib-append port:libheif
 
 #configure.args-append \
 #    -DUSE_PTEX=OFF

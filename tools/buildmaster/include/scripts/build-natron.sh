@@ -244,9 +244,16 @@ echo "========================================================================"
 
 
 # setup build dir
-rm -rf build || true
-mkdir build
-cd build
+if [ "${QMAKE_BUILD_SUBDIR:-}" = "1" ]; then
+    # disabled by default, because it does not always work right, eg for Info.plist creation on macOS
+    # Since we delete the sources after the build, we really don't care
+    rm -rf build || true
+    mkdir build
+    cd build
+    srcdir=..
+else
+    srcdir=.
+fi
 
 # setup version
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
@@ -315,8 +322,8 @@ if [ "${DEBUG_MODE:-}" != "1" ]; then
 fi
 
 # build
-echo "env CFLAGS=\"${BF:-}\" CXXFLAGS=\"${BF:-}\" \"$QMAKE\" -r CONFIG+=\"$BUILD_MODE\" QMAKE_CC=\"$CC\" QMAKE_CXX=\"$CXX\" QMAKE_LINK=\"$CXX\" QMAKE_OBJECTIVE_CC=\"$OBJECTIVE_CC\" QMAKE_OBJECTIVE_CXX=\"$OBJECTIVE_CXX\" ${QMAKE_FLAGS_EXTRA[*]} ${PYO:-} ../Project.pro"
-env CFLAGS="${BF:-}" CXXFLAGS="${BF:-}" "$QMAKE" -r CONFIG+="$BUILD_MODE" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" QMAKE_OBJECTIVE_CC="$OBJECTIVE_CC" QMAKE_OBJECTIVE_CXX="$OBJECTIVE_CXX" "${QMAKE_FLAGS_EXTRA[@]}" ${PYO:-} ../Project.pro
+echo "env CFLAGS=\"${BF:-}\" CXXFLAGS=\"${BF:-}\" \"$QMAKE\" -r CONFIG+=\"$BUILD_MODE\" QMAKE_CC=\"$CC\" QMAKE_CXX=\"$CXX\" QMAKE_LINK=\"$CXX\" QMAKE_OBJECTIVE_CC=\"$OBJECTIVE_CC\" QMAKE_OBJECTIVE_CXX=\"$OBJECTIVE_CXX\" ${QMAKE_FLAGS_EXTRA[*]} ${PYO:-} "$srcdir"/Project.pro"
+env CFLAGS="${BF:-}" CXXFLAGS="${BF:-}" "$QMAKE" -r CONFIG+="$BUILD_MODE" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" QMAKE_OBJECTIVE_CC="$OBJECTIVE_CC" QMAKE_OBJECTIVE_CXX="$OBJECTIVE_CXX" "${QMAKE_FLAGS_EXTRA[@]}" ${PYO:-} "$srcdir"/Project.pro
 
 make -j"${MKJOBS}"
 make -j"${MKJOBS}" -C Tests
@@ -377,12 +384,10 @@ cp App${MAC_APP_PATH:-}/$NATRON_BIN "$TMP_BINARIES_PATH/bin/"
 # copy Info.plist and PkgInfo
 if [ "$PKGOS" = "OSX" ]; then
     ls -lR App/Natron.app
-    if [ -f "App${MAC_INFOPLIST}" ]; then
-        cp "App${MAC_INFOPLIST}" "$TMP_BINARIES_PATH/bin/"
-    fi
-    if [ -f "App${MAC_PKGINFO}" ]; then
-        cp App${MAC_PKGINFO} "$TMP_BINARIES_PATH/bin/"
-    fi
+    # Note: Info.plist generation only works if compiling in the sources,
+    # NOT in a "build" subdir (at least in qt4).
+    cp "App${MAC_INFOPLIST}" "$TMP_BINARIES_PATH/bin/"
+    cp "App${MAC_PKGINFO}" "$TMP_BINARIES_PATH/bin/"
 fi
 
 cp Renderer/$RENDERER_BIN "$TMP_BINARIES_PATH/bin/"
@@ -396,7 +401,7 @@ if [ -f PythonBin/$NATRON_PYTHON_BIN ]; then
 fi
 
 mkdir -p "$TMP_BINARIES_PATH/docs/natron" || true
-cp ../LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
+cp "$srcdir"/LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
 
 # install crashapp(s)
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
@@ -432,33 +437,33 @@ echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
 ls -l "$RES_DIR/OpenColorIO-Configs" "$RES_DIR/OpenColorIO-Configs/blender/config.ocio"
 
 mkdir -p "$RES_DIR/stylesheets"
-cp ../Gui/Resources/Stylesheets/mainstyle.qss "$RES_DIR/stylesheets/"
+cp "$srcdir"/Gui/Resources/Stylesheets/mainstyle.qss "$RES_DIR/stylesheets/"
 
 if [ "$PKGOS" != "OSX" ]; then
     mkdir -p "$RES_DIR/pixmaps" || true
 fi
 
 if [ "$PKGOS" = "Linux" ]; then
-    cp ../Gui/Resources/Images/natronIcon256_linux.png "$RES_DIR/pixmaps/"
-    cp ../Gui/Resources/Images/natronProjectIcon_linux.png "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronIcon256_linux.png "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronProjectIcon_linux.png "$RES_DIR/pixmaps/"
 elif [ "$PKGOS" = "Windows" ]; then
-    cp ../Gui/Resources/Images/natronProjectIcon_windows.ico "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronProjectIcon_windows.ico "$RES_DIR/pixmaps/"
 elif [ "$PKGOS" = "OSX" ]; then
-    cp ../Gui/Resources/Images/*.icns "$RES_DIR/"
-    cp ../Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
+    cp "$srcdir"/Gui/Resources/Images/*.icns "$RES_DIR/"
+    cp "$srcdir"/Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
     #cp -a App/Natron.app/Contents/Resources/etc "$RES_DIR/"
     # quickfix
-    cp -a ../Gui/Resources/etc "$RES_DIR/"
+    cp -a "$srcdir"/Gui/Resources/etc "$RES_DIR/"
 fi
 
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
-cp ../Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
+cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
 if [ "$PKGOS" = "Linux" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
-    cp ../Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
-    #cp ../Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
-    cp ../Gui/Resources/etc/fonts/conf.d/* "$RES_DIR/etc/fonts/conf.d/"
+    cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
+    #cp "$srcdir"/Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
+    cp "$srcdir"/Gui/Resources/etc/fonts/conf.d/* "$RES_DIR/etc/fonts/conf.d/"
 fi
 
 export NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs"
@@ -529,23 +534,23 @@ fi
 ######################
 # Make documentation
 
-cd ../Documentation
+cd "$srcdir"/Documentation
 # generating the docs requires a recent pandoc, else a spurious "{ width=10% }" will appear after each plugin logo
 # pandoc 1.19.1 runs OK, but MacPorts has an outdated version (1.12.4.2), and Ubuntu 16LTS has 1.16.0.2
 # For now, we regenerate the docs from a CI or SNAPSHOT build on Fred's mac, using:
 # cd Development/Natron/Documentation
-# env FONTCONFIG_FILE=/Applications/Natron.app/Contents/Resources/etc/fonts/fonts.conf OCIO=/Applications/Natron.app/Contents/Resources/OpenColorIO-Configs/nuke-default/config.ocio OFX_PLUGIN_PATH=/Applications/Natron.app/Contents/Plugins bash ../tools/genStaticDocs.sh /Applications/Natron.app/Contents/MacOS/NatronRenderer  $TMPDIR/natrondocs .
+# env FONTCONFIG_FILE=/Applications/Natron.app/Contents/Resources/etc/fonts/fonts.conf OCIO=/Applications/Natron.app/Contents/Resources/OpenColorIO-Configs/nuke-default/config.ocio OFX_PLUGIN_PATH=/Applications/Natron.app/Contents/Plugins bash "$srcdir"/tools/genStaticDocs.sh /Applications/Natron.app/Contents/MacOS/NatronRenderer  $TMPDIR/natrondocs .
 GENDOCS=0
 if [ "$GENDOCS" = 1 ] && command -v pandoc > /dev/null 2>&1; then
     
     # generate the plugins doc first
     if [ "$PKGOS" = "Linux" ]; then
-        env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" ../tools/genStaticDocs.sh "$TMP_BINARIES_PATH"/bin/NatronRenderer "$TMPDIR/natrondocs$$" .
+        env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" "$srcdir"/tools/genStaticDocs.sh "$TMP_BINARIES_PATH"/bin/NatronRenderer "$TMPDIR/natrondocs$$" .
     elif [ "$PKGOS" = "Windows" ]; then
         echo "TODO: generate doc on windows"
         true
     elif [ "$PKGOS" = "OSX" ]; then
-        env DYLD_LIBRARY_PATH=/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$MACPORTS"/lib ../tools/genStaticDocs.sh "$TMP_BINARIES_PATH"/bin/NatronRenderer "$TMPDIR/natrondocs$$" .
+        env DYLD_LIBRARY_PATH=/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$MACPORTS"/lib "$srcdir"/tools/genStaticDocs.sh "$TMP_BINARIES_PATH"/bin/NatronRenderer "$TMPDIR/natrondocs$$" .
     fi
 fi
 

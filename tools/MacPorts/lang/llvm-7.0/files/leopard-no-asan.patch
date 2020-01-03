@@ -1,0 +1,12 @@
+--- a/projects/compiler-rt/cmake/config-ix.cmake       2015-11-29 22:17:04.000000000 -0800
++++ b/projects/compiler-rt/cmake/config-ix.cmake       2015-11-29 22:19:16.000000000 -0800
+@@ -228,9 +228,6 @@ if(APPLE)
+     else()
+       set(SANITIZER_MIN_OSX_VERSION 10.9)
+     endif()
+-    if(SANITIZER_MIN_OSX_VERSION VERSION_LESS "10.7")
+-      message(FATAL_ERROR "macOS deployment target '${SANITIZER_MIN_OSX_VERSION}' is too old.")
+-    endif()
+     if(SANITIZER_MIN_OSX_VERSION VERSION_GREATER "10.9")
+       message(WARNING "macOS deployment target '${SANITIZER_MIN_OSX_VERSION}' is too new, setting to '10.9' instead.")
+       set(SANITIZER_MIN_OSX_VERSION 10.9)

@@ -24,7 +24,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 echo "*** Windows installer..."
 
@@ -108,7 +108,7 @@ REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
 REMOTE_ONLINE_PACKAGES_PATH="$REMOTE_PROJECT_PATH/packages"
 
 # The date passed to the ReleaseDate tag of the xml config file of the installer. This has a different format than CURRENT_DATE.
-INSTALLER_XML_DATE="$(date "+%Y-%m-%d")"
+INSTALLER_XML_DATE="$(date -u "+%Y-%m-%d")"
 
 
 # tag symbols we want to keep with 'release'
@@ -311,7 +311,7 @@ OCIO_VERSION="20180327000000"
 # OCIO
 for c in blender natron nuke-default; do
     lib="${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs/${c}/config.ocio"
-    LAST_MODIFICATION_DATE="$(date -r "$lib" "+%Y%m%d%H%M%S")"
+    LAST_MODIFICATION_DATE="$(date -u -r "$lib" "+%Y%m%d%H%M%S")"
     if [ "$LAST_MODIFICATION_DATE" -gt "$OCIO_VERSION" ]; then
         OCIO_VERSION="$LAST_MODIFICATION_DATE"
     fi
@@ -415,7 +415,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -433,7 +433,7 @@ cp -r "$PYDIR" "$DLLS_PACKAGE_PATH/data/lib/"
 # Configure the package date using the most recent DLL modification date
 CLIBS_VERSION="00000000000000"
 for depend in "${NATRON_DLL[@]}"; do
-    LAST_MODIFICATION_DATE="$(date -r "$depend" "+%Y%m%d%H%M%S")"
+    LAST_MODIFICATION_DATE="$(date -u -r "$depend" "+%Y%m%d%H%M%S")"
     if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
         CLIBS_VERSION="$LAST_MODIFICATION_DATE"
     fi
@@ -445,7 +445,7 @@ cp "$QS/$PKGOS/corelibs.qs" "$DLLS_PACKAGE_PATH/meta/installscript.qs"
 # on a software renderer if OpenGL driver is not good enough
 if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
     ( cd "$SRC_PATH";
-      $WGET "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar" -O "$SRC_PATH/natron-windows-mesa.tar"
+      $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar" --output "$SRC_PATH/natron-windows-mesa.tar"
       tar xvf natron-windows-mesa.tar
     )
 fi

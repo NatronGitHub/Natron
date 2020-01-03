@@ -1,0 +1,13 @@
+diff --git a/include/llvm/ADT/Triple.h b/include/llvm/ADT/Triple.h
+index c95b16dd..ecc0f148 100644
+--- a/include/llvm/ADT/Triple.h
++++ b/include/llvm/ADT/Triple.h
+@@ -682,7 +682,7 @@ public:
+ 
+   /// Tests whether the target uses emulated TLS as default.
+   bool hasDefaultEmulatedTLS() const {
+-    return isAndroid() || isOSOpenBSD() || isWindowsCygwinEnvironment();
++    return isAndroid() || isOSOpenBSD() || isWindowsCygwinEnvironment() || isMacOSXVersionLT(10, 7);
+   }
+ 
+   /// @}

@@ -1,0 +1,78 @@
+https://trac.macports.org/ticket/58469
+
+--- libjava/posix.cc	2007-02-22 11:04:55.000000000 -0500
++++ libjava/posix.cc	2019-05-13 23:21:13.000000000 -0400
+@@ -10,6 +10,15 @@
+ 
+ #include <config.h>
+ 
++#if defined(__APPLE__) && defined(__MACH__)
++/* libgcj doesn't normally provide this symbol. Declare it as "hidden" to make
++ * sure that it's only available for libgcj's own use. The declaration must come
++ * before any other in order to ensure that the desired hidden visibility is
++ * applied. */
++extern "C" __attribute__ ((visibility ("hidden")))
++void * _darwin10_Unwind_FindEnclosingFunction (void *);
++#endif
++
+ #include "posix.h"
+ 
+ #include <stdlib.h>
+@@ -27,6 +36,10 @@
+ #include <java/io/InterruptedIOException.h>
+ #include <java/util/Properties.h>
+ 
++#if defined(__APPLE__) && defined(__MACH__)
++#include "unwind-dw2-fde.h"
++#endif
++
+ #if defined (ECOS)
+ extern "C" unsigned long long _clock (void);
+ #endif
+@@ -248,3 +261,15 @@
+ 
+   return ret_val;
+ }
++
++#if defined(__APPLE__) && defined(__MACH__)
++void *
++_darwin10_Unwind_FindEnclosingFunction (void *pc)
++{
++  struct dwarf_eh_bases bases;
++  const struct dwarf_fde *fde = _Unwind_Find_FDE ((void*)(((uintptr_t)pc)-1), &bases);
++  if (fde)
++    return bases.func;
++  return NULL;
++}
++#endif
+--- libgcc/unwind-dw2-fde.h	2015-01-22 11:22:31.000000000 -0500
++++ libgcc/unwind-dw2-fde.h	2019-05-13 21:08:51.000000000 -0400
+@@ -26,6 +26,10 @@
+ #ifndef GCC_UNWIND_DW2_FDE_H
+ #define GCC_UNWIND_DW2_FDE_H
+ 
++#ifdef __cplusplus
++extern "C" {
++#endif
++
+ #ifndef HIDE_EXPORTS
+ #pragma GCC visibility push(default)
+ #endif
+@@ -154,7 +158,7 @@
+ static inline const struct dwarf_cie *
+ get_cie (const struct dwarf_fde *f)
+ {
+-  return (const void *)&f->CIE_delta - f->CIE_delta;
++  return (const struct dwarf_cie *)((const void *)&f->CIE_delta - f->CIE_delta);
+ }
+ 
+ static inline const fde *
+@@ -179,4 +183,8 @@
+ #pragma GCC visibility pop
+ #endif
+ 
++#ifdef __cplusplus
++}
++#endif
++
+ #endif /* unwind-dw2-fde.h */

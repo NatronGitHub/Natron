@@ -2,8 +2,7 @@
 
 # Install libraw
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-# do not install 0.19, which dropped support for the demosaic packs
-LIBRAW_VERSION=0.18.13
+LIBRAW_VERSION=0.18.13 # DO NOT INSTALL 0.19.x, which dropped support for the demosaic packs
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"

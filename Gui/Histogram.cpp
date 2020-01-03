@@ -1113,7 +1113,7 @@ HistogramPrivate::renderHistogram(Histogram::DisplayModeEnum channel)
        bottom, another for the top of the bin.*/
     glDrawArrays(GL_LINES, 0, 512);
     histogramRenderingShader->release();
-    /*reseting opengl context*/
+    /*resetting opengl context*/
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glActiveTexture(GL_TEXTURE2);
@@ -1281,7 +1281,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         const double zoomFactor_min = 0.000001;
         const double zoomFactor_max = 1000000.;
         double zoomFactor;
-        double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta); // no need to use ipow() here, because the result is not cast to int
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
 
@@ -1373,7 +1373,7 @@ Histogram::wheelEvent(QWheelEvent* e)
     const double par_max = 1000000.;
     double zoomFactor;
     double par;
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     if ( modCASIsControlShift(e) ) {

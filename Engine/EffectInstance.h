@@ -133,7 +133,7 @@ public:
 
     struct RenderRoIArgs
     {
-        // Developper note: the fields were reordered to optimize packing.
+        // Developer note: the fields were reordered to optimize packing.
         // see http://www.catb.org/esr/structure-packing/
 
         double time; //< the time at which to render
@@ -227,7 +227,7 @@ public:
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
      * You shouldn't do any heavy processing here nor lengthy initialization as the constructor is often
-     * called just to be able to call a few virtuals fonctions.
+     * called just to be able to call a few virtuals functions.
      * The constructor is always called by the main thread of the application.
      **/
     explicit EffectInstance(NodePtr node);
@@ -427,7 +427,7 @@ public:
     virtual bool isInputOptional(int inputNb) const WARN_UNUSED_RETURN = 0;
 
     /**
-     * @brief Is inputNb a mask ? In which case the effect will have an additionnal mask parameter.
+     * @brief Is inputNb a mask ? In which case the effect will have an additional mask parameter.
      **/
     virtual bool isInputMask(int /*inputNb*/) const WARN_UNUSED_RETURN
     {
@@ -527,7 +527,7 @@ public:
     virtual void getPluginGrouping(std::list<std::string>* grouping) const = 0;
 
     /**
-     * @brief Must be implemented to give a desription of the effect that this node does. This is typically
+     * @brief Must be implemented to give a description of the effect that this node does. This is typically
      * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
      **/
     virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
@@ -650,7 +650,7 @@ public:
 
     /**
      * @brief Sets render preferences for the rendering of a frame for the current thread.
-     * This is thread local storage. This is NOT local to a call to renderRoI
+     * This is thread-local storage. This is NOT local to a call to renderRoI
      **/
     void setParallelRenderArgsTLS(double time,
                                   ViewIdx view,
@@ -698,7 +698,7 @@ public:
                                            FrameRequestMap & requests);
 
     /**
-     * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
+     * @brief Visit recursively the compositing tree and computes required information about region of interests for each node and
      * for each frame/view pair. This helps to call render a single time per frame/view pair for a node.
      * Implem is in ParallelRenderArgs.cpp
      **/
@@ -729,7 +729,7 @@ public:
 
 
     /**
-     * @breif Don't override this one, override onKnobValueChanged instead.
+     * @brief Don't override this one, override onKnobValueChanged instead.
      **/
     virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
@@ -1041,7 +1041,7 @@ public:
 
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
-     * RenderSafetyEnum::eRenderSafetyUnsafe - indicating that only a single 'render' call can be made at any time amoung all instances,
+     * RenderSafetyEnum::eRenderSafetyUnsafe - indicating that only a single 'render' call can be made at any time among all instances,
      * RenderSafetyEnum::eRenderSafetyInstanceSafe - indicating that any instance can have a single 'render' call at any one time,
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
@@ -1105,7 +1105,7 @@ protected:
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
      * of the node at time 'time' and render scale 'scale' given a render window.
-     * For exemple a blur plugin would specify what it needs
+     * For example a blur plugin would specify what it needs
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
@@ -1181,7 +1181,7 @@ public:
 
 
     /**
-     * @brief Overload this and return true if your operator should dislay a preview image by default.
+     * @brief Overload this and return true if your operator should display a preview image by default.
      **/
     virtual bool makePreviewByDefault() const WARN_UNUSED_RETURN
     {
@@ -1228,7 +1228,7 @@ public:
      * a dialog. The message can be of 4 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
      * case the function may return false if the user pressed the 'No' button.
@@ -1241,7 +1241,7 @@ public:
      * node's graphical interface and on any connected viewer. The message can be of 3 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * @param content The message you want to pass.
      **/
     void setPersistentMessage(MessageTypeEnum type, const std::string & content);
@@ -1582,7 +1582,7 @@ public:
      **/
     void pushUndoCommand(const UndoCommandPtr& command);
 
-    // Same as the version above, do NOT derefence command after this call as it will be destroyed already, usually this call is
+    // Same as the version above, do NOT dereference command after this call as it will be destroyed already, usually this call is
     // made as such: pushUndoCommand(new MyCommand(...))
     void pushUndoCommand(UndoCommand* command);
 
@@ -1594,7 +1594,7 @@ public:
     bool setCurrentCursor(CursorEnum defaultCursor);
     bool setCurrentCursor(const QString& customCursorFilePath);
 
-    ///Doesn't do anything, instead we overriden onKnobValueChanged_public
+    ///Doesn't do anything, instead we overridden onKnobValueChanged_public
     virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
@@ -1653,7 +1653,7 @@ public:
      * No need to include any OpenGL related header.
      * The coordinate space is  defined by the displayWindow
      * (i.e: (0,0) = bottomLeft and  width() and height() being
-     * respectivly the width and height of the frame.)
+     * respectively the width and height of the frame.)
      */
     virtual bool hasOverlay() const
     {
@@ -1722,12 +1722,12 @@ public:
                               bool isSlave) OVERRIDE FINAL;
 
     /**
-     * @brief This function calls the impementation specific attachOpenGLContext()
+     * @brief This function calls the implementation specific attachOpenGLContext()
      **/
     StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext, EffectInstance::OpenGLContextEffectDataPtr* data);
 
     /**
-     * @brief This function calls the impementation specific dettachOpenGLContext()
+     * @brief This function calls the implementation specific dettachOpenGLContext()
      **/
     StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data);
 
@@ -1952,7 +1952,7 @@ protected:
     virtual void assertActionIsNotRecursive() const OVERRIDE FINAL;
 
     /**
-     * @brief Should be called in the begining of an action.
+     * @brief Should be called in the beginning of an action.
      * Right after assertActionIsNotRecursive() for non recursive actions.
      **/
     virtual void incrementRecursionLevel() OVERRIDE FINAL;

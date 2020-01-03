@@ -27,6 +27,11 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+#include <string>
+#include <vector>
+#include <map>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -104,7 +109,7 @@ public:
     QString diskCachesLocation;
     boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
-    bool _loaded; //< true when the first instance is completly loaded.
+    bool _loaded; //< true when the first instance is completely loaded.
     QString _binaryPath; //< the path to the application's binary
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex errorLogMutex;
@@ -127,7 +132,7 @@ public:
     // - This very well describes the render activity of Natron
     //
     // Disadvantages:
-    // - This only takes into account the current Natron process and disregard completly CPU activity.
+    // - This only takes into account the current Natron process and disregard completely CPU activity.
     // - We might count a thread that is actually waiting in a mutex as a running thread
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
@@ -159,7 +164,9 @@ public:
     ExistenceCheckerThreadPtr breakpadAliveThread;
 #endif
 
+#ifdef USE_NATRON_GIL
     QMutex natronPythonGIL;
+#endif
 
 #ifdef Q_OS_WIN32
     //On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map

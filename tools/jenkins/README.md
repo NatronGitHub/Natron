@@ -41,21 +41,21 @@ sudo yum -y install git2u
  * Install tmux: `sudo yum -y install libevent tmux`
  * Launch tmux: `tmux`
  * Build SDK: run `include/scripts/build-Linux-sdk.sh` (this will take forever, it's recommended to use a prebuilt archive)
- * Dettach tmux while building and reconnect when done:
-    type ctrl+b then type 'd' in tmux to dettach., to reattach: `tmux attach`
+ * Detach tmux while building and reconnect when done:
+    type ctrl+b then type 'd' in tmux to detach., to reattach: `tmux attach`
 
 Windows Setup
 =============
 
  * Install Windows 7 Pro/Enterprise 64bit
 
-Note that if this is a VM created on the ci-inria, you must install update the storage controler driver with this iso:
+Note that if this is a VM created on the ci-inria, you must install update the storage controller driver with this iso:
 
 https://fedoraproject.org/wiki/Windows_Virtio_Drivers#Direct_download
 
 You can mount the iso using daemon tools.
 Then launch Administrative Tools.exe and in Computer Management select Devices Manager, expand Storage controllers and right click "Update driver" and select the location where the iso was mounted.
-The disk should be available now from the Storage/Disk Management area of Computer Management (still in Administrative Tools.exe). Right click and add a volume on the disk with NTFS formating.
+The disk should be available now from the Storage/Disk Management area of Computer Management (still in Administrative Tools.exe). Right click and add a volume on the disk with NTFS formatting.
 
  * Install http://repo.msys2.org/distrib/msys2-x86_64-latest.exe (or http://repo.msys2.org/distrib/msys2-i686-latest.exe if on a 32-bit machine) from http://www.msys2.org/ . The default install location is `C:\msys64` (`C:\msys32` on a 
  * Start MSYS terminal: Start, All Programs, MSYS2 64bit (or 32bit), MSYS2 MSYS
@@ -167,7 +167,9 @@ Options
 
 The following options can be passed to `launchBuildMain.sh` as environment variables:
 
-`RELEASE_TAG`: Make a release build. The version (x.y.z) must correspond with tags in Natron, openfx-io, openfx-misc, openfx-arena. Note that the plugins use "Natron-x.y.z" tags and Natron uses "x.y.z" tags. You do not have to prefix with "tags/"
+`WORKSPACE`: The absolute path to a directory on the local filesystem were builds are done, external files are downloaded, and builds are archived.
+
+`RELEASE_TAG`: Make a release build. It should be a string "x.y.z" indicating the release number. The corresponding tag is "vx.y.z" in the Natron repository and "Natron-x.y.z" in each of the plugins repository (openfx-io, openfx-misc, openfx-arena, openfx-gmic). Only indicate this to trigger a release.
 
 `SNAPSHOT_BRANCH`: If set and `RELEASE_TAG` is not set, this indicates the branch on which to launch a snapshot from. If `SNAPSHOT_COMMIT` is also set, this will build this specific commit on that branch, otherwise it will build the latest commit on the branch. If `GIT_COMMIT` is set, `GIT_BRANCH` is ignored.
 
@@ -192,6 +194,8 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 `NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron.
 
 `BUILD_NAME`: Set this to label the project build. On the slave, the build artifacts are stored for some amount of time in `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER`.
+
+`BUILD_NUMBER`: A unique number to identify the build (usually incremented at each build). See also `BUILD_NAME`.
 
 `DISABLE_RPM_DEB_PKGS`: If set to 1, deb and rpm packages will never be built. Default is to build when `NATRON_BUILD_CONFIG`=`STABLE`.
 

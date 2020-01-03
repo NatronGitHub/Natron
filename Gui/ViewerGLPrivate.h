@@ -172,7 +172,7 @@ struct ViewerGL::Implementation
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
     QFont textFont;
-    bool overlay; /*!< True if the user enabled overlay dispay*/
+    bool overlay; /*!< True if the user enabled overlay display*/
     bool updatingTexture;
     QColor clearColor;
     QMenu* menu;

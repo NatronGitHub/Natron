@@ -1,0 +1,60 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=libmng
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.0.3
+pkgrel=4.1
+pkgdesc="A collection of routines used to create and manipulate MNG format graphics files (mingw-w64)"
+arch=('any')
+url="https://sourceforge.net/projects/libmng"
+license=("zlib")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-cmake")
+depends=("${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+options=('strip' 'staticlibs')
+source=("https://downloads.sourceforge.net/libmng/${_realname}-${pkgver}.tar.xz"
+         libmng-1.0.10-mingw.patch
+         libmng-1.0.9-dont-leak-zlib-streams.diff
+         no-undefined.patch
+         libmng-2.0.3-cmake-versioning.patch
+         fix-mng-version-cmake.patch
+         pkg-config-extra-flags.patch)
+sha256sums=('4a462fdd48d4bc82c1d7a21106c8a18b62f8cc0042454323058e6da0dbb57dd3'
+            'f21bd32a9e4453e1334aa32faea3a13c6829bb247ffc4a4c48c75c58769c94e3'
+            'e91c1f852fbbcecec40b365bc71c1b15346442018c92b41af0d29d32bfbbb895'
+            '9ee540e6b375223285db286b0a04fc618d9f8d991bddd6a2ee1001fad16f3584'
+            '5981d90392a4c7e7ad52e3720604f8158ac62420eec61f96e98a1b90a47631df'
+            'ef79f6784910c751f4a4c27f962b7f7c02e39699137ac33eddfb8f5aab5dd44c'
+            '10791556a7798ca2c083bccf68b51b6d429a91de0ba2b61e9160fcf17ae2e051')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -p0 -i "$srcdir"/libmng-1.0.9-dont-leak-zlib-streams.diff
+  patch -p1 -i "$srcdir"/libmng-1.0.10-mingw.patch
+  patch -p1 -i "$srcdir"/no-undefined.patch
+  patch -p1 -i "$srcdir"/libmng-2.0.3-cmake-versioning.patch
+  patch -p1 -i "$srcdir"/fix-mng-version-cmake.patch
+  patch -p1 -i "$srcdir"/pkg-config-extra-flags.patch
+}
+
+build() {
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd ${srcdir}/build-${MINGW_CHOST}
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DCMAKE_BUILD_TYPE=RELEASE \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_STATIC_LIBS=ON \
+    ../${_realname}-${pkgver}
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR=${pkgdir} install
+}

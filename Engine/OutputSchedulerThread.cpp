@@ -729,7 +729,7 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,
     }
 
 
-    ///Wake up render threads to notify them theres work to do
+    ///Wake up render threads to notify them there's work to do
     _imp->framesToRenderNotEmptyCond.wakeAll();
 }
 
@@ -763,7 +763,7 @@ OutputSchedulerThread::pushAllFrameRange()
             _imp->framesToRender.push_back(i);
         }
     }
-    ///Wake up render threads to notify them theres work to do
+    ///Wake up render threads to notify them there's work to do
     _imp->framesToRenderNotEmptyCond.wakeAll();
 }
 
@@ -1463,7 +1463,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
     ///We make sure the render-threads don't wait for the main-thread to process a frame
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
     ///event-loop, we just flag that the next event that will process the frame should NOT process it by
-    ///reseting the processRunning flag
+    ///resetting the processRunning flag
     // Flag directly all threads that they are aborted, this enables each thread to have a shorter code-path
     // when checking for abortion and will generally abort faster
     {
@@ -1636,7 +1636,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
     double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
     // total estimated time is: timeSpentSinceStartSec / fractionDone
-    // remaning time is thus:
+    // remaining time is thus:
     double timeRemaining = (nbTotalFrames <= 0 || _imp->nFramesRendered <= 0) ? -1. : timeSpentSinceStartSec / fractionDone - timeSpentSinceStartSec;
 
     // If running in background, notify to the pipe that we rendered a frame

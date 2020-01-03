@@ -17,7 +17,7 @@ Functions
 
 - def :meth:`setType<NatronEngine.StringParam.setType>` (type)
 
-.. string.details:
+.. _string.details:
 
 Detailed Description
 --------------------
@@ -27,22 +27,29 @@ A StringParam can have several forms on the user interface, depending on its
 
 Here are the different types of string parameters:
 
-    * A basic string that can be edited by the user
-      .. figure:: stringParam.png
-         :width: 400px
-         :align: center
-    * A non animating label string that the user cannot edit
-      .. figure:: stringLabel.png
-         :width: 400px
-         :align: center
-    * A multi-line string that the user can edit and animate
-      .. figure:: multiLineString.png
-         :width: 400px
-         :align: center
-    * A multi-line string with rich text support with a `subset of html <https://qt-project.org/doc/qt-4.8/richtext-html-subset.html>`_
-      .. figure:: multiLineRichTextParam.png
-         :width: 400px
-         :align: center
+.. figure:: stringParam.png
+   :width: 400px
+   :align: center
+
+   A basic string that can be edited by the user
+
+.. figure:: stringLabel.png
+   :width: 400px
+   :align: center
+
+   A non animating label string that the user cannot edit
+
+.. figure:: multiLineString.png
+   :width: 400px
+   :align: center
+
+   A multi-line string that the user can edit and animate
+
+.. figure:: multiLineRichTextParam.png
+   :width: 400px
+   :align: center
+
+   A multi-line string with rich text support with a `subset of html <https://qt-project.org/doc/qt-4.8/richtext-html-subset.html>`_
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

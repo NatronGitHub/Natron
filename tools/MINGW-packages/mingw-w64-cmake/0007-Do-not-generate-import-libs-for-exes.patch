@@ -1,0 +1,25 @@
+From 071655c9a2d11ac4a2d94a8663c19b1edd4c6527 Mon Sep 17 00:00:00 2001
+From: Ray Donnelly <mingw.android@gmail.com>
+Date: Tue, 14 Feb 2017 09:35:40 -0600
+Subject: [PATCH 7/8] Do not generate import libs for exes
+
+---
+ Modules/Platform/Windows-GNU.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Modules/Platform/Windows-GNU.cmake b/Modules/Platform/Windows-GNU.cmake
+index f0e04cb56..5892108e7 100644
+--- a/Modules/Platform/Windows-GNU.cmake
++++ b/Modules/Platform/Windows-GNU.cmake
+@@ -105,7 +107,7 @@ macro(__windows_compiler_gnu lang)
+   set(CMAKE_${lang}_CREATE_SHARED_LIBRARY
+     "<CMAKE_${lang}_COMPILER> <CMAKE_SHARED_LIBRARY_${lang}_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_${lang}_FLAGS> -o <TARGET> -Wl,--out-implib,<TARGET_IMPLIB> ${CMAKE_GNULD_IMAGE_VERSION} <OBJECTS> <LINK_LIBRARIES>")
+   set(CMAKE_${lang}_LINK_EXECUTABLE
+-    "<CMAKE_${lang}_COMPILER> <FLAGS> <CMAKE_${lang}_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  -o <TARGET> -Wl,--out-implib,<TARGET_IMPLIB> ${CMAKE_GNULD_IMAGE_VERSION} <LINK_LIBRARIES>")
++    "<CMAKE_${lang}_COMPILER> <FLAGS> <CMAKE_${lang}_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  -o <TARGET> ${CMAKE_GNULD_IMAGE_VERSION} <LINK_LIBRARIES>")
+ 
+   list(APPEND CMAKE_${lang}_ABI_FILES "Platform/Windows-GNU-${lang}-ABI")
+ 
+-- 
+2.16.2.windows.1
+

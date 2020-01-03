@@ -576,7 +576,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         return false;
     }
     if (lastAge == _imp->strokes[lastMultiStrokeIndex].xCurve->getKeyFramesCount() - 1) {
-        //We rendered completly that stroke so far, pick the next one if there is
+        //We rendered completely that stroke so far, pick the next one if there is
         if (lastMultiStrokeIndex == (int)_imp->strokes.size() - 1) {
             //nothing to do
             return false;

@@ -160,7 +160,7 @@ OfxImageEffectInstance::mainEntry(const char *action,
 OfxStatus
 OfxImageEffectInstance::createInstanceAction()
 {
-    ///Overriden because the call to setDefaultClipPreferences is done in Natron
+    ///Overridden because the call to setDefaultClipPreferences is done in Natron
 
 #       ifdef OFX_DEBUG_ACTIONS
     std::cout << "OFX: " << (void*)this << "->" << kOfxActionCreateInstance << "()" << std::endl;
@@ -345,7 +345,7 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
 
 // The extent of the current project in canonical coordinates.
 // The extent is the size of the 'output' for the current project. See ProjectCoordinateSystems
-// for more infomation on the project extent. The extent is in canonical coordinates and only
+// for more information on the project extent. The extent is in canonical coordinates and only
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
 void

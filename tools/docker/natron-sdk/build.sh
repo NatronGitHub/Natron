@@ -1,13 +1,14 @@
 #!/bin/sh
 cd `dirname "$0"`
+LABEL="natrongithub/natron-sdk"
 env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile
-cp  ../../jenkins/common.sh ../../jenkins/compiler-common.sh .
-(cd ../../jenkins/include/scripts; tar cf - build-Linux-sdk.sh pkg) | tar xf -
-(cd ../../jenkins; tar cf - include/patches) | tar xf -
-docker build -t natrongithub/natron-sdk:latest .
-#docker build --no-cache -t natron-sdk:latest .
+cp  ../../jenkins/*.sh .
+(cd ../../jenkins/; tar cf - include) | tar xf -
+docker build -t "${LABEL}:latest" .
+#docker build --no-cache -t "${LABEL}:latest" .
 echo "please execute:"
+#echo "docker-squash ${LABEL}:latest"
 echo "docker login"
-echo "docker tag natrongithub/natron-sdk:latest natrongithub/natron-sdk:$(date +%Y%m%d)"
-echo "docker push natrongithub/natron-sdk:latest"
-echo "docker push natrongithub/natron-sdk:$(date +%Y%m%d)"
+echo "docker tag ${LABEL}:latest ${LABEL}:$(date -u +%Y%m%d)"
+echo "docker push ${LABEL}:latest"
+echo "docker push ${LABEL}:$(date -u +%Y%m%d)"

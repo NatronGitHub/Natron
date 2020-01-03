@@ -63,7 +63,7 @@ potential huge number of control points and keyframes. You can use the Natron Gr
 functionality to generate automatically a script from a Roto node within that group.
 
 A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet.
-At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
+At this stage you can then add control points using the :func:`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
@@ -92,7 +92,7 @@ A Bezier curve has several parameters that the API allows you to modify:
 - overlay color
 - compositing operator
 
-Each of them is a regular :ref:`parameter<NatronEngine.Param>` that you can access to modify
+Each of them is a regular :class:`Param<NatronEngine.Param>` that you can access to modify
 or query its properties.
 All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
 

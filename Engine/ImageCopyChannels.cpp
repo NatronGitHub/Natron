@@ -47,7 +47,7 @@ GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 
 // NATRON_COPY_CHANNELS_UNPREMULT:
 // Repremult R G and B if output is premult and alpha was modified.
-// We do not consider it a good thing, since the user explicitely deselected the channels, and expects
+// We do not consider it a good thing, since the user explicitly deselected the channels, and expects
 // to get the values from input instead.
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
@@ -84,7 +84,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
 
 #        ifdef NATRON_COPY_CHANNELS_UNPREMULT
             // Repremult R G and B if output is premult and alpha was modified.
-            // We do not consider it a good thing, since the user explicitely deselected the channels, and expects
+            // We do not consider it a good thing, since the user explicitly deselected the channels, and expects
             // to get the values from input instead.
 #           define DOCHANNEL(c)                                                    \
     if (srcNComps == 1 || !src_pixels || c >= srcNComps) {      \

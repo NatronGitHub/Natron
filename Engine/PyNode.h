@@ -234,6 +234,8 @@ public:
 
     bool isWriterNode();
 
+    bool isOutputNode();
+
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
@@ -253,7 +255,7 @@ public:
     /**
      * @brief Attempts to connect the Effect 'input' to the given inputNumber.
      * This function uses canSetInput(int,Effect) to determine whether a connection is possible.
-     * There's no auto-magic behind this function: you must explicitely disconnect any already connected Effect
+     * There's no auto-magic behind this function: you must explicitly disconnect any already connected Effect
      * to the given inputNumber otherwise this function will return false.
      **/
     bool connectInput(int inputNumber, const Effect* input);

@@ -1,0 +1,40 @@
+# Maintainer: Andrew Sun <adsun701@gmail.com>
+
+_realname=libdatrie
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=0.2.12
+pkgrel=1
+pkgdesc="Implementation of double-array structure for representing trie, as proposed by Junichi Aoe. (mingw-w64)"
+arch=('any')
+url='https://linux.thai.net/projects/datrie'
+license=('LGPL')
+depends=("${MINGW_PACKAGE_PREFIX}-libiconv")
+source=("https://linux.thai.net/pub/thailinux/software/libthai/${_realname}-${pkgver}.tar.xz")
+sha256sums=('452dcc4d3a96c01f80f7c291b42be11863cd1554ff78b93e110becce6e00b149')
+
+build() {
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  cp -rf "${srcdir}"/${_realname}-${pkgver}/. "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+  export ac_cv_func_malloc_0_nonnull=yes
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared
+
+  make
+}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+  make install DESTDIR="${pkgdir}"
+  
+  # copy trietool executable correctly
+  rm -rf "${pkgdir}${MINGW_PREFIX}"/bin/trietool-0.2.exe
+  cp -rf "${pkgdir}${MINGW_PREFIX}"/bin/trietool.exe "${pkgdir}${MINGW_PREFIX}"/bin/trietool-0.2.exe
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}

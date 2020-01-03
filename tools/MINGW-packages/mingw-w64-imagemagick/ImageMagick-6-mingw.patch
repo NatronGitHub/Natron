@@ -1,0 +1,25 @@
+--- ImageMagick-6.9.9-3/magick/nt-base.h.orig	2017-07-28 04:16:40.374173000 -0700
++++ ImageMagick-6.9.9-3/magick/nt-base.h	2017-07-28 04:20:48.521084100 -0700
+@@ -38,6 +38,8 @@
+ #include <process.h>
+ #include <errno.h>
+ #include <malloc.h>
++#include <winsock2.h>
++#include <ws2tcpip.h>
+ #include <sys/utime.h>
+ #if defined(_DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
+ #include <crtdbg.h>
+--- ImageMagick-6.9.9-3/magick/nt-base.c.orig	2017-07-28 04:16:40.390194200 -0700
++++ ImageMagick-6.9.9-3/magick/nt-base.c	2017-07-28 04:22:23.159866700 -0700
+@@ -1734,6 +1734,11 @@
+     directory_separator[MaxTextExtent],
+     file_specification[MaxTextExtent];
+ 
++  wchar_t WCDirectorySeparator[strlen(DirectorySeparator)+1];
++  MultiByteToWideChar(CP_UTF8,0,DirectorySeparator,-1,WCDirectorySeparator,
++                     strlen(DirectorySeparator)+1);
++    
++
+   assert(path != (const char *) NULL);
+   length=MultiByteToWideChar(CP_UTF8,0,path,-1,file_specification,
+     MaxTextExtent);

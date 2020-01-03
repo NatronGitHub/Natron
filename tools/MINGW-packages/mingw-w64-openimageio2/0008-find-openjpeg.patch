@@ -1,0 +1,57 @@
+--- oiio-Release-1.8.10/src/cmake/modules/FindOpenJpeg.cmake.orig	2018-04-01 00:56:14.000000000 +0300
++++ oiio-Release-1.8.10/src/cmake/modules/FindOpenJpeg.cmake	2018-04-28 08:37:46.927177600 +0300
+@@ -17,8 +17,7 @@
+   string (TOUPPER ${prefix}_INCLUDE_DIR tmp_varname)
+   find_path(${tmp_varname} ${includefile}
+     PATHS ${${libpath_var}}
+-    PATH_SUFFIXES include
+-    NO_DEFAULT_PATH
++    PATH_SUFFIXES openjpeg openjpeg-2.0 openjpeg-2.1 openjpeg-2.2 openjpeg-2.3 openjpeg-1.5
+   )
+   if (${tmp_varname})
+     mark_as_advanced (${tmp_varname})
+@@ -33,13 +32,11 @@
+     NAMES ${libname}
+     PATHS ${${libpath_var}}
+     PATH_SUFFIXES lib
+-    NO_DEFAULT_PATH
+   )
+   find_library(${tmp_prefix}_LIBRARY_DEBUG
+     NAMES ${libname}d ${libname}_d ${libname}debug ${libname}_debug
+     PATHS ${${libpath_var}}
+     PATH_SUFFIXES lib
+-    NO_DEFAULT_PATH
+   )
+   # Properly define ${tmp_prefix}_LIBRARY (cached) and ${tmp_prefix}_LIBRARIES
+   select_library_configurations (${tmp_prefix})
+@@ -59,18 +56,6 @@
+ 
+ # Generic search paths
+ set (OpenJpeg_include_paths
+-     /usr/local/include/openjpeg-2.3
+-     /usr/local/include/openjpeg-2.2
+-     /usr/local/include/openjpeg-2.1
+-     /usr/local/include/openjpeg-2.0
+-     /usr/local/include/openjpeg
+-     /usr/local/include
+-     /usr/include/openjpeg-2.3
+-     /usr/include/openjpeg-2.2
+-     /usr/include/openjpeg-2.1
+-     /usr/include/openjpeg-1.5
+-     /usr/include/openjpeg
+-     /usr/local/include/openjpeg-1.5
+      /usr/include
+      /opt/local/include)
+ 
+@@ -89,11 +74,6 @@
+        ${OpenJpeg_library_paths}
+       )
+   set (OpenJpeg_include_paths
+-       ${OPENJPEG_HOME}/include/openjpeg-2.3
+-       ${OPENJPEG_HOME}/include/openjpeg-2.2
+-       ${OPENJPEG_HOME}/include/openjpeg-2.1
+-       ${OPENJPEG_HOME}/include/openjpeg-2.0
+-       ${OPENJPEG_HOME}/include/openjpeg
+        ${OPENJPEG_HOME}/include
+        ${OpenJpeg_include_paths}
+       )

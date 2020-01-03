@@ -4,13 +4,13 @@
 PyModalDialog
 ******************
 
-**Inherits** :class:`QDialog` :class:`NatronEngine.UserParamHolder`
+**Inherits** `QDialog <https://pyside.github.io/docs/pyside/PySide/QtGui/QDialog.html>`_ :doc:`../NatronEngine/UserParamHolder`
 
 
 Synopsis
 -------------
 
-A modal dialog to ask informations to the user or to warn about something.
+A modal dialog to ask information to the user or to warn about something.
 See :ref:`detailed<modalDialog.details>` description...
 
 
@@ -90,7 +90,7 @@ Member functions description
 
 .. method:: NatronGui.PyModalDialog.addWidget(widget)
 
-    :param widget: :class:`PySide.QtGui.QWidget`
+    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`_
 
 Append a QWidget inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
 that will be inserted **after** any custom parameter.
@@ -133,7 +133,7 @@ The signature of the :ref:`callback<callbacks>` used on :ref:`PyModalDialog<pyMo
 - **paramName** indicating the :ref:`script-name<autoVar>` of the parameter which just had its value changed.
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
 - **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
-  the value by herself/himself) or due to another parameter changing the value of the parameter
+  the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
 Example::

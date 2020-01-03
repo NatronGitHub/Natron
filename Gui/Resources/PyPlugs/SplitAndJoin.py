@@ -40,6 +40,10 @@ def createInstance(app,group):
         return
 
     selNode = selectedNodes[0]
+    if selNode.isOutputNode():
+        natron.warningDialog("Split and Join","The selected node must not be a viewer or an output node")
+        return
+
     selectedNodePosition = selNode.getPosition()
     selectedNodeSize = selNode.getSize()
 

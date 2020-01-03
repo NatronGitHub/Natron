@@ -1356,7 +1356,7 @@ Image::pasteFrom(const Image & src,
         glFlush();
         glFinish();
         glCheckError();
-        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+        // Read to a temporary RGBA buffer then convert to the image which may not be RGBA
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 #else

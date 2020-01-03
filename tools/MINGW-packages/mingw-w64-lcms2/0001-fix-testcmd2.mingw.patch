@@ -1,0 +1,11 @@
+--- lcms2-2.4/testbed/testcms2.c.orig	2013-04-04 11:44:04 +0400
++++ lcms2-2.4/testbed/testcms2.c	2013-04-04 11:47:22 +0400
+@@ -33,6 +33,8 @@
+ // On Visual Studio, use debug CRT
+ #ifdef _MSC_VER
+ #     include "crtdbg.h"
++#endif
++#if defined (_WIN32)
+ #     include <io.h>
+ #endif
+ 

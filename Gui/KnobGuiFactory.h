@@ -39,7 +39,7 @@
 NATRON_NAMESPACE_ENTER
 
 /******************************KNOB_FACTORY**************************************/
-//Maybe the factory should move to a separate file since it is used to create KnobGui aswell
+//Maybe the factory should move to a separate file since it is used to create KnobGui as well
 class KnobGui;
 class KnobHolder;
 

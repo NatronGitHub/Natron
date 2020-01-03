@@ -44,6 +44,21 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
         DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
     fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
+    fi
 fi
 
 # the list of libs in /opt/local/lib/libgcc
@@ -384,7 +399,7 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
 fi
 # Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
-# Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
+# Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
 for qtlib in $QT_LIBS; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
         binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
@@ -692,7 +707,7 @@ for bin in $natronbins $otherbins; do
             IMAGEMAGICKMAJ=${IMAGEMAGICKVER%.*.*}
             IMAGEMAGICKLIB="$(pkg-config --variable=libdir ImageMagick)"
             IMAGEMAGICKSHARE="$(pkg-config --variable=prefix ImageMagick)/share"
-            # if I get this right, $GSED substitutes in the exe the occurences of IMAGEMAGICKVER
+            # if I get this right, $GSED substitutes in the exe the occurrences of IMAGEMAGICKVER
             # into the actual value retrieved from the package.
             # We don't need this because we use MAGICKCORE_PACKAGE_VERSION declared in the <magick/magick-config.h>
             # $GSED -e "s,IMAGEMAGICKVER,$IMAGEMAGICKVER,g" --in-place $pkgbin/DisparityKillerM

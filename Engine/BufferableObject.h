@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <cstddef>
+#include <list>
 
 NATRON_NAMESPACE_ENTER
 

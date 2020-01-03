@@ -88,7 +88,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
  *(std::unordered_map or boost::unordered_set_of) instead of a
  * tree-based version (std::map or boost::set_of).
  *
- * WARNING:  definining NATRON_CACHE_USE_HASH and not defining
+ * WARNING:  defining NATRON_CACHE_USE_HASH and not defining
  * NATRON_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
  * defined otherwise it will not compile. (no std::unordered_map
  * support on c++98)
@@ -125,7 +125,7 @@ public:
     // Key to value and key history iterator
     typedef MAP<key_type, std::pair<value_type, typename key_tracker_type::iterator> > key_to_value_type;
 
-    // Constuctor specifies the cached function and
+    // Constructor specifies the cached function and
     // the maximum number of records to be stored
     StlLRUHashTable()
     {
@@ -359,7 +359,7 @@ public:
     // Key to value and key history iterator
     typedef std::map<key_type, std::pair<value_type, typename key_tracker_type::iterator> > key_to_value_type;
 
-    // Constuctor specifies the cached function and
+    // Constructor specifies the cached function and
     // the maximum number of records to be stored
     StlLRUHashTable()
     {

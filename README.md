@@ -1,4 +1,4 @@
-Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](code-of-conduct.md) [![Open Hub](https://www.openhub.net/p/Natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron?ref=Thin+badge) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.png?branch=master)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.png?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/15152/badge.svg)](https://scan.coverity.com/projects/natrongithub-natron "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received)
+Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](code-of-conduct.md) [![Open Hub](https://www.openhub.net/p/Natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron?ref=Thin+badge) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.png?branch=master)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.png?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/15152/badge.svg)](https://scan.coverity.com/projects/natrongithub-natron "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received)
 ======
 
 
@@ -11,6 +11,7 @@ It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 - Home page: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
+- User documentation: https://natron.readthedocs.io/
 
 Help wanted
 -----------
@@ -53,14 +54,13 @@ Features
 - OpenFX: Currently almost all features of OpenFX v1.4 are supported
 
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user
-interface.  It is possible to customize and separate on any number of screens the graphical user interface.
-You can re-use your layouts and share your layout files (.nl)
+interface.  It is possible to customize and separate the graphical user interface on any number of screens.
+You can re-use your layouts and share your layout files (.nl).
 
-- Performances:  Never wait for anything to be rendered, in Natron anything you do produces
-real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e:
-the render pipeline can be computed at lower res to speed-up rendering).
+- Performance:  Never wait for anything to be rendered. In Natron, anything you do produces
+real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e the render pipeline can be computed at lower res to speed-up rendering).
 
-- Multi-task: Natron can render multiple graphs at the same time, it can also be used
+- Multi-task: Natron can render multiple graphs at the same time. It can also be used
 as a background process in command-line mode without any display support (e.g. for render farm purpose).
 
 - Recover easily from bugs: Natron sometimes crashes. Fear not, an  auto-save system

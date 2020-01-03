@@ -782,6 +782,8 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 
         getProject()->forceComputeInputDependentDataOnAllTrees();
     } else {
+        PythonGILLocker pgl;
+
         PyRun_SimpleString( content.toStdString().c_str() );
 
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -831,7 +833,9 @@ public:
         : _imp(imp)
         , _node(node)
     {
-        _imp->_creatingNodeQueue.push_back(node);
+        if (node) {
+            _imp->_creatingNodeQueue.push_back(node);
+        }
     }
 
     virtual ~AddCreateNode_RAII()
@@ -896,7 +900,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         QString modulePath;
         plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
 
-        if ( !moduleName.isEmpty() ) {
+        if ( containerNode && !moduleName.isEmpty() ) {
             setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
         }
 
@@ -929,7 +933,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             return NodePtr();
         }
 
-        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+        // If there's a serialization, restore the serialization of the group node because the Python script probably overridden any state
         if (serialization) {
             containerNode->loadKnobs(*serialization);
         }
@@ -947,6 +951,10 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
                                        const QString& pythonModulePath,
                                        const QString &pythonModule)
 {
+    assert(node);
+    if (!node) {
+        throw std::logic_error(__func__);
+    }
     std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
     unsigned int version;
     bool istoolset;
@@ -1511,13 +1519,14 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
         groupMD.append( tr("Reference Guide") );
         groupMD.append( QString::fromUtf8("\n============================================================\n\n") );
-        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. It is followed by one section for each node group in %1.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
         groupMD.append( QString::fromUtf8("\n\n") );
         //groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
+        groupMD.append( QString::fromUtf8("    _environment.rst\n") );
 
         Q_FOREACH(const QString &group, groups) {
             QString plugMD;
@@ -2190,6 +2199,9 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
                                      const NodeSerializationPtr& serialization, bool /*autoConnect*/)
 {
     assert(node);
+    if (!node) {
+        throw std::logic_error(__func__);
+    }
 
     // If the node is a PyPlug we might have set in the Python scripts the Mask and Optional knobs of the GroupInput
     // nodes, but nothing updated the inputs since we were loading the PyPlug, ensure they are up to date.

@@ -200,7 +200,7 @@ public:
         return false;
     }
 
-    //// Overriden from DockablePanelI
+    //// Overridden from DockablePanelI
 
     /**
      * @brief Removes a knob from the GUI, this should not be called directly, instead one should call KnobHolder::deleteKnob
@@ -218,7 +218,7 @@ public:
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
     ///// End override from DockablePanelI
 
-    //// Overriden from KnobGuiContainerI
+    //// Overridden from KnobGuiContainerI
 
     /**
      * @brief Get a pointer to the main gui
@@ -291,7 +291,7 @@ protected:
     virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) = 0;
 
     /**
-     * @brief Calld once a page is removed to remove it from the container (e.g: from a tabwidget)
+     * @brief Called once a page is removed to remove it from the container (e.g: from a tabwidget)
      **/
     virtual void removePageFromContainer(const KnobPageGuiPtr& page) = 0;
 

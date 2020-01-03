@@ -49,7 +49,7 @@ The signature of the callback used on the :ref:`Effect<Effect>` is::
 - **thisGroup** : This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode** or **app** otherwise if the node is in the main node-graph.
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
 - **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
-  the value by herself/himself) or due to another parameter changing the value of the parameter
+  the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
 For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`, the signature of the callback function is:
@@ -58,9 +58,7 @@ For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModa
 
 - **paramName** indicating the :ref:`script-name<autoVar>` of the parameter which just had its value changed.
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
-- **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
-the value by herself/himself) or due to another parameter changing the value of the parameter
-via a derivative of the :func:`setValue(value)<>` function.
+- **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed the value by theirself) or due to another parameter changing the value of the parameter via a derivative of the :func:`setValue(value)<>` function.
 
 .. note::
 

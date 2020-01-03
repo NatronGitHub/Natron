@@ -1,0 +1,12 @@
+--- a/OpenEXR/IlmImf/dwaLookups.cpp
++++ b/OpenEXR/IlmImf/dwaLookups.cpp
+@@ -42,6 +42,9 @@
+ #include <math.h>
+ #include <vector>
+ 
++#ifdef _WIN32
++#include <windows.h>
++#endif
+ #include <OpenEXRConfig.h>
+ 
+ #ifdef OPENEXR_IMF_HAVE_SYSCONF_NPROCESSORS_ONLN

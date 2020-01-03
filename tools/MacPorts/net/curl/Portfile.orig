@@ -1,9 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem                      1.0
+PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.65.1
+version                         7.67.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +27,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  bbd3437e70b34bd577b6cb09020ca667d3723e18 \
-                                sha256  f6c22074877f235aebc7c53057dbc7ee82358f8ae58bfb767e955c18c859a77a \
-                                size    2392672
+                                rmd160  f9db855e7f76abeac1eeeb9ebc37b2b116be77f2 \
+                                sha256  f5d2e7320379338c3952dcc7566a140abb49edb575f9f99272455785c40e536c \
+                                size    2418548
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -205,7 +206,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    0
+    revision                    2
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -218,23 +219,30 @@ subport curl-ca-bundle {
                                 (CA certs) which curl (when linked with OpenSSL) uses to \
                                 verify the authenticity of secure web and FTP servers.
 
-    depends_extract-append      bin:bzip2:bzip2
+    depends_extract-append      bin:unzip:unzip
 
     depends_build               path:bin/perl:perl5
 
+    # The approximate time (in seconds since the epoch) when the port maintainer
+    # updated the certdata.txt file in this port. (The output of "date +%s".)
+    set certdata_updated        1575014585
+    # The upstream commit in which certdata.txt was last updated.
+    set certdata_commit         dc8776ff47594e025f7cd07a5d7eefb00cbc9770
+    # The date (in YYYYMMDD format) that commit was pushed.
+    set certdata_date           20191127
     set certdata_file           certdata.txt
-    # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
-    # the certdata.txt file in the port was last updated.
-    set certdata_updated        1559870717
-    set certdata_version        3709f100f264
-    set certdata_extract_cmd    bzip2
-    set certdata_extract_suffix .tar.bz2
-    set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
+    # Using tar.bz2 would be preferable because it's smaller but upstream has
+    # disabled the creation of all but zip archives:
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=1596135
+    set certdata_extract_suffix .zip
+    set certdata_distfile       certdata-${certdata_date}-${certdata_commit}${certdata_extract_suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
-    # Only try to fetch from the master site shortly after the port is updated, to guard against stealth updates.
-    if {[clock seconds] - ${certdata_updated} < 604800} {
-        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_version}${certdata_extract_suffix}/${certdata_path}?dummy=:certdata
+    # Only try to fetch from upstream shortly after the port is updated,
+    # to reduce load on their server:
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=1596135
+    if {[clock seconds] - ${certdata_updated} < 86400} {
+        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_commit}${certdata_extract_suffix}/${certdata_path}?dummy=:certdata
     } else {
         master_sites-append     macports_distfiles::certdata
     }
@@ -242,18 +250,17 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  4f198d012501659d460f8fca9e17fabfd3b80a1c \
-                                sha256  9126c48a0b071abf105cabc1a20984b8b6480b4e9a6a719dd88c933b0c03542c \
-                                size    195136
+                                rmd160  560120de8901f051ba92ec0444b267602f6ef1ba \
+                                sha256  e01615571ad502435b438971226dc45336bee01644186a2cc9ecab5bc24d1f0f \
+                                size    257920
 
     extract.only                ${curl_distfile}
-    set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
-    extract.post_args-append    {*}${curl_mk_ca_bundle_files}
+    extract.post_args-append    ${worksrcdir}/Makefile \
+                                ${worksrcdir}/lib/mk-ca-bundle.pl
 
     post-extract {
-        extract.post_args-delete    {*}${curl_mk_ca_bundle_files}
-        system -W ${workpath} "${certdata_extract_cmd} ${extract.pre_args} '${distpath}/${certdata_distfile}' ${extract.post_args}"
-        move ${workpath}/mozilla-central-${certdata_version}/${certdata_path} ${worksrcpath}/${certdata_file}
+        system -W ${workpath} "unzip -q -a '${distpath}/${certdata_distfile}'"
+        move ${workpath}/mozilla-central-${certdata_commit}/${certdata_path} ${worksrcpath}/${certdata_file}
     }
 
     patchfiles                  patch-no-autodownload.diff
@@ -271,7 +278,7 @@ subport curl-ca-bundle {
     }
 
     livecheck.type              regexm
-    livecheck.url               https://hg.mozilla.org/mozilla-central/log/tip/${certdata_path}
-    livecheck.version           ${certdata_version}
-    livecheck.regex             {/rev/([0-9a-f]+)"}
+    livecheck.url               https://hg.mozilla.org/mozilla-central/log/default/${certdata_path}
+    livecheck.version           [regsub {(....)(..)(..)} ${certdata_date} {\1-\2-\3}]
+    livecheck.regex             {[0-9a-f]+<br/>created <i>[^<]+</i>\n<br/>pushed <i>([0-9-]+)}
 }

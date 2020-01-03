@@ -202,7 +202,7 @@ public:
        item correctly.*/
     virtual QPainterPath shape() const OVERRIDE;
 
-    /*Returns the bouding box of the nodeGUI, must be derived if you
+    /*Returns the bounding box of the nodeGUI, must be derived if you
        plan on changing the shape of the node.*/
     virtual QRectF boundingRect() const OVERRIDE;
 

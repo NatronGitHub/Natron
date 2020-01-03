@@ -6,7 +6,7 @@ IntParam
 
 *Inherits* :doc:`AnimatedParam`
 
-**Inherited by:** :ref:`Int2DParam`, :ref:`Int3DParam`
+**Inherited by:** :doc:`Int2DParam`, :doc:`Int3DParam`
 
 Synopsis
 --------
@@ -74,7 +74,7 @@ Member functions description
 
 
 Returns the value of this parameter at the given *frame*. If the animation curve has an
-animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
+animation (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>` then the
 value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
@@ -179,7 +179,7 @@ Returns the value of this parameter at the given *dimension* at the current time
 Returns the value of this parameter at the given *dimension* at the given *time*.
 
 If the animation curve has an
-animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
+animation (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>` then the
 value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 

@@ -34,7 +34,7 @@ for x in $RPMS; do
     yum -y install $x
 done
 
-# dont include png-dev
+# don't include png-dev
 yum -y remove libpng-devel
 yum -y remove libjpeg-turbo-devel
 

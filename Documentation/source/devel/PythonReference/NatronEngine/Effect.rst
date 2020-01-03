@@ -48,6 +48,7 @@ Functions
 - def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
 - def :meth:`isReaderNode<NatronEngine.Effect.isReaderNode>` ()
 - def :meth:`isWriterNode<NatronEngine.Effect.isWriterNode>` ()
+- def :meth:`isOutputNode<NatronEngine.Effect.isOutputNode>` ()
 - def :meth:`setColor<NatronEngine.Effect.setColor>` (r, g, b)
 - def :meth:`setLabel<NatronEngine.Effect.setLabel>` (name)
 - def :meth:`setPosition<NatronEngine.Effect.setPosition>` (x, y)
@@ -213,8 +214,8 @@ Removes any input Effect connected to the given *inputNumber* of this node.
 
     :rtype: :class:`dict`
 
-    Returns the layer available on this node. This is a dict with a :ref:`ImageLayer<NatronEngine.ImageLayer>`
-    as key and :ref:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
+    Returns the layer available on this node. This is a dict with a :class:`ImageLayer<NatronEngine.ImageLayer>`
+    as key and :class:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
     the upstream tree (including this node) that produced that layer.
 
     For example, in a simple graph Read --> Blur, if the Read node has a layer available
@@ -277,7 +278,7 @@ thread.
 :rtype: :class:`Effect<NatronEngine.Effect>`
 
     Same as :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` except that the parameter in input
-    is the name of the input as diplayed on the node-graph. This function is made available for convenience.
+    is the name of the input as displayed on the node-graph. This function is made available for convenience.
 
 
 
@@ -326,7 +327,7 @@ no such parameter exists.
 
     :rtype: :class:`sequence`
 
-Returns all the :doc:`parameters<NatronEngine.Param>` of this Effect as a sequence.
+Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 
 
 
@@ -384,7 +385,7 @@ of the region of definition.
     :rtype: :class:`Roto<NatronEngine.Roto>`
 
 Returns the roto context for this node. Currently only the Roto node has a roto context.
-The roto context is in charge of maintaining all informations relative to :doc:`Beziers<BezierCurve>`
+The roto context is in charge of maintaining all information relative to :doc:`Beziers<BezierCurve>`
 and :doc:`Layers<Layer>`.
 Most of the nodes don't have a roto context though and this function will return None.
 
@@ -395,7 +396,7 @@ Most of the nodes don't have a roto context though and this function will return
     :rtype: :class:`Tracker<NatronEngine.Tracker>`
 
 Returns the tracker context for this node. Currently only the Tracker node has a tracker context.
-The tracker context is in charge of maintaining all informations relative to :doc:`Tracks<Track>`.
+The tracker context is in charge of maintaining all information relative to :doc:`Tracks<Track>`.
 Most of the nodes don't have a tracker context though and this function will return None.
 
 
@@ -456,6 +457,13 @@ Convenience function to return the user page parameter if this Effect has one.
 
 
     Returns True if this node is a writer node
+
+.. method:: NatronEngine.Effect.isOutputNode()
+
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+    Returns True if this node is an output node (which also means that it has no output)
 
 .. method:: NatronEngine.Effect.setColor(r, g, b)
 

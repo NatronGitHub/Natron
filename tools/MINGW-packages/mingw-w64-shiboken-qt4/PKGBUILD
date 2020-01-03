@@ -3,8 +3,8 @@
 
 DLAGENTS=("https::/usr/bin/curl -k -o %o %u")
 _realname=shiboken-qt4
-pkgname=(${MINGW_PACKAGE_PREFIX}-${_realname} ${MINGW_PACKAGE_PREFIX}-python2-${_realname})
-pkgver=1.2.2
+pkgname=${MINGW_PACKAGE_PREFIX}-python2-${_realname}
+pkgver=1.2.4
 pkgrel=1
 arch=('any')
 url="http://pyside.github.io/docs/pyside/"
@@ -12,8 +12,8 @@ license=("LGPL")
 install=${_realname}-${CARCH}.install
 source=(https://pypi.python.org/packages/source/P/PySide/PySide-${pkgver}.tar.gz
         shiboken.patch)
-md5sums=('c45bc400c8a86d6b35f34c29e379e44d'
-         '79cbe9b06107a431693c401944e78c3b')
+sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
+         '603b3ac935a60494cc9cb52c3e0847f61353df546dfea88544025e9ddea5e7c0')
 makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
              "${MINGW_PACKAGE_PREFIX}-libxslt"
              "${MINGW_PACKAGE_PREFIX}-python2"
@@ -45,7 +45,7 @@ build() {
       -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
       ${_conf} \
       -DCMAKE_BUILD_TYPE=RELEASE \
-      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe
 
     make -j${MKJOBS}
 
@@ -67,27 +67,28 @@ fix_paths() {
   done
 }
 
-package_shiboken() {
-  pkgdesc="CPython bindings generator for C++ libraries (mingw-w64)"
-  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
-               "${MINGW_PACKAGE_PREFIX}-libxslt"
-               "${MINGW_PACKAGE_PREFIX}-python3"
-               "${MINGW_PACKAGE_PREFIX}-qt4")
+package() {
+#  pkgdesc="CPython bindings generator for C++ libraries (mingw-w64)"
+#  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+#               "${MINGW_PACKAGE_PREFIX}-libxslt"
+#               "${MINGW_PACKAGE_PREFIX}-python3"
+#               "${MINGW_PACKAGE_PREFIX}-qt4")
 
   #cd ${srcdir}/build-${MINGW_CHOST}-python2/sources/shiboken/data
   #install -Dm644 ShibokenConfig-python2.7.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/
   #install -Dm644 shiboken.pc ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/Shiboken-py2.pc
   
-  fix_paths
-}
-
-package_python2-shiboken() {
-  pkgdesc="Support library for Python2 bindings (mingw-w64)"
-  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
-               "${MINGW_PACKAGE_PREFIX}-libxslt"
-               "${MINGW_PACKAGE_PREFIX}-python2"
-               "${MINGW_PACKAGE_PREFIX}-shiboken"
-               "${MINGW_PACKAGE_PREFIX}-qt4")
+  #fix_paths
+  #package_python2-shiboken
+#}
+#
+#package_python2-shiboken() {
+#  pkgdesc="Support library for Python2 bindings (mingw-w64)"
+#  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+#               "${MINGW_PACKAGE_PREFIX}-libxslt"
+#               "${MINGW_PACKAGE_PREFIX}-python2"
+#               "${MINGW_PACKAGE_PREFIX}-shiboken"
+#               "${MINGW_PACKAGE_PREFIX}-qt4")
 
   cd ${srcdir}/build-${MINGW_CHOST}-python2/sources/shiboken
   make DESTDIR=${pkgdir} install
@@ -100,19 +101,19 @@ package_python2-shiboken() {
 }
 
 # Wrappers
-package_mingw-w64-i686-shiboken-qt4() {
-  package_shiboken
-}
+#package_mingw-w64-i686-shiboken-qt4() {
+#  package_shiboken
+#}
 
-package_mingw-w64-i686-python2-shiboken-qt4() {
-  package_python2-shiboken
-}
+#package_mingw-w64-i686-python2-shiboken-qt4() {
+#  package_python2-shiboken
+#}
 
-package_mingw-w64-x86_64-shiboken-qt4() {
-  package_shiboken
-}
+#package_mingw-w64-x86_64-shiboken-qt4() {
+#  package_shiboken
+#}
 
-package_mingw-w64-x86_64-python2-shiboken-qt4() {
-  package_python2-shiboken
-}
+#package_mingw-w64-x86_64-python2-shiboken-qt4() {
+#  package_python2-shiboken
+#}
 

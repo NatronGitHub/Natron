@@ -1,0 +1,91 @@
+diff --git a/src/thbrk/Makefile.am b/src/thbrk/Makefile.am
+index b528c34..476fbf1 100644
+--- a/src/thbrk/Makefile.am
++++ b/src/thbrk/Makefile.am
+@@ -19,5 +19,5 @@ libthbrk_la_SOURCES =	\
+ 	brk-maximal.h	\
+ 	$(NULL)
+ 
+-libthbrk_la_LIBADD = $(DATRIE_LIBS)
++libthbrk_la_LIBADD = -lshlwapi $(DATRIE_LIBS)
+ 
+diff --git a/src/thbrk/brk-common.c b/src/thbrk/brk-common.c
+index fedb1bf..4f80bca 100644
+--- a/src/thbrk/brk-common.c
++++ b/src/thbrk/brk-common.c
+@@ -35,6 +35,49 @@
+ 
+ #define DICT_NAME   "thbrk"
+ 
++#ifdef _WIN32
++#define WIN32_LEAN_AND_MEAN
++#include <windows.h>
++#include <shlwapi.h>
++static HMODULE libthai_dll;
++
++BOOL WINAPI
++DllMain (HINSTANCE hinstDLL,
++         DWORD     fdwReason,
++         LPVOID    lpvReserved)
++{
++    switch (fdwReason) {
++        case DLL_PROCESS_ATTACH:
++            libthai_dll = (HMODULE) hinstDLL;
++            break;
++    }
++
++    return TRUE;
++}
++
++static BOOL _getWinDictPath(wchar_t *out, int size) {
++    /* returns TRUE on success, FALSE on error */
++
++    BOOL status;
++    if (GetModuleFileNameW (libthai_dll, out, MAX_PATH) == 0)
++        return FALSE;
++    PathRemoveFileSpecW (out);
++    /* Assume the DLL is in /bin */
++    PathRemoveFileSpecW (out);
++    status = PathAppendW (out, L"share");
++    if (status != TRUE)
++        return FALSE;
++    status = PathAppendW (out, L"libthai");
++    if (status != TRUE)
++        return FALSE;
++    status = PathAppendW (out, L"thbrk.tri");
++    if (status != TRUE)
++        return FALSE;
++
++    return TRUE;
++}
++#endif
++
+ static char *
+ full_path (const char *path, const char *name, const char *ext)
+ {
+@@ -58,10 +101,25 @@ brk_load_default_dict ()
+         free (path);
+     }
+ 
++#ifdef _WIN32
++    if (!dict_trie) {
++        wchar_t dict_path[MAX_PATH];
++        FILE *trie_file;
++
++        if (_getWinDictPath (dict_path, MAX_PATH) == TRUE) {
++            trie_file = _wfopen (dict_path, L"rb");
++            if (trie_file != NULL) {
++                dict_trie = trie_fread (trie_file);
++                fclose (trie_file);
++            }
++        }
++    }
++#else
+     /* Then, fall back to default DICT_DIR macro */
+     if (!dict_trie) {
+         dict_trie = trie_new_from_file (DICT_DIR "/" DICT_NAME ".tri");
+     }
++#endif
+ 
+     return dict_trie;
+ }

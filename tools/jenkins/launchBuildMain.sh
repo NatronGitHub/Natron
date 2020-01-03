@@ -4,7 +4,7 @@
 #
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 
 # Configurable Options:
@@ -18,7 +18,7 @@ set -x # Print commands and their arguments as they are executed.
 # To launch a snapshot, you must set SNAPSHOT_BRANCH and SNAPSHOT_COMMIT and point GIT_URL to the Natron repo to build from.
 # To launch a CI (Natron or plug-in repo) you must set GIT_URL, GIT_BRANCH, GIT_COMMIT. GIT_URL may point to either a Natron repository or plug-in repository. The GIT_URL must be known by the script. List of repositories is maintained in gitRepositories.sh
 #
-# RELEASE_TAG: string "x.y.z" indicating the tag name of the repository to use. Do not add the prefix "tags/", it will be added automatically. Only indicate this to trigger a release.
+# RELEASE_TAG: string "x.y.z" indicating the release number. The corresponding tag is "vx.y.z" in the Natron repository and "Natron-x.y.z" in each of the plugins repository. Only indicate this to trigger a release.
 # SNAPSHOT_BRANCH: If set and RELEASE_TAG is not set, this describes a specific branch to build as a snapshot
 # SNAPSHOT_COMMIT: The commit to build for a snapshot on the given SNAPSHOT_BRANCH. If not set, the latest commit of the branch will be built
 # UNIT_TESTS: "false" or "true" (for compat with jenkins) to run the full unit tests suite after the build
@@ -35,14 +35,59 @@ set -x # Print commands and their arguments as they are executed.
 # BITS: Windows only: Must indicate if this is a 64 or 32 bits build
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
+# MKJOBS: number of parallel build jobs
 #
 # The options above are set by custom parameters in the build configuration
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
-
-
+#
 # GIT_URL, GIT_BRANCH, GIT_COMMIT are set from the git jenkins plug-in automatically
+# If GIT_URL is an unknown Natron repository, GIT_URL_IS_NATRON=1 can be used to force a Natron build.
 # BUILD_NUMBER is also given by jenkins, see https://wiki.jenkins-ci.org/display/JENKINS/Building+a+software+project#Buildingasoftwareproject-JenkinsSetEnvironmentVariables
 # The above options must be set if calling this script manually. If GIT_COMMIT is omitted, the latest commit of GIT_BRANCH is actually built
+#
+#
+# Script debug parameters:
+#
+# BUILD_FROM: first step of the build
+# BUILD_TO: last step of the build
+#
+#### STEP 1: checkout sources
+if [ "${BUILD_FROM:-1}" -le 1 ] && [ "${BUILD_TO:-99}" -ge 1 ]; then
+    BUILD_1=true
+else
+    BUILD_1=false
+fi
+#### STEP2: build plugins
+if [ "${BUILD_FROM:-1}" -le 2 ] && [ "${BUILD_TO:-99}" -ge 2 ]; then
+    BUILD_2=true
+else
+    BUILD_2=false
+fi
+#### STEP3: build natron
+if [ "${BUILD_FROM:-1}" -le 3 ] && [ "${BUILD_TO:-99}" -ge 3 ]; then
+    BUILD_3=true
+else
+    BUILD_3=false
+fi
+#### STEP4: build installer
+if [ "${BUILD_FROM:-1}" -le 4 ] && [ "${BUILD_TO:-99}" -ge 4 ]; then
+    BUILD_4=true
+else
+    BUILD_4=false
+fi
+#### STEP5: unit tests
+if [ "${BUILD_FROM:-1}" -le 5 ] && [ "${BUILD_TO:-99}" -ge 5 ]; then
+    BUILD_5=true
+else
+    BUILD_5=false
+fi
+#### STEP6: archive artifacts and cleanup (which happens even if build fails)
+if [ "${BUILD_FROM:-1}" -le 6 ] && [ "${BUILD_TO:-99}" -ge 6 ]; then
+    BUILD_6=true
+else
+    BUILD_6=false
+fi
+
 echo "-----------------------------------------------------------------------"
 echo "NATRON JENKINS BUILDMASTER"
 echo "-----------------------------------------------------------------------"
@@ -50,6 +95,7 @@ echo "BUILD_NUMBER                      : \"${BUILD_NUMBER:-}\""
 echo "BUILD_NAME                        : \"${BUILD_NAME:-}\""
 echo "WORKSPACE                         : \"${WORKSPACE:-}\""
 echo "GIT_URL                           : \"${GIT_URL:-}\""
+echo "GIT_URL_IS_NATRON                 : \"${GIT_URL_IS_NATRON:-}\""
 echo "GIT_BRANCH                        : \"${GIT_BRANCH:-}\""
 echo "GIT_COMMIT                        : \"${GIT_COMMIT:-}\""
 echo "RELEASE_TAG                       : \"${RELEASE_TAG:-}\""
@@ -65,9 +111,19 @@ echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
 echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
 echo "EXTRA_PYTHON_MODULES_SCRIPT       : \"${EXTRA_PYTHON_MODULES_SCRIPT:-}\""
-echo "REMOTE_URL                        : \"${REMOTE_URL}\""
-echo "REMOTE_USER                       : \"${REMOTE_USER}\""
-echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX}\""
+echo "REMOTE_URL                        : \"${REMOTE_URL:-}\""
+echo "REMOTE_USER                       : \"${REMOTE_USER:-}\""
+echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX:-}\""
+echo "BUILD_FROM                        : \"${BUILD_FROM:-}\""
+echo "BUILD_TO                          : \"${BUILD_TO:-}\""
+echo "BUILD_1 (checkout sources)        : \"${BUILD_1:-}\""
+echo "BUILD_2 (plugins)                 : \"${BUILD_2:-}\""
+echo "BUILD_3 (natron)                  : \"${BUILD_3:-}\""
+echo "BUILD_4 (installer)               : \"${BUILD_4:-}\""
+echo "BUILD_5 (unit tests)              : \"${BUILD_5:-}\""
+echo "BUILD_6 (archive and cleanup)     : \"${BUILD_6:-}\""
+echo "MKJOBS                            : \"${MKJOBS:-}\""
+echo "NOUPDATE (disable scripts update) : \"${NOUPDATE:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then
@@ -77,6 +133,11 @@ fi
 
 if [ -z "${BUILD_NAME:-}" ] || [ -z "${BUILD_NUMBER:-}" ]; then
     echo "Must set BUILD_NAME and BUILD_NUMBER"
+    exit 1
+fi
+
+if [ -z "${WORKSPACE:-}" ] || [ ! -d "${WORKSPACE}" ]; then
+    echo "WORKSPACE must be set to an existing directory on the local filesystem."
     exit 1
 fi
 
@@ -94,16 +155,23 @@ source gitRepositories.sh
 # refresh credentials
 if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
     keychainstatus=0
-    eval `keychain -q --eval --agents ssh id_rsa_build_master` || keychainstatus=1
+    eval $(keychain -q --eval --agents ssh id_rsa_build_master) || keychainstatus=1
     if [ $keychainstatus != 0 ]; then
         echo "Restarting ssh-agent"
         keychain -k
-        eval `keychain --eval --agents ssh id_rsa_build_master`
+        eval $(keychain --eval --agents ssh id_rsa_build_master)
     fi
 fi
 
-GIT_BRANCH=$(echo $GIT_BRANCH | sed 's#origin/##')
-BUILD_NATRON=0
+# check that TIMEOUT works
+$TIMEOUT 1 true && echo "$TIMEOUT works"
+#check that SED works
+echo "Testing $GSED"
+echo "$GSED does not work" | $GSED -e "s/does not work/works/"
+# check that curl works
+$CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
+
+GIT_BRANCH=$(echo "$GIT_BRANCH" | sed 's#origin/##')
 DO_UTEST=0
 
 # Defaults to relwithdebinfo if not set
@@ -128,18 +196,20 @@ else
 fi
 
 # Remove any previous jenkins artifacts from previous builds
-if [ ! -z "${WORKSPACE:-}" ]; then
+if [ -n "${WORKSPACE:-}" ]; then
     if [ -d "${WORKSPACE}/jenkins_artifacts" ]; then
         rm -rf "${WORKSPACE}/jenkins_artifacts" || true
     fi
 fi
 
-# Do we need to build Natron ? No if the script was not invoked from a Natron project
-IS_GIT_URL_NATRON_REPO=0
-isNatronRepo "$GIT_URL" || IS_GIT_URL_NATRON_REPO=1
+# Do we need to build Natron ? No if the script was not invoked from a Natron CI project
+if [ -z "${GIT_URL_IS_NATRON:-}" ]; then
+    GIT_URL_IS_NATRON=0
+    isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
+fi
 
 
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     # Set the git urls from the Natron url in gitRepositories.sh
     setGitUrlsForNatronUrl "$GIT_URL"
 else
@@ -185,7 +255,7 @@ setBuildOption "GIT_URL_OPENFX_ARENA" "$GIT_URL_OPENFX_ARENA"
 setBuildOption "GIT_URL_OPENFX_GMIC" "$GIT_URL_OPENFX_GMIC"
 setBuildOption "GIT_URL_OPENFX_OPENCV" "$GIT_URL_OPENFX_OPENCV"
 
-BUILDS_ARCHIVE_PATH="$CWD/builds_archive"
+BUILDS_ARCHIVE_PATH="$WORKSPACE/builds_archive"
 
 BUILD_ARCHIVE_DIRECTORY="$BUILDS_ARCHIVE_PATH/$BUILD_NAME/$BUILD_NUMBER"
 
@@ -203,10 +273,10 @@ setBuildOption "BUILD_ARCHIVE_DIRECTORY" "$BUILD_ARCHIVE_DIRECTORY"
 
 # Determine Natron build type
 NATRON_BUILD_CONFIG=""
-if [ "$IS_GIT_URL_NATRON_REPO" != "1" ]; then
+if [ "${GIT_URL_IS_NATRON:-}" != "1" ]; then
     TYPE="PLUGIN_CI"
 else
-    if [ ! -z "${RELEASE_TAG:-}" ]; then
+    if [ -n "${RELEASE_TAG:-}" ]; then
         TYPE="RELEASE"
         if [ "$NATRON_DEV_STATUS" != "ALPHA" ] && [ "$NATRON_DEV_STATUS" != "BETA" ] && [ "$NATRON_DEV_STATUS" != "RC" ] && [ "$NATRON_DEV_STATUS" != "CUSTOM" ] && [ "$NATRON_DEV_STATUS" != "STABLE" ]; then
             echo "Invalid NATRON_DEV_STATUS=$NATRON_DEV_STATUS, it must be either [ALPHA, BETA, RC, CUSTOM, STABLE]"
@@ -216,7 +286,7 @@ else
         setBuildOption "NATRON_BUILD_CONFIG" "$NATRON_DEV_STATUS"
         setBuildOption "NATRON_BUILD_NUMBER" "$NATRON_BUILD_NUMBER"
         setBuildOption "NATRON_CUSTOM_BUILD_USER_NAME" "${NATRON_CUSTOM_BUILD_USER_NAME:-}"
-    elif [ ! -z "${SNAPSHOT_COMMIT:-}" ] || [ ! -z "${SNAPSHOT_BRANCH:-}" ]; then
+    elif [ -n "${SNAPSHOT_COMMIT:-}" ] || [ -n "${SNAPSHOT_BRANCH:-}" ]; then
         TYPE="SNAPSHOT"
         NATRON_BUILD_CONFIG="SNAPSHOT"
         setBuildOption "NATRON_BUILD_CONFIG" "SNAPSHOT"
@@ -234,10 +304,10 @@ setBuildOption "NATRON_EXTRA_QMAKE_FLAGS" "${NATRON_EXTRA_QMAKE_FLAGS:-}"
 setBuildOption "BUILD_TYPE" "$TYPE"
 
 # Set the url for Natron to GIT_URL if this is the build that triggered it, otherwise use Github by default
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     setBuildOption "NATRON_GIT_URL" "$GIT_URL"
 else
-    setBuildOption "NATRON_GIT_URL" "$GIT_NATRON"
+    setBuildOption "NATRON_GIT_URL" "$GIT_URL_NATRON"
 fi
 
 
@@ -266,7 +336,7 @@ if [ "$TYPE" = "RELEASE" ]; then
     fi
     setBuildOption "DISABLE_RPM_DEB_PKGS" "$DISABLE_RPM_DEB_PKGS"
     GIT_COMMIT=""
-    GIT_BRANCH="tags/${RELEASE_TAG:-}"
+    GIT_BRANCH="tags/v${RELEASE_TAG:-}"
     setBuildOption "NATRON_GIT_BRANCH" "$GIT_BRANCH"
     setBuildOption "NATRON_GIT_COMMIT" ""
     setBuildOption "OPENFX_IO_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
@@ -352,8 +422,10 @@ FAIL=0
 source checkout-repository.sh
 
 # Checkout Natron git
-if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
-    checkoutRepository "$GIT_URL_NATRON" "Natron" "$NATRON_GIT_BRANCH" "$NATRON_GIT_COMMIT" "NATRON_GIT_COMMIT" "$TAR_SOURCES" || FAIL=$?
+if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+    if $BUILD_1; then
+        checkoutRepository "$GIT_URL_NATRON" "Natron" "$NATRON_GIT_BRANCH" "$NATRON_GIT_COMMIT" "NATRON_GIT_COMMIT" "$TAR_SOURCES" || FAIL=$?
+    fi
 
     if [ "$FAIL" != "1" ]; then
     NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
@@ -366,14 +438,17 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
 
     setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
     setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
-
-
-    # add breakpad
-    #cd "$TMP_PATH/Natron"
-    #rm -rf CrashReporter* BreakpadClient google-breakpad || true
-    #cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
     fi
     cd "$CWD"
+    # Update build scripts, except launchBuildMain.sh, which is being executed
+    # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
+    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ]; then
+        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
+        sleep 5
+    fi
+    if [ -z "${NOUPDATE:+x}" ]; then
+        (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
+    fi
 fi
 
 
@@ -441,25 +516,25 @@ setBuildOption "TMP_PORTABLE_DIR" "${TMP_BINARIES_PATH}/$PORTABLE_DIRNAME"
 updateBuildOptions
 
 # Checkout plug-ins git
-if [ ! -z "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_IO" "openfx-io" "$OPENFX_IO_GIT_BRANCH" "$OPENFX_IO_GIT_COMMIT" "OPENFX_IO_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_MISC" "openfx-misc" "$OPENFX_MISC_GIT_BRANCH" "$OPENFX_MISC_GIT_COMMIT" "OPENFX_MISC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_ARENA" "openfx-arena" "$OPENFX_ARENA_GIT_BRANCH" "$OPENFX_ARENA_GIT_COMMIT" "OPENFX_ARENA_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_GMIC" "openfx-gmic" "$OPENFX_GMIC_GIT_BRANCH" "$OPENFX_GMIC_GIT_COMMIT" "OPENFX_GMIC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
 # Force deactivate of openfx-opencv for now.
 OPENFX_OPENCV_GIT_BRANCH=""
-if [ ! -z "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_OPENCV" "openfx-opencv" "$OPENFX_OPENCV_GIT_BRANCH" "$OPENFX_OPENCV_GIT_COMMIT" "OPENFX_OPENCV_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
@@ -467,7 +542,7 @@ dumpBuildOptions
 
 
 # Build plug-ins
-if [ "$FAIL" = "0" ]; then
+if $BUILD_2 && [ "$FAIL" = "0" ]; then
     bash "build-plugins.sh" || FAIL=$?
 fi
 if [ "$FAIL" -ne "0" ]; then
@@ -476,7 +551,7 @@ if [ "$FAIL" -ne "0" ]; then
 fi
 
 # Build Natron
-if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_3 && [ "$FAIL" = "0" ] && [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     bash "build-natron.sh" || FAIL=$?
 fi
 if [ "$FAIL" -ne "0" ]; then
@@ -486,7 +561,7 @@ fi
 
 # build installer(s)
 #
-if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_4 && [ "$FAIL" = "0" ] && [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     printStatusMessage "Creating installer..."
     bash "build-${PKGOS}-installer.sh" || FAIL=$?
 fi
@@ -497,10 +572,10 @@ fi
 
 
 UNIT_TESTS_FAIL=0
-if [ "$FAIL" = "0" ]; then
+if $BUILD_5 && [ "$FAIL" = "0" ]; then
     echo "Build finished! Files are located in $BUILD_ARCHIVE_DIRECTORY"
     # unit tests
-    if [ "$IS_GIT_URL_NATRON_REPO" = "1" ] && [ "$DO_UTEST" = "1" ]; then
+    if [ "${GIT_URL_IS_NATRON:-}" = "1" ] && [ "$DO_UTEST" = "1" ]; then
 
         env bash runUnitTests.sh || UNIT_TESTS_FAIL=$?
         if [ "$UNIT_TESTS_FAIL" = "0" ]; then
@@ -511,13 +586,14 @@ if [ "$FAIL" = "0" ]; then
     fi
 fi
 
+if $BUILD_6; then
 if [ -f "$BUILD_OPTIONS_FILE" ]; then
     cp "$BUILD_OPTIONS_FILE" "$BUILD_ARCHIVE_DIRECTORY/"
 fi
 
 # Move files to Jenkins artifact directory
 if [ "$FAIL" = "0" ]; then
-    if [ ! -z "${WORKSPACE:-}" ]; then
+    if [ -n "${WORKSPACE:-}" ]; then
         [ -d "${WORKSPACE}" ] || mkdir -p "${WORKSPACE}"
         # Make a sym link of the build to the jenkins artifacts directory 
         ln -s "${BUILD_ARCHIVE_DIRECTORY}" "${WORKSPACE}/jenkins_artifacts"
@@ -529,7 +605,7 @@ fi
 
 # clean up
 "$INC_PATH/scripts/cleantmp.sh" > /dev/null 2>&1
-
+fi
 
 # Local variables:
 # mode: shell-script

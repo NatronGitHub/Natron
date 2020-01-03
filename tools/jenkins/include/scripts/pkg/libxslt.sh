@@ -2,7 +2,7 @@
 
 # Install libxslt
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/libxslt.html
-LIBXSLT_VERSION=1.1.33
+LIBXSLT_VERSION=1.1.34
 LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.gz"
 LIBXSLT_SITE="ftp://xmlsoft.org/libxslt"
 if build_step && { force_build || { [ "${REBUILD_XSLT:-}" = "1" ]; }; }; then

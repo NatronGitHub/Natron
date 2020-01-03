@@ -194,7 +194,7 @@ OfxClipInstance::getUnmappedBitDepth() const
         }
     }
 
-    ///Return the hightest bit depth supported by the plugin
+    ///Return the highest bit depth supported by the plugin
     EffectInstancePtr effect = getEffectHolder();
     if (effect) {
         const std::string& ret = natronsDepthToOfxDepth( effect->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
@@ -454,8 +454,8 @@ OfxClipInstance::getFrameRange(double &startFrame,
 /// Field Order - Which spatial field occurs temporally first in a frame.
 /// \returns
 ///  - kOfxImageFieldNone - the clip material is unfielded
-///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occuring first in a frame
-///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
+///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occurring first in a frame
+///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occurring first in a frame
 const std::string &
 OfxClipInstance::getFieldOrder() const
 {
@@ -546,7 +546,7 @@ OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
 // Continuous Samples -
 //
 //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
-//  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
+//  1 if the images can only be sampled continuously (eg: the clip is in fact an animating roto spline and can be rendered anywhen).
 bool
 OfxClipInstance::getContinuousSamples() const
 {
@@ -1699,7 +1699,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
         }
     }
 
-    /// wierd, must be some custom bit , if only one, choose that, otherwise no idea
+    /// weird, must be some custom bit , if only one, choose that, otherwise no idea
     /// how to map, you need to derive to do so.
     const std::vector<std::string> &supportedComps = getSupportedComponents();
     if (supportedComps.size() == 1) {

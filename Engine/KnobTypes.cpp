@@ -1281,7 +1281,10 @@ KnobColor::KnobColor(KnobHolder* holder,
     , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
-    assert(dimension <= 4 && dimension != 2);
+    assert(dimension == 1 || dimension == 3 ||  dimension == 4);
+    if (dimension != 1 && dimension != 3 && dimension != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 }
 
 KnobColor::KnobColor(KnobHolder* holder,
@@ -1293,7 +1296,10 @@ KnobColor::KnobColor(KnobHolder* holder,
     , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
-    assert(dimension <= 4 && dimension != 2);
+    assert(dimension == 1 || dimension == 3 ||  dimension == 4);
+    if (dimension != 1 && dimension != 3 && dimension != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 }
 
 void

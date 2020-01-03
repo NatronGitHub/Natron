@@ -1,0 +1,43 @@
+From 842e5675224adfc49ddadfeb084bf61166dc7101 Mon Sep 17 00:00:00 2001
+From: Christoph Reiter <reiter.christoph@gmail.com>
+Date: Sun, 21 Jul 2019 16:06:55 +0200
+Subject: [PATCH] pangowin32: add back the old font fallback list for each
+ registered font
+
+In f523c25c12c I changed the font fallback list from hardcoded to reading it from
+the registry to cover all potentially default Windows UI fonts. Turns out that this
+doesn't cover all of Unicode and breaks things like Marathi.
+
+This adds back the language specific font fallbacks to each font read from the registry
+to restore the old Unicode coverage.
+
+Fixes #375
+---
+ pango/pangowin32-fontmap.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/pango/pangowin32-fontmap.c b/pango/pangowin32-fontmap.c
+index 130b76e9..976a36cb 100644
+--- a/pango/pangowin32-fontmap.c
++++ b/pango/pangowin32-fontmap.c
+@@ -574,6 +574,17 @@ read_windows_fallbacks (GHashTable *ht_aliases)
+           entry_len = wcslen (entry);
+         }
+       g_free (value_data);
++
++      /* For some reason the default fallback list doesn't cover all of Unicode
++       * and Windows has additional fonts for certain languages.
++       * Some of them are listed in
++       * SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontMapperFamilyFallback
++       * but I couldn't find any docs for it. Feel free to improve this */
++      g_string_append (line_buffer,
++                       ",gisha,leelawadee,arial unicode ms,browallia new,"
++                       "mingliu,simhei,gulimche,ms gothic,sylfaen,kartika,"
++                       "latha,mangal,raavi");
++
+       g_string_append (line_buffer, "\"");
+ 
+       handle_alias_line (line_buffer, &errstring, ht_aliases);
+-- 
+2.21.0
+

@@ -1314,7 +1314,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 // Function to spawn SMP threads
 //  This function will spawn nThreads separate threads of computation (typically one per CPU) to allow something to perform symmetric multi processing. Each thread will call 'func' passing in the index of the thread and the number of threads actually launched.
 // multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
-// nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
+// nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limited to the number of CPUs returned by multiThreadNumCPUs.
 // This function cannot be called recursively.
 // Note that the thread indexes are from 0 to nThreads-1.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
@@ -1336,7 +1336,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
 
     // from the documentation:
     // "nThreads can be more than the value returned by multiThreadNumCPUs, however
-    // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
+    // the threads will be limited to the number of CPUs returned by multiThreadNumCPUs."
 
     if ( (nThreads == 1) || (maxConcurrentThread <= 1) || (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) ) {
         try {
@@ -1555,7 +1555,7 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 }
 
 // Destroy a mutex
-//  Destroys a mutex intially created by mutexCreate.
+//  Destroys a mutex initially created by mutexCreate.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexDestroy
 OfxStatus
 OfxHost::mutexDestroy(const OfxMutexHandle mutex)
@@ -1596,8 +1596,8 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 }
 
 // Blocking lock on the mutex
-//  This trys to lock a mutex and blocks the thread it is in until the lock suceeds.
-// A sucessful lock causes the mutex's lock count to be increased by one and to block any other calls to lock the mutex until it is unlocked.
+//  This tries to lock a mutex and blocks the thread it is in until the lock succeeds.
+// A successful lock causes the mutex's lock count to be increased by one and to block any other calls to lock the mutex until it is unlocked.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexLock
 OfxStatus
 OfxHost::mutexLock(const OfxMutexHandle mutex)
@@ -1656,7 +1656,7 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 
 // Non blocking attempt to lock the mutex
 //  This attempts to lock a mutex, if it cannot, it returns and says so, rather than blocking.
-// A sucessful lock causes the mutex's lock count to be increased by one, if the lock did not suceed, the call returns immediately and the lock count remains unchanged.
+// A successful lock causes the mutex's lock count to be increased by one, if the lock did not succeed, the call returns immediately and the lock count remains unchanged.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexTryLock
 OfxStatus
 OfxHost::mutexTryLock(const OfxMutexHandle mutex)

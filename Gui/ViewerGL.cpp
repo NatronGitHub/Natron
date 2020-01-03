@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -1070,7 +1071,7 @@ explode(const QString& str)
         QString word = str.mid(startIndex, index - startIndex);
         const QChar& nextChar = str[index];
 
-        // Dashes and the likes should stick to the word occuring before it. Whitespace doesn't have to.
+        // Dashes and the likes should stick to the word occurring before it. Whitespace doesn't have to.
         if ( nextChar.isSpace() ) {
             ret.push_back(word);
             ret.push_back(nextChar);
@@ -1351,7 +1352,7 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
     RectI texRect;
-    int tileSize = std::pow( 2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
+    int tileSize = ipow( 2, appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
     texRect.x1 = std::floor( ( (double)roi.x1 ) / tileSize ) * (double)tileSize;
     texRect.y1 = std::floor( ( (double)roi.y1 ) / tileSize ) * (double)tileSize;
     texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * (double)tileSize;
@@ -2275,7 +2276,7 @@ ViewerGL::penMotionInternal(int x,
         const double zoomFactor_max = 1024.;
         double zoomFactor;
         int delta = 2 * ( ( x - _imp->lastMousePosition.x() ) - ( y - _imp->lastMousePosition.y() ) );
-        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta); // no need to use ipow() here, because the result is not cast to int
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
             zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
@@ -2795,13 +2796,14 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     const double zoomFactor_max = 1024.;
     double zoomFactor;
     unsigned int oldMipMapLevel, newMipMapLevel;
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
         zoomFactor = _imp->zoomCtx.factor();
 
-        oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        //oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        oldMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
         zoomFactor *= scaleFactor;
 
@@ -2813,7 +2815,8 @@ ViewerGL::wheelEvent(QWheelEvent* e)
             scaleFactor = zoomFactor / _imp->zoomCtx.factor();
         }
 
-        newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         _imp->zoomOrPannedSinceLastFit = true;
     }
@@ -2859,12 +2862,14 @@ ViewerGL::zoomSlot(int v)
         newZoomFactor = 1024.;
     }
     unsigned int oldMipMapLevel, newMipMapLevel;
-    newMipMapLevel = std::log( newZoomFactor >= 1 ? 1 :
-                               std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
+    //newMipMapLevel = std::log( newZoomFactor >= 1 ? 1 :
+    //                           std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
+    newMipMapLevel = newZoomFactor >= 1 ? 0 : -std::ceil(std::log(newZoomFactor) / M_LN2);
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        oldMipMapLevel = std::log( _imp->zoomCtx.factor() >= 1 ? 1 :
-                                   std::pow( 2, -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2) ) ) / M_LN2;
+        //oldMipMapLevel = std::log( _imp->zoomCtx.factor() >= 1 ? 1 :
+        //                           std::pow( 2, -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2) ) ) / M_LN2;
+        oldMipMapLevel = _imp->zoomCtx.factor() >= 1 ? 0 : -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2);
         double scale = newZoomFactor / _imp->zoomCtx.factor();
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
@@ -2904,8 +2909,9 @@ ViewerGL::fitImageToFormat()
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
-        oldMipMapLevel = std::log( old_zoomFactor >= 1 ? 1 :
-                                   std::pow( 2, -std::ceil(std::log(old_zoomFactor) / M_LN2) ) ) / M_LN2;
+        //oldMipMapLevel = std::log( old_zoomFactor >= 1 ? 1 :
+        //                           std::pow( 2, -std::ceil(std::log(old_zoomFactor) / M_LN2) ) ) / M_LN2;
+        oldMipMapLevel = old_zoomFactor >= 1 ? 0 : -std::ceil(std::log(old_zoomFactor) / M_LN2);
 
         // set the PAR first
         //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
@@ -2914,8 +2920,9 @@ ViewerGL::fitImageToFormat()
         zoomFactor = _imp->zoomCtx.factor();
         _imp->zoomOrPannedSinceLastFit = false;
     }
-    newMipMapLevel = std::log( zoomFactor >= 1 ? 1 :
-                               std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+    //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 :
+    //                           std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+    newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
     _imp->oldClick = QPoint(); // reset mouse posn
 

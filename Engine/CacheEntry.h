@@ -37,6 +37,8 @@
 #include <fstream>
 #endif
 #include <sstream> // stringstream
+#include <algorithm>
+#include <utility>
 
 #ifdef __NATRON_WIN32__
 #include <windows.h>
@@ -196,7 +198,7 @@ public:
     virtual void notifyEntryDestroyed(double time, size_t size, StorageModeEnum storage) const = 0;
 
     /**
-     * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
+     * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new image
      **/
     virtual void notifyMemoryDeallocated() const = 0;
 
@@ -721,7 +723,7 @@ private:
     std::string _path;
     boost::scoped_ptr<RamBuffer<DataType> > _buffer;
 
-    /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
+    /*mutable so the reOpenFileMapping function can reopen the mapped file. It doesn't
        change the underlying data*/
     mutable boost::scoped_ptr<MemoryFile> _backingFile;
 

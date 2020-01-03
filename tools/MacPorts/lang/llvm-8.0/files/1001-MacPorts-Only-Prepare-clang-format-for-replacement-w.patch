@@ -1,0 +1,84 @@
+From 2e4692aba7027972d6fa621cafe3f33a54c627c5 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 17:50:24 -0800
+Subject: [PATCH 1001/1008] MacPorts Only: Prepare clang-format for replacement
+ with absolute path
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ tools/clang-format/clang-format-bbedit.applescript | 2 +-
+ tools/clang-format/clang-format-diff.py            | 2 +-
+ tools/clang-format/clang-format-sublime.py         | 2 +-
+ tools/clang-format/clang-format.el                 | 3 +--
+ tools/clang-format/clang-format.py                 | 2 +-
+ 5 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git llvm_release_80/tools/clang/tools/clang-format/clang-format-bbedit.applescript macports_release_80/tools/clang/tools/clang-format/clang-format-bbedit.applescript
+index fa88fe9004..eb09448be5 100644
+--- llvm_release_80/tools/clang/tools/clang-format/clang-format-bbedit.applescript
++++ macports_release_80/tools/clang/tools/clang-format/clang-format-bbedit.applescript
+@@ -15,7 +15,7 @@ tell application "BBEdit"
+ end tell
+ 
+ set filePath to urlToPOSIXPath(fileURL)
+-set newContents to do shell script "/path/to/clang-format -offset=" & selectionOffset & " -length=" & selectionLength & " " & quoted form of filePath
++set newContents to do shell script "@CLANG_FORMAT_PATH@ -offset=" & selectionOffset & " -length=" & selectionLength & " " & quoted form of filePath
+ 
+ tell application "BBEdit"
+ 	-- "set contents of text document 1 to newContents" scrolls to the bottom while
+diff --git llvm_release_80/tools/clang/tools/clang-format/clang-format-diff.py macports_release_80/tools/clang/tools/clang-format/clang-format-diff.py
+index d6d3510416..d9b558e70b 100755
+--- llvm_release_80/tools/clang/tools/clang-format/clang-format-diff.py
++++ macports_release_80/tools/clang/tools/clang-format/clang-format-diff.py
+@@ -59,7 +59,7 @@ def main():
+   parser.add_argument('-style',
+                       help='formatting style to apply (LLVM, Google, Chromium, '
+                       'Mozilla, WebKit)')
+-  parser.add_argument('-binary', default='clang-format',
++  parser.add_argument('-binary', default='@CLANG_FORMAT_PATH@',
+                       help='location of binary to use for clang-format')
+   args = parser.parse_args()
+ 
+diff --git llvm_release_80/tools/clang/tools/clang-format/clang-format-sublime.py macports_release_80/tools/clang/tools/clang-format/clang-format-sublime.py
+index 5ea9a27825..83a2967625 100644
+--- llvm_release_80/tools/clang/tools/clang-format/clang-format-sublime.py
++++ macports_release_80/tools/clang/tools/clang-format/clang-format-sublime.py
+@@ -18,7 +18,7 @@ import sublime_plugin
+ import subprocess
+ 
+ # Change this to the full path if clang-format is not on the path.
+-binary = 'clang-format'
++binary = '@CLANG_FORMAT_PATH@'
+ 
+ # Change this to format according to other formatting styles. See the output of
+ # 'clang-format --help' for a list of supported styles. The default looks for
+diff --git llvm_release_80/tools/clang/tools/clang-format/clang-format.el macports_release_80/tools/clang/tools/clang-format/clang-format.el
+index 4f11daf15f..439beddd45 100644
+--- llvm_release_80/tools/clang/tools/clang-format/clang-format.el
++++ macports_release_80/tools/clang/tools/clang-format/clang-format.el
+@@ -36,8 +36,7 @@
+   :group 'tools)
+ 
+ (defcustom clang-format-executable
+-  (or (executable-find "clang-format")
+-      "clang-format")
++  "@CLANG_FORMAT_PATH@"
+   "Location of the clang-format executable.
+ 
+ A string containing the name or the full path of the executable."
+diff --git llvm_release_80/tools/clang/tools/clang-format/clang-format.py macports_release_80/tools/clang/tools/clang-format/clang-format.py
+index fe068bd41c..e0f1128a1c 100644
+--- llvm_release_80/tools/clang/tools/clang-format/clang-format.py
++++ macports_release_80/tools/clang/tools/clang-format/clang-format.py
+@@ -36,7 +36,7 @@ import vim
+ 
+ # set g:clang_format_path to the path to clang-format if it is not on the path
+ # Change this to the full path if clang-format is not on the path.
+-binary = 'clang-format'
++binary = '@CLANG_FORMAT_PATH@'
+ if vim.eval('exists("g:clang_format_path")') == "1":
+   binary = vim.eval('g:clang_format_path')
+ 
+-- 
+2.20.1 (Apple Git-116)
+

@@ -105,6 +105,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
@@ -852,7 +856,7 @@ Node::computeHashInternal()
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );
 
-        ///Also append the project's creation time in the hash because 2 projects openend concurrently
+        ///Also append the project's creation time in the hash because 2 projects opened concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
         qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
         _imp->hash.append(creationTime);
@@ -1973,7 +1977,7 @@ Node::createInfoPage()
     nodeInfos->setAsMultiLine();
     nodeInfos->setAsCustomHTMLText(true);
     nodeInfos->setEvaluateOnChange(false);
-    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values") );
+    nodeInfos->setHintToolTip( tr("Input and output information, press Refresh to update them with current values") );
     infoPage->addKnob(nodeInfos);
     _imp->nodeInfos = nodeInfos;
 
@@ -2964,7 +2968,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         }
     }
 
-    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
+    // If the effect was doing OpenGL rendering and had context(s) bound, detach them.
     _imp->effect->dettachAllOpenGLContexts();
 
 
@@ -3098,7 +3102,7 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
 
     {
         QMutexLocker l(&_imp->activatedMutex);
-        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
+        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (especially the Viewer)
     }
 
     NodeCollectionPtr group = getGroup();
@@ -3319,8 +3323,8 @@ Node::makePreviewImage(SequenceTime time,
     assert( !rod.isNull() );
     double yZoomFactor = (double)*height / (double)rod.height();
     double xZoomFactor = (double)*width / (double)rod.width();
-    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
-    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
+    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(xZoomFactor) / M_LN2 ) );
+    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(yZoomFactor) / M_LN2 ) );
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
     unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
 
@@ -5645,7 +5649,7 @@ Node::canOthersConnectToThisNode() const
 void
 Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 {
-    ///If marked, we alredy set render args
+    ///If marked, we already set render args
     for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
         if (it->lock().get() == this) {
             return;

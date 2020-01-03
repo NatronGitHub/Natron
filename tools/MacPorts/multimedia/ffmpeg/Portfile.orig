@@ -5,12 +5,15 @@ PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 PortGroup           compiler_blacklist_versions 1.0
 PortGroup           active_variants 1.1
+# https://trac.macports.org/ticket/59246
+PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.1.4
+version             4.2.1
+revision            2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -52,16 +55,14 @@ master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  73f8e5f363a5803f6e11992f2c112a09e0abd04f \
-                    sha256  f1f049a82fcfbf156564e73a3935d7e750891fab2abf302e735104fd4050a7e1 \
-                    size    8896056
+checksums           rmd160  581749bb22f25357ccae1ea504a65ffc5e1cfe75 \
+                    sha256  cec7c87e9b60d174509e263ac4011b522385fd0775292e1670ecc1180c9bb6d4 \
+                    size    9090632
 
 depends_build       port:pkgconfig \
                     port:gmake \
+                    port:ld64 \
                     port:texinfo
-
-# libvpx 1.7.0 now provides a shared library
-# move dependency from depends_build to depends_lib
 
 depends_lib         port:lame \
                     port:libiconv \
@@ -253,11 +254,7 @@ if {[variant_isset universal]} {
     lappend merger_configure_args(x86_64) --enable-x86asm
 } else {
     configure.args-append --arch=${configure.build_arch}
-    if {[vercmp [macports_version] 2.5.99] >= 0} {
     configure.env-append  ASFLAGS=[get_canonical_archflags]
-    } else {
-    configure.env-append  ASFLAGS='[get_canonical_archflags]'
-    }
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
         depends_build-append port:nasm
         configure.args-append --enable-x86asm

@@ -530,7 +530,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     ymax = std::sin(angle + M_PI_2) * maxSize;
 
 
-    // first, compute wether the whole rectangle is on one side of the wipe
+    // first, compute whether the whole rectangle is on one side of the wipe
     const QPointF firstPoint ( center.x() + (rightPlane ? xmax : -xmax), center.y() + (rightPlane ? ymax : -ymax) );
     const QPointF secondPoint( center.x() + (rightPlane ? -xmax : xmax), center.y() + (rightPlane ? -ymax : ymax) );
     double crossProd11  = ( ( secondPoint.x() - center.x() ) * ( texRectClipped.y1 - center.y() )

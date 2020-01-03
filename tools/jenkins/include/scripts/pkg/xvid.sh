@@ -2,9 +2,9 @@
 
 # xvid
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/xvid.html
-XVID_VERSION=1.3.5
+XVID_VERSION=1.3.7
 XVID_TAR="xvidcore-${XVID_VERSION}.tar.gz"
-XVID_SITE="http://downloads.xvid.org/downloads"
+XVID_SITE="http://downloads.xvid.com/downloads"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libxvidcore.so" ]; }; }; then
     start_build
     download "$XVID_SITE" "$XVID_TAR"

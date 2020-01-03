@@ -2,7 +2,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 # Ensure we have the build master ssh key to clone/update repository
 # Note: This is now done by keychain (see ~/.bash_profile)
@@ -135,4 +135,10 @@ if [ -d "$BUILD_DIR/symbols" ]; then
 fi
 
 
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
 

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -x /usr/bin/xcrun ] ; then
+    exec /usr/bin/xcrun EXEC_PATH "${@}"
+else
+    exec EXEC_PATH "${@}"
+fi

@@ -88,7 +88,7 @@ Set the script-name of the track. It will then be accessible via a Python script
 
     :rtype: :class:`Param<NatronEngine.Param>`
 
-    Get the :doc:`Param<NatronEngine.Param>` with the given *paramScriptName*.
+    Get the :class:`Param<NatronEngine.Param>` with the given *paramScriptName*.
     The parameter can also be retrieved as an attribute of the *tracker* object like this::
 
         Tracker1.tracker.center
@@ -98,7 +98,7 @@ Set the script-name of the track. It will then be accessible via a Python script
 
     :rtype: :class:`Param<NatronEngine.Param>`
 
-    Returns a list of all the :doc:`Param<NatronEngine.Param>` for this track.
+    Returns a list of all the :class:`Param<NatronEngine.Param>` for this track.
 
 
 .. method:: NatronEngine.Track.reset()

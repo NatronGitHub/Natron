@@ -506,8 +506,12 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         return;
     }
 
-    if (!PyObject_HasAttrString( nodeObj, k->getName().c_str() ) ) {
-        return;
+    {
+        PythonGILLocker pgl;
+        
+        if (!PyObject_HasAttrString( nodeObj, k->getName().c_str() ) ) {
+            return;
+        }
     }
 
     std::stringstream ss;

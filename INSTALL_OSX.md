@@ -5,21 +5,23 @@ These are step-by-step instructions to compile Natron on OS X.
 
 OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest OS X.
 
-## Checkout sources
+## Official Natron binaries
 
-    git clone https://github.com/NatronGitHub/Natron.git
-    cd Natron
+The official Natron and plugins binaries are built using the section about MacPorts in these instructions to prepare the system, and the `launchBuildMain.sh` build script found in the `tools/jenkins` directory. The script takes care of everything, from checking out sources, to compiling and packaging.
 
-If you want to compile the bleeding edge version, use the master
-branch:
+These binaries are built on an OS X 10.9 (Mavericks) virtual machine with [Xcode 6.2](https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.2/Xcode_6.2.dmg). Note that [Mavericks can not be downloaded anymore from the 10.14 (High Sierra) App Store](https://www.macworld.co.uk/how-to/mac-software/download-old-os-x-3629363/), so you will need to use a Mac with an older system (up to 10.13), or look for [alternatives](https://applehint.com/t/download-all-macos-x-10-4-10-14-original/376).
 
-    git checkout master
+The build system is based on [MacPorts](https://www.macports.org) with the custom ports found in the `tools/MacPorts` directory in the sources. We are not using [Homebrew](https://brew.sh), because MacPorts is easier to customize.
 
-Update the submodules:
+Everything is compiled using the latest version of [Clang](https://clang.llvm.org) rather than the version bundled with Xcode, in order to have full OpenMP support.
 
-    git submodule update -i --recursive
 
-## Install libraries
+## Building on a VM (Virtual Machine)
+
+Natron can be built on a virtual machine, in order to target older versions of OS X / macOS.  Due to the OS X Software License Agreement, OS X may only be virtualized on Mac hardware. The excellent blog post [OS X on OS X](https://ntk.me/2012/09/07/os-x-on-os-x/) ([archive](https://web.archive.org/web/20190520141144/https://ntk.me/2012/09/07/os-x-on-os-x/)) gives all the instructions to install an OS X virtual machine.
+
+
+## Install Dependencies
 
 In order to have Natron compiling, first you need to install the required libraries.
 
@@ -28,6 +30,8 @@ There are two exclusive options: using MacPorts or using Homebrew.
 Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 ### MacPorts
+
+#### Basic Setup
 
 You need an up to date MacPorts version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
@@ -44,22 +48,49 @@ Then, create the index file:
 
 It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
 
-    -x11 +no_x11 +bash_completion +no_gnome +quartz
+    -x11 +no_x11 +bash_completion +no_gnome +quartz +natron
 
-If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+#### Notes for OS X 10.6 Snow Leopard
 
-    default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
+On older systems such as 10.6, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end.
+This means that `/opt/local/etc/macports/macports.conf` should contain the following:
+```
+cxx_stdlib         libc++
+buildfromsource    always
+delete_la_files    yes
+default_compilers  macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-3.7 macports-clang-3.4 llvm-gcc-4.2 clang gcc-4.2 apple-gcc-4.2 gcc-4.0
+```
 
-Now, if you want to use turbojpeg instead of jpeg:
+Also add the following to `/opt/local/etc/macports/variants.conf`:
+
+    -llvm34 -llvm37 -llvm39 -llvm40 -llvm50 -llvm60 -llvm70 +llvm80
+    -ld64_97 -ld64_127 -ld64_236
+
+make sure you have the right versions of cctools and ld64:
+
+    port -N install ld64-latest@274.2 +llvm80 cctools@921_2 +llvm80
+
+The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+
+#### Install Ports
+
+Now, use libjpeg-turbo instead of jpeg:
 
     sudo port -f uninstall jpeg
-    sudo port -v install libjpeg-turbo
+    sudo port -v -N install libjpeg-turbo
     
 And finally install the required packages:
 
-    sudo port -v install opencolorio -quartz
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside pandoc py27-sphinx py27-sphinx_rtd_theme
-    sudo ln -s python2.7-config /opt/local/bin/python2-config
+    sudo port -v -N install clang-8.0
+    sudo port -v -N install opencolorio -quartz -python27
+    sudo port -v -N install qt4-mac boost cairo expat
+    sudo port -v -N install gsed gawk coreutils findutils
+    sudo port -v -N install cmake keychain
+    sudo port -v -N install py27-pyside py37-sphinx py37-sphinx_rtd_theme
+    sudo port select --set python python27
+    sudo port select --set python2 python27
+    sudo port select --set python3 python37
+    sudo port select --set sphinx py37-sphinx
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -68,9 +99,9 @@ configuration, for example using the following comands:
 sudo -s
 cat > /opt/local/lib/pkgconfig/glu.pc << EOF
  prefix=/usr
- exec_prefix=${prefix}
- libdir=${exec_prefix}/lib
- includedir=${prefix}/include
+ exec_prefix=\${prefix}
+ libdir=\${exec_prefix}/lib
+ includedir=\${prefix}/include
 
 
 Name: glu
@@ -78,21 +109,33 @@ Name: glu
  Description: glu
  Requires:
  Libs:
- Cflags: -I${includedir}
+ Cflags: -I\${includedir}
 EOF
 ```
 
 If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
-    yes | sudo port -v install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
+    sudo port -v -N install x264
+    sudo port -v -N install libvpx +highbitdepth
+    sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+    sudo port -v -N install libraw +gpl2
+    sudo port -v -N install openexr
+    sudo port -v -N install opencolorio -quartz -python27
+    sudo port -v -N install openimageio +natron
+    sudo port -v -N install seexpr
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    yes | sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    sudo port -v -N install librsvg
+    sudo port -v -N install ImageMagick +natron
+    sudo port -v -N install poppler
+    sudo port -v -N install librevenge
+    sudo port -v -N install libcdr-0.1
+    sudo port -v -N install libzip
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
-    yes | sudo port -v install fftw-3
+    sudo port -v -N install fftw-3
 
 ### Homebrew
 
@@ -101,14 +144,13 @@ Install homebrew from <http://brew.sh/>
 Qt 4 is not supported in homebrew. Please enable the community-maintained recipe using:
 
     brew tap cartr/qt4
-    brew tap-pin cartr/qt4
-    brew install qt@4 shiboken@1.2
+    brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2
 
 Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit qt@4
+    brew edit cartr/qt4/qt@4
 
 and before the line that starts with `head`, add the following code:
 
@@ -122,7 +164,9 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed pandoc sphinx-doc
+    brew install cairo expat
+    brew install gnu-sed gawk coreutils findutils
+    brew install cmake keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 
@@ -190,6 +234,20 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 
     make install
 
+
+## Checkout sources
+
+    git clone https://github.com/NatronGitHub/Natron.git
+    cd Natron
+
+If you want to compile the bleeding edge version, use the master
+branch:
+
+    git checkout master
+
+Update the submodules:
+
+    git submodule update -i --recursive
 
 ### Download OpenColorIO-Configs
 

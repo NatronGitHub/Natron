@@ -368,7 +368,7 @@ Q_SIGNALS:
 
 private:
     /*******************************************
-       *******OVERRIDEN FROM EFFECT INSTANCE******
+     ******OVERRIDDEN FROM EFFECT INSTANCE******
      *******************************************/
 
     virtual bool isOutput() const OVERRIDE FINAL

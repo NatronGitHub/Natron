@@ -16,7 +16,7 @@ Writing contributions
 
 Contributing to the Natron documentation is rather easy. The source for the documentation is located in the *Documentation/source* folder. 
 
-The documentation is generated using `Sphinx <http://www.sphinx-doc.org>`_, and the source files are in `reStructuredText <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_ format.
+The documentation is generated using `Sphinx <http://sphinx-doc.org>`_, and the source files are in `reStructuredText <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_ format.
 
 Most likely you will want to contribute to the :ref:`user-guide`. The source files for the guide are located in the directory named ``Documentation/source/guide``. If you want to contribute to an already existing document just open the file in your favorite (plain) text-editor and do your modifications.
 

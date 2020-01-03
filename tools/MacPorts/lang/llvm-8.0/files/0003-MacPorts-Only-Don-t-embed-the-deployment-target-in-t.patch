@@ -1,0 +1,33 @@
+From bc46e7ec9797ff027266a7874be93ea075c0499f Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 16:41:30 -0800
+Subject: [PATCH 3/4] MacPorts Only: Don't embed the deployment target in the
+ asm when using -fno-integrated-as
+
+http://llvm.org/bugs/show_bug.cgi?id=21636
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/CodeGen/AsmPrinter/AsmPrinter.cpp | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git llvm_release_80/lib/CodeGen/AsmPrinter/AsmPrinter.cpp macports_release_80/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
+index 7070451e333..aa2a8ceebb5 100644
+--- llvm_release_80/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
++++ macports_release_80/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
+@@ -262,8 +262,10 @@ bool AsmPrinter::doInitialization(Module &M) {
+   // alternative is duplicated code in each of the target asm printers that
+   // use the directive, where it would need the same conditionalization
+   // anyway.
+-  const Triple &Target = TM.getTargetTriple();
+-  OutStreamer->EmitVersionForTarget(Target, M.getSDKVersion());
++  if (MAI->useIntegratedAssembler()) {
++    const Triple &Target = TM.getTargetTriple();
++    OutStreamer->EmitVersionForTarget(Target, M.getSDKVersion());
++  }
+ 
+   // Allow the target to emit any magic that it wants at the start of the file.
+   EmitStartOfAsmFile(M);
+-- 
+2.20.1 (Apple Git-116)
+

@@ -7,34 +7,40 @@
 
 ## Version 2.3.15
 
-- Inputs of the selected nodes are now always visible
-- Avoid crash and issues when NatronEngine.Effect.destroy() is called #368
-- macOS: fix version numbers in Finder information #372
-- Fix callbacks in PyPanel and PyModalDialog #379
+- Inputs of the selected nodes are now always visible.
+- Avoid crash and issues when NatronEngine.Effect.destroy() is called. #368
+- macOS: fix version numbers in Finder information. #372
+- Fix callbacks in PyPanel and PyModalDialog. #379
+- Fix recursive Python calls and handle the Python GIL properly.
+- Fix loading of Python Toolsets, and document how Toolsets are detected.
+- Fix using Rotopaint with multiple layers. #420 #205
 
 ### Plugins
 
-- Fix bugs in DenoiseSharpen that caused crashes #300
-- Add support for chromatic aberration correction when reading RAW files #309
-- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins
-- Many new GMIC plugins, including GMIC Custom Code
+- Fix bugs in DenoiseSharpen that caused crashes. #300
+- Add support for chromatic aberration correction when reading RAW files. #309
+- Update CImg and G'MIC to 2.7.4 and fix several issues in GMIC plugins (which are still beta).
+- Many new GMIC plugins, including GMIC Custom Code.
+- FrameRange: New options "Loop" and "Bounce". #411
+- Fix reading multi-view EXRs. #429
+- Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
 
 
 ## Version 2.3.14
 
 - Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
-- ReadSVG: Fix reading layers of SVG files #292
+- ReadSVG: Fix reading layers of SVG files. #292
 - Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
-- LensDistortion: fix loading PFBarrel files #296
+- LensDistortion: fix loading PFBarrel files. #296
 - Label parameters now use both columns in the parameters panel.
 
 
 ## Version 2.3.13
 
 - Fix default value for file premult in ReadSVG (should be premultiplied).
-- HSV values in the viewer info lines are now computed from linear RGB #286.
-- RGBToHSV, HSVToRGB, RGBToHSL, HSLToRGB, RGBToHSI, HSIToRGB: Use linear RGB values in computation #286.
-- Tracker: fix bug where Transform tracking was wrong when using more than 1 point #289.
+- HSV values in the viewer info lines are now computed from linear RGB. #286
+- RGBToHSV, HSVToRGB, RGBToHSL, HSLToRGB, RGBToHSI, HSIToRGB: Use linear RGB values in computation. #286
+- Tracker: fix bug where Transform tracking was wrong when using more than 1 point. #289
 
 
 ## Version 2.3.12
@@ -42,9 +48,9 @@
 *Note*: all github issues were moved to https://github.com/NatronGitHub/Natron/issues , and issue numbers in the change log now refer to this github repository.
 Issue numbers up to version 2.3.10 refer to archived issues in https://github.com/MrKepzie/Natron/issues .
 
-- Fix font selection in the plugins that render text (Text and Polaroid from openfx-arena) #269.
+- Fix font selection in the plugins that render text (Text and Polaroid from openfx-arena). #269
 - Python: add Effect.getOutputFormat() method.
-- GCC 8.1 (used for the 2.3.11 binaries) breaks the timeline GUI, revert to GCC 7.3 for Linux builds #279.
+- GCC 8.1 (used for the 2.3.11 binaries) breaks the timeline GUI, revert to GCC 7.3 for Linux builds. #279
 - Disable crash reporter in official binaries (requires maintenance to get it working again), and add crash reporter code to the source tree.
 
 
@@ -52,40 +58,40 @@ Issue numbers up to version 2.3.10 refer to archived issues in https://github.co
 
 - User Guide: Add documentation on tracking and stabilizing.
 - FrameBlend: Add Over operation, add decay parameter, and fix bugs.
-- Fix Python Pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+- Fix Python Pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed).
 - Shadertoy: Document the process to adapt a shader from shadertoy.com to the Shadertoy plugin.
 - Support FFmpeg 4.0 in the ReadFFmpeg and WriteFFmpeg plugins.
 
 
 ## Version 2.3.10
 
-- Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
+- Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence. #1683
 - Writers do not render the whole RoD on their input anymore (this may result in a huge speed improvement on some projects).
-- Fix bug where effects could be marked as pass-through if their RoD was larger than the project format #1578
+- Fix bug where effects could be marked as pass-through if their RoD was larger than the project format. #1578
 - Add python method setCanAutoFoldDimensions(enable) to Double2DParam and Double3DParam.
-- Fix several plugins when included in a PyPlug: ColorSuppress, HSVTool, ImageStatistics, Ramp, Shuffle, Reformat #1749.
+- Fix several plugins when included in a PyPlug: ColorSuppress, HSVTool, ImageStatistics, Ramp, Shuffle, Reformat. #1749
 - Fix Matrix3x3 and Matrix5x5 GUI (y was reversed).
 
 
 ## Version 2.3.9
 
-- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737.
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated. #1737
 - When a node is selected, make its inputs/outputs more visible.
 - Node shape is now thinner in the node graph.
 - In the node graph, the cursor now really reflects what a mouse click would do.
-- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720.
+- All nodes inside a backdrop can be enabled/disabled using the "D" key. #1720
 - Fix the "." shortcut for creating a Dot in the nodegraph on non-French keyboards.
 - Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
-- Made more clear what the "LUT" tab in the project settings is for #1744.
-- Better "hide all parameters without modifications" behaviour #1625
-- Only the keypad number keys should be used to nudge Bezier/tracker, regular number keys switch the viewer #1582
+- Made more clear what the "LUT" tab in the project settings is for. #1744
+- Better "hide all parameters without modifications" behaviour. #1625
+- Only the keypad number keys should be used to nudge Bezier/tracker, regular number keys switch the viewer. #1582
 
 
 ## Version 2.3.8
 
-- Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+- Fix crash when Viewer/maxNodeUiOpened=1 in the preferences.
 - Fix bug where an exported PyPlug would not have a correct Python syntax if a string had a backslash followed by newline (as may be seen in Shadertoy sources).
-- Fix behaviour of loop/bounce in the Read node when there is a time offset #1734.
+- Fix behaviour of loop/bounce in the Read node when there is a time offset. #1734
 - G'MIC plugins by Tobias Fleischer are now bundled with the binary distributions (beta).
 - Fix bug where the "&" character was not displayed in the plugin creation menus.
 
@@ -102,33 +108,33 @@ Issue numbers up to version 2.3.10 refer to archived issues in https://github.co
 
 ## Version 2.3.6
 
-- Fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
-- Fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy)
-- Fix bug where Natron would crash when the "clear all panels" button is pressed #1729
-- Fix bug where Roto and RotoPaint lifetime would change randomly #1707
+- Fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too). #1726 #1637
+- Fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy).
+- Fix bug where Natron would crash when the "clear all panels" button is pressed. #1729
+- Fix bug where Roto and RotoPaint lifetime would change randomly. #1707
 
 ### Plugins
 
 - ReadOIIO/ReadPNG: "Image Info..." gives a more explicit message, containing the filename and more info.
-- Fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case)
+- Fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case).
 
 
 ## Version 2.3.5
 
 ### Plugins
 
-- ReadOIIO: fix a bug where the Read nodes are not properly restored when timeOffset is used #1711
-- ReadOIIO: add options for reading RAW files: rawUserSat, rawHighlightMode, rawHighlightRebuildLevel
+- ReadOIIO: fix a bug where the Read nodes are not properly restored when timeOffset is used. #1711
+- ReadOIIO: add options for reading RAW files: rawUserSat, rawHighlightMode, rawHighlightRebuildLevel.
 - DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
-- ColorCorrect: fix luminance computation when applying saturation #1706
-- Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop)
-- ContactSheet/LayerContactSheet: correctly set the format when the output size is changed
+- ColorCorrect: fix luminance computation when applying saturation. #1706
+- Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop).
+- ContactSheet/LayerContactSheet: correctly set the format when the output size is changed.
 
 
 ## Version 2.3.4
 
 - Binaries distributed through Natron's web site are now built with 8-bit x264. 10-bit x264 (introduced with 2.2.6) causes too many compatibility issues. There are other codecs that support 10-bit output (especially ProRes, vc2, libopenjpeg, libvpx-vp9, and x265 on some systems). In order to get 10-bit x264, it is recommended to encode a quasi-lossless using one of these codecs, and then transcode with a ffmpeg binary capable of encoding 10-bit x264.
-- Work around a possible Qt/Linux  bug where tablet events have a negative pressure on Wacom Intuos tablet #1697
+- Work around a possible Qt/Linux  bug where tablet events have a negative pressure on Wacom Intuos tablet. #1697
 - Binaries: add 10-bit HEVC encoding, Cisco openh264 encoding, VidVox Hap encoding.
 
 ### Plugins
@@ -136,14 +142,14 @@ Issue numbers up to version 2.3.10 refer to archived issues in https://github.co
 - Upgrade SeExpr to version 2.11.
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
 - Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
-- ColorCorrect: Fix wrong render for input values outside the [0-1] range #1703
-- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should defaut to 0.0 #1705
+- ColorCorrect: Fix wrong render for input values outside the [0-1] range. #1703
+- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should defaut to 0.0. #1705
 
 
 ## Version 2.3.3
 
 - Fix computation of remaining time when rendering.
-- Fix loading third-party plugins on Linux #1682
+- Fix loading third-party plugins on Linux. #1682
 
 ### Plugins
 
@@ -157,13 +163,13 @@ Issue numbers up to version 2.3.10 refer to archived issues in https://github.co
 
 ## Version 2.3.2
 
-- Merge: fix bug #1648, where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation.
+- Merge: fix bug where the alpha from the B input would be used for all consecutive merge operations, rather than updated at each operation. #1648
 
 
 ## Version 2.3.1
 
-- Python: Fix the setTable() function of the PathParam class
-- Windows: Fix a bug where most image formats would not read and write correctly
+- Python: Fix the setTable() function of the PathParam class.
+- Windows: Fix a bug where most image formats would not read and write correctly.
 
 
 ## Version 2.3.0
@@ -738,7 +744,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - It is now possible to zoom the range of a slider around the current position by holding certain modifiers: Hold CTRL to zoom-in x10, hold CTRL + SHIFT to zoom-in x100. This can help adjusting precisely a parameter value
 - It is now possible to extract one or more nodes from the graph by pressing CTRL + SHIFT + X or via the right click menu. This will keep the connections between all extracted nodes but remove them from the surrounding tree and shift them by 200 pixels on the right.
 - It is now possible to merge 2 nodes (with a MergeOFX node) by holding CTRL + SHIFT and moving a node close to another one. The bounding box of both nodes should be green, indicating that a merge is possible.
-- A new Info tab on each node now contains informations about the format of images coming from each input and out-going from the node. This can help understand what data is really processed under the hood.
+- A new Info tab on each node now contains information about the format of images coming from each input and out-going from the node. This can help understand what data is really processed under the hood.
 - New shortcut to set the zoom level of the viewer to 100% (CTRL + 1)
 - New shortcut to toggle preview images for selected nodes: ALT + P
 - Added the possibility to edit node names in the node graph by pressing the key N
@@ -747,7 +753,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - Roto : when selecting points with the selection rectangle, if the SHIFT modifier is held down, it will not clear the previous selection. Also when holding down SHIFT, clicking on a selected point will remove it from the selection. Similarly, if selecting points with the selection rectangle but while holding down both SHIFT and CTRL will now allow to keep the previous selection but remove from the selection the newly selected points.
 - Roto : the beziers animation can now be controlled in the curve editor, as well as the per-shape parameters.
 - The ColorCorrect and Grade nodes can now choose on which channels to operate on, including the alpha channel
-- The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the informations.
+- The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the information.
 - The viewer refresh button will now be red when it is actively rendering (not using the cache).
 - The turbo-mode button is now next to the FPS box of the viewer’s player bar instead of being on top of the properties bin.
 - The paste/duplicate/clone nodes operations now position new nodes under the mouse cursor.
@@ -820,7 +826,7 @@ for a station with 8 cores. Some tuning may be needed for stations with huge num
 filepath parameter.
 - Fixed a few bugs with the render progression report
 - Copy/Paste of a node will use an index-based copy differentiation instead of an incremental number of "- copy" appended to the original node name. For example: "Blur" "Blur.1" "Blur.2", etc...
-- The project now contains more informations visible in the Infos tab of the project settings. In particular, we added the following:
+- The project now contains more information visible in the Infos tab of the project settings. In particular, we added the following:
   - Original author name (the person who created the project) (read-only)
   - Last author name (the person who last saved this project) (read-only)
   - Creation date (read-only)
@@ -871,7 +877,7 @@ to
 Then all file-paths that depended on this variable will be updated to point to the correct location of the file.
 - File-paths are now "watched" by Natron: When a file changes outside of Natron, for example because another software have overwritten it or modified it, Natron will be notified and will reload the images.
 - New shortcuts editor: you can now customise the entire keyboard layout for the application.
-- Caching has been improved and should now be more aware of your system capabilities. It should strive for being as close possible to what the settings in the preferences are set to. Note that it might still need some tweeking on some platforms though because we're using system-dependents informations to make the Cache work.
+- Caching has been improved and should now be more aware of your system capabilities. It should strive for being as close possible to what the settings in the preferences are set to. Note that it might still need some tweeking on some platforms though because we're using system-dependents information to make the Cache work.
 - You can now add control points/keyframes to curves by double-clicking on them. However, it doesn't apply for the Roto beziers.
 - File dialog speed has been increased drastically
 - ReadFFMPEG: improve stability a lot

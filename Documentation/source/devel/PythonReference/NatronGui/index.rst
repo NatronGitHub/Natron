@@ -12,7 +12,7 @@ Here are listed all classes being part of NatronEngine module. This module is lo
 by Natron natively in GUI mode only.  In that case, access is granted to these classes
 in your scripts without importing anything.
 Scripts that want to operate both in command line background mode and in GUI mode should
-poll the :func:`NatronEngine.PyCoreApplication.isBackground()` function on the **natron**
+poll the :func:`isBackground()<NatronEngine.PyCoreApplication.isBackground>` function on the **natron**
 object before calling functions dependent on the module :mod:`NatronGui`.
 E.g::
 

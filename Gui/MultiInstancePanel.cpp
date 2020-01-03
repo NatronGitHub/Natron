@@ -1218,7 +1218,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 ///Don't slave knobs when several are selected otherwise all the instances would then share the same values
                 ///while being selected
                 if (!setDirty) {
-                    ///do not slave buttons, handle them separatly in onButtonTriggered()
+                    ///do not slave buttons, handle them separately in onButtonTriggered()
                     KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
                     if (!isButton) {
                         otherKnob->clone(knobs[i]);

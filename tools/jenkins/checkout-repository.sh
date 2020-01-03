@@ -21,7 +21,7 @@ function checkoutRepository() {
     REPO_COMMIT="$4"
     COMMIT_BUILD_OPTION_NAME="$5"
     TAR_SOURCES=$6
-    if [ -z "${REPO_URL:-}" ]; then
+    if [ -z "$REPO_URL" ]; then
         echo "Please define REPO"
         return 1
     fi
@@ -34,11 +34,11 @@ function checkoutRepository() {
 
     # clone
     if [ ! -d "$TMP_PATH" ]; then
-	mkdir -p "$TMP_PATH"
+        mkdir -p "$TMP_PATH"
     fi
     cd "$TMP_PATH"
     if [ ! -d "$REPO_LOCAL_DIRNAME" ]; then
-	$TIMEOUT 1800 $GIT clone "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+        $TIMEOUT 1800 $GIT clone "$REPO_URL" "$REPO_LOCAL_DIRNAME"
     fi
 
     cd "$REPO_LOCAL_DIRNAME"
@@ -63,8 +63,17 @@ function checkoutRepository() {
         rm -rf "$SRC_DIR_NAME"
     fi
 
-    setBuildOption "$COMMIT_BUILD_OPTION_NAME" "$REPO_COMMIT"
+    if [ -n "$REPO_COMMIT" ]; then
+        setBuildOption "$COMMIT_BUILD_OPTION_NAME" "$REPO_COMMIT"
+    fi
 
     cd $CWD
     return 0
 }
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:

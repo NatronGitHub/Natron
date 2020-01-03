@@ -40,6 +40,11 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
+PKGOS=Linux
+
+source common.sh
+
+
 if false; then
     # to update all linux SDKs, run the following
     alias ssh-natron-linux32='ssh -A -p 3232 natron@natron.inrialpes.fr' # centos32
@@ -52,19 +57,19 @@ if false; then
     ssh-natron-linux64-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
 fi
 
-scriptdir=`dirname "$0"`
+scriptdir="$(dirname "$0")"
 
-if [ "${GEN_DOCKERFILE32:-}" = "1" -a -z "${GEN_DOCKERFILE+x}" ]; then
+if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     GEN_DOCKERFILE=1
 fi
-if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
+if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
 # Natron-SDK dockerfile.
 #
 # The natron-sdk docker image should be created using the following commands:
 # cd tools/docker/natron-sdk/
 # ./build.sh
-# SDK is installed in /opt/Natron-sdk
+# SDK is installed in $SDK_HOME
 EOF
     if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
         # - base on i386/centos:6
@@ -72,20 +77,26 @@ EOF
         # - install util-linux to get the "setarch" executable
         DOCKER_BASE="i386/centos:6"
         LINUX32="setarch i686"
-        DOCKERFILE_I386='RUN echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch'
+        PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
+        ARCH=i686
     else
         DOCKER_BASE="centos:6"
         LINUX32=
-        DOCKERFILE_I386=
+        PREYUM=
+        ARCH=x86_64
     fi
     cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
-$DOCKERFILE_I386
-RUN yum install -y util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
+ARG SDK=$SDK_HOME
+ARG ARCH=$ARCH
+ARG SETARCH="$LINUX32"
+RUN ${PREYUM} \\
+    yum -y install util-linux git gcc gcc-c++ make tar wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
+    yum clean all
 COPY include/patches/ include/patches/
-COPY build-Linux-sdk.sh common.sh compiler-common.sh ./
+COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 EOF
     BUILD_LINUX_SDK=./build-Linux-sdk.sh
     ## older version:
@@ -96,7 +107,7 @@ fi
 
 function dobuild ()
 {
-    if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ]; then
+    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ]; then
         return 1
     fi
     return 0 # must return a status
@@ -108,7 +119,7 @@ function build()
     if [ -f "${scriptdir}/pkg/${step}.sh" ]; then
         . "${scriptdir}/pkg/${step}.sh"
     else
-        if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ] || [ "${step}" = "${LAST_STEP:-}" ]; then
+        if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ] || [ "${step}" = "${LAST_STEP:-}" ]; then
             (>&2 echo "Error: package file ${scriptdir}/pkg/${step}.sh not available")
             exit 1
         fi
@@ -117,7 +128,7 @@ function build()
 
 function checkpoint()
 {
-    if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
+    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
         if [ "$step" = "$checkpointstep" ]; then
             # checkpoint was walled twice in a row
             return 0
@@ -125,12 +136,12 @@ function checkpoint()
         copyline="COPY "
         for s in in "${pkgs[@]}"; do
             if [ -f "$scriptdir/pkg/${s}.sh" ]; then
-                copyline="$copyline pkg/${s}.sh "
+                copyline="$copyline include/scripts/pkg/${s}.sh "
             fi
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN $LINUX32 env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN \$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -141,7 +152,7 @@ function checkpoint()
 function build_step ()
 {
     # no-build cases (we avoid printing the same step twice)
-    if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
+    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
         if [ "$step" != "$prevstep" ]; then
             # push to the list of packages
             pkgs+=("$step")
@@ -194,12 +205,10 @@ function force_build()
 }
 
 if dobuild; then
-    source common.sh
-
     if [ "${DEBUG:-}" = "1" ]; then
-        CMAKE_BUILD_TYPE="Debug"
+        export CMAKE_BUILD_TYPE="Debug"
     else
-        CMAKE_BUILD_TYPE="Release"
+        export CMAKE_BUILD_TYPE="Release"
     fi
 
     error=false
@@ -212,7 +221,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel')")
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel')")
         error=true
     fi
 
@@ -433,7 +442,7 @@ build gperf # (used by fontconfig) as well as assemblers (yasm and nasm)
 build autoconf
 build automake
 build yasm
-build nasm # (for x264, lame, ans others)
+build nasm # (for x264, lame, and others)
 build gmp # (used by ruby)
 build openssl
 build patchelf
@@ -509,6 +518,7 @@ build libxml2
 build libxslt # (required by glib)
 build dbus # (for QtDBus and glib)
 build glib
+build itstool # (required by shared-mime-info)
 build boost
 
 checkpoint
@@ -535,6 +545,15 @@ build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
 build fftw # (GPLv2, for openfx-gmic)
+
+checkpoint
+
+build x265 # (for ffmpeg and libheif)
+build libde265 # (for libheif)
+build libheif # (for imagemagick and openimageio)
+
+checkpoint
+
 build imagemagick6
 build imagemagick7
 build glew
@@ -562,7 +581,6 @@ build opus
 build orc
 #build dirac # (obsolete since ffmpeg-3.4)
 build x264
-build x265
 build xvid
 build soxr
 build libass # (for ffmpeg)
@@ -629,13 +647,13 @@ if dobuild; then
         fi
     done
 
-    if [ ! -z "${TAR_SDK:-}" ]; then
+    if [ -n "${TAR_SDK:-}" ]; then
         # Done, make a tarball
         pushd "$SDK_HOME/.."
         tar cJf "$SRC_PATH/Natron-$SDK.tar.xz" "Natron-sdk"
         echo "*** SDK available at $SRC_PATH/Natron-$SDK.tar.xz"
 
-        if [ ! -z "${UPLOAD_SDK:-}" ]; then
+        if [ -n "${UPLOAD_SDK:-}" ]; then
             rsync -avz -O --progress --verbose -e 'ssh -oBatchMode=yes' "$SRC_PATH/Natron-$SDK.tar.xz" "$BINARIES_URL"
         fi
         popd
@@ -657,11 +675,69 @@ fi
 
 checkpoint
 
-if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
+if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
-RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
+RUN rm -rf $SDK_HOME/var/log/Natron-Linux-x86_64-SDK
 FROM $DOCKER_BASE
-COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
+MAINTAINER https://github.com/NatronGitHub/Natron
+WORKDIR /home
+COPY --from=intermediate $SDK_HOME $SDK_HOME
+ARG SDK=$SDK_HOME
+ARG QTDIR=\$SDK/qt4
+ARG GCC=\$SDK/gcc
+ARG FFMPEG=\$SDK/ffmpeg-gpl2
+ARG LIBRAW=\$SDK/libraw-gpl2
+ARG OSMESA=\$SDK/osmesa
+RUN ${PREYUM}yum -y install glibc-devel patch zip unzip mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
+ENV QTDIR="\$QTDIR" \\
+    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
+    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
+    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
+    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \\
+    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \\
+    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \\
+    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH" \\
+    WORKSPACE=/home \\
+    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
+    GIT_BRANCH=RB-2.3 \\
+    GIT_COMMIT= \\
+    RELEASE_TAG=  \\
+    SNAPSHOT_BRANCH= \\
+    SNAPSHOT_COMMIT= \\
+    UNIT_TESTS=true \\
+    NATRON_LICENSE=GPL \\
+    DISABLE_BREAKPAD=1 \\
+    COMPILE_TYPE=release \\
+    NATRON_DEV_STATUS=RC \\
+    NATRON_CUSTOM_BUILD_USER_NAME= \\
+    NATRON_EXTRA_QMAKE_FLAGS= \\
+    BUILD_NAME=natron_github_RB2 \\
+    DISABLE_RPM_DEB_PKGS=1 \\
+    DISABLE_PORTABLE_ARCHIVE= \\
+    BITS= \\
+    DEBUG_SCRIPTS= \\
+    EXTRA_PYTHON_MODULES_SCRIPT= \\
+    BUILD_NUMBER=0
+
+COPY \\
+    common.sh \\
+    compiler-common.sh \\
+    linuxStartupJenkins.sh \\
+    launchBuildMain.sh \\
+    manageBuildOptions.sh \\
+    manageLog.sh \\
+    createBuildOptionsFile.sh \\
+    gitRepositories.sh \\
+    checkout-repository.sh \\
+    build-plugins.sh \\
+    build-natron.sh \\
+    build-Linux-installer.sh \\
+    gen-natron-doc.sh \\
+    zip-python.sh \\
+    runUnitTests.sh \\
+    uploadArtifactsMain.sh \\
+    ./
+COPY include/ include/
 #COPY --from=intermediate /home/src /opt/Natron-sdk/src
 ## retrieve sources using:
 ## docker run natrongithub/natron-sdk:latest tar -C /opt/Natron-sdk -cf - src | tar xvf -
@@ -672,6 +748,9 @@ COPY --from=intermediate /usr/bin/setarch /usr/bin/setarch
 ENTRYPOINT ["setarch", "i686"]
 EOF
     fi
+    cat <<EOF
+CMD launchBuildMain.sh
+EOF
 fi
 
 exit 0

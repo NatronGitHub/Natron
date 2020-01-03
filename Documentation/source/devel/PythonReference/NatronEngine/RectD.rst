@@ -65,7 +65,7 @@ Returns the bottom edge, that is the
 
 .. method:: NatronEngine.RectD.clear()
 
-Same as :ref:`set<NatronEngine.RectD.set>` (0,0,0,0)
+Same as :func:`set<NatronEngine.RectD.set>` (0,0,0,0)
 
 .. method:: NatronEngine.RectD.contains(otherRect)
 

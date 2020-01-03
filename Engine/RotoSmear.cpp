@@ -271,7 +271,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
     //prev is the previously rendered point. On initialization this is just the point in the list prior to cur.
     //cur is the last point we rendered or the point before "it"
-    //renderPoint is the final point we rendered, recorded for the next call to render when we are bulding up the smear
+    //renderPoint is the final point we rendered, recorded for the next call to render when we are building up the smear
     std::pair<Point, double> prev, cur, renderPoint;
     bool bgInitialized = false;
     CairoImageWrapper imgWrapper;

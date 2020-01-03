@@ -4,14 +4,20 @@ PortSystem          1.0
 
 PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
+PortGroup           xcode_workaround 1.0
+
+# https://trac.macports.org/ticket/59875
+PortGroup           legacysupport 1.0
+
+legacysupport.newest_darwin_requires_legacy 9
 
 name                x265
-version             3.0
+version             3.2.1
 revision            1
 
-checksums           rmd160  6f866d290f0df0356f5a10a898fedf64fda53f0f \
-                    sha256  c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662 \
-                    size    1398519
+checksums           rmd160  7386c00a49a2fc143cd3c8cea657872235a8ba77 \
+                    sha256  fb9badcf92364fd3567f8b5aa0e5e952aeea7a39a2b864387cec31e3b58cbbcc \
+                    size    1426255
 
 categories          multimedia
 platforms           darwin
@@ -32,11 +38,14 @@ depends_build-append \
                     port:gmake \
                     port:nasm
 
-compiler.blacklist  *llvm-gcc-4.2
+compiler.blacklist-append *llvm-gcc-4.2
 
-configure.env-append CONFIGURE='${configure.cmd}' BUILD='${build.cmd}'
-build.env-append     BUILD='${build.cmd}'
-destroot.env-append  BUILD='${build.cmd}' ARCH=none
+# https://trac.macports.org/ticket/59246
+xcode_workaround.fixed_xcode_version 11.2
+
+configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
+build.env-append     BUILD=${build.cmd}
+destroot.env-append  BUILD=${build.cmd} ARCH=none
 configure.cmd        ${portpath}/${filesdir}/configure.sh
 build.cmd            ${portpath}/${filesdir}/build.sh
 
@@ -46,8 +55,8 @@ build.cmd            ${portpath}/${filesdir}/build.sh
 if {[variant_exists universal] && [variant_isset universal]} {
     lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
     foreach arch ${configure.universal_archs} {
-        lappend merger_configure_env(${arch}) ARCH='${arch}'
-        lappend merger_build_env(${arch}) ARCH='${arch}'
+        lappend merger_configure_env(${arch}) ARCH=${arch}
+        lappend merger_build_env(${arch}) ARCH=${arch}
     }
 } else {
     if {${build_arch} eq "i386"} {

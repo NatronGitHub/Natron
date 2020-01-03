@@ -17,13 +17,13 @@ The added functionality is having the ability to use the suppressed or despill c
     :width: 200px
     :align: center
 
-The first screenshot demostration if for the node **Ip_ChillSpill**. This despilling node has the most of features and functions that I can tell that exist amoungst all the despilling nodes. in the image below you will see the spill suppression on the left and the alpha channel from selecting **"Shuffle Spillmatte to Alpha"** on the right.
+The first screenshot demonstration if for the node **Ip_ChillSpill**. This despilling node has the most of features and functions that I can tell that exist amongst all the despilling nodes. in the image below you will see the spill suppression on the left and the alpha channel from selecting **"Shuffle Spillmatte to Alpha"** on the right.
 
 .. figure:: _images/AlternativeMatteExtraction/Ip_ChillSpill-FullComp.jpg
     :width: 200px
     :align: center
 
-Now just selecting the **Shuffle Spillmatte to Alpha** feature is not some magic trick and you get a perfect matte, not by a long shot. For a matter a fact its not for any of them. Attached are example of the nodes in their default state before the scaling process begins. The first image is the **Ip_ChillSpill** default matte output and the second in the ColorSuppression default matte output. It looks like if I was trying to use the **HSVTool Node** to pull a **Saturation or Brightness Key**. You can read more about that in my HSVTool node `tutorial <https://colorgrade13.wordpress.com/2015/05/07/natron-digital-compositor-hsvtool-node-tutorial/>`_. I used a very underated and under used node amoungst beginners called the **ColorLookup Node**. You can be very familiar with the node if you have used Photoshop or Gimp's curve tool.
+Now just selecting the **Shuffle Spillmatte to Alpha** feature is not some magic trick and you get a perfect matte, not by a long shot. For a matter a fact its not for any of them. Attached are example of the nodes in their default state before the scaling process begins. The first image is the **Ip_ChillSpill** default matte output and the second in the ColorSuppression default matte output. It looks like if I was trying to use the **HSVTool Node** to pull a **Saturation or Brightness Key**. You can read more about that in my HSVTool node `tutorial <https://colorgrade13.wordpress.com/2015/05/07/natron-digital-compositor-hsvtool-node-tutorial/>`_. I used a very underated and under used node amongst beginners called the **ColorLookup Node**. You can be very familiar with the node if you have used Photoshop or Gimp's curve tool.
 
 .. figure::  _images/AlternativeMatteExtraction/Ip_ChillSpill-default.jpg
     :width: 200px
@@ -45,7 +45,7 @@ As you can see these nodes all perform the same functions but some has different
     :width: 200px
     :align: center
 
-**Now this by node means a primary replacement for powerfull keying node in Natron. The extended functionality should only be considered as compliment to Chromakeyer, PIK/PIK Color and Keyer nodes**. Just remember that the Here are some screen captures of the effects using the **ColorLookup node is needed to scaled that matte**. Also this process doesn't treat your edges with a choking or eroding effect. You would have to experiment with some of the filters to process them. Now you can try and cheat by using the **Shuffle Node** to convert to this matte output to an real alpha channel and maybe you can process your edges directly as if you were coming out of a keyer. You will need to do some serious testing. After you have done that, please feel free to talk about it and join `NatronNation <https://www.facebook.com/groups/NatronNation/>`_ and read my `blog <https://colorgrade13.wordpress.com/>`_.
+**Now this by node means a primary replacement for powerful keying node in Natron. The extended functionality should only be considered as compliment to Chromakeyer, PIK/PIK Color and Keyer nodes**. Just remember that the Here are some screen captures of the effects using the **ColorLookup node is needed to scaled that matte**. Also this process doesn't treat your edges with a choking or eroding effect. You would have to experiment with some of the filters to process them. Now you can try and cheat by using the **Shuffle Node** to convert to this matte output to an real alpha channel and maybe you can process your edges directly as if you were coming out of a keyer. You will need to do some serious testing. After you have done that, please feel free to talk about it and join `NatronNation <https://www.facebook.com/groups/NatronNation/>`_ and read my `blog <https://colorgrade13.wordpress.com/>`_.
 
 Despill and Color Suppression Pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

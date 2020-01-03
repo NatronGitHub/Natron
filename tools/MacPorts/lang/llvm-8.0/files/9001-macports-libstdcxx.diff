@@ -1,0 +1,135 @@
+--- orig/tools/clang/include/clang/Lex/HeaderSearchOptions.h
++++ new/tools/clang/include/clang/Lex/HeaderSearchOptions.h
+@@ -185,6 +185,9 @@ public:
+   /// Use libc++ instead of the default libstdc++.
+   unsigned UseLibcxx : 1;
+ 
++  /// Use MacPorts libstdc++ instead of default system libstdc++.
++  unsigned UseMacPortsLibstdcxx : 1;
++
+   /// Whether header search information should be output as for -v.
+   unsigned Verbose : 1;
+ 
+--- orig/tools/clang/lib/Frontend/CompilerInvocation.cpp
++++ new/tools/clang/lib/Frontend/CompilerInvocation.cpp
+@@ -1721,8 +1721,10 @@ static void ParseHeaderSearchArgs(HeaderSearchOptions &Opts, ArgList &Args,
+   Opts.UseBuiltinIncludes = !Args.hasArg(OPT_nobuiltininc);
+   Opts.UseStandardSystemIncludes = !Args.hasArg(OPT_nostdsysteminc);
+   Opts.UseStandardCXXIncludes = !Args.hasArg(OPT_nostdincxx);
+-  if (const Arg *A = Args.getLastArg(OPT_stdlib_EQ))
++  if (const Arg *A = Args.getLastArg(OPT_stdlib_EQ)) {
+     Opts.UseLibcxx = (strcmp(A->getValue(), "libc++") == 0);
++    Opts.UseMacPortsLibstdcxx = (strcmp(A->getValue(), "macports-libstdc++") == 0);
++  }
+   Opts.ResourceDir = Args.getLastArgValue(OPT_resource_dir);
+ 
+   // Canonicalize -fmodules-cache-path before storing it.
+--- orig/tools/clang/lib/Frontend/InitHeaderSearch.cpp
++++ new/tools/clang/lib/Frontend/InitHeaderSearch.cpp
+@@ -111,7 +111,7 @@ static bool CanPrefixSysroot(StringRef Path) {
+ #if defined(_WIN32)
+   return !Path.empty() && llvm::sys::path::is_separator(Path[0]);
+ #else
+-  return llvm::sys::path::is_absolute(Path);
++  return llvm::sys::path::is_absolute(Path) && Path.find("@@MACPORTS_GCC_INCLUDE_DIR@@")!=0;
+ #endif
+ }
+ 
+@@ -371,9 +371,17 @@ void InitHeaderSearch::AddDefaultCPlusPlusIncludePaths(
+ 
+     case llvm::Triple::ppc:
+     case llvm::Triple::ppc64:
+-      IsBaseFound = AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.2.1",
+-                                                "powerpc-apple-darwin10", "",
+-                                                "ppc64", triple);
++      IsBaseFound = false;
++
++      if (HSOpts.UseMacPortsLibstdcxx) {
++        IsBaseFound = AddGnuCPlusPlusIncludePaths("@@MACPORTS_GCC_INCLUDE_DIR@@",
++                                                  "@@MACPORTS_HOST_NAME@@", "@@MACPORTS_GCC_SUBDIRECTORY_ppc@@", "@@MACPORTS_GCC_SUBDIRECTORY_ppc64@@",
++                                                  triple);
++      }
++
++      IsBaseFound |= AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.2.1",
++                                                 "powerpc-apple-darwin10", "",
++                                                 "ppc64", triple);
+       IsBaseFound |= AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.0.0",
+                                                  "powerpc-apple-darwin8", "",
+                                                  "ppc64", triple);
+@@ -381,9 +389,16 @@ void InitHeaderSearch::AddDefaultCPlusPlusIncludePaths(
+ 
+     case llvm::Triple::x86:
+     case llvm::Triple::x86_64:
+-      IsBaseFound = AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.2.1",
+-                                                "i686-apple-darwin10", "",
+-                                                "x86_64", triple);
++      IsBaseFound = false;
++
++      if (HSOpts.UseMacPortsLibstdcxx) {
++        IsBaseFound = AddGnuCPlusPlusIncludePaths("@@MACPORTS_GCC_INCLUDE_DIR@@",
++                                                  "@@MACPORTS_HOST_NAME@@", "@@MACPORTS_GCC_SUBDIRECTORY_i386@@", "@@MACPORTS_GCC_SUBDIRECTORY_x86_64@@", triple);
++      }
++
++      IsBaseFound |= AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.2.1",
++                                                 "i686-apple-darwin10", "",
++                                                 "x86_64", triple);
+       IsBaseFound |= AddGnuCPlusPlusIncludePaths(
+           "/usr/include/c++/4.0.0", "i686-apple-darwin8", "", "x86_64", triple);
+       break;
+--- orig/tools/clang/include/clang/Driver/ToolChain.h
++++ new/tools/clang/include/clang/Driver/ToolChain.h
+@@ -91,7 +91,8 @@ public:
+ 
+   enum CXXStdlibType {
+     CST_Libcxx,
+-    CST_Libstdcxx
++    CST_Libstdcxx,
++    CST_MacPortsLibstdcxx
+   };
+ 
+   enum RuntimeLibType {
+--- orig/tools/clang/lib/Driver/ToolChains/Darwin.cpp
++++ new/tools/clang/lib/Driver/ToolChains/Darwin.cpp
+@@ -1729,6 +1729,12 @@ void DarwinClang::AddCXXStdlibLibArgs(const ArgList &Args,
+     break;
+ 
+   case ToolChain::CST_Libstdcxx:
++  case ToolChain::CST_MacPortsLibstdcxx:
++    if (Type==ToolChain::CST_MacPortsLibstdcxx && getVFS().exists("@@MACPORTS_libstdc++@@")) {
++      CmdArgs.push_back("@@MACPORTS_libstdc++@@");
++      return;
++      }
++
+     // Unfortunately, -lstdc++ doesn't always exist in the standard search path;
+     // it was previously found in the gcc lib dir. However, for all the Darwin
+     // platforms we care about it was -lstdc++.6, so we search for that
+--- orig/tools/clang/lib/Driver/ToolChains/Hexagon.cpp
++++ new/tools/clang/lib/Driver/ToolChains/Hexagon.cpp
+@@ -557,6 +557,8 @@ HexagonToolChain::GetCXXStdlibType(const ArgList &Args) const {
+     return ToolChain::CST_Libstdcxx;
+ 
+   StringRef Value = A->getValue();
++  if (Value == "macports-libstdc++")
++    return ToolChain::CST_MacPortsLibstdcxx;
+   if (Value != "libstdc++")
+     getDriver().Diag(diag::err_drv_invalid_stdlib_name) << A->getAsString(Args);
+ 
+--- orig/tools/clang/lib/Driver/ToolChain.cpp
++++ new/tools/clang/lib/Driver/ToolChain.cpp
+@@ -674,6 +674,8 @@ ToolChain::CXXStdlibType ToolChain::GetCXXStdlibType(const ArgList &Args) const{
+     return ToolChain::CST_Libcxx;
+   else if (LibName == "libstdc++")
+     return ToolChain::CST_Libstdcxx;
++  else if (LibName == "macports-libstdc++")
++    return ToolChain::CST_MacPortsLibstdcxx;
+   else if (LibName == "platform")
+     return GetDefaultCXXStdlibType();
+ 
+@@ -755,6 +757,7 @@ void ToolChain::AddCXXStdlibLibArgs(const ArgList &Args,
+     break;
+ 
+   case ToolChain::CST_Libstdcxx:
++  case ToolChain::CST_MacPortsLibstdcxx:
+     CmdArgs.push_back("-lstdc++");
+     break;
+   }

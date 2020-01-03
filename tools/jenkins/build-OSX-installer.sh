@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 
 echo "*** OSX installer..."
@@ -33,7 +33,7 @@ pushd () {
 }
 
 popd () {
-    command popd "$@" > /dev/null
+    command popd > /dev/null
 }
 
 updateBuildOptions
@@ -46,6 +46,21 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     fi
     if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
         DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-6.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-6.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
     fi
 fi
 
@@ -60,6 +75,12 @@ omplibs="omp"
 BPAD_TAG=""
 if [ "${NATRON_BUILD_CONFIG:-}" != "" ] && [ "${NATRON_BUILD_CONFIG:-}" != "SNAPSHOT" ]; then
     BPAD_TAG="-release"
+    #if [ -f "$TMP_BINARIES_PATH/natron-fullversion.txt" ]; then
+    #    GET_VER=`cat "$TMP_BINARIES_PATH/natron-fullversion.txt"`
+    #    if [ "$GET_VER" != "" ]; then
+    #        TAG=$GET_VER
+    #    fi
+    #fi
 fi
 
 if [ ! -d "$TMP_BINARIES_PATH" ]; then
@@ -155,24 +176,23 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
         echo "* stripping $ofx_binary";
         # Retain the original binary for QA and use with the util 'atos'
         #mv -f "$ofx_binary" "${binary}_FULL";
-        ARCHS="x86_64 i386"
-        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch "$ARCHS"; then
+        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch i386 x86_64; then
             # Extract each arch into a "thin" binary for stripping
-            # Perform desired stripping on each thin binary.
-            for a in $ARCHS; do
-                lipo "$ofx_binary" -thin "$a" -output "${ofx_binary}_$a"
-                strip -S -x -r "${ofx_binary}_$a"
-            done
+            lipo "$ofx_binary" -thin x86_64 -output "${ofx_binary}_x86_64";
+            lipo "$ofx_binary" -thin i386   -output "${ofx_binary}_i386";
 
+            # Perform desired stripping on each thin binary.
+            strip -S -x -r "${ofx_binary}_i386";
+            strip -S -x -r "${ofx_binary}_x86_64";
             # Make the new universal binary from our stripped thin pieces.
-            lipo "-arch x86_64 ${ofx_binary}_x86_64 -arch i386 ${ofx_binary}_i386" -create -output "${ofx_binary}"
+            lipo -arch i386 "${ofx_binary}_i386" -arch x86_64 "${ofx_binary}_x86_64" -create -output "${ofx_binary}";
 
             # We're now done with the temp thin binaries, so chuck them.
-            rm -f "${ofx_binary}_i386"
-            rm -f "${ofx_binary}_x86_64"
-# Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
-#else
-#           strip -S -x -r "${ofx_binary}"
+            rm -f "${ofx_binary}_i386";
+            rm -f "${ofx_binary}_x86_64";
+        # Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
+        #else
+        #   strip -S -x -r "${ofx_binary}"
         fi
         #rm -f "${ofx_binary}_FULL";
     else
@@ -238,12 +258,20 @@ LOCAL="/usr/local"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
 ## all Qt frameworks:
-QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
 ## Qt frameworks used by Natron + PySide + Qt plugins:
-#QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+#qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
 STRIP=1
 
-"$QTDIR"/bin/macdeployqt "${package}" -no-strip
+# macdeployqt only works if the package name has the same name as the executable inside:
+# ERROR: Could not find bundle binary for "/Users/devernay/Development/workspace/tmp/tmp_deploy/Natron-RB-2.3-201909281526-05aaefe-64-no-installer.app"
+# ERROR: "error: otool: can't open file:  (No such file or directory)
+app_for_macdeployqt="$(dirname "${package}")/Natron.app"
+[ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+ln -s "${package}" "${app_for_macdeployqt}"
+echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
+"$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
+rm  "${app_for_macdeployqt}"
 
 binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
@@ -277,6 +305,7 @@ cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resourc
 rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Python"
 cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
 cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/include" "$pkglib/Python.framework/Versions/${PYVER}/"
+chmod -R u+w "$pkglib/Python.framework" # fixes ERROR: "error: install_name_tool: can't open input file: /Users/devernay/Development/workspace/tmp/tmp_deploy/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib for writing (Permission denied)
 chmod 755 "$pkglib/Python.framework/Versions/${PYVER}/Python"
 install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
 ln -sf "Versions/${PYVER}/Python" "$pkglib/Python.framework/Python"
@@ -342,7 +371,7 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
             for lib in libjpeg.8.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
                 install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
             done
-            for f in $QT_LIBS; do
+            for f in "${qt_libs[@]}"; do
                 install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
             done
             if otool -L "$binary" | grep -F "${MACPORTS}"; then
@@ -354,15 +383,15 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
 fi
 # Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
-# Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
-for qtlib in $QT_LIBS; do
+# Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
+for qtlib in "${qt_libs[@]}"; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
         binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
         mkdir -p "$(dirname "${binary}")"
         cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
         chmod +w "${binary}"
         install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "$binary"
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
         for lib in libcrypto.1.0.0.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.1.0.0.dylib libz.1.dylib; do
@@ -447,13 +476,22 @@ echo "* installing PySide..."
 PYLIB="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/PySide"
 rm -rf "${package}/Contents/${PYSIDE}"
-cp -r "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}"
+cp -pPR "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}"
+pyshiboken="${PYLIB}/site-packages/shiboken.so"
+rm -rf "${package}/Contents/${pyshiboken}"
+cp "${MACPORTS}/Library/${pyshiboken}" "${package}/Contents/${pyshiboken}"
+# fix shiboken.so
+l="shiboken-python${PYVER}.${SBKVER}"
+dylib="lib${l}.dylib"
+binary="${package}/Contents/${pyshiboken}"
+install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$binary"
+
 # install pyside and shiboken libs, and fix deps from Qt
 for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
     dylib="lib${l}.dylib"
     binary="${package}/Contents/Frameworks/$dylib"
     cp "${MACPORTS}/lib/$dylib" "$binary"
-    for f in $QT_LIBS; do
+    for f in "${qt_libs[@]}"; do
         install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
 done
@@ -476,11 +514,11 @@ popd # pushd "${package}/Contents/${PYLIB}/config"
 (cd "${package}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"; ln -s ../Python "libpython${PYVER}.dylib")
 
 echo "* Fixing sonames in PySide..."
-for qtlib in $QT_LIBS ;do
+for qtlib in "${qt_libs[@]}" ;do
     binary="${package}/Contents/${PYSIDE}/${qtlib}.so"
     if [ -f "$binary" ]; then
         install_name_tool -id "@executable_path/../${PYSIDE}/${qtlib}.so" "$binary"
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
 
@@ -542,7 +580,7 @@ for bin in $natronbins $otherbins; do
         ### FIX FRAMEWORKS (must be done before dylibs)
         
 	# maydeployqt only fixes the main binary, fix others too
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
 	done
 
@@ -621,7 +659,7 @@ for bin in $natronbins $otherbins; do
             IMAGEMAGICKMAJ=${IMAGEMAGICKVER%.*.*}
             IMAGEMAGICKLIB="$(pkg-config --variable=libdir ImageMagick)"
             IMAGEMAGICKSHARE="$(pkg-config --variable=prefix ImageMagick)/share"
-            # if I get this right, $GSED substitutes in the exe the occurences of IMAGEMAGICKVER
+            # if I get this right, $GSED substitutes in the exe the occurrences of IMAGEMAGICKVER
             # into the actual value retrieved from the package.
             # We don't need this because we use MAGICKCORE_PACKAGE_VERSION declared in the <magick/magick-config.h>
             # $GSED -e "s,IMAGEMAGICKVER,$IMAGEMAGICKVER,g" --in-place $pkgbin/DisparityKillerM
@@ -634,7 +672,7 @@ for bin in $natronbins $otherbins; do
             cp -r "$IMAGEMAGICKSHARE/ImageMagick-$IMAGEMAGICKMAJ" "$pkglib/share/"
 
             # see http://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-            LIBADD=(${LIBADD[@]+"${LIBADD[@]}"} $pkglib/ImageMagick-$IMAGEMAGICKVER/modules-*/*/*.so)
+            LIBADD=(${LIBADD[@]+"${LIBADD[@]}"} "$pkglib/ImageMagick-$IMAGEMAGICKVER"/modules-*/*/*.so)
             #WITH_IMAGEMAGICK=yes
         fi
 
@@ -657,7 +695,6 @@ for bin in $natronbins $otherbins; do
                 # shellcheck disable=SC2012
                 alllibs=( $(ls "${alllibs[@]+${alllibs[@]}}" "${libs[@]}" | sort | uniq) )
             fi
-            let "a+=1"  
             # shellcheck disable=SC2012
             nnfiles="$(ls "$pkglib" | wc -l)"
             if [ "$nnfiles" = "$nfiles" ]; then
@@ -680,7 +717,7 @@ for bin in $natronbins $otherbins; do
                 changes=( ${changes[@]+"${changes[@]}"} -change "$l" "@rpath/$(basename "$l")" )
             done
             if [ -n "${changes[*]-}" ]; then
-                for f in  $pkglib/* "${LIBADD[@]+${LIBADD[@]}}" "$binary"; do
+                for f in  "$pkglib"/* "${LIBADD[@]+${LIBADD[@]}}" "$binary"; do
                     # avoid directories
                     if [ -f "$f" ]; then
                         chmod +w "$f"
@@ -796,18 +833,18 @@ if [ "$STRIP" = 1 ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
-            ARCHS="x86_64 i386"
-            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch "$ARCHS"; then
+            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch x86_64 i386; then
                 # Extract each arch into a "thin" binary for stripping
-                for a in $ARCHS; do
-                    lipo "$binary" -thin "$a" -output "${binary}_$a"
-                    strip -S -x -r "${binary}_$a"
-                done
-                               # Perform desired stripping on each thin binary.
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
 
+                # Perform desired stripping on each thin binary.
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
 
                 # Make the new universal binary from our stripped thin pieces.
-                lipo "-arch x86_64 ${binary}_x86_64 -arch i386 ${binary}_i386" -create -output "${binary}";
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
 
                 # We're now done with the temp thin binaries, so chuck them.
                 rm -f "${binary}_i386";
@@ -866,7 +903,7 @@ export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -901,19 +938,19 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     DMG_FINAL="${DMG_FINAL}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}"
+DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
 if [ "$COMPILE_TYPE" = "debug" ]; then
     DMG_FINAL="${DMG_FINAL}-debug"
 fi
 
-DMG_FINAL=${DMG_FINAL}.dmg
-DMG_TMP=tmp${DMG_FINAL}
+DMG_FINAL="${DMG_FINAL}.dmg"
+DMG_TMP="tmp${DMG_FINAL}"
 
 
 if [ -f "$TMP_BINARIES_PATH/splashscreen.png" ]; then
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.png
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.png"
 else 
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.jpg
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.jpg"
 fi
 
 if [ ! -f "$DMG_BACK" ]; then

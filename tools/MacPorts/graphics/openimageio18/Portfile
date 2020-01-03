@@ -21,6 +21,7 @@ github.setup     OpenImageIO oiio 1.8.13 tags/Release-
 name             openimageio18
 conflicts        openimageio16
 conflicts        openimageio17
+conflicts        openimageio20
 conflicts        openimageio
 #revision         1
 categories       graphics

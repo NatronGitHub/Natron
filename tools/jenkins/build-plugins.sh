@@ -4,7 +4,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 source common.sh
 source manageBuildOptions.sh
@@ -12,6 +12,7 @@ source manageLog.sh
 
 updateBuildOptions
 
+#MAKEFLAGS_VERBOSE="V=1" # verbose build
 
 # Enable to use cmake to build instead of regular Makefiles. Untested for a while
 CMAKE_PLUGINS=0
@@ -22,6 +23,12 @@ BUILD_MISC=1
 BUILD_ARENA=1
 BUILD_GMIC=1
 BUILD_CV=0
+
+OMP=""
+if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
+    # compile DenoiseSharpen, CImg and GMIC with OpenMP support
+    OMP="OPENMP=1"
+fi
 
 # When debugging script, do not build if ofx bundle exists
 if [ "${DEBUG_SCRIPTS:-}" = "1" ]; then
@@ -108,7 +115,7 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     OPTFLAG=-O
 else
     # Let us benefit from maximum optimization for release builds,
-    # includng non-conformant IEEE floating-point computation.
+    # including non-conformant IEEE floating-point computation.
     OPTFLAG=-Ofast
 fi
 
@@ -149,11 +156,12 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     #fi
 
     if [ "$CMAKE_PLUGINS" = "1" ] && [ -f CMakeLists.txt ] && [ -d openfx/cmake ]; then
+        echo "Info: build openfx-misc using cmake..."
         # Use CMake if available
         mkdir build
         cd build
         CMAKE_LDFLAGS=""
-        if [ "$PKGOS" = "OSX" ]; then
+        if [ "$PKGOS" = "OSX" ] && [ "$BITS" = "Universal" ]; then
             UNIVERSAL='-DCMAKE_OSX_ARCHITECTURES="x86_64;i386"'
         elif [ "$PKGOS" = "Windows" ]; then
             MSYS='-G"MSYS Makefiles"'
@@ -163,41 +171,70 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-}
         make -j"${MKJOBS}"
         make install
+        echo "Info: build openfx-misc using cmake... done!"
     else
+        echo "Info: build openfx-misc using make..."
         #set -x
         #make -C Shadertoy V=1 CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0
         #set +x
         # first, build everything except CImg (including OpenGL plugins)
-        OMP=""
-        #if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-        #    # compile DenoiseSharpen with OpenMP support
-        #    # see https://discuss.pixls.us/t/denoisesharpen-filter-is-crashing-natron/8564/2
-        #    OMP="OPENMP=1"
-        #fi
-        make -j"${MKJOBS}" CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" \
-                                                CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" HAVE_CIMG=0 ${OMP} CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+
+        echo "Info: make all except CImg."
+
+        env \
+            OSMESA_PATH="${OSMESA_PATH}" \
+            LLVM_PATH="${LLVM_PATH}" \
+            CXXFLAGS_MESA="-I${OSMESA_PATH}/include" \
+            LDFLAGS_MESA="-L${OSMESA_PATH}/lib ${GLULIB} ${MESALIB} -L${SDK_HOME}/lib -lz -L${LLVM_PATH}/lib ${LLVM_LIB}" \
+            CXX="$CXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
+            HAVE_CIMG=0 \
+            ${OMP} \
+            CXXFLAGS_EXTRA="-DHAVE_OSMESA ${CXXFLAGS_EXTRA}" \
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+
+        echo "Info: make CImg."
 
         # extract CImg.h
         make -C CImg CImg.h
+        
         # build CImg.ofx
-        if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-            # build CImg with OpenMP support (no OpenGL required)
-            make -j"${MKJOBS}" -C CImg OPENMP=1 \
-                 CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
-        elif [ -n "${GXX:-}" ]; then
-            # Building with clang, but GCC is available too!
+
+        if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
+            # Building with Apple clang (no OpenMP available), but GCC is available too!
             # libSupport was compiled by clang, now clean it to build it again with gcc
-            make -j"${MKJOBS}" \
-                 CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 clean
+            env \
+                CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 \
+                make -j"${MKJOBS}" clean
             # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
-            make -j"${MKJOBS}" -C CImg OPENMP=1 \
-                 CXX="$GXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+            env \
+                CXX="$CXX" \
+                CONFIG="${COMPILE_TYPE}" \
+                OPTFLAG="${OPTFLAG}" \
+                BITS="${BITS}" \
+                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" \
+                HAVE_CIMG=1 \
+                OPENMP=1 \
+                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+                make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
         else
-            # build CImg without OpenMP
-            make -j"${MKJOBS}" -C CImg \
-                 CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+            # build CImg with OpenMP support (no OpenGL required)
+            env \
+                CXX="$CXX" \
+                CONFIG="${COMPILE_TYPE}" \
+                OPTFLAG="${OPTFLAG}" \
+                BITS="${BITS}" \
+                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
+                HAVE_CIMG=1 \
+                ${OMP} \
+                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+                make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
         fi
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        echo "Info: build openfx-misc using make... done!"
     fi
     cd "$TMP_PATH"
     #rm -rf openfx-misc || true
@@ -212,6 +249,7 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
     #Always bump git commit, it is only used to version-stamp binaries
 
     if [ "$CMAKE_PLUGINS" = "1" ] && [ -f CMakeLists.txt ] && [ -d openfx/cmake ]; then
+        echo "Info: build openfx-io using cmake..."
         # Use CMake if available
         mkdir build
         cd build
@@ -241,10 +279,21 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
         env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBITS="${BITS}" -DOpenImageIO_INCLUDE_DIR="${IO_DEPENDS_PATH}/include" -DOpenImageIO_LIBRARY="${IO_DEPENDS_PATH}/${IO_OIIO_LIB}" -DSEEXPR_INCLUDE_DIRS="${IO_DEPENDS_PATH}/include" -DSEEXPR_LIBRARIES="${IO_DEPENDS_PATH}/${IO_SEEXPR_LIB}" ${UNIVERSAL:-}
         make -j"${MKJOBS}"
         make install
+        echo "Info: build openfx-io using cmake... done!"
     else
-        make -j"${MKJOBS}" OIIO_HOME="$SDK_HOME" SEEXPR_HOME="${SDK_HOME}" \
-             CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+        echo "Info: build openfx-io using make..."
+        env \
+            OIIO_HOME="$SDK_HOME" \
+            SEEXPR_HOME="${SDK_HOME}" \
+            CXX="$CXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-}" \
+            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        echo "Info: build openfx-io using make... done!"
     fi
     cd "$TMP_PATH"
     #rm -rf openfx-io  || true
@@ -264,6 +313,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         ISWIN=1
     fi
 
+    echo "Info: build openfx-arena using make..."
     # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
     ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
     if [ "$ARENA_CHECK" != "" ]; then
@@ -277,11 +327,22 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         make -C Bundle lodepng.h
     fi
 
-    make -j"${MKJOBS}" MINGW="${ISWIN:-}" LICENSE="$NATRON_LICENSE" ${ARENA_FLAGS:-} \
-         CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+    env \
+        MINGW="${ISWIN:-}" \
+        LICENSE="$NATRON_LICENSE" \
+        ${ARENA_FLAGS:-} \
+        CXX="$CXX" \
+        CONFIG="${COMPILE_TYPE}" \
+        OPTFLAG="${OPTFLAG}" \
+        BITS="${BITS}" \
+        LDFLAGS_ADD="${BUILDID:-}" \
+        CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+
     cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     cd "$TMP_PATH"
     #rm -rf openfx-arena || true
+    echo "Info: build openfx-arena using make... done!"
 fi
 
 # GMIC
@@ -304,23 +365,36 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
         ISWIN=1
     fi
 
+    echo "Info: build openfx-gmic using make..."
+
     # build GMIC.ofx
-    if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-        # build with OpenMP support (no OpenGL required)
-        make -j"${GMIC_MKJOBS}" OPENMP=1 \
-             CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
-    elif [ -n "${GXX:-}" ]; then
-        # build with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
-        make -j"${GMIC_MKJOBS}" OPENMP=1 \
-             CXX="$GXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
+    if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
+        # Building with Apple clang (no OpenMP available), but GCC is available too!
+        env \
+            CXX="$GXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-} -static-libgcc" \
+            OPENMP=1 \
+            CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
+            make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
     else
-        # build without OpenMP
-        make -j"${GMIC_MKJOBS}" \
-             CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
+        # build with OpenMP support (no OpenGL required)
+        env \
+            CXX="$CXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-}" \
+            ${OMP} \
+            CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
+            make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
     fi
     cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     cd "$TMP_PATH"
     #rm -rf openfx-gmic || true
+    echo "Info: build openfx-gmic using make... done!"
 fi
 
 # OPENCV
@@ -334,8 +408,14 @@ if [ "$BUILD_CV" = "1" ] && [ -d "$TMP_PATH/openfx-opencv" ]; then
     setBuildOption "OPENFX_OPENCV_GIT_COMMIT" "${CV_V}"
     setBuildOption "OPENFX_OPENCV_GIT_BRANCH" "${CV_BRANCH}"
     cd opencv2fx
-    make -j"${MKJOBS}" \
-         CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+    env \
+        CXX="$CXX" \
+        CONFIG="${COMPILE_TYPE}" \
+        OPTFLAG="${OPTFLAG}" \
+        BITS="${BITS}" \
+        LDFLAGS_ADD="${BUILDID:-}" \
+        CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
     cp -a ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
 fi
 

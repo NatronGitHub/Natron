@@ -29,6 +29,9 @@
 
 #include <list>
 #include <string>
+#include <vector>
+#include <utility>
+
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QStringList>

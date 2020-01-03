@@ -366,7 +366,7 @@ Gui::createViewerGui(NodePtr viewer)
     if (!where) {
         where = getAnchor();
     } else {
-        _imp->_nextViewerTabPlace = NULL; // < reseting next viewer anchor to default
+        _imp->_nextViewerTabPlace = NULL; // < resetting next viewer anchor to default
     }
     assert(where);
 

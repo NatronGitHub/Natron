@@ -263,7 +263,7 @@ applicationFilePath_fromArgv(const char* argv0Param)
 
 /*
  Copied from Qt qcore_mac_p.h
- Helper class that automates refernce counting for CFtypes.
+ Helper class that automates reference counting for CFtypes.
  After constructing the QCFType object, it can be copied like a
  value-based type.
 

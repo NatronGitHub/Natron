@@ -2075,7 +2075,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
     }
     startRow = qMin( startRow, rowCount() );
 
-    ///Remove already existant URLS
+    ///Remove already existent URLS
     ///Result is a pair new Url, clean url path
     std::vector<std::pair<QUrl, QString> > realList;
     for (U32 i = 0; i < list.size(); ++i) {

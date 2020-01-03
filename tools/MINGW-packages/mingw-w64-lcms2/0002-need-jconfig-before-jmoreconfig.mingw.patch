@@ -1,0 +1,11 @@
+--- lcms2-2.5/configure.ac.orig	2013-06-27 16:01:28.000000000 +0000
++++ lcms2-2.5/configure.ac	2013-07-28 06:17:38.507957900 +0000
+@@ -122,7 +122,7 @@
+     passed=0;
+     AC_CHECK_HEADER(jconfig.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`)
+     AC_CHECK_HEADER(jerror.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`)
+-    AC_CHECK_HEADER(jmorecfg.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`)
++    AC_CHECK_HEADER(jmorecfg.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`,[#include <jconfig.h>])
+     AC_CHECK_HEADER(jpeglib.h,passed=`expr $passed + 1`,failed=`expr $failed + 1`)
+     AC_CHECK_LIB(jpeg,jpeg_read_header,passed=`expr $passed + 1`,failed=`expr $failed + 1`,)
+ 

@@ -1,0 +1,25 @@
+From 6fcaf7683d06488f451107fe0466ec8f91572096 Mon Sep 17 00:00:00 2001
+From: Alexpux <alexey.pawlow@gmail.com>
+Date: Mon, 13 Oct 2014 07:23:44 +0400
+Subject: [PATCH 2/3] Add -no-undefined to link to enable build shared version
+ with mingw.
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index e2958e6..9a6ab44 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -22,7 +22,7 @@ libminizip_la_SOURCES = \
+ 	ioapi_mem.c \
+ 	${iowin32_src}
+ 
+-libminizip_la_LDFLAGS = $(AM_LDFLAGS) -version-info 1:0:0 -lz
++libminizip_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined -version-info 1:0:0 -lz
+ 
+ minizip_includedir = $(includedir)/minizip
+ minizip_include_HEADERS = \
+-- 
+2.1.2

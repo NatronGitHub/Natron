@@ -12,7 +12,7 @@ Natron <a id="top"></a>
         - Animation
         - Rendering
         - Rotoscoping/Rotopainting
-        - Interaction with other compositing softwares
+        - Interaction with other compositing software
 3. [Graphical user interface](#GUI)
 4. [Features in v1](#V1Features)
 5. [Features in v2](#V2Features)
@@ -32,7 +32,7 @@ images (wikipedia) .
 
 #### Philosophy<a id="Philosophy"></a>
 
-We aim to provide a software on par with visual effects industry softwares performance
+We aim to provide a software on par with visual effects industry software performance
 wise. We also want the end-user to be familiar with the Natron by dampening the learning
 curve that exists when one first use a compositing software. This is done by using the
 same looks and concepts as successful industries software. We clearly do not think Natron
@@ -53,12 +53,12 @@ in the compositing field:
 
 Blender is probably the most well known open-source software in the 3D-modeling and
 animation field. This is not so true for its compositing module. I see 2 reasons for this:
-- The graphical user interface is too complicated and is far from what industry softwares
-interfaces actually look like (i.e. The Foundry Nuke ,Adobe After Effects,eyeon Fusion,...)
+- The graphical user interface is too complicated and is far from what industry software
+interfaces actually look like (i.e. The Foundry Nuke, Adobe After Effects, Blackmagic Fusion...)
 - This open-source solution doesn't implement the standard open-source solution for making
 visual effects plug-ins: OpenFX !
 This is really game breaking, more and more professional studios are developing plug-ins
-that are compatible on many compositing softwares. Today hundreds of industry-tested
+that are compatible on many compositing software. Today hundreds of industry-tested
 OpenFX plug-ins exist and Blender is turning its back to them. I don't see any
 professional artist willing to give up the tools he's used to use every day and are
 extremely performant to Blender-only tools. I think people don't want to be tied down
@@ -128,7 +128,7 @@ In practise the animation is represented like a curve representing for each time
 (the X-axis) what value would our effect have (the Y-axis). Rest assured, the end user
 doesn't have to provide her/himself a value for each individual time that exists, it
 would not be possible because the time is continuous! Rather the user provides values at
-peaked times, known as keyframes, and the software interpolates the value beween those
+peaked times, known as keyframes, and the software interpolates the value between those
 2 keyframes.
 Hence animation is not more than providing keyframes at each desired time value for
 a given parameter of a visual effect.
@@ -154,7 +154,7 @@ a render farm) with a simple shell script that would dispatch the total image se
 among the available computers (e.g. PC 1 takes frames 0-99, PC 2 takes frames 100-199
 etc...).
 
-See the [command line manual](#cmdlineArgs) for more informations.
+See the [command line manual](#cmdlineArgs) for more information.
 
 #### Rotoscoping and rotopainting
 
@@ -165,7 +165,7 @@ Rotoscoping/painting is not yet implemented in Natron and will be for the versio
 
 Natron implements OpenFX 1.3 standard. That is any compositing tree using only
 OpenFX plug-ins should produce exactly the same results in Natron than in all other
-OpenFX-compatible softwares (Assuming they implement all the features of the standard).
+OpenFX-compatible software (Assuming they implement all the features of the standard).
 
 For now Natron has its own project file format. In the future we would like to be able
 to have a simple script allowing to transfer a Natron's project to a Nuke's project.

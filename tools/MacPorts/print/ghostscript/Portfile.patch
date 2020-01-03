@@ -1,12 +1,25 @@
-57c57
-<                     port:jpeg \
----
->                     path:lib/libjpeg.dylib:jpeg \
-119a120,126
-> if {[variant_isset universal]} {
->     lappend merger_configure_args(i386)     --enable-little-endian
->     lappend merger_configure_args(x86_64)   --enable-little-endian
->     lappend merger_configure_args(ppc)      --enable-big-endian
->     lappend merger_configure_args(ppc64)    --enable-big-endian
-> }
-> 
+--- Portfile.orig	2019-11-07 20:18:12.000000000 -0800
++++ Portfile	2019-11-07 20:19:37.000000000 -0800
+@@ -53,7 +53,7 @@
+                     port:fontconfig \
+                     port:freetype \
+                     port:jbig2dec \
+-                    port:jpeg \
++                    path:lib/libjpeg.dylib:jpeg \
+                     port:libiconv \
+                     port:libidn \
+                     port:libpaper \
+@@ -116,6 +116,13 @@
+ 
+ build.target        so
+ 
++if {[variant_isset universal]} {
++    lappend merger_configure_args(i386)     --enable-little-endian
++    lappend merger_configure_args(x86_64)   --enable-little-endian
++    lappend merger_configure_args(ppc)      --enable-big-endian
++    lappend merger_configure_args(ppc64)    --enable-big-endian
++}
++
+ destroot.target     soinstall
+ post-destroot {
+     ln -s gsc ${destroot}${prefix}/bin/gs
