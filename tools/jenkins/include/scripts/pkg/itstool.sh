@@ -5,7 +5,7 @@
 ITSTOOL_VERSION=2.0.6 
 ITSTOOL_TAR="itstool-${ITSTOOL_VERSION}.tar.bz2"
 ITSTOOL_SITE="http://files.itstool.org/itstool"
-if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/itstool" ] || [ "$(itstool)" != "itstool $ITSTOOL_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/itstool" ] || [ "$(itstool -v)" != "itstool $ITSTOOL_VERSION" ]; }; }; then
     start_build
     download "$ITSTOOL_SITE" "$ITSTOOL_TAR"
     untar "$SRC_PATH/$ITSTOOL_TAR"
