@@ -246,12 +246,10 @@ mingw-w64-nghttp2
 mingw-w64-curl
 mingw-w64-libraw-gpl2
 mingw-w64-ffmpeg-gpl2
-mingw-w64-imagemagick
 mingw-w64-libarchive
 mingw-w64-cmake
 mingw-w64-poppler
 mingw-w64-opencolorio-git
-mingw-w64-openimageio2
 mingw-w64-python2-sphinx
 mingw-w64-python-sphinx_rtd_theme
 mingw-w64-python-sphinx-alabaster-theme
@@ -261,6 +259,10 @@ mingw-w64-shiboken-qt4
 mingw-w64-pyside-qt4
 mingw-w64-sox
 mingw-w64-osmesa
+mingw-w64-libde265
+mingw-w64-libheif
+mingw-w64-imagemagick
+mingw-w64-openimageio2
 "
 for pkg in $PKGS; do
 cd $CWD/$pkg
