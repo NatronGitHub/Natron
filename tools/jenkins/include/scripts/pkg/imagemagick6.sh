@@ -2,7 +2,7 @@
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.10-68 # latest is 6.9.10-82, but fails to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+MAGICK_VERSION=6.9.10-68 # latest is 6.9.10-83, but 6.9.10-80 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 #MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
@@ -24,7 +24,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc"
     #fi
     # the following patch was integrated, see https://github.com/ImageMagick/ImageMagick/issues/1488
     #patch -p0 -i "$INC_PATH/patches/ImageMagick/pango-align-hack.diff"
-    env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" ./configure --prefix="$SDK_HOME" --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --with-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules ${MAGICK_CL_OPT:-}
+    MAGICK_CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1"
+    if [ -f /etc/centos-release ] && grep -q "release 6"  /etc/centos-release; then
+        # 6.9.10-80 and later fail on CentOS 6 with "undefined reference to `aligned_alloc'"
+        #MAGICK_CFLAGS="$MAGICK_CFLAGS -UMAGICKCORE_HAVE_STDC_ALIGNED_ALLOC"
+        true
+    fi
+    env CFLAGS="$BF $MAGICK_CFLAGS" CXXFLAGS="$BF $MAGICK_CFLAGS" ./configure --prefix="$SDK_HOME" --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --with-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules --with-libheic ${MAGICK_CL_OPT:-}
     make -j${MKJOBS}
     make install
     popd

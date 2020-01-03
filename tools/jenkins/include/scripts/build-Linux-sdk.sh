@@ -545,6 +545,15 @@ build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
 build fftw # (GPLv2, for openfx-gmic)
+
+checkpoint
+
+build x265 # (for ffmpeg and libheif)
+build libde265 # (for libheif)
+build libheif # (for imagemagick and openimageio)
+
+checkpoint
+
 build imagemagick6
 build imagemagick7
 build glew
@@ -572,7 +581,6 @@ build opus
 build orc
 #build dirac # (obsolete since ffmpeg-3.4)
 build x264
-build x265
 build xvid
 build soxr
 build libass # (for ffmpeg)
