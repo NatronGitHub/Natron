@@ -14,7 +14,7 @@ pkgver=6.9.10.55
 _realname=imagemagick
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgrel=1
+pkgrel=2
 pkgdesc="An image viewing/manipulation program (mingw-w64)"
 arch=('any')
 url="https://www.imagemagick.org/"
@@ -27,6 +27,7 @@ makedepends=(
              "${MINGW_PACKAGE_PREFIX}-freetype"
              "${MINGW_PACKAGE_PREFIX}-fontconfig"
 	     "${MINGW_PACKAGE_PREFIX}-lcms2"
+	     "${MINGW_PACKAGE_PREFIX}-libheif"
             )
 depends=(
          "${MINGW_PACKAGE_PREFIX}-libpng"
@@ -36,11 +37,12 @@ depends=(
          "${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
 	 "${MINGW_PACKAGE_PREFIX}-lcms2"
+	 "${MINGW_PACKAGE_PREFIX}-libheif"
         )
 options=('strip' '!debug' 'libtool')
 
 source=(
-        https://www.imagemagick.org/download/releases/ImageMagick-${pkgver%.*}-${pkgver##*.}.tar.xz
+        https://mirror.sobukus.de/files/src/imagemagick/ImageMagick-${pkgver%.*}-${pkgver##*.}.tar.xz
         ImageMagick-7.0.8-mingw.diff
 	ImageMagick-7.0.8-disable-ltdl.diff
 	ImageMagick-6.8.8.1-mingw.patch
@@ -99,7 +101,7 @@ build() {
     --with-png \
     --with-freetype \
     --with-fontconfig \
-    --without-heic \
+    --with-heic \
     --without-raqm \
     --without-raw \
     --without-zstd \
