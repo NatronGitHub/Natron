@@ -1,0 +1,87 @@
+--- gdk-pixbuf-2.38.0/meson.build.orig	2018-09-03 16:41:50.000000000 +0200
++++ gdk-pixbuf-2.38.0/meson.build	2018-10-28 11:23:42.801144700 +0100
+@@ -288,7 +288,7 @@
+ endif
+ 
+ # Don't check and build the jpeg loader if native_windows_loaders is true
+-if get_option('jpeg') and not native_windows_loaders
++if get_option('jpeg')
+   if cc.has_header('jpeglib.h')
+     jpeg_dep = cc.find_library('jpeg', required: false)
+     if cc.get_id() == 'msvc' and not jpeg_dep.found()
+@@ -308,7 +308,7 @@
+ endif
+ 
+ # Don't check and build the tiff loader if native_windows_loaders is true
+-if get_option('tiff') and not native_windows_loaders
++if get_option('tiff')
+   tiff_dep = dependency('libtiff-4', required: false)
+   if not tiff_dep.found()
+     # Fallback when no pkg-config file is found for libtiff on MSVC, which is quite normal
+
+--- gdk-pixbuf-2.38.0/gdk-pixbuf/meson.build.orig	2018-10-28 11:20:03.962627900 +0100
++++ gdk-pixbuf-2.38.0/gdk-pixbuf/meson.build	2018-10-28 11:22:38.522468200 +0100
+@@ -9,9 +9,9 @@
+ # when native_windows_loaders is true
+ loaders = [
+   [ 'png', [ 'io-png.c' ], enabled_loaders.contains('png') ],
+-  [ 'bmp', [ 'io-bmp.c' ], not native_windows_loaders ],
+-  [ 'gif', [ 'io-gif.c', 'io-gif-animation.c' ], not native_windows_loaders ],
+-  [ 'ico', [ 'io-ico.c' ], not native_windows_loaders ],
++  [ 'bmp', [ 'io-bmp.c' ] ],
++  [ 'gif', [ 'io-gif.c', 'io-gif-animation.c' ] ],
++  [ 'ico', [ 'io-ico.c' ] ],
+   [ 'ani', [ 'io-ani.c', 'io-ani-animation.c' ] ],
+   [ 'jpeg', [ 'io-jpeg.c' ], enabled_loaders.contains('jpeg') ],
+   [ 'pnm', [ 'io-pnm.c' ] ],
+
+--- gdk-pixbuf-2.36.11/gdk-pixbuf/gdk-pixbuf-io.c.orig	2018-02-01 18:02:27.955913000 +0100
++++ gdk-pixbuf-2.36.11/gdk-pixbuf/gdk-pixbuf-io.c	2018-02-01 18:11:35.652239400 +0100
+@@ -457,17 +457,17 @@
+         /* We don't bother having the GDI+ loaders individually selectable
+          * for building in or not.
+          */
+-        load_one_builtin_module (ico);
++        //~ load_one_builtin_module (ico);
+         load_one_builtin_module (wmf);
+         load_one_builtin_module (emf);
+-        load_one_builtin_module (bmp);
+-        load_one_builtin_module (gif);
+-        load_one_builtin_module (jpeg);
+-        load_one_builtin_module (tiff);
++        //~ load_one_builtin_module (bmp);
++        //~ load_one_builtin_module (gif);
++        //~ load_one_builtin_module (jpeg);
++        //~ load_one_builtin_module (tiff);
+ #endif
+ #ifdef INCLUDE_gdip_png
+         /* Except the gdip-png loader which normally isn't built at all even */
+-        load_one_builtin_module (png);
++        //~ load_one_builtin_module (png);
+ #endif
+ 
+ #undef load_one_builtin_module
+@@ -681,16 +681,16 @@
+         }
+ 
+ #ifdef INCLUDE_gdiplus
+-        try_module (ico,gdip_ico);
++        //~ try_module (ico,gdip_ico);
+         try_module (wmf,gdip_wmf);
+         try_module (emf,gdip_emf);
+-        try_module (bmp,gdip_bmp);
+-        try_module (gif,gdip_gif);
+-        try_module (jpeg,gdip_jpeg);
+-        try_module (tiff,gdip_tiff);
++        //~ try_module (bmp,gdip_bmp);
++        //~ try_module (gif,gdip_gif);
++        //~ try_module (jpeg,gdip_jpeg);
++        //~ try_module (tiff,gdip_tiff);
+ #endif
+ #ifdef INCLUDE_gdip_png
+-        try_module (png,gdip_png);
++        //~ try_module (png,gdip_png);
+ #endif
+ #ifdef INCLUDE_png
+         try_module (png,png);
+

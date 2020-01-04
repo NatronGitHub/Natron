@@ -13,6 +13,7 @@ The following sections contain documentation about every node in the Extra group
     plugins/net.fxarena.openfx.Edges.rst
     plugins/net.fxarena.openfx.Implode.rst
     plugins/net.fxarena.openfx.Modulate.rst
+    plugins/net.fxarena.openfx.Morphology.rst
     plugins/net.fxarena.openfx.Oilpaint.rst
     plugins/net.fxarena.openfx.Polar.rst
     plugins/net.fxarena.openfx.Polaroid.rst

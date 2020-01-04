@@ -1,0 +1,86 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=cairo
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.16.0
+pkgrel=1.1
+pkgdesc="Cairo vector graphics library (mingw-w64)"
+arch=('any')
+url="https://cairographics.org/"
+license=(LGPL2.1 MPL1.1)
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             #"${MINGW_PACKAGE_PREFIX}-ghostscript"
+             "${MINGW_PACKAGE_PREFIX}-glib2"
+             #"${MINGW_PACKAGE_PREFIX}-gtk2"
+             #"${MINGW_PACKAGE_PREFIX}-librsvg"
+             "${MINGW_PACKAGE_PREFIX}-libspectre"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             #"${MINGW_PACKAGE_PREFIX}-poppler"
+             "${MINGW_PACKAGE_PREFIX}-gtk-doc"
+            )
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-fontconfig"
+         "${MINGW_PACKAGE_PREFIX}-lzo2"
+         "${MINGW_PACKAGE_PREFIX}-pixman"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+        )
+optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libcairo-gobject")
+options=('strip' 'staticlibs')
+source=("https://cairographics.org/releases/cairo-${pkgver}.tar.xz"
+        #"https://cairographics.org/snapshots/cairo-${pkgver}.tar.xz"
+        0009-standalone-headers.mingw.patch
+        0026-create-argb-fonts.all.patch
+        0027-win32-print-fix-unbounded-surface-assertion.patch)
+sha256sums=('5e7b29b3f113ef870d1e3ecf8adf21f923396401604bda16d44be45e66052331'
+            '234de8c5d4c28b03c19e638a353e8defb2de0367a634c002b0ea7d2877bd0756'
+            '6db6c44fbdb4926d09afa978fe80430186c4b7b7d255059602b1f94c6a079975'
+            '7e244c20eec8c7b287dbee1d34de178d9b0c419dc4c2b11c90eaf626c92bf781')
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+  patch -p1 -i ${srcdir}/0009-standalone-headers.mingw.patch
+  patch -p1 -i ${srcdir}/0026-create-argb-fonts.all.patch
+  patch -p1 -i ${srcdir}/0027-win32-print-fix-unbounded-surface-assertion.patch
+
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  # export lt_cv_deplibs_check_method='pass_all'
+  rm -rf build-${MINGW_CHOST}
+  mkdir -p build-${MINGW_CHOST}
+  cd build-${MINGW_CHOST}
+  CFLAGS+=" -Wno-implicit-function-declaration"
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --enable-win32 \
+    --enable-win32-font \
+    --enable-png \
+    --enable-shared \
+    --enable-static \
+    --enable-gobject \
+    --enable-tee \
+    --disable-xlib \
+    --disable-xcb \
+    --enable-fc \
+    --enable-ft \
+    --disable-silent-rules \
+    ac_cv_prog_GS=${MINGW_PREFIX}/bin/gsc
+
+  make #-j1 V=1
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+
+  # Licenses
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING"          "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING-LGPL-2.1" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING-LGPL-2.1"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING-MPL-1.1"  "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING-MPL-1.1"
+}

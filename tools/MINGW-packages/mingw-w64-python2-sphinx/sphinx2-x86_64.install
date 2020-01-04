@@ -1,0 +1,14 @@
+post_install() {
+  cd mingw64
+  local _prefix=$(pwd -W)
+  cd -
+  local _it
+  for _it in sphinx-apidoc2 sphinx-autogen2 sphinx-build2 sphinx-quickstart2; do
+    sed -e "s|/mingw64|${_prefix}|g" \
+        -i ${_prefix}/bin/${_it}-script.py
+  done
+}
+
+post_upgrade() {
+  post_install
+}

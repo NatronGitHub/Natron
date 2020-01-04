@@ -1,0 +1,70 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=srt
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.3.3
+pkgrel=1
+pkgdesc="Secure Reliable Transport (SRT) (mingw-w64)"
+arch=('any')
+license=('MPLv2.0')
+url="https://www.srtalliance.org/"
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-libwinpthread"
+         "${MINGW_PACKAGE_PREFIX}-openssl")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "make")
+source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/Haivision/srt/archive/v${pkgver}.tar.gz"
+        0001-CMakeLists.txt-substitute-link-flags-for-package-nam.patch
+        0004-mingw-ws2_32-linking.patch
+        0006-no-msvc-compat-headers.patch)
+sha256sums=('fb2e50c027ebcf32f8ebf6525a29a15e765c7a94efb52ccc3c770a0384b1fbaf'
+            '1b4f5ad5cc30564a77a65389498160f84d08152bfc6a65474679500d29127b2c'
+            'f311383a0d6f2bc0cf61df06ace564e5ea9d160bb749d862f2c11eb34a2683d9'
+            '18af8a55e898b12074e797a212eda5e6f3c935dcc37745eb97a60591e80ab64e')
+noextract=(${_realname}-${pkgver}.tar.gz)
+
+prepare() {
+  [[ -d ${srcdir}/${_realname}-${pkgver} ]] && rm -rf ${srcdir}/${_realname}-${pkgver}
+  tar -xzf ${srcdir}/${_realname}-${pkgver}.tar.gz -C ${srcdir} || true
+
+  cd ${_realname}-${pkgver}
+  patch -p1 -i ${srcdir}/0001-CMakeLists.txt-substitute-link-flags-for-package-nam.patch
+  patch -p1 -i ${srcdir}/0004-mingw-ws2_32-linking.patch
+  patch -p1 -i ${srcdir}/0006-no-msvc-compat-headers.patch
+}
+
+build() {
+  [[ -d "${srcdir}"/build-${MINGW_CHOST} ]] && rm -rf "${srcdir}"/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST}
+  cd ${srcdir}/build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+      -G'MSYS Makefiles' \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DENABLE_SHARED=ON \
+      -DENABLE_STATIC=ON \
+      -DENABLE_RELATIVE_LIBPATH=ON \
+      -DUSE_ENCLIB=openssl \
+      -DUSE_GNUTLS=OFF \
+      ../${_realname}-${pkgver}
+
+  make
+}
+
+package() {
+  # Shared Install
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR=${pkgdir} install
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/LICENSE ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE
+
+  local _WIN_PREFIX=$(cygpath -am ${MINGW_PREFIX})
+  for _f in "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/*.pc; do
+    sed -e "s|${_WIN_PREFIX}|${MINGW_PREFIX}|g" -i ${_f}
+  done
+}

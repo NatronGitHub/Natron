@@ -1,0 +1,17 @@
+--- libheif-1.4.0/libheif.pc.in.orig	2019-06-11 09:44:59.145657700 +0300
++++ libheif-1.4.0/libheif.pc.in	2019-06-11 09:45:12.764481600 +0300
+@@ -1,7 +1,7 @@
+ prefix=@prefix@
+ exec_prefix=@exec_prefix@
+ libdir=@libdir@
+-includedir=@includedir@
++includedir=@includedir@/@PACKAGE@
+ builtin_h265_decoder=@have_libde265@
+ builtin_h265_encoder=@have_x265@
+ 
+@@ -12,4 +12,4 @@
+ Requires:
+ Libs: -L@libdir@ -lheif
+ Libs.private: @LIBS@ -lstdc++
+-Cflags: -I@includedir@
++Cflags: -I@includedir@/@PACKAGE@

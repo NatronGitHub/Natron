@@ -6,8 +6,8 @@ pkgname="${MINGW_PACKAGE_PREFIX}-libraw-gpl2"
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
-pkgver=0.18.9
-pkgrel=1
+pkgver=0.18.13
+pkgrel=2
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
 url="https://www.libraw.org/"
@@ -22,7 +22,7 @@ source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
         "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL3-0.18.8.tar.gz"
         "LibRaw_wsock32.patch"
         "LibRaw_obsolete-macros.patch")
-sha256sums=('d2ef177032e6d804fc512b206d02c393fca26be43ecd136cc26926407273b24e'
+sha256sums=('cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca'
             '0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da'
             'ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701'
             '4bd077917fb8f37fa736e3a8bf32fabe3df3ff5438b684acbb5adff8a6c2a73b'

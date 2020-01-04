@@ -1,0 +1,45 @@
+diff -ru lcms2-2.5/utils/linkicc/Makefile.am lcms2-2.5.new/utils/linkicc/Makefile.am
+--- lcms2-2.5/utils/linkicc/Makefile.am	2013-06-27 16:01:28.000000000 +0000
++++ lcms2-2.5.new/utils/linkicc/Makefile.am	2013-07-28 06:35:22.305043000 +0000
+@@ -14,6 +14,6 @@
+ linkicc_LDADD = $(top_builddir)/src/liblcms2.la 
+ linkicc_LDFLAGS = @LDFLAGS@
+ linkicc_SOURCES = linkicc.c ../common/xgetopt.c ../common/vprf.c ../common/utils.h
+-linkicc_MANS = linkicc.1
++man_MANS = linkicc.1
+ 
+ EXTRA_DIST = $(man_MANS)
+Only in lcms2-2.5.new/utils/linkicc: Makefile.am.orig
+diff -ru lcms2-2.5/utils/psicc/Makefile.am lcms2-2.5.new/utils/psicc/Makefile.am
+--- lcms2-2.5/utils/psicc/Makefile.am	2013-06-27 16:01:28.000000000 +0000
++++ lcms2-2.5.new/utils/psicc/Makefile.am	2013-07-28 06:35:34.624607400 +0000
+@@ -14,6 +14,6 @@
+ psicc_LDADD = $(top_builddir)/src/liblcms2.la 
+ psicc_LDFLAGS = @LDFLAGS@
+ psicc_SOURCES = psicc.c ../common/xgetopt.c ../common/vprf.c ../common/utils.h
+-psicc_MANS = psicc.1
++man_MANS = psicc.1
+ 
+ EXTRA_DIST = $(man_MANS)
+diff -ru lcms2-2.5/utils/samples/Makefile.am lcms2-2.5.new/utils/samples/Makefile.am
+--- lcms2-2.5/utils/samples/Makefile.am	2013-06-27 16:01:28.000000000 +0000
++++ lcms2-2.5.new/utils/samples/Makefile.am	2013-07-28 06:35:46.745146500 +0000
+@@ -14,6 +14,6 @@
+ wtpt_LDADD = $(top_builddir)/src/liblcms2.la 
+ wtpt_LDFLAGS = @LDFLAGS@
+ wtpt_SOURCES = wtpt.c ../common/xgetopt.c ../common/vprf.c ../common/utils.h
+-wtpt_MANS = wtpt.1
++man_MANS = wtpt.1
+ 
+ EXTRA_DIST = $(man_MANS) roundtrip.c mktiff8.c mkgrayer.c mkcmy.c itufax.c
+diff -ru lcms2-2.5/utils/transicc/Makefile.am lcms2-2.5.new/utils/transicc/Makefile.am
+--- lcms2-2.5/utils/transicc/Makefile.am	2013-06-27 16:01:28.000000000 +0000
++++ lcms2-2.5.new/utils/transicc/Makefile.am	2013-07-28 06:35:57.328990500 +0000
+@@ -14,6 +14,6 @@
+ transicc_LDADD = $(top_builddir)/src/liblcms2.la 
+ transicc_LDFLAGS = @LDFLAGS@
+ transicc_SOURCES = transicc.c ../common/xgetopt.c ../common/vprf.c  ../common/utils.h
+-transicc_MANS = transicc.1
++man_MANS = transicc.1
+ 
+ EXTRA_DIST = $(man_MANS)

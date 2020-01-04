@@ -1,19 +1,15 @@
 diff -aur libvpx-1.6.0-orig/build/make/configure.sh libvpx-1.6.0/build/make/configure.sh
 --- libvpx-1.6.0-orig/build/make/configure.sh	2016-07-21 04:15:41.000000000 +0300
 +++ libvpx-1.6.0/build/make/configure.sh	2016-07-28 18:34:25.287546800 +0300
-@@ -585,11 +585,14 @@
+@@ -647,7 +647,10 @@
        --libdir=*)
          libdir="${optval}"
          ;;
+-      --libc|--as|--prefix|--libdir)
 +      --bindir=*)
 +        bindir="${optval}"
 +        ;;
-       --sdk-path=*)
-         [ -d "${optval}" ] || die "Not a directory: ${optval}"
-         sdk_path="${optval}"
-         ;;
--      --libc|--as|--prefix|--libdir|--sdk-path)
-+      --libc|--as|--prefix|--libdir|--bindir|--sdk-path)
++      --libc|--as|--prefix|--libdir|--bindir)
          die "Option ${opt} requires argument"
          ;;
        --help|-h)

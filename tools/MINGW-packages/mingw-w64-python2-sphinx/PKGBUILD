@@ -1,0 +1,106 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Ray Donnelly <mingw.android@gmail.com>
+
+_pyname=Sphinx
+_realname=sphinx
+pkgbase=mingw-w64-python2-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-python2-${_realname}")
+pkgver=1.8.5
+pkgrel=2
+pkgdesc="Python documentation generator (mingw-w64)"
+arch=('any')
+license=('BSD')
+url="http://www.sphinx-doc.org/"
+makedepends=(
+            "${MINGW_PACKAGE_PREFIX}-python2-colorama"
+            "${MINGW_PACKAGE_PREFIX}-python2-docutils"
+            "${MINGW_PACKAGE_PREFIX}-python2-imagesize"
+            "${MINGW_PACKAGE_PREFIX}-python2-jinja"
+            "${MINGW_PACKAGE_PREFIX}-python2-pygments"
+            "${MINGW_PACKAGE_PREFIX}-python2-requests"
+            "${MINGW_PACKAGE_PREFIX}-python2-setuptools"
+            "${MINGW_PACKAGE_PREFIX}-python2-six"
+            "${MINGW_PACKAGE_PREFIX}-python2-sqlalchemy"
+            "${MINGW_PACKAGE_PREFIX}-python2-whoosh"
+            )
+checkdepends=(
+              "${MINGW_PACKAGE_PREFIX}-python2-nose"
+              "${MINGW_PACKAGE_PREFIX}-python2-snowballstemmer"
+              "${MINGW_PACKAGE_PREFIX}-python2-babel"
+              "${MINGW_PACKAGE_PREFIX}-python2-sphinx-alabaster-theme"
+              "${MINGW_PACKAGE_PREFIX}-python2-sphinx_rtd_theme"
+              "${MINGW_PACKAGE_PREFIX}-python2-mock"
+              "${MINGW_PACKAGE_PREFIX}-python2-enum34"
+              )
+source=("${_realname}-${pkgver}.tar.gz"::"https://pypi.org/packages/source/S/${_pyname}/${_pyname}-${pkgver}.tar.gz")
+sha256sums=('c7658aab75c920288a8cf6f09f244c6cfdae30d82d803ac1634d9f223a80ca08')
+
+prepare() {
+  cd ${srcdir}
+  rm -rf python2-build-${CARCH} | true
+  cp -r "${_pyname}-${pkgver}" "python2-build-${CARCH}"
+
+  # change python2 interpreter
+  find python2-build-${CARCH} -type f -exec \
+  sed -i '1s,^#! \?/usr/bin/\(env \|\)python$,#!/usr/bin/python2,' {} \;
+  # change sphinx-binaries name in source code
+  find python2-build-${CARCH} -type f -name '*.py' -exec \
+  sed -ri 's,(sphinx-(:?build|apidoc|autogen|quickstart)),\12,' {} \;
+
+}
+
+build() {
+  cd "${srcdir}"
+  msg "Python 2 build for ${CARCH}"  
+  cd "${srcdir}/python2-build-${CARCH}"
+  ${MINGW_PREFIX}/bin/python2 setup.py build
+}
+
+package_python2-sphinx() {
+  pkgdesc='Python2 documentation generator (mingw-w64)'
+  depends=("${MINGW_PACKAGE_PREFIX}-python2-babel"
+           "${MINGW_PACKAGE_PREFIX}-python2-certifi"
+           "${MINGW_PACKAGE_PREFIX}-python2-colorama"
+           "${MINGW_PACKAGE_PREFIX}-python2-chardet"
+           "${MINGW_PACKAGE_PREFIX}-python2-docutils"
+           "${MINGW_PACKAGE_PREFIX}-python2-idna"
+           "${MINGW_PACKAGE_PREFIX}-python2-imagesize"
+           "${MINGW_PACKAGE_PREFIX}-python2-jinja"
+           "${MINGW_PACKAGE_PREFIX}-python2-packaging"
+           "${MINGW_PACKAGE_PREFIX}-python2-pygments"
+           "${MINGW_PACKAGE_PREFIX}-python2-requests"
+           "${MINGW_PACKAGE_PREFIX}-python2-sphinx_rtd_theme"
+           "${MINGW_PACKAGE_PREFIX}-python2-snowballstemmer"
+           "${MINGW_PACKAGE_PREFIX}-python2-sphinx-alabaster-theme"
+           "${MINGW_PACKAGE_PREFIX}-python2-sphinxcontrib-websupport"
+           "${MINGW_PACKAGE_PREFIX}-python2-six"
+           "${MINGW_PACKAGE_PREFIX}-python2-sqlalchemy"
+           "${MINGW_PACKAGE_PREFIX}-python2-urllib3"
+           "${MINGW_PACKAGE_PREFIX}-python2-whoosh"
+           "${MINGW_PACKAGE_PREFIX}-python2-typing")
+  optdepends=("${MINGW_PACKAGE_PREFIX}-imagemagick: ext.imageconverter")
+
+  cd "${srcdir}/python2-build-${CARCH}"
+  MSYS2_ARG_CONV_EXCL="--prefix=;--install-scripts=;--install-platlib=" \
+  ${MINGW_PREFIX}/bin/python2 setup.py install -O1 --skip-build \
+      --root="${pkgdir}" --prefix=${MINGW_PREFIX}
+
+  local PREFIX_WIN=$(cygpath -wm ${MINGW_PREFIX})
+  # fix python command in files
+  for _f in "${pkgdir}${MINGW_PREFIX}"/bin/*.py; do
+    sed -e "s|/usr/bin/env |${MINGW_PREFIX}|g" \
+        -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" -i ${_f}
+  done
+
+  install -Dm644 LICENSE "${pkgdir}${MINGW_PREFIX}"/share/licenses/python2-sphinx/LICENSE
+}
+
+package_mingw-w64-i686-python2-sphinx() {
+  install=${_realname}2-${CARCH}.install
+  package_python2-sphinx
+}
+
+package_mingw-w64-x86_64-python2-sphinx() {
+  install=${_realname}2-${CARCH}.install
+  package_python2-sphinx
+}

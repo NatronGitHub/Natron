@@ -1,0 +1,11 @@
+--- gnutls-3.4.0/lib/includes/gnutls/gnutls.h.in.orig	2015-04-09 23:38:42.018400000 +0300
++++ gnutls-3.4.0/lib/includes/gnutls/gnutls.h.in	2015-04-09 23:39:31.860400000 +0300
+@@ -67,6 +67,8 @@
+ #define GNUTLS_CIPHER_RIJNDAEL_CBC GNUTLS_CIPHER_AES_128_CBC
+ #define GNUTLS_CIPHER_ARCFOUR GNUTLS_CIPHER_ARCFOUR_128
+ 
++#define GNUTLS_INTERNAL_BUILD 1
++
+ #if !defined(GNUTLS_INTERNAL_BUILD) && defined(_WIN32)
+ # define _SYM_EXPORT __declspec(dllimport)
+ #else

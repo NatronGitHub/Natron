@@ -1,0 +1,63 @@
+diff -Naur libarchive-3.3.3.orig/libarchive/archive_cryptor.c libarchive-3.3.3/libarchive/archive_cryptor.c
+--- libarchive-3.3.3.orig/libarchive/archive_cryptor.c	2018-09-04 15:36:21.010905600 -0400
++++ libarchive-3.3.3/libarchive/archive_cryptor.c	2018-09-04 15:39:13.953139100 -0400
+@@ -57,7 +57,7 @@
+ 	return 0;
+ }
+ 
+-#elif defined(_WIN32) && !defined(__CYGWIN__) && defined(HAVE_BCRYPT_H)
++#elif defined(_WIN32) || defined(__CYGWIN__) && defined(HAVE_BCRYPT_H) && defined(HAVE_WINDOWS_H)
+ #ifdef _MSC_VER
+ #pragma comment(lib, "Bcrypt.lib")
+ #endif
+@@ -168,7 +168,7 @@
+ 	return 0;
+ }
+ 
+-#elif defined(_WIN32) && !defined(__CYGWIN__) && defined(HAVE_BCRYPT_H)
++#elif defined(_WIN32) || defined(__CYGWIN__) && defined(HAVE_BCRYPT_H) && defined(HAVE_WINDOWS_H)
+ 
+ static int
+ aes_ctr_init(archive_crypto_ctx *ctx, const uint8_t *key, size_t key_len)
+diff -Naur libarchive-3.3.3.orig/libarchive/archive_cryptor_private.h libarchive-3.3.3/libarchive/archive_cryptor_private.h
+--- libarchive-3.3.3.orig/libarchive/archive_cryptor_private.h	2018-09-04 15:36:21.079906500 -0400
++++ libarchive-3.3.3/libarchive/archive_cryptor_private.h	2018-09-04 15:39:58.077520000 -0400
+@@ -63,7 +63,10 @@
+ 	unsigned	encr_pos;
+ } archive_crypto_ctx;
+ 
+-#elif defined(_WIN32) && !defined(__CYGWIN__) && defined(HAVE_BCRYPT_H)
++#elif defined(_WIN32) || defined(__CYGWIN__) && defined(HAVE_BCRYPT_H) && defined(HAVE_WINDOWS_H)
++#if defined(__CYGWIN__)
++	# include <windows.h>
++#endif
+ #include <bcrypt.h>
+ 
+ /* Common in other bcrypt implementations, but missing from VS2008. */
+diff -Naur libarchive-3.3.3.orig/libarchive/archive_hmac.c libarchive-3.3.3/libarchive/archive_hmac.c
+--- libarchive-3.3.3.orig/libarchive/archive_hmac.c	2018-09-04 15:36:20.986905600 -0400
++++ libarchive-3.3.3/libarchive/archive_hmac.c	2018-09-04 15:41:06.218433900 -0400
+@@ -74,7 +74,7 @@
+ 	memset(ctx, 0, sizeof(*ctx));
+ }
+ 
+-#elif defined(_WIN32) && !defined(__CYGWIN__) && defined(HAVE_BCRYPT_H)
++#elif defined(_WIN32) || defined(__CYGWIN__) && defined(HAVE_BCRYPT_H) && defined(HAVE_WINDOWS_H)
+ 
+ #ifndef BCRYPT_HASH_REUSABLE_FLAG
+ # define BCRYPT_HASH_REUSABLE_FLAG 0x00000020
+diff -Naur libarchive-3.3.3.orig/libarchive/archive_hmac_private.h libarchive-3.3.3/libarchive/archive_hmac_private.h
+--- libarchive-3.3.3.orig/libarchive/archive_hmac_private.h	2018-09-04 15:36:21.006904800 -0400
++++ libarchive-3.3.3/libarchive/archive_hmac_private.h	2018-09-04 15:42:32.374554800 -0400
+@@ -53,7 +53,10 @@
+ 
+ typedef	CCHmacContext archive_hmac_sha1_ctx;
+ 
+-#elif defined(_WIN32) && !defined(__CYGWIN__) && defined(HAVE_BCRYPT_H)
++#elif defined(_WIN32) || defined(__CYGWIN__) && defined(HAVE_BCRYPT_H) && defined(HAVE_WINDOWS_H)
++#if defined(__CYGWIN__)
++	# include <windows.h>
++#endif
+ #include <bcrypt.h>
+ 
+ typedef struct {

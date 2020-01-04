@@ -1,0 +1,16 @@
+diff --git a/OpenEXR/IlmImfTest/testBackwardCompatibility.cpp b/OpenEXR/IlmImf/testBackwardCompatibility.cpp
+index 8a7002b..24fdecc 100644
+--- a/OpenEXR/IlmImfTest/testBackwardCompatibility.cpp
++++ b/OpenEXR/IlmImfTest/testBackwardCompatibility.cpp
+@@ -70,9 +70,9 @@ using IMATH_NAMESPACE::divp;
+ #include <string>
+ #include <assert.h>
+ #include <time.h>
+-#ifndef WIN32
++#ifndef _WIN32
+ #include <sys/times.h>
+-#endif // WIN32
++#endif // _WIN32
+ 
+ #ifndef ILM_IMF_TEST_IMAGEDIR
+     #define ILM_IMF_TEST_IMAGEDIR

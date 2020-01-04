@@ -3,8 +3,8 @@
 _realname=poppler
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.74.0
-pkgrel=1.1
+pkgver=0.78.0
+pkgrel=2
 pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
 arch=('any')
 url="https://poppler.freedesktop.org/"
@@ -28,10 +28,8 @@ depends=("${MINGW_PACKAGE_PREFIX}-cairo"
 optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libpoppler-glib"
             "${MINGW_PACKAGE_PREFIX}-qt5: libpoppler-qt5")
 options=('strip' 'staticlibs')
-source=("https://poppler.freedesktop.org/${_realname}-${pkgver}.tar.xz"
-        "test::git+https://anongit.freedesktop.org/git/poppler/test/#commit=45f55f1e03b9bf3fbd334c31776b6f5e472889ec")
-sha256sums=('92e09fd3302567fd36146b36bb707db43ce436e8841219025a82ea9fb0076b2f'
-            'SKIP')
+source=("https://poppler.freedesktop.org/${_realname}-${pkgver}.tar.xz")
+sha256sums=('SKIP')
 
 prepare() {
   cd ${_realname}-${pkgver}
@@ -48,7 +46,7 @@ build() {
     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
     -DSPLASH_CMYK=ON \
     -DENABLE_GLIB=ON \
-    -DENABLE_GOBJECT_INTROSPECTION=ON \
+    -DENABLE_GOBJECT_INTROSPECTION=OFF \
     -DENABLE_CPP=ON \
     -DENABLE_DCTDECODER=libjpeg \
     -DENABLE_LIBOPENJPEG=openjpeg2 \
@@ -57,7 +55,7 @@ build() {
     -DNSS3_FOUND=OFF \
     -DENABLE_NSS3=OFF \
     -DENABLE_QT5=OFF \
-    -DENABLE_UTILS=ON \
+    -DENABLE_UTILS=OFF \
     -DENABLE_LIBCURL=OFF \
     -DENABLE_ZLIB=ON \
     -DENABLE_ZLIB_UNCOMPRESS=OFF \
@@ -67,15 +65,6 @@ build() {
   CC="${MINGW_PREFIX}/bin/gcc.exe" \
   PKG_CONFIG_PATH=${MINGW_PREFIX}/lib/pkgconfig \
   make
-}
-
-check() {
-  cd ${srcdir}/build-${MINGW_CHOST}
-  cp libpoppler-85.dll qt5/tests
-  cp cpp/libpoppler-cpp-0.dll qt5/tests
-  cp qt5/src/libpoppler-qt5-1.dll qt5/tests
-
-  make test
 }
 
 package() {

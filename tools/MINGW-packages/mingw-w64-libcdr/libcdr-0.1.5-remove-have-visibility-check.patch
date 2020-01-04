@@ -1,0 +1,34 @@
+--- libcdr-0.1.5.orig/configure.ac	2019-04-18 09:30:08.074718800 -0400
++++ libcdr-0.1.5/configure.ac	2019-04-18 09:56:17.558025700 -0400
+@@ -179,20 +179,6 @@
+ AC_MSG_RESULT([$platform_win32])
+ AM_CONDITIONAL([PLATFORM_WIN32], [test "x$platform_win32" = "xyes"])
+ 
+-AS_IF([test $platform_win32 = yes],
+-    [],
+-    [
+-        AC_MSG_CHECKING([for -fvisibility=hidden compiler flag])
+-        saved_CXXFLAGS="$CXXFLAGS"
+-        CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+-        AC_TRY_COMPILE([], [], [have_visibility=yes], [have_visibility=no])
+-        AC_MSG_RESULT([$have_visibility])
+-        CXXFLAGS="$saved_CXXFLAGS"
+-        AX_GCC_FUNC_ATTRIBUTE([visibility])
+-        AM_CONDITIONAL([HAVE_VISIBILITY], [
+-            test "$have_visibility" = "yes" && test "$ax_cv_have_func_attribute_visibility" = "yes"])
+-    ]
+-)
+ 
+ # ================
+ # Check for cflags
+--- libcdr-0.1.5.orig/src/lib/Makefile.am	2019-04-18 09:30:08.122719000 -0400
++++ libcdr-0.1.5/src/lib/Makefile.am	2019-04-18 09:56:29.790096700 -0400
+@@ -17,7 +17,7 @@
+ 	-DBOOST_ERROR_CODE_HEADER_ONLY \
+ 	-DBOOST_SYSTEM_NO_DEPRECATED
+ 
+-if HAVE_VISIBILITY
++if PLATFORM_WIN32
+ AM_CXXFLAGS += -fvisibility=hidden -DLIBCDR_VISIBILITY
+ endif
+ 

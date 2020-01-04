@@ -1,0 +1,21 @@
+diff -ru cairo-1.15.6/src/win32/cairo-win32-printing-surface.c cairo-1.15.6b/src/win32/cairo-win32-printing-surface.c
+--- cairo-1.15.6/src/win32/cairo-win32-printing-surface.c	2017-06-09 08:46:49.000000000 +0200
++++ cairo-1.15.6b/src/win32/cairo-win32-printing-surface.c	2017-07-26 21:41:09.380698500 +0200
+@@ -335,7 +335,7 @@
+ static cairo_bool_t
+ surface_pattern_supported (const cairo_surface_pattern_t *pattern)
+ {
+-    if (_cairo_surface_is_recording (pattern->surface))
++    if (pattern->surface->type == CAIRO_SURFACE_TYPE_RECORDING)
+ 	return TRUE;
+ 
+     if (pattern->surface->backend->acquire_source_image == NULL)
+@@ -1119,7 +1119,7 @@
+     case CAIRO_PATTERN_TYPE_SURFACE: {
+ 	cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) pattern;
+ 
+-	if ( _cairo_surface_is_recording (surface_pattern->surface))
++	if (surface_pattern->surface->type == CAIRO_SURFACE_TYPE_RECORDING)
+ 	    status = _cairo_win32_printing_surface_paint_recording_pattern (surface, surface_pattern);
+ 	else
+ 	    status = _cairo_win32_printing_surface_paint_image_pattern (surface, pattern, extents);

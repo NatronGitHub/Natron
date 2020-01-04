@@ -127,8 +127,8 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
-#  allow_failures:
-#    - os: osx # if we exceed the time limit
+  allow_failures:
+    - os: osx # if we exceed the time limit, if if qt4 is still using openssl 1.0
   fast_finish: true
 
 

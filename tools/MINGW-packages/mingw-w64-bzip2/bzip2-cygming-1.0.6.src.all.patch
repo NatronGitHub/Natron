@@ -1,0 +1,171 @@
+diff -urN bzip2-1.0.6/bzip2.c bzip2-1.0.6/bzip2.c
+--- bzip2-1.0.6/bzip2.c	2010-09-10 19:04:53.000000000 -0400
++++ bzip2-1.0.6/bzip2.c	2011-05-20 21:22:16.853325100 -0400
+@@ -1132,8 +1132,8 @@
+ static 
+ void compress ( Char *name )
+ {
+-   FILE  *inStr;
+-   FILE  *outStr;
++   FILE  *inStr = NULL;
++   FILE  *outStr = NULL;
+    Int32 n, i;
+    struct MY_STAT statBuf;
+ 
+@@ -1313,8 +1313,8 @@
+ static 
+ void uncompress ( Char *name )
+ {
+-   FILE  *inStr;
+-   FILE  *outStr;
++   FILE  *inStr = NULL;
++   FILE  *outStr = NULL;
+    Int32 n, i;
+    Bool  magicNumberOK;
+    Bool  cantGuess;
+@@ -1511,7 +1511,7 @@
+ static 
+ void testf ( Char *name )
+ {
+-   FILE *inStr;
++   FILE *inStr = NULL;
+    Bool allOK;
+    struct MY_STAT statBuf;
+ 
+diff -urN bzip2-1.0.6/bzip2recover.c bzip2-1.0.6/bzip2recover.c
+--- bzip2-1.0.6/bzip2recover.c	2010-09-10 19:18:40.000000000 -0400
++++ bzip2-1.0.6/bzip2recover.c	2011-05-20 21:21:39.518325100 -0400
+@@ -24,6 +24,8 @@
+ #include <errno.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
+ 
+ 
+ /* This program records bit locations in the file to be recovered.
+@@ -269,6 +271,19 @@
+        name[n-1] == '2');
+ }
+ 
++/*---------------------------------------------*/
++/* Open an output file safely with O_EXCL and good permissions */
++FILE* fopen_output( Char* name, const char* mode )
++{
++  FILE *fp;
++  int   fh;
++   
++  fh = open(name, O_WRONLY|O_CREAT|O_EXCL, 0600);
++  if (fh == -1) return NULL;
++  fp = fdopen(fh, mode);
++  if (fp == NULL) close(fh);
++  return fp;
++}
+ 
+ /*---------------------------------------------------*/
+ /*---                                             ---*/
+@@ -306,6 +321,7 @@
+    Int32       b, wrBlock, currBlock, rbCtr;
+    MaybeUInt64 bitsRead;
+ 
++
+    UInt32      buffHi, buffLo, blockCRC;
+    Char*       p;
+ 
+@@ -486,7 +502,7 @@
+          fprintf ( stderr, "   writing block %d to `%s' ...\n",
+                            wrBlock+1, outFileName );
+ 
+-         outFile = fopen ( outFileName, "wb" );
++         outFile = fopen_output ( outFileName, "wb" );
+          if (outFile == NULL) {
+             fprintf ( stderr, "%s: can't write `%s'\n",
+                       progName, outFileName );
+diff -urN bzip2-1.0.6/bzlib.c bzip2-1.0.6/bzlib.c
+--- bzip2-1.0.6/bzlib.c	2010-09-10 18:38:23.000000000 -0400
++++ bzip2-1.0.6/bzlib.c	2011-05-20 21:21:39.524325100 -0400
+@@ -1372,7 +1372,7 @@
+ #ifndef BZ_NO_STDIO
+ /*---------------------------------------------------*/
+ 
+-#if defined(_WIN32) || defined(OS2) || defined(MSDOS)
++#if defined(_WIN32) || defined(OS2) || defined(MSDOS) || defined(__CYGWIN__)
+ #   include <fcntl.h>
+ #   include <io.h>
+ #   define SET_BINARY_MODE(file) setmode(fileno(file),O_BINARY)
+diff -urN bzip2-1.0.6/bzlib.h bzip2-1.0.6/bzlib.h
+--- bzip2-1.0.6/bzlib.h	2010-09-10 19:08:42.000000000 -0400
++++ bzip2-1.0.6/bzlib.h	2011-05-20 22:38:02.807325100 -0400
+@@ -75,21 +75,39 @@
+ #include <stdio.h>
+ #endif
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__CYGWIN__)
+ #   include <windows.h>
+ #   ifdef small
+       /* windows.h define small to char */
+ #      undef small
+ #   endif
+-#   ifdef BZ_EXPORT
+-#   define BZ_API(func) WINAPI func
+-#   define BZ_EXTERN extern
++#   ifndef __GNUC__
++       /* Use these rules only for non-gcc native win32 */
++#      ifdef BZ_EXPORT
++#      define BZ_API(func) WINAPI func
++#      define BZ_EXTERN extern
++#      else
++       /* import windows dll dynamically */
++#      define BZ_API(func) (WINAPI * func)
++#      define BZ_EXTERN
++#      endif
+ #   else
+-   /* import windows dll dynamically */
+-#   define BZ_API(func) (WINAPI * func)
+-#   define BZ_EXTERN
++       /* For gcc on native win32, use import library trampoline       */
++       /* functions on DLL import.  This avoids requiring clients to   */
++       /* use special compilation flags depending on whether eventual  */
++       /* link will be against static libbz2 or against DLL, at the    */
++       /* expense of a small loss of efficiency. */
++
++       /* Because libbz2 does not export any DATA items, GNU ld's      */
++       /* "auto-import" is not a factor; the MinGW-built DLL can be    */
++       /* used by other compilers, provided an import library suitable */
++       /* for that compiler is (manually) constructed using the .def   */
++       /* file and the appropriate tool. */
++#      define BZ_API(func) func
++#      define BZ_EXTERN extern
+ #   endif
+ #else
++    /* non-win32 platforms, and cygwin */
+ #   define BZ_API(func) func
+ #   define BZ_EXTERN extern
+ #endif
+diff -urN bzip2-1.0.6/bzmore bzip2-1.0.6/bzmore
+--- bzip2-1.0.6/bzmore	2007-01-02 21:00:55.000000000 -0500
++++ bzip2-1.0.6/bzmore	2011-05-20 21:21:39.540325100 -0400
+@@ -24,10 +24,10 @@
+   # 'stty min 1' resets eof to ^a on both SunOS and SysV!
+   cb='min 1 -icanon'; ncb='icanon eof ^d'
+ fi
+-if test $? -eq 0 -a -n "$oldtty"; then
+-   trap 'stty $oldtty 2>/dev/null; exit' 0 2 3 5 10 13 15
++if test $? -eq 0 && test -n "$oldtty"; then
++   trap 'stty $oldtty 2>/dev/null; exit' 0 INT QUIT TRAP USR1 PIPE TERM
+ else
+-   trap 'stty $ncb echo 2>/dev/null; exit' 0 2 3 5 10 13 15
++   trap 'stty $ncb echo 2>/dev/null; exit' 0 INT QUIT TRAP USR1 PIPE TERM
+ fi
+ 
+ if test $# = 0; then
+@@ -46,7 +46,7 @@
+ 		ANS=`dd bs=1 count=1 2>/dev/null` 
+ 		stty $ncb echo 2>/dev/null
+ 		echo " "
+-		if test "$ANS" = 'e' -o "$ANS" = 'q'; then
++		if test "$ANS" = 'e' || test "$ANS" = 'q'; then
+ 			exit
+ 		fi
+ 	fi

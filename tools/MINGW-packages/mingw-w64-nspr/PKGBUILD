@@ -1,0 +1,78 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=nspr
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=4.23
+pkgrel=1
+pkgdesc="Netscape Portable Runtime (mingw-w64)"
+arch=('any')
+url="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR"
+license=(MPL2)
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "zip")
+options=('staticlibs' 'strip' '!emptydirs')
+source=(https://ftp.mozilla.org/pub/mozilla.org/nspr/releases/v${pkgver}/src/${_realname}-${pkgver}.tar.gz
+        https://ftp.mozilla.org/pub/mozilla.org/mozilla/libraries/win32/moztools-static.zip
+        nspr-4.10.6-mswsock.patch
+        nspr-4.10.2_autotools.patch
+        nspr-4.10.2_mingw.patch
+        nspr-4.10.2_staticbuild.patch
+        nspr-4.10.2_x64.patch
+        manifest)
+sha256sums=('4b9d821037faf5723da901515ed9cac8b23ef1ea3729022259777393453477a4'
+            '1894bc68a0badd6e6f68f66abc4c6cd8e222791dd194f6b631ce536011ab6707'
+            '725f8d6da56e44dba7669c498ed66af1b2145640115fd9bae9663c9364d9fde9'
+            '3108ea02a33dbe8d612b70c44b60826d8beea1bbfa907668dc798f8061fb4ad4'
+            '4f47fbfce21a5634094d6a0c7fdd29f2bbdcb352074b8c498ba23a9f4f859b29'
+            'bdb7138b12b7fbc32e906347e0dc963342316032ac3db8586683e54e40126e26'
+            '599ab9edb21568c02c4e6e96b366e51c042a9e789b72b9e7d9b7acc283757ab4'
+            '838098b25a8044176b3139b4003594570c62a8d64f5470fbbd769f3bf44e0855')
+
+prepare() {
+  cd ${srcdir}/${_realname}-${pkgver}/nspr
+  patch -p1 -i ${srcdir}/nspr-4.10.6-mswsock.patch
+  patch -p0 -i ${srcdir}/nspr-4.10.2_autotools.patch
+  patch -p0 -i ${srcdir}/nspr-4.10.2_mingw.patch
+  patch -p0 -i ${srcdir}/nspr-4.10.2_staticbuild.patch
+  patch -p0 -i ${srcdir}/nspr-4.10.2_x64.patch
+
+  cp ${srcdir}/moztools/bin/nsinstall.exe ${srcdir}/${_realname}-${pkgver}/
+  cp ${srcdir}/manifest ${srcdir}/${_realname}-${pkgver}/nsinstall.exe.manifest
+}
+
+build() {
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+  if [ "$CARCH" = "x86_64" ]; then
+    _confflags="--enable-64bit"
+  else
+    _confflags=""
+  fi
+
+  "${srcdir}"/${_realname}-${pkgver}/nspr/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --includedir=${MINGW_PREFIX}/include/nspr \
+    --enable-optimize \
+    --disable-debug \
+    ${_confflags}
+
+  PATH="$PATH:${srcdir}/${_realname}-${pkgver}" make
+}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+  PATH="$PATH:${srcdir}/${_realname}-${pkgver}" make DESTDIR="${pkgdir}" install
+
+  mv ${pkgdir}${MINGW_PREFIX}/lib/*.dll ${pkgdir}${MINGW_PREFIX}/bin/
+
+  ln -s nspr.pc "${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/mozilla-nspr.pc"
+  rm -r ${pkgdir}${MINGW_PREFIX}/bin/{compile-et.pl,prerr.properties} \
+        ${pkgdir}${MINGW_PREFIX}/include/nspr/md
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/nspr/LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+}

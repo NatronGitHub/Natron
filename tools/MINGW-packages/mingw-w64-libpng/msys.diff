@@ -1,0 +1,11 @@
+--- CMakeLists.txt.orig	2019-12-28 06:21:36.835041300 +0100
++++ CMakeLists.txt	2019-12-28 06:21:58.120902600 +0100
+@@ -268,7 +268,7 @@
+   symbol_prefix()
+ endif()
+ 
+-find_program(AWK NAMES gawk awk)
++#find_program(AWK NAMES gawk awk)
+ 
+ include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
