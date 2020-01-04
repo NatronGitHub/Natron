@@ -7,7 +7,7 @@ Environment Variables
 What are Environment Variables?
 -------------------------------
 
-[Environment variables](https://en.wikipedia.org/wiki/Environment_variable) are global system variables accessible by all the processes running under the Operating System (OS). Environment variables are useful to store system-wide values such as the directories to search for the executable programs (``PATH``) and the OS version.
+`Environment variables <https://en.wikipedia.org/wiki/Environment_variable>`_ are global system variables accessible by all the processes running under the Operating System (OS). Environment variables are useful to store system-wide values such as the directories to search for the executable programs (``PATH``) and the OS version.
 
 How do I set an environment variable?
 -------------------------------------
