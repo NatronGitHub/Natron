@@ -335,6 +335,17 @@ for location in "${COPY_LOCATIONS[@]}"; do
         cp "$b" "$location/bin/"
     done
 
+    # If the binary contains upper case letters, make a symbolic link.
+    # Solves https://github.com/NatronGitHub/Natron/issues/225
+    for b in Natron NatronRenderer NatronProjectConverter; do
+        if [ -f "$location/bin/$b" ]; then
+            fname="$(basename "$b")"
+            fnamel="$(echo "$fname" | tr '[:upper:]' '[:lower:]')" # https://stackoverflow.com/a/2264537
+            if [ "$fname" != "$fnamel" ]; then
+                ln -s "$fname" "$location/bin/$fnamel"
+            fi
+        fi
+    done
     # end for all locations
 done
 
