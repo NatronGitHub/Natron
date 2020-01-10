@@ -1,0 +1,10 @@
+--- rtmpdump/librtmp/handshake.h.orig	2014-03-02 18:20:23.000000000 +0000
++++ rtmpdump/librtmp/handshake.h	2014-03-12 09:26:06.474683800 +0000
+@@ -134,6 +134,7 @@
+   HMAC_setup(ctx, secretKey, 128);
+   HMAC_crunch(ctx, pubKeyOut, 128);
+   HMAC_finish(ctx, digest, digestLen);
++  (void) digestLen;
+ 
+   RTMP_Log(RTMP_LOGDEBUG, "RC4 In Key: ");
+   RTMP_LogHex(RTMP_LOGDEBUG, digest, 16);

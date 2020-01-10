@@ -1,0 +1,11 @@
+--- rtmpdump/librtmp/Makefile.orig	2014-03-12 09:49:51.274110300 +0000
++++ rtmpdump/librtmp/Makefile	2014-03-12 09:50:07.689194800 +0000
+@@ -114,7 +114,7 @@
+ 	cp librtmp.pc $(LIBDIR)/pkgconfig
+ 	cp librtmp.3 $(MANDIR)/man3
+ 
+-install_so:	librtmp$(SO_EXT)
++install_so:	librtmp$(SO_EXT) install_base
+ 	cp librtmp$(SO_EXT) $(SODIR)
+ 	$(INSTALL_IMPLIB)
+ 	cd $(SODIR); ln -sf librtmp$(SO_EXT) librtmp.$(SOX)

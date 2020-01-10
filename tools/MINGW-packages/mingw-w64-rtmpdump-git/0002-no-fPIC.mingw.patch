@@ -1,0 +1,11 @@
+--- rtmpdump/librtmp/Makefile.orig	2014-03-12 09:15:13.992329000 +0000
++++ rtmpdump/librtmp/Makefile	2014-03-12 09:15:47.418573600 +0000
+@@ -65,7 +65,7 @@
+ INSTALL_IMPLIB=$(INSTALL_IMPLIB_$(SYS))
+ 
+ SHARED=yes
+-SODEF_yes=-fPIC
++SODEF_yes=
+ SOLIB_yes=librtmp$(SO_EXT)
+ SOINST_yes=install_so
+ SO_DEF=$(SODEF_$(SHARED))
