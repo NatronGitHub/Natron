@@ -1,5 +1,5 @@
---- Portfile.orig	2020-01-02 13:01:28.000000000 -0800
-+++ Portfile	2020-01-02 14:21:55.000000000 -0800
+--- Portfile.orig	2020-01-10 08:48:27.000000000 -0800
++++ Portfile	2020-01-10 08:49:55.000000000 -0800
 @@ -2,12 +2,12 @@
  
  PortSystem          1.0
@@ -9,7 +9,7 @@
  PortGroup           cmake 1.1
  PortGroup           active_variants 1.1
  
- github.setup        OpenImageIO oiio 2.1.9.0
+ github.setup        OpenImageIO oiio 2.1.10.0
 -revision            0
 +revision            100
  name                openimageio
