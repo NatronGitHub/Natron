@@ -24,7 +24,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-#set -x # Print commands and their arguments as they are executed.
+set -x # Print commands and their arguments as they are executed.
 
 echo "*** Windows installer..."
 
@@ -52,11 +52,7 @@ if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     exit 1
 fi
 
-if [ "$BITS" = 64 ]; then
-    DUMP_SYMS="$SDK_HOME/bin/dump_syms.exe"
-else
-    DUMP_SYMS="$SDK_HOME/dump_syms_x64/dump_syms.exe"
-fi
+DUMP_SYMS="$SDK_HOME/bin/dump_syms.exe"
 
 dump_syms_safe() {
     if [ $# != 2 ]; then
@@ -85,7 +81,7 @@ fi
 
 # If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
-    (cd "${TMP_BINARIES_PATH}" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || trye
+    (cd "${TMP_BINARIES_PATH}" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || true
 fi
 
 
@@ -173,7 +169,7 @@ function installPlugin() {
 
 
     if [ ! -z "$DEPENDENCIES_DLL" ]; then
-        for depend in "${DEPENDENCIES_DLL[@]}"; do
+        for depend in ${DEPENDENCIES_DLL}; do
             cp "$depend" "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
             cp "$depend" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
         done
@@ -221,11 +217,8 @@ installPlugin "Misc" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openf
 installPlugin "CImg" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openfx-misc.qs"
 installPlugin "Shadertoy" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openfx-misc.qs"
 PACKAGES="${PACKAGES},fr.inria.openfx.extra"
-installPlugin "Arena" "$ARENA_DLL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs"
-installPlugin "ArenaCL" "$ARENA_DLL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs"
-installPlugin "GMIC" "$GMIC_DLL" "fr.inria.openfx.extra" "$XML/openfx-gmic.xml" "$QS/openfx-gmic.qs"
-#installPlugin "CV" "" "fr.inria.openfx.opencv" "$XML/openfx-opencv.xml" "$QS/openfx-opencv.qs"
-
+installPlugin "Arena" "${ARENA_DLL[*]}" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs"
+installPlugin "GMIC" "${GMIC_DLL[*]}" "fr.inria.openfx.extra" "$XML/openfx-gmic.xml" "$QS/openfx-gmic.qs"
 
 # Create package directories
 mkdir -p "$NATRON_PACKAGE_PATH/meta"
@@ -348,7 +341,8 @@ COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$DLLS_PACKAGE_PATH/data")
 
 for location in "${COPY_LOCATIONS[@]}"; do
     mkdir -p "$location/bin" "$location/lib" "$location/Resources/pixmaps" "$location/Resources/etc/fonts"
-    cp -a "$SDK_HOME/etc/fonts"/* "$location/Resources/etc/fonts"
+    #cp -a "$SDK_HOME/etc/fonts"/* "$location/Resources/etc/fonts"
+    cp -a "${TMP_BINARIES_PATH}/Resources/etc/fonts"/* "$location/Resources/etc/fonts/"
     cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
     cp -a "$SDK_HOME/share/qt4/plugins"/* "$location/bin/"
     rm -f "$location/bin"/*/*d4.dll || true
@@ -429,6 +423,9 @@ fi
 
 # Copy Python distrib to installer package
 cp -r "$PYDIR" "$DLLS_PACKAGE_PATH/data/lib/"
+cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${DLLS_PACKAGE_PATH}/data/lib/"
+mkdir -p "${DLLS_PACKAGE_PATH}/data/Plugins"
+cp -a "${TMP_PORTABLE_DIR}/Plugins/PySide" "${DLLS_PACKAGE_PATH}/data/Plugins/"
 
 # Configure the package date using the most recent DLL modification date
 CLIBS_VERSION="00000000000000"
