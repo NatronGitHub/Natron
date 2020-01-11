@@ -3,7 +3,7 @@
 _realname=aom
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc='AV1 codec library(mingw-w64)'
 arch=('any')
 url="https://aomedia.org/"

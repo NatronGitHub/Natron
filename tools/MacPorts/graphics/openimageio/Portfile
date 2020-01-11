@@ -6,7 +6,7 @@ PortGroup           github 1.0
 PortGroup           cmake 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.1.9.0
+github.setup        OpenImageIO oiio 2.1.10.0
 revision            100
 name                openimageio
 categories          graphics
@@ -16,9 +16,9 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  74e2e80c485e5320333d0849d42119a28c7d0993 \
-                    sha256  eb6776afd7a8c290c55c57878b3979c25184e45465b137956fe85ad0d17df014 \
-                    size    29104303
+checksums           rmd160  022030941253825eaaca504b6d728362df0df916 \
+                    sha256  f1547f15e9af16792a4ca0881c9298704d56db3e5d1cf41ca7e855a6a7548e66 \
+                    size    29105718
 
 compiler.cxx_standard   2011
 
@@ -29,8 +29,7 @@ worksrcdir          oiio-Release-${version}
 patch.pre_args  -p1
 patchfiles \
     oiio-2.0.8-invalidatespec.patch \
-    oiio-2.0.8-atomic-load.patch \
-    oiio-2.0.13-exifread.patch
+    oiio-2.0.8-atomic-load.patch
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted

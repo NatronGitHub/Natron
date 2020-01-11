@@ -2,7 +2,7 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.1.9.0
+OIIO_VERSION=2.1.10.0
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then

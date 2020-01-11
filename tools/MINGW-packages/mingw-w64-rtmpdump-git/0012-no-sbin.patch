@@ -1,0 +1,26 @@
+--- rtmpdump/Makefile.orig	2015-04-10 09:39:49.033600000 +0300
++++ rtmpdump/Makefile	2015-04-10 09:42:55.350600000 +0300
+@@ -25,11 +25,9 @@
+ LDFLAGS=-Wall $(XLDFLAGS)
+ 
+ bindir=$(prefix)/bin
+-sbindir=$(prefix)/sbin
+ mandir=$(prefix)/share/man
+ 
+ BINDIR=$(DESTDIR)$(bindir)
+-SBINDIR=$(DESTDIR)$(sbindir)
+ MANDIR=$(DESTDIR)$(mandir)
+ 
+ LIBS_posix=
+@@ -59,9 +57,9 @@
+ $(PROGS): $(LIBRTMP)
+ 
+ install:	$(PROGS)
+-	-mkdir -p $(BINDIR) $(SBINDIR) $(MANDIR)/man1 $(MANDIR)/man8
++	-mkdir -p $(BINDIR) $(MANDIR)/man1 $(MANDIR)/man8
+ 	cp rtmpdump$(EXT) $(BINDIR)
+-	cp rtmpgw$(EXT) rtmpsrv$(EXT) rtmpsuck$(EXT) $(SBINDIR)
++	cp rtmpgw$(EXT) rtmpsrv$(EXT) rtmpsuck$(EXT) $(BINDIR)
+ 	cp rtmpdump.1 $(MANDIR)/man1
+ 	cp rtmpgw.8 $(MANDIR)/man8
+ 	@cd librtmp; $(MAKE) install
