@@ -1140,7 +1140,16 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 {
     assert(knob);
 
-    // ensure _currentEntry is set before eventually triggering GUI update
+    ///Clone first and then handle restoration of the static value
+    clone(knob);
+    setSecret( knob->getIsSecret() );
+    if ( getDimension() == knob->getDimension() ) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            setEnabled( i, knob->isEnabled(i) );
+        }
+    }
+    
+
     {
         QMutexLocker k(&_entriesMutex);
         if (id >= 0) {
@@ -1148,15 +1157,6 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
             _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
         } else {
             _currentEntry.id = optionID;
-        }
-    }
-
-    ///Clone first and then handle restoration of the static value
-    clone(knob);
-    setSecret( knob->getIsSecret() );
-    if ( getDimension() == knob->getDimension() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            setEnabled( i, knob->isEnabled(i) );
         }
     }
 
