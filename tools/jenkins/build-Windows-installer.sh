@@ -127,6 +127,16 @@ $GSED -e "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}
 # Copy installer images to the config folder
 cp "$INC_PATH/config/"*.png "$INSTALLER_PATH/config/"
 
+# make sure we have mt and qtifw
+if [ ! -f "$SDK_HOME/bin/mt.exe" ] || [ ! -f "$SDK_HOME/bin/binarycreator.exe" ]; then
+    if [ ! -d "$SRC_PATH/natron-windows-installer" ]; then
+        ( cd "$SRC_PATH";
+          $CURL "$THIRD_PARTY_BIN_URL/natron-windows-installer.zip" --output "$SRC_PATH/natron-windows-installer.zip"
+          unzip natron-windows-installer.zip
+        )
+    fi
+    cp "$SRC_PATH/natron-windows-installer/mingw$BITS/bin/"{archivegen.exe,binarycreator.exe,installerbase.exe,installerbase.manifest,repogen.exe,mt.exe} "$SDK_HOME/bin/"
+fi
 
 function installPlugin() {
     OFX_BINARY="$1"
@@ -442,8 +452,8 @@ cp "$QS/$PKGOS/corelibs.qs" "$DLLS_PACKAGE_PATH/meta/installscript.qs"
 # on a software renderer if OpenGL driver is not good enough
 if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
     ( cd "$SRC_PATH";
-      $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar" --output "$SRC_PATH/natron-windows-mesa.tar"
-      tar xvf natron-windows-mesa.tar
+      $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar.xz" --output "$SRC_PATH/natron-windows-mesa.tar.xz"
+      tar xvf natron-windows-mesa.tar.xz
     )
 fi
 
