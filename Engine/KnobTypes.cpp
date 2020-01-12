@@ -607,6 +607,7 @@ KnobChoice::cloneExtraData(KnobI* other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
+    // TODO: Isn't this redundant, as it's implementation is identical to the other cloneExtraData?
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
     if (!isChoice) {
@@ -1140,16 +1141,6 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 {
     assert(knob);
 
-    // ensure _currentEntry is set before eventually triggering GUI update
-    {
-        QMutexLocker k(&_entriesMutex);
-        if (id >= 0) {
-            // we found a reasonable id
-            _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
-        } else {
-            _currentEntry.id = optionID;
-        }
-    }
 
     ///Clone first and then handle restoration of the static value
     clone(knob);
@@ -1160,8 +1151,18 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
         }
     }
 
+    {
+        QMutexLocker k(&_entriesMutex);
+        if (id >= 0) {
+            // we found a reasonable id
+            _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
+        } else {
+            _currentEntry.id = optionID;
+        }
+    }
+
     if (id >= 0) {
-        setValue(id);
+        setValue(id, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
     }
 }
 
