@@ -8,9 +8,11 @@ BOOST_VERSION=1.72.0 # openimageio 2.0.9 fails building with 1.70.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
 BOOST_SITE="https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source"
+if download_step; then
+    download "$BOOST_SITE" "$BOOST_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] || ! fgrep "define BOOST_LIB_VERSION \"${BOOST_LIB_VERSION}\"" "$SDK_HOME/include/boost/version.hpp" &>/dev/null ; }; }; then
     start_build
-    download "$BOOST_SITE" "$BOOST_TAR"
     untar "$SRC_PATH/$BOOST_TAR"
     pushd "boost_${BOOST_VERSION//./_}"
     # fix a bug with the header files path, when Python3 is used:

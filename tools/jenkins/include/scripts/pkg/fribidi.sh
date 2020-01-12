@@ -5,10 +5,12 @@
 FRIBIDI_VERSION=1.0.8
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
+if download_step; then
+    download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1
     start_build
-    download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
     untar "$SRC_PATH/$FRIBIDI_TAR"
     pushd "fribidi-${FRIBIDI_VERSION}"
     # git.mk seems to trigger a ./config.status --recheck, which is unnecessary

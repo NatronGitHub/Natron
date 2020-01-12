@@ -46,14 +46,16 @@ CLOOG_VERSION=0.18.4
 CLOOG_TAR="cloog-${CLOOG_VERSION}.tar.gz"
 CLOOG_SITE="http://www.bastoul.net/cloog/pages/download/count.php3?url=."
 
-if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; }; }; then
-    start_build
+if download_step; then
     download "$GCC_SITE" "$GCC_TAR"
     download "$MPC_SITE" "$MPC_TAR"
     download "$MPFR_SITE" "$MPFR_TAR"
     download "$GMP_SITE" "$GMP_TAR"
     download "$ISL_SITE" "$ISL_TAR"
     download "$CLOOG_SITE" "$CLOOG_TAR"
+fi
+if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; }; }; then
+    start_build
     untar "$SRC_PATH/$GCC_TAR"
     pushd "gcc-$GCC_VERSION"
     untar "$SRC_PATH/$MPC_TAR"

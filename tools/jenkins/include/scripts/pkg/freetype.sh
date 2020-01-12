@@ -5,9 +5,11 @@
 FREETYPE_VERSION=2.10.1
 FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.gz"
 FREETYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
+if download_step; then
+    download "$FREETYPE_SITE" "$FREETYPE_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; }; }; then # || [ "$(pkg-config --modversion freetype2)" != "$FREETYPE_VERSION" ]; then
     start_build
-    download "$FREETYPE_SITE" "$FREETYPE_TAR"
     untar "$SRC_PATH/$FREETYPE_TAR"
     pushd "freetype-${FREETYPE_VERSION}"
     # First command enables GX/AAT and OpenType table validation

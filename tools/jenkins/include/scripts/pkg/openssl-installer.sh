@@ -18,9 +18,11 @@ OPENSSL_SITE="https://www.openssl.org/source"
 OPENSSL_CONFIG_INSTALLER="enable-ssl3-method"
 # Working config for the SDK openssl:
 OPENSSL_CONFIG="enable-cms enable-camellia enable-idea enable-mdc2 enable-tlsext enable-rfc3779 enable-ssl3-method"
+if download_step; then
+    download "$OPENSSL_SITE" "$OPENSSL_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/installer/lib/pkgconfig:$SDK_HOME/installer/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
     start_build
-    download "$OPENSSL_SITE" "$OPENSSL_TAR"
     untar "$SRC_PATH/$OPENSSL_TAR"
     pushd "openssl-$OPENSSL_VERSION"
     # Use versioned symbols for OpenSSL binary compatibility.

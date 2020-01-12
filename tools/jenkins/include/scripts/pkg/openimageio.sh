@@ -5,12 +5,14 @@
 OIIO_VERSION=2.1.10.0
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
+if download_step; then
+    download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; }; }; then
     start_build
-    download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
     untar "$SRC_PATH/$OIIO_TAR"
     pushd "oiio-Release-${OIIO_VERSION}"
 

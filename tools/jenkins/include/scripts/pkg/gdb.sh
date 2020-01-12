@@ -5,9 +5,11 @@
 GDB_VERSION=8.3.1
 GDB_TAR="gdb-${GDB_VERSION}.tar.xz" # when using the sdk during debug we get a conflict with native gdb, so bundle our own
 GDB_SITE="ftp://ftp.gnu.org/gnu/gdb"
+if download_step; then
+    download "$GDB_SITE" "$GDB_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/gdb" ]; }; }; then
     start_build
-    download "$GDB_SITE" "$GDB_TAR"
     untar "$SRC_PATH/$GDB_TAR"
     pushd "gdb-${GDB_VERSION}"
 

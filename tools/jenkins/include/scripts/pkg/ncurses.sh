@@ -6,9 +6,11 @@ NCURSES_VERSION=6.1
 NCURSES_VERSION_PKG=6.1.20180127
 NCURSES_TAR="ncurses-${NCURSES_VERSION}.tar.gz"
 NCURSES_SITE="ftp://ftp.gnu.org/gnu/ncurses"
+if download_step; then
+    download "$NCURSES_SITE" "$NCURSES_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ncurses.pc" ] || [ "$(pkg-config --modversion ncurses)" != "$NCURSES_VERSION_PKG" ]; }; }; then
     start_build
-    download "$NCURSES_SITE" "$NCURSES_TAR"
     untar "$SRC_PATH/$NCURSES_TAR"
     pushd "ncurses-${NCURSES_VERSION}"
     # Don't install a static library that is not handled by configure:

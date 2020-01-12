@@ -5,14 +5,16 @@
 LIBVPX_VERSION=1.8.2
 LIBVPX_TAR="libvpx-${LIBVPX_VERSION}.tar.gz"
 #LIBVPX_SITE=http://storage.googleapis.com/downloads.webmproject.org/releases/webm
+if download_step; then
+    #download "$LIBVPX_SITE" "$LIBVPX_TAR"
+    download_github webmproject libvpx "${LIBVPX_VERSION}" v "${LIBVPX_TAR}"
+fi
 if build_step && { force_build || { [ "${REBUILD_LIBVPX:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libvpx* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/vpx.pc || true
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/vpx.pc" ] || [ "$(pkg-config --modversion vpx)" != "$LIBVPX_VERSION" ]; }; }; then
     start_build
-    #download "$LIBVPX_SITE" "$LIBVPX_TAR"
-    download_github webmproject libvpx "${LIBVPX_VERSION}" v "${LIBVPX_TAR}"
     untar "$SRC_PATH/$LIBVPX_TAR"
     pushd "libvpx-$LIBVPX_VERSION"
     # This command corrects ownership and permissions of installed files. 

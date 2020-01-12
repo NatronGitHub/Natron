@@ -8,12 +8,14 @@ MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.gz"
 MAGICK_SITE="https://imagemagick.org/download"
+if download_step; then
+    download "$MAGICK_SITE" "$MAGICK_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_MAGICK:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/ImageMagick-6/ "$SDK_HOME"/lib/libMagick* "$SDK_HOME"/share/ImageMagick-6/ "$SDK_HOME"/lib/pkgconfig/{Image,Magick}* "$SDK_HOME"/magick7 || true
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversion Magick++)" != "$MAGICK_VERSION_SHORT" ]; }; }; then
     start_build
-    download "$MAGICK_SITE" "$MAGICK_TAR"
     untar "$SRC_PATH/$MAGICK_TAR"
     #pushd "ImageMagick6-${MAGICK_VERSION}"
     pushd "ImageMagick-${MAGICK_VERSION}"

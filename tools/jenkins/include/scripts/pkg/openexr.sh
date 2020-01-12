@@ -2,9 +2,11 @@
 
 # see ilmbase.sh
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"
+if download_step; then
+    download "$EXR_SITE" "$EXR_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" ] || [ "$(pkg-config --modversion OpenEXR)" != "$EXR_VERSION" ]; }; }; then    
     start_build
-    download "$EXR_SITE" "$EXR_TAR"
     untar "$SRC_PATH/$EXR_TAR"
     pushd "openexr-${EXR_VERSION}"
     env PATH="$SDK_HOME/bin:$PATH" ./bootstrap

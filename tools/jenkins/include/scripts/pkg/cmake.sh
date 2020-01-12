@@ -14,9 +14,11 @@ CMAKE_VERSION=3.16.1
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
+if download_step; then
+    download "$CMAKE_SITE" "$CMAKE_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/cmake" ] || [ $("$SDK_HOME/bin/cmake" --version | head -1 |awk '{print $3}') != "$CMAKE_VERSION" ]; }; }; then
     start_build
-    download "$CMAKE_SITE" "$CMAKE_TAR"
     untar "$SRC_PATH/$CMAKE_TAR"
     pushd "cmake-${CMAKE_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --no-system-libs --prefix="$SDK_HOME"

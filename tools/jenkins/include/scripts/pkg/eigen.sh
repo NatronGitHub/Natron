@@ -4,9 +4,11 @@ exit 1
 
 # Install eigen
 EIGEN_TAR=eigen-eigen-bdd17ee3b1b3.tar.gz
+if download_step; then
+    download "$EIGEN_SITE" "$EIGEN_TAR"
+fi
 if build_step && { force_build || { [ ! -s $SDK_HOME/lib/pkgconfig/eigen3.pc ]; }; }; then
     start_build
-    download "$EIGEN_SITE" "$EIGEN_TAR"
     untar "$SRC_PATH/$EIGEN_TAR"
     pushd eigen-*
     rm -rf build

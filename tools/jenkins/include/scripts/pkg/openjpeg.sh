@@ -5,12 +5,14 @@
 OPENJPEG2_VERSION=2.3.1
 OPENJPEG2_VERSION_SHORT=${OPENJPEG2_VERSION%.*}
 OPENJPEG2_TAR="openjpeg-${OPENJPEG2_VERSION}.tar.gz"
+if download_step; then
+    download_github uclouvain openjpeg "${OPENJPEG2_VERSION}" v "${OPENJPEG2_TAR}"
+fi
 if build_step && { force_build || { [ "${REBUILD_OPENJPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libopenjp* || true
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libopenjp2.pc" ] || [ "$(pkg-config --modversion libopenjp2)" != "$OPENJPEG2_VERSION" ]; }; }; then
     start_build
-    download_github uclouvain openjpeg "${OPENJPEG2_VERSION}" v "${OPENJPEG2_TAR}"
     untar "$SRC_PATH/$OPENJPEG2_TAR"
     pushd "openjpeg-${OPENJPEG2_VERSION}"
     mkdir build
