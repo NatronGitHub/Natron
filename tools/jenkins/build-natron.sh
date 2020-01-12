@@ -392,7 +392,7 @@ fi
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
 cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
-if [ "$PKGOS" = "Linux" ]; then
+if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
     cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
     #cp "$srcdir"/Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
