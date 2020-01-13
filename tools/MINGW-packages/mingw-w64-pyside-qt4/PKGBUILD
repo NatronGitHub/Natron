@@ -3,17 +3,17 @@
 
 DLAGENTS=("https::/usr/bin/curl -k -o %o %u")
 _realname=pyside-qt4
-pkgname=(${MINGW_PACKAGE_PREFIX}-${_realname}-common ${MINGW_PACKAGE_PREFIX}-python2-${_realname})
-pkgver=1.2.2
-pkgrel=1.0
+pkgname=${MINGW_PACKAGE_PREFIX}-python2-${_realname}
+pkgver=1.2.4
+pkgrel=2
 arch=('any')
 url="http://pyside.github.io/docs/pyside/"
 license=("LGPL")
 install=${_realname}-${CARCH}.install
 source=(https://pypi.python.org/packages/source/P/PySide/PySide-${pkgver}.tar.gz
         pyside.patch)
-md5sums=('c45bc400c8a86d6b35f34c29e379e44d'
-         'c24be77f77fde7a4235e04b7b8af917a')
+sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
+            '7e8e3c26a8ab2f279260965cb44ef7e8b8c5f3093898dc9fff6288ef024d44d9')
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-python2-shiboken"
@@ -43,7 +43,8 @@ build() {
       -DCMAKE_BUILD_TYPE=RELEASE \
 	  -DBUILD_TESTS=FALSE \
       ${_conf} \
-      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
+      -DCMAKE_CXX_STANDARD=98
 
     make
     
@@ -65,14 +66,7 @@ fix_paths() {
   done
 }
 
-package_pyside-common() {
-  pkgdesc="Provides LGPL Qt bindings for Python and related tools for binding generation (Common files)(mingw-w64)"
-
-  
-  fix_paths
-}
-
-package_python2-pyside() {
+package() {
   pkgdesc="Provides LGPL Qt bindings for Python and related tools for binding generation (Python2)(mingw-w64)"
   makedepends=("${MINGW_PACKAGE_PREFIX}-pyside-common"
                "${MINGW_PACKAGE_PREFIX}-python2"
@@ -88,23 +82,5 @@ package_python2-pyside() {
   
   
   fix_paths
-}
-
-
-# Wrappers
-package_mingw-w64-i686-pyside-qt4-common() {
-  package_pyside-common
-}
-
-package_mingw-w64-i686-python2-pyside-qt4() {
-  package_python2-pyside
-}
-
-package_mingw-w64-x86_64-pyside-qt4-common() {
-  package_pyside-common
-}
-
-package_mingw-w64-x86_64-python2-pyside-qt4() {
-  package_python2-pyside
 }
 

@@ -1,0 +1,73 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=pixman
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0.38.4
+pkgrel=2
+pkgdesc="The pixel-manipulation library for X and cairo (mingw-w64)"
+arch=('any')
+url="https://xorg.freedesktop.org/"
+license=(MIT)
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-libpng"
+             "${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-ninja")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+options=('staticlibs' 'strip')
+source=("https://xorg.freedesktop.org/releases/individual/lib/pixman-${pkgver}.tar.bz2"
+        "0001-meson-define-SIZEOF_LONG-and-use-Wundef.patch"
+        "0001-meson-fix-TLS-support-under-mingw.patch"
+        "0001-meson-allow-building-a-static-library.patch")
+sha256sums=('84abb7fa2541af24d9c3b34bf75d6ac60cc94ac4410061bbb295b66a29221550'
+            'c98bcbf93b71e49f5ee37013a5f842d0362b175d35ccbe84b596d70092e1b6cc'
+            '2b0c15ad2fcf3a37209ca2758416928e09733c60fd99e5e4b776cec1b6b8a49e'
+            '83fd6b84c4bf90195d570828b46d131e8c021c445f374e5561e7de779f8bf961')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # https://gitlab.freedesktop.org/pixman/pixman/merge_requests/9
+  patch -p1 -i "${srcdir}"/0001-meson-define-SIZEOF_LONG-and-use-Wundef.patch
+  # https://gitlab.freedesktop.org/pixman/pixman/merge_requests/10
+  patch -p1 -i "${srcdir}"/0001-meson-fix-TLS-support-under-mingw.patch
+  # https://gitlab.freedesktop.org/pixman/pixman/merge_requests/11
+  patch -p1 -i "${srcdir}"/0001-meson-allow-building-a-static-library.patch
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  ${MINGW_PREFIX}/bin/meson \
+    --buildtype plain \
+    -Ddefault_library=both \
+    -Dgtk=disabled \
+    ../${_realname}-${pkgver}
+
+  ${MINGW_PREFIX}/bin/ninja
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  ${MINGW_PREFIX}/bin/ninja test
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  DESTDIR="${pkgdir}${MINGW_PREFIX}" ${MINGW_PREFIX}/bin/ninja install
+
+  for pcfile in  "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/*.pc; do
+    sed -s "s|$(cygpath -m ${MINGW_PREFIX})|${MINGW_PREFIX}|g" -i "${pcfile}"
+    # https://github.com/mesonbuild/meson/issues/3934
+    sed -s "s|-lpixman-mmx||g" -i "${pcfile}"
+    sed -s "s|-lpixman-sse2||g" -i "${pcfile}"
+    sed -s "s|-lpixman-ssse3||g" -i "${pcfile}"
+  done
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+}

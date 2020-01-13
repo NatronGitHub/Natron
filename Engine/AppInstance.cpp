@@ -1519,13 +1519,14 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
         groupMD.append( tr("Reference Guide") );
         groupMD.append( QString::fromUtf8("\n============================================================\n\n") );
-        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. It is followed by one section for each node group in %1.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
         groupMD.append( QString::fromUtf8("\n\n") );
         //groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
+        groupMD.append( QString::fromUtf8("    _environment.rst\n") );
 
         Q_FOREACH(const QString &group, groups) {
             QString plugMD;

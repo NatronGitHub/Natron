@@ -12,9 +12,11 @@
 # Working config for the SDK openssl:
 #OPENSSL_CONFIG="enable-cms enable-camellia enable-idea enable-mdc2 enable-tlsext enable-rfc3779 enable-ssl3-method"
 OPENSSL_CONFIG="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-weak-ssl-ciphers no-mdc2 no-ec2m no-sm2 no-sm4"
+if download_step; then
+    download "$OPENSSL_SITE" "$OPENSSL_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
     start_build
-    download "$OPENSSL_SITE" "$OPENSSL_TAR"
     untar "$SRC_PATH/$OPENSSL_TAR"
     pushd "openssl-$OPENSSL_VERSION"
     # Use versioned symbols for OpenSSL binary compatibility.

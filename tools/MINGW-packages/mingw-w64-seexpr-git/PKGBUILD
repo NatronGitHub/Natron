@@ -1,0 +1,64 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_realname=seexpr
+pkgbase=mingw-w64-${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+gitcommit=a5f02bb #v1-2.11
+pkgver=86.a5f02bb
+pkgrel=2
+pkgdesc="Arithmetic expression language"
+arch=('any')
+url="https://github.com/wdas/SeExpr"
+license=('Apache2')
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "git")
+options=('strip')
+source=(
+        "${_realname}"::"git+https://github.com/wdas/SeExpr#commit=${gitcommit}"
+        0001-seexpr-2.11-fix-cxxflags.patch
+        0002-seexpr-2.11-fix-inline-error.patch
+        0003-seexpr-2.11-fix-dll-installation.patch
+        0004-seexpr-2.11-c++98.patch
+        0005-seexpr-2.11-noeditordemos.patch
+       )
+sha256sums=(
+            'SKIP'
+            '1eeaba08b574ca1c6ff5ce4ddcc45319dbdb3d4d9f82ca6ba9a9af32a0dbc183'
+            'f7733debf6a8d0ef169abfd11eb18434a57b7e2608e49aca8131bd0f264f330f'
+            'caa6576737ee72bb3961d299b7479a4a6629a90e5dde0e220ba57cef62624242'
+            '534c27b14e8bfa4e840ed2e96ed37d784cad4b8640039a362a5f85aef1a1e339'
+            '2c04c23ad2777c0c7dcb11696863a269984a032edd7ab10117dd7c30ef09d0ca'
+           )
+
+pkgver() {
+  cd "${srcdir}/${_realname}"
+  printf "%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd ${_realname}
+  patch -p1 -i ${srcdir}/0001-seexpr-2.11-fix-cxxflags.patch
+  patch -p1 -i ${srcdir}/0002-seexpr-2.11-fix-inline-error.patch
+  patch -p1 -i ${srcdir}/0003-seexpr-2.11-fix-dll-installation.patch
+  patch -p1 -i ${srcdir}/0004-seexpr-2.11-c++98.patch
+  patch -p1 -i ${srcdir}/0005-seexpr-2.11-noeditordemos.patch
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    ../${_realname}
+
+  make
+}
+
+package() {
+  cd build-${MINGW_CHOST}
+  make DESTDIR=${pkgdir} install
+}

@@ -1,0 +1,29 @@
+--- gdk-pixbuf-2.35.1-orig/gdk-pixbuf/gdk-pixbuf-io.c	2016-04-26 21:34:17.000000000 +0200
++++ gdk-pixbuf-2.35.1/gdk-pixbuf/gdk-pixbuf-io.c	2016-08-02 17:27:21.952759200 +0200
+@@ -191,7 +191,7 @@
+         return file_formats;
+ }
+ 
+-#ifdef G_OS_WIN32
++#if defined (G_OS_WIN32) && defined (DLL_EXPORT)
+ 
+ /* DllMain function needed to tuck away the gdk-pixbuf DLL handle */
+ 
+@@ -221,7 +221,7 @@
+   static gchar *toplevel = NULL;
+ 
+   if (toplevel == NULL) {
+-#if defined(G_OS_WIN32)
++#if defined (G_OS_WIN32) && defined (DLL_EXPORT)
+     toplevel = g_win32_get_package_installation_directory_of_module (gdk_pixbuf_dll);
+ #elif defined(OS_DARWIN)
+     char pathbuf[PATH_MAX + 1];
+@@ -232,7 +232,7 @@
+     bin_dir = g_dirname(pathbuf);
+     toplevel = g_build_path (G_DIR_SEPARATOR_S, bin_dir, "..", NULL);
+     g_free (bin_dir);
+-#elif defined (OS_LINUX)
++#elif defined (OS_LINUX) || defined(__MINGW32__)
+     gchar *exe_path, *bin_dir;
+ 
+     exe_path = g_file_read_link ("/proc/self/exe", NULL);

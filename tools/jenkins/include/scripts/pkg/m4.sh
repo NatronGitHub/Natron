@@ -5,9 +5,11 @@
 M4_VERSION=1.4.18
 M4_TAR="m4-${M4_VERSION}.tar.xz"
 M4_SITE="https://ftp.gnu.org/gnu/m4"
+if download_step; then
+    download "$M4_SITE" "$M4_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/m4" ]; }; }; then
     start_build
-    download "$M4_SITE" "$M4_TAR"
     untar "$SRC_PATH/$M4_TAR"
     pushd "m4-${M4_VERSION}"
     # Patch for use with glibc 2.28 and up.

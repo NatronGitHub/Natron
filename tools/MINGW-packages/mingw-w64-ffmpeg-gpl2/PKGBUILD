@@ -5,8 +5,8 @@
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}-gpl2"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
-pkgver=4.1.1
-pkgrel=1
+pkgver=4.1.4
+pkgrel=3
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
@@ -33,7 +33,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-opus"
          "${MINGW_PACKAGE_PREFIX}-rtmpdump"
-         "${MINGW_PACKAGE_PREFIX}-SDL2"
+         #"${MINGW_PACKAGE_PREFIX}-SDL2"
 	 "${MINGW_PACKAGE_PREFIX}-snappy"
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-srt"
@@ -46,10 +46,8 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-nasm"
              "${MINGW_PACKAGE_PREFIX}-aom")
-source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc})
-validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('373749824dfd334d84e55dff406729edfd1606575ee44dd485d97d45ea4d2d86'
-            'SKIP')
+source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz)
+sha256sums=('f1f049a82fcfbf156564e73a3935d7e750891fab2abf302e735104fd4050a7e1')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"

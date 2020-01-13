@@ -435,7 +435,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                        "<div class=\"toctree-wrapper compound\">"
                                                        "<ul>")
                                      .arg( tr("Reference Guide") )
-            .arg ( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+            .arg ( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. It is followed by one section for each node group in %1.")
                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.") );
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );

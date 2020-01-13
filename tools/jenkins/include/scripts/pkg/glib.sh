@@ -14,9 +14,11 @@ GLIB_VERSION=2.58.3 # last version before meson
 GLIB_VERSION_SHORT=${GLIB_VERSION%.*}
 GLIB_TAR="glib-${GLIB_VERSION}.tar.xz"
 GLIB_SITE="https://ftp.gnome.org/pub/gnome/sources/glib/${GLIB_VERSION_SHORT}"
+if download_step; then
+    download "$GLIB_SITE" "$GLIB_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversion glib-2.0)" != "$GLIB_VERSION" ]; }; }; then
     start_build
-    download "$GLIB_SITE" "$GLIB_TAR"
     untar "$SRC_PATH/$GLIB_TAR"
     pushd "glib-${GLIB_VERSION}"
     # apply patches from http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html

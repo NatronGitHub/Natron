@@ -7,6 +7,9 @@
 EXR_VERSION=2.3.0
 EXR_ILM_TAR="ilmbase-${EXR_VERSION}.tar.gz"
 EXR_SITE="https://github.com/openexr/openexr/releases/download/v${EXR_VERSION}"
+if download_step; then
+    download "$EXR_SITE" "$EXR_ILM_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_EXR:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libI* "$SDK_HOME"/lib/libHalf* || true
     rm -f "$SDK_HOME"/lib/pkgconfig/{OpenEXR,IlmBase}.pc || true
@@ -14,7 +17,6 @@ if build_step && { force_build || { [ "${REBUILD_EXR:-}" = "1" ]; }; }; then
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/IlmBase.pc" ] || [ "$(pkg-config --modversion IlmBase)" != "$EXR_VERSION" ]; }; }; then
     start_build
-    download "$EXR_SITE" "$EXR_ILM_TAR"
     untar "$SRC_PATH/$EXR_ILM_TAR"
     pushd "ilmbase-${EXR_VERSION}"
     if version_gt "2.3.0" "${EXR_VERSION}"; then

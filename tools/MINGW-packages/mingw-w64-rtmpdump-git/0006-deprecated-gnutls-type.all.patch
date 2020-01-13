@@ -1,0 +1,11 @@
+--- rtmpdump/librtmp/rtmp.c.orig	2014-03-02 18:20:23.000000000 +0000
++++ rtmpdump/librtmp/rtmp.c	2014-03-12 09:27:08.312536200 +0000
+@@ -272,7 +272,7 @@
+       return NULL;
+   }
+ #elif defined(USE_GNUTLS) && !defined(NO_SSL)
+-  gnutls_certificate_allocate_credentials((gnutls_certificate_credentials*) &ctx);
++  gnutls_certificate_allocate_credentials((gnutls_certificate_credentials_t *) &ctx);
+   if (gnutls_certificate_set_x509_key_file(ctx, cert, key, GNUTLS_X509_FMT_PEM) != 0) {
+     gnutls_certificate_free_credentials(ctx);
+     return NULL;

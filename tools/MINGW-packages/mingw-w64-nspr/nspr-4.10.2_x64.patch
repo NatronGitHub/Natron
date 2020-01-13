@@ -1,0 +1,33 @@
+--- pr/include/md/_win95.cfg	Tue Nov 12 04:52:34 2013
++++ pr/include/md/_win95.cfg	Tue Nov 26 11:22:37 2013
+@@ -68,7 +68,7 @@
+ #define PR_BYTES_PER_WORD_LOG2	2
+ #define PR_BYTES_PER_DWORD_LOG2	3
+ 
+-#elif defined(_M_X64) || defined(_M_AMD64) || defined(_AMD64_)
++#elif defined(_M_X64) || defined(_M_AMD64) || defined(_AMD64_) || defined (_WIN64)
+ 
+ #define IS_LITTLE_ENDIAN 1
+ #undef  IS_BIG_ENDIAN
+--- pr/include/md/_winnt.cfg	Tue Nov 12 04:52:34 2013
++++ pr/include/md/_winnt.cfg	Tue Nov 26 11:22:37 2013
+@@ -68,7 +68,7 @@
+ #define PR_BYTES_PER_WORD_LOG2	2
+ #define PR_BYTES_PER_DWORD_LOG2	2
+ 
+-#elif defined(_M_X64) || defined(_M_AMD64) || defined(_AMD64_)
++#elif defined(_M_X64) || defined(_M_AMD64) || defined(_AMD64_) || defined (_WIN64)
+ 
+ #define IS_LITTLE_ENDIAN 1
+ #undef  IS_BIG_ENDIAN
+--- pr/src/md/windows/ntgc.c	Tue Nov 12 04:52:34 2013
++++ pr/src/md/windows/ntgc.c	Tue Nov 26 11:22:37 2013
+@@ -12,7 +12,7 @@
+ 
+ PRWord *_MD_HomeGCRegisters(PRThread *t, int isCurrent, int *np) 
+ {
+-#if defined(_X86_)
++#if defined(_X86_) && (!defined(_AMD64_))
+     CONTEXT context;
+     context.ContextFlags = CONTEXT_INTEGER;
+ 

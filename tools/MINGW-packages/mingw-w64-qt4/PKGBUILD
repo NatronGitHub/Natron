@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=5.0
+pkgrel=7
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
@@ -72,7 +72,7 @@ optdepends=($([[ "$_variant" == "-shared" ]] && echo \
 groups=("${MINGW_PACKAGE_PREFIX}-qt4")
 options=('!strip' 'staticlibs')
 _pkgfqn="qt-everywhere-opensource-src-${pkgver}"
-source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar.gz"
+source=("https://download.qt.io/archive/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar.gz"
         0001-qt-4.6-demo-plugandpaint.patch
         0002-qt-4.8.0-fix-include-windows-h.patch
         0003-qt-4.8.0-fix-javascript-jit-on-mingw-x86_64.patch

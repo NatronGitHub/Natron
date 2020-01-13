@@ -21,9 +21,10 @@ docker pull natrongithub/natron-sdk-i386
 
 To launch a build:
 
-- create a directory when the build artifacts should be put (`$(pwd)/artifacts` in the following), another one for the builds (`$(pwd)/builds` in the following), and launch a build that binds these to directories to `/home/jenkins_artifacts` and `/home/builds_archive`:
+- create a directory for the builds (`$(pwd)/builds` in the following), and launch a build that binds this directory to `/home/builds_archive`:
 ```
-mkdir artifacts; mkdir builds; docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+mkdir builds
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
 (for the 32-bit version, use `natrongithub/natron-sdk-i386:latest` instead of `natrongithub/natron-sdk:latest`)
 
@@ -31,8 +32,35 @@ By default, this launches a snapshot build, but you may want to customize build 
 
 For example, to limit the number of parallel build jobs to 2:
 ```
-docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env MKJOBS=2 natrongithub/natron-sdk:latest
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env MKJOBS=2 natrongithub/natron-sdk:latest
 ```
+
+
+### Launching a build from a specific fork, branch or commit
+
+`GIT_URL`, `GIT_BRANCH`, and `GIT_COMMIT` can be set to launch a build from a specific git repository, branch, and/or commit.
+
+If `GIT_URL` is not an official Natron repository (as listed in [gitRepositories.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/gitRepositories.sh)), `GIT_URL_IS_NATRON=1` can be used to force a Natron build, as in the following example, which launches a build from branch `SetDefaultProjectFormat` of repository `https://github.com/rodlie/Natron.git`.
+
+```
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_URL_IS_NATRON=1 --env GIT_URL=https://github.com/rodlie/Natron.git --env GIT_BRANCH=SetDefaultProjectFormat natrongithub/natron-sdk:latest
+```
+
+
+### Launching a release build
+
+To launch a release, the Natron and plugins repositories must have the appropriate tags. for example, for release 2.3.15, the Natron repository must have tag `v2.3.15`, and the plugin repositories (openfx-misc, openfx-io, openfx-arena, openfx-gmic) must all have the tag `Natron-2.3.15`.
+
+When launching the build, `RELEASE_TAG` must be set to the version number (eg "2.3.15") and `NATRON_BUILD_NUMBER` must be set to an integer value (typically 1 for the first build, and increment for each new build after fixing issues). See [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh#L340) for more details.
+
+```
+docker run -it --rm --env RELEASE_TAG=2.3.15 --env NATRON_BUILD_NUMBER=1 --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+```
+
+
+### More build options
+
+Other build options are documented at the beginning of the [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh) script.
 
 
 ## Debugging a build

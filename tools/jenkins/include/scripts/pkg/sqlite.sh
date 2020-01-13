@@ -7,9 +7,11 @@ SQLITE_VERSION_INT=3300100
 SQLITE_YEAR=2019
 SQLITE_TAR="sqlite-autoconf-${SQLITE_VERSION_INT}.tar.gz"
 SQLITE_SITE="https://sqlite.org/${SQLITE_YEAR}"
+if download_step; then
+    download "$SQLITE_SITE" "$SQLITE_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$SQLITE_VERSION" ]; }; }; then
     start_build
-    download "$SQLITE_SITE" "$SQLITE_TAR"
     untar "$SRC_PATH/$SQLITE_TAR"
     pushd "sqlite-autoconf-${SQLITE_VERSION_INT}"
     env CFLAGS="$BF \

@@ -1,0 +1,20 @@
+diff -Naur libde265-1.0.3.orig/sherlock265/Makefile.am libde265-1.0.3/sherlock265/Makefile.am
+--- libde265-1.0.3.orig/sherlock265/Makefile.am	2016-06-23 03:31:00.000000000 -0500
++++ libde265-1.0.3/sherlock265/Makefile.am	2018-07-16 05:31:16.578125000 -0500
+@@ -37,13 +37,13 @@
+ endif
+ 
+ moc_VideoWidget.cpp: VideoWidget.hh
+-	$(QTMOC) $(DEFINES) $(INCPATH) VideoWidget.hh -o moc_VideoWidget.cpp
++	$(QTMOC) $(DEFINES) $(INCPATH) $(srcdir)/VideoWidget.hh -o moc_VideoWidget.cpp
+ 
+ moc_VideoPlayer.cpp: VideoPlayer.hh
+-	$(QTMOC) $(DEFINES) $(INCPATH) VideoPlayer.hh -o moc_VideoPlayer.cpp
++	$(QTMOC) $(DEFINES) $(INCPATH) $(srcdir)/VideoPlayer.hh -o moc_VideoPlayer.cpp
+ 
+ moc_VideoDecoder.cpp: VideoDecoder.hh
+-	$(QTMOC) $(DEFINES) $(INCPATH) VideoDecoder.hh -o moc_VideoDecoder.cpp
++	$(QTMOC) $(DEFINES) $(INCPATH) $(srcdir)/VideoDecoder.hh -o moc_VideoDecoder.cpp
+ 
+ EXTRA_DIST = \
+   README

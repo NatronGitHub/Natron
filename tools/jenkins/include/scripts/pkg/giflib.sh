@@ -5,9 +5,11 @@
 GIFLIB_VERSION=5.2.1
 GIFLIB_TAR="giflib-${GIFLIB_VERSION}.tar.gz"
 GIFLIB_SITE="https://sourceforge.net/projects/giflib/files"
+if download_step; then
+    download "$GIFLIB_SITE" "$GIFLIB_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libgif.so" ]; }; }; then
     start_build
-    download "$GIFLIB_SITE" "$GIFLIB_TAR"
     untar "$SRC_PATH/$GIFLIB_TAR"
     pushd "giflib-${GIFLIB_VERSION}"
     if version_gt "5.1.6" "${GIFLIB_VERSION}"; then

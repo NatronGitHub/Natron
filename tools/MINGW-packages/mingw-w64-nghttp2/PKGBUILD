@@ -1,0 +1,51 @@
+# Maintainer: J. Peter Mugaas <jpmugaas@suddenlink.net>
+
+_realname=nghttp2
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=1.39.2
+pkgrel=4
+pkgdesc="Framing layer of HTTP/2 is implemented as a reusable C library (mingw-w64)"
+arch=('any')
+url='https://nghttp2.org/'
+depends=("${MINGW_PACKAGE_PREFIX}-jansson"
+         "${MINGW_PACKAGE_PREFIX}-jemalloc"
+         #"${MINGW_PACKAGE_PREFIX}-libevent"
+         #"${MINGW_PACKAGE_PREFIX}-libxml2"
+         "${MINGW_PACKAGE_PREFIX}-openssl"
+         "${MINGW_PACKAGE_PREFIX}-c-ares")
+checkdepends=("${MINGW_PACKAGE_PREFIX}-cunit")
+license=('MIT')
+source=("https://github.com/nghttp2/nghttp2/releases/download/v${pkgver}/${_realname}-${pkgver}.tar.xz")
+sha256sums=('a2d216450abd2beaf4e200c168957968e89d602ca4119338b9d7ab059fd4ce8b')
+
+prepare() {
+  cd $srcdir/${_realname}-${pkgver}
+}
+
+build() {
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+  # Note, cmake system does not yet work well with this.
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared \
+    --disable-python-bindings \
+    --disable-examples \
+    --enable-hpack-tools=yes
+  make
+}
+
+#check() {
+#  cd "${srcdir}"/build-${CARCH}
+#  make check
+#}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+  make install DESTDIR="${pkgdir}"
+}

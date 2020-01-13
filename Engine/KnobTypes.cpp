@@ -1150,6 +1150,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
             setEnabled( i, knob->isEnabled(i) );
         }
     }
+    
 
     {
         QMutexLocker k(&_entriesMutex);

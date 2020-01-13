@@ -70,12 +70,18 @@ rm "$TMP_FOLDER/dummy.ntp"
 pushd "$TMP_FOLDER"
 
 for i in *.md; do
-    $PANDOC -f markdown -t rst-simple_tables-multiline_tables+grid_tables "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
+    $PANDOC -f markdown -t rst-simple_tables-multiline_tables+grid_tables "$i" --columns=9000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
 #    $PANDOC "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
 done
-for x in plugins/*.md; do
-    $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/\.md$/.rst/')"
-    PLUG="$(echo "$x"|$SED 's/.md//;s#plugins/##')"
+echo "Applying pandoc asterisk fix"
+for i in plugins/fr.inria.openfx.ReadOIIO.md plugins/fr.inria.openfx.WriteOIIO.md; do
+    # Hack: pandoc 2.3.1 does not escape the asterisk in "\(\*",
+    # let's replace this string with "\(\\*".
+    $SED -i.bak "s/\\\(\\\\\*/\\\(\\\\\\\*/" "$i"
+done
+for i in plugins/*.md; do
+    $PANDOC -f markdown -t rst-simple_tables-multiline_tables+grid_tables "$i" --columns=9000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
+    PLUG="$(echo "$i"|$SED 's/.md//;s#plugins/##')"
     $SED -i "1i.. _${PLUG}:\n" plugins/"${PLUG}".rst
     # multiline table element hack: in tables (lines beginning
     # with '|') replace "| . " with "| | "
@@ -108,7 +114,9 @@ done
 for x in "$TMP_FOLDER"/plugins/*.png; do 
     cp "$x" "$DOC_FOLDER/source/plugins" || exit 1
 done
-
+echo "*** DONE!"
+echo "Temporary files (markdown and rst) are still in $TMP_FOLDER"
+echo "You can now safely remove these using:"
 echo rm -rf "$TMP_FOLDER"
 
 # Local Variables:

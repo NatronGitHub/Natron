@@ -30,6 +30,7 @@
 # LIST_STEPS=1 : Output an ordered list of steps to build the SDK
 # LAST_STEP=step_name : Only build until this step (be careful, as dependent packages are not rebuilt).
 # FORCE_BUILD=1 : Force build, even if up-to-date. If LAST_STEP is specified, only force-build this step.
+# DOWNLOAD=1 : build nothing, just download the sources
 #
 # Only available when GEN_DOCKERFILE, LIST_STEPS and LAST_STEPS are not set:
 #
@@ -42,8 +43,21 @@ set -u # Treat unset variables as an error when substituting.
 
 PKGOS=Linux
 
+if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
+    echo "*** downloading all source distributions"
+    if [ -z "${WORKSPACE+x}" ]; then
+        echo "Error: set WORKSPACE. Source distributions will be downloaded to WORKSPACE/src"
+        exit 1
+    fi
+    if [ ! -d "${WORKSPACE}" ]; then
+        echo "Error: directory WORKSPACE/src=$WORKSPACE/src does not exist"
+        exit 1
+    fi
+fi
 source common.sh
 
+newdists=()
+newdistsurls=()
 
 if false; then
     # to update all linux SDKs, run the following
@@ -107,7 +121,7 @@ fi
 
 function dobuild ()
 {
-    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ]; then
+    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ] || [ "${LIST_STEPS:-}" = "1" ] || [ "${DOWNLOAD:-}" = "1" ]; then
         return 1
     fi
     return 0 # must return a status
@@ -191,6 +205,19 @@ function build_step ()
     return 1 # must return a status
 }
 
+# should we download sources for this step?
+# Also prints output if GEN_DOCKERFILE=1 or LIST_STEPS=1
+function download_step ()
+{
+    if build_step; then
+        return 0 # must download to build
+    fi
+    if [ "${DOWNLOAD:-}" = "1" ]; then
+        return 0 # download everything, build nothing
+    fi
+    return 1
+}
+
 # is build forced?
 function force_build()
 {
@@ -261,14 +288,34 @@ fi # dobuild
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
 function download() {
-    if dobuild; then
+    if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         local master_site=$1
         local package=$2
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** downloading $package"
-            wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
-                wget --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || \
-                rm "$SRC_PATH/$package" || true
+            if [ "${DOWNLOAD:-}" = "1" ]; then
+                # print list of new dists, in case subsequent download hangs
+                if [ "${#newdists[*]}" -gt 0 ]; then
+                    echo "*** newdists = ${newdists[*]}"
+                fi
+                if [ "${#newdistsurls[*]}" -gt 0 ]; then
+                    echo "*** newdistsurls = ${newdistsurls[*]}"
+                fi
+            fi
+            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
+            fail=false
+            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            if $fail; then
+                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                echo "*** downloading $package from $master_site"
+                fail=false
+                wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                if $fail; then
+                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                else
+                    newdists+=("$package")
+                    newdistsurls+=("$master_site/$package")
+                fi
+            fi
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
             (>&2 echo "Error: unable to download $package.")
@@ -278,7 +325,7 @@ function download() {
 }
 
 function download_github() {
-    if dobuild; then
+    if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         # e.g.:
         #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz
         #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz
@@ -288,10 +335,21 @@ function download_github() {
         local tagprefix=$4
         local package=$5
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** downloading $package"
-            wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
-                wget --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || \
-                rm "$SRC_PATH/$package" || true
+            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
+            fail=false
+            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            if $fail; then
+                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                echo "*** downloading $package from https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
+                fail=false
+                wget -q --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || fail=true
+                if $fail; then
+                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                else
+                    newdists+=("$package")
+                    newdistsurls+=("$master_site/$package")
+                fi
+            fi
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
             (>&2 echo "Error: unable to download $package")
@@ -545,6 +603,15 @@ build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
 build fftw # (GPLv2, for openfx-gmic)
+
+checkpoint
+
+build x265 # (for ffmpeg and libheif)
+build libde265 # (for libheif)
+build libheif # (for imagemagick and openimageio)
+
+checkpoint
+
 build imagemagick6
 build imagemagick7
 build glew
@@ -572,7 +639,6 @@ build opus
 build orc
 #build dirac # (obsolete since ffmpeg-3.4)
 build x264
-build x265
 build xvid
 build soxr
 build libass # (for ffmpeg)
@@ -745,6 +811,18 @@ CMD launchBuildMain.sh
 EOF
 fi
 
+if [ -z "${GEN_DOCKERFILE+x}" ]; then
+    if [ "${#newdists[*]}" -gt 0 ]; then
+        echo "*** List of packages that were not available in $THIRD_PARTY_SRC_URL:"
+        echo "${newdists[*]}"
+    else
+        echo "*** Note: All packages were available from $THIRD_PARTY_SRC_URL"
+    fi
+    if [ "${#newdistsurls[*]}" -gt 0 ]; then
+        echo "*** URLs of packages that were not available in $THIRD_PARTY_SRC_URL:"
+        echo "${newdistsurls[*]}"
+    fi
+fi
 exit 0
 
 # Local variables:

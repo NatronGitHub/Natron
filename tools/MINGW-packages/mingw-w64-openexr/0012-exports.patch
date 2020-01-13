@@ -1,0 +1,303 @@
+--- a/IlmBase/Iex/IexBaseExc.h	2018-11-04 12:38:32.719974200 +0300
++++ b/IlmBase/Iex/IexBaseExc.h	2018-11-04 12:39:01.089596800 +0300
+@@ -129,14 +129,14 @@
+ //-----------------------------------------------------
+ 
+ #define DEFINE_EXC_EXP(exp, name, base)                             \
+-    class name: public base                                         \
++    class exp name: public base                                         \
+     {                                                               \
+       public:                                                       \
+-        exp name()                         throw(): base (0)    {}  \
+-        exp name (const char* text)        throw(): base (text) {}  \
+-        exp name (const std::string &text) throw(): base (text) {}  \
+-        exp name (std::stringstream &text) throw(): base (text) {}  \
+-        exp ~name() throw() { }                                     \
++        name()                         throw(): base (0)    {}  \
++        name (const char* text)        throw(): base (text) {}  \
++        name (const std::string &text) throw(): base (text) {}  \
++        name (std::stringstream &text) throw(): base (text) {}  \
++        ~name() throw() { }                                     \
+     };
+ 
+ // For backward compatibility.
+diff -Naur a/OpenEXR/IlmImf/ImfCRgbaFile.h b/OpenEXR/IlmImf/ImfCRgbaFile.h
+--- a/OpenEXR/IlmImf/ImfCRgbaFile.h	2018-11-04 22:55:11.645972400 +0300
++++ b/OpenEXR/IlmImf/ImfCRgbaFile.h	2018-11-04 22:55:48.038053900 +0300
+@@ -441,6 +441,7 @@
+ struct ImfInputFile;
+ typedef struct ImfInputFile ImfInputFile;
+ 
++IMF_EXPORT 
+ ImfInputFile *		ImfOpenInputFile (const char name[]);
+ 
+ IMF_EXPORT 
+diff -Naur a/OpenEXR/IlmImf/ImfGenericInputFile.h b/OpenEXR/IlmImf/ImfGenericInputFile.h
+--- a/OpenEXR/IlmImf/ImfGenericInputFile.h	2018-11-04 22:55:11.645972400 +0300
++++ b/OpenEXR/IlmImf/ImfGenericInputFile.h	2018-11-04 22:55:48.038053900 +0300
+@@ -42,16 +42,13 @@
+ 
+ OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+-class GenericInputFile
++class IMF_EXPORT GenericInputFile
+ {
+     public:
+-        IMF_EXPORT
+         virtual ~GenericInputFile() {}
+ 
+     protected:
+-        IMF_EXPORT
+         GenericInputFile() {}
+-        IMF_EXPORT
+         void readMagicNumberAndVersionField(OPENEXR_IMF_INTERNAL_NAMESPACE::IStream& is, int& version);
+ };
+ 
+diff -Naur a/OpenEXR/IlmImf/ImfGenericOutputFile.h b/OpenEXR/IlmImf/ImfGenericOutputFile.h
+--- a/OpenEXR/IlmImf/ImfGenericOutputFile.h	2018-11-04 22:55:07.805752800 +0300
++++ b/OpenEXR/IlmImf/ImfGenericOutputFile.h	2018-11-04 22:56:00.851786800 +0300
+@@ -45,18 +45,14 @@
+ OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+ 
+-class GenericOutputFile
++class IMF_EXPORT GenericOutputFile
+ {
+     public:
+-        IMF_EXPORT
+         virtual ~GenericOutputFile() {}
+ 
+     protected:
+-        IMF_EXPORT
+         GenericOutputFile() {}
+-        IMF_EXPORT
+         void writeMagicNumberAndVersionField (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream& os, const Header& header);
+-        IMF_EXPORT
+         void writeMagicNumberAndVersionField (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream& os, const Header * headers, int parts);
+   
+ };
+diff -Naur a/OpenEXR/IlmImf/ImfName.h b/OpenEXR/IlmImf/ImfName.h
+--- a/OpenEXR/IlmImf/ImfName.h	2018-08-10 04:34:58.000000000 +0300
++++ b/OpenEXR/IlmImf/ImfName.h	2018-11-04 22:52:03.670220800 +0300
+@@ -51,7 +51,7 @@
+ OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+ 
+-class Name
++class IMF_EXPORT Name
+ {
+   public:
+ 
+@@ -59,9 +59,7 @@
+     // Constructors
+     //-------------
+ 
+-    IMF_EXPORT
+     Name ();
+-    IMF_EXPORT
+     Name (const char text[]);
+ 
+ 
+@@ -69,7 +67,6 @@
+     // Assignment operator
+     //--------------------
+ 
+-    IMF_EXPORT
+     Name &		operator = (const char text[]);
+ 
+ 
+@@ -77,9 +74,7 @@
+     // Access to the string
+     //---------------------
+ 
+-    IMF_EXPORT
+     const char *	text () const		{return _text;}
+-    IMF_EXPORT
+     const char *	operator * () const	{return _text;}
+ 
+     //---------------
+@@ -95,12 +90,9 @@
+ };
+ 
+ 
+-IMF_EXPORT
+-bool operator == (const Name &x, const Name &y);
+-IMF_EXPORT
+-bool operator != (const Name &x, const Name &y);
+-IMF_EXPORT
+-bool operator < (const Name &x, const Name &y);
++IMF_EXPORT bool operator == (const Name &x, const Name &y);
++IMF_EXPORT bool operator != (const Name &x, const Name &y);
++IMF_EXPORT bool operator < (const Name &x, const Name &y);
+ 
+ 
+ //-----------------
+diff -Naur a/OpenEXR/IlmImf/ImfPreviewImage.h b/OpenEXR/IlmImf/ImfPreviewImage.h
+--- a/OpenEXR/IlmImf/ImfPreviewImage.h	2018-08-10 04:34:58.000000000 +0300
++++ b/OpenEXR/IlmImf/ImfPreviewImage.h	2018-11-04 22:39:19.052487200 +0300
+@@ -52,7 +52,7 @@
+ OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+ 
+-struct PreviewRgba
++struct IMF_EXPORT PreviewRgba
+ {
+     unsigned char	r;	// Red, green and blue components of
+     unsigned char	g;	// the pixel's color; intensity is
+@@ -70,7 +70,7 @@
+ };
+ 
+ 
+-class PreviewImage
++class IMF_EXPORT PreviewImage
+ {
+   public:
+ 
+@@ -87,7 +87,6 @@
+     //
+     //--------------------------------------------------------------------
+    
+-    IMF_EXPORT
+      PreviewImage (unsigned int width = 0,
+ 		   unsigned int height = 0,
+ 		   const PreviewRgba pixels[] = 0);
+@@ -96,12 +95,9 @@
+     // Copy constructor, destructor and assignment operator
+     //-----------------------------------------------------
+ 
+-    IMF_EXPORT
+      PreviewImage (const PreviewImage &other);
+-    IMF_EXPORT
+     ~PreviewImage ();
+ 
+-    IMF_EXPORT
+     PreviewImage &	operator = (const PreviewImage &other);
+ 
+ 
+@@ -109,14 +105,10 @@
+     // Access to width, height and to the pixel array
+     //-----------------------------------------------
+ 
+-    IMF_EXPORT
+     unsigned int	width () const	{return _width;}
+-    IMF_EXPORT
+     unsigned int	height () const	{return _height;}
+ 
+-    IMF_EXPORT
+     PreviewRgba *	pixels ()	{return _pixels;}
+-    IMF_EXPORT
+     const PreviewRgba *	pixels () const	{return _pixels;}
+ 
+ 
+@@ -124,11 +116,9 @@
+     // Access to individual pixels
+     //----------------------------
+ 
+-    IMF_EXPORT
+     PreviewRgba &	pixel (unsigned int x, unsigned int y)
+     					{return _pixels[y * _width + x];}
+ 
+-    IMF_EXPORT
+     const PreviewRgba &	pixel (unsigned int x, unsigned int y) const
+     					{return _pixels[y * _width + x];}
+ 
+diff -Naur a/OpenEXR/IlmImf/ImfStdIO.h b/OpenEXR/IlmImf/ImfStdIO.h
+--- a/OpenEXR/IlmImf/ImfStdIO.h	2018-11-04 22:26:43.723504100 +0300
++++ b/OpenEXR/IlmImf/ImfStdIO.h	2018-11-04 22:43:25.795600100 +0300
+@@ -86,7 +86,7 @@
+ // class OPENEXR_IMF_INTERNAL_NAMESPACE::IStream based on class std::ifstream
+ //-------------------------------------------
+ 
+-class StdIFStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::IStream
++class IMF_EXPORT StdIFStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::IStream
+ {
+   public:
+ 
+@@ -95,7 +95,6 @@
+     // The destructor will close the file.
+     //-------------------------------------------------------
+ 
+-    IMF_EXPORT
+     StdIFStream (const char fileName[]);
+ 
+     
+@@ -105,20 +104,14 @@
+     // will not close the std::ifstream.
+     //---------------------------------------------------------
+ 
+-    IMF_EXPORT
+     StdIFStream (OPENEXR_IMF_INTERNAL_NAMESPACE::ifstream &is, const char fileName[]);
+ 
+ 
+-    IMF_EXPORT
+     virtual ~StdIFStream ();
+ 
+-    IMF_EXPORT
+     virtual bool	read (char c[/*n*/], int n);
+-    IMF_EXPORT
+     virtual Int64	tellg ();
+-    IMF_EXPORT
+     virtual void	seekg (Int64 pos);
+-    IMF_EXPORT
+     virtual void	clear ();
+ 
+   private:
+@@ -133,7 +126,7 @@
+ // class OPENEXR_IMF_INTERNAL_NAMESPACE::OStream based on class std::ofstream
+ //-------------------------------------------
+ 
+-class StdOFStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::OStream
++class IMF_EXPORT StdOFStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::OStream
+ {
+   public:
+ 
+@@ -142,7 +135,6 @@
+     // The destructor will close the file.
+     //-------------------------------------------------------
+ 
+-    IMF_EXPORT
+     StdOFStream (const char fileName[]);
+     
+ 
+@@ -152,18 +144,13 @@
+     // will not close the std::ofstream.
+     //---------------------------------------------------------
+ 
+-    IMF_EXPORT
+     StdOFStream (OPENEXR_IMF_INTERNAL_NAMESPACE::ofstream &os, const char fileName[]);
+ 
+ 
+-    IMF_EXPORT
+     virtual ~StdOFStream ();
+ 
+-    IMF_EXPORT
+     virtual void	write (const char c[/*n*/], int n);
+-    IMF_EXPORT
+     virtual Int64	tellp ();
+-    IMF_EXPORT
+     virtual void	seekp (Int64 pos);
+ 
+   private:
+@@ -178,21 +165,16 @@
+ // OPENEXR_IMF_INTERNAL_NAMESPACE::OStream, based on class std::ostringstream
+ //------------------------------------------------
+ 
+-class StdOSStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::OStream
++class IMF_EXPORT StdOSStream: public OPENEXR_IMF_INTERNAL_NAMESPACE::OStream
+ {
+   public:
+ 
+-    IMF_EXPORT
+     StdOSStream ();
+ 
+-    IMF_EXPORT
+     virtual void	write (const char c[/*n*/], int n);
+-    IMF_EXPORT
+     virtual Int64	tellp ();
+-    IMF_EXPORT
+     virtual void	seekp (Int64 pos);
+ 
+-    IMF_EXPORT
+     std::string		str () const {return _os.str();}
+ 
+   private:

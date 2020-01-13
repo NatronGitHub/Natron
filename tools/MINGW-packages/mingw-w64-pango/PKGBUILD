@@ -1,0 +1,99 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=pango
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+# Don't update to 1.44.0! https://gitlab.gnome.org/GNOME/pango/issues/385
+pkgver=1.43.0
+pkgrel=4
+pkgdesc="A library for layout and rendering of text (mingw-w64)"
+arch=('any')
+url="https://www.pango.org/"
+license=('LGPL2.1')
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+            "${MINGW_PACKAGE_PREFIX}-pkg-config"
+            "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+            "${MINGW_PACKAGE_PREFIX}-meson"
+            "${MINGW_PACKAGE_PREFIX}-ninja"
+            "${MINGW_PACKAGE_PREFIX}-gtk-doc")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-cairo"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-fontconfig"
+         "${MINGW_PACKAGE_PREFIX}-glib2"
+         "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+         "${MINGW_PACKAGE_PREFIX}-fribidi"
+         "${MINGW_PACKAGE_PREFIX}-libthai")
+options=('staticlibs' 'strip' 'emptydirs')
+source=("https://download.gnome.org/sources/pango/${pkgver:0:4}/${_realname}-${pkgver}.tar.xz"
+        static-skip-help2man.patch
+        0001-pango.pc-Make-gobject-2.0-a-non-private-requirement.patch
+        002-font-fallback.patch)
+sha256sums=('d2c0c253a5328a0eccb00cdd66ce2c8713fabd2c9836000b6e22a8b06ba3ddd2'
+            '0d4bfd80f82969ae555b7bda6905ac413c325457360164fcd404e23278b51e1a'
+            '4e605934977b9e4ac1aae58bee47b152397ffd4e97138c184b2508c1cd3b7bab'
+            '41e72fc17f0e15d74c03eb61fa44750fedcecfc2373bbdee7b28ec9c65a2406d')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # pango-view doesn't work in the static build
+  patch -p1 -i ${srcdir}/static-skip-help2man.patch
+
+  # https://github.com/Alexpux/MINGW-packages/issues/4830
+  patch -p1 -i ${srcdir}/0001-pango.pc-Make-gobject-2.0-a-non-private-requirement.patch
+
+  # https://gitlab.gnome.org/GNOME/pango/merge_requests/97
+  patch -p1 -i ${srcdir}/002-font-fallback.patch
+}
+
+build() {
+  cd "${srcdir}"
+  [[ -d build-${MINGW_CHOST} ]] && rm -rf build-${MINGW_CHOST}
+  mkdir -p build-${MINGW_CHOST}
+  cd build-${MINGW_CHOST}
+
+  meson \
+    --default-library shared \
+    --buildtype plain \
+    -Denable_docs=false \
+    -Dgir=false \
+    ../${_realname}-${pkgver}
+
+  ninja
+
+  for pcfile in meson-private/*.pc; do
+    sed -s "s|$(cygpath -m ${MINGW_PREFIX})|${MINGW_PREFIX}|g" -i "${pcfile}"
+  done
+
+  #cd "${srcdir}"
+  #[[ -d build-static-${MINGW_CHOST} ]] && rm -rf build-static-${MINGW_CHOST}
+  #mkdir -p build-static-${MINGW_CHOST}
+  #cd build-static-${MINGW_CHOST}
+
+  #meson \
+  #  --default-library static \
+  #  --buildtype plain \
+  #  -Denable_docs=false \
+  #  -Dgir=false \
+  #  ../${_realname}-${pkgver}
+
+  #ninja
+}
+
+package() {
+  #cd "${srcdir}/build-static-${MINGW_CHOST}"
+  #DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
+
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
+
+  # remove installed tests, no need and they contain the build path which
+  # leads to pkgbuild warnings
+  rm -Rf "${pkgdir}${MINGW_PREFIX}/share/installed-tests"
+  rm -Rf "${pkgdir}${MINGW_PREFIX}/libexec"
+
+  # License
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+}

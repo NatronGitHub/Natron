@@ -1,0 +1,12 @@
+--- librsvg-2.40.4/configure.ac.orig	2014-09-24 12:24:57.276600000 +0500
++++ librsvg-2.40.4/configure.ac	2014-09-24 12:25:51.939000000 +0500
+@@ -165,6 +165,9 @@
+   gdk_pixbuf_binarydir="`$PKG_CONFIG --variable=gdk_pixbuf_binarydir gdk-pixbuf-2.0`"
+   gdk_pixbuf_moduledir=`$PKG_CONFIG --variable gdk_pixbuf_moduledir gdk-pixbuf-2.0`
+   gdk_pixbuf_cache_file=`$PKG_CONFIG --variable gdk_pixbuf_cache_file gdk-pixbuf-2.0`
++  gdk_pixbuf_binarydir=`cygpath -u $gdk_pixbuf_binarydir`
++  gdk_pixbuf_moduledir=`cygpath -u $gdk_pixbuf_moduledir`
++  gdk_pixbuf_cache_file=`cygpath -u $gdk_pixbuf_cache_file`
+ fi
+ 
+ AC_SUBST([gdk_pixbuf_binary_version])

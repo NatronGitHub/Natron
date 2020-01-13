@@ -1,0 +1,43 @@
+# Maintainer: Andrew Sun <adsun701@gmail.com>
+
+_realname=libthai
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=0.1.28
+pkgrel=3
+pkgdesc="Thai language support routines (mingw-w64)"
+arch=('any')
+url="https://linux.thai.net/projects/libthai"
+license=('LGPL')
+depends=("${MINGW_PACKAGE_PREFIX}-libdatrie")
+source=("https://linux.thai.net/pub/thailinux/software/libthai/${_realname}-${pkgver}.tar.xz"
+        'relocatable.patch')
+sha256sums=('ffe0a17b4b5aa11b153c15986800eca19f6c93a4025ffa5cf2cab2dcdf1ae911'
+            'f258c748e37a11ce20d307a9a27cf68de9543d79b7e60ebd31c7cf4398b5f6d9')
+
+prepare() {
+  cd "${srcdir}/libthai-${pkgver}"
+
+  patch -Np1 -i "${srcdir}"/relocatable.patch
+}
+
+build() {
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared
+
+  make
+}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+  make install DESTDIR="${pkgdir}"
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}

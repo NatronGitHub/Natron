@@ -5,9 +5,11 @@
 BISON_VERSION=3.5
 BISON_TAR="bison-${BISON_VERSION}.tar.gz"
 BISON_SITE="http://ftp.gnu.org/pub/gnu/bison"
+if download_step; then
+    download "$BISON_SITE" "$BISON_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/bison" ]; }; }; then
     start_build
-    download "$BISON_SITE" "$BISON_TAR"
     untar "$SRC_PATH/$BISON_TAR"
     pushd "bison-${BISON_VERSION}"
     # 2 patches for use with glibc 2.28 and up. (for bison 3.0.4)

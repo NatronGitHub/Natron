@@ -7,9 +7,11 @@ NETTLE_VERSION=3.5.1
 #NETTLE_VERSION_SHORT=${NETTLE_VERSION%.*}
 NETTLE_TAR="nettle-${NETTLE_VERSION}.tar.gz"
 NETTLE_SITE="https://ftp.gnu.org/gnu/nettle"
+if download_step; then
+    download "$NETTLE_SITE" "$NETTLE_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/nettle.pc" ] || [ "$(pkg-config --modversion nettle)" != "$NETTLE_VERSION" ]; }; }; then
     start_build
-    download "$NETTLE_SITE" "$NETTLE_TAR"
     untar "$SRC_PATH/$NETTLE_TAR"
     pushd "nettle-${NETTLE_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared --disable-documentation

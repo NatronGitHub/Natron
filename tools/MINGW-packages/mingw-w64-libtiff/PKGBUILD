@@ -1,0 +1,67 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=libtiff
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=4.0.10
+pkgrel=2
+pkgdesc="Library for manipulation of TIFF images (mingw-w64)"
+arch=('any')
+url="http://www.simplesystems.org/libtiff/"
+license=(MIT)
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         #"${MINGW_PACKAGE_PREFIX}-jbigkit"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+         #"${MINGW_PACKAGE_PREFIX}-webp"
+         "${MINGW_PACKAGE_PREFIX}-xz"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         #"${MINGW_PACKAGE_PREFIX}-zstd"
+	 )
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc")
+options=('staticlibs' 'strip')
+source=(http://download.osgeo.org/libtiff/tiff-${pkgver}.tar.gz)
+sha256sums=('2c52d11ccaf767457db0c46795d9c7d1a8d8f76f68b0b800a3dfe45786b996e4')
+
+prepare() {
+  cd tiff-${pkgver}
+}
+
+build() {
+  export CFLAGS+=" -fno-strict-aliasing"
+  export CXXFLAGS+=" -fno-strict-aliasing"
+
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+
+  ../tiff-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared \
+    --enable-cxx \
+    --disable-jbig \
+    --disable-webp \
+    --without-x
+
+  make
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make check
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+
+  cp ${srcdir}/tiff-${pkgver}/libtiff/{tiffiop,tif_dir}.h "${pkgdir}${MINGW_PREFIX}/include/"
+  cp "libtiff/tif_config.h" "${pkgdir}${MINGW_PREFIX}/include/"
+
+  # License
+  # See https://fedoraproject.org/wiki/Licensing:MIT#Hylafax_Variant
+  install -Dm644 "${srcdir}/tiff-${pkgver}/COPYRIGHT" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYRIGHT"
+}

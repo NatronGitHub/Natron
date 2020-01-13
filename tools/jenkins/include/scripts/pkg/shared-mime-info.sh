@@ -6,9 +6,11 @@ SHAREDMIMEINFO_VERSION=1.15 # Warning: SHAREDMIMEINFO_SITE changes with every re
 SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.xz"
 #SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
 SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/b27eb88e4155d8fccb8bb3cd12025d5b"
+if download_step; then
+    download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mime-info.pc" ] || [ "$(pkg-config --modversion shared-mime-info)" != "$SHAREDMIMEINFO_VERSION" ]; }; }; then
     start_build
-    download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
     untar "$SRC_PATH/$SHAREDMIMEINFO_TAR"
     pushd "shared-mime-info-${SHAREDMIMEINFO_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --without-libtiff

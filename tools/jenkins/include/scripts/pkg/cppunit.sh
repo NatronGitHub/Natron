@@ -8,9 +8,11 @@ if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
     CPPUNIT_SITE="http://dev-www.libreoffice.org/src"
 fi
 CPPUNIT_TAR="cppunit-${CPPUNIT_VERSION}.tar.gz"
+if download_step; then
+    download "$CPPUNIT_SITE" "$CPPUNIT_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cppunit.pc" ] || [ "$(pkg-config --modversion cppunit)" != "$CPPUNIT_VERSION" ]; }; }; then
     start_build
-    download "$CPPUNIT_SITE" "$CPPUNIT_TAR"
     untar "$SRC_PATH/$CPPUNIT_TAR"
     pushd "cppunit-${CPPUNIT_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"

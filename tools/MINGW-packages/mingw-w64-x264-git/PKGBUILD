@@ -1,0 +1,58 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=x264
+pkgbase=mingw-w64-${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=r2991.1771b556
+pkgrel=2
+pkgdesc="Library for encoding H264/AVC video streams (mingw-w64)"
+arch=('any')
+url="https://www.videolan.org/developers/x264.html"
+license=("custom")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-nasm"
+             "git")
+depends=("${MINGW_PACKAGE_PREFIX}-libwinpthread"
+         "${MINGW_PACKAGE_PREFIX}-l-smash"
+         #"${MINGW_PACKAGE_PREFIX}-ffms2"
+	 )
+options=('strip' 'staticlibs')
+source=("${_realname}"::"git+https://code.videolan.org/videolan/${_realname}.git"
+        0001-beautify-pc.all.patch
+        0002-install-avisynth_c.h.mingw.patch)
+sha256sums=('SKIP'
+            '0eba3b41ef0c01f33280ce61bdd47cb966d765c0cb02db239fc6c89d601a2596'
+            '51d7efd8eb504d42767c04cfe8abb9c7ccbe84d76e7150c5c46535507763d1b8')
+
+pkgver() {
+  cd ${srcdir}/${_realname}
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd ${_realname}
+#  patch -p1 -i ${srcdir}/0001-beautify-pc.all.patch
+  patch -p1 -i ${srcdir}/0002-install-avisynth_c.h.mingw.patch
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  ../${_realname}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --host=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}

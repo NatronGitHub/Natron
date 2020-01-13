@@ -5,9 +5,11 @@
 FFTW_VERSION=3.3.8
 FFTW_TAR="fftw-${FFTW_VERSION}.tar.gz"
 FFTW_SITE="http://www.fftw.org/"
+if download_step; then
+    download "$FFTW_SITE" "$FFTW_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion fftw3)" != "$FFTW_VERSION" ]; }; }; then
     start_build
-    download "$FFTW_SITE" "$FFTW_TAR"
     untar "$SRC_PATH/$FFTW_TAR"
     pushd "fftw-${FFTW_VERSION}"
     # to compile fftw3f, add --enable-float --enable-sse

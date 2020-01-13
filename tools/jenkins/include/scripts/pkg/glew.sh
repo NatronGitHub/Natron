@@ -5,9 +5,11 @@
 GLEW_VERSION=2.1.0
 GLEW_TAR="glew-${GLEW_VERSION}.tgz"
 GLEW_SITE="https://sourceforge.net/projects/glew/files/glew/${GLEW_VERSION}"
+if download_step; then
+    download "$GLEW_SITE" "$GLEW_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] || [ "$(pkg-config --modversion glew)" != "$GLEW_VERSION" ]; }; }; then
     start_build
-    download "$GLEW_SITE" "$GLEW_TAR"
     untar "$SRC_PATH/$GLEW_TAR"
     pushd "glew-${GLEW_VERSION}"
     if [ "$ARCH" = "i686" ]; then

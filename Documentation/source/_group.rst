@@ -5,7 +5,7 @@
 Reference Guide
 ============================================================
 
-The first section in this manual describes the various options available from the Natron preference settings. The next section gives the documentation for the various enrivironment variables that may be used to control Natron's behavior. It is followed by one section for each node group in Natron. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
+The first section in this manual describes the various options available from the Natron preference settings. The next section gives the documentation for the various environment variables that may be used to control Natron's behavior. It is followed by one section for each node group in Natron. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1

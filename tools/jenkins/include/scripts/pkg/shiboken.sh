@@ -5,13 +5,15 @@ SHIBOKEN_VERSION=1.2.4
 #SHIBOKEN_TAR="shiboken-${SHIBOKEN_VERSION}.tar.bz2"
 #SHIBOKEN_SITE="https://download.qt.io/official_releases/pyside"
 SHIBOKEN_TAR="Shiboken-${SHIBOKEN_VERSION}.tar.gz"
+if download_step; then
+    #download "$SHIBOKEN_SITE" "$SHIBOKEN_TAR"
+    download_github pyside Shiboken "${SHIBOKEN_VERSION}" "" "${SHIBOKEN_TAR}"
+fi
 if dobuild; then
     SHIBOKEN_PREFIX="$QT4PREFIX"
 fi
 if build_step && { force_build || { [ ! -s "$SHIBOKEN_PREFIX/lib/pkgconfig/shiboken.pc" ] || [ "$(env PKG_CONFIG_PATH=$SHIBOKEN_PREFIX/lib/pkgconfig:$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion shiboken)" != "$SHIBOKEN_VERSION" ]; }; }; then
     start_build
-    #download "$SHIBOKEN_SITE" "$SHIBOKEN_TAR"
-    download_github pyside Shiboken "${SHIBOKEN_VERSION}" "" "${SHIBOKEN_TAR}"
     untar "$SRC_PATH/$SHIBOKEN_TAR"
     #pushd "shiboken-$SHIBOKEN_VERSION"
     pushd "Shiboken-$SHIBOKEN_VERSION"

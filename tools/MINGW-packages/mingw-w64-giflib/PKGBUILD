@@ -1,0 +1,37 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=giflib
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=5.2.1
+pkgrel=2
+pkgdesc="A library for reading and writing gif images (mingw-w64)"
+arch=('any')
+url="https://sourceforge.net/projects/giflib"
+license=("MIT")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "xmlto")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+options=('staticlibs' 'strip')
+source=("https://downloads.sourceforge.net/sourceforge/giflib/${_realname}-${pkgver}.tar.gz"
+        "001-mingw-build.patch")
+sha256sums=('31da5562f44c5f15d63340a09a4fd62b48c45620cd302f77a6d9acf0077879bd'
+            '2b2262ddea87fc07be82e10aeb39eb699239f883c899aa18a16e4d4e40af8ec8')
+noextract=(${_realname}-${pkgver}.tar.gz)
+
+prepare() {
+  [[ -d ${srcdir}/${_realname}-${pkgver} ]] && rm -rf ${srcdir}/${_realname}-${pkgver}
+  tar -xzf ${srcdir}/${_realname}-${pkgver}.tar.gz -C ${srcdir} || true
+
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -Np1 -i "${srcdir}/001-mingw-build.patch"
+}
+
+build() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  make
+}
+
+package() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  make DESTDIR="${pkgdir}" PREFIX="${MINGW_PREFIX}" install
+}

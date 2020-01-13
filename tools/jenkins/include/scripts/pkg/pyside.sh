@@ -5,13 +5,15 @@ PYSIDE_VERSION=1.2.4
 #PYSIDE_TAR="pyside-qt4.8+${PYSIDE_VERSION}.tar.bz2"
 #PYSIDE_SITE="https://download.qt.io/official_releases/pyside"
 PYSIDE_TAR="PySide-${PYSIDE_VERSION}.tar.gz"
+if download_step; then
+    #download "$PYSIDE_SITE" "$PYSIDE_TAR"
+    download_github pyside PySide "${PYSIDE_VERSION}" "" "${PYSIDE_TAR}"
+fi
 if dobuild; then
     PYSIDE_PREFIX="$QT4PREFIX"
 fi
 if build_step && { force_build || { [ ! -s "$PYSIDE_PREFIX/lib/pkgconfig/pyside${PYSIDE_V:-}.pc" ] || [ "$(env PKG_CONFIG_PATH=$PYSIDE_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion pyside)" != "$PYSIDE_VERSION" ]; }; }; then
     start_build
-    #download "$PYSIDE_SITE" "$PYSIDE_TAR"
-    download_github pyside PySide "${PYSIDE_VERSION}" "" "${PYSIDE_TAR}"
     untar "$SRC_PATH/$PYSIDE_TAR"
     #pushd "pyside-qt4.8+${PYSIDE_VERSION}"
     pushd "PySide-${PYSIDE_VERSION}"

@@ -14,20 +14,22 @@ OSMESA_DEMOS_SITE="ftp://ftp.freedesktop.org/pub/mesa/demos/${OSMESA_DEMOS_VERSI
 OSMESA_LLVM_VERSION=4.0.1
 OSMESA_LLVM_TAR="llvm-${OSMESA_LLVM_VERSION}.src.tar.xz"
 OSMESA_LLVM_SITE="http://releases.llvm.org/${OSMESA_LLVM_VERSION}"
+if download_step; then
+    download "$OSMESA_SITE" "$OSMESA_TAR"
+    download "$OSMESA_GLU_SITE" "$OSMESA_GLU_TAR"
+    download "$OSMESA_DEMOS_SITE" "$OSMESA_DEMOS_TAR"
+    download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_OSMESA:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/osmesa" || true
     rm -rf "$SDK_HOME/llvm" || true
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/osmesa/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion gl)" != "$OSMESA_VERSION" ]; }; }; then
     start_build
-    download "$OSMESA_SITE" "$OSMESA_TAR"
-    download "$OSMESA_GLU_SITE" "$OSMESA_GLU_TAR"
-    download "$OSMESA_DEMOS_SITE" "$OSMESA_DEMOS_TAR"
     mkdir -p "${SDK_HOME}/osmesa" || true
     LLVM_BUILD=0
     if [ ! -s "$SDK_HOME/llvm/bin/llvm-config" ] || [ "$($SDK_HOME/llvm/bin/llvm-config --version)" != "$OSMESA_LLVM_VERSION" ]; then
         LLVM_BUILD=1
-        download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
     git clone https://github.com/NatronGitHub/osmesa-install

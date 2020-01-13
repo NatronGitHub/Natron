@@ -5,9 +5,11 @@
 ITSTOOL_VERSION=2.0.6 
 ITSTOOL_TAR="itstool-${ITSTOOL_VERSION}.tar.bz2"
 ITSTOOL_SITE="http://files.itstool.org/itstool"
-if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/itstool" ] || [ "$(itstool)" != "itstool $ITSTOOL_VERSION" ]; }; }; then
-    start_build
+if download_step; then
     download "$ITSTOOL_SITE" "$ITSTOOL_TAR"
+fi
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/itstool" ] || [ "$(itstool -v)" != "itstool $ITSTOOL_VERSION" ]; }; }; then
+    start_build
     untar "$SRC_PATH/$ITSTOOL_TAR"
     pushd "itstool-${ITSTOOL_VERSION}"
     env PYTHON="$SDK_HOME/bin/python3" CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"

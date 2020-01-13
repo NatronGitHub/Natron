@@ -1,0 +1,86 @@
+# Maintainer: Alexey Pavlov <Alexpux@gmail.com>
+# Contributor: Martell Malone <martellmalone@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+# Contributor: Ray Donnelly <mingw.android@gmail.com>
+
+_external_minizip=yes
+_realname=zlib
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=1.2.11
+pkgrel=8
+pkgdesc="Compression library implementing the deflate compression method found in gzip and PKZIP (mingw-w64)"
+arch=('any')
+license=(ZLIB)
+url="https://www.zlib.net/"
+depends=($([[ "$_external_minizip" != "yes" ]] && echo "${MINGW_PACKAGE_PREFIX}-bzip2"))
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc")
+options=('staticlibs')
+source=("https://zlib.net/current/${_realname}-${pkgver}.tar.gz"
+        01-zlib-1.2.11-1-buildsys.mingw.patch
+        03-dont-put-sodir-into-L.mingw.patch
+        04-fix-largefile-support.patch
+        06-add-64bit-functions-and-fix-typos.patch
+        07-Add-no-undefined-to-link-to-enable-build-shared-vers.patch
+        08-Add-bzip2-library-to-pkg-config-file.patch)
+sha256sums=('c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1'
+            'ac91f905b695d71f6c9c471ac98c14a3ed989a1e2b2a3b1171b3f6dc6bfc31b4'
+            '3d039f42194aade91dadf4174f55fd6db349fd8044db93875bed1042dcfe1f31'
+            '3b36fe536a7458af2a9a494d70d24048da10c43423fd620ed93fa0a6ddd14f78'
+            '6677eff383727cef5f6d142892fd1c78b5012e080dcede3d0651f96e9330c4e6'
+            'fb83292f494f649ea7f1835aa4abea61acc593d7f90625741d42cd99cac0e075'
+            '0be98a7e660e7c068856f08b9e92d6c73a6b0d88c3e29a9716140b147f7c23c5')
+
+prepare() {
+  cd ${srcdir}/${_realname}-${pkgver}
+  grep -A 24 '^  Copyright' zlib.h > LICENSE
+
+  patch -p1 -i ${srcdir}/01-zlib-1.2.11-1-buildsys.mingw.patch
+  patch -p2 -i ${srcdir}/03-dont-put-sodir-into-L.mingw.patch
+  patch -p1 -i ${srcdir}/04-fix-largefile-support.patch
+  if [ "${_external_minizip}" != "yes" ]; then
+    patch -p2 -i ${srcdir}/06-add-64bit-functions-and-fix-typos.patch
+    cd ${srcdir}/${_realname}-${pkgver}/contrib/minizip
+    patch -p1 -i ${srcdir}/07-Add-no-undefined-to-link-to-enable-build-shared-vers.patch
+    patch -p1 -i ${srcdir}/08-Add-bzip2-library-to-pkg-config-file.patch  
+  fi
+}
+
+build() {
+  cd ${srcdir}/${_realname}-${pkgver}
+  CHOST=${MINGW_CHOST} ./configure --prefix=${MINGW_PREFIX} --shared
+  make -j1 all
+  
+  # build minizip
+  if [ "${_external_minizip}" != "yes" ]; then
+    pushd contrib/minizip > /dev/null
+      autoreconf -fi
+      CFLAGS+=" -DHAVE_BZIP2"
+      ./configure --prefix=${MINGW_PREFIX} \
+        --build=${MINGW_CHOST} \
+        --host=${MINGW_CHOST} \
+        --target=${MINGW_CHOST} \
+        --enable-demos \
+        LIBS="-lbz2"
+      make
+    popd > /dev/null
+  fi
+}
+
+check() {
+  cd ${srcdir}/${_realname}-${pkgver}
+  make test
+}
+
+package() {
+  cd ${srcdir}/${_realname}-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+
+  # install minizip
+  if [ "${_external_minizip}" != "yes" ]; then
+    pushd contrib/minizip > /dev/null
+      make DESTDIR="${pkgdir}" install
+    popd > /dev/null
+  fi
+}

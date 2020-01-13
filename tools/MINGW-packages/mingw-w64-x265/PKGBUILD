@@ -1,0 +1,101 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Yuta Nakai <nak5124@live.jp>
+
+_realname=x265
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=3.1.1
+pkgrel=2
+pkgdesc='Open Source H265/HEVC video encoder (mingw-w64)'
+arch=('any')
+license=('GPL')
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=("${MINGW_PACKAGE_PREFIX}-nasm" "${MINGW_PACKAGE_PREFIX}-cmake")
+options=('strip')
+url='https://bitbucket.org/multicoreware/x265'
+source=("${_realname}-${pkgver}.tar.gz"::"https://bitbucket.org/multicoreware/x265/downloads/${_realname}_${pkgver}.tar.gz"
+        "0001-winxp-condition-var.mingw.patch")
+sha256sums=('827900c7cc0a0105b8a96460fab7cd22b97afa7b2835b5cb979c44bddaa3c8d0'
+            'c71016ca51eb6d8916de9ef48f14048412569ae89e149f3d372158af6378e0e4')
+
+
+prepare() {
+  cd "${srcdir}"/x265_${pkgver}
+  patch -Np1 -i ${srcdir}/0001-winxp-condition-var.mingw.patch
+  
+  for d in 8 10 12; do
+    if [[ -d ${srcdir}/build-${CARCH}-${d} ]]; then
+      rm -rf ${srcdir}/build-${CARCH}-${d}
+    fi
+    mkdir -p ${srcdir}/build-${CARCH}-${d}
+  done
+}
+
+
+build() {
+  if [ "${CARCH}" = 'i686' ]; then
+    _ENABLE_ASM=OFF
+    _WINXP_SUPPORT=TRUE
+  else
+    _ENABLE_ASM=ON
+    _WINXP_SUPPORT=FALSE
+  fi
+  
+  # 12-bit
+  cd "${srcdir}/build-${CARCH}-12"
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G "MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
+    -DHIGH_BIT_DEPTH=ON \
+    -DMAIN12=ON \
+    -DEXPORT_C_API=OFF \
+    -DENABLE_CLI=OFF \
+    -DENABLE_SHARED=OFF \
+    -DENABLE_ASSEMBLY=${_ENABLE_ASM} \
+  ../x265_${pkgver}/source
+  make
+  
+  # 10-bit
+  cd "${srcdir}/build-${CARCH}-10"
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G "MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
+    -DHIGH_BIT_DEPTH=ON \
+    -DEXPORT_C_API=OFF \
+    -DENABLE_CLI=OFF \
+    -DENABLE_SHARED=OFF \
+    -DENABLE_ASSEMBLY=${_ENABLE_ASM} \
+  ../x265_${pkgver}/source
+  make
+  
+  # 8-bit
+  cd "${srcdir}/build-${CARCH}-8"
+  ln -s ../build-${CARCH}-10/libx265.a libx265_main10.a
+  ln -s ../build-${CARCH}-12/libx265.a libx265_main12.a
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G "MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
+    -DENABLE_SHARED=ON \
+    -DENABLE_ASSEMBLY=${_ENABLE_ASM} \
+    -DENABLE_HDR10_PLUS=ON \
+    -DEXTRA_LIB='x265_main10.a;x265_main12.a' \
+    -DEXTRA_LINK_FLAGS='-L .' \
+    -DLINKED_10BIT=ON \
+    -DLINKED_12BIT=ON \
+  ../x265_${pkgver}/source
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${CARCH}-8"
+  make DESTDIR=${pkgdir} install
+  
+  # Properly install missing libhdr10plus.dll
+  install -Dm644 libhdr10plus.dll "${pkgdir}${MINGW_PREFIX}/bin/libhdr10plus.dll"
+}

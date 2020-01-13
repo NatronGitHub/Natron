@@ -2,14 +2,16 @@
 
 # Install libjpeg-turbo
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libjpeg.html
-LIBJPEGTURBO_VERSION=2.0.3
+LIBJPEGTURBO_VERSION=2.0.4
 LIBJPEGTURBO_VERSION_MAJOR=${LIBJPEGTURBO_VERSION%.*.*}
 
 LIBJPEGTURBO_TAR="libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz"
 LIBJPEGTURBO_SITE="https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEGTURBO_VERSION}"
+if download_step; then
+    download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libturbojpeg.so.0.${LIBJPEGTURBO_VERSION_MAJOR}.0" ]; }; }; then
     start_build
-    download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR"
     untar "$SRC_PATH/$LIBJPEGTURBO_TAR"
     pushd "libjpeg-turbo-${LIBJPEGTURBO_VERSION}"
     if [ "$LIBJPEGTURBO_VERSION_MAJOR" = "1" ]; then

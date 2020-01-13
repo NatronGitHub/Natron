@@ -1,0 +1,45 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=xz
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=5.2.4
+pkgrel=2
+pkgdesc="Library and command line tools for XZ and LZMA compressed files (mingw-w64)"
+arch=('any')
+url="https://tukaani.org/xz"
+
+# TODO: check situation with getopt_long mentioned in COPYING for possible
+# removal of LGPL from this field
+license=(partial:'PublicDomain' partial:'LGPL2.1+' partial:'GPL2+')
+
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-gettext")
+options=('staticlibs' 'strip')
+source=("${url}/${_realname}-${pkgver}.tar.gz")
+sha256sums=('b512f3b726d3b37b6dc4c8570e137b9311e7552e8ccbab4d39d47ce5f4177145')
+
+build() {
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${CARCH} && cd ${srcdir}/build-${CARCH}
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --disable-rpath \
+    --disable-lzma-links
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${CARCH}"
+  make DESTDIR="${pkgdir}" install
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING.GPLv2 ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING.GPLv2
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING.GPLv3 ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING.GPLv3
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING.LGPLv2.1 ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING.LGPLv2.1
+}

@@ -1,0 +1,127 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=openexr
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-ilmbase"
+         "${MINGW_PACKAGE_PREFIX}-${_realname}"
+         "${MINGW_PACKAGE_PREFIX}-pyilmbase")
+pkgver=2.3.0
+pkgrel=3
+pkgdesc="Openexr library for EXR images (mingw-w64)"
+arch=('any')
+url="http://www.openexr.com/"
+license=("custom")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-boost"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             #"${MINGW_PACKAGE_PREFIX}-python2-numpy"
+	     )
+options=('staticlibs' 'strip')
+source=(#"https://download.savannah.nongnu.org/releases/openexr/${_realname}-${pkgver}.tar.gz"
+        ${_realname}-${pkgver}.tar.gz::https://github.com/openexr/openexr/archive/v${pkgver}.tar.gz
+        0000-openexr-versions.patch
+        0001-mingw-w64-fix.patch
+        0002-openexr-2.1.0-headers.patch
+        0003-ilmthread-mingw-pthreads.patch
+        0006-cmake-soversion.patch
+        0009-win-dwalookups.patch
+        0010-openexr-2.2.0-mingw-utf8.patch
+        0011-compile-fixes-mingw.patch
+        0012-exports.patch)
+sha256sums=('8243b7de12b52239fe9235a6aeb4e35ead2247833e4fbc41541774b222717933'
+            'ed50a9f9e7b4000d17f5fdb796ef7bb056b823077fce3961fd373a83cdbfc428'
+            'd15c25b2e754ea47f547234cc0ac753e55f30b58e0b43a7bb3e68902632965e5'
+            '7a023ac36d7e0cccbd9d396195a3336f24163595d552ebda5b7a4ed259999f39'
+            '14df87d62dbda9a9f5607243d867f9ed86f0a02437e06126699615090a49bcde'
+            '340526f62de645dbbcf38144ef6dab3c96f18fc4a20a728034cb64a6c49bcd2e'
+            '2ca841425ae676f75fa714a16f0124272224147fe40ea507ccc4bf74477f51ab'
+            'a14051fd1aa842f9475ffffa81a270718d2efb40d415f13703004f1feeb949f3'
+            '8a08269c242bc9686f1f7195b1bbabe66366479ec0de23fc9e52c4659af435fd'
+            '8741feeb5cd5e660b8e01cdfc0ef0aedc49163516fda175030a81fb20358221b')
+
+prepare(){
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' OpenEXR/IlmImf/ImfZipCompressor.cpp
+  sed -i 's/#define ZLIB_WINAPI/\/\/#define ZLIB_WINAPI/g' OpenEXR/IlmImf/ImfPxr24Compressor.cpp
+
+  patch -p1 -i ${srcdir}/0000-openexr-versions.patch
+  patch -p1 -i ${srcdir}/0001-mingw-w64-fix.patch
+  patch -p1 -i ${srcdir}/0002-openexr-2.1.0-headers.patch
+  patch -p1 -i ${srcdir}/0003-ilmthread-mingw-pthreads.patch
+  patch -p1 -i ${srcdir}/0006-cmake-soversion.patch
+  patch -p1 -i ${srcdir}/0009-win-dwalookups.patch
+  patch -p1 -i ${srcdir}/0010-openexr-2.2.0-mingw-utf8.patch
+  patch -p1 -i ${srcdir}/0011-compile-fixes-mingw.patch
+  patch -p1 -i ${srcdir}/0012-exports.patch
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DOPENEXR_BUILD_SHARED=ON \
+    -DOPENEXR_BUILD_STATIC=ON \
+    -DOPENEXR_NAMESPACE_VERSIONING=ON \
+    ../${_realname}-${pkgver}
+
+  make
+}
+
+package_ilmbase() {
+  pkgdesc="Base libraries from ILM for OpenEXR (mingw-w64)"
+  depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+
+  cd "${srcdir}/build-${MINGW_CHOST}/IlmBase"
+  make DESTDIR=${pkgdir} install
+}
+
+package_openexr() {
+  pkgdesc="An high dynamic-range image file format library (mingw-w64)"
+  depends=("${MINGW_PACKAGE_PREFIX}-ilmbase=${pkgver}"
+           "${MINGW_PACKAGE_PREFIX}-zlib")
+
+  cd "${srcdir}/build-${MINGW_CHOST}/OpenEXR"
+  make DESTDIR=${pkgdir} install
+}
+
+package_pyilmbase() {
+  pkgdesc="Python2 bindings for OpenEXR library (mingw-w64)"
+  depends=("${MINGW_PACKAGE_PREFIX}-openexr=${pkgver}"
+           "${MINGW_PACKAGE_PREFIX}-boost"
+           #"${MINGW_PACKAGE_PREFIX}-python2-numpy"
+	   )
+
+  cd "${srcdir}/build-${MINGW_CHOST}/PyIlmBase"
+  make DESTDIR=${pkgdir} install
+}
+
+package_mingw-w64-i686-ilmbase() {
+  package_ilmbase
+}
+
+package_mingw-w64-i686-openexr() {
+  package_openexr
+}
+
+package_mingw-w64-i686-pyilmbase() {
+  package_pyilmbase
+}
+
+package_mingw-w64-x86_64-ilmbase() {
+  package_ilmbase
+}
+
+package_mingw-w64-x86_64-openexr() {
+  package_openexr
+}
+
+package_mingw-w64-x86_64-pyilmbase() {
+  package_pyilmbase
+}

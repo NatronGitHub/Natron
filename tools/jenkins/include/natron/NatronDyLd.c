@@ -137,7 +137,6 @@ int main(int argc, char *argv[])
 
   // append "-driver" to the program name
   strncat(exec_path, "-driver", PATH_MAX - strlen(exec_path) - 1);
-  printf("buf = %s\n", exec_path);
   char *dyldLibraryPathDef = 0;
   char *programDir = dirname(exec_path);
 #if defined(LIBGCC)
@@ -153,7 +152,7 @@ int main(int argc, char *argv[])
   // std::length_error::~length_error() is only defined in libc++abi.dylib on 10.9 (13.0.0) and later.
   // see https://github.com/NatronGitHub/Natron/issues/431
   // We this force linking with the provided libc++ on previous versions of OS X.
-  if (CompareKernelVersion(13, 0, 0) < 0) {
+  if (CompareKernelVersion(13, 0, 0) > 0) {  // if 10.9.0 > OS X version
     /*
      * set the DYLD_LIBRARY_PATH environment variable to the directory containing only the libc++.1.dylib
      * and re-exec the binary. The re-exec is necessary as the DYLD_LIBRARY_PATH is only read at exec.

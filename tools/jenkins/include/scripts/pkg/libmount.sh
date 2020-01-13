@@ -16,9 +16,11 @@ UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0}
 UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}
 UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION_NOZERO}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
+if download_step; then
+    download "$UTILLINUX_SITE" "$UTILLINUX_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion mount)" != "$UTILLINUX_VERSION" ]; }; }; then
     start_build
-    download "$UTILLINUX_SITE" "$UTILLINUX_TAR"
     untar "$SRC_PATH/$UTILLINUX_TAR"
     pushd "util-linux-${UTILLINUX_VERSION_NOZERO}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-chfn-chsh  \

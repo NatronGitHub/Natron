@@ -1,0 +1,26 @@
+--- nss-3.20/nss/lib/dbm/src/mktemp.c	2015-04-20 20:15:12.000000000 +0200
++++ nss-3.20/nss/lib/dbm/src/mktemp.c	2015-04-27 17:20:23.111705529 +0200
+@@ -29,6 +29,11 @@
+  * SUCH DAMAGE.
+  */
+ 
++#ifdef _WINDOWS
++#include <process.h>
++#include "winfile.h"
++#endif
++
+ #if defined(LIBC_SCCS) && !defined(lint)
+ static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
+ #endif /* LIBC_SCCS and not lint */
+@@ -49,11 +54,6 @@
+ #include <unistd.h>
+ #endif
+ 
+-#ifdef _WINDOWS
+-#include <process.h>
+-#include "winfile.h"
+-#endif
+-
+ static int _gettemp(char *path, register int *doopen, int extraFlags);
+ 
+ int

@@ -1,0 +1,11 @@
+--- cairo-1.12.10/src/Makefile.am.analysis.orig	2013-01-19 16:35:36 +0400
++++ cairo-1.12.10/src/Makefile.am.analysis	2013-01-19 17:16:51 +0400
+@@ -24,7 +24,7 @@
+ 	@echo Checking that enabled public/private headers can be compiled standalone
+ 	@status=true; for f in $(enabled_cairo_headers) $(enabled_cairo_private); do \
+ 		echo "  CHECK $$f"; \
+-		echo "#include \"$(srcdir)/$$f\"" > headers-standalone-tmp.c; \
++		echo "#include \"$(shell cd $(srcdir) ; pwd -W)/$$f\"" > headers-standalone-tmp.c; \
+ 		echo "int main(int argc, char * argv[]) { return 0; }" >> headers-standalone-tmp.c; \
+ 		$(COMPILE) -o headers-standalone-tmp headers-standalone-tmp.c || status=false; \
+ 		$(RM) headers-standalone-tmp headers-standalone-tmp.c; \
