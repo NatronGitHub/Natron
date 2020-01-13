@@ -1,6 +1,6 @@
 # Natron Windows SDK (DRAFT)
 
-The following are instructions for installing the Natron SDK on Windows. Please follow the instructions exactly as described.
+The following are instructions for installing and building the Natron SDK on Windows. Please follow the instructions exactly as described.
 
 ## Install MSYS2
 
@@ -186,15 +186,9 @@ mingw-w64-x86_64-python3-pytest \
 mingw-w64-x86_64-jemalloc
 ```
 
-Note that some packages might not be available from MSYS2 when you read this, you can download all the packages in one archive here (TODO, ADD LINK) then copy them to ``/var/cache/pacman/pkg`` and run the command above again.
-
 ## Additional packages
 
 Several packages needs to be added or updated. You can build them yourself or install from binary packages.
-
-## Install
-
-TODO link to packages here.
 
 ## Build
 
@@ -244,6 +238,7 @@ mingw-w64-nettle
 mingw-w64-gnutls
 mingw-w64-nghttp2
 mingw-w64-curl
+mingw-w64-rtmpdump-git
 mingw-w64-libraw-gpl2
 mingw-w64-ffmpeg-gpl2
 mingw-w64-libarchive
@@ -262,7 +257,7 @@ mingw-w64-osmesa
 mingw-w64-libde265
 mingw-w64-libheif
 mingw-w64-imagemagick
-mingw-w64-openimageio2
+mingw-w64-openimageio21
 "
 for pkg in $PKGS; do
 cd $CWD/$pkg

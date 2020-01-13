@@ -1,0 +1,59 @@
+--- src/cmake/externalpackages.cmake.orig	2020-01-13 01:50:20.333267700 +0100
++++ src/cmake/externalpackages.cmake	2020-01-13 01:53:24.363403800 +0100
+@@ -125,6 +125,8 @@
+ else ()
+     if (MSVC)
+         add_definitions (-DBOOST_ALL_DYN_LINK=1)
++    elseif (MINGW)
++        add_definitions("-DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB")
+     endif ()
+ endif ()
+ if (BOOST_CUSTOM)
+--- src/testtex/CMakeLists.txt.orig	2020-01-13 02:03:48.472756200 +0100
++++ src/testtex/CMakeLists.txt	2020-01-13 02:04:24.872623200 +0100
+@@ -5,5 +5,5 @@
+ set (testtex_srcs testtex.cpp)
+ add_executable (testtex ${testtex_srcs})
+ target_include_directories (testtex PRIVATE ${ROBINMAP_INCLUDES})
+-target_link_libraries (testtex PRIVATE OpenImageIO)
++target_link_libraries (testtex PRIVATE OpenImageIO ${Boost_SYSTEM_LIBRARY})
+ set_target_properties (testtex PROPERTIES FOLDER "Tools")
+--- src/libutil/plugin.cpp.orig	2020-01-13 00:18:34.271662000 +0100
++++ src/libutil/plugin.cpp	2020-01-13 00:22:32.765637800 +0100
+@@ -65,7 +65,11 @@
+ void*
+ dlsym(Handle plugin_handle, const char* symbol_name)
+ {
++#if defined(__MINGW32__)
++    return (void*)GetProcAddress((HMODULE)plugin_handle, symbol_name);
++#else
+     return GetProcAddress((HMODULE)plugin_handle, symbol_name);
++#endif
+ }
+ 
+ 
+--- src/libutil/sysutil.cpp.orig	2020-01-13 00:34:09.302533500 +0100
++++ src/libutil/sysutil.cpp	2020-01-13 00:34:45.365468000 +0100
+@@ -206,7 +206,7 @@
+ void
+ Sysutil::get_local_time(const time_t* time, struct tm* converted_time)
+ {
+-#ifdef _MSC_VER
++#ifdef _WIN32
+     localtime_s(converted_time, time);
+ #else
+     localtime_r(time, converted_time);
+--- src/libutil/thread.cpp.orig	2020-01-13 00:41:57.784611000 +0100
++++ src/libutil/thread.cpp	2020-01-13 00:44:41.802897300 +0100
+@@ -210,7 +210,11 @@
+             = std::any_of(this->threads.begin(), this->threads.end(),
+                           [](std::unique_ptr<std::thread>& t) {
+                               DWORD rcode;
++#if defined(__MINGW32__)
++			      GetExitCodeThread((HANDLE)t->native_handle(), &rcode);
++#else
+                               GetExitCodeThread(t->native_handle(), &rcode);
++#endif
+                               return rcode != STILL_ACTIVE;
+                           });
+ 
