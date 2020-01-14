@@ -120,6 +120,13 @@ NodeSettingsPanel::setSelected(bool s)
 }
 
 void
+NodeSettingsPanel::setPyPlugUIEnabled(bool enabled)
+{
+    DockablePanel::setPyPlugUIEnabled(enabled);
+    _settingsButton->setEnabled(enabled);
+}
+
+void
 NodeSettingsPanel::centerOnItem()
 {
     getNode()->centerGraphOnIt();

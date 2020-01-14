@@ -816,12 +816,31 @@ DockablePanel::onKnobsInitialized()
             NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
             if (isGroup) {
                 if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
-                    setEnabled(false);
+                    isNodePanel->setPyPlugUIEnabled(false);
                 }
             }
         }
     }
 } // DockablePanel::initializeKnobsInternal
+
+void
+DockablePanel::setPyPlugUIEnabled(bool enabled)
+{
+    _imp->_centerNodeButton->setEnabled(enabled);
+    _imp->_undoButton->setEnabled(enabled);
+    _imp->_redoButton->setEnabled(enabled);
+    _imp->_colorButton->setEnabled(enabled);
+    _imp->_restoreDefaultsButton->setEnabled(enabled);
+    _imp->_nameLineEdit->setEnabled(enabled);
+    if (_imp->_tabWidget)
+    {
+        int nTabs = _imp->_tabWidget->count();
+        for (int i = 0; i < nTabs; ++i)
+        {
+            _imp->_tabWidget->widget(i)->setEnabled(enabled);
+        }
+    }
+} // DockablePanel::setPyPlugUIEnabled
 
 TrackerPanel*
 DockablePanel::getTrackerPanel() const
