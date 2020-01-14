@@ -826,12 +826,18 @@ DockablePanel::onKnobsInitialized()
 void
 DockablePanel::setPyPlugUIEnabled(bool enabled)
 {
-    _imp->_centerNodeButton->setEnabled(enabled);
-    _imp->_undoButton->setEnabled(enabled);
-    _imp->_redoButton->setEnabled(enabled);
-    _imp->_colorButton->setEnabled(enabled);
-    _imp->_restoreDefaultsButton->setEnabled(enabled);
-    _imp->_nameLineEdit->setEnabled(enabled);
+    std::vector<QWidget*> btns = {
+        _imp->_centerNodeButton,
+        _imp->_undoButton,
+        _imp->_redoButton,
+        _imp->_colorButton,
+        _imp->_overlayButton,
+        _imp->_restoreDefaultsButton,
+        _imp->_nameLineEdit,
+    };
+    for (QWidget* btn : btns)
+        if (btn)
+            btn->setEnabled(enabled);
     if (_imp->_tabWidget)
     {
         int nTabs = _imp->_tabWidget->count();
