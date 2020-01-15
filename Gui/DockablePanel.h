@@ -156,6 +156,8 @@ public:
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
     virtual void onKnobsInitialized() OVERRIDE FINAL;
 
+    virtual void setPyPlugUIEnabled(bool enabled);
+
 private:
 
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
