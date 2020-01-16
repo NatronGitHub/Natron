@@ -299,8 +299,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #The formula built, but is not symlinked into /usr/local
     #Could not symlink bin/f2py
     # (see https://travis-ci.org/NatronGitHub/Natron/jobs/504468941)
-    brew install numpy || true
-    brew link --overwrite numpy || true
+    #brew install numpy || true
+    #brew link --overwrite numpy || true
     
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
@@ -325,7 +325,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 
     # Upgrade the essential packages
     echo "* Brew upgrade selected packages"
-    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre python readline sqlite; do
+    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre python@2 readline sqlite; do
         brew outdated $p || brew upgrade $p
     done
     # On Nov. 7 2017, the following caused 49 upgrades.
