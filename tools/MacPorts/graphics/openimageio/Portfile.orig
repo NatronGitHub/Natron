@@ -6,7 +6,7 @@ PortGroup           qt5 1.0
 PortGroup           cmake 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.1.10.0
+github.setup        OpenImageIO oiio 2.1.10.1
 revision            0
 name                openimageio
 categories          graphics
@@ -16,9 +16,9 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  022030941253825eaaca504b6d728362df0df916 \
-                    sha256  f1547f15e9af16792a4ca0881c9298704d56db3e5d1cf41ca7e855a6a7548e66 \
-                    size    29105718
+checksums           rmd160  6ebc4e495293dcbb9ce8a1f45636752d52eec2b3 \
+                    sha256  640e40b559a59129c14a980cec75668c857b09639fade09395e0824a634b6956 \
+                    size    29107558
 
 compiler.cxx_standard   2011
 
@@ -44,7 +44,8 @@ depends_lib-append \
     port:libpng \
     port:tiff \
     port:ilmbase \
-    port:openexr
+    port:openexr \
+    port:squish
 
 # optional components
 

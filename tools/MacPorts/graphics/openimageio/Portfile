@@ -6,7 +6,7 @@ PortGroup           github 1.0
 PortGroup           cmake 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.1.10.0
+github.setup        OpenImageIO oiio 2.1.10.1
 revision            100
 name                openimageio
 categories          graphics
@@ -16,9 +16,9 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  022030941253825eaaca504b6d728362df0df916 \
-                    sha256  f1547f15e9af16792a4ca0881c9298704d56db3e5d1cf41ca7e855a6a7548e66 \
-                    size    29105718
+checksums           rmd160  6ebc4e495293dcbb9ce8a1f45636752d52eec2b3 \
+                    sha256  640e40b559a59129c14a980cec75668c857b09639fade09395e0824a634b6956 \
+                    size    29107558
 
 compiler.cxx_standard   2011
 
@@ -49,28 +49,8 @@ depends_lib-append \
     port:libpng \
     port:tiff \
     port:ilmbase \
-    port:openexr
-
-configure.args-append \
-    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-    -DBOOST_ROOT=${prefix} \
-    -DUSE_QT:BOOL=FALSE \
-    -DUSE_PYTHON:BOOL=FALSE \
-    -DUSE_PYTHON3:BOOL=FALSE \
-    -DUSE_FIELD3D:BOOL=FALSE \
-    -DUSE_FFMPEG:BOOL=FALSE \
-    -DUSE_OPENJPEG:BOOL=FALSE \
-    -DUSE_OCIO:BOOL=FALSE \
-    -DUSE_OPENCV:BOOL=FALSE \
-    -DUSE_OPENSSL:BOOL=FALSE \
-    -DUSE_FREETYPE:BOOL=FALSE \
-    -DUSE_GIF:BOOL=TRUE \
-    -DUSE_HEIF:BOOL=TRUE \
-    -DUSE_PTEX:BOOL=FALSE \
-    -DUSE_LIBRAW:BOOL=TRUE \
-    -DUSE_OPENGL:BOOL=FALSE \
-    -DUSE_WEBP:BOOL=TRUE \
-    -DSTOP_ON_WARNING:BOOL=FALSE
+    port:openexr \
+    port:squish
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:
@@ -113,6 +93,27 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
     ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
     #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
+
+configure.args-append \
+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
+    -DBOOST_ROOT=${prefix} \
+    -DUSE_QT:BOOL=FALSE \
+    -DUSE_PYTHON:BOOL=FALSE \
+    -DUSE_PYTHON3:BOOL=FALSE \
+    -DUSE_FIELD3D:BOOL=FALSE \
+    -DUSE_FFMPEG:BOOL=FALSE \
+    -DUSE_OPENJPEG:BOOL=FALSE \
+    -DUSE_OCIO:BOOL=FALSE \
+    -DUSE_OPENCV:BOOL=FALSE \
+    -DUSE_OPENSSL:BOOL=FALSE \
+    -DUSE_FREETYPE:BOOL=FALSE \
+    -DUSE_GIF:BOOL=TRUE \
+    -DUSE_HEIF:BOOL=TRUE \
+    -DUSE_PTEX:BOOL=FALSE \
+    -DUSE_LIBRAW:BOOL=TRUE \
+    -DUSE_OPENGL:BOOL=FALSE \
+    -DUSE_WEBP:BOOL=TRUE \
+    -DSTOP_ON_WARNING:BOOL=FALSE
 
 # optional components
 
@@ -180,8 +181,6 @@ variant dicom description {Use DICOM from dcmtk.} {
     configure.args-append -DUSE_DICOM:BOOL=TRUE
     depends_lib-append port:dcmtk
 }
-
-configure.args-append   -DUSE_PYTHON=OFF
 
 set pythons_suffixes    {27 36 37 38}
 

@@ -10,18 +10,18 @@ PortGroup cmake         1.0
 set llvm_version        7.0
 set llvm_version_no_dot 70
 set clang_executable_version 7
-set lldb_executable_version 7.0.1
+set lldb_executable_version 7.1.0
 name                    llvm-${llvm_version}
-revision                2
-subport                 clang-${llvm_version} { revision 1 }
-subport                 lldb-${llvm_version} { revision 1 }
+revision                0
+subport                 clang-${llvm_version} { revision 0 }
+subport                 lldb-${llvm_version} { revision 0 }
 set suffix              mp-${llvm_version}
 set sub_prefix          ${prefix}/libexec/llvm-${llvm_version}
 dist_subdir             llvm
 categories              lang
 platforms               darwin
 license                 NCSA
-maintainers             {jeremyhu @jeremyhu} {larryv @larryv}
+maintainers             {jeremyhu @jeremyhu} {larryv @larryv} {kencu @kencu}
 
 if {${subport} eq "llvm-${llvm_version}"} {
     homepage            https://llvm.org/
@@ -100,7 +100,7 @@ if {${subport} eq "llvm-${llvm_version}"} {
 #default_variants-append +assertions
 #default_variants-append +debug
 
-version                 ${llvm_version}.1
+version                 7.1.0
 epoch                   1
 master_sites            https://releases.llvm.org/${version}
 #master_sites            https://prereleases.llvm.org/${llvm_version}.0/rc2
@@ -121,34 +121,34 @@ if {${distfiles} ne ""} {
     }
 }
 
-checksums           llvm-7.0.1.src.tar.xz \
-                    rmd160  dae96c6f85afb60e73564dc40d02171d01ffdb8f \
-                    sha256  a38dfc4db47102ec79dcc2aa61e93722c5f6f06f0a961073bd84b78fb949419b \
-                    size    28311056 \
-                    cfe-7.0.1.src.tar.xz \
-                    rmd160  914adafed7c97e5ebab15a437670906c404cb8bd \
-                    sha256  a45b62dde5d7d5fdcdfa876b0af92f164d434b06e9e89b5d0b1cbc65dfe3f418 \
-                    size    12488668 \
-                    compiler-rt-7.0.1.src.tar.xz \
-                    rmd160  ddc0a23cc2f05e44e0bf1b542688968a8126ee0d \
-                    sha256  782edfc119ee172f169c91dd79f2c964fb6b248bd9b73523149030ed505bbe18 \
-                    size    1864520 \
-                    libcxx-7.0.1.src.tar.xz \
-                    rmd160  ddc3aad371b5cf018bf977ddb66efbc024fd4aea \
-                    sha256  020002618b319dc2a8ba1f2cba88b8cc6a209005ed8ad29f9de0c562c6ebb9f1 \
-                    size    1638188 \
-                    clang-tools-extra-7.0.1.src.tar.xz \
-                    rmd160  d0ec60e76157a99e7d6d5f04f7b7eda56ba450da \
-                    sha256  4c93c7d2bb07923a8b272da3ef7914438080aeb693725f4fc5c19cd0e2613bed \
-                    size    901368 \
-                    lldb-7.0.1.src.tar.xz \
-                    rmd160  cc74fa4a201d6541cc918caee9abd683c18189b5 \
-                    sha256  76b46be75b412a3d22f0d26279306ae7e274fe4d7988a2184c529c38a6a76982 \
-                    size    19384628 \
-                    polly-7.0.1.src.tar.xz \
-                    rmd160  f1968870c6069bdc22b660eac4a1de4ca580cddd \
-                    sha256  1bf146842a09336b9c88d2d76c2d117484e5fad78786821718653d1a9d57fb71 \
-                    size    8755168
+checksums           llvm-7.1.0.src.tar.xz \
+                    rmd160  0d972e6d46e8741ae06abbf4125375c1a762f79b \
+                    sha256  1bcc9b285074ded87b88faaedddb88e6b5d6c331dfcfb57d7f3393dd622b3764 \
+                    size    28313784 \
+                    cfe-7.1.0.src.tar.xz \
+                    rmd160  7ce1610cf1915775603f7190781a1080958d7f59 \
+                    sha256  e97dc472aae52197a4d5e0185eb8f9e04d7575d2dc2b12194ddc768e0f8a846d \
+                    size    12487872 \
+                    compiler-rt-7.1.0.src.tar.xz \
+                    rmd160  78fb2825ffecd83c8efc7d1d42ca67600b914fd2 \
+                    sha256  057bdac0581215b5ceb39edfd5bbef9eb79578f16a8908349f3066251fba88d8 \
+                    size    1864248 \
+                    libcxx-7.1.0.src.tar.xz \
+                    rmd160  0ccb07c007c7f5998dea02aefa0c1c4a3f4bbb8a \
+                    sha256  4442b408eaea3c1e4aa2cf21da38aba9f0856b4b522b1c3d555c3251af62b04e \
+                    size    1638448 \
+                    clang-tools-extra-7.1.0.src.tar.xz \
+                    rmd160  2f53c1f44475be2017812b472a876aa4ea9defae \
+                    sha256  1ce0042c48ecea839ce67b87e9739cf18e7a5c2b3b9a36d177d00979609b6451 \
+                    size    901328 \
+                    lldb-7.1.0.src.tar.xz \
+                    rmd160  a8618ddac7e23549afe05cc9d9794e180d1d7311 \
+                    sha256  9b68127a7964af715d96528b675930632693e27b7d142ab825ec331d1ed39a4e \
+                    size    19384976 \
+                    polly-7.1.0.src.tar.xz \
+                    rmd160  51286b17b99a921bcb395a1e3bbc6e735bc0580a \
+                    sha256  305454f72db5e30def3f48e2dc56ce62f9c52c3b9278b8f357a093a588b6139b \
+                    size    8755032
 
 patch.pre_args  -p1
 patchfiles \
