@@ -607,6 +607,7 @@ KnobChoice::cloneExtraData(KnobI* other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
+    // TODO: Isn't this redundant, as it's implementation is identical to the other cloneExtraData?
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
     if (!isChoice) {
@@ -1140,6 +1141,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 {
     assert(knob);
 
+
     ///Clone first and then handle restoration of the static value
     clone(knob);
     setSecret( knob->getIsSecret() );
@@ -1161,7 +1163,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
     }
 
     if (id >= 0) {
-        setValue(id);
+        setValue(id, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
     }
 }
 
