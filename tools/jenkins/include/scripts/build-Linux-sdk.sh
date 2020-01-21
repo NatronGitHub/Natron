@@ -347,7 +347,7 @@ function download_github() {
                     rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
                 else
                     newdists+=("$package")
-                    newdistsurls+=("$master_site/$package")
+                    newdistsurls+=("https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz")
                 fi
             fi
         fi
