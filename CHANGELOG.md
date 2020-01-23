@@ -1,6 +1,6 @@
 # Known Bugs
 
-- Windows: If Natron is not installed in Program Files using the installer, the Text node does not work because fontconfig does not initialize properly.
+- https://github.com/NatronGitHub/Natron/issues/445
 
 # History
 
@@ -26,6 +26,7 @@
 - Update OpenImageIO to 2.1.10.1. #350
 - Fix reading multi-view EXRs. #429
 - Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
+- Text: Added SRT subtitle format support
 
 
 ## Version 2.3.14
