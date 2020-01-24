@@ -348,9 +348,9 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
     equals(QT_MAJOR_VERSION, 5) {
-        shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
-    	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
-   	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+        shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
+   	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
     }
     equals(QT_MAJOR_VERSION, 4) {
         shiboken:  PKGCONFIG += shiboken-py2
@@ -404,9 +404,9 @@ unix {
      }
 
      equals(QT_MAJOR_VERSION, 5) {
-         shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
-    	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
-   	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+         shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
+    	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
+   	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
      }
 
      equals(QT_MAJOR_VERSION, 4) {
