@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       active_variants 1.1
 
 name            gnutls
-version         3.6.11.1
+version         3.6.12
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -30,9 +30,9 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  a5182c63cc9e79c929c8cc098f36d55fd70789c8 \
-                sha256  fbba12f3db9a55dbf027e14111755817ec44b57eabec3e8089aac8ac6f533cf8 \
-                size    5902328
+checksums       rmd160  f76e05c4a5f6c15277259b874bca475089c02630 \
+                sha256  bfacf16e342949ffd977a9232556092c47164bd26e166736cf3459a870506c4b \
+                size    5942064
 
 use_xz          yes
 

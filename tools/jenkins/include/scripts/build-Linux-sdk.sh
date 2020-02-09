@@ -632,10 +632,18 @@ build lame
 build libogg
 build libvorbis
 build libtheora
+
+checkpoint
+
+build flac # (for libsndfile, sox)
+build libsndfile # (for sox)
+build libmad # (for sox)
 build libmodplug
 build libvpx
 build speex # (EOL, use opus)
 build opus
+build opusfile # (for sox)
+build sox
 build orc
 #build dirac # (obsolete since ffmpeg-3.4)
 build x264

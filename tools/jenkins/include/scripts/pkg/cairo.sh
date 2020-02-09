@@ -2,9 +2,11 @@
 
 # Install cairo
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/cairo.html
-CAIRO_VERSION=1.16.0
+CAIRO_VERSION=1.17.2+f93fc72c03e
+CAIRO_VERSION_PKGCONFIG=1.17.3
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
-CAIRO_SITE="https://www.cairographics.org/releases"
+#CAIRO_SITE="https://www.cairographics.org/releases"
+CAIRO_SITE="http://anduin.linuxfromscratch.org/BLFS/cairo/"
 if download_step; then
     download "$CAIRO_SITE" "$CAIRO_TAR"
 fi
@@ -13,7 +15,7 @@ if build_step && { force_build || { [ "${REBUILD_CAIRO:-}" = "1" ]; }; }; then
     rm -f "$SDK_HOME"/lib/pkgconfig/{cairo-*.pc,cairo.pc} || true
     rm -f "$SDK_HOME"/lib/libcairo* || true
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] || [ "$(pkg-config --modversion cairo)" != "$CAIRO_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] || [ "$(pkg-config --modversion cairo)" != "$CAIRO_VERSION_PKGCONFIG" ]; }; }; then
     REBUILD_PANGO=1
     REBUILD_SVG=1
     REBUILD_BUZZ=1

@@ -16,8 +16,11 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/python3.pc" 
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-shared --with-system-expat --with-system-ffi --with-ensurepip=yes --with-ensurepip=yes
     make -j${MKJOBS}
     make install
-    chmod -v 755 "$SDK_HOME/lib/libpython${PY3_VERSION_SHORT}m.so"
-    chmod -v 755 "$SDK_HOME/lib/libpython3.so"
+    if version_gt 3.8 "$PY3_VERSION"; then
+        # python 3.7.x
+        chmod -v 755 "$SDK_HOME/lib/libpython${PY3_VERSION_SHORT}m.so"
+        chmod -v 755 "$SDK_HOME/lib/libpython3.so"
+    fi
 	${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --upgrade pip
     popd
     rm -rf "Python-${PY3_VERSION}"

@@ -3,7 +3,7 @@
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
 GNUTLS_VERSION=3.6.8
-#GNUTLS_VERSION=3.6.11
+#GNUTLS_VERSION=3.6.12
 # 3.6.9 and later fail on CentOS6 (probably needs an updated binutils/gas) with:
 #  CCAS     elf/sha512-ssse3-x86_64.lo
 #elf/sha1-ssse3-x86_64.s: Assembler messages:

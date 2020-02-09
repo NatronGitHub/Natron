@@ -26,6 +26,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc"
     #fi
     # the following patch was integrated, see https://github.com/ImageMagick/ImageMagick/issues/1488
     #patch -p0 -i "$INC_PATH/patches/ImageMagick/pango-align-hack.diff"
+
+    # backport by @rodlie of xcf (GIMP) format from IM7:
+    patch -p0 -i "$INC_PATH/patches/ImageMagick/ImageMagick-6.9.10-gimp210.diff"
+
     MAGICK_CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1"
     if [ -f /etc/centos-release ] && grep -q "release 6"  /etc/centos-release; then
         # 6.9.10-80 and later fail on CentOS 6 with "undefined reference to `aligned_alloc'"

@@ -22,7 +22,7 @@ MPFR_TAR="mpfr-${MPFR_VERSION}.tar.bz2"
 MPFR_SITE="http://www.mpfr.org/mpfr-${MPFR_VERSION}"
 
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/gmp.html
-GMP_VERSION=6.1.2
+GMP_VERSION=6.1.2 # 6.2.0 fails when buiding gcc: requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
 GMP_SITE="https://gmplib.org/download/gmp"
 
@@ -68,7 +68,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" 
     mv "isl-$ISL_VERSION" isl
     untar "$SRC_PATH/$CLOOG_TAR"
     mv "cloog-$CLOOG_VERSION" cloog
-    ./configure --prefix="$SDK_HOME/gcc-${GCC_VERSION}" --disable-multilib --enable-languages=c,c++
+    env CFLAGS="-std=gnu99 -O2" ./configure --prefix="$SDK_HOME/gcc-${GCC_VERSION}" --disable-multilib --enable-languages=c,c++
     make -j$MKJOBS
     #make -k check
     make install

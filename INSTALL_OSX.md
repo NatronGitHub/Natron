@@ -113,6 +113,7 @@ and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that 
     sudo port -v -N install librevenge
     sudo port -v -N install libcdr-0.1
     sudo port -v -N install libzip
+    sudo port -v -N install sox
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
@@ -169,7 +170,7 @@ The last command above will take a while, since it builds from sources, and shou
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
-    brew install librsvg poppler librevenge libcdr libzip
+    brew install librsvg poppler librevenge libcdr libzip sox
     brew uninstall imagemagick
     brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
 

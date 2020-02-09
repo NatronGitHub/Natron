@@ -1,12 +1,9 @@
---- Portfile.orig	2019-06-29 14:55:24.000000000 -0700
-+++ Portfile	2019-07-08 20:44:28.000000000 -0700
-@@ -63,8 +63,17 @@
-     # avoid "can't find a register in class 'BREG' while reloading 'asm'
-     # see #51470 for MacPorts report
-     # see https://github.com/openexr/openexr/issues/128 for upstream report
--    if { ${build_arch} eq "i386" && [string match *gcc-4* ${configure.compiler}] } {
-         patchfiles-append patch-pic.diff
-+
+--- Portfile.orig	2020-02-08 08:54:55.000000000 -0800
++++ Portfile	2020-02-08 08:59:19.000000000 -0800
+@@ -60,6 +60,16 @@
+     patchfiles-append   patch-search_order.diff
+     configure.ldflags-delete \
+                         -L${prefix}/lib
 +    # code generated with -Os on clang-3.9 crashes openexr in
 +    # #0  Imf_2_2::DwaCompressor::initializeFuncs () at ImfDwaCompressor.cpp:2865
 +    # -O, -O2, -O3 work, though
@@ -14,17 +11,18 @@
 +        configure.optflags "-O2"
 +    }
 +    # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
-+    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" || ${configure.compiler} eq "macports-clang-7.0" || ${configure.compiler} eq "macports-clang-8.0"} {
++    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" || ${configure.compiler} eq "macports-clang-7.0" || ${configure.compiler} eq "macports-clang-8.0" || ${configure.compiler} eq "macports-clang-9.0"} {
 +        configure.optflags "-O2"
-     }
++    }
  }
  
-@@ -75,6 +84,8 @@
+ subport ilmbase {
+@@ -70,6 +80,8 @@
                  sha256  456978d1a978a5f823c7c675f3f36b0ae14dba36638aeaa3c4b0e784f12a3862 \
                  size    595490
  
 +    depends_build   port:gsed
 +
      # Bitrotted ucontext usage is buggy, don't bother with it.
-     patchfiles-append patch-configure.diff
- }
+     patchfiles-append \
+                 patch-configure.diff

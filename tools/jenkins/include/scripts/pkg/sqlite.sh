@@ -2,9 +2,9 @@
 
 # Install sqlite (required for webkit and QtSql SQLite module, optional for python2)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/sqlite.html
-SQLITE_VERSION=3.30.1 # also set SQLITE_VERSION_INT and SQLITE_YEAR below
-SQLITE_VERSION_INT=3300100
-SQLITE_YEAR=2019
+SQLITE_VERSION=3.31.1 # also set SQLITE_VERSION_INT and SQLITE_YEAR below
+SQLITE_VERSION_INT=3310100
+SQLITE_YEAR=2020
 SQLITE_TAR="sqlite-autoconf-${SQLITE_VERSION_INT}.tar.gz"
 SQLITE_SITE="https://sqlite.org/${SQLITE_YEAR}"
 if download_step; then

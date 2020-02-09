@@ -4,7 +4,7 @@
  			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
  			   ImfRgbaYca.h \
  			   ImfTestFile.h ImfThreading.h \
-+			   ImfCompressor.h \
++			   ImfCompressor.h ImfFloatVectorAttribute.h \
  			   ImfB44Compressor.h ImfStringVectorAttribute.h \
  			   ImfMultiView.h \
  			   ImfAcesFile.h \
@@ -24,7 +24,7 @@
  			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
  			   ImfRgbaYca.h \
  			   ImfTestFile.h ImfThreading.h \
-+			   ImfCompressor.h \
++			   ImfCompressor.h ImfFloatVectorAttribute.h \
  			   ImfB44Compressor.h ImfStringVectorAttribute.h \
  			   ImfMultiView.h \
  			   ImfAcesFile.h \

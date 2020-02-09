@@ -2,7 +2,7 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.1.10.1
+OIIO_VERSION=2.1.10.1 # 2.1.11.0 requires OpenEXR 2.4.0
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if download_step; then

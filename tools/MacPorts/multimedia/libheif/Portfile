@@ -3,7 +3,7 @@
 PortSystem                  1.0
 PortGroup                   github 1.0
 
-github.setup                strukturag libheif 1.6.1 v
+github.setup                strukturag libheif 1.6.2 v
 revision                    0
 categories                  multimedia
 license                     LGPL-3+
@@ -14,9 +14,9 @@ platforms                   darwin
 
 github.tarball_from         releases
 
-checksums                   rmd160  3f4601247ba74e485202772f11484dca6edcdabc \
-                            sha256  a22611289464da08fa7e580c95ea5e1b1b522b96ee6807de9b3b4605efb621d1 \
-                            size    1514950
+checksums                   rmd160  659bf1335b86bf95c58ef022fd654bd268809d96 \
+                            sha256  bb229e855621deb374f61bee95c4642f60c2a2496bded35df3d3c42cc6d8eefc \
+                            size    1515763
 
 depends_build-append        port:pkgconfig
 
