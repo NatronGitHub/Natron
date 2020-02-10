@@ -19,7 +19,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mad.pc" ] ||
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-shared --disable-static
     make -j${MKJOBS}
     make install
-    cat > "${SDK_HOME}/lib/pkgconfig/mad.pc" << "EOF"
+    cat > "${SDK_HOME}/lib/pkgconfig/mad.pc" << EOF
 prefix=${SDK_HOME}
 exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
