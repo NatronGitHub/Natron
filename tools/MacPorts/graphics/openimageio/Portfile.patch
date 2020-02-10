@@ -1,5 +1,5 @@
---- Portfile.orig	2020-01-15 16:10:21.000000000 -0800
-+++ Portfile	2020-01-15 16:16:32.000000000 -0800
+--- Portfile.orig	2020-02-09 10:14:02.000000000 -0800
++++ Portfile	2020-02-09 09:39:14.000000000 -0800
 @@ -2,12 +2,12 @@
  
  PortSystem          1.0
@@ -9,7 +9,7 @@
  PortGroup           cmake 1.1
  PortGroup           active_variants 1.1
  
- github.setup        OpenImageIO oiio 2.1.10.1
+ github.setup        OpenImageIO oiio 2.1.11.0
 -revision            0
 +revision            100
  name                openimageio
@@ -60,7 +60,7 @@
 +
 +# GCC < 4.9 does not have proper GCC intrinsics support
 +compiler.blacklist-append {*gcc-4.8}
-+compiler.whitelist-append macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
++#compiler.whitelist-append macports-clang-9.0 macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
 +
 +# The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
 +# Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads

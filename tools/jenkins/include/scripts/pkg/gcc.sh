@@ -36,7 +36,7 @@ fi
 if version_gt "$GCC_VERSION" 9.2.0; then
     # in-tree build of ISL 0.22 fails in GCC 9.2.0, see
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=92484
-    #ISL_VERSION=0.22
+    #ISL_VERSION=0.22.1
     true
 fi
 ISL_TAR="isl-${ISL_VERSION}.tar.bz2"
