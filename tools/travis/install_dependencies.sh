@@ -324,8 +324,12 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
 
     # Upgrade the essential packages
+    # Python2 is now keg-only
+    brew install python@2
+    #PATH="/usr/local/opt/python@2/bin:$PATH"
+    #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     echo "* Brew upgrade selected packages"
-    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre python@2 readline sqlite; do
+    for p in python@2 boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
         brew outdated $p || brew upgrade $p
     done
     # On Nov. 7 2017, the following caused 49 upgrades.
@@ -357,10 +361,6 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #        break
     #    fi
     #done
-    # Python2 is now keg-only
-    brew install python@2
-    #PATH="/usr/local/opt/python@2/bin:$PATH"
-    #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     # Python 2 pyside comes precompiled!
     brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
