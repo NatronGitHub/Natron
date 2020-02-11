@@ -5,9 +5,11 @@
 TINYXML_VERSION=2.6.2
 TINYXML_TAR="tinyxml_${TINYXML_VERSION//./_}.tar.gz"
 TINYXML_SITE="http://sourceforge.net/projects/tinyxml/files/tinyxml/${TINYXML_VERSION}"
+if download_step; then
+    download "$TINYXML_SITE" "$TINYXML_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/tinyxml.pc" ] || [ "$(pkg-config --modversion tinyxml)" != "$TINYXML_VERSION" ]; }; }; then
     start_build
-    download "$TINYXML_SITE" "$TINYXML_TAR"
     untar "$SRC_PATH/$TINYXML_TAR"
     pushd "tinyxml"
     # The first two patches are taken from the debian packaging of tinyxml.

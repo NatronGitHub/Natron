@@ -96,6 +96,8 @@ public:
 
     virtual QColor getCurrentColor() const OVERRIDE FINAL;
 
+    virtual void setPyPlugUIEnabled(bool enabled) OVERRIDE FINAL;
+
 private:
 
 

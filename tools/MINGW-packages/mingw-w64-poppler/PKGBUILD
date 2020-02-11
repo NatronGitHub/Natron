@@ -3,7 +3,7 @@
 _realname=poppler
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.78.0
+pkgver=0.83.0
 pkgrel=2
 pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
 arch=('any')
@@ -12,7 +12,7 @@ license=("GPL")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-glib2"
-             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+             #"${MINGW_PACKAGE_PREFIX}-gobject-introspection"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              'git')
 depends=("${MINGW_PACKAGE_PREFIX}-cairo"

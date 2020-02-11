@@ -11,7 +11,7 @@ Natron documentation
 The Natron documentation is organized as follows:
 
 - The :ref:`user-guide` contains everything to get started with Natron, including tutorials.
-- The :ref:`reference-guide` contains the documentation about the user settings in Natron, as well as the documentation
+- The :ref:`reference-guide` contains the documentation about the user settings and environment variables for Natron, as well as the documentation for each node in Natron.
 - The :ref:`developers-guide` contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).
 
 This documentation is also

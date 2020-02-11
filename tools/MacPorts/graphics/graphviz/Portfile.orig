@@ -300,21 +300,18 @@ subport graphviz-gui${thisbranch} {
     
     categories-append           aqua
     
-    description                 OS X Aqua GUI for viewing and exporting \
+    description                 macOS Aqua GUI for viewing and exporting \
                                 Graphviz graphs
     
     long_description            ${description}.
     
     depends_lib                 port:graphviz${thisbranch}
     
-    pre-fetch {
-        if {${os.platform} ne "darwin"} {
-            ui_error "${subport} requires OS X."
-            return -code error "incompatible operating system"
-        }
-        if {${os.major} < 9} {
-            ui_error "${subport} requires OS X 10.5 or greater. Try graphviz-oldgui instead."
-            return -code error "incompatible OS X version"
+    if {${os.major} < 9} {
+        known_fail              yes
+        pre-fetch {
+            ui_error "${subport} requires Mac OS X 10.5 or greater. Try graphviz-oldgui instead."
+            return -code error "incompatible Mac OS X version"
         }
     }
     

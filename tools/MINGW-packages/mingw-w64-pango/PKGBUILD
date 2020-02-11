@@ -6,7 +6,7 @@ pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 # Don't update to 1.44.0! https://gitlab.gnome.org/GNOME/pango/issues/385
 pkgver=1.43.0
-pkgrel=3
+pkgrel=4
 pkgdesc="A library for layout and rendering of text (mingw-w64)"
 arch=('any')
 url="https://www.pango.org/"

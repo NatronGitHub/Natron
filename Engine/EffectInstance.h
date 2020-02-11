@@ -1869,6 +1869,8 @@ public:
         RenderArgs();
 
         RenderArgs(const RenderArgs & o);
+
+        RenderArgs& operator=(const RenderArgs& other); // copy assignment
     };
 
     //these are per-node thread-local data

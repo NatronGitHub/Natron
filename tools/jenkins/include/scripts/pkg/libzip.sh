@@ -2,12 +2,14 @@
 
 # Install libzip (requires cmake)
 # see https://libzip.org/download/
-ZIP_VERSION=1.5.2
+ZIP_VERSION=1.6.1
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
 ZIP_SITE="https://libzip.org/download"
+if download_step; then
+    download "$ZIP_SITE" "$ZIP_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; }; }; then
     start_build
-    download "$ZIP_SITE" "$ZIP_TAR"
     untar "$SRC_PATH/$ZIP_TAR"
     pushd "libzip-${ZIP_VERSION}"
     mkdir build-natron

@@ -7,7 +7,7 @@ Environment Variables
 What are Environment Variables?
 -------------------------------
 
-[Environment variables](https://en.wikipedia.org/wiki/Environment_variable) are global system variables accessible by all the processes running under the Operating System (OS). Environment variables are useful to store system-wide values such as the directories to search for the executable programs (``PATH``) and the OS version.
+`Environment variables <https://en.wikipedia.org/wiki/Environment_variable>`_ are global system variables accessible by all the processes running under the Operating System (OS). Environment variables are useful to store system-wide values such as the directories to search for the executable programs (``PATH``) and the OS version.
 
 How do I set an environment variable?
 -------------------------------------
@@ -121,7 +121,7 @@ Natron Environment Variables
 
 ``FONTCONFIG_PATH``: This variable may be used to override the default fontconfig_ configuration directory, which configures fonts used by :doc:`Text <plugins/net.fxarena.openfx.Text>` plug-ins.
 
-``NATRON_DISK_CACHE_PATH``: The location where the Natron tile/image cache is stored. This overrides the "Disk cache path" preference. On Linux, the default location is the value of the environment variable ``XDG_CACHE_HOME`` followed by ``INRIA/Natron`` if set, else ``$HOME/.cache/INRIA/Natron``. On macOS, the default location is ``$HOME/Library/Caches/INRIA/Natron``. On Windows, the default location is ``C:\Documents and Settings\username\Local Settings\Application Data\cache\INRIA\Natron``.
+``NATRON_DISK_CACHE_PATH``: The location where the Natron tile/image cache is stored. This overrides the "Disk cache path" preference. On Linux, the default location is ``$XDG_CACHE_HOME/INRIA/Natron`` if the environment variable ``XDG_CACHE_HOME`` is set, else ``$HOME/.cache/INRIA/Natron``. On macOS, the default location is ``$HOME/Library/Caches/INRIA/Natron``. On Windows, the default location is ``C:\Documents and Settings\%USERNAME%\Local Settings\Application Data\cache\INRIA\Natron``.
 
 .. _directories: http://openfx.sourceforge.net/Documentation/1.4/Reference/ch02s02.html#ArchitectureInstallingLocation
 

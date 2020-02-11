@@ -5,9 +5,11 @@
 VALGRIND_VERSION=3.15.0
 VALGRIND_TAR="valgrind-${VALGRIND_VERSION}.tar.bz2"
 VALGRIND_SITE="https://sourceware.org/ftp/valgrind"
+if download_step; then
+    download "$VALGRIND_SITE" "$VALGRIND_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/valgrind" ]; }; }; then
     start_build
-    download "$VALGRIND_SITE" "$VALGRIND_TAR"
     untar "$SRC_PATH/$VALGRIND_TAR"
     pushd "valgrind-${VALGRIND_VERSION}"
     sed -i '1904s/4/5/' coregrind/m_syswrap/syswrap-linux.c

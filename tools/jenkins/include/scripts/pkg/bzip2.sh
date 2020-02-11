@@ -5,9 +5,11 @@
 BZIP2_VERSION=1.0.8
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
 BZIP2_SITE="https://sourceware.org/pub/bzip2"
+if download_step; then
+    download "$BZIP2_SITE" "$BZIP2_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; }; }; then
     start_build
-    download "$BZIP2_SITE" "$BZIP2_TAR"
     untar "$SRC_PATH/$BZIP2_TAR"
     pushd "bzip2-${BZIP2_VERSION}"
     $GSED -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$\(BIGFILES\)/' -i ./Makefile-libbz2_so

@@ -3,10 +3,12 @@
 # Qt4 webkit (a version more recent than the one in Qt 4.8.7)
 # see https://download.kde.org/stable/qtwebkit-2.3/
 # see qt-installer.sh
+if download_step; then
+    download "$QT4WEBKIT_SITE" "$QT4WEBKIT_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
     start_build
     # install a more recent qtwebkit, see http://www.linuxfromscratch.org/blfs/view/7.9/x/qt4.html
-    download "$QT4WEBKIT_SITE" "$QT4WEBKIT_TAR"
     mkdir "qtwebkit-${QT4WEBKIT_VERSION}"
     pushd "qtwebkit-${QT4WEBKIT_VERSION}"
     untar "$SRC_PATH/$QT4WEBKIT_TAR"

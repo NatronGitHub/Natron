@@ -1,0 +1,8 @@
+--- rtmpdump/librtmp/Makefile.orig	2015-04-10 09:42:13.667400000 +0300
++++ rtmpdump/librtmp/Makefile	2015-04-10 09:51:38.129000000 +0300
+@@ -117,5 +117,4 @@
+ install_so:	librtmp$(SO_EXT) install_base
+ 	cp librtmp$(SO_EXT) $(SODIR)
+ 	$(INSTALL_IMPLIB)
+-	cd $(SODIR); ln -sf librtmp$(SO_EXT) librtmp.$(SOX)
+ 

@@ -202,9 +202,20 @@ catDll libwebpmux-
 catDll libwinpthread-
 catDll libxml2-
 catDll phonon4
-catDll SDL2
+#catDll SDL2
 catDll SSLEAY32
 catDll zlib1
+
+catDll libSeExpr
+catDll yaml-cpp
+catDll libopenh264
+catDll libthai
+catDll libdatrie-
+catDll libsnappy
+catDll libpugixml
+catDll libheif-
+catDll libde265-
+catDll libx265
 
 if [ "$BITS" = "32" ]; then
     catDll libgcc_s_dw2-
@@ -214,7 +225,7 @@ fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
     catDll libx264-
-    catDll libx265
+    #catDll libx265
     #catDll libx265_main
     catDll xvidcore
 fi
@@ -222,6 +233,7 @@ fi
 BIN_PATH="$SDK_HOME/osmesa/lib"
 catDll osmesa
 BIN_PATH="$LIBRAW_PATH"
+catDll libraw-
 catDll libraw_r-
 BIN_PATH="$FFMPEG_PATH"
 catDll avcodec-
@@ -242,7 +254,7 @@ BIN_PATH="$SDK_HOME_BIN"
 catDll libcdr-
 catDll libcroco-
 catDll libicuin
-catDll libpoppler-7
+catDll libpoppler-9
 catDll libpoppler-glib-
 catDll librevenge-0
 catDll librevenge-stream-

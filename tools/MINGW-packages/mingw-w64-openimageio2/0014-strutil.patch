@@ -1,0 +1,11 @@
+--- a/src/libutil/strutil.cpp.orig	2020-01-12 07:52:12.859265400 +0100
++++ b/src/libutil/strutil.cpp	2020-01-12 07:52:27.311843000 +0100
+@@ -1227,7 +1227,7 @@
+ #    else
+     return strtof_l(nptr, endptr, c_loc);
+ #    endif
+-#elif defined (_MSC_VER)
++#elif defined (_WIN32)
+     // Windows has _strtod_l
+     static _locale_t c_loc = _create_locale(LC_ALL, "C");
+     return static_cast<float>(_strtod_l(nptr, endptr, c_loc));

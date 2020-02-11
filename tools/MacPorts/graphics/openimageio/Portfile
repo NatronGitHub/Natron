@@ -6,7 +6,7 @@ PortGroup           github 1.0
 PortGroup           cmake 1.1
 PortGroup           active_variants 1.1
 
-github.setup        OpenImageIO oiio 2.1.9.0
+github.setup        OpenImageIO oiio 2.1.11.0
 revision            100
 name                openimageio
 categories          graphics
@@ -16,9 +16,9 @@ description         a library for reading and writing images
 long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
 
-checksums           rmd160  74e2e80c485e5320333d0849d42119a28c7d0993 \
-                    sha256  eb6776afd7a8c290c55c57878b3979c25184e45465b137956fe85ad0d17df014 \
-                    size    29104303
+checksums           rmd160  907c271f69bcf1bcdbd6ba8ce5d41d8507b2f0fc \
+                    sha256  44715bef0285cd993908b870901016ed34b86ee337573710f257a30dc4c8c777 \
+                    size    29026895
 
 compiler.cxx_standard   2011
 
@@ -29,8 +29,7 @@ worksrcdir          oiio-Release-${version}
 patch.pre_args  -p1
 patchfiles \
     oiio-2.0.8-invalidatespec.patch \
-    oiio-2.0.8-atomic-load.patch \
-    oiio-2.0.13-exifread.patch
+    oiio-2.0.8-atomic-load.patch
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
@@ -50,28 +49,8 @@ depends_lib-append \
     port:libpng \
     port:tiff \
     port:ilmbase \
-    port:openexr
-
-configure.args-append \
-    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-    -DBOOST_ROOT=${prefix} \
-    -DUSE_QT:BOOL=FALSE \
-    -DUSE_PYTHON:BOOL=FALSE \
-    -DUSE_PYTHON3:BOOL=FALSE \
-    -DUSE_FIELD3D:BOOL=FALSE \
-    -DUSE_FFMPEG:BOOL=FALSE \
-    -DUSE_OPENJPEG:BOOL=FALSE \
-    -DUSE_OCIO:BOOL=FALSE \
-    -DUSE_OPENCV:BOOL=FALSE \
-    -DUSE_OPENSSL:BOOL=FALSE \
-    -DUSE_FREETYPE:BOOL=FALSE \
-    -DUSE_GIF:BOOL=TRUE \
-    -DUSE_HEIF:BOOL=TRUE \
-    -DUSE_PTEX:BOOL=FALSE \
-    -DUSE_LIBRAW:BOOL=TRUE \
-    -DUSE_OPENGL:BOOL=FALSE \
-    -DUSE_WEBP:BOOL=TRUE \
-    -DSTOP_ON_WARNING:BOOL=FALSE
+    port:openexr \
+    port:squish
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:
@@ -94,7 +73,7 @@ if {${configure.cxx_stdlib} eq "libstdc++"} {
 
 # GCC < 4.9 does not have proper GCC intrinsics support
 compiler.blacklist-append {*gcc-4.8}
-compiler.whitelist-append macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
+#compiler.whitelist-append macports-clang-9.0 macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
 
 # The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
@@ -114,6 +93,27 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
     ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
     #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
+
+configure.args-append \
+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
+    -DBOOST_ROOT=${prefix} \
+    -DUSE_QT:BOOL=FALSE \
+    -DUSE_PYTHON:BOOL=FALSE \
+    -DUSE_PYTHON3:BOOL=FALSE \
+    -DUSE_FIELD3D:BOOL=FALSE \
+    -DUSE_FFMPEG:BOOL=FALSE \
+    -DUSE_OPENJPEG:BOOL=FALSE \
+    -DUSE_OCIO:BOOL=FALSE \
+    -DUSE_OPENCV:BOOL=FALSE \
+    -DUSE_OPENSSL:BOOL=FALSE \
+    -DUSE_FREETYPE:BOOL=FALSE \
+    -DUSE_GIF:BOOL=TRUE \
+    -DUSE_HEIF:BOOL=TRUE \
+    -DUSE_PTEX:BOOL=FALSE \
+    -DUSE_LIBRAW:BOOL=TRUE \
+    -DUSE_OPENGL:BOOL=FALSE \
+    -DUSE_WEBP:BOOL=TRUE \
+    -DSTOP_ON_WARNING:BOOL=FALSE
 
 # optional components
 
@@ -181,8 +181,6 @@ variant dicom description {Use DICOM from dcmtk.} {
     configure.args-append -DUSE_DICOM:BOOL=TRUE
     depends_lib-append port:dcmtk
 }
-
-configure.args-append   -DUSE_PYTHON=OFF
 
 set pythons_suffixes    {27 36 37 38}
 

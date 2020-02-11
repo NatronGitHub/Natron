@@ -816,12 +816,36 @@ DockablePanel::onKnobsInitialized()
             NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
             if (isGroup) {
                 if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
-                    setEnabled(false);
+                    isNodePanel->setPyPlugUIEnabled(false);
                 }
             }
         }
     }
 } // DockablePanel::initializeKnobsInternal
+
+void
+DockablePanel::setPyPlugUIEnabled(bool enabled)
+{
+    QList<QWidget*> btns;
+    btns.append(_imp->_centerNodeButton);
+    btns.append(_imp->_undoButton);
+    btns.append(_imp->_redoButton);
+    btns.append(_imp->_colorButton);
+    btns.append(_imp->_overlayButton);
+    btns.append(_imp->_restoreDefaultsButton);
+    btns.append(_imp->_nameLineEdit);
+    Q_FOREACH(QWidget* btn, btns) {  // for (QWidget* btn : btns)
+        if (btn) {
+            btn->setEnabled(enabled);
+        }
+    }
+    if (_imp->_tabWidget) {
+        int nTabs = _imp->_tabWidget->count();
+        for (int i = 0; i < nTabs; ++i) {
+            _imp->_tabWidget->widget(i)->setEnabled(enabled);
+        }
+    }
+} // DockablePanel::setPyPlugUIEnabled
 
 TrackerPanel*
 DockablePanel::getTrackerPanel() const

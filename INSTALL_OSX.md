@@ -52,25 +52,7 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
 #### Notes for OS X 10.6 Snow Leopard
 
-On older systems such as 10.6, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end.
-This means that `/opt/local/etc/macports/macports.conf` should contain the following:
-```
-cxx_stdlib         libc++
-buildfromsource    always
-delete_la_files    yes
-default_compilers  macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-3.7 macports-clang-3.4 llvm-gcc-4.2 clang gcc-4.2 apple-gcc-4.2 gcc-4.0
-```
-
-Also add the following to `/opt/local/etc/macports/variants.conf`:
-
-    -llvm34 -llvm37 -llvm39 -llvm40 -llvm50 -llvm60 -llvm70 +llvm80
-    -ld64_97 -ld64_127 -ld64_236
-
-make sure you have the right versions of cctools and ld64:
-
-    port -N install ld64-latest@274.2 +llvm80 cctools@921_2 +llvm80
-
-The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to substitute it with the libtool provided by MacPort's `cctools` package, using `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 #### Install Ports
 
@@ -81,7 +63,6 @@ Now, use libjpeg-turbo instead of jpeg:
     
 And finally install the required packages:
 
-    sudo port -v -N install clang-8.0
     sudo port -v -N install opencolorio -quartz -python27
     sudo port -v -N install qt4-mac boost cairo expat
     sudo port -v -N install gsed gawk coreutils findutils
@@ -132,6 +113,7 @@ and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that 
     sudo port -v -N install librevenge
     sudo port -v -N install libcdr-0.1
     sudo port -v -N install libzip
+    sudo port -v -N install sox
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
@@ -162,8 +144,6 @@ and before the line that starts with `head`, add the following code:
 
 Install libraries:
 
-    brew tap homebrew/python
-    brew tap homebrew/science
     brew install cairo expat
     brew install gnu-sed gawk coreutils findutils
     brew install cmake keychain sphinx-doc
@@ -190,7 +170,7 @@ The last command above will take a while, since it builds from sources, and shou
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
-    brew install librsvg poppler librevenge libcdr libzip
+    brew install librsvg poppler librevenge libcdr libzip sox
     brew uninstall imagemagick
     brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
 
@@ -284,19 +264,19 @@ cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
 boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-8.0
-  QMAKE_CXX=/opt/local/bin/clang++-mp-8.0
+  QMAKE_CC=/opt/local/bin/clang-mp-9.0
+  QMAKE_CXX=/opt/local/bin/clang++-mp-9.0
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
   
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-8.0
+  cc_setting.value = /opt/local/bin/clang-mp-9.0
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-8.0
+  cxx_setting.value = /opt/local/bin/clang++-mp-9.0
   ld_setting.name = LD
-  ld_setting.value = /opt/local/bin/clang-mp-8.0
+  ld_setting.value = /opt/local/bin/clang-mp-9.0
   ldplusplus_setting.name = LDPLUSPLUS
   ldplusplus_setting.value = /opt/local/bin/clang++-mp-7.0
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
@@ -373,35 +353,39 @@ If you want to build in DEBUG mode change the qmake call to this line:
 ### Building with OpenMP support using clang
 
 It is possible to build Natron using clang (version 3.8 is required,
-version 8.0 is recommended) with OpenMP support on
+version 9.0 is recommended) with OpenMP support on
 MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-First, install clang 8.0. On OS X 10.9 and later with MacPorts, simply execute:
+First, install clang 9.0. On OS X 10.9 and later with MacPorts, simply execute:
 
-    sudo port -v install clang-8.0
+    sudo port -v install clang-9.0
 
 Or with homebrew:
 
     brew install llvm
 
-On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-9.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
 
 The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
-Then, configure using the following qmake command:
+Then, configure using the following qmake command on MacPorts:
 
-    /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-8.0 -stdlib=libc++' QMAKE_CC=clang-mp-8.0 QMAKE_OBJECTIVE_CXX='clang++-mp-8.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-8.0 -stdlib=libc++' QMAKE_LD='clang++-mp-8.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
+    /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
+
+Or on homebrew:
+
+	env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
 
 To build the plugins, use the following command-line:
 
-    make CXX='clang++-mp-8.0 -stdlib=libc++' OPENMP=1
+    make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX='clang++-mp-8.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 
@@ -442,7 +426,7 @@ See instructions under "Using clang-omp with Xcode" at the following page https:
 
 On Macports clang now ships with openmp by default. To install it:
 ```
-sudo port install clang-8.0
+sudo port install clang-9.0
 ```
 
 In your config.pri file, add the following lines and change the paths according to your installation of clang
@@ -453,13 +437,13 @@ INCLUDEPATH += /opt/local/include/libomp
 LIBS += -L/opt/local/lib/libomp -liomp5 # may also be -lomp
 
 cc_setting.name = CC
-cc_setting.value = /opt/local/bin/clang-mp-8.0
+cc_setting.value = /opt/local/bin/clang-mp-9.0
 cxx_setting.name = CXX
-cxx_setting.value = /opt/local/bin/clang++-mp-8.0 -stdlib=libc++
+cxx_setting.value = /opt/local/bin/clang++-mp-9.0 -stdlib=libc++
 ld_setting.name = LD
-ld_setting.value = /opt/local/bin/clang-mp-8.0
+ld_setting.value = /opt/local/bin/clang-mp-9.0
 ldplusplus_setting.name = LDPLUSPLUS
-ldplusplus_setting.value = /opt/local/bin/clang++-mp-8.0 -stdlib=libc++
+ldplusplus_setting.value = /opt/local/bin/clang++-mp-9.0 -stdlib=libc++
 QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
 QMAKE_LFLAGS += "-B /usr/bin"
 }
@@ -467,7 +451,9 @@ QMAKE_LFLAGS += "-B /usr/bin"
 
 The qmake call should add CONFIG+=openmp
 
-qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llvm OSMESA_PATH=/opt/osmesa CONFIG+=openmp
+```
+qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llvm OSMESA_PATH=/opt/osmesa CONFIG+=openmp QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
+```
 
 
 Then you can just build and run using Xcode

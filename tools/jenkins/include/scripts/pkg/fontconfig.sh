@@ -5,6 +5,9 @@
 FONTCONFIG_VERSION=2.13.1
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
 FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
+if download_step; then
+    download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_FONTCONFIG:-}" = "1" ]; }; }; then
     rm -f "$SDK_HOME"/lib/libfontconfig* || true
     rm -rf "$SDK_HOME"/include/fontconfig || true
@@ -12,7 +15,6 @@ if build_step && { force_build || { [ "${REBUILD_FONTCONFIG:-}" = "1" ]; }; }; t
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modversion fontconfig)" != "$FONTCONFIG_VERSION" ]; }; }; then
     start_build
-    download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
     untar "$SRC_PATH/$FONTCONFIG_TAR"
     pushd "fontconfig-${FONTCONFIG_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared

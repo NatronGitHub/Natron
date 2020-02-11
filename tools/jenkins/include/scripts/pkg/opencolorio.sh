@@ -8,6 +8,9 @@ OCIO_BUILD_GIT=0 # set to 1 to build the git version instead of the release
 # non-GIT version:
 OCIO_VERSION=1.1.1
 OCIO_TAR="OpenColorIO-${OCIO_VERSION}.tar.gz"
+if download_step; then
+    download_github imageworks OpenColorIO "$OCIO_VERSION" v "$OCIO_TAR"
+fi
 # if [ "$OCIO_BUILD_GIT" = 1 ]; then
 #     ## GIT version:
 #     OCIO_GIT="https://github.com/imageworks/OpenColorIO.git"
@@ -20,7 +23,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.
         git_clone_commit "$OCIO_GIT" "$OCIO_COMMIT"
         pushd OpenColorIO
     else
-        download_github imageworks OpenColorIO "$OCIO_VERSION" v "$OCIO_TAR"
         untar "$SRC_PATH/$OCIO_TAR"
         pushd "OpenColorIO-${OCIO_VERSION}"
     fi

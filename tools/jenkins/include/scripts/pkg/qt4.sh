@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Qt4
+if download_step; then
+    download "$QT4_SITE" "$QT4_TAR"
+fi
 if build_step && { force_build || { [ "${REBUILD_QT4:-}" = "1" ]; }; }; then
     rm -rf "$QT4PREFIX" || true
 fi
@@ -30,7 +33,6 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     # disable openvg
     QT_CONF+=( "-no-openvg" )
     
-    download "$QT4_SITE" "$QT4_TAR"
     untar "$SRC_PATH/$QT4_TAR"
     pushd "qt-everywhere-opensource-src-${QT4_VERSION}"
 

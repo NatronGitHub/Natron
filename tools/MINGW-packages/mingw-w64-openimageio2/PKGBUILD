@@ -4,7 +4,7 @@ _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=2.0.8
-pkgrel=1.6
+pkgrel=3
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -51,7 +51,8 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         0011-fix-casting.patch
         0012-maybe-uninitialized-errors.patch
         0013-invalidatespec.patch
-	1de4f37c8da084027e7393cdb46824c530ceb0db.patch)
+	1de4f37c8da084027e7393cdb46824c530ceb0db.patch
+	0014-strutil.patch)
 sha256sums=('3c4794b0e8674728389363de291bada25ff86b4a6f5582380ed2def1ca2e07ae'
             'SKIP'
             'ea3f56a4ff58439ee3364116f69e33afcf2ad216a8ba6d5df2cdceff9406d424'
@@ -65,7 +66,8 @@ sha256sums=('3c4794b0e8674728389363de291bada25ff86b4a6f5582380ed2def1ca2e07ae'
             'f006ddd0b0a3660ba074eee970af0e7d1c0538528c56166e06a1ded30413f635'
             'bc37ea8326f7f5f26068051b537f2491e9554a380e6584bf55aaad111d33eb81'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
-	    '3a5f79f84bd183939fe9ba13a6ddd149f4ef5b2ab5e940bfa3480e9bcd5d7f47')
+	    '3a5f79f84bd183939fe9ba13a6ddd149f4ef5b2ab5e940bfa3480e9bcd5d7f47'
+	    '1221fbe2de7d0f26b05a7e946327dd3fdf82f1ab68f8abcf360a98aeef52ce5e')
 
 prepare() {
   cd ${srcdir}/oiio-Release-${pkgver}
@@ -81,6 +83,7 @@ prepare() {
   patch -p1 -i ${srcdir}/0012-maybe-uninitialized-errors.patch
   patch -p1 -i ${srcdir}/0013-invalidatespec.patch
   patch -p1 -i ${srcdir}/1de4f37c8da084027e7393cdb46824c530ceb0db.patch
+  patch -p1 -i ${srcdir}/0014-strutil.patch
 }
 
 build() {

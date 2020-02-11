@@ -380,6 +380,30 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
 {
 }
 
+EffectInstance::RenderArgs&
+EffectInstance::RenderArgs::operator=(const RenderArgs & o)
+{
+    //if (this != &other) { // self-assignment check expected
+    rod = o.rod;
+    regionOfInterestResults = o.regionOfInterestResults;
+    renderWindowPixel = o.renderWindowPixel;
+    time = o.time;
+    view = o.view;
+    validArgs = o.validArgs;
+    isIdentity = o.isIdentity;
+    identityTime = o.identityTime;
+    identityInput = o.identityInput;
+    inputImages = o.inputImages;
+    outputPlanes = o.outputPlanes;
+    outputPlaneBeingRendered = o.outputPlaneBeingRendered;
+    firstFrame = o.firstFrame;
+    lastFrame = o.lastFrame;
+    transformRedirections = o.transformRedirections;
+    isDoingOpenGLRender = o.isDoingOpenGLRender;
+    //}
+    return *this;
+}
+
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
     , tlsData()

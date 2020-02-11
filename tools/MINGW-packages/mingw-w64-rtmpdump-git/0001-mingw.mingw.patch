@@ -1,0 +1,64 @@
+--- rtmpdump/Makefile.orig	2014-03-02 18:20:23.000000000 +0000
++++ rtmpdump/Makefile	2014-03-12 09:12:10.896078800 +0000
+@@ -1,16 +1,16 @@
+ VERSION=v2.4
+ 
+-prefix=/usr/local
++prefix=/mingw
+ 
+ CC=$(CROSS_COMPILE)gcc
+ LD=$(CROSS_COMPILE)ld
+ 
+-SYS=posix
+-#SYS=mingw
++#SYS=posix
++SYS=mingw
+ 
+-CRYPTO=OPENSSL
++#CRYPTO=OPENSSL
+ #CRYPTO=POLARSSL
+-#CRYPTO=GNUTLS
++CRYPTO=GNUTLS
+ LIBZ=-lz
+ LIB_GNUTLS=-lgnutls -lhogweed -lnettle -lgmp $(LIBZ)
+ LIB_OPENSSL=-lssl -lcrypto $(LIBZ)
+--- rtmpdump/librtmp/Makefile.orig	2014-03-02 18:20:23.000000000 +0000
++++ rtmpdump/librtmp/Makefile	2014-03-12 09:13:48.314949400 +0000
+@@ -1,11 +1,11 @@
+ VERSION=v2.4
+ 
+-prefix=/usr/local
++prefix=/mingw
+ 
+ incdir=$(prefix)/include/librtmp
+ bindir=$(prefix)/bin
+ libdir=$(prefix)/lib
+-mandir=$(prefix)/man
++mandir=$(prefix)/share/man
+ BINDIR=$(DESTDIR)$(bindir)
+ INCDIR=$(DESTDIR)$(incdir)
+ LIBDIR=$(DESTDIR)$(libdir)
+@@ -15,9 +15,9 @@
+ LD=$(CROSS_COMPILE)ld
+ AR=$(CROSS_COMPILE)ar
+ 
+-SYS=posix
+-CRYPTO=OPENSSL
+-#CRYPTO=GNUTLS
++SYS=mingw
++#CRYPTO=OPENSSL
++CRYPTO=GNUTLS
+ DEF_POLARSSL=-DUSE_POLARSSL
+ DEF_OPENSSL=-DUSE_OPENSSL
+ DEF_GNUTLS=-DUSE_GNUTLS
+--- rtmpdump/Makefile.orig	2014-03-12 09:38:43.190274500 +0000
++++ rtmpdump/Makefile	2014-03-12 09:40:10.906913100 +0000
+@@ -26,7 +26,7 @@
+ 
+ bindir=$(prefix)/bin
+ sbindir=$(prefix)/sbin
+-mandir=$(prefix)/man
++mandir=$(prefix)/share/man
+ 
+ BINDIR=$(DESTDIR)$(bindir)
+ SBINDIR=$(DESTDIR)$(sbindir)

@@ -2,12 +2,14 @@
 
 # install libcdr
 # see https://dev-www.libreoffice.org/src/libcdr/
-LIBCDR_VERSION=0.1.5
+LIBCDR_VERSION=0.1.6
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
 LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"
+if download_step; then
+    download "$LIBCDR_SITE" "$LIBCDR_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modversion libcdr-0.1)" != "$LIBCDR_VERSION" ]; }; }; then
     start_build
-    download "$LIBCDR_SITE" "$LIBCDR_TAR"
     untar "$SRC_PATH/$LIBCDR_TAR"
     pushd "libcdr-${LIBCDR_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --disable-werror --prefix="$SDK_HOME" --disable-docs --enable-shared

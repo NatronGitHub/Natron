@@ -207,6 +207,24 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
   }
 }
 
+# from https://github.com/qt/qtbase/blob/dev/mkspecs/features/qt_common.prf
+# and https://patchwork.ozlabs.org/patch/1009009/#2048261
+gcc:!intel_icc {
+    QMAKE_CXXFLAGS_WARN_ON += -Wvla
+    # GCC 5 fixed -Wmissing-field-initializers for when there are no initializers
+    lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS_WARN_ON += -Wno-missing-field-initializers
+    # GCC 5 introduced -Wdate-time
+    greaterThan(QT_GCC_MAJOR_VERSION, 4): QMAKE_CXXFLAGS_WARN_ON += -Wdate-time
+    # GCC 6 introduced these
+    greaterThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS_WARN_ON += -Wshift-overflow=2 -Wduplicated-cond
+    # GCC 7 has a lot of false positives relating to this, so disable completely
+    greaterThan(QT_GCC_MAJOR_VERSION, 6): QMAKE_CXXFLAGS_WARN_ON += -Wno-stringop-overflow
+    # GCC 9 introduced -Wformat-overflow in -Wall, but it is buggy:
+    greaterThan(QT_GCC_MAJOR_VERSION, 8): QMAKE_CXXFLAGS_WARN_ON += -Wno-format-overflow
+    # GCC 9 has a lot of false positives relating to this, so disable completely
+    greaterThan(QT_GCC_MAJOR_VERSION, 8): QMAKE_CXXFLAGS_WARN_ON += -Wno-deprecated-copy
+}
+
 openmp {
   QMAKE_CXXFLAGS += -fopenmp
   QMAKE_CFLAGS += -fopenmp
@@ -348,9 +366,9 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
     equals(QT_MAJOR_VERSION, 5) {
-        shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
-    	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
-   	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+        shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
+   	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
     }
     equals(QT_MAJOR_VERSION, 4) {
         shiboken:  PKGCONFIG += shiboken-py2
@@ -404,9 +422,9 @@ unix {
      }
 
      equals(QT_MAJOR_VERSION, 5) {
-         shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
-    	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
-   	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+         shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
+    	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
+   	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
      }
 
      equals(QT_MAJOR_VERSION, 4) {

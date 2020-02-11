@@ -1,6 +1,6 @@
 # Known Bugs
 
-- Windows: If Natron is not installed in Program Files using the installer, the Text node does not work because fontconfig does not initialize properly.
+- https://github.com/NatronGitHub/Natron/issues/445
 
 # History
 
@@ -14,16 +14,20 @@
 - Fix recursive Python calls and handle the Python GIL properly.
 - Fix loading of Python Toolsets, and document how Toolsets are detected.
 - Fix using Rotopaint with multiple layers. #420 #205
+- Fix loading project settings. #439
 
 ### Plugins
 
 - Fix bugs in DenoiseSharpen that caused crashes. #300
 - Add support for chromatic aberration correction when reading RAW files. #309
-- Update CImg and G'MIC to 2.7.4 and fix several issues in GMIC plugins (which are still beta).
+- Update CImg and G'MIC to 2.8.4 and fix several issues in GMIC plugins (which are still beta).
 - Many new GMIC plugins, including GMIC Custom Code.
 - FrameRange: New options "Loop" and "Bounce". #411
+- Update OpenImageIO to 2.1.10.1. #350
 - Fix reading multi-view EXRs. #429
 - Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
+- Text: Added SRT subtitle format support
+- AudioCurve (audio curve generator): new plugin
 
 
 ## Version 2.3.14
