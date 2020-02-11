@@ -327,7 +327,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         make -C Bundle lodepng.h
     fi
 
-    pkg-config sox && ARENA_AUDIO="-DAUDIO=ON"
+    pkg-config sox && ARENA_AUDIO="AUDIO=ON"
     env \
         MINGW="${ISWIN:-}" \
         LICENSE="$NATRON_LICENSE" \
