@@ -85,7 +85,10 @@ getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
 /**
  * @brief Given a string str, assume that the content of the string between startParenthesis and endParenthesis
  * is a well-formed Python signature with comma separated arguments list. The list of arguments is stored in params.
- **/
+ * This code looks very fragile.
+ * Whitespace handling was added, but it seems like anything that looks like a more
+ * complicated expression with operators would break (see https://github.com/NatronGitHub/Natron/issues/448).
+ */
 static void
 extractParameters(std::size_t startParenthesis,
                   std::size_t endParenthesis,
@@ -95,14 +98,29 @@ extractParameters(std::size_t startParenthesis,
     std::size_t i = startParenthesis + 1;
     int insideParenthesis = 0;
 
-    while (i < endParenthesis || insideParenthesis < 0) {
-        string curParam;
+    while ( i < str.size() && (i < endParenthesis || insideParenthesis < 0) ) {
+        std::string curParam;
+        std::size_t prev_i = i;
+        while ( i < str.size() && std::isspace( str.at(i) ) ) {
+            ++i;
+        }
+        if ( i >= str.size() ) {
+            break;
+        }
         if (str.at(i) == '(') {
             ++insideParenthesis;
+            ++i;
         } else if (str.at(i) == ')') {
             --insideParenthesis;
+            ++i;
         }
-        while ( i < str.size() && (str.at(i) != ',' || insideParenthesis > 0) ) {
+        while ( i < str.size() && std::isspace( str.at(i) ) ) {
+            ++i;
+        }
+        if ( i >= str.size() ) {
+            break;
+        }
+        while ( i < str.size() && ((!std::isspace( str.at(i) ) && str.at(i) != ',') || insideParenthesis > 0) ) {
             curParam.push_back( str.at(i) );
             ++i;
             if (str.at(i) == '(') {
@@ -115,7 +133,23 @@ extractParameters(std::size_t startParenthesis,
                 }
             }
         }
-        params->push_back(curParam);
+        while ( i < str.size() && std::isspace( str.at(i) ) ) {
+            ++i;
+        }
+        if ( i >= str.size() ) {
+            break;
+        }
+        if (str.at(i) == ',') {
+            ++i;
+        }
+        if (i == prev_i) {
+            assert(false && "this should not happen");
+            // We didn't move, this is probably a bug.
+            break;
+        }
+        if ( !curParam.empty() ) {
+            params->push_back(curParam);
+        }
     }
 } // extractParameters
 
@@ -277,7 +311,6 @@ parseTokenFrom(int fromDim,
         throw std::invalid_argument("Invalid expr");
     }
 
-    std::locale loc;
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
     int nClosingParenthesisMet = 0;
@@ -285,7 +318,7 @@ parseTokenFrom(int fromDim,
         if (str[i] == ')') {
             ++nClosingParenthesisMet;
         }
-        if ( std::isspace(str[i], loc) ||
+        if ( std::isspace(str[i]) ||
              ( str[i] == '=') ||
              ( str[i] == '\n') ||
              ( str[i] == '\t') ||
