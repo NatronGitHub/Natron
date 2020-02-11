@@ -327,6 +327,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         make -C Bundle lodepng.h
     fi
 
+    pkg-config sox && ARENA_AUDIO="-DAUDIO=ON"
     env \
         MINGW="${ISWIN:-}" \
         LICENSE="$NATRON_LICENSE" \
@@ -337,7 +338,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         BITS="${BITS}" \
         LDFLAGS_ADD="${BUILDID:-}" \
         CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} ${ARENA_AUDIO:-}
 
     cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     cd "$TMP_PATH"
