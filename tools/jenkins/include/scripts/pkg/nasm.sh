@@ -5,9 +5,11 @@
 NASM_VERSION=2.14.02
 NASM_TAR="nasm-${NASM_VERSION}.tar.gz"
 NASM_SITE="http://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}"
+if download_step; then
+    download "$NASM_SITE" "$NASM_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/nasm" ]; }; }; then
     start_build
-    download "$NASM_SITE" "$NASM_TAR"
     untar "$SRC_PATH/$NASM_TAR"
     pushd "nasm-${NASM_VERSION}"
     if [ "${GCC_VERSION:0:2}" = 8. ]; then

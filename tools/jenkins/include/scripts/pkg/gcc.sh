@@ -22,7 +22,7 @@ MPFR_TAR="mpfr-${MPFR_VERSION}.tar.bz2"
 MPFR_SITE="http://www.mpfr.org/mpfr-${MPFR_VERSION}"
 
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/gmp.html
-GMP_VERSION=6.1.2
+GMP_VERSION=6.1.2 # 6.2.0 fails when buiding gcc: requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
 GMP_SITE="https://gmplib.org/download/gmp"
 
@@ -36,7 +36,7 @@ fi
 if version_gt "$GCC_VERSION" 9.2.0; then
     # in-tree build of ISL 0.22 fails in GCC 9.2.0, see
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=92484
-    #ISL_VERSION=0.22
+    #ISL_VERSION=0.22.1
     true
 fi
 ISL_TAR="isl-${ISL_VERSION}.tar.bz2"
@@ -46,14 +46,16 @@ CLOOG_VERSION=0.18.4
 CLOOG_TAR="cloog-${CLOOG_VERSION}.tar.gz"
 CLOOG_SITE="http://www.bastoul.net/cloog/pages/download/count.php3?url=."
 
-if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; }; }; then
-    start_build
+if download_step; then
     download "$GCC_SITE" "$GCC_TAR"
     download "$MPC_SITE" "$MPC_TAR"
     download "$MPFR_SITE" "$MPFR_TAR"
     download "$GMP_SITE" "$GMP_TAR"
     download "$ISL_SITE" "$ISL_TAR"
     download "$CLOOG_SITE" "$CLOOG_TAR"
+fi
+if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; }; }; then
+    start_build
     untar "$SRC_PATH/$GCC_TAR"
     pushd "gcc-$GCC_VERSION"
     untar "$SRC_PATH/$MPC_TAR"
@@ -66,7 +68,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" 
     mv "isl-$ISL_VERSION" isl
     untar "$SRC_PATH/$CLOOG_TAR"
     mv "cloog-$CLOOG_VERSION" cloog
-    ./configure --prefix="$SDK_HOME/gcc-${GCC_VERSION}" --disable-multilib --enable-languages=c,c++
+    env CFLAGS="-std=gnu99 -O2" ./configure --prefix="$SDK_HOME/gcc-${GCC_VERSION}" --disable-multilib --enable-languages=c,c++
     make -j$MKJOBS
     #make -k check
     make install

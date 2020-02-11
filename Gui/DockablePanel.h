@@ -142,6 +142,8 @@ public:
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
     virtual void onKnobsInitialized() OVERRIDE FINAL;
     virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL;
+    virtual void setPyPlugUIEnabled(bool enabled);
+
 private:
 
     virtual void onPagingTurnedOff() OVERRIDE FINAL;

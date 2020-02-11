@@ -8,9 +8,11 @@ if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
 fi
 YAMLCPP_VERSION_SHORT=${YAMLCPP_VERSION%.*}
 YAMLCPP_TAR="yaml-cpp-${YAMLCPP_VERSION}.tar.gz"
+if download_step; then
+    download_github jbeder yaml-cpp "${YAMLCPP_VERSION}" yaml-cpp- "${YAMLCPP_TAR}"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversion yaml-cpp)" != "$YAMLCPP_VERSION" ]; }; }; then
     start_build
-    download_github jbeder yaml-cpp "${YAMLCPP_VERSION}" yaml-cpp- "${YAMLCPP_TAR}"
     untar "$SRC_PATH/$YAMLCPP_TAR"
     pushd "yaml-cpp-yaml-cpp-${YAMLCPP_VERSION}"
     mkdir build

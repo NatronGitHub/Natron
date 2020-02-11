@@ -1,0 +1,15 @@
+--- rtmpdump/librtmp/log.h.orig	2014-03-02 18:20:23.000000000 +0000
++++ rtmpdump/librtmp/log.h	2014-03-12 09:23:45.011220200 +0000
+@@ -49,9 +49,9 @@
+ void RTMP_LogSetCallback(RTMP_LogCallback *cb);
+ void RTMP_LogSetOutput(FILE *file);
+ #ifdef __GNUC__
+-void RTMP_LogPrintf(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+-void RTMP_LogStatus(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+-void RTMP_Log(int level, const char *format, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
++void RTMP_LogPrintf(const char *format, ...) __attribute__ ((__format__ (gnu_printf, 1, 2)));
++void RTMP_LogStatus(const char *format, ...) __attribute__ ((__format__ (gnu_printf, 1, 2)));
++void RTMP_Log(int level, const char *format, ...) __attribute__ ((__format__ (gnu_printf, 2, 3)));
+ #else
+ void RTMP_LogPrintf(const char *format, ...);
+ void RTMP_LogStatus(const char *format, ...);

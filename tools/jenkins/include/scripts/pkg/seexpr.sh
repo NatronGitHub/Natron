@@ -4,9 +4,11 @@
 # Be careful when upgrading, v3.0 uses llvm and is probably not trivial to build.
 SEEXPR_VERSION=2.11
 SEEXPR_TAR="SeExpr-${SEEXPR_VERSION}.tar.gz"
+if download_step; then
+    download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; }; then
     start_build
-    download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR"
     untar "$SRC_PATH/$SEEXPR_TAR"
     pushd "SeExpr-${SEEXPR_VERSION}"
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0001-seexpr-2.11-fix-cxxflags.patch"

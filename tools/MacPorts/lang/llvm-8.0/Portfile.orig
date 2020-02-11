@@ -24,7 +24,7 @@ dist_subdir             llvm
 categories              lang
 platforms               darwin
 license                 NCSA
-maintainers             {jeremyhu @jeremyhu} {larryv @larryv}
+maintainers             {jeremyhu @jeremyhu} {larryv @larryv} {kencu @kencu}
 
 if {${subport} eq "llvm-${llvm_version}"} {
     homepage            https://llvm.org/

@@ -1,5 +1,5 @@
---- Portfile.orig	2020-01-02 13:01:28.000000000 -0800
-+++ Portfile	2020-01-02 14:21:55.000000000 -0800
+--- Portfile.orig	2020-02-09 10:14:02.000000000 -0800
++++ Portfile	2020-02-09 09:39:14.000000000 -0800
 @@ -2,12 +2,12 @@
  
  PortSystem          1.0
@@ -9,7 +9,7 @@
  PortGroup           cmake 1.1
  PortGroup           active_variants 1.1
  
- github.setup        OpenImageIO oiio 2.1.9.0
+ github.setup        OpenImageIO oiio 2.1.11.0
 -revision            0
 +revision            100
  name                openimageio
@@ -27,7 +27,7 @@
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
  configure.args-append \
-@@ -40,19 +45,141 @@
+@@ -40,22 +45,142 @@
      port:zlib \
      port:bzip2 \
      port:boost \
@@ -36,29 +36,9 @@
      port:libpng \
      port:tiff \
      port:ilmbase \
-     port:openexr
+     port:openexr \
+     port:squish
  
-+configure.args-append \
-+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-+    -DBOOST_ROOT=${prefix} \
-+    -DUSE_QT:BOOL=FALSE \
-+    -DUSE_PYTHON:BOOL=FALSE \
-+    -DUSE_PYTHON3:BOOL=FALSE \
-+    -DUSE_FIELD3D:BOOL=FALSE \
-+    -DUSE_FFMPEG:BOOL=FALSE \
-+    -DUSE_OPENJPEG:BOOL=FALSE \
-+    -DUSE_OCIO:BOOL=FALSE \
-+    -DUSE_OPENCV:BOOL=FALSE \
-+    -DUSE_OPENSSL:BOOL=FALSE \
-+    -DUSE_FREETYPE:BOOL=FALSE \
-+    -DUSE_GIF:BOOL=TRUE \
-+    -DUSE_HEIF:BOOL=TRUE \
-+    -DUSE_PTEX:BOOL=FALSE \
-+    -DUSE_LIBRAW:BOOL=TRUE \
-+    -DUSE_OPENGL:BOOL=FALSE \
-+    -DUSE_WEBP:BOOL=TRUE \
-+    -DSTOP_ON_WARNING:BOOL=FALSE
-+
 +# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 +# tested with openimageio 1.4.6rc1:
 +# macports-clang-3.3 and later work
@@ -80,7 +60,7 @@
 +
 +# GCC < 4.9 does not have proper GCC intrinsics support
 +compiler.blacklist-append {*gcc-4.8}
-+compiler.whitelist-append macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
++#compiler.whitelist-append macports-clang-9.0 macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
 +
 +# The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
 +# Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
@@ -101,6 +81,27 @@
 +    #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 +}
 +
++configure.args-append \
++    -DOIIO_BUILD_TESTS:BOOL=FALSE \
++    -DBOOST_ROOT=${prefix} \
++    -DUSE_QT:BOOL=FALSE \
++    -DUSE_PYTHON:BOOL=FALSE \
++    -DUSE_PYTHON3:BOOL=FALSE \
++    -DUSE_FIELD3D:BOOL=FALSE \
++    -DUSE_FFMPEG:BOOL=FALSE \
++    -DUSE_OPENJPEG:BOOL=FALSE \
++    -DUSE_OCIO:BOOL=FALSE \
++    -DUSE_OPENCV:BOOL=FALSE \
++    -DUSE_OPENSSL:BOOL=FALSE \
++    -DUSE_FREETYPE:BOOL=FALSE \
++    -DUSE_GIF:BOOL=TRUE \
++    -DUSE_HEIF:BOOL=TRUE \
++    -DUSE_PTEX:BOOL=FALSE \
++    -DUSE_LIBRAW:BOOL=TRUE \
++    -DUSE_OPENGL:BOOL=FALSE \
++    -DUSE_WEBP:BOOL=TRUE \
++    -DSTOP_ON_WARNING:BOOL=FALSE
++
  # optional components
  
 -#configure.args-append \
@@ -109,7 +110,8 @@
 -qt5.depends_component qtbase
 -qt5.min_version       5.6
 +default_variants    +opencolorio +openjpeg +freetype
-+
+ 
+-configure.args-append   -DUSE_PYTHON=OFF
 +variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
 +    if {${configure.cxx_stdlib} eq "libstdc++"} {
 +    }
@@ -173,9 +175,9 @@
 +    depends_lib-append port:dcmtk
 +}
  
- configure.args-append   -DUSE_PYTHON=OFF
+ set pythons_suffixes    {27 36 37 38}
  
-@@ -89,38 +216,38 @@
+@@ -90,38 +215,38 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -225,7 +227,7 @@
  
  #configure.args-append \
  #    -DUSE_GIF=OFF
-@@ -132,7 +259,7 @@
+@@ -133,7 +258,7 @@
  
  #configure.args-append \
  #    -DUSE_PTEX=OFF
@@ -234,7 +236,7 @@
  
  #configure.args-append \
  #    -DUSE_LIBRAW=OFF
-@@ -141,8 +268,8 @@
+@@ -142,8 +267,8 @@
  #configure.args-append \
  #    -DUSE_TBB=OFF     \
  #    -DUSE_OPENVDB=OFF
@@ -245,7 +247,7 @@
  
  # not in MacPorts
  configure.args-append \
-@@ -150,7 +277,7 @@
+@@ -151,7 +276,7 @@
  
  #configure.args-append \
  #    -DUSE_DICOM=OFF

@@ -32,6 +32,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <cctype> // isspace
 
 #include <QtCore/QDataStream>
 #include <QtCore/QDateTime>

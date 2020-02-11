@@ -14,11 +14,13 @@ QT4WEBKIT_TAR="qtwebkit-${QT4WEBKIT_VERSION}.tar.gz"
 QT4WEBKIT_SITE="https://download.kde.org/stable/qtwebkit-${QT4WEBKIT_VERSION_SHORT}/${QT4WEBKIT_VERSION}/src"
 SYSTEM_GCC_VERSION=$(gcc -dumpversion)
 
+if download_step; then
+    download "$QT4_SITE" "$QT4_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; }; }; then
     start_build
     QT_CONF=( "-no-multimedia" "-no-gif" "-qt-libpng" "-no-opengl" "-no-libmng" "-no-libtiff" "-no-libjpeg" "-static" "-openssl-linked" "-confirm-license" "-release" "-opensource" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-no-gtkstyle" "-no-webkit" "-no-avx" "-no-openvg" "-no-phonon" "-no-phonon-backend" "-I${SDK_HOME}/installer/include" "-L${SDK_HOME}/installer/lib" )
 
-    download "$QT4_SITE" "$QT4_TAR"
     untar "$SRC_PATH/$QT4_TAR"
     pushd "qt-everywhere-opensource-src-${QT4_VERSION}"
 

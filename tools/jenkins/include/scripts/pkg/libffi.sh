@@ -5,9 +5,11 @@
 FFI_VERSION=3.3
 FFI_TAR="libffi-${FFI_VERSION}.tar.gz"
 FFI_SITE="ftp://sourceware.org/pub/libffi"
+if download_step; then
+    download "$FFI_SITE" "$FFI_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion libffi)" != "$FFI_VERSION" ]; }; }; then
     start_build
-    download "$FFI_SITE" "$FFI_TAR"
     untar "$SRC_PATH/$FFI_TAR"
     pushd "libffi-${FFI_VERSION}"
     # Modify the Makefile to install headers into the standard /usr/include directory instead of /usr/lib/libffi-3.2.1/include.

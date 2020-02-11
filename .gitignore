@@ -267,3 +267,6 @@ tools/utils/generateGLIncludes
 tools/utils/generateGLIncludes.pro.user
 tools/utils/generateGLIncludes.xcodeproj/
 Gui/Resources/etc/fonts/fonts.conf
+
+# VS Code
+.vscode/

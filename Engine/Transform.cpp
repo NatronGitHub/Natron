@@ -57,6 +57,17 @@ Point3D::Point3D(const Point3D & p)
 {
 }
 
+Point3D&
+Point3D::operator=(const Point3D& other) // copy assignment
+{
+    //if (this != &other) { // self-assignment check expected
+    x = other.x;
+    y = other.y;
+    z = other.z;
+    //}
+    return *this;
+}
+
 bool
 Point3D::operator==(const Point3D & other) const
 {
@@ -79,6 +90,18 @@ Point4D::Point4D(double x,
 Point4D::Point4D(const Point4D & o)
     : x(o.x), y(o.y), z(o.z), w(o.w)
 {
+}
+
+Point4D&
+Point4D::operator=(const Point4D& other) // copy assignment
+{
+    //if (this != &other) { // self-assignment check expected
+    x = other.x;
+    y = other.y;
+    z = other.z;
+    w = other.w;
+    //}
+    return *this;
 }
 
 double &

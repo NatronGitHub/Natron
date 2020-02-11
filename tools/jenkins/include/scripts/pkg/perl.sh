@@ -5,9 +5,11 @@
 PERL_VERSION=5.30.1
 PERL_TAR="perl-${PERL_VERSION}.tar.gz"
 PERL_SITE="http://www.cpan.org/src/5.0"
+if download_step; then
+    download "$PERL_SITE" "$PERL_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/perl" ]; }; }; then
     start_build
-    download "$PERL_SITE" "$PERL_TAR"
     untar "$SRC_PATH/$PERL_TAR"
     pushd "perl-${PERL_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./Configure -des -Dprefix="$SDK_HOME" -Dusethreads -Duseshrplib -Dcc="$CC"

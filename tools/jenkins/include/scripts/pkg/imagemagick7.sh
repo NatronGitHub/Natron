@@ -8,9 +8,11 @@ MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.gz"
 #MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
 MAGICK7_SITE="https://www.imagemagick.org/download/releases"
+if download_step; then
+    download "$MAGICK7_SITE" "$MAGICK7_TAR"
+fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; }; }; then
     start_build
-    download "$MAGICK7_SITE" "$MAGICK7_TAR"
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
     #if [ "${MAGICK_CL:-}" = "1" ]; then

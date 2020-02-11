@@ -1,16 +1,35 @@
-# Natron Windows SDK (DRAFT)
+# Natron Windows SDK
 
-The following are instructions for installing the Natron SDK on Windows. Please follow the instructions exactly as described.
+The following are instructions for installing the Natron SDK on Windows.
 
 ## Install MSYS2
 
 First you need to download a MSYS2 snapshot, only ``20180531`` is supported.
 
-* Download and extract http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20180531.tar.xz, then move the ``msys64`` folder to ``C:\msys64-20180531``
-* Run ``C:\msys64-20180531\mingw64.exe``
-* When prompted close the terminal
+* Download and extract [msys2-base-x86_64-20180531.tar.xz](http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20180531.tar.xz)
+* Move the ``msys64`` folder to ``C:\msys64-20180531``
+* Run ``C:\msys64-20180531\mingw64.exe`` (this will trigger a setup script, wait until done)
+* When prompted close the terminal window
 
-Now start ``C:\msys64-20180531\mingw64.exe`` again and run the following command:
+Start ``C:\msys64-20180531\mingw64.exe``, then run the following commands:
+
+	$ sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel = Never/' /etc/pacman.conf
+
+	$ echo "Server = https://downloads.sourceforge.net/project/openfx-arena/MINGW-packages/mingw64" > /etc/pacman.d/mirrorlist.mingw64
+
+	$ echo "Server = https://downloads.sourceforge.net/project/openfx-arena/MINGW-packages/msys" > /etc/pacman.d/mirrorlist.msys
+
+	$ pacman -Syu natron-sdk
+
+This will install everything required to build Natron and the plug-ins.
+
+## Maintain (DRAFT)
+
+Information for current and future maintainers.
+
+### Setup from scratch
+
+Install MSYS2 snapshot and the following packages:
 
 ```
 pacman -S \
@@ -186,19 +205,7 @@ mingw-w64-x86_64-python3-pytest \
 mingw-w64-x86_64-jemalloc
 ```
 
-Note that some packages might not be available from MSYS2 when you read this, you can download all the packages in one archive here (TODO, ADD LINK) then copy them to ``/var/cache/pacman/pkg`` and run the command above again.
-
-## Additional packages
-
-Several packages needs to be added or updated. You can build them yourself or install from binary packages.
-
-## Install
-
-TODO link to packages here.
-
-## Build
-
-You will need to build and install the following packages (in the correct order):
+Now build all the packages in this directory (tools/MINGW-packages) in the following order:
 
 ```
 CWD=`pwd`
@@ -244,6 +251,7 @@ mingw-w64-nettle
 mingw-w64-gnutls
 mingw-w64-nghttp2
 mingw-w64-curl
+mingw-w64-rtmpdump-git
 mingw-w64-libraw-gpl2
 mingw-w64-ffmpeg-gpl2
 mingw-w64-libarchive
@@ -262,7 +270,8 @@ mingw-w64-osmesa
 mingw-w64-libde265
 mingw-w64-libheif
 mingw-w64-imagemagick
-mingw-w64-openimageio2
+mingw-w64-openimageio21
+mingw-w64-natron-sdk
 "
 for pkg in $PKGS; do
 cd $CWD/$pkg

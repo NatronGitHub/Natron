@@ -7,7 +7,7 @@ Instructions for installing Natron from sources on Microsoft Windows
 toolchain that can be used to build Windows applications. It provides
 most dependencies required by Natron.
 
-Follow the [Windows Setup](tools/jenkins/README.md) instructions from the jenkins README to setup MSYS2 and install the required MSYS packages.
+Follow the [Windows SDK](tools/MINGW-packages/README.md) instructions to setup MSYS2 and install the required MSYS packages.
 
 ### OpenFX
 
