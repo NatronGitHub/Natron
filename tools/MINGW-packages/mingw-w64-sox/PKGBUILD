@@ -4,13 +4,14 @@ _realname=sox
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=14.4.2
-pkgrel=2
+pkgrel=3
 pkgdesc="Swiss Army Knife of sound processing utilities (mingw-w64)"
 arch=('any')
 url="https://sourceforge.net/projects/sox"
 license=("LGPL")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+	     "${MINGW_PACKAGE_PREFIX}-libmad"
              #"${MINGW_PACKAGE_PREFIX}-cmake"
              )
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
@@ -26,10 +27,10 @@ build() {
       --build=${MINGW_CHOST} \
       --host=${MINGW_CHOST} \
       --target=${MINGW_CHOST} \
-      --without-png --without-ladspa --without-mad --without-id3tag --without-lame --without-twolame \
+      --without-png --without-ladspa --with-mad=yes --without-id3tag --without-lame --without-twolame \
       --with-oggvorbis=no --with-opus=no --with-flac=no --with-amrwb=no --with-amrnb=no --with-wavpack=no --with-sndio=no \
-      --with-coreaudio=no --with-alsa=no --with-ao=no --with-pulseaudio=no --with-waveaudio=no \
-      --with-sndfile=no --with-oss=no --with-sunaudio=no --with-mp3=no --with-gsm=no --with-lpc10=no --program-prefix=""
+      --with-coreaudio=no --with-alsa=no --with-ao=no --with-pulseaudio=no --with-waveaudio=yes \
+      --with-sndfile=no --with-oss=no --with-sunaudio=no --with-mp3=yes --with-gsm=no --with-lpc10=no --program-prefix=""
   # I would prefer to use cmake but I can't enable/disable third-party!
   #MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   #${MINGW_PREFIX}/bin/cmake \
