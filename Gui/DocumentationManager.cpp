@@ -497,7 +497,12 @@ DocumentationManager::handler(QHttpRequest *req,
                              page.endsWith( QString::fromUtf8(".js") ) ||
                              page.endsWith( QString::fromUtf8(".txt") ) ||
                              page.endsWith( QString::fromUtf8(".png") ) ||
-                             page.endsWith( QString::fromUtf8(".jpg") ) ) ) {
+                             page.endsWith( QString::fromUtf8(".jpg") ) ||
+                             page.endsWith( QString::fromUtf8(".ttf") ) ||
+                             page.endsWith( QString::fromUtf8(".eot") ) ||
+                             page.endsWith( QString::fromUtf8(".svg") ) ||
+                             page.endsWith( QString::fromUtf8(".woff") ) ||
+                             page.endsWith( QString::fromUtf8(".woff2") ) ) ) {
         // get static file
         QFileInfo staticFileInfo;
 
