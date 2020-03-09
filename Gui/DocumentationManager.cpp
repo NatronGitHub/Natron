@@ -336,6 +336,8 @@ DocumentationManager::handler(QHttpRequest *req,
         html = parser(html, docDir);
         body = html.toUtf8();
     } else if ( page == QString::fromUtf8("_group.html") ) {
+#pragma message WARN("TODO: produce HTML from file templates")
+        // TODO: we should really read and parse _group.html or _groupChannel.html and just replace the relevant sections
         QString html;
         QString group;
         QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
