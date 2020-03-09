@@ -8,6 +8,7 @@ The following sections contain documentation about every node in the Other group
 .. toctree::
     :maxdepth: 1
 
+    plugins/net.fxarena.openfx.AudioCurve.rst
     plugins/fr.inria.built-in.BackDrop.rst
     plugins/fr.inria.built-in.DiskCache.rst
     plugins/fr.inria.built-in.Dot.rst
