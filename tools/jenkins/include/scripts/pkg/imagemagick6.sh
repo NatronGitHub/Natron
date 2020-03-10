@@ -2,12 +2,13 @@
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.10-92 # latest is 6.9.10-92, but 6.9.10-80 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+MAGICK_VERSION=6.9.10-78 # latest is 6.9.11-0, but 6.9.10-79 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+#MAGICK_VERSION=6.9.11-0
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 #MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.gz"
-MAGICK_SITE="https://imagemagick.org/download"
+MAGICK_SITE="https://imagemagick.org/download/releases"
 if download_step; then
     download "$MAGICK_SITE" "$MAGICK_TAR"
 fi
