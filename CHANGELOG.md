@@ -15,6 +15,7 @@
 - Fix loading of Python Toolsets, and document how Toolsets are detected.
 - Fix using Rotopaint with multiple layers. #420 #205
 - Fix loading project settings. #439
+- Fix property panels of PyPlug nodes. #449
 
 ### Plugins
 
