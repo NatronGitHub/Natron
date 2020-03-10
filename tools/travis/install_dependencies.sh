@@ -326,10 +326,11 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Upgrade the essential packages
     # Python2 is now keg-only
     brew install python@2
+    brew link --overwrite python
     #PATH="/usr/local/opt/python@2/bin:$PATH"
     #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     echo "* Brew upgrade selected packages"
-    for p in python@2 boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
+    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
         brew outdated $p || brew upgrade $p
     done
     # On Nov. 7 2017, the following caused 49 upgrades.
