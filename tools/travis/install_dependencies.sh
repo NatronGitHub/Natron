@@ -326,8 +326,13 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Upgrade the essential packages
     # Python2 is now keg-only
     brew install python@2
-    brew link --overwrite python
-    #PATH="/usr/local/opt/python@2/bin:$PATH"
+    brew unlink python@2 || true
+    brew link python@2 || true
+    PATH="/usr/local/opt/python@2/bin:$PATH"
+
+    brew unlink python || true
+    brew link --overwrite python || true
+
     #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     echo "* Brew upgrade selected packages"
     for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
