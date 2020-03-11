@@ -1,0 +1,202 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Preferences &mdash; NATRON_DOCUMENTATION</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Environment Variables" href="_environment.html" />
+    <link rel="prev" title="Reference Guide" href="_group.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Natron
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Preferences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general">General</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#threading">Threading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rendering">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gpu-rendering">GPU Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#project-setup">Project Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-interface">User Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#color-management">Color Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#caching">Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#viewer">Viewer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nodegraph">Nodegraph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plug-ins">Plug-ins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python">Python</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#appearance">Appearance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#main-window">Main Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#curve-editor">Curve Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dope-sheet">Dope Sheet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#node-graph">Node Graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#script-editor">Script Editor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_group%1.html">%1 nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="_group.html">Reference Guide</a> &raquo;</li>
+        
+      <li>Preferences</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/_prefs.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="preferences">

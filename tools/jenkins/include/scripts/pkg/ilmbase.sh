@@ -2,7 +2,7 @@
 
 # Install openexr
 # see https://github.com/openexr/openexr/releases/
-# Note: upgrading to 2.4.0 requires rewriting the download and build scripts
+# Note: upgrading to 2.4.1 requires rewriting the download and build scripts
 # (openexr is now a single package).
 EXR_VERSION=2.3.0
 EXR_ILM_TAR="ilmbase-${EXR_VERSION}.tar.gz"

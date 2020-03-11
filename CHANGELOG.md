@@ -42,6 +42,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Fix loading of Python Toolsets, and document how Toolsets are detected.
 - Fix using Rotopaint with multiple layers. #420 #205
 - Fix loading project settings. #439
+- Fix property panels of PyPlug nodes. #449
 
 ### Plugins
 
@@ -50,7 +51,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Update CImg and G'MIC to 2.8.4 and fix several issues in GMIC plugins (which are still beta).
 - Many new GMIC plugins, including GMIC Custom Code.
 - FrameRange: New options "Loop" and "Bounce". #411
-- Update OpenImageIO to 2.1.10.1. #350
+- Update OpenImageIO to 2.1.11.0. #350
 - Fix reading multi-view EXRs. #429
 - Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
 - Text: Added SRT subtitle format support

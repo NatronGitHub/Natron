@@ -2,7 +2,7 @@
 
 # Install orc
 # see https://gstreamer.freedesktop.org/src/orc/
-ORC_VERSION=0.4.29 # 0.4.30 uses meson to build
+ORC_VERSION=0.4.29 # 0.4.30 and later use meson to build
 ORC_TAR="orc-${ORC_VERSION}.tar.xz"
 ORC_SITE="http://gstreamer.freedesktop.org/src/orc"
 if download_step; then

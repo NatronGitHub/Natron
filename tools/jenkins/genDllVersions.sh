@@ -259,6 +259,8 @@ catDll libpoppler-glib-
 catDll librevenge-0
 catDll librevenge-stream-
 catDll libzip
+catDll libmad-0
+catDll libsox-
 
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"

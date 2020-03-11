@@ -180,7 +180,7 @@ Release Notes
 
 - 2019/08/14 : version 2.7.0.
 
-- 2019/12/19 : version 2.8.1 (Current stable).
+- 2020/02/10 : version 2.8.4 (Current stable).
 
 View latest minor changelog (2.8): https://discuss.pixls.us/t/release-of-gmic-2-8
 

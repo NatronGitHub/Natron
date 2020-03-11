@@ -1,0 +1,69 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: AlexWMF <alexxwmf@gmail.com>
+
+_realname=libmad
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0.15.1b
+pkgrel=5
+pkgdesc="A high-quality MPEG audio decoder (mingw-w64)"
+arch=('any')
+url="https://www.underbit.com/products/mad/"
+license=('GPL')
+depends=()
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "autoconf"
+             "m4")
+source=(https://downloads.sourceforge.net/sourceforge/mad/${_realname}-${pkgver}.tar.gz
+        0001-no-undefined.mingw.patch
+        0003-update-ac-and-silent-rules.mingw.patch
+        0004-amd64-64bit.diff
+        0006-optimize.diff
+        0007-libmad.patch
+        0008-md_size.diff
+        0009-length-check.patch)
+sha256sums=('bbfac3ed6bfbc2823d3775ebb931087371e142bb0e9bb1bee51a76a6e0078690'
+            '7b95737e1a7c134054d57ad040e30a39497195b2a49d20ce32331f65e7a7b88b'
+            '3d839da54c91f1a3afdd78a705ad1fe880c0d8431c16394808a484d14d3447b9'
+            '0b506dc3c3a83837739f84f7b9db7497fd79b3623b5fb7e291ce44f79d7bf726'
+            'f38216942a1e84fd5341394a56dc5e91117d168a660f3c07ebd59af9b907e6f2'
+            '74e7824c2a8066d5e214910ac9e5a87b1f57d6d12b69e0b4ee6b7739048c3ca9'
+            '6bb89c1b244912e6a863b451743e4c19145f0b75b8ac502eedc5f8b9bf998fdd'
+            '388f2fde37cb6bce2f58324880095efc41e490f41ef06bbac8ca850f7ac58728')
+
+prepare() {
+  cd ${_realname}-${pkgver}
+  patch -p1 -i "${srcdir}/0001-no-undefined.mingw.patch"
+  patch -p1 -i "${srcdir}/0003-update-ac-and-silent-rules.mingw.patch"
+  patch -p1 -i "${srcdir}/0004-amd64-64bit.diff"
+  patch -p1 -i "${srcdir}/0006-optimize.diff"
+  patch -p1 -i "${srcdir}/0007-libmad.patch"
+  patch -p1 -i "${srcdir}/0008-md_size.diff"
+  patch -p1 -i "${srcdir}/0009-length-check.patch"
+
+  touch NEWS AUTHORS ChangeLog
+  rm aclocal.m4
+  rm Makefile.in
+
+  WANT_AUTOMAKE=latest autoreconf -fi
+}
+
+build() {
+  [[ -d build-${MINGW_CHOST} ]] && rm -rf build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST}
+  cd ${srcdir}/build-${MINGW_CHOST}
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --enable-shared \
+    --enable-static
+
+  make
+}
+
+package() {
+  cd build-${MINGW_CHOST}
+  make DESTDIR="${pkgdir}" install
+}

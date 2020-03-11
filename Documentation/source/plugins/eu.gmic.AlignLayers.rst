@@ -12,7 +12,7 @@ G’MIC Align Layers node
 Description
 -----------
 
-Author: David Tschumperle. Latest Update: 2010/29/12.
+Author: David Tschumperle. Latest Update: 2020/01/11.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
