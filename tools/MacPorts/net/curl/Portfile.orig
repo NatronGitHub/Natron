@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.68.0
+version                         7.69.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -27,9 +27,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  e6c7e2cfbabca69cd36be4025ab3fa0c209bd28e \
-                                sha256  b724240722276a27f6e770b952121a3afd097129d8c9fe18e6272dc34192035a \
-                                size    2442788
+                                rmd160  802d529dac716fb17875bd40da9eb4afb3ca60d2 \
+                                sha256  03c7d5e6697f7b7e40ada1b2256e565a555657398e6c1fcfa4cb251ccd819d4f \
+                                size    2467272
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
