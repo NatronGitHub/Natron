@@ -177,6 +177,14 @@ function installPlugin() {
         dump_syms_safe "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
+    # Strip ofx binaries (must be done before manifest)
+    if [ "$COMPILE_TYPE" != "debug" ]; then
+        for dir in "$PKG_PATH/data/Plugins/OFX/Natron" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"; do
+            echo "*** stripping ofx binaries in $dir"
+            find "$dir" -type f \( -iname '*.ofx' \) -exec strip -s {} \;
+            echo "*** stripping ofx binaries in $dir... done!"
+        done
+    fi
 
     if [ ! -z "$DEPENDENCIES_DLL" ]; then
         for depend in ${DEPENDENCIES_DLL}; do
@@ -203,15 +211,15 @@ function installPlugin() {
 
     fi
 
-
     # Strip all binaries
     if [ "$COMPILE_TYPE" != "debug" ]; then
         for dir in "$PKG_PATH/data/Plugins/OFX/Natron" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"; do
             echo "*** stripping binaries in $dir"
-            find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
+            find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' \) -exec strip -s {} \;
             echo "*** stripping binaries in $dir... done!"
         done
     fi
+
     return 0
 }
 
