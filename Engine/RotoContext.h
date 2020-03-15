@@ -355,6 +355,7 @@ public:
      **/
     std::string getRotoNodeName() const;
 
+    void onItemGloballyActivatedChanged(const RotoItemPtr& item);
     void onItemScriptNameChanged(const RotoItemPtr& item);
     void onItemLabelChanged(const RotoItemPtr& item);
 
@@ -437,6 +438,7 @@ Q_SIGNALS:
 
     void itemLockedChanged(int reason);
 
+    void itemGloballyActivatedChanged(const RotoItemPtr&);
     void itemScriptNameChanged(const RotoItemPtr&);
     void itemLabelChanged(const RotoItemPtr&);
 

@@ -2005,6 +2005,12 @@ RotoContext::onItemLockedChanged(const RotoItemPtr& item,
 }
 
 void
+RotoContext::onItemGloballyActivatedChanged(const RotoItemPtr& item)
+{
+    Q_EMIT itemGloballyActivatedChanged(item);
+}
+
+void
 RotoContext::onItemScriptNameChanged(const RotoItemPtr& item)
 {
     Q_EMIT itemScriptNameChanged(item);

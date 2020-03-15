@@ -172,6 +172,7 @@ public Q_SLOTS:
 
     void onItemColorDialogEdited(const QColor & color);
 
+    void onItemGloballyActivatedChanged(const RotoItemPtr& item);
     void onItemLabelChanged(const RotoItemPtr& item);
     void onItemScriptNameChanged(const RotoItemPtr& item);
 
