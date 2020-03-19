@@ -18,6 +18,9 @@ Generic Description
 ###################
 The purpose of Natron is to process video images using elementary "effect" bricks called nodes.
 
+for more details see:
+:doc:`Main concepts </getstarted-about-mainconcepts>`
+
 The image is processed in order passing through each node. The nodes are connected with links that define the order of the processing.
 These connected nodes are called the node graph.
 
