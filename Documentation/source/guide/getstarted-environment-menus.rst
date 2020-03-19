@@ -5,6 +5,9 @@
 Using the menus
 =================
 
+.. toctree::
+   :maxdepth: 2
+
 Modifications of your project are done using items located in menus located in different places of the interface
 
 The menu bar
@@ -258,5 +261,3 @@ Menus Usage
 
 When a menu item has a keyboard shortcut associated, it is visible inside the menus
 
-.. toctree::
-   :maxdepth: 2
