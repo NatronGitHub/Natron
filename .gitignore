@@ -275,3 +275,5 @@ Gui/Resources/etc/fonts/fonts.conf
 
 # VS Code
 .vscode/
+
+Documentation/source/_build/

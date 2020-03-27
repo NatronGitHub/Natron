@@ -17,4 +17,5 @@ This guide will help you getting started using Natron for compositing and visual
    getstarted
    compositing
    tutorials
+   glossary
 

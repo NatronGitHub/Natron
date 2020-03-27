@@ -13,13 +13,13 @@ Modifications of your project are done using items located in menus located in d
 The menu bar
 ############
 
-.. image:: _images\menubar_01.jpg
+.. image:: _images/menubar_01.jpg
    :width: 600px
    
 File menu
 ---------
 
-.. image:: _images\menu_file_01.png
+.. image:: _images/menu_file_01.png
 
 
 New Project
@@ -56,7 +56,7 @@ Export Project As Group
 Edit menu
 ---------
 
-.. image:: _images\menu_edit_01.png
+.. image:: _images/menu_edit_01.png
 
 
 Preferences...
@@ -69,7 +69,7 @@ Undo/Redo
 
 Layout menu
 -------------
-.. image:: _images\menu_layout_01.png
+.. image:: _images/menu_layout_01.png
 
 
 The Layout is the position of the different user interface elements of Natron. This menu let's you manage different layout configuration.
@@ -104,13 +104,13 @@ Close Tab
   
 Display menu
 -------------
-.. image:: _images\menu_display_01.png
+.. image:: _images/menu_display_01.png
 
 
 In Natron you can view different parts of your work in different windows. For each window a viewer node is present in the node graph.
 To better compare different images each viewer can be split in side A/side B. This menu helps you manage these settings.
 
-.. image:: _images\viewer_02.png
+.. image:: _images/viewer_02.png
    :width: 600px
    
 Above: a viewer can have multiple inputs, up to 10.
@@ -146,7 +146,7 @@ Enter Full Screen
 
 Render menu
 -------------
-.. image:: _images\menu_render_01.png
+.. image:: _images/menu_render_01.png
 
    
 The final result of Natron image processing is only written to disk as a new image. When a Write node has been setup and the render process has been launched.
@@ -162,7 +162,7 @@ Enable Render Statistics
 
 Cache menu
 ------------
-.. image:: _images\menu_cache_01.png
+.. image:: _images/menu_cache_01.png
 
    
 To improve Natron speed, some intermediate images of the node graph are kept in memory/on disk. This caching mechanism sometimes need to be cleared to free up memory/disk space. Use this if Natron seems to slow down or warn you about memory usage.
@@ -181,7 +181,7 @@ Clear Plug-Ins Load Cache
 
 Help menu
 -----------
-.. image:: _images\menu_help_01.png
+.. image:: _images/menu_help_01.png
 
 
 Documentation
@@ -200,7 +200,7 @@ About Natron
 
 Tools menu
 -----------
-.. image:: _images\menu_tools_01.png
+.. image:: _images/menu_tools_01.png
 
    
 In this menu additional functions are added through python scripting. Natron interface can be vastly modified through scripting.  
@@ -211,46 +211,46 @@ Context menus
 You can right clic in many places of Natron to get quick access to a contextual menu. Here are the main ones
 
 
-.. figure:: _images\menu_context_curve_01.png
+.. figure:: _images/menu_context_curve_01.png
 
    
    Context menu for the Curve Editor window
 
 *
 
-.. figure:: _images\menu_context_dope_01.png
+.. figure:: _images/menu_context_dope_01.png
 
    
    Context menu for the Dope Sheet window
 
-.. figure:: _images\menu_context_nodegraph_01.png
+.. figure:: _images/menu_context_nodegraph_01.png
 
    
    Context menu for the node graph window
 
 *
 
-.. figure:: _images\menu_context_parameter_01.png
+.. figure:: _images/menu_context_parameter_01.png
 
    
    Context menu for the Node Graph window
 
 *
 
-.. figure:: _images\menu_context_properties_01.png
+.. figure:: _images/menu_context_properties_01.png
    
    Context menu for the Properties window
 
 *
    
-.. figure:: _images\menu_context_parameter_01.png
+.. figure:: _images/menu_context_parameter_01.png
 
    
    Context menu for a parameter box in the Properties window
 
 *
    
-.. figure:: _images\menu_context_viewer_01.png
+.. figure:: _images/menu_context_viewer_01.png
 
    
    Context menu for the Viewer window

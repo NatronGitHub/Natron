@@ -4,6 +4,9 @@
 Using the toolbar
 =================
 
+.. image:: _images/toolbar_02.png
+   :width: 600px
+
 Each icon in the toolbar is a menu giving access to different categories of nodes (ie. image processing tools) that Natron offers to process or create images.
 
 If you click on a tool, the corresponding node will be added to the node graph
