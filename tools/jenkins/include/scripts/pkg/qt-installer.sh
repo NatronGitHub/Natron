@@ -245,7 +245,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
 	    patch -Np0 -i "$INC_PATH/patches/Qt/patch-qt4-openssl111.diff" # -p1 -b .openssl1.1
     fi
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch95" # -p1 -b .icu59
-    if vergion_gt "$SYSTEM_GCC_VERSION" 7.99; then
+    if version_gt "$SYSTEM_GCC_VERSION" 7.99; then
 	    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch96" # -p1 -b .gcc8_qtscript
     fi
 
