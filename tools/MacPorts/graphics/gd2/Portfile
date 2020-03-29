@@ -4,7 +4,17 @@ PortSystem                  1.0
 PortGroup                   github 1.0
 PortGroup                   muniversal 1.0
 
-github.setup                libgd libgd 2.2.5 gd-
+# getline
+# https://github.com/libgd/libgd/issues/611
+PortGroup                   legacysupport 1.0
+legacysupport.newest_darwin_requires_legacy 10
+
+github.setup                libgd libgd 2.3.0 gd-
+revision                    0
+checksums                   rmd160  c490d426083763bb6fc678da98a4bf6b26dc2bdb \
+                            sha256  ecd9155b9a417fb3f837f29e5966323796de247789163761dd72dbf83bfcac58 \
+                            size    2539188
+
 name                        gd2
 categories                  graphics
 maintainers                 {ryandesign @ryandesign}
@@ -28,9 +38,6 @@ long_description            gd is a graphics library. It allows your code to \
 
 github.tarball_from         releases
 use_xz                      yes
-
-checksums                   rmd160  1c20f719161da596dac6c5c5b92bde71ddc9aedb \
-                            sha256  8c302ccbf467faec732f0741a859eef4ecae22fea2d2ab87467be940842bde51
 
 depends_build               port:gettext
 
@@ -58,21 +65,6 @@ configure.args-append       --disable-werror \
                             --without-xpm
 
 configure.cflags-append     -DDEFAULT_FONTPATH=\\\"/System/Library/Fonts:/Library/Fonts\\\"
-
-post-configure {
-    if {[variant_isset universal]} {
-        set dirs {}
-        foreach arch ${universal_archs_to_use} {
-            lappend dirs ${worksrcpath}-${arch}
-        }
-    } else {
-        set dirs ${worksrcpath}
-    }
-    foreach dir ${dirs} {
-        reinplace -E {s|-arch [a-z0-9_]+||g} \
-            ${dir}/config/gdlib-config
-    }
-}
 
 variant x11 {
     depends_lib-append      port:xpm

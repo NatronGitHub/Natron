@@ -10,6 +10,7 @@ PortGroup           legacysupport 1.0
 name                poppler
 conflicts           xpdf-tools
 version             0.86.1
+revision            1
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -65,7 +66,11 @@ patchfiles-append   patch-bug106417.diff
 
 # https://trac.macports.org/ticket/57167
 patchfiles-append   patch-trac-57167.diff
-  
+
+# https://gitlab.freedesktop.org/poppler/poppler/issues/893
+# patch based on upstream commit 68b6dd2e by Adam Reichold
+patchfiles-append   patch-upstream-issue-893.diff
+
 configure.args-append \
                     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
                     -DENABLE_QT5=OFF \
