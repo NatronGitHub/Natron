@@ -30,6 +30,7 @@
 - Text: Added SRT subtitle format support
 - AudioCurve (audio curve generator): new plugin
 - Fix crash when writing large images. #456
+- Fix "Fill" PyPlug: was not filling everything if the Source was larger than the project. #475
 
 
 ## Version 2.3.14
