@@ -48,7 +48,7 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Fix bugs in DenoiseSharpen that caused crashes. #300
 - Add support for chromatic aberration correction when reading RAW files. #309
-- Update CImg and G'MIC to 2.8.4 and fix several issues in GMIC plugins (which are still beta).
+- Update CImg and G'MIC to 2.9.0 and fix several issues in GMIC plugins (which are still beta).
 - Many new GMIC plugins, including GMIC Custom Code.
 - FrameRange: New options "Loop" and "Bounce". #411
 - Update OpenImageIO to 2.1.11.0. #350
@@ -56,6 +56,8 @@ Natron multiple times on the same computer, the different processes will share t
 - Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
 - Text: Added SRT subtitle format support
 - AudioCurve (audio curve generator): new plugin
+- Fix crash when writing large images. #456
+- Fix "Fill" PyPlug: was not filling everything if the Source was larger than the project. #475
 
 
 ## Version 2.3.14

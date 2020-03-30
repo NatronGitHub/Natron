@@ -77,6 +77,7 @@ if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     GEN_DOCKERFILE=1
 fi
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
+    CENTOS=${CENTOS:-6}
     cat <<EOF
 # Natron-SDK dockerfile.
 #
@@ -86,18 +87,31 @@ if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
 # SDK is installed in $SDK_HOME
 EOF
     if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
-        # - base on i386/centos:6
+        # - base on i386/centos:${CENTOS}
         # - set the yum archs
         # - install util-linux to get the "setarch" executable
-        DOCKER_BASE="i386/centos:6"
+        DOCKER_BASE="i386/centos:${CENTOS}"
         LINUX32="setarch i686"
         PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
         ARCH=i686
     else
-        DOCKER_BASE="centos:6"
+        DOCKER_BASE="centos:${CENTOS}"
         LINUX32=
         PREYUM=
         ARCH=x86_64
+    fi
+    # Also install a recent Developer Toolset to get C++11 support while building GCC
+    # yum -y install centos-release-scl && \\
+    # yum -y install devtoolset-8-gcc devtoolset-8-binutils devtoolset-8-gcc-c++ devtoolset-8-make && \\
+    # We still need those to build Qt for the installer: gcc gcc-c++ make
+    DTSYUM=
+    DTSSDK=
+    if [ -n "${DTS:-}" ]; then
+        DTSYUM+="yum -y install centos-release-scl && "
+        if [ "${CENTOS:-}" -ge 7 ]; then
+            DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
+        fi
+        DTSYUM+="yum -y install devtoolset-${DTS} && "
     fi
     cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -106,13 +120,22 @@ WORKDIR /home
 ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
-RUN ${PREYUM} \\
-    yum -y install util-linux git gcc gcc-c++ make tar wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
+RUN ${PREYUM}${DTSYUM}\\
+    yum -y install gcc gcc-c++ make util-linux git tar wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 EOF
-    BUILD_LINUX_SDK=./build-Linux-sdk.sh
+    # using Developer Toolset 8:
+    #BUILD_LINUX_SDK="/usr/bin/scl enable devtoolset-8 ./build-Linux-sdk.sh"
+    # Using the default toolset (i.e. gcc 4.4.7 on CentOS6, which does not support C++11)
+    BUILD_LINUX_SDK="./build-Linux-sdk.sh"
+    if [ -n "${DTS:-}" ]; then
+        BUILD_LINUX_SDK="DTS=${DTS} $BUILD_LINUX_SDK"
+    fi
+    if [ -n "${CENTOS:-}" ]; then
+        BUILD_LINUX_SDK="CENTOS=${CENTOS} $BUILD_LINUX_SDK"
+    fi
     ## older version:
     #RUN git clone https://github.com/NatronGitHub/Natron.git
     #WORKDIR /home/Natron/tools/jenkins
@@ -155,7 +178,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN \$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN ${DTSSDK}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -461,12 +484,15 @@ if dobuild; then
     QT4PREFIX="$SDK_HOME/qt4"
     QT5PREFIX="$SDK_HOME/qt5"
 
-    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$PATH"
+    export PATH="$SDK_HOME/bin:$PATH"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    if [ "$ARCH" = "x86_64" ]; then
-        LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    else
-        LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    if [ -z "${DTS:-}" ]; then
+        export PATH="$SDK_HOME/gcc/bin:$PATH"
+        if [ "$ARCH" = "x86_64" ]; then
+            LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        else
+            LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        fi
     fi
     #export LD_RUN_PATH="$LD_LIBRARY_PATH"
     #PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
@@ -479,13 +505,34 @@ if dobuild; then
     export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 fi
 
-build gcc
+if [ -n "${DTS:-}" ]; then
+    DTSSDK="source scl_source enable devtoolset-${DTS} && "
+    case "${DTS}" in
+    8)
+        GCC_VERSION=8.3.1
+        ;;
+    4)
+        GCC_VERSION=5.3.1
+        ;;
+    6)
+        GCC_VERSION=6.3.1
+        ;;
+    7)
+        GCC_VERSION=7.3.1
+        ;;
+    9|*)
+        GCC_VERSION=9.1.1
+        ;;
+    esac
+else
+    build gcc
 
-checkpoint
+    checkpoint
 
-if dobuild; then
-    export CC="${SDK_HOME}/gcc/bin/gcc"
-    export CXX="${SDK_HOME}/gcc/bin/g++"
+    if dobuild; then
+        export CC="${SDK_HOME}/gcc/bin/gcc"
+        export CXX="${SDK_HOME}/gcc/bin/g++"
+    fi
 fi
 
 build bzip2
@@ -656,8 +703,10 @@ build snappy # (for ffmpeg)
 build ffmpeg
 build ruby # (necessary for qtwebkit)
 build breakpad
-build valgrind
-build gdb # (requires xz, zlib ncurses, python2, texinfo)
+if [ -z "${DTS:-}" ]; then
+    build valgrind
+    build gdb # (requires xz, zlib ncurses, python2, texinfo)
+fi
 
 checkpoint
 
@@ -754,7 +803,7 @@ ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
-RUN ${PREYUM}yum -y install glibc-devel patch zip unzip mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
+RUN ${PREYUM}${DTSYUM}yum -y install glibc-devel patch zip unzip mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
 ENV QTDIR="\$QTDIR" \\
     LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
     LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
@@ -814,8 +863,12 @@ COPY --from=intermediate /usr/bin/setarch /usr/bin/setarch
 ENTRYPOINT ["setarch", "i686"]
 EOF
     fi
+    DTSENABLE=
+    if [ -n "${DTS:-}" ]; then
+        DTSENABLE="scl enable devtoolset-${DTS} "
+    fi
     cat <<EOF
-CMD launchBuildMain.sh
+CMD ${DTSENABLE}launchBuildMain.sh
 EOF
 fi
 

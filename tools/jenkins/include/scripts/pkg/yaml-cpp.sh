@@ -2,9 +2,9 @@
 
 # Install yaml-cpp (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
 # see https://github.com/jbeder/yaml-cpp/releases
-YAMLCPP_VERSION=0.5.3
-if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
-    YAMLCPP_VERSION=0.6.3 # 0.6.0 is the first version to require C++11
+YAMLCPP_VERSION=0.6.3 # 0.6.0 is the first version to require C++11
+if version_gt 5.0.0 "$GCC_VERSION"; then
+    YAMLCPP_VERSION=0.5.3 # does not require C++11
 fi
 YAMLCPP_VERSION_SHORT=${YAMLCPP_VERSION%.*}
 YAMLCPP_TAR="yaml-cpp-${YAMLCPP_VERSION}.tar.gz"

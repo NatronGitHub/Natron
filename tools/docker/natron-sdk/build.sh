@@ -1,6 +1,8 @@
 #!/bin/sh
 cd `dirname "$0"`
-LABEL="natrongithub/natron-sdk"
+export CENTOS=6
+#export DTS=8
+LABEL="natrongithub/natron-sdk${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}"
 env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile
 cp  ../../jenkins/*.sh .
 (cd ../../jenkins/; tar cf - include) | tar xf -

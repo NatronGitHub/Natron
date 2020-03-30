@@ -7,6 +7,7 @@ name                gdk-pixbuf2
 set gname           gdk-pixbuf
 epoch               2
 version             2.40.0
+revision            1
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -46,7 +47,8 @@ compiler.c_standard 1999
 
 configure.ldflags-append -lintl
 
-configure.args      -Ddocs=true \
+configure.args      -Dx11=false \
+                    -Ddocs=true \
                     -Djasper=true
 
 # gobject-introspection uses g-ir-scanner, which uses $CC from env
@@ -66,7 +68,7 @@ variant bundle description {Enable application bundle relocation support} {
 
 variant x11 {
     depends_lib-append      port:xorg-libX11
-    configure.args-append   -Dx11=true
+    configure.args-replace  -Dx11=false -Dx11=true
 }
 
 if {![variant_isset quartz]} {
