@@ -95,6 +95,7 @@ Children:
     Pos: [1036, 302]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
+    Inputs: Input1
     Params:
       - Name: NatronParamFormatChoice
         String: PC_Video
