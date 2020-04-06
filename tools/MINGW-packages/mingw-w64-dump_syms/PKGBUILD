@@ -5,7 +5,7 @@ pkgbase=mingw-w64-dump_syms
 pkgname="${MINGW_PACKAGE_PREFIX}-dump_syms"
 gitcommit=9474c3f
 pkgver=29.9474c3f
-pkgrel=1
+pkgrel=2
 pkgdesc="Dump win32 dwarf symbols"
 arch=('any')
 url="https://github.com/NatronGitHub/google-breakpad"
@@ -32,6 +32,6 @@ build() {
 }
 
 package() {
-  mkdir -p ${pkgdir}/bin
-  cp ${srcdir}/${_realname}/src/tools/windows/dump_syms_dwarf/dump_syms.exe ${pkgdir}/bin/
+  mkdir -p ${pkgdir}/${MINGW_PREFIX}/bin
+  cp ${srcdir}/${_realname}/src/tools/windows/dump_syms_dwarf/dump_syms.exe ${pkgdir}/${MINGW_PREFIX}/bin/
 }
