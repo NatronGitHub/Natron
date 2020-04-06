@@ -5,7 +5,7 @@
 	<Title>Natron</Title>
 	<Publisher>INRIA</Publisher>
 	<StartMenuDir>Natron</StartMenuDir>
-	<ProductUrl>http://www.natron.fr</ProductUrl>
+	<ProductUrl>https://natrongithub.github.io</ProductUrl>
 	<RemoveTargetDir>true</RemoveTargetDir>
 	<RunProgram></RunProgram>
 	<AllowSpaceInPath>true</AllowSpaceInPath>

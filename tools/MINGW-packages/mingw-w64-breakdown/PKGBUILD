@@ -1,0 +1,49 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_realname=breakdown
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+gitcommit=e17245d
+pkgver=27.e17245d
+pkgrel=1
+pkgdesc="A library (and tools) for parsing Google Breakpad crash dumps (mingw-w64)"
+arch=('any')
+url="https://github.com/rodlie/breakdown"
+license=('BSD')
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+depends=("${MINGW_PACKAGE_PREFIX}-libzip")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "git")
+options=('strip')
+source=("${_realname}"::"git+https://github.com/rodlie/breakdown.git#commit=${gitcommit}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/${_realname}"
+  printf "%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd ${_realname}
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    ../${_realname}
+
+  make
+}
+
+package() {
+  cd build-${MINGW_CHOST}
+  make DESTDIR=${pkgdir} install
+  cp -a ${pkgdir}${MINGW_PREFIX}/lib/libBreakdown.dll ${pkgdir}${MINGW_PREFIX}/bin/
+}
