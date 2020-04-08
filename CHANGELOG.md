@@ -27,9 +27,9 @@
 - Update OpenImageIO to 2.1.11.0. #350
 - Fix reading multi-view EXRs. #429
 - Support for reading and writing HEIF/HEIC images. HEIC is the still-image sibling of HEVC (a.k.a. H.265), and compresses to about half the size of JPEG but with higher visual quality.
-- Text: Added SRT subtitle format support
-- AudioCurve (audio curve generator): new plugin
-- Fix crash when writing large images. #456
+- Text: Added SRT subtitle format support.
+- AudioCurve (audio curve generator): new plugin.
+- Fix plugin bugs (IO and CImg) with images that take more than 2GiB of memory (e.g. 12000x12000 RGBA float). #456
 - Fix "Fill" PyPlug: was not filling everything if the Source was larger than the project. #475
 
 
