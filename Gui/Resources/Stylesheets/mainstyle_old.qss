@@ -1,0 +1,731 @@
+/* -*- mode: css -*- */
+/*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
+/*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
+/*%10 = altered text colour, %11 = mouse over selection color*/
+/*You have to fill the arguments with  stylesheet-representable colours.*/
+
+QWidget {
+    color: %5;
+    background-color: %2;
+}
+
+QFrame {
+   color: black;
+}
+
+/*QLabel inherits QFrame so we put it afterwards, otherwise the label text will be black too.*/
+QLabel {
+    color: %5;
+}
+
+
+
+
+
+
+Label[altered="true"] { color: %10; }
+Label[altered="false"] { color: %5; }
+
+
+
+NodeSettingsPanel[_selected="true"] {
+    border:1px solid white;
+    border-radius : 2px;
+}
+NodeSettingsPanel[_selected="false"] {
+    border:1px solid black;
+    border-radius : 2px;
+}
+
+QToolTip {
+   color: %5;
+   background-color: black;
+   border: 2px solid black;
+   border-radius: 5px;
+   opacity: 200;
+}
+
+QToolBar {
+    color: %2;
+    spacing: 3px; /* spacing between items in the tool bar */
+    border: 0px solid black;
+}
+/* QToolBar::handle {
+image: url(handle.png);
+}TODO*/
+
+QGroupBox {
+    color: %5;
+    background-color: %2;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left; /* position at the top center */
+    padding: 0 3px;
+
+}
+QGroupBox::indicator:unchecked {
+    width :10px;
+    height: 10px;
+    image: url(:/Resources/Images/groupbox_folded.png);
+}
+QGroupBox::indicator:checked {
+    width :10px;
+    height: 10px;
+    image: url(:/Resources/Images/groupbox_unfolded.png);
+}
+
+QScrollBar:vertical {
+    border: 1px solid %1 ;
+    background: %3;
+    width: 15px;
+    margin : 23px 0px 23px 0px;
+}
+QScrollBar::handle:vertical {
+    image: url(:/Resources/Images/scrollbarHandle_vertical.png);
+    min-height: 20px;
+}
+QScrollBar::up-arrow:vertical {
+    image : url(:/Resources/Images/scrollbarButton_up.png);
+    width: 11px;
+    height: 20px;
+}
+QScrollBar::down-arrow:vertical {
+    image : url(:/Resources/Images/scrollbarButton_down.png);
+    width: 11px;
+    height: 20px;
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: %2;
+}
+QScrollBar::add-line:vertical {
+    border: 1px solid %1;
+    background: %3;
+    height: 20px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::sub-line:vertical {
+    border: 1px solid %1;
+    background: %3;
+    height: 20px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+}
+QScrollBar:horizontal {
+    border: 1px solid %1 ;
+    background: %3;
+    height: 15px;
+    margin : 0px 23px 0px 23px;
+}
+QScrollBar::handle:horizontal {
+    image: url(:/Resources/Images/scrollbarHandle_horizontal.png);
+    min-width: 20px;
+}
+QScrollBar::left-arrow:horizontal {
+    image : url(:/Resources/Images/scrollbarButton_right.png);
+    width: 20px;
+    height: 11px;
+}
+QScrollBar::right-arrow:horizontal {
+    image : url(:/Resources/Images/scrollbarButton_left.png);
+    width: 20px;
+    height: 11px;
+}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: %2;
+}
+QScrollBar::add-line:horizontal {
+    border: 1px solid %1;
+    background: %3;
+    width: 20px;
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::sub-line:horizontal {
+    border: 1px solid %1;
+    background: %3;
+    width: 20px;
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+}
+
+
+QTreeView,QListView,QHeaderView {
+    color: %5;
+    background-color: %3;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+
+QTreeWidget::item:selected {
+    background: %1;
+}
+QTreeWidget::branch:selected {
+    background: %1;
+}
+QTreeWidget::branch:has-siblings:!adjoins-item {
+    border-image: url(:/Resources/Images/treeview_vline.png);
+}
+QTreeWidget::branch:has-siblings:adjoins-item {
+    border-image: url(:/Resources/Images/treeview_more.png);
+}
+QTreeWidget::branch:!has-children:!has-siblings:adjoins-item {
+    border-image: url(:/Resources/Images/treeview_end.png);
+}
+QTreeWidget::branch:has-children:!has-siblings:closed,
+QTreeWidget::branch:closed:has-children:has-siblings {
+    border-image: none;
+    image: url(:/Resources/Images/groupbox_folded.png);
+}
+QTreeWidget::branch:open:has-children:!has-siblings,
+QTreeWidget::branch:open:has-children:has-siblings  {
+    border-image: none;
+    image: url(:/Resources/Images/groupbox_unfolded.png);
+}
+
+QHeaderView:section {
+    color: %5;
+    background-color: %2;
+    selection-color: %1;
+    selection-background-color : %1; /* same as selection-color??? */
+}
+
+ComboBox {
+    border-radius : 2px;
+    border: 1px solid black;
+}
+
+/*See http://doc.qt.io/qt-5/stylesheet-syntax.html for classes in namespaces*/
+
+/*Basic background: No multiple selection, no animation, no sunken style*/
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
+    background-color: %2;
+}
+
+/*Basic background: No multiple selection, no animation but sunken style*/
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
+    background-color: %3;
+}
+
+/*Multiple selection always have a black background*/
+ClickableLabel[dirty="true"]{
+    background-color: black;
+}
+
+/*No multiple selection and interpolated*/
+ClickableLabel[dirty="false"][animation="1"]{
+    background-color: %6;
+}
+
+/*Multiple selection and interpolated: change text color instead*/
+ClickableLabel[dirty="true"][animation="1"] {
+    color: %6;
+}
+
+/*No multiple selection and keyframe*/
+ClickableLabel[dirty="false"][animation="2"]{
+    background-color: %7;
+}
+
+/*Multiple selection and keyframe: change text color instead*/
+ClickableLabel[dirty="true"][animation="2"] {
+    color: %7;
+}
+
+/*No multiple selection and expr. Change also text colour otherwise the default white is not perceptible*/
+ClickableLabel[dirty="false"][animation="3"] {
+    background-color: %7;
+    color: %9;
+}
+
+/*Multiple selection and expr: change text color instead*/
+ClickableLabel[dirty="true"][animation="3"] {
+    color: %9;
+}
+
+/*Disabled and no multiple selection: */
+ClickableLabel[readOnly="true"][dirty="false"] {
+    color : %8;
+}
+
+/*Disabled and multiple selection: */
+ClickableLabel[readOnly="true"][dirty="true"] {
+    background-color: black;
+    color : %8;
+}
+
+
+
+TabWidget{background-color: %4;}
+
+NodeSettingsPanel{
+    background-color : %2;
+    color: %5;
+}
+QPushButton{
+    background-color: %3;
+    color: %5;
+    border: 0.5px solid black;
+    border-radius : 3px;
+    padding : 3px;
+}
+QPushButton:pressed{
+    background-color : %4;
+}
+QPushButton:hover {
+    border: 1px solid gray;
+}
+QPushButton:focus {
+    border: 2px solid %1;
+}
+QPushButton:!enabled {
+    color: %8;
+}
+
+QHeaderView:section {
+    color: %5;
+    background-color: %2;
+    selection-color: %1;
+    selection-background-color : %1; /* same as selection-color ??? */
+}
+
+QDialog {
+    background-color: %2;
+}
+
+
+NodeCreationDialog {
+    background-color: %2;
+    border: 5px black;
+    border-radius:2px;
+}
+
+QToolButton {
+    background-color: %3;
+}
+
+QToolButton:pressed {
+    border: 1px solid %1;
+}
+
+
+QToolButton:focus {
+    border: 1px solid %1;
+}
+
+ViewerToolButton[isSelected="true"]
+{
+    border: 1px solid %1;
+}
+
+ViewerToolButton
+{
+    border: 0px ;
+}
+
+ViewerToolButton[isSelected="false"]:pressed {
+    border: 0px;
+}
+ViewerToolButton[isSelected="true"]:pressed {
+    border: 1px solid %1;
+}
+
+
+ViewerToolButton:focus {
+    border: 0px;
+}
+
+QDialogButtonBox {
+    background-color: %3;
+}
+
+QMainWindow {
+    background-color: %2;
+}
+
+QCheckBox::indicator:unchecked {
+    image: url(:/Resources/Images/checkbox.png);
+}
+QCheckBox::indicator:checked {
+    image: url(:/Resources/Images/checkbox_checked.png);
+}
+QCheckBox::indicator:checked:hover {
+    image: url(:/Resources/Images/checkbox_checked_hovered.png);
+}
+QCheckBox::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_checked_hovered.png);
+}
+QCheckBox::indicator:unchecked:hover {
+    image: url(:/Resources/Images/checkbox_hovered.png);
+}
+QCheckBox::indicator:unchecked:focus {
+    image: url(:/Resources/Images/checkbox_hovered.png);
+}
+QCheckBox {
+    color : %5
+}
+
+QGraphicsView {
+    background-color: %2;
+}
+
+QScrollArea {
+    background-color: %2;
+}
+
+
+QComboBox {
+    color: %5;
+    background-color: %3;
+    selection-color: %1;
+    selection-background-color: %3;
+}
+QComboBox QAbstractItemView  {
+    border-radius:0px;
+    border:0px;
+    /*background: %3; ??? */ 
+    color: %5;
+    background-color: %3;
+    selection-color: %1;
+    selection-background-color: %3;
+}
+
+QDockWidget::title {
+    /*background: %3; ????*/
+}
+
+QDockWidget {
+    color: %5;
+    /* no background-color? */
+}
+
+QTabWidget::pane {
+    border:1px solid black;
+}
+
+
+QLineEdit {
+    border: 1px solid;
+    border-radius: 1px;
+    padding: 1px;
+    color: %5;
+    background-color : %3;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+
+QLineEdit:focus {
+    border: 2px groove %1;
+    border-radius: 2px;
+    /*padding: 2px 4px;*/
+}
+QLineEdit:!enabled {
+    color: %8;
+    background-color : %3;
+}
+QLineEdit:read-only {
+    color: %8;
+    background-color: %3;
+}
+
+QSplitter::handle:horizontal {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
+    border: 0px;
+}
+QSplitter::handle:vertical {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:0.55 %2, stop:0.98 black, stop:1 black);
+    border: 0px;
+}
+
+QSplitter::handle::horizontal {
+    width: 3px;
+}
+QSplitter::handle::vertical {
+    height: 3px;
+}
+
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
+QTabBar {
+    tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */
+    background-color: %4; /* color of the background over non-selected tabs, and to the sides of the tab when there is only one */
+}
+
+QTabBar::tab {
+    background-color: %4; /* the background of non-selected tabs */
+    border: 1px solid ;
+    border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
+    min-width: 8ex;
+    padding: 2px;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+}
+
+QTabBar::tab#DockablePanelTabWidget {
+    min-width: 5ex;
+}
+
+QTabBar::tab:hover {
+    background: %1;
+}
+QTabBar::tab:selected {
+    background: %2; /* the background of the selected tab */
+    border-bottom-style:none;
+    /*border-color: %1;*/
+}
+
+
+QTabBar::tab:!selected {
+    color: %5;  color of the text on deselected tabs
+    margin-top: 2px; /* make non-selected tabs look smaller */
+}
+
+/* make use of negative margins for overlapping tabs */
+QTabBar::tab:selected {
+    /* expand/overlap to the left and right by 4px */
+    margin-left: -2px;
+    margin-right: -2px;
+}
+QTabBar::tab:first:selected {
+    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
+}
+QTabBar::tab:last:selected {
+    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
+}
+QTabBar::tab:only-one {
+    margin: 0; /* if there is only one tab, we don't want overlapping margins */
+}
+QTabBar::close-button {
+    image: url(:/Resources/Images/closeTab.png);
+    subcontrol-position:right;
+}
+
+QTabBar::close-button:hover {
+    image: url(:/Resources/Images/closeTab_hovered.png);
+    subcontrol-position:right;
+}
+
+TabBar[mouseOverFocus="true"][clickFocus="false"] {
+    color: %11;
+}
+
+TabBar[clickFocus="true"] {
+    color: %1;
+}
+
+TabBar[mouseOverFocus="false"][clickFocus="false"] {
+    color: %5;
+}
+
+QTabWidget::tab-bar {
+    alignment: left;
+}
+
+QMenu {
+    background-color: %2; /* sets background of the menu */
+    border: 0px;
+    padding: 1px 0px 0px 1px; /* [top+bottom] [ignored] [ignored] [left+right] (QMenu box model is buggy) top must be > 1px or the first item is selected when clicking */
+    margin: 0px;
+    color : %5;
+    menu-scrollable: 1;
+}
+QMenu::item:selected { /* when user selects item using mouse or keyboard */
+    background-color: %1;
+}
+QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
+    color : rgb(120,120,120);
+}
+
+QToolButton {
+    background-color:%2;
+    color: %5;
+}
+
+SpinBox[animation="0"] {
+    background-color: %3;
+}
+SpinBox[animation="1"] {
+    background-color: %6;
+}
+SpinBox[animation="2"] {
+    background-color: %7;
+}
+
+SpinBox[animation="3"] {
+    background-color: %9;
+    color: black;
+}
+SpinBox[dirty="true"] {
+    background-color: black;
+    color: %5;
+}
+
+SpinBox[altered="true"][dirty="false"] {
+    color: %10;
+}
+
+
+
+LineEdit[animation="0"] {
+    background-color: %3;
+}
+LineEdit[animation="1"] {
+    background-color: %6;
+}
+LineEdit[animation="2"] {
+    background-color: %7;
+}
+LineEdit[animation="3"] {
+    background-color: %9;
+}
+LineEdit[dirty="true"] {
+    background-color: black;
+}
+
+LineEdit[altered="true"] {
+    color: %10;
+}
+
+QTextEdit{
+    color: %5;
+    background-color: %3;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+QTextEdit:!enabled{
+    color: %8;
+}
+QTextEdit:read-only{
+    color: %8;
+}
+QTextEdit:focus {
+    border: 2px groove %1;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+AnimatingTextEdit[animation="0"] {
+    background-color: %3;
+}
+AnimatingTextEdit[animation="1"] {
+    background-color: %6;
+}
+AnimatingTextEdit[animation="2"] {
+    background-color: %7;
+}
+AnimatingTextEdit[animation="3"] {
+    background-color: %9;
+    color: black;
+}
+AnimatingTextEdit[readOnlyNatron="true"]{
+    color:%8;
+}
+
+AnimatingTextEdit[dirty="true"] {
+    background-color: black;
+}
+
+/*AnimatedCheckBox[animation="1"]::indicator:unchecked {
+    image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:checked {
+    image: url(:/Resources/Images/checkbox_animation1_checked.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:checked:hover {
+    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
+    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="1"]::indicator:unchecked:focus {
+    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked {
+    image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:checked {
+    image: url(:/Resources/Images/checkbox_animation2_checked.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:checked:hover {
+    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
+    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="2"]::indicator:unchecked:focus{
+    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked {
+    image: url(:/Resources/Images/checkbox_animation3_unchecked.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked {
+    image: url(:/Resources/Images/checkbox_animation3_checked.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked:hover {
+    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:checked:focus {
+    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked:hover{
+    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
+}
+AnimatedCheckBox[animation="3"]::indicator:unchecked:focus{
+    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
+}
+AnimatedCheckBox[readOnly="true"]::indicator:checked{
+    image: url(:/Resources/Images/checkbox_checked_readonly.png);
+}
+AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
+    image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
+}
+AnimatedCheckBox[dirty="true"]::indicator:checked{
+    image: url(:/Resources/Images/checkbox_dirty_checked.png);
+}
+AnimatedCheckBox[dirty="true"]::indicator:unchecked{
+    image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
+}*/
+
+QMenuBar
+{
+    color: %5;
+    background-color: %2;
+}
+
+QMenuBar::item
+{
+    color: %5;
+    background-color: %2;
+}
+
+QMenuBar::item:selected
+{
+	color: %5;
+    background: %1;
+}
+
+QPlainTextEdit {
+    color: %5;
+    background-color: %3;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+
+OutputScriptTextEdit {
+    color: %5;
+    background-color: %2;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+
