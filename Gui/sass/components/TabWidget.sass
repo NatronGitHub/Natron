@@ -1,0 +1,24 @@
+TabWidget
+    background: $b10
+    QTabBar
+        background: transparent
+        &::tab 
+            border-top-left-radius: 3px
+            border-top-right-radius: 3px
+            background: $b15
+            padding: 3px 13px 3px 13px
+            margin-right: 5px
+            color: $c1
+            &:hover
+                color: $base
+            &:selected
+                background: $b20
+                color: $base
+        &::close-button
+            image: url(:/Resources/Images/closeTab.png)
+            filter: sepia(100%)
+            margin-right: 3px
+            margin-bottom: 2px
+            &:hover
+                image: url(:/Resources/Images/closeTab_hovered.png)
+                subcontrol-position:right

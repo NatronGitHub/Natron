@@ -1,0 +1,44 @@
+#ViewerTab
+    ComboBox 
+        background: $b17
+        border-radius: 2px
+        border: 1px solid $b15
+        color: $c1
+        font-size: 10px
+        &:hover
+            border-color: mix($base, $b18, 40%)
+            padding: 0
+            margin: 0
+            background: $b20        
+    #firstSettingsRow
+        background: $b22
+        border-bottom: 1px solid $b13
+        #ChannelsComboBox
+            @mixin color($color, $back, $border)
+                background: mix($color, $b17, $back)
+                border-color: mix($color, $b17, $border)
+            &[color = '1']
+                border-color: $b15
+            &[color = '2']
+                @include color(red, 5%, 60%)
+            &[color = '3']
+                @include color(green, 10%, 100%)
+            &[color = '4']
+                @include color(blue, 10%, 80%) 
+            &[color = '5']
+                @include color(white, 5%, 40%)
+            &:hover
+                border-color: mix($base, $b18, 40%)
+                background: $b20 
+    #secondSettingsRow
+        background: $b18
+    #viewerContainer
+    #playerButtonsContainer
+        background: $b15
+        QPushButton
+            background: $b20
+            border: 1px solid transparent
+            border-radius: 2px
+            &:hover
+                background: mix($base, $b20, 10%)
+                border-color: mix($base, $b20, 30%)

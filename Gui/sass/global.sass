@@ -1,0 +1,130 @@
+// resetear toda la interface    
+*
+    // background: $b18
+    color: white
+    border: 0px
+    padding: 0
+    margin: 0
+    outline: 0
+    font: 8pt "Tahoma"
+QMainWindow
+    background: $b18
+QSplitter
+    &::handle
+        $width: 3px
+        &::horizontal, &::vertical
+            background: transparent
+            &:hover
+                border-color: mix($base, $b10, 60%)
+        &::horizontal 
+            border-right: 1px solid $b10
+            width: $width
+        &::vertical 
+            border-top: 1px solid $b10
+            height: $width
+QMenu 
+    background-color: $b15
+    color: $c1
+    border: 1px solid mix($base, $b15, 20%)
+    border-radius: 2px
+    &::item 
+        padding: 4px 15px 4px 15px
+        spacing: 20px
+        &:selected 
+            background-color: mix($base, $b15, 50%)
+            color: $c3
+    &::separator 
+        background-color: $b20
+        margin: 5px
+        height: 1px
+    &::indicator 
+        width: 20px
+        height: 13px
+QLineEdit 
+    background: $b15
+    border: 1px solid $b12
+    border-radius: 2px
+    color: $c1
+    &:hover
+        background: $b20
+        border-color: $b18
+    &:focus
+        background: $b20
+        border-color: $base
+    &:disabled        
+        color: mix($c1, $b15, 40%)
+CurveEditor
+    #tree    
+        background: $b20
+QScrollBar
+    $width: 20px
+    padding: 3px
+    &:vertical, &:horizontal 
+        background: $b12
+    &:vertical 
+        width: 15px
+        margin : 23px 0px 23px 0px
+    &:horizontal 
+        height: 10px
+        margin : 0px 23px 0px 23px
+    &::handle
+        &:vertical, &:horizontal 
+            background: $b20
+            border-radius: 4px
+            &:hover
+                background: mix($base, $b20, 50%)
+        &:vertical
+            min-height: $width
+        &:horizontal 
+            min-width: $width
+    &::add-page, &::sub-page
+        &:vertical, &:horizontal
+            background: transparent
+    &::add-line
+        &:vertical, &:horizontal
+            background: $b18
+            subcontrol-origin: margin
+        &:vertical 
+            height: $width
+            subcontrol-position: bottom
+        &:horizontal 
+            width: $width
+            subcontrol-position: left
+    &::sub-line
+        &:vertical, &:horizontal
+            background: $b18
+            subcontrol-origin: margin
+        &:vertical            
+            height: $width
+            subcontrol-position: top
+        &:horizontal 
+            width: $width
+            subcontrol-position: right
+    &::up-arrow:vertical 
+        image : url(:/Resources/Images/scrollbarButton_up.png)
+        width: 11px
+        height: $width
+    &::down-arrow:vertical 
+        image : url(:/Resources/Images/scrollbarButton_down.png)
+        width: 11px
+        height: $width
+    &::left-arrow:horizontal 
+        image : url(:/Resources/Images/scrollbarButton_right.png)
+        width: $width
+        height: 11px
+    &::right-arrow:horizontal 
+        image : url(:/Resources/Images/scrollbarButton_left.png)
+        width: $width
+        height: 11px
+QCheckBox
+    &::indicator
+        width: 16px
+        height: 16px
+        background: $b18
+        border-radius: 2px
+        border: 1px solid $b13
+        &:hover
+            border-color: mix($base, $b10, 50%)
+        &:checked 
+            image: url(:/Resources/Images/closeTab_hovered.png)
+            border-color: $b50
