@@ -217,6 +217,7 @@ bigobjects.txt
 bigtosmall.txt
 node_modules
 package-lock.json
+temp
 
 #Documentation/source/_group*
 #Documentation/source/_prefs.rst
