@@ -2,7 +2,7 @@
 
 # Install ruby (necessary for qtwebkit)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/ruby.html
-RUBY_VERSION=2.7.0
+RUBY_VERSION=2.7.1
 RUBY_VERSION_SHORT=${RUBY_VERSION%.*}
 RUBY_VERSION_PKG=${RUBY_VERSION_SHORT}.0
 RUBY_TAR="ruby-${RUBY_VERSION}.tar.xz"
