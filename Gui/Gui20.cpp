@@ -67,6 +67,7 @@
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+#include "utils/util.hpp"
 
 #include "Global/QtCompat.h" // removeFileExtension
 #ifdef DEBUG
@@ -172,129 +173,132 @@ to_qcolor(double r,
 void
 Gui::loadStyleSheet()
 {
-    SettingsPtr settings = appPTR->getCurrentSettings();
-    QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
+    QString style = fread(":/Resources/Stylesheets/mainstyle.qss");
+    qApp->setStyleSheet(style);
 
-    //settings->
-    {
-        double r, g, b;
-        settings->getSelectionColor(&r, &g, &b);
-        selCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        r = 1;
-        g = 0.75;
-        b = 0.47;
-        lightSelCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getBaseColor(&r, &g, &b);
-        baseCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getRaisedColor(&r, &g, &b);
-        raisedCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getSunkenColor(&r, &g, &b);
-        sunkCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getTextColor(&r, &g, &b);
-        txtCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getInterpolatedColor(&r, &g, &b);
-        intCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getKeyframeColor(&r, &g, &b);
-        kfCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        r = g = b = 0.;
-        disCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getExprColor(&r, &g, &b);
-        eCol = to_qcolor(r, g, b);
-    }
-    {
-        double r, g, b;
-        settings->getAltTextColor(&r, &g, &b);
-        altCol = to_qcolor(r, g, b);
-    }
+//     SettingsPtr settings = appPTR->getCurrentSettings();
+//     QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
 
-    // First, set the global palette colors
-    // Note: the following colors may be wrong, please test and fix these on Linux with an empty mainstyle.css
-    QPalette p = qApp->palette();
+//     //settings->
+//     {
+//         double r, g, b;
+//         settings->getSelectionColor(&r, &g, &b);
+//         selCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         r = 1;
+//         g = 0.75;
+//         b = 0.47;
+//         lightSelCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getBaseColor(&r, &g, &b);
+//         baseCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getRaisedColor(&r, &g, &b);
+//         raisedCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getSunkenColor(&r, &g, &b);
+//         sunkCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getTextColor(&r, &g, &b);
+//         txtCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getInterpolatedColor(&r, &g, &b);
+//         intCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getKeyframeColor(&r, &g, &b);
+//         kfCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         r = g = b = 0.;
+//         disCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getExprColor(&r, &g, &b);
+//         eCol = to_qcolor(r, g, b);
+//     }
+//     {
+//         double r, g, b;
+//         settings->getAltTextColor(&r, &g, &b);
+//         altCol = to_qcolor(r, g, b);
+//     }
 
-    p.setBrush( QPalette::Window, sunkCol );
-    p.setBrush( QPalette::WindowText, txtCol );
-    p.setBrush( QPalette::Base, baseCol );
-    //p.setBrush( QPalette::ToolTipBase, baseCol );
-    //p.setBrush( QPalette::ToolTipText, txtCol );
-    p.setBrush( QPalette::Text, txtCol );
-    p.setBrush( QPalette::Button, baseCol );
-    p.setBrush( QPalette::ButtonText, txtCol );
-    p.setBrush( QPalette::Light, raisedCol );
-    p.setBrush( QPalette::Dark, sunkCol );
-    p.setBrush( QPalette::Mid, baseCol );
-    //p.setBrush( QPalette::Shadow, sunkCol );
-    p.setBrush( QPalette::BrightText, txtCol );
-    p.setBrush( QPalette::Link, selCol ); // can only be set via palette
-    p.setBrush( QPalette::LinkVisited, selCol ); // can only be set via palette
-    {
-#ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(0);
-#endif
-        qApp->setPalette( p );
-    }
+//     // First, set the global palette colors
+//     // Note: the following colors may be wrong, please test and fix these on Linux with an empty mainstyle.css
+//     QPalette p = qApp->palette();
 
-    QFile qss;
-    std::string userQss = settings->getUserStyleSheetFilePath();
-    if ( !userQss.empty() ) {
-        qss.setFileName( QString::fromUtf8( userQss.c_str() ) );
-    } else {
-        qss.setFileName( QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss") );
-    }
+//     p.setBrush( QPalette::Window, sunkCol );
+//     p.setBrush( QPalette::WindowText, txtCol );
+//     p.setBrush( QPalette::Base, baseCol );
+//     //p.setBrush( QPalette::ToolTipBase, baseCol );
+//     //p.setBrush( QPalette::ToolTipText, txtCol );
+//     p.setBrush( QPalette::Text, txtCol );
+//     p.setBrush( QPalette::Button, baseCol );
+//     p.setBrush( QPalette::ButtonText, txtCol );
+//     p.setBrush( QPalette::Light, raisedCol );
+//     p.setBrush( QPalette::Dark, sunkCol );
+//     p.setBrush( QPalette::Mid, baseCol );
+//     //p.setBrush( QPalette::Shadow, sunkCol );
+//     p.setBrush( QPalette::BrightText, txtCol );
+//     p.setBrush( QPalette::Link, selCol ); // can only be set via palette
+//     p.setBrush( QPalette::LinkVisited, selCol ); // can only be set via palette
+//     {
+// #ifdef DEBUG
+//         boost_adaptbx::floating_point::exception_trapping trap(0);
+// #endif
+//         qApp->setPalette( p );
+//     }
 
-    if ( qss.open(QIODevice::ReadOnly
-                  | QIODevice::Text) ) {
-        QTextStream in(&qss);
-        QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n"
-                                            "QListView { font-family: \"%1\"; font-size: %2pt; }\n" // .. or the items in the QListView get the wrong font
-                                            "QComboBox::drop-down { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the drop-down doesn't get the right font
-                                            "QInputDialog { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the label doesn't get the right font
-                                            ).arg(appFont).arg(appFontSize);
-        content += in.readAll();
-#ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(0);
-#endif
-        qApp->setStyleSheet( content
-                             .arg( qcolor_to_qstring(selCol) ) // %1: selection-color
-                             .arg( qcolor_to_qstring(baseCol) ) // %2: medium background
-                             .arg( qcolor_to_qstring(raisedCol) ) // %3: soft background
-                             .arg( qcolor_to_qstring(sunkCol) ) // %4: strong background
-                             .arg( qcolor_to_qstring(txtCol) ) // %5: text colour
-                             .arg( qcolor_to_qstring(intCol) ) // %6: interpolated value color
-                             .arg( qcolor_to_qstring(kfCol) ) // %7: keyframe value color
-                             .arg( qcolor_to_qstring(disCol) ) // %8: disabled editable text
-                             .arg( qcolor_to_qstring(eCol) ) // %9: expression background color
-                             .arg( qcolor_to_qstring(altCol) ) // %10 = altered text color
-                             .arg( qcolor_to_qstring(lightSelCol) ) ); // %11 = mouse over selection color
-    } else {
-        Dialogs::errorDialog( tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString() );
-    }
+//     QFile qss;
+//     std::string userQss = settings->getUserStyleSheetFilePath();
+//     if ( !userQss.empty() ) {
+//         qss.setFileName( QString::fromUtf8( userQss.c_str() ) );
+//     } else {
+//         qss.setFileName( QString::fromUtf8(":/Resources/Stylesheets/mainstyle.qss") );
+//     }
+
+//     if ( qss.open(QIODevice::ReadOnly
+//                   | QIODevice::Text) ) {
+//         QTextStream in(&qss);
+//         QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n"
+//                                             "QListView { font-family: \"%1\"; font-size: %2pt; }\n" // .. or the items in the QListView get the wrong font
+//                                             "QComboBox::drop-down { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the drop-down doesn't get the right font
+//                                             "QInputDialog { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the label doesn't get the right font
+//                                             ).arg(appFont).arg(appFontSize);
+//         content += in.readAll();
+// #ifdef DEBUG
+//         boost_adaptbx::floating_point::exception_trapping trap(0);
+// #endif
+//         qApp->setStyleSheet( content
+//                              .arg( qcolor_to_qstring(selCol) ) // %1: selection-color
+//                              .arg( qcolor_to_qstring(baseCol) ) // %2: medium background
+//                              .arg( qcolor_to_qstring(raisedCol) ) // %3: soft background
+//                              .arg( qcolor_to_qstring(sunkCol) ) // %4: strong background
+//                              .arg( qcolor_to_qstring(txtCol) ) // %5: text colour
+//                              .arg( qcolor_to_qstring(intCol) ) // %6: interpolated value color
+//                              .arg( qcolor_to_qstring(kfCol) ) // %7: keyframe value color
+//                              .arg( qcolor_to_qstring(disCol) ) // %8: disabled editable text
+//                              .arg( qcolor_to_qstring(eCol) ) // %9: expression background color
+//                              .arg( qcolor_to_qstring(altCol) ) // %10 = altered text color
+//                              .arg( qcolor_to_qstring(lightSelCol) ) ); // %11 = mouse over selection color
+//     } else {
+//         Dialogs::errorDialog( tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString() );
+//     }
 } // Gui::loadStyleSheet
 
 void

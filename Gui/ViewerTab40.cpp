@@ -1090,8 +1090,13 @@ ViewerTab::onGainToggled(bool clicked)
     } else {
         value = 0;
     }
+
+    // limita los decimales a 2
+    QString _value = QString::number(value,'f', 2);
+    // -------------------------
+
     _imp->toggleGainButton->setDown(clicked);
-    _imp->gainBox->setValue(value);
+    _imp->gainBox->setValue(_value);
     _imp->gainSlider->seekScalePosition(value);
 
     double gain = std::pow(2, value);
@@ -1106,7 +1111,12 @@ ViewerTab::onGainSliderChanged(double v)
         _imp->toggleGainButton->setChecked(true);
         _imp->toggleGainButton->setDown(true);
     }
-    _imp->gainBox->setValue(v);
+
+    // limita los decimales a 2
+    QString value = QString::number(v,'f', 2);
+    // -------------------------
+
+    _imp->gainBox->setValue(value);
     double gain = std::pow(2, v);
     _imp->viewer->setGain(gain);
     _imp->viewerNode->onGainChanged(gain);
@@ -1137,8 +1147,13 @@ ViewerTab::onGammaToggled(bool clicked)
     } else {
         value = 1.;
     }
+
+    // limita los decimales a 2
+    QString _value = QString::number(value,'f', 2);
+    // -------------------------
+
     _imp->toggleGammaButton->setDown(clicked);
-    _imp->gammaBox->setValue(value);
+    _imp->gammaBox->setValue(_value);
     _imp->gammaSlider->seekScalePosition(value);
     _imp->viewer->setGamma(value);
     _imp->viewerNode->onGammaChanged(value);
@@ -1151,7 +1166,11 @@ ViewerTab::onGammaSliderValueChanged(double value)
         _imp->toggleGammaButton->setChecked(true);
         _imp->toggleGammaButton->setDown(true);
     }
-    _imp->gammaBox->setValue(value);
+    // limita los decimales a 2
+    QString _value = QString::number(value,'f', 2);
+    // -------------------------
+
+    _imp->gammaBox->setValue(_value);
     _imp->viewer->setGamma(value);
     _imp->viewerNode->onGammaChanged(value);
     _imp->lastGammaValue = value;

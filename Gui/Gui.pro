@@ -223,6 +223,7 @@ SOURCES += \
     NatronGui/pytabwidget_wrapper.cpp \
     NatronGui/pyviewer_wrapper.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
+    ../utils/util.cpp 
 
 HEADERS += \
     AboutWindow.h \
@@ -383,7 +384,8 @@ HEADERS += \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h
+    NatronGui/pyviewer_wrapper.h \
+    ../utils/util.hpp 
 
 RESOURCES += \
     GuiResources.qrc

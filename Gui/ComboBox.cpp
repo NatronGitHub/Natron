@@ -116,6 +116,13 @@ ComboBox::ComboBox(QWidget* parent)
     setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
+void ComboBox::updateStyle()
+{
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
+}
+
 QSize
 ComboBox::sizeForWidth(int w) const
 {
@@ -315,16 +322,7 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                       Color::floatToInt<256>(b) );
             fw = 2;
         }
-        p.setPen(pen);
-
-
-        QRectF roundedRect = bRect.adjusted(fw / 2., fw / 2., -fw, -fw);
-        bRect.adjust(fw, fw, -fw, -fw);
-        p.fillRect(bRect, fillColor);
-        double roundPixels = 3;
-        QPainterPath path;
-        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
-        p.drawPath(path);
+        // p.setPen(pen);
     }
     QColor textColor;
     if (_readOnly) {
@@ -354,21 +352,22 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
             p.setFont(f);
         }
         pen.setColor(textColor);
-        p.setPen(pen);
+        // p.setPen(pen);
 
         QRectF lr = layoutRect().toAlignedRect();
         p.drawText(lr.toRect(), flags, _currentText);
     }
 
     {
-        ///Draw the dropdown icon
+        // Draw the dropdown icon
         QPainterPath path;
         QPolygonF poly;
         poly.push_back( QPointF(bRect.right() - DROP_DOWN_ICON_SIZE * 3. / 2., bRect.height() / 2. - DROP_DOWN_ICON_SIZE / 2.) );
         poly.push_back( QPointF(bRect.right() - DROP_DOWN_ICON_SIZE / 2., bRect.height() / 2. - DROP_DOWN_ICON_SIZE / 2.) );
         poly.push_back( QPointF(bRect.right() - DROP_DOWN_ICON_SIZE, bRect.height() / 2. + DROP_DOWN_ICON_SIZE / 2.) );
         path.addPolygon(poly);
-        p.fillPath(path, textColor);
+        
+        p.fillPath(path, QBrush(QColor ("darkGray")));
     }
 } // ComboBox::paintEvent
 

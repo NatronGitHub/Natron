@@ -107,6 +107,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     , _imp( new ViewerTabPrivate(this, node) )
 {
     installEventFilter(this);
+    this->setObjectName(QString::fromUtf8("ViewerTab"));
 
     std::string nodeName =  node->getNode()->getFullyQualifiedName();
     for (std::size_t i = 0; i < nodeName.size(); ++i) {
@@ -134,10 +135,11 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QFontMetrics fm(font(), 0);
 
     _imp->firstSettingsRow = new QWidget(this);
+    _imp->firstSettingsRow->setObjectName(QString::fromUtf8("firstSettingsRow"));
     _imp->firstRowLayout = new QHBoxLayout(_imp->firstSettingsRow);
     _imp->firstSettingsRow->setLayout(_imp->firstRowLayout);
-    _imp->firstRowLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->firstRowLayout->setSpacing(0);
+    _imp->firstRowLayout->setContentsMargins(4, 4, 4, 4);
+    _imp->firstRowLayout->setSpacing(2);
     _imp->mainLayout->addWidget(_imp->firstSettingsRow);
 
     _imp->layerChoice = new ComboBox(_imp->firstSettingsRow);
@@ -409,10 +411,11 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*2nd row of buttons*/
     _imp->secondSettingsRow = new QWidget(this);
+    _imp->secondSettingsRow->setObjectName(QString::fromUtf8("secondSettingsRow"));
     _imp->secondRowLayout = new QHBoxLayout(_imp->secondSettingsRow);
     _imp->secondSettingsRow->setLayout(_imp->secondRowLayout);
-    _imp->secondRowLayout->setSpacing(0);
-    _imp->secondRowLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->secondRowLayout->setSpacing(2);
+    _imp->secondRowLayout->setContentsMargins(4, 4, 4, 4);
     _imp->mainLayout->addWidget(_imp->secondSettingsRow);
 
     QPixmap gainEnabled, gainDisabled;
@@ -551,6 +554,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*OpenGL viewer*/
     _imp->viewerContainer = new QWidget(this);
+    _imp->viewerContainer->setObjectName(QString::fromUtf8("viewerContainer"));
     _imp->viewerLayout = new QHBoxLayout(_imp->viewerContainer);
     _imp->viewerLayout->setContentsMargins(0, 0, 0, 0);
     _imp->viewerLayout->setSpacing(0);
@@ -606,9 +610,10 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*Player buttons*/
     _imp->playerButtonsContainer = new QWidget(this);
+    _imp->playerButtonsContainer->setObjectName(QString::fromUtf8("playerButtonsContainer"));
     _imp->playerLayout = new QHBoxLayout(_imp->playerButtonsContainer);
-    _imp->playerLayout->setSpacing(0);
-    _imp->playerLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->playerLayout->setSpacing(2);
+    _imp->playerLayout->setContentsMargins(4, 4, 4, 4);
     _imp->playerButtonsContainer->setLayout(_imp->playerLayout);
 
     _imp->currentFrameBox = new SpinBox(_imp->playerButtonsContainer, SpinBox::eSpinBoxTypeInt);

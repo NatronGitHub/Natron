@@ -85,6 +85,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui,
     _imp( new DopeSheetEditorPrivate(this) )
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    this->setObjectName(QString::fromUtf8("DopeSheetEditor"));
 
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);

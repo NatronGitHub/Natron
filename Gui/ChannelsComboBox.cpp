@@ -34,56 +34,26 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QPaintEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QPainter>
-#include <QPen>
 
 NATRON_NAMESPACE_ENTER
 
-void
-ChannelsComboBox::paintEvent(QPaintEvent* event)
+ChannelsComboBox::ChannelsComboBox(QWidget *parent)
+    : ComboBox(parent)
+{
+    setObjectName(QString::fromUtf8("ChannelsComboBox"));
+}
+
+void ChannelsComboBox::paintEvent(QPaintEvent *event)
 {
     ComboBox::paintEvent(event);
     int idx = activeIndex();
 
-    if (idx != 1) {
-        QColor color;
-        QPainter p(this);
-        QPen pen;
+    setProperty("color", idx);
 
-        switch (idx) {
-        case 0:
-            //luminance
-            color.setRgbF(0.5, 0.5, 0.5);
-            break;
-        case 2:
-            //r
-            color.setRgbF(1., 0, 0);
-            break;
-        case 3:
-            //g
-            color.setRgbF(0., 1., 0.);
-            break;
-        case 4:
-            //b
-            color.setRgbF(0., 0., 1.);
-            break;
-        case 5:
-            //a
-            color.setRgbF(1., 1., 1.);
-            break;
-        }
+    if (current_index != idx)
+        updateStyle();
 
-        pen.setColor(color);
-        p.setPen(pen);
-
-
-        QRectF bRect = rect();
-        QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
-        double roundPixels = 3;
-        QPainterPath path;
-        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
-        p.drawPath(path);
-    }
+    current_index = idx;
 }
 
 NATRON_NAMESPACE_EXIT

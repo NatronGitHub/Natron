@@ -160,6 +160,8 @@ public:
 
     void clear();
 
+    void updateStyle();
+
     QString getCurrentIndexText() const;
 
 
@@ -221,7 +223,7 @@ private:
 
     void growMaximumWidthFromText(const QString & str);
     void createMenu();
-
+    
     ///changes the current index and returns true if the index really changed, false if it is the same.
     bool setCurrentIndex_internal(int index);
 

@@ -40,6 +40,7 @@ PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
     : QWidget(parent)
     , PanelWidget(this, parent)
 {
+    this->setObjectName(QString::fromUtf8("PropertiesBinWrapper"));
 }
 
 PropertiesBinWrapper::~PropertiesBinWrapper()

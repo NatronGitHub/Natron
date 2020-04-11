@@ -154,7 +154,7 @@ public:
 
     void minimize();
 
-    static void loadStyleSheet();
+    
     ToolButton* findExistingToolButton(const QString & name) const;
     ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& plugin);
 
@@ -691,6 +691,7 @@ public Q_SLOTS:
     void openHelpForum();
     void openHelpIssues();
     void openHelpDocumentation();
+    static void loadStyleSheet();
 
 #ifdef Q_OS_MAC
     void dockClicked();

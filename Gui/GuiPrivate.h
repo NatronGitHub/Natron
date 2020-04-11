@@ -133,6 +133,7 @@ public:
     QAction* actionHelpWebsite;
     QAction* actionHelpForum;
     QAction* actionHelpIssues;
+    QAction* actionHelpUpdateStylesheet;
     QAction* actionHelpDocumentation;
 
     ///the main "central" widget

@@ -37,13 +37,11 @@ class ChannelsComboBox
     : public ComboBox
 {
 public:
-
-    ChannelsComboBox(QWidget* parent)
-        : ComboBox(parent) {}
+    ChannelsComboBox(QWidget *parent);
+    int current_index;
 
 private:
-
-    virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent *event) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT

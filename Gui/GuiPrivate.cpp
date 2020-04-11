@@ -188,6 +188,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , actionHelpWebsite(0)
     , actionHelpForum(0)
     , actionHelpIssues(0)
+    , actionHelpUpdateStylesheet(0)
     , actionHelpDocumentation(0)
     , _centralWidget(0)
     , _mainLayout(0)

@@ -138,6 +138,8 @@ public Q_SLOTS:
 
     void setValue(int d);
 
+    void setValue(QString value);
+
     /*Used internally when the user pressed enter*/
     void interpretReturn();
 

@@ -720,6 +720,12 @@ Gui::createMenuActions()
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
 
+    _imp->actionHelpUpdateStylesheet = new QAction(this);
+    _imp->actionHelpUpdateStylesheet->setText( tr("Update Stylesheet") );
+    _imp->actionHelpUpdateStylesheet->setShortcut(QString::fromUtf8("Ctrl+R"));
+    _imp->menuHelp->addAction(_imp->actionHelpUpdateStylesheet);
+    QObject::connect( _imp->actionHelpUpdateStylesheet, SIGNAL(triggered()), this, SLOT(loadStyleSheet()) );
+
 #ifndef __APPLE__
     _imp->menuHelp->addSeparator();
     _imp->menuHelp->addAction(_imp->actionShowAboutWindow);

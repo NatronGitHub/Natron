@@ -271,6 +271,13 @@ SpinBox::setValue(int d)
     setValue( (double)d );
 }
 
+void 
+SpinBox::setValue(QString value)
+{
+    int pos = cursorPosition();
+    setText(value, pos);
+}
+
 void
 SpinBox::interpretReturn()
 {
