@@ -25,7 +25,6 @@ Cache
 TestImages
 TestWrite
 .pro.user
-config.pri
 *.vcxproj
 Info.plist
 *Win32
@@ -216,7 +215,8 @@ PortIndex.quick
 allfileshas.txt
 bigobjects.txt
 bigtosmall.txt
-
+node_modules
+package-lock.json
 
 #Documentation/source/_group*
 #Documentation/source/_prefs.rst
@@ -248,7 +248,6 @@ Tests/Plugins
 Tests/Tests
 breakpadclient.pri
 breakpadpro.pri
-config.pri
 google-breakpad/
 libs/ceres/ceres.xcodeproj/
 libs/gflags/gflags.xcodeproj/
