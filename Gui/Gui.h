@@ -569,7 +569,6 @@ Q_SIGNALS:
     void s_showLogOnMainThread();
 
 public Q_SLOTS:
-    void hilo();
     void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
