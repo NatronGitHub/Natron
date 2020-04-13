@@ -298,8 +298,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
 
     ///show the gui
     _imp->_gui->show();
-
-
+    _imp->_gui->loaded = true;
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 

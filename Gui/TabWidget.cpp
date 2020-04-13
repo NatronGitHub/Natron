@@ -630,6 +630,8 @@ TabWidget::closePane()
         return;
     }
 
+    _imp->gui->disableUpdate(true);
+
     QWidget* parent = parentWidget();
     while (parent) {
         FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(parent);
@@ -685,6 +687,8 @@ TabWidget::closePane()
     if (container) {
         closeSplitterAndMoveOtherSplitToParent(container);
     }
+
+    _imp->gui->disableUpdate(false);
 } // closePane
 
 void
@@ -878,6 +882,7 @@ TabWidget*
 TabWidget::splitInternal(bool autoSave,
                          Qt::Orientation orientation)
 {
+    _imp->gui->disableUpdate(true);
     QWidget* parent = parentWidget();
     FloatingWidget* parentIsFloating = 0;
 
@@ -955,6 +960,8 @@ TabWidget::splitInternal(bool autoSave,
         _imp->gui->getApp()->triggerAutoSave();
     }
 
+    _imp->gui->disableUpdate(false);
+
     return newTab;
 } // splitInternal
 
@@ -982,6 +989,7 @@ TabWidget::appendTab(const QIcon & icon,
                      PanelWidget* widget,
                      ScriptObject* object)
 {
+    _imp->gui->disableUpdate(true);
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
 
@@ -989,6 +997,7 @@ TabWidget::appendTab(const QIcon & icon,
         std::string name = object->getScriptName();
         std::string label = object->getLabel();
         if ( name.empty() || label.empty() ) {
+            _imp->gui->disableUpdate(false);
             return false;
         }
 
@@ -1017,6 +1026,8 @@ TabWidget::appendTab(const QIcon & icon,
     _imp->declareTabToPython( widget, object->getScriptName() );
     makeCurrentTab(_imp->tabs.size() - 1);
 
+    _imp->gui->disableUpdate(false);
+
     return true;
 }
 
@@ -1026,6 +1037,7 @@ TabWidget::insertTab(int index,
                      PanelWidget* widget,
                      ScriptObject* object)
 {
+    _imp->gui->disableUpdate(true);
     QString title = QString::fromUtf8( object->getLabel().c_str() );
     QMutexLocker l(&_imp->tabWidgetStateMutex);
 
@@ -1051,6 +1063,7 @@ TabWidget::insertTab(int index,
         appendTab(widget, object);
     }
     _imp->floatButton->setEnabled(true);
+    _imp->gui->disableUpdate(false);
 }
 
 void
@@ -1223,6 +1236,9 @@ TabWidget::makeCurrentTab(int index)
     if (!tab) {
         return;
     }
+
+    _imp->gui->disableUpdate(true);
+
     QWidget* tabW = tab->getWidget();
     PanelWidget* curWidget;
     {
@@ -1263,6 +1279,8 @@ TabWidget::makeCurrentTab(int index)
         curWidget->takeClickFocus();
     }
     tab->onPanelMadeCurrent();
+
+    _imp->gui->disableUpdate(false);
 } // TabWidget::makeCurrentTab
 
 void

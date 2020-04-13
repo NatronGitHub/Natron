@@ -403,6 +403,22 @@ Gui::getSelectedNodes() const
     return _imp->_nodeGraphArea->getSelectedNodes();
 }
 
+void Gui::disableUpdate(bool disable){
+    // desabilita las actualizaciones, para que la "gui"
+    // no tenga parpadeos feos.
+    if (!loaded)
+        return;
+
+    if (disable){
+        setUpdatesEnabled(false);
+        _imp->_centralWidget->hide();
+    }
+    else{
+        _imp->_centralWidget->show();
+        setUpdatesEnabled(true);
+    }
+}
+
 void
 Gui::createGui()
 {

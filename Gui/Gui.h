@@ -89,6 +89,11 @@ public:
      **/
     void createGui();
 
+    void disableUpdate(bool disable);
+    bool loaded = false;
+
+    std::list<DockablePanel*> getOpenedPanels();
+
     NodeGuiPtr createNodeGUI(NodePtr node,
                              const CreateNodeArgs& args);
 
@@ -564,7 +569,7 @@ Q_SIGNALS:
     void s_showLogOnMainThread();
 
 public Q_SLOTS:
-
+    void hilo();
     void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline

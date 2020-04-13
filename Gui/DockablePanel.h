@@ -174,6 +174,9 @@ private:
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
 
 public Q_SLOTS:
+    void disableUpdate(bool disable);
+    void disableUpdateTimer1();
+    void disableUpdateTimer2();
 
     void onPageIndexChanged(int index);
 

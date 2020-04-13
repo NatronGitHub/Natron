@@ -254,6 +254,11 @@ Gui::minimizeMaximizeAllPanels(bool clicked)
     getApp()->redrawAllViewers();
 }
 
+std::list<DockablePanel*>
+Gui::getOpenedPanels(){
+    return _imp->openedPanels;
+}
+
 void
 Gui::connectViewersToViewerCache()
 {

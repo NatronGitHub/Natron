@@ -1132,6 +1132,8 @@ DockablePanel::setClosedInternal(bool c)
 void
 DockablePanel::closePanel()
 {
+    disableUpdate(true);
+
     close();
     setClosedInternal(true);
 
@@ -1148,11 +1150,15 @@ DockablePanel::closePanel()
             (*it)->getViewer()->redraw();
         }
     }
+
+    disableUpdate(false);
 }
 
 void
 DockablePanel::minimizeOrMaximize(bool toggled)
 {
+    disableUpdate(true);
+
     _imp->_minimized = toggled;
     if (_imp->_minimized) {
         Q_EMIT minimized();
@@ -1175,6 +1181,42 @@ DockablePanel::minimizeOrMaximize(bool toggled)
         gui->buildTabFocusOrderPropertiesBin();
     }
     update();
+
+    disableUpdate(false);
+}
+
+void 
+DockablePanel::disableUpdate(bool disable){
+    // esta funcion permite, que los paneles no tenga parpadeos
+    // al modificarse, se ocultan todos los paneles, y para desabilitarlo,
+    // se envian 2 hilos, uno con 20 milesegundo que deja visible todos los paneles
+    // y el otro con 40 milesegundo que habilita las actualizaciones en el "propertiesBin"
+
+    if (disable){
+        _imp->_gui->getPropertiesBin()->setUpdatesEnabled(false);
+
+        auto openedPanels = _imp->_gui->getOpenedPanels();
+        for (std::list<DockablePanel*>::iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
+            (*it)->setVisible(false);
+        }
+    }
+    else{
+        QTimer::singleShot(20, this, SLOT(disableUpdateTimer1()));
+        QTimer::singleShot(40, this, SLOT(disableUpdateTimer2()));
+    }
+}
+
+void 
+DockablePanel::disableUpdateTimer1(){
+    auto openedPanels = _imp->_gui->getOpenedPanels();
+    for (std::list<DockablePanel*>::iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
+        (*it)->setVisible(true);
+    }
+}
+
+void 
+DockablePanel::disableUpdateTimer2(){
+    _imp->_gui->getPropertiesBin()->setUpdatesEnabled(true);
 }
 
 FloatingWidget*
@@ -1186,6 +1228,7 @@ DockablePanel::getFloatingWindow() const
 FloatingWidget*
 DockablePanel::floatPanel()
 {
+    disableUpdate(true);
     _imp->_floating = !_imp->_floating;
     {
         QMutexLocker k(&_imp->_isClosedMutex);
@@ -1217,6 +1260,8 @@ DockablePanel::floatPanel()
     if (gui) {
         gui->buildTabFocusOrderPropertiesBin();
     }
+
+    disableUpdate(false);
     return _imp->_floatingWidget;
 }
 
