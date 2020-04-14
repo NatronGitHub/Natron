@@ -3,7 +3,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 
 module.exports = {
     entry: {
-        natron: "./Gui/sass/main.sass",
+        natron: "./stylesheet/main.sass",
     },
     output: {
         path: __dirname + "/",

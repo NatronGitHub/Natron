@@ -5,6 +5,7 @@ moc_*
 qrc_GuiResources.cpp
 node_modules
 temp
+package-lock.json
 App/Natron
 Renderer/NatronRenderer
 Gui/Resources/etc/fonts/fonts.conf

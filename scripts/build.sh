@@ -15,6 +15,10 @@ pkill -9 Natron
 rm App/Natron
 rm /opt/Natron2/bin/Natron
 
+# Compilar sass stylesheet
+npm run d
+# -----------------
+
 # Compilacion
 $qmake -r CONFIG+="$compile_type" ./Project.pro
 make -j $thread
