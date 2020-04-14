@@ -16,7 +16,3 @@ ln -s /usr/lib64/libboost_serialization.so.1.69.0 /usr/lib64/libboost_serializat
 ln -s /usr/lib64/libboost_system.so.1.69.0 /usr/lib64/libboost_system.so
 ln -s /usr/lib64/libboost_thread.so.1.69.0 /usr/lib64/libboost_thread.so
 # ---------------------------
-
-# instalar modulos
-git submodule update --init --recursive
-# ----------------------

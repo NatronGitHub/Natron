@@ -1,0 +1,62 @@
+body {
+  margin: 40px 10%;
+  font-family: Helvetica, Arial, sans-serif;
+  padding: 20px 40px;
+  border: solid 1px #aaa; 
+  background-color: #e9eeFF;
+  line-height: 1.5;
+}
+.navheader {
+  background-image: url('/assets/OFX_navheader.png');
+  background-color: #fff;
+  background-position: center top;
+  background-repeat: no-repeat;
+  padding: 100px 20px 20px 20px;
+  border: solid 2px #ccc;
+}
+.navheader th {
+  font-size: 150%;
+  color: #6a0487;
+}
+a {
+  color: Navy;
+}
+.refpurpose {
+  color: #666;
+}
+.navheader a, .navfooter a {
+  text-decoration: none;
+  padding: 5px 10px;
+  color: #fff;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  background-color: #428BCA;
+  border-color: #357EBD;
+  font-style: normal;
+}
+.navfooter td {
+  height: 40px;
+  font-style: italic;
+} 
+h1 {
+  background-repeat: no-repeat;
+  background-position: right center;
+  min-height: 45px;
+  color: #6a0487;
+}
+h2 {
+  color: #333;
+}
+h3 {
+  color: #666;
+  font-style: italic;
+}
+pre.programlisting { 
+  background-color: #f3f3d8;
+	border: 1px solid #006600 ;
+	overflow: auto
+	margin: 0.5em 2em;
+	padding: 20px;
+}
+
