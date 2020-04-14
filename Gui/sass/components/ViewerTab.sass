@@ -1,15 +1,6 @@
 #ViewerTab
     ComboBox 
-        background: $b17
-        border-radius: 2px
-        border: 1px solid $b15
-        color: $c1
-        font-size: 10px
-        &:hover
-            border-color: mix($base, $b18, 40%)
-            padding: 0
-            margin: 0
-            background: $b20        
+        @include combobox
     #firstSettingsRow
         background: $b22
         border-bottom: 1px solid $b13
@@ -35,6 +26,8 @@
     #viewerContainer
     #playerButtonsContainer
         background: $b15
+        QCheckBox
+            @include checkbox 
         QPushButton
             background: $b20
             border: 1px solid transparent

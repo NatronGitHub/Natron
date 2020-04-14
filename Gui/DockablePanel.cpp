@@ -184,6 +184,7 @@ DockablePanel::DockablePanel(Gui* gui,
     QColor currentColor;
     if (headerMode != eHeaderModeNoHeader) {
         _imp->_headerWidget = new QFrame(this);
+        _imp->_headerWidget->setObjectName(QString::fromStdString("headerWidget"));
         _imp->_headerWidget->setFrameShape(QFrame::Box);
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
         _imp->_headerLayout->setContentsMargins(0, 0, 0, 0);
@@ -426,6 +427,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
 
     _imp->_horizContainer = new QWidget(this);
+    _imp->_horizContainer->setObjectName(QString::fromStdString("horizContainer"));
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
     _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
     _imp->_horizLayout->setSpacing(2);

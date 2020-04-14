@@ -1,2 +1,39 @@
 DockablePanel
-    // background: green
+    #headerWidget
+        background: $b17
+        padding: 4px
+        QLineEdit
+            margin-left: 10px
+    #horizContainer
+        background: $b10
+        QTabWidget            
+            border: 1px solid
+            background: $b18
+            QTabBar
+                @include tabbar
+            QLabel
+                color: $c1
+            QPushButton
+                @include button
+            ComboBox 
+                @include combobox
+                background: $b25
+            ScaleSliderQWidget
+                background: $b25
+                
+
+        QTreeView 
+            alternate-background-color: $b18
+            background-color: $b15
+            border: 1px solid $b18
+            QWidget
+                background: $b15
+            QHeaderView
+                &::section 
+                    color: $c1
+                    background-color: $b22
+                    padding: 5px 10px 5px 10px
+                    border: 0px solid transparent
+                    margin-left: 1px
+                    margin-top: 1px
+                    margin-bottom: 1px

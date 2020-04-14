@@ -16,5 +16,6 @@
     },
     "keywords": [],
     "author": "Francisco José Contreras Cuevas",
-    "license": "ISC"
+    "license": "ISC",
+    "dependencies": {}
 }

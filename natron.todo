@@ -1,0 +1,5 @@
+Gui:
+    nodeGraph:
+
+    DocablePanel:
+        ☐ corregir scroll cuando se usa la funcion "disableUpdate"

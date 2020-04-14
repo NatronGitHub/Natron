@@ -173,7 +173,7 @@ to_qcolor(double r,
 void
 Gui::loadStyleSheet()
 {
-    QString style = fread(":/Resources/Stylesheets/mainstyle.qss");
+    QString style = fread("/home/pancho/Documents/GitHub/Natron/Gui/Resources/Stylesheets/mainstyle.qss");
     qApp->setStyleSheet(style);
 
 //     SettingsPtr settings = appPTR->getCurrentSettings();

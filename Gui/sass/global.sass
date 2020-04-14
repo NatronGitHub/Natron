@@ -9,6 +9,8 @@
     font: 8pt "Tahoma"
 QMainWindow
     background: $b18
+
+
 QSplitter
     &::handle
         $width: 3px
@@ -116,7 +118,20 @@ QScrollBar
         image : url(:/Resources/Images/scrollbarButton_left.png)
         width: $width
         height: 11px
-QCheckBox
+
+@mixin button()
+    background: $b25
+    color: $c1
+    padding: 4px 10px 4px 10px
+    border-radius: 3px
+    border: 1px solid $b25
+    &:hover
+        border-color: mix($base, $b25, 50%)
+    &:pressed
+        background: mix($base, $b25, 5%)
+        color: $base
+
+@mixin checkbox()
     &::indicator
         width: 16px
         height: 16px
@@ -128,3 +143,13 @@ QCheckBox
         &:checked 
             image: url(:/Resources/Images/closeTab_hovered.png)
             border-color: $b50
+@mixin combobox()     
+    background: $b17
+    border-radius: 2px
+    border: 1px solid $b15
+    color: $c1
+    &:hover
+        border-color: mix($base, $b18, 40%)
+        padding: 0
+        margin: 0
+        background: $b20  
