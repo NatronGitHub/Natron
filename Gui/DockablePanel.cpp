@@ -108,6 +108,7 @@ DockablePanel::DockablePanel(Gui* gui,
     , KnobGuiContainerHelper(holder, stack)
     , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, helpToolTip) )
 {
+    disableUpdate(true);
     setContainerWidget(this);
 
     assert(holder);
@@ -453,6 +454,8 @@ DockablePanel::DockablePanel(Gui* gui,
     QObject::connect( _imp->_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onPageIndexChanged(int)) );
     _imp->_horizLayout->addWidget(_imp->_rightContainer);
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
+
+    disableUpdate(false);
 }
 
 DockablePanel::~DockablePanel()
@@ -1790,6 +1793,7 @@ DockablePanel::onEnterInGroupClicked()
 void
 DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 {
+    disableUpdate(true);
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
         const KnobsGuiMapping& knobsMap = getKnobsMapping();
@@ -1843,6 +1847,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             }
         }
     }
+    disableUpdate(false);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER

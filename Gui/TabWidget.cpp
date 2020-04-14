@@ -1819,6 +1819,7 @@ TabWidget::setAsAnchor(bool anchor)
 void
 TabWidget::togglePaneFullScreen()
 {
+    _imp->gui->disableUpdate(true);
     bool oldFullScreen;
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -1831,6 +1832,7 @@ TabWidget::togglePaneFullScreen()
     } else {
         _imp->gui->maximize(this);
     }
+    _imp->gui->disableUpdate(false);
 }
 
 void
