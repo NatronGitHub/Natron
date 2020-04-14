@@ -35,7 +35,6 @@ SUBDIRS += \
     Engine \
     Renderer \
     Gui \
-    Tests \
     PythonBin \
     App
 
@@ -57,7 +56,6 @@ openMVG.depends = ceres
 Engine.depends = libmv openMVG HostSupport libtess ceres
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
-Tests.depends = Gui Engine
 App.depends = Gui Engine
 
 OTHER_FILES += \
@@ -77,14 +75,6 @@ include(libs.pri)
 
 isEmpty(CONFIG_SET) {
     message("You did not select a config option for the build. Defaulting to Devel. You can choose among  (snapshot | alpha | beta | RC | stable | custombuild). For custombuild you need to define the environment variable BUILD_USER_NAME. Also you can give a revision number to the version of Natron with the environment variable BUILD_NUMBER (e.g: RC1, RC2 etc...)")
-}
-
-*-xcode {
-  # Qt 4.8.5's XCode generator has a bug and places moc_*.cpp files next to the sources instead of inside the build dir
-  # However, setting the MOC_DIR doesn't fix that (Xcode build fails)
-  # Simple rtule: don't use Xcode
-  #MOC_DIR = $$OUT_PWD
-  warning("Xcode generator wrongly places the moc files in the source directory. You thus cannot compile with different Qt versions using Xcode.")
 }
 
 CONFIG(debug, debug|release){

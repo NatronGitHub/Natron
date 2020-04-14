@@ -1,4 +1,0 @@
-This directory contains package-specific files included by build-Linux-sdk.sh.
-The rationale is that each file is copied just before building the package in the Dockerfile,
-thus the docker cache is invalidated from this step.
-That way, when a package version or build script, only this package and the downstreamm packages are rebuilt.
