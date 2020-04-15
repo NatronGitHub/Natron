@@ -22,6 +22,7 @@ CONFIG += link_pkgconfig
 # -------------------
 
 DEFINES += NATRON_BUILD_NUMBER=0
+DEFINES *= NDEBUG
 
 openmp {
 	QMAKE_CXXFLAGS += -fopenmp

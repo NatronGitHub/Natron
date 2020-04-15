@@ -2,4 +2,4 @@ Gui:
     DocablePanel:
         ☐ corregir scroll cuando se usa la funcion "disableUpdate"
     KnobUndoCommand:
-        ☐ Natron: KnobUndoCommand.cpp:296: error cuando presiono la tecla "restore default" en el panel "project settings"
+        ✔ Natron: KnobUndoCommand.cpp:296: error cuando presiono la tecla "restore default" en el panel "project settings" @done (4/15/2020, 7:43:53 PM)
