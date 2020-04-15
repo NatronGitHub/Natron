@@ -29,6 +29,10 @@ python {
 }
 
 
+
+QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\''
+
+
 boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
