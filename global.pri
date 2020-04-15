@@ -23,6 +23,11 @@ openmp {
   QMAKE_LFLAGS += -fopenmp
 }
 
+python {
+        LIBS += -lpython2.7
+        INCLUDEPATH *= /usr/include/python2.7
+}
+
 
 boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
