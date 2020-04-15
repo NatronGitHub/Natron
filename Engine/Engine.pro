@@ -26,9 +26,6 @@ QT += core network
 
 !noexpat: CONFIG += expat
 
-# Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
-#QT -= gui
-
 CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
 
 include(../global.pri)
@@ -523,62 +520,3 @@ HEADERS += \
 
 OTHER_FILES += \
     typesystem_engine.xml
-
-# GENERATED_SOURCES =				\
-# NatronEngine/animatedparam_wrapper.cpp		\
-# NatronEngine/app_wrapper.cpp			\
-# NatronEngine/beziercurve_wrapper.cpp		\
-# NatronEngine/booleanparam_wrapper.cpp		\
-# NatronEngine/buttonparam_wrapper.cpp		\
-# NatronEngine/choiceparam_wrapper.cpp		\
-# NatronEngine/colorparam_wrapper.cpp		\
-# NatronEngine/colortuple_wrapper.cpp		\
-# NatronEngine/double2dparam_wrapper.cpp		\
-# NatronEngine/double2dtuple_wrapper.cpp		\
-# NatronEngine/double3dparam_wrapper.cpp		\
-# NatronEngine/double3dtuple_wrapper.cpp		\
-# NatronEngine/doubleparam_wrapper.cpp		\
-# NatronEngine/effect_wrapper.cpp			\
-# NatronEngine/fileparam_wrapper.cpp		\
-# NatronEngine/group_wrapper.cpp			\
-# NatronEngine/groupparam_wrapper.cpp		\
-# NatronEngine/int2dparam_wrapper.cpp		\
-# NatronEngine/int2dtuple_wrapper.cpp		\
-# NatronEngine/int3dparam_wrapper.cpp		\
-# NatronEngine/int3dtuple_wrapper.cpp		\
-# NatronEngine/intparam_wrapper.cpp		\
-# NatronEngine/itembase_wrapper.cpp		\
-# NatronEngine/layer_wrapper.cpp			\
-# NatronEngine/natron_wrapper.cpp			\
-# NatronEngine/natronengine_module_wrapper.cpp	\
-# NatronEngine/outputfileparam_wrapper.cpp	\
-# NatronEngine/pageparam_wrapper.cpp		\
-# NatronEngine/param_wrapper.cpp			\
-# NatronEngine/parametricparam_wrapper.cpp	\
-# NatronEngine/pathparam_wrapper.cpp		\
-# NatronEngine/roto_wrapper.cpp			\
-# NatronEngine/stringparam_wrapper.cpp		\
-# NatronEngine/stringparambase_wrapper.cpp
-
-# defineReplace(shibokenWorkaround) {
-#     SOURCES += $$GENERATED_SOURCES
-#     return("%_wrapper.cpp")
-# }
-
-# isEmpty(SHIBOKEN) {
-#    SHIBOKEN = shiboken
-# }
-
-# SHIBOKEN_FILE  = . # Need to give some bogus input
-# SHIBOKEN.input = SHIBOKEN_FILE
-# SHIBOKEN.output_function = shibokenWorkaround
-# SHIBOKEN.commands = $$SHIBOKEN --include-paths=..:$$system(pkg-config --variable=includedir pyside)  --typesystem-paths=$$system(pkg-config --variable=typesystemdir pyside) Pyside_Engine_Python.h typesystem_engine.xml
-# SHIBOKEN.CONFIG = no_link # don't add the .cpp target file to OBJECTS
-# SHIBOKEN.clean = dummy # don't remove the %_wrapper.cpp file by "make clean"
-
-# QMAKE_EXTRA_COMPILERS += SHIBOKEN
-macx {
-
-OBJECTIVE_SOURCES += \
-    QUrlFix.mm
-}

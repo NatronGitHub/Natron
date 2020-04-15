@@ -13,7 +13,8 @@
     "scripts": {
         "d": "npx webpack -d",
         "w": "npx webpack -d --watch",
-        "b": "sh scripts/build.sh"
+        "b": "sh scripts/build.sh",
+        "clean": "git clean -fdx"
     },
     "keywords": [],
     "author": "Francisco José Contreras Cuevas",

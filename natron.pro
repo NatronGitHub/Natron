@@ -9,6 +9,7 @@ SUBDIRS += \
     openMVG \
     qhttpserver \
     libtess \
+    hoedown \
     Engine \
     Renderer \
     Gui \
@@ -23,6 +24,7 @@ ceres.subdir = libs/ceres
 libmv.subdir = libs/libmv
 openMVG.subdir = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
+hoedown.subdir     = libs/hoedown
 libtess.subdir = libs/libtess
 #-----------------------------
 

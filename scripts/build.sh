@@ -3,7 +3,6 @@
 thread=4
 natron_src='./'
 qmake="qmake-qt4"
-compile_type='Release'
 
 # entorno para gcc 8.3
 source /opt/rh/devtoolset-8/enable
@@ -20,7 +19,7 @@ npm run d
 # -----------------
 
 # Compilacion
-$qmake -r CONFIG+="$compile_type" ./Project.pro
+$qmake
 make -j $thread
 # -------------------
 
