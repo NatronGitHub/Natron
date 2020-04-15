@@ -1,39 +1,47 @@
 DockablePanel
     #headerWidget
-        background: $b17
+        background: $b15
         padding: 4px
         QLineEdit
             margin-left: 10px
+            background: $b18
+            border-color: $b13
+            &::focus
+                border-color: mix($base, $b18, 50%)
     #horizContainer
         background: $b10
-        QTabWidget            
-            border: 1px solid
-            background: $b18
-            QTabBar
-                @include tabbar
-            QLabel
-                color: $c1
-            QPushButton
-                @include button
-            ComboBox 
-                @include combobox
-                background: $b25
-            ScaleSliderQWidget
-                background: $b25
+        #rightContainer
+            background: none
+            QTabWidget            
+                border: 1px solid
+                background: $b18
+                QTabBar
+                    @include tabbar
+                    
+
+                QLabel
+                    color: $c1
+                QPushButton
+                    @include button
+                ComboBox 
+                    @include combobox
+                    background: $b25
+                ScaleSliderQWidget
+                    background: none
                 
 
-        QTreeView 
-            alternate-background-color: $b18
-            background-color: $b15
-            border: 1px solid $b18
-            QWidget
-                background: $b15
-            QHeaderView
-                &::section 
-                    color: $c1
-                    background-color: $b22
-                    padding: 5px 10px 5px 10px
-                    border: 0px solid transparent
-                    margin-left: 1px
-                    margin-top: 1px
-                    margin-bottom: 1px
+            QTreeView 
+                alternate-background-color: $b18
+                background-color: $b15
+                border: 1px solid $b18
+                QWidget
+                    background: $b15
+                QHeaderView
+                    &::section 
+                        color: $c1
+                        background-color: $b22
+                        padding: 5px 10px 5px 10px
+                        border: 0px solid transparent
+                        margin-left: 1px
+                        margin-top: 1px
+                        margin-bottom: 1px

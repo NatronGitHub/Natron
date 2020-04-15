@@ -10,3 +10,4 @@ App/Natron
 Renderer/NatronRenderer
 Gui/Resources/etc/fonts/fonts.conf
 PythonBin/natron-python
+.vscode

@@ -61,6 +61,8 @@
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerGL.h"
 
+#include "utils/util.hpp"
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -87,11 +89,12 @@ addSpacer(QBoxLayout* layout)
 {
     layout->addSpacing(5);
     QFrame* line = new QFrame( layout->parentWidget() );
+    line->setObjectName(qs("space"));
     line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Raised);
     //line->setObjectName("LayoutSeparator");
     QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
+    // palette.setColor(QPalette::Foreground, Qt::black);
     line->setPalette(palette);
     layout->addWidget(line);
     layout->addSpacing(5);
@@ -608,6 +611,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*=============================================*/
 
+    const QSize playerButtonSize = QSize(30,25);
+
     /*Player buttons*/
     _imp->playerButtonsContainer = new QWidget(this);
     _imp->playerButtonsContainer->setObjectName(QString::fromUtf8("playerButtonsContainer"));
@@ -623,15 +628,16 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->firstFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->firstFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->firstFrame_Button->setFixedSize(buttonSize);
+    _imp->firstFrame_Button->setFixedSize(playerButtonSize);
     _imp->firstFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, "<p>" + tr("First frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->firstFrame_Button);
 
 
     _imp->previousKeyFrame_Button = new Button(_imp->playerButtonsContainer);
+    _imp->previousKeyFrame_Button->setObjectName(qs("playerButton"));
     _imp->previousKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->previousKeyFrame_Button->setFixedSize(buttonSize);
+    _imp->previousKeyFrame_Button->setFixedSize(playerButtonSize);
     _imp->previousKeyFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, "<p>" + tr("Previous Keyframe").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->previousKeyFrame_Button);
@@ -639,7 +645,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->previousFrame_Button->setFixedSize(buttonSize);
+    _imp->previousFrame_Button->setFixedSize(playerButtonSize);
     _imp->previousFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, "<p>" + tr("Previous frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->previousFrame_Button);
@@ -647,7 +653,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
     _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->play_Backward_Button->setFixedSize(buttonSize);
+    _imp->play_Backward_Button->setFixedSize(playerButtonSize);
     _imp->play_Backward_Button->setIconSize(buttonIconSize);
     {
         std::list<std::string> actions;
@@ -661,8 +667,9 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->play_Backward_Button->setDown(false);
 
     _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
+    _imp->play_Forward_Button->setObjectName(qs("playerButton"));
     _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->play_Forward_Button->setFixedSize(buttonSize);
+    _imp->play_Forward_Button->setFixedSize(playerButtonSize);
     _imp->play_Forward_Button->setIconSize(buttonIconSize);
     {
         std::list<std::string> actions;
@@ -676,17 +683,18 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->play_Forward_Button->setDown(false);
 
 
-    _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);
+    _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);    
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->nextFrame_Button->setFixedSize(buttonSize);
+    _imp->nextFrame_Button->setFixedSize(playerButtonSize);
     _imp->nextFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, "<p>" + tr("Next frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->nextFrame_Button);
 
 
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
+    _imp->nextKeyFrame_Button->setObjectName(qs("playerButton"));
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->nextKeyFrame_Button->setFixedSize(buttonSize);
+    _imp->nextKeyFrame_Button->setFixedSize(playerButtonSize);
     _imp->nextKeyFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, "<p>" + tr("Next Keyframe").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->nextKeyFrame_Button);
@@ -694,7 +702,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->lastFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->lastFrame_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->lastFrame_Button->setFixedSize(buttonSize);
+    _imp->lastFrame_Button->setFixedSize(playerButtonSize);
     _imp->lastFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, "<p>" + tr("Last Frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->lastFrame_Button);
@@ -1004,6 +1012,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*frame seeker*/
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
+    _imp->timeLineGui->setObjectName(qs("timeLineGui"));
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
     QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );

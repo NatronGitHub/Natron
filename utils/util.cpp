@@ -28,3 +28,8 @@ void fwrite(QString _path, QString data)
 		qFile.close();
 	}
 }
+
+QString qs(string str)
+{
+	return QString::fromStdString(str);
+}

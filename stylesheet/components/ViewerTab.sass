@@ -1,9 +1,15 @@
 #ViewerTab
     ComboBox 
         @include combobox
+
+    #space
+        border-right: 1px solid $b18
+        background: none
+
     #firstSettingsRow
         background: $b22
         border-bottom: 1px solid $b13
+
         #ChannelsComboBox
             @mixin color($color, $back, $border)
                 background: mix($color, $b17, $back)
@@ -24,14 +30,22 @@
     #secondSettingsRow
         background: $b18
     #viewerContainer
+
     #playerButtonsContainer
-        background: $b15
+        background: $b17
+        border-top: 1px solid $b15
+        
         QCheckBox
             @include checkbox 
-        QPushButton
-            background: $b20
-            border: 1px solid transparent
+        #playerButton
+            background: $b22
+            border: 1px solid $b14
+        QPushButton, #playerButton
+            
+            
             border-radius: 2px
             &:hover
                 background: mix($base, $b20, 10%)
                 border-color: mix($base, $b20, 30%)
+        QLineEdit
+            background: $b20

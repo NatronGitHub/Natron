@@ -63,6 +63,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
+#include "utils/util.hpp"
 
 NATRON_NAMESPACE_ENTER
 
@@ -90,6 +91,7 @@ Gui::setupUi()
     /*CENTRAL AREA*/
     //======================
     _imp->_centralWidget = new QWidget(this);
+    _imp->_centralWidget->setObjectName(qs("centralWidget"));
     setCentralWidget(_imp->_centralWidget);
     _imp->_mainLayout = new QHBoxLayout(_imp->_centralWidget);
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -104,6 +106,7 @@ Gui::setupUi()
 
 
     _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
+    _imp->_toolBox->setObjectName(qs("toolBox"));
     _imp->_toolBox->setToolButtonStyle(Qt::ToolButtonIconOnly);
     _imp->_toolBox->setOrientation(Qt::Vertical);
     _imp->_toolBox->setMaximumWidth( TO_DPIX(NATRON_TOOL_BUTTON_SIZE) );

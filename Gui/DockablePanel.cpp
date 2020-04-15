@@ -89,6 +89,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+#include "utils/util.hpp"
+
 using std::make_pair;
 
 
@@ -427,12 +429,13 @@ DockablePanel::DockablePanel(Gui* gui,
 
 
     _imp->_horizContainer = new QWidget(this);
-    _imp->_horizContainer->setObjectName(QString::fromStdString("horizContainer"));
+    _imp->_horizContainer->setObjectName(qs("horizContainer"));
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(0, 3, 3, 0);
-    _imp->_horizLayout->setSpacing(2);
+    _imp->_horizLayout->setContentsMargins(0, 7, 0, 0);
+    _imp->_horizLayout->setSpacing(0);
 
     _imp->_rightContainer = new QWidget(_imp->_horizContainer);
+    _imp->_rightContainer->setObjectName(qs("rightContainer"));
     _imp->_rightContainerLayout = new QVBoxLayout(_imp->_rightContainer);
     _imp->_rightContainerLayout->setSpacing(0);
     _imp->_rightContainerLayout->setContentsMargins(0, 0, 0, 0);

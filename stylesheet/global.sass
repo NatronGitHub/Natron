@@ -1,15 +1,20 @@
 // resetear toda la interface    
 *
-    // background: $b18
-    color: white
+    background: $b18
+    color: $c1
     border: 0px
     padding: 0
     margin: 0
     outline: 0
-    font: 8pt "Tahoma"
+    font: 8pt "Arial"
 QMainWindow
     background: $b18
 
+QPushButton, QLabel, QCheckBox
+    background: none
+
+QToolBar
+    background: $b18
 
 QSplitter
     &::handle
@@ -25,13 +30,12 @@ QSplitter
             border-top: 1px solid $b10
             height: $width
 QMenu 
-    background-color: $b15
+    background-color: $b17
     color: $c1
     border: 1px solid mix($base, $b15, 20%)
     border-radius: 2px
     &::item 
-        padding: 4px 15px 4px 15px
-        spacing: 20px
+        padding: 4px 15px 4px 22px
         &:selected 
             background-color: mix($base, $b15, 50%)
             color: $c3
@@ -39,17 +43,16 @@ QMenu
         background-color: $b20
         margin: 5px
         height: 1px
-    &::indicator 
-        width: 20px
-        height: 13px
+
+    
+
 QLineEdit 
     background: $b15
     border: 1px solid $b12
     border-radius: 2px
     color: $c1
     &:hover
-        background: $b20
-        border-color: $b18
+        border-color: mix($base, $b15, 10%)
     &:focus
         background: $b20
         border-color: $base
