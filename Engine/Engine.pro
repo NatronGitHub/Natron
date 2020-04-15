@@ -23,7 +23,6 @@ CONFIG += staticlib
 CONFIG += moc
 CONFIG += boost boost-serialization-lib qt cairo python shiboken pyside 
 QT += core network
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 !noexpat: CONFIG += expat
 

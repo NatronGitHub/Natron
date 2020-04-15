@@ -61,13 +61,7 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
 
-win32-msvc* {
-        CONFIG(64bit) {
-                QMAKE_LFLAGS += /MACHINE:X64
-        } else {
-                QMAKE_LFLAGS += /MACHINE:X86
-        }
-}
+
 
 SOURCES += \
     AboutWindow.cpp \
@@ -408,7 +402,3 @@ OTHER_FILES += \
     Resources/Images/searchSize.png \
     Resources/Images/splashscreen.svg
 
-macx {
-OBJECTIVE_SOURCES += \
-    $$PWD/../Gui/QtMac.mm
-}
