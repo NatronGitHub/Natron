@@ -1,5 +1,5 @@
 Gui:
-    nodeGraph:
-
     DocablePanel:
         ☐ corregir scroll cuando se usa la funcion "disableUpdate"
+    KnobUndoCommand:
+        ☐ Natron: KnobUndoCommand.cpp:296: error cuando presiono la tecla "restore default" en el panel "project settings"

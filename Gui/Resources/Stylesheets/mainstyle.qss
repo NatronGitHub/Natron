@@ -239,6 +239,21 @@ DockablePanel #headerWidget {
     border-color: #202122; }
     DockablePanel #headerWidget QLineEdit::focus {
       border-color: #357097; }
+  DockablePanel #headerWidget QPushButton {
+    background: #3e4041;
+    color: #cbcccd;
+    padding: 4px 10px 4px 10px;
+    border-radius: 3px;
+    border: 1px solid #3e4041;
+    background: none;
+    border-color: #252627; }
+    DockablePanel #headerWidget QPushButton:hover {
+      border-color: #3e79a0; }
+    DockablePanel #headerWidget QPushButton:pressed {
+      background: #3e454b;
+      color: #3eb2ff; }
+    DockablePanel #headerWidget QPushButton:hover {
+      background: #323334; }
 
 DockablePanel #horizContainer {
   background: #19191a; }
