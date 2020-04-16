@@ -192,7 +192,7 @@ CurveEditor::CurveEditor(Gui* gui,
 
     _imp->leftPaneContainer = new QWidget(_imp->splitter);
     _imp->leftPaneLayout = new QVBoxLayout(_imp->leftPaneContainer);
-    _imp->leftPaneLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->leftPaneLayout->setContentsMargins(7, 7, 5, 0);
     _imp->filterContainer = new QWidget(_imp->leftPaneContainer);
 
     _imp->filterLayout = new QHBoxLayout(_imp->filterContainer);
@@ -210,7 +210,9 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->leftPaneLayout->addWidget(_imp->filterContainer);
 
     _imp->tree = new CurveEditorTreeWidget(gui, _imp->leftPaneContainer);
-    _imp->tree->setObjectName( QString::fromUtf8("tree") );
+    _imp->tree->setAlternatingRowColors(true);
+    _imp->tree->setObjectName("tree");
+    _imp->tree->setFocusPolicy(Qt::NoFocus); 
     _imp->tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
     _imp->tree->setColumnCount(1);
     _imp->tree->header()->close();
@@ -228,7 +230,7 @@ CurveEditor::CurveEditor(Gui* gui,
 
     _imp->expressionContainer = new QWidget(this);
     _imp->expressionLayout = new QHBoxLayout(_imp->expressionContainer);
-    _imp->expressionLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->expressionLayout->setContentsMargins(7, 7, 7, 7);
 
     _imp->knobLabel = new Label(_imp->expressionContainer);
     _imp->knobLabel->setAltered(true);

@@ -115,8 +115,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsContainerLayout = new QHBoxLayout(_imp->buttonsContainer);
-    _imp->buttonsContainerLayout->setContentsMargins(0, 0, 0, 0);
-    _imp->buttonsContainerLayout->setSpacing(2);
+    _imp->buttonsContainerLayout->setContentsMargins(5, 5, 5, 5);
+    _imp->buttonsContainerLayout->setSpacing(3);
 
     QPixmap undoPix, redoPix, clearHistoPix, sourceScriptPix, loadScriptPix, saveScriptPix, execScriptPix, outputVisiblePix, outputHiddenPix, clearOutpoutPix;
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &undoPix);

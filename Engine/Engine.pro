@@ -252,6 +252,7 @@ SOURCES += \
     NatronEngine/track_wrapper.cpp \
     NatronEngine/tracker_wrapper.cpp \
     NatronEngine/userparamholder_wrapper.cpp \
+    ../utils/util.cpp \
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -517,6 +518,7 @@ HEADERS += \
     NatronEngine/track_wrapper.h \
     NatronEngine/tracker_wrapper.h \
     NatronEngine/userparamholder_wrapper.h \
+    ../utils/util.hpp \
 
 OTHER_FILES += \
     typesystem_engine.xml

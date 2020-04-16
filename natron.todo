@@ -3,3 +3,7 @@ Gui:
         ☐ corregir scroll cuando se usa la funcion "disableUpdate"
     KnobUndoCommand:
         ✔ Natron: KnobUndoCommand.cpp:296: error cuando presiono la tecla "restore default" en el panel "project settings" @done (4/15/2020, 7:43:53 PM)
+    PreferencesPanel:
+        ☐ dejar siempre en foco las preferencias, ahora cuando hacemos click al natron, las preferencias quedan detras.
+    PropertiesBinWrapper:
+        ☐ despues de agregar muchos nodos, y se hace split, se expande o se cierra, PropertiesBinWrapper funciona muy lento

@@ -176,6 +176,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
 
 
     _imp->view = new TableView(this);
+    _imp->view->setAlternatingRowColors(true);
     _imp->view->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _imp->model = new TableModel(0, 0, _imp->view);
     _imp->view->setSortingEnabled(false);

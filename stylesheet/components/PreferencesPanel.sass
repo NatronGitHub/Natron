@@ -1,0 +1,29 @@
+PreferencesPanel
+    background: $b17
+    #tree
+        @include treewidget
+    QSplitter
+        &::handle
+            &::horizontal, &:vertical
+                border: none 
+            &:horizontal
+                border-left: 2px solid none
+                width: 15px
+                &:hover
+                    border-color: mix($base, $b10, 60%)
+    QFrame
+        background: $b17
+        QWidget 
+            background: $b17
+        ComboBox
+            @include combobox
+            background: $b22
+        QLineEdit
+            background: $b22
+        QPushButton
+            @include button
+        #pluginsView, #shortcutsTree
+            @include treewidget
+
+    QPushButton
+        @include button

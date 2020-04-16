@@ -16,7 +16,7 @@
 using namespace std;
 
 QString fread(string path);
-void fwrite(QString path, QString data);
+void fwrite(string path, string data);
 QString qs(string str);
 
 // print para 1, 2 y 3 argumentos

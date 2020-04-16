@@ -379,5 +379,9 @@
         <file>Resources/Images/motionTypeT.png</file>
         <file>Resources/Images/patternSize.png</file>
         <file>Resources/Images/searchSize.png</file>
+        <file>Resources/Images/down_arrow.png</file>
+        <file>Resources/Images/right_arrow.png</file>
+        <file>Resources/Images/up_arrow.png</file>
+        <file>Resources/Images/left_arrow.png</file>
     </qresource>
 </RCC>

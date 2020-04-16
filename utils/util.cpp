@@ -17,14 +17,14 @@ QString fread(string _path)
 	return info.left(info.size() - 1); // borra el ultimo caracter "\n"
 }
 
-void fwrite(QString _path, QString data)
+void fwrite(string _path, string data)
 {
-	const QString qPath(_path);
+	const QString qPath(QString::fromStdString(_path));
 	QFile qFile(qPath);
 	if (qFile.open(QIODevice::WriteOnly))
 	{
 		QTextStream out(&qFile);
-		out << data;
+		out << QString::fromStdString(data);
 		qFile.close();
 	}
 }

@@ -482,6 +482,9 @@ void
 PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
 {
     _imp->pluginsView = new QTreeWidget(this);
+    _imp->pluginsView->setObjectName("pluginsView"); 
+    _imp->pluginsView->setFocusPolicy(Qt::NoFocus); 
+    _imp->pluginsView->setAlternatingRowColors(true); 
     _imp->pluginsView->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
     Label* restartWarningLabel = new Label(tr("<i>Changing any plug-in property requires a restart of %1</i>").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), this);
@@ -623,6 +626,8 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutsFrame = dynamic_cast<QFrame*>( createPageMainWidget(this) );
     _imp->shortcutsLayout = new QVBoxLayout(_imp->shortcutsFrame);
     _imp->shortcutsTree = new HackedTreeWidget(_imp->shortcutsFrame);
+    _imp->shortcutsTree->setAlternatingRowColors(true);
+    _imp->shortcutsTree->setObjectName("shortcutsTree");
     _imp->shortcutsTree->setColumnCount(3);
     QStringList headers;
     headers << tr("Command") << tr("Shortcut") << tr("Alt. Shortcut");
@@ -740,6 +745,8 @@ PreferencesPanel::createGui()
     _imp->splitter = new Splitter(Qt::Horizontal, this);
 
     _imp->tree = new QTreeWidget(_imp->splitter);
+    _imp->tree->setAlternatingRowColors(true);   
+    _imp->tree->setObjectName("tree");
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setColumnCount(1);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect, 0);
@@ -1391,12 +1398,12 @@ ShortcutDelegate::paint(QPainter * painter,
     if (isTopLevel) {
         font.setBold(true);
         font.setPixelSize(13);
-        pen.setColor(Qt::black);
+        pen.setColor(QColor(200, 200, 200));
     } else {
         font.setBold(false);
         font.setPixelSize(11);
         if ( item->isDisabled() ) {
-            pen.setColor(Qt::black);
+            pen.setColor(QColor(100, 100, 100));
         } else {
             pen.setColor( QColor(200, 200, 200) );
         }

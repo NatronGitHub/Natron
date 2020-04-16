@@ -9,13 +9,10 @@
     font: 8pt "Arial"
 QMainWindow
     background: $b18
-
 QPushButton, QLabel, QCheckBox
     background: none
-
 QToolBar
     background: $b18
-
 QSplitter
     &::handle
         $width: 3px
@@ -43,25 +40,17 @@ QMenu
         background-color: $b20
         margin: 5px
         height: 1px
-
 QToolTip 
    color: $c1
-   background: transparent
+   background: black
    border: 1px solid mix($base, black, 50%)
    border-radius: 2px
    padding: 2px
-   opacity: 0.2
-
-
-    
-
 QLineEdit 
     background: $b15
     border: 1px solid $b12
     border-radius: 2px
     color: $c1
-    &:hover
-        border-color: mix($base, $b15, 10%)
     &:focus
         background: $b20
         border-color: $base
@@ -74,12 +63,12 @@ QScrollBar
     $width: 20px
     padding: 3px
     &:vertical, &:horizontal 
-        background: $b12
+        background: $b14
     &:vertical 
         width: 15px
         margin : 23px 0px 23px 0px
     &:horizontal 
-        height: 10px
+        height: 15px
         margin : 0px 23px 0px 23px
     &::handle
         &:vertical, &:horizontal 
@@ -114,23 +103,19 @@ QScrollBar
         &:horizontal 
             width: $width
             subcontrol-position: right
+    &::up-arrow:vertical, 
+    &::down-arrow:vertical,
+    &::left-arrow:horizontal,
+    &::right-arrow:horizontal
+        background: transparent
     &::up-arrow:vertical 
-        image : url(:/Resources/Images/scrollbarButton_up.png)
-        width: 11px
-        height: $width
+        image : url(:/Resources/Images/up_arrow.png)
     &::down-arrow:vertical 
-        image : url(:/Resources/Images/scrollbarButton_down.png)
-        width: 11px
-        height: $width
+        image : url(:/Resources/Images/down_arrow.png)
     &::left-arrow:horizontal 
-        image : url(:/Resources/Images/scrollbarButton_right.png)
-        width: $width
-        height: 11px
+        image : url(:/Resources/Images/right_arrow.png)
     &::right-arrow:horizontal 
-        image : url(:/Resources/Images/scrollbarButton_left.png)
-        width: $width
-        height: 11px
-
+        image : url(:/Resources/Images/left_arrow.png)
 @mixin button()
     background: $b25
     color: $c1
@@ -142,7 +127,6 @@ QScrollBar
     &:pressed
         background: mix($base, $b25, 5%)
         color: $base
-
 @mixin checkbox()
     &::indicator
         width: 16px
@@ -165,3 +149,38 @@ QScrollBar
         padding: 0
         margin: 0
         background: $b20  
+@mixin treewidget()
+    background: $b20
+    alternate-background-color: $b22
+    border: 1px solid $b15
+    border-radius: 2px
+    &::item 
+        height: 20px
+        &:selected
+            background: mix($base, $b20, 10%)
+            color: $base
+    &::branch 
+        background: $b20
+        // @include treecolor
+        &:alternate 
+            background: $b22
+        &:selected
+            background: mix($base, $b20, 10%)
+        &:has-children
+            &:selected
+                background: mix($base, $b20, 10%)
+            &:open 
+                image: url(:/Resources/Images/down_arrow.png)
+            &:closed
+                image: url(:/Resources/Images/right_arrow.png)
+    QHeaderView
+        &::section 
+            background-color: $b25
+            padding: 5px 10px 5px 10px
+            border: 0px solid none
+            border-bottom: 1px solid $b18
+            margin-left: 1px
+        &::down-arrow
+            image: url(:/Resources/Images/down_arrow.png)
+        &::up-arrow 
+            image: url(:/Resources/Images/up_arrow.png)

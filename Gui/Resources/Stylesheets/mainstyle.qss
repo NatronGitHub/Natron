@@ -47,19 +47,16 @@ QMenu {
 
 QToolTip {
   color: #cbcccd;
-  background: transparent;
+  background: black;
   border: 1px solid #1f5980;
   border-radius: 2px;
-  padding: 2px;
-  opacity: 0.2; }
+  padding: 2px; }
 
 QLineEdit {
   background: #252627;
   border: 1px solid #1e1e1f;
   border-radius: 2px;
   color: #cbcccd; }
-  QLineEdit:hover {
-    border-color: #28343d; }
   QLineEdit:focus {
     background: #323334;
     border-color: #3eb2ff; }
@@ -72,12 +69,12 @@ CurveEditor #tree {
 QScrollBar {
   padding: 3px; }
   QScrollBar:vertical, QScrollBar:horizontal {
-    background: #1e1e1f; }
+    background: #232424; }
   QScrollBar:vertical {
     width: 15px;
     margin: 23px 0px 23px 0px; }
   QScrollBar:horizontal {
-    height: 10px;
+    height: 15px;
     margin: 0px 23px 0px 23px; }
   QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
     background: #323334;
@@ -108,22 +105,16 @@ QScrollBar {
   QScrollBar::sub-line:horizontal {
     width: 20px;
     subcontrol-position: right; }
+  QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical, QScrollBar::left-arrow:horizontal, QScrollBar::right-arrow:horizontal {
+    background: transparent; }
   QScrollBar::up-arrow:vertical {
-    image: url(:/Resources/Images/scrollbarButton_up.png);
-    width: 11px;
-    height: 20px; }
+    image: url(:/Resources/Images/up_arrow.png); }
   QScrollBar::down-arrow:vertical {
-    image: url(:/Resources/Images/scrollbarButton_down.png);
-    width: 11px;
-    height: 20px; }
+    image: url(:/Resources/Images/down_arrow.png); }
   QScrollBar::left-arrow:horizontal {
-    image: url(:/Resources/Images/scrollbarButton_right.png);
-    width: 20px;
-    height: 11px; }
+    image: url(:/Resources/Images/right_arrow.png); }
   QScrollBar::right-arrow:horizontal {
-    image: url(:/Resources/Images/scrollbarButton_left.png);
-    width: 20px;
-    height: 11px; }
+    image: url(:/Resources/Images/left_arrow.png); }
 
 #PropertiesBinWrapper {
   background: #323334; }
@@ -330,8 +321,209 @@ DockablePanel #horizContainer {
         margin-left: 1px;
         margin-top: 1px;
         margin-bottom: 1px; }
+    DockablePanel #horizContainer #rightContainer LineEdit {
+      background: #373839; }
+      DockablePanel #horizContainer #rightContainer LineEdit[animation="1"] {
+        background-color: #668aa7; }
+      DockablePanel #horizContainer #rightContainer LineEdit[animation="2"] {
+        background-color: #2379be; }
+      DockablePanel #horizContainer #rightContainer LineEdit[animation="3"] {
+        background-color: #83b641; }
+      DockablePanel #horizContainer #rightContainer LineEdit[altered="false"] {
+        color: #f2f2f3; }
+      DockablePanel #horizContainer #rightContainer LineEdit[dirty="true"] {
+        background-color: red; }
+    DockablePanel #horizContainer #rightContainer ClickableLabel[dirty="false"] {
+      color: #b1b2b4; }
 
 #toolBox {
   background: #2d2e2f;
   spacing: 3px; }
+
+PreferencesPanel {
+  background: #2a2b2c; }
+  PreferencesPanel #tree {
+    background: #323334;
+    alternate-background-color: #373839;
+    border: 1px solid #252627;
+    border-radius: 2px; }
+    PreferencesPanel #tree::item {
+      height: 20px; }
+      PreferencesPanel #tree::item:selected {
+        background: #334048;
+        color: #3eb2ff; }
+    PreferencesPanel #tree::branch {
+      background: #323334; }
+      PreferencesPanel #tree::branch:alternate {
+        background: #373839; }
+      PreferencesPanel #tree::branch:selected {
+        background: #334048; }
+      PreferencesPanel #tree::branch:has-children:selected {
+        background: #334048; }
+      PreferencesPanel #tree::branch:has-children:open {
+        image: url(:/Resources/Images/down_arrow.png); }
+      PreferencesPanel #tree::branch:has-children:closed {
+        image: url(:/Resources/Images/right_arrow.png); }
+    PreferencesPanel #tree QHeaderView::section {
+      background-color: #3e4041;
+      padding: 5px 10px 5px 10px;
+      border: 0px solid none;
+      border-bottom: 1px solid #2d2e2f;
+      margin-left: 1px; }
+    PreferencesPanel #tree QHeaderView::down-arrow {
+      image: url(:/Resources/Images/down_arrow.png); }
+    PreferencesPanel #tree QHeaderView::up-arrow {
+      image: url(:/Resources/Images/up_arrow.png); }
+  PreferencesPanel QSplitter::handle::horizontal, PreferencesPanel QSplitter::handle:vertical {
+    border: none; }
+  PreferencesPanel QSplitter::handle:horizontal {
+    border-left: 2px solid none;
+    width: 15px; }
+    PreferencesPanel QSplitter::handle:horizontal:hover {
+      border-color: #2f75a3; }
+  PreferencesPanel QFrame {
+    background: #2a2b2c; }
+    PreferencesPanel QFrame QWidget {
+      background: #2a2b2c; }
+    PreferencesPanel QFrame ComboBox {
+      background: #2d2e2f;
+      border-radius: 2px;
+      border: 1px solid #252627;
+      color: #cbcccd;
+      background: #373839; }
+      PreferencesPanel QFrame ComboBox:hover {
+        border-color: #346382;
+        padding: 0;
+        margin: 0;
+        background: #323334; }
+    PreferencesPanel QFrame QLineEdit {
+      background: #373839; }
+    PreferencesPanel QFrame QPushButton {
+      background: #3e4041;
+      color: #cbcccd;
+      padding: 4px 10px 4px 10px;
+      border-radius: 3px;
+      border: 1px solid #3e4041; }
+      PreferencesPanel QFrame QPushButton:hover {
+        border-color: #3e79a0; }
+      PreferencesPanel QFrame QPushButton:pressed {
+        background: #3e454b;
+        color: #3eb2ff; }
+    PreferencesPanel QFrame #pluginsView, PreferencesPanel QFrame #shortcutsTree {
+      background: #323334;
+      alternate-background-color: #373839;
+      border: 1px solid #252627;
+      border-radius: 2px; }
+      PreferencesPanel QFrame #pluginsView::item, PreferencesPanel QFrame #shortcutsTree::item {
+        height: 20px; }
+        PreferencesPanel QFrame #pluginsView::item:selected, PreferencesPanel QFrame #shortcutsTree::item:selected {
+          background: #334048;
+          color: #3eb2ff; }
+      PreferencesPanel QFrame #pluginsView::branch, PreferencesPanel QFrame #shortcutsTree::branch {
+        background: #323334; }
+        PreferencesPanel QFrame #pluginsView::branch:alternate, PreferencesPanel QFrame #shortcutsTree::branch:alternate {
+          background: #373839; }
+        PreferencesPanel QFrame #pluginsView::branch:selected, PreferencesPanel QFrame #shortcutsTree::branch:selected {
+          background: #334048; }
+        PreferencesPanel QFrame #pluginsView::branch:has-children:selected, PreferencesPanel QFrame #shortcutsTree::branch:has-children:selected {
+          background: #334048; }
+        PreferencesPanel QFrame #pluginsView::branch:has-children:open, PreferencesPanel QFrame #shortcutsTree::branch:has-children:open {
+          image: url(:/Resources/Images/down_arrow.png); }
+        PreferencesPanel QFrame #pluginsView::branch:has-children:closed, PreferencesPanel QFrame #shortcutsTree::branch:has-children:closed {
+          image: url(:/Resources/Images/right_arrow.png); }
+      PreferencesPanel QFrame #pluginsView QHeaderView::section, PreferencesPanel QFrame #shortcutsTree QHeaderView::section {
+        background-color: #3e4041;
+        padding: 5px 10px 5px 10px;
+        border: 0px solid none;
+        border-bottom: 1px solid #2d2e2f;
+        margin-left: 1px; }
+      PreferencesPanel QFrame #pluginsView QHeaderView::down-arrow, PreferencesPanel QFrame #shortcutsTree QHeaderView::down-arrow {
+        image: url(:/Resources/Images/down_arrow.png); }
+      PreferencesPanel QFrame #pluginsView QHeaderView::up-arrow, PreferencesPanel QFrame #shortcutsTree QHeaderView::up-arrow {
+        image: url(:/Resources/Images/up_arrow.png); }
+  PreferencesPanel QPushButton {
+    background: #3e4041;
+    color: #cbcccd;
+    padding: 4px 10px 4px 10px;
+    border-radius: 3px;
+    border: 1px solid #3e4041; }
+    PreferencesPanel QPushButton:hover {
+      border-color: #3e79a0; }
+    PreferencesPanel QPushButton:pressed {
+      background: #3e454b;
+      color: #3eb2ff; }
+
+CurveEditor QTreeWidget {
+  background: #323334;
+  alternate-background-color: #373839;
+  border: 1px solid #252627;
+  border-radius: 2px; }
+  CurveEditor QTreeWidget::item {
+    height: 20px; }
+    CurveEditor QTreeWidget::item:selected {
+      background: #334048;
+      color: #3eb2ff; }
+  CurveEditor QTreeWidget::branch {
+    background: #323334; }
+    CurveEditor QTreeWidget::branch:alternate {
+      background: #373839; }
+    CurveEditor QTreeWidget::branch:selected {
+      background: #334048; }
+    CurveEditor QTreeWidget::branch:has-children:selected {
+      background: #334048; }
+    CurveEditor QTreeWidget::branch:has-children:open {
+      image: url(:/Resources/Images/down_arrow.png); }
+    CurveEditor QTreeWidget::branch:has-children:closed {
+      image: url(:/Resources/Images/right_arrow.png); }
+  CurveEditor QTreeWidget QHeaderView::section {
+    background-color: #3e4041;
+    padding: 5px 10px 5px 10px;
+    border: 0px solid none;
+    border-bottom: 1px solid #2d2e2f;
+    margin-left: 1px; }
+  CurveEditor QTreeWidget QHeaderView::down-arrow {
+    image: url(:/Resources/Images/down_arrow.png); }
+  CurveEditor QTreeWidget QHeaderView::up-arrow {
+    image: url(:/Resources/Images/up_arrow.png); }
+
+CurveEditor QLineEdit {
+  background: #323334; }
+
+ProgressPanel QWidget {
+  background: #323334; }
+
+ProgressPanel TableView {
+  background: #323334;
+  alternate-background-color: #373839;
+  border: 1px solid #252627;
+  border-radius: 2px;
+  border-radius: 0;
+  border: none; }
+  ProgressPanel TableView::item {
+    height: 20px; }
+    ProgressPanel TableView::item:selected {
+      background: #334048;
+      color: #3eb2ff; }
+  ProgressPanel TableView::branch {
+    background: #323334; }
+    ProgressPanel TableView::branch:alternate {
+      background: #373839; }
+    ProgressPanel TableView::branch:selected {
+      background: #334048; }
+    ProgressPanel TableView::branch:has-children:selected {
+      background: #334048; }
+    ProgressPanel TableView::branch:has-children:open {
+      image: url(:/Resources/Images/down_arrow.png); }
+    ProgressPanel TableView::branch:has-children:closed {
+      image: url(:/Resources/Images/right_arrow.png); }
+  ProgressPanel TableView QHeaderView::section {
+    background-color: #3e4041;
+    padding: 5px 10px 5px 10px;
+    border: 0px solid none;
+    border-bottom: 1px solid #2d2e2f;
+    margin-left: 1px; }
+  ProgressPanel TableView QHeaderView::down-arrow {
+    image: url(:/Resources/Images/down_arrow.png); }
+  ProgressPanel TableView QHeaderView::up-arrow {
+    image: url(:/Resources/Images/up_arrow.png); }
 
