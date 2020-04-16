@@ -123,7 +123,7 @@ QScrollBar {
     background: #323334; }
 
 #ViewerTab ComboBox {
-  background: #2a2b2c;
+  background: #2d2e2f;
   border-radius: 2px;
   border: 1px solid #252627;
   color: #cbcccd; }
@@ -296,7 +296,7 @@ DockablePanel #horizContainer {
           background: #3e454b;
           color: #3eb2ff; }
       DockablePanel #horizContainer #rightContainer QTabWidget ComboBox {
-        background: #2a2b2c;
+        background: #2d2e2f;
         border-radius: 2px;
         border: 1px solid #252627;
         color: #cbcccd;
