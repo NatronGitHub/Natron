@@ -423,6 +423,8 @@ NodeGui::ensurePanelCreated()
     }
     _panelCreated = true;
     Gui* gui = getDagGui()->getGui();
+    gui->disableUpdate(true);
+    
     QVBoxLayout* propsLayout = gui->getPropertiesLayout();
     assert(propsLayout);
     NodeGuiPtr thisShared = shared_from_this();
@@ -474,6 +476,7 @@ NodeGui::ensurePanelCreated()
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->getViewer()->updatePersistentMessage();
     }
+    gui->disableUpdate(false);
 } // NodeGui::ensurePanelCreated
 
 void
@@ -492,7 +495,9 @@ NodeGui::onSettingsPanelClosed(bool closed)
 NodeSettingsPanel*
 NodeGui::createPanel(QVBoxLayout* container,
                      const NodeGuiPtr& thisAsShared)
-{
+{   
+
+   
     NodeSettingsPanel* panel = 0;
     NodePtr node = getNode();
 

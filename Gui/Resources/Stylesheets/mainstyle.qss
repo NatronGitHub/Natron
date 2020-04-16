@@ -45,6 +45,14 @@ QMenu {
     margin: 5px;
     height: 1px; }
 
+QToolTip {
+  color: #cbcccd;
+  background: transparent;
+  border: 1px solid #1f5980;
+  border-radius: 2px;
+  padding: 2px;
+  opacity: 0.2; }
+
 QLineEdit {
   background: #252627;
   border: 1px solid #1e1e1f;
