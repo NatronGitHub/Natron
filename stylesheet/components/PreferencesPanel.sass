@@ -4,13 +4,8 @@ PreferencesPanel
         @include treewidget
     QSplitter
         &::handle
-            &::horizontal, &:vertical
-                border: none 
-            &:horizontal
-                border-left: 2px solid none
-                width: 15px
-                &:hover
-                    border-color: mix($base, $b10, 60%)
+            &::horizontal, &::vertical
+                background: none
     QFrame
         background: $b17
         QWidget 
@@ -24,6 +19,5 @@ PreferencesPanel
             @include button
         #pluginsView, #shortcutsTree
             @include treewidget
-
     QPushButton
         @include button

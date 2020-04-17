@@ -384,13 +384,8 @@ PreferencesPanel {
       image: url(:/Resources/Images/down_arrow.png); }
     PreferencesPanel #tree QHeaderView::up-arrow {
       image: url(:/Resources/Images/up_arrow.png); }
-  PreferencesPanel QSplitter::handle::horizontal, PreferencesPanel QSplitter::handle:vertical {
-    border: none; }
-  PreferencesPanel QSplitter::handle:horizontal {
-    border-left: 2px solid none;
-    width: 15px; }
-    PreferencesPanel QSplitter::handle:horizontal:hover {
-      border-color: #2f75a3; }
+  PreferencesPanel QSplitter::handle::horizontal, PreferencesPanel QSplitter::handle::vertical {
+    background: none; }
   PreferencesPanel QFrame {
     background: #2b2b2b; }
     PreferencesPanel QFrame QWidget {
@@ -533,7 +528,7 @@ ScriptEditor #buttonsContainer {
 ScriptEditor OutputScriptTextEdit {
   padding-left: 7px;
   background: #262626;
-  font-size: 15px;
+  font-size: 13px;
   color: #999999;
   selection-color: #c5e8ff;
   selection-background-color: #365970; }
