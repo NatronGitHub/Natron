@@ -294,6 +294,8 @@ DockablePanel #horizContainer {
         DockablePanel #horizContainer #rightContainer QTabWidget QPushButton:pressed {
           background: #3e454b;
           color: #3eb2ff; }
+      DockablePanel #horizContainer #rightContainer QTabWidget #dimensionSwitchButton {
+        padding: 0; }
       DockablePanel #horizContainer #rightContainer QTabWidget ComboBox {
         background: #2d2e2f;
         border-radius: 2px;

@@ -94,6 +94,7 @@ struct KnobGuiValuePrivate
     Button* rectangleFormatButton;
     Button *dimensionSwitchButton;
     bool rectangleFormatIsWidthHeight;
+    QSpacerItem *containerLayoutSpacer;
 
     KnobGuiValuePrivate(KnobIPtr knob)
         : knob(knob)
@@ -101,6 +102,7 @@ struct KnobGuiValuePrivate
         , doubleKnob( boost::dynamic_pointer_cast<KnobDoubleBase>(knob) )
         , spinBoxes()
         , container(0)
+        , containerLayoutSpacer(0)
         , slider(0)
         , rectangleFormatButton(0)
         , dimensionSwitchButton(0)
@@ -445,6 +447,12 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         onDisplayMinMaxChanged(dispmin, dispmax);
     }
 
+    // agrega un espacio al layout, para que que los botones "dimensionSwitchButton" y los otros queden al final
+    // ya que cuando el slider no esta visible los botones se ajustan y queda feo.
+    _imp->containerLayoutSpacer = new QSpacerItem(1,1, QSizePolicy::Ignored, QSizePolicy::Fixed);        
+    containerLayout->addSpacerItem(_imp->containerLayoutSpacer);
+    // ---------------------------------
+
     QSize medSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
@@ -463,6 +471,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
     if ( (nDims > 1) && !isSliderDisabled() && sliderVisible ) {
         _imp->dimensionSwitchButton = new Button(QIcon(), QString::number(nDims), _imp->container);
+        _imp->dimensionSwitchButton->setObjectName("dimensionSwitchButton");
         _imp->dimensionSwitchButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->dimensionSwitchButton->setFixedSize(medSize);
         _imp->dimensionSwitchButton->setIconSize(medIconSize);
@@ -587,8 +596,11 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
     _imp->dimensionSwitchButton->setDown(clicked);
     _imp->dimensionSwitchButton->setChecked(clicked);
     if (clicked) {
+        _imp->containerLayoutSpacer->changeSize(1,1, QSizePolicy::Expanding, QSizePolicy::Fixed); 
         expandAllDimensions();
+        
     } else {
+        _imp->containerLayoutSpacer->changeSize(1,1, QSizePolicy::Ignored, QSizePolicy::Fixed);  
         foldAllDimensions();
 
         KnobIPtr knob = _imp->getKnob();
