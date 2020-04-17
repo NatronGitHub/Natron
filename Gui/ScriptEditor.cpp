@@ -113,7 +113,10 @@ ScriptEditor::ScriptEditor(Gui* gui)
     , _imp( new ScriptEditorPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setSpacing(0);
+    _imp->mainLayout->setContentsMargins(0,0,0,0);
     _imp->buttonsContainer = new QWidget(this);
+    _imp->buttonsContainer->setObjectName("buttonsContainer");
     _imp->buttonsContainerLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsContainerLayout->setContentsMargins(5, 5, 5, 5);
     _imp->buttonsContainerLayout->setSpacing(3);
@@ -210,6 +213,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
 
     _imp->showAutoDeclVarsB = new Button(QIcon(), QString::fromUtf8("..."), _imp->buttonsContainer);
     _imp->showAutoDeclVarsB->setFocusPolicy(Qt::NoFocus);
+    _imp->showAutoDeclVarsB->setObjectName("showAutoDeclVarsB");
     _imp->showAutoDeclVarsB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->showAutoDeclVarsB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     _imp->showAutoDeclVarsB->setCheckable(true);
@@ -243,7 +247,6 @@ ScriptEditor::ScriptEditor(Gui* gui)
 
     _imp->outputEdit = new OutputScriptTextEdit(this);
     QObject::connect( _imp->outputEdit, SIGNAL(userScrollChanged(bool)), this, SLOT(onUserScrollChanged(bool)) );
-    _imp->outputEdit->setFocusPolicy(Qt::NoFocus);
     _imp->outputEdit->setReadOnly(true);
 
     _imp->inputEdit = new InputScriptTextEdit(gui, this);

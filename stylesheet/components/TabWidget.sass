@@ -19,10 +19,13 @@
         &:hover
             image: url(:/Resources/Images/closeTab_hovered.png)
             subcontrol-position:right
-
-    
 TabWidget
-    background: $b10
+    background: $b11
+    TabWidgetHeader
+        QPushButton
+            margin-bottom: 3px
+            margin-right: 3px
+        #leftCornerButton
+            margin-left: 3px
     QTabBar
         @include tabbar
-        

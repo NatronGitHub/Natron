@@ -379,7 +379,7 @@ InputScriptTextEdit::highlightCurrentLine()
 
     if ( !isReadOnly() ) {
         QTextEdit::ExtraSelection selection;
-        QColor lineColor = QColor(100, 100, 100);
+        QColor lineColor = QColor(70, 70, 70);
 
         selection.format.setBackground(lineColor);
         selection.format.setProperty(QTextFormat::FullWidthSelection, true);
@@ -424,7 +424,7 @@ InputScriptTextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
                 painter.setPen(txtColor);
             }
 
-            painter.drawText(0, top, _lineNumber->width(), fontMetrics().height(),
+            painter.drawText(-3, top, _lineNumber->width(), fontMetrics().height(),
                              Qt::AlignRight, number);
         }
 

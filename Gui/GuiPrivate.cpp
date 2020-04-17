@@ -339,40 +339,35 @@ GuiPrivate::createPropertiesBinGui()
     _propertiesScrollArea->setWidgetResizable(true);
 
     QWidget* propertiesAreaButtonsContainer = new QWidget(_propertiesBin);
+    propertiesAreaButtonsContainer->setObjectName("propertiesAreaButtonsContainer");
     QHBoxLayout* propertiesAreaButtonsLayout = new QHBoxLayout(propertiesAreaButtonsContainer);
-    propertiesAreaButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    propertiesAreaButtonsLayout->setAlignment(Qt::AlignHCenter);
+    propertiesAreaButtonsLayout->setContentsMargins(5, 5, 5, 5);
     propertiesAreaButtonsLayout->setSpacing(5);
     QPixmap closePanelPix;
-    int smallSizeIcon = TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE);
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, smallSizeIcon, &closePanelPix);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_WIDGET, &closePanelPix);
     _clearAllPanelsButton = new Button(QIcon(closePanelPix), QString(), propertiesAreaButtonsContainer);
 
-    const QSize smallButtonSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
     const QSize smallButtonIconSize( TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE) );
 
-    _clearAllPanelsButton->setFixedSize(smallButtonSize);
-    _clearAllPanelsButton->setIconSize(smallButtonIconSize);
     _clearAllPanelsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
                                                                       NATRON_NAMESPACE::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
     QPixmap minimizePix, maximizePix;
-    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, smallSizeIcon, &minimizePix);
-    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, smallSizeIcon, &maximizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, &minimizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &maximizePix);
     QIcon mIc;
     mIc.addPixmap(minimizePix, QIcon::Normal, QIcon::On);
     mIc.addPixmap(maximizePix, QIcon::Normal, QIcon::Off);
     _minimizeAllPanelsButtons = new Button(mIc, QString(), propertiesAreaButtonsContainer);
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
-    _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
-    _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
     _minimizeAllPanelsButtons->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Minimize / Maximize all panels."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
-    _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "

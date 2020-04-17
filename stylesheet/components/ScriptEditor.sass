@@ -1,1 +1,31 @@
 ScriptEditor
+    #buttonsContainer
+        background: $b20
+        border-bottom: 1px solid $b10
+        QPushButton
+            @include button
+        #showAutoDeclVarsB
+            @include button
+            padding: 0
+            &:pressed
+                border-color: mix($base, $b20, 70%)
+    OutputScriptTextEdit
+        padding-left: 7px
+        background: $b15
+        font-size: 15px
+        color: $c0
+        selection-color: mix($base, white, 30%)
+        selection-background-color: mix($base, $b20, 30%)
+    InputScriptTextEdit
+        font-size: 15px
+        color: $c1
+        background-color: $b25
+        selection-color: mix($base, white, 30%)
+        selection-background-color: mix($base, $b25, 30%)
+        border: 1px solid transparent
+        &:focus
+            border-color: mix($base, $b25, 50%)
+        &[currentLine = "1"]
+            background: red
+        QTextEdit
+            background: red

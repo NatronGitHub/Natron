@@ -263,6 +263,7 @@ TabWidget::TabWidget(Gui* gui,
     _imp->header = new TabWidgetHeader(this);
     QObject::connect( _imp->header, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()) );
     _imp->headerLayout = new QHBoxLayout(_imp->header);
+    _imp->headerLayout->setAlignment(Qt::AlignHCenter);
     _imp->headerLayout->setContentsMargins(0, 0, 0, 0);
     _imp->headerLayout->setSpacing(0);
     _imp->header->setLayout(_imp->headerLayout);
@@ -277,8 +278,7 @@ TabWidget::TabWidget(Gui* gui,
     const QSize smallButtonIconSize( TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE) );
 
     _imp->leftCornerButton = new Button(QIcon(pixL), QString(), _imp->header);
-    _imp->leftCornerButton->setFixedSize(smallButtonSize);
-    _imp->leftCornerButton->setIconSize(smallButtonIconSize);
+    _imp->leftCornerButton->setObjectName("leftCornerButton");
     _imp->leftCornerButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->leftCornerButton->setFocusPolicy(Qt::NoFocus);
     _imp->headerLayout->addWidget(_imp->leftCornerButton);

@@ -15,16 +15,17 @@ QToolBar
     background: $b18
 QSplitter
     &::handle
-        $width: 3px
+        $width: 1px
         &::horizontal, &::vertical
-            background: transparent
+            background: $b10
             &:hover
-                border-color: mix($base, $b10, 60%)
+                background: mix($base, $b10, 80%)
+                // border-color: mix($base, $b10, 60%)
         &::horizontal 
-            border-right: 1px solid $b10
+            // border-right: 1px solid $b10
             width: $width
         &::vertical 
-            border-top: 1px solid $b10
+            // border-top: 1px solid $b10
             height: $width
 QMenu 
     background-color: $b17
