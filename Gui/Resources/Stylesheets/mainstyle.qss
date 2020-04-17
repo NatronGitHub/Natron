@@ -253,7 +253,7 @@ DockablePanel #headerWidget {
     border-radius: 3px;
     border: 1px solid #404040;
     background: none;
-    border-color: #262626; }
+    border-color: #2b2b2b; }
     DockablePanel #headerWidget QPushButton:hover {
       border-color: #3f799f; }
     DockablePanel #headerWidget QPushButton:pressed {
