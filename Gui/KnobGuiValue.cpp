@@ -659,6 +659,8 @@ KnobGuiValue::foldAllDimensions()
         return;
     }
 
+    _imp->containerLayoutSpacer->changeSize(1,1, QSizePolicy::Ignored, QSizePolicy::Fixed);  
+
     _imp->dimensionSwitchButton->setChecked(false);
     _imp->dimensionSwitchButton->setDown(false);
     _imp->slider->show();
@@ -1067,6 +1069,7 @@ KnobGuiValue::_show()
         double sliderMax = _imp->slider->maximum();
         double sliderMin = _imp->slider->minimum();
         if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+            _imp->containerLayoutSpacer->changeSize(1,1, QSizePolicy::Ignored, QSizePolicy::Fixed);  
             _imp->slider->show();
         }
     }
