@@ -738,7 +738,7 @@ PreferencesPanel::createGui()
 {
     //setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    setWindowFlags(Qt::Window);
+    setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
     setWindowTitle( tr("Preferences") );
     _imp->mainLayout = new QVBoxLayout(this);
 

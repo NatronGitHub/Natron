@@ -48,6 +48,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QFileIconProvider>
 #include <QFileSystemModel>
+#include <QDesktopWidget>
 //#include <QInputDialog>
 #include <QSplitter>
 #include <QtGui/QIcon>
@@ -266,7 +267,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         gui->getApp()->getProject()->canonicalizePath(directoryArgs);
     }
 
-    setWindowFlags(Qt::Window);
+    this->setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
@@ -612,6 +614,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         enableSequenceMode(false);
     }
     _selectionLineEdit->setFocus();
+
+    // deja la ventana al centro de la pantalla
+    QRect screenGeometry = QApplication::desktop()->screenGeometry();
+    int x = (screenGeometry.width() - this->width()) / 2;
+    int y = (screenGeometry.height() - this->height()) / 2;
+    this->move(x, y);
+    // -----------------------
 }
 
 SequenceFileDialog::~SequenceFileDialog()
