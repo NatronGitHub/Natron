@@ -614,6 +614,7 @@ ProgressTaskInfo::createCellWidgets()
         Q_UNUSED(s);
     }
     _imp->controlsButtonsContainer = new QWidget;
+    _imp->controlsButtonsContainer->setObjectName("controlsButtonsContainer");
     QHBoxLayout* layout = new QHBoxLayout(_imp->controlsButtonsContainer);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);

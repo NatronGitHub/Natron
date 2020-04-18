@@ -764,6 +764,19 @@ ProgressPanel TableView {
     image: url(:/Resources/Images/down_arrow.png); }
   ProgressPanel TableView QHeaderView::up-arrow {
     image: url(:/Resources/Images/up_arrow.png); }
+  ProgressPanel TableView #controlsButtonsContainer {
+    background: none; }
+    ProgressPanel TableView #controlsButtonsContainer QPushButton {
+      background: transparent; }
+  ProgressPanel TableView QProgressBar {
+    max-height: 100px; }
+    ProgressPanel TableView QProgressBar:horizontal {
+      text-align: center; }
+      ProgressPanel TableView QProgressBar:horizontal::chunk:horizontal {
+        background: rgba(77, 77, 77, 0.2); }
+    ProgressPanel TableView QProgressBar::chunk:horizontal {
+      border-bottom: 1px solid #333333;
+      background: #325064; }
 
 SequenceFileDialog {
   background: #2b2b2b; }

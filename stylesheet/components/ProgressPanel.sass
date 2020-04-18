@@ -5,3 +5,18 @@ ProgressPanel
         @include treewidget($b20)     
         border-radius: 0
         border: none
+        #controlsButtonsContainer
+            background: none
+            QPushButton
+                background: transparent
+        QProgressBar
+            max-height: 100px
+            &:horizontal 
+                text-align: center
+                &::chunk
+                    &:horizontal 
+                        background: rgba($b30,.2)
+            &::chunk
+                &:horizontal 
+                    border-bottom: 1px solid $b20
+                    background: $blue
