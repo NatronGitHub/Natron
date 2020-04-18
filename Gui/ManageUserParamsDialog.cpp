@@ -156,6 +156,8 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     _imp->mainLayout = new QHBoxLayout(this);
 
     _imp->tree = new UserParamsDialogTreeWidget(this);
+    _imp->tree->setAlternatingRowColors(true);
+    _imp->tree->setFocusPolicy(Qt::NoFocus);
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setSelectionBehavior(QAbstractItemView::SelectRows);
     _imp->tree->setItemsExpandable(true);

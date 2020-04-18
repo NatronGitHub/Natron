@@ -3,6 +3,7 @@ DockablePanel
         background: $b17
         padding: 4px
         border-top: 1px solid $b13
+        border-bottom: 1px solid $b13
         QLineEdit
             margin-left: 10px
             background: $b20
@@ -16,18 +17,32 @@ DockablePanel
             &:hover
                 background: $b20
     #horizContainer
-        background: $b10
+        background: $b12
         #rightContainer
             background: none
+            *
+                background: $b19
+            QAbstractSpinBox
+                background: $b25
+            QToolTip
+                background: $b10
             QTabWidget            
                 border: 1px solid
                 background: $b18
+                QComboBox
+                    @include qcombobox
                 QTabBar
                     @include tabbar
+                    &::tab 
+                        &:selected
+                            background: $b19
+                QTextEdit
+                    @include textedit
                 QLabel
                     color: $c1
                 QPushButton
                     @include button
+                    border
                 #dimensionSwitchButton
                     padding: 0
                 ComboBox 
@@ -35,33 +50,27 @@ DockablePanel
                     background: $b25
                 ScaleSliderQWidget
                     background: none
-            QTreeView 
-                alternate-background-color: $b18
-                background-color: $b15
-                border: 1px solid $b18
-                QWidget
-                    background: $b15
-                QHeaderView
-                    &::section 
-                        color: $c1
-                        background-color: $b22
-                        padding: 5px 10px 5px 10px
-                        border: 0px solid transparent
-                        margin-left: 1px
-                        margin-top: 1px
-                        margin-bottom: 1px
-            LineEdit
-                background: $b22
-                &[animation="1"] 
-                    background-color: #668aa7
-                &[animation="2"] 
-                    background-color: #2379be
-                &[animation="3"] 
-                    background-color: #83b641
-                &[altered="false"]
-                    color: $c3
-                &[dirty="true"] 
-                    background-color: red
-            ClickableLabel
-                &[dirty="false"]
-                    color: mix($c1, $c0, 50%)
+                #treeKnob
+                    @include treewidget($b22)
+                    margin-right: 5px
+                LineEdit
+                    background: $b22
+                    &[animation="1"] 
+                        background-color: #668aa7
+                    &[animation="2"] 
+                        background-color: #2379be
+                    &[animation="3"] 
+                        background-color: #83b641
+                    &[altered="false"]
+                        color: $c3
+                    &[dirty="true"] 
+                        background-color: red
+                ClickableLabel
+                    font-size: 10px
+                    &[dirty="false"]
+                        color: mix($c1, $c0, 50%)   
+                QTreeView
+                    @include treewidget($b22)
+                    QHeaderView
+                        &::section 
+                            background-color: $b25

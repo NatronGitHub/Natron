@@ -1,7 +1,7 @@
 PreferencesPanel
     background: $b17
     #tree
-        @include treewidget
+        @include treewidget($b20)
     QSplitter
         &::handle
             &::horizontal, &::vertical
@@ -18,6 +18,6 @@ PreferencesPanel
         QPushButton
             @include button
         #pluginsView, #shortcutsTree
-            @include treewidget
+            @include treewidget($b20)
     QPushButton
         @include button

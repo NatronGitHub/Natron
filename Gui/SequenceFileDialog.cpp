@@ -331,6 +331,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _centerSplitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     _favoriteWidget = new QWidget(this);
+    _favoriteWidget->setObjectName("favoriteWidget");
     _favoriteLayout = new QVBoxLayout(_favoriteWidget);
     _favoriteWidget->setLayout(_favoriteLayout);
     _favoriteView = new FavoriteView(_gui, this);
@@ -346,7 +347,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _favoriteButtonsWidget->setLayout(_favoriteButtonsLayout);
 
     _addFavoriteButton = new Button(QString::fromUtf8(" + "), this);
-    _addFavoriteButton->setMaximumSize(20, 20);
     _addFavoriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add the current directory to the favorites list."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _favoriteButtonsLayout->addWidget(_addFavoriteButton);
     QObject::connect( _addFavoriteButton, SIGNAL(clicked()), this, SLOT(addFavorite()) );
@@ -358,7 +358,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     //QObject::connect( _editFavoriteButton, SIGNAL(clicked()), this, SLOT(editUrl()) );
 
     _removeFavoriteButton = new Button(QString::fromUtf8(" - "), this);
-    _removeFavoriteButton->setMaximumSize(20, 20);
     _removeFavoriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove the selected directory from the favorites list."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _favoriteButtonsLayout->addWidget(_removeFavoriteButton);
     QObject::connect( _removeFavoriteButton, SIGNAL(clicked()), _favoriteView, SLOT(removeEntry()) );
@@ -449,6 +448,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         icPreview.addPixmap(pixPreviewButtonDisabled, QIcon::Normal, QIcon::Off);
         _togglePreviewButton = new Button(icPreview, QString(), _centerArea);
         _togglePreviewButton->setIconSize(buttonIconSize);
+        _togglePreviewButton->setObjectName("togglePreviewButton");
         QObject::connect( _togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool)) );
         _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
         _togglePreviewButton->setCheckable(true);
@@ -1127,6 +1127,7 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd)
     setDragDropMode(QAbstractItemView::DragOnly);
     setAttribute(Qt::WA_MacShowFocusRect, 0);
     setAcceptDrops(true);
+    setAlternatingRowColors(true); 
 }
 
 void
@@ -2352,7 +2353,7 @@ FavoriteView::FavoriteView(Gui* gui,
     , urlModel(0)
     , _itemDelegate(0)
 {
-    // setAttribute(Qt::WA_MacShowFocusRect,0);
+    setAlternatingRowColors(true);  
 }
 
 void

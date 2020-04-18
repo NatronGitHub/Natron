@@ -442,14 +442,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     //QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
 
     _imp->vLayout = new QVBoxLayout(this);
-    _imp->vLayout->setContentsMargins(0, 0, 15, 0);
+    _imp->vLayout->setContentsMargins(10, 10, 10, 10);
 
     _imp->mainContainer = new QWidget(this);
     _imp->mainLayout = new QFormLayout(_imp->mainContainer);
     _imp->mainLayout->setLabelAlignment(Qt::AlignVCenter | Qt::AlignRight);
     _imp->mainLayout->setFormAlignment(Qt::AlignVCenter | Qt::AlignLeft);
     _imp->mainLayout->setSpacing(3);
-    _imp->mainLayout->setContentsMargins(0, 0, 15, 0);
+    _imp->mainLayout->setContentsMargins(10, 10, 10, 10);
 
     _imp->vLayout->addWidget(_imp->mainContainer);
 

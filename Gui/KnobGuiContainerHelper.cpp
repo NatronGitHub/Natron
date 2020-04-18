@@ -242,6 +242,7 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     // Check If the page main widget should be a scrollarea
     if ( useScrollAreaForTabs() ) {
         QScrollArea* sa = new QScrollArea(pagesContainer);
+        
         layoutContainer = new QWidget(sa);
         layoutContainer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         sa->setWidgetResizable(true);
@@ -252,6 +253,8 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
         newTab = createPageMainWidget(pagesContainer);
         layoutContainer = newTab;
     }
+
+    pagesContainer->setObjectName("tabPage");
 
     // The container layout is always a grid layout
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);

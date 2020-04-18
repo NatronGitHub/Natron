@@ -1,0 +1,37 @@
+
+
+ManageUserParamsDialog
+    $color: $b15
+    background: $color
+    *
+        background: $color
+    QPushButton
+        @include button
+    QTreeWidget
+        @include treewidget($b20)
+    AddKnobDialog
+        background: $b18
+        margin: 30px
+        *
+            background: $b18
+        QTextEdit
+            @include textedit
+        QLineEdit
+            background: $b24
+        ComboBox
+            @include combobox
+            background: $b24
+        QPushButton
+            background: $b24
+    PickKnobDialog
+        background: $b20
+        *
+            background: $b20
+        QLineEdit
+            background: $b30
+        ComboBox
+            @include combobox
+            background: $b27
+        QPushButton
+            background: $b27
+

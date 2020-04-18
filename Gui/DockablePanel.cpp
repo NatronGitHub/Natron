@@ -431,7 +431,7 @@ DockablePanel::DockablePanel(Gui* gui,
     _imp->_horizContainer = new QWidget(this);
     _imp->_horizContainer->setObjectName(qs("horizContainer"));
     _imp->_horizLayout = new QHBoxLayout(_imp->_horizContainer);
-    _imp->_horizLayout->setContentsMargins(0, 7, 0, 0);
+    _imp->_horizLayout->setContentsMargins(0, 10, 0, 0);
     _imp->_horizLayout->setSpacing(0);
 
     _imp->_rightContainer = new QWidget(_imp->_horizContainer);
@@ -594,6 +594,7 @@ DockablePanel::onPageIndexChanged(int index)
     if (!_imp->_tabWidget) {
         return;
     }
+    this->setUpdatesEnabled(false);
     QWidget* curTab = _imp->_tabWidget->widget(index);
     const PagesMap& pages = getPages();
 
@@ -609,6 +610,7 @@ DockablePanel::onPageIndexChanged(int index)
             }
         }
     }
+    this->setUpdatesEnabled(true);
 }
 
 void
@@ -1170,6 +1172,14 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     } else {
         Q_EMIT maximized();
     }
+
+    // quita el margen cuando esta cerrado
+    if (toggled)
+        _imp->_horizLayout->setContentsMargins(0, 0, 0, 0);
+    else
+        _imp->_horizLayout->setContentsMargins(0, 10, 0, 0);
+    // ----------------------------
+
     _imp->_rightContainer->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {

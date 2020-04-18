@@ -1,0 +1,115 @@
+@mixin button()
+    background: $b25
+    color: $c1
+    padding: 4px 10px 4px 10px
+    border-radius: 3px
+    border: 1px solid $b25
+    &:hover
+        border-color: mix($base, $b25, 50%)
+    &:pressed
+        background: mix($base, $b25, 5%)
+        color: $base
+    &:disabled
+        color: mix($c1, $b25, 40%)
+@mixin checkbox()
+    &::indicator
+        width: 16px
+        height: 16px
+        background: $b18
+        border-radius: 2px
+        border: 1px solid $b13
+        &:hover
+            border-color: mix($base, $b10, 50%)
+        &:checked 
+            image: url(:/Resources/Images/closeTab_hovered.png)
+            border-color: $b50
+@mixin combobox()     
+    background: $b18
+    border-radius: 2px
+    border: 1px solid $b15
+    color: $c1
+    &:hover
+        border-color: mix($base, $b18, 40%)
+        padding: 0
+        margin: 0
+        background: $b20  
+@mixin qcombobox()
+    background-color: $b25
+    border: 1px solid $b15
+    padding: 3px
+    border-radius: 3px
+    &::down-arrow
+        image : url(:/Resources/Images/down_arrow.png)
+    &:focus 
+        border-color: $b22
+    &::drop-down 
+        width: 20px
+        background-color: transparent
+    &:hover 
+        border-color: mix($base, $b22, 50%)
+
+    &:item
+        font-size: 13px
+        &:selected 
+            background-color: $b20
+            color: $base
+            padding-left: 0px
+    &::indicator 
+        background-color: red  
+
+@mixin treewidget($backcolor)
+    $contrast: 97%
+    $alternate: mix($backcolor, white, $contrast)
+    // color de secleccion de item
+    $selected_color: mix($base, $backcolor, 10%)
+    $selected_alternate: mix($selected_color, white, $contrast)
+    // -----------------
+    background: $backcolor
+    alternate-background-color: $alternate
+    border: 1px solid $b15
+    border-radius: 2px
+    &::item 
+        height: 20px
+        &:selected
+            background: $selected_color
+            color: $c2
+            &:alternate
+                background: $selected_alternate
+    &::branch 
+        background: $backcolor
+        &:alternate 
+            background: $alternate
+        &:selected
+            background: $selected_color
+            &:alternate
+                background: $selected_alternate
+        &:has-children
+            &:selected
+                background: $selected_color
+                &:alternate
+                    background: $selected_alternate
+            &:open 
+                image: url(:/Resources/Images/down_arrow.png)
+            &:closed
+                image: url(:/Resources/Images/right_arrow.png)
+    QHeaderView
+        &::section 
+            background-color: $b25
+            padding: 5px 10px 5px 10px
+            border: 0px solid none
+            border-bottom: 1px solid $b18
+            margin-left: 1px
+        &::down-arrow
+            image: url(:/Resources/Images/down_arrow.png)
+        &::up-arrow 
+            image: url(:/Resources/Images/up_arrow.png)
+
+@mixin textedit()
+    background: $b22
+    border-radius: 3px
+    border: 1px solid $b15
+    padding: 3px
+    selection-color: $b15
+    margin-bottom: 10px
+    &:focus
+        border-color: $base

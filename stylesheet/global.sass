@@ -34,6 +34,8 @@ QMenu
         &:selected 
             background-color: mix($base, $b15, 50%)
             color: $c3
+        &:disabled
+            color: mix($c1, $b17, 50%)
     &::separator 
         background-color: $b20
         margin: 5px
@@ -114,71 +116,29 @@ QScrollBar
         image : url(:/Resources/Images/right_arrow.png)
     &::right-arrow:horizontal 
         image : url(:/Resources/Images/left_arrow.png)
-@mixin button()
-    background: $b25
-    color: $c1
-    padding: 4px 10px 4px 10px
-    border-radius: 3px
-    border: 1px solid $b25
-    &:hover
-        border-color: mix($base, $b25, 50%)
-    &:pressed
-        background: mix($base, $b25, 5%)
-        color: $base
-@mixin checkbox()
-    &::indicator
-        width: 16px
-        height: 16px
-        background: $b18
-        border-radius: 2px
-        border: 1px solid $b13
-        &:hover
-            border-color: mix($base, $b10, 50%)
-        &:checked 
-            image: url(:/Resources/Images/closeTab_hovered.png)
-            border-color: $b50
-@mixin combobox()     
-    background: $b18
-    border-radius: 2px
-    border: 1px solid $b15
-    color: $c1
-    &:hover
-        border-color: mix($base, $b18, 40%)
-        padding: 0
-        margin: 0
-        background: $b20  
-@mixin treewidget()
+QDialog
     background: $b20
-    alternate-background-color: $b22
-    border: 1px solid $b15
+    QPushButton
+        @include button
+        background: $b27
+        border-color: $b27
+QAbstractSpinBox 
+    background-color: $b27
+    height: 18px
     border-radius: 2px
-    &::item 
-        height: 20px
-        &:selected
-            background: mix($base, $b20, 10%)
-            color: $base
-    &::branch 
-        background: $b20
-        // @include treecolor
-        &:alternate 
-            background: $b22
-        &:selected
-            background: mix($base, $b20, 10%)
-        &:has-children
-            &:selected
-                background: mix($base, $b20, 10%)
-            &:open 
-                image: url(:/Resources/Images/down_arrow.png)
-            &:closed
-                image: url(:/Resources/Images/right_arrow.png)
-    QHeaderView
-        &::section 
-            background-color: $b25
-            padding: 5px 10px 5px 10px
-            border: 0px solid none
-            border-bottom: 1px solid $b18
-            margin-left: 1px
-        &::down-arrow
-            image: url(:/Resources/Images/down_arrow.png)
-        &::up-arrow 
-            image: url(:/Resources/Images/up_arrow.png)
+    border: 1px solid $b18
+    padding: 3px
+    &:focus
+        border-color: $base
+    &::down-button 
+        subcontrol-origin: border
+        subcontrol-position: center left
+        width: 18px
+        height: 18px
+        image: url(:/Resources/Images/left_arrow.png)
+    &::up-button
+        image: url(:/Resources/Images/right_arrow.png)
+        subcontrol-origin: border
+        subcontrol-position: center right
+        width: 18px
+        height: 18px

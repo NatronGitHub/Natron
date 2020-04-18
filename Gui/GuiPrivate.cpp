@@ -332,7 +332,7 @@ GuiPrivate::createPropertiesBinGui()
     _propertiesContainer = new QWidget(_propertiesScrollArea);
     _propertiesContainer->setObjectName( QString::fromUtf8("_propertiesContainer") );
     _layoutPropertiesBin = new QVBoxLayout(_propertiesContainer);
-    _layoutPropertiesBin->setSpacing(0);
+    _layoutPropertiesBin->setSpacing(7);
     _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
     _propertiesContainer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     _propertiesScrollArea->setWidget(_propertiesContainer);

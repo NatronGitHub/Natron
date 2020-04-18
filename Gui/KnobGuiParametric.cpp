@@ -124,6 +124,9 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
 
     _tree = new QTreeWidget( layout->parentWidget() );
+    _tree->setAlternatingRowColors(true); 
+    _tree->setObjectName("treeKnob");
+    _tree->setFocusPolicy(Qt::NoFocus); 
     _tree->setSelectionMode(QAbstractItemView::ContiguousSelection);
     _tree->setColumnCount(1);
     _tree->header()->close();

@@ -1,0 +1,43 @@
+SequenceFileDialog
+    $color: $b17
+    background: $color
+    *
+        background: $color
+    QLineEdit
+        background: $b22
+    QPushButton
+        @include button
+        
+    ComboBox
+        @include combobox
+        background: $b22
+    QComboBox
+        @include qcombobox
+        background: $b22
+        border-color: $b15
+    QTreeView
+        @include treewidget($b22)
+        color: $c1
+        margin-left: 5px
+        margin-bottom: 5px
+    
+    QSplitter
+        &::handle
+            &::horizontal, &::vertical
+                background: none
+    #favoriteWidget
+        QPushButton
+            padding: 0
+            width: 25px
+            height: 25px
+        QListView
+            margin-bottom: 10px
+            margin-right: 5px
+            @include treewidget($b22)
+    #togglePreviewButton
+        background: none
+        border-color: $color
+        padding: 0
+        &:hover
+            background: mix($base, $color, 5%)
+            border-color: mix($base, $color, 50%)
