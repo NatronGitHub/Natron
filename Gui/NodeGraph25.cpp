@@ -176,6 +176,7 @@ NodeGraph::event(QEvent* e)
         QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
         assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
+            getGui()->disableUpdate(true);
             NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
@@ -185,7 +186,7 @@ NodeGraph::event(QEvent* e)
 
             takeClickFocus();
             ke->accept();
-
+            getGui()->disableUpdate(false);
             return true;
         }
     }

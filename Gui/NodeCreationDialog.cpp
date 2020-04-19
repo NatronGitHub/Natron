@@ -101,6 +101,8 @@ CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
     , _imp( new CompleterLineEditPrivate(plugins, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
+    _imp->listView->setObjectName("listView");
+    _imp->listView->setAlternatingRowColors(true);
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
@@ -117,6 +119,8 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     , _imp( new CompleterLineEditPrivate(displayWords, internalIds, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
+    _imp->listView->setObjectName("listView");
+    _imp->listView->setAlternatingRowColors(true);  
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);

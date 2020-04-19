@@ -270,12 +270,56 @@ TabWidget {
 
 NodeGraph {
   background: #333333; }
-  NodeGraph * {
-    border-radius: 10px; }
-  NodeGraph NodeCreationDialog {
-    background: #262626; }
-    NodeGraph NodeCreationDialog * {
-      color: #cccccc; }
+  NodeGraph NodeCreationDialog * {
+    color: #cccccc; }
+  NodeGraph NodeCreationDialog #listView {
+    background: #262626;
+    alternate-background-color: #2d2d2d;
+    border: 1px solid #262626;
+    border-radius: 2px;
+    border: 1px solid #33566d;
+    padding: 5px; }
+    NodeGraph NodeCreationDialog #listView::item {
+      height: 20px; }
+      NodeGraph NodeCreationDialog #listView::item:selected {
+        background: #29343c;
+        color: #e6e6e6; }
+        NodeGraph NodeCreationDialog #listView::item:selected:alternate {
+          background: #2f3a42; }
+    NodeGraph NodeCreationDialog #listView::branch {
+      background: #262626; }
+      NodeGraph NodeCreationDialog #listView::branch:alternate {
+        background: #2d2d2d; }
+      NodeGraph NodeCreationDialog #listView::branch:selected {
+        background: #29343c; }
+        NodeGraph NodeCreationDialog #listView::branch:selected:alternate {
+          background: #2f3a42; }
+      NodeGraph NodeCreationDialog #listView::branch:has-children:selected {
+        background: #29343c; }
+        NodeGraph NodeCreationDialog #listView::branch:has-children:selected:alternate {
+          background: #2f3a42; }
+      NodeGraph NodeCreationDialog #listView::branch:has-children:open {
+        image: url(:/Resources/Images/down_arrow.png); }
+      NodeGraph NodeCreationDialog #listView::branch:has-children:closed {
+        image: url(:/Resources/Images/right_arrow.png); }
+    NodeGraph NodeCreationDialog #listView QHeaderView::section {
+      background-color: #404040;
+      padding: 5px 10px 5px 10px;
+      border: 0px solid none;
+      border-bottom: 1px solid #2e2e2e;
+      margin-left: 1px; }
+    NodeGraph NodeCreationDialog #listView QHeaderView::down-arrow {
+      image: url(:/Resources/Images/down_arrow.png); }
+    NodeGraph NodeCreationDialog #listView QHeaderView::up-arrow {
+      image: url(:/Resources/Images/up_arrow.png); }
+    NodeGraph NodeCreationDialog #listView::item {
+      padding: 2px 0 2px 0; }
+      NodeGraph NodeCreationDialog #listView::item:hover {
+        background: #303b43; }
+  NodeGraph NodeCreationDialog QLineEdit {
+    border-radius: 2px;
+    border-color: #398ac0;
+    padding: 0 5px 0 5px; }
 
 DockablePanel #headerWidget {
   background: #2b2b2b;
