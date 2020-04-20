@@ -800,7 +800,11 @@ Gui::getNodesEntitledForOverlays(NodesList & nodes) const
     }
 
     for (std::list<DockablePanel*>::const_iterator it = panels.begin();
-         it != panels.end(); ++it) {
+        it != panels.end(); ++it) {
+
+        if (!dynamic_cast<NodeSettingsPanel*>(*it))
+            continue;
+
         NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
         if (!panel) {
             continue;
