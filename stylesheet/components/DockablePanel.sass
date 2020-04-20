@@ -57,16 +57,25 @@ DockablePanel
                     margin-right: 5px
                 LineEdit
                     background: $b22
+                    $expresion_color: #ffd342
+                    $key_color: #008cff
+                    $key_color_2: #95cfff
+                    &[animation="0"] 
+                        &[altered="false"]
+                            color: $c2
                     &[animation="1"] 
-                        background-color: #668aa7
+                        background-color: mix($key_color_2, $b22, 5%)
+                        border-color: mix($key_color_2, $b22, 40%)
+                        color: $key_color_2
                     &[animation="2"] 
-                        background-color: #2379be
+                        background-color: mix($key_color, $b22, 10%)
+                        border-color: mix($key_color, $b22, 80%)
+                        color: mix($key_color, white, 60%)
                     &[animation="3"] 
-                        background-color: #ad9135
-                    &[altered="false"]
-                        color: $c2
+                        background-color: mix($expresion_color, $b22, 3%)
+                        border-color: mix($expresion_color, $b22, 30%)
+                        color: $expresion_color
                     &[dirty="true"] 
-                        background-color: red
                 ClickableLabel
                     font-size: 10px
                     &[dirty="false"]

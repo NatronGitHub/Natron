@@ -538,16 +538,20 @@ DockablePanel #horizContainer {
           image: url(:/Resources/Images/up_arrow.png); }
       DockablePanel #horizContainer #rightContainer QTabWidget LineEdit {
         background: #383838; }
-        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="1"] {
-          background-color: #668aa7; }
-        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="2"] {
-          background-color: #2379be; }
-        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="3"] {
-          background-color: #ad9135; }
-        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[altered="false"] {
+        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="0"][altered="false"] {
           color: #e6e6e6; }
-        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[dirty="true"] {
-          background-color: red; }
+        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="1"] {
+          background-color: #3d4042;
+          border-color: #5d7488;
+          color: #95cfff; }
+        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="2"] {
+          background-color: #32404c;
+          border-color: #0b7bd7;
+          color: #66baff; }
+        DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="3"] {
+          background-color: #3e3d38;
+          border-color: #74673b;
+          color: #ffd342; }
       DockablePanel #horizContainer #rightContainer QTabWidget ClickableLabel {
         font-size: 10px; }
         DockablePanel #horizContainer #rightContainer QTabWidget ClickableLabel[dirty="false"] {
