@@ -1,0 +1,18 @@
+@import components/ScriptEditor 
+@mixin EditScriptDialog()
+    background: $b18
+    QLabel
+        background: none
+        margin-bottom: 10px
+        color: $c0
+    InputScriptTextEdit
+        @include InputScriptTextEdit
+        margin: 0
+    OutputScriptTextEdit
+        @include OutputScriptTextEdit
+        margin: 0
+        padding: 0
+        border: 1px solid mix($base, $b18, 10%)
+    #midButtonsContainer
+        padding: 30px
+        background: $b18

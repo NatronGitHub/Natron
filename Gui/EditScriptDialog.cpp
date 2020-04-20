@@ -106,7 +106,6 @@ struct EditScriptDialogPrivate
     QHBoxLayout* midButtonsLayout;
     Button* useRetButton;
     Button* helpButton;
-    Label* resultLabel;
     OutputScriptTextEdit* resultEdit;
     DialogButtonBox* buttons;
 
@@ -119,7 +118,6 @@ struct EditScriptDialogPrivate
         , midButtonsLayout(0)
         , useRetButton(0)
         , helpButton(0)
-        , resultLabel(0)
         , resultEdit(0)
         , buttons(0)
     {
@@ -168,15 +166,12 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->expressionLabel = new Label(labelHtml, this);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
-    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, this);
-    _imp->expressionEdit->setAcceptDrops(true);
-    _imp->expressionEdit->setMouseTracking(true);
-    _imp->mainLayout->addWidget(_imp->expressionEdit);
-    _imp->expressionEdit->setPlainText(initialScript);
+
 
     _imp->midButtonsContainer = new QWidget(this);
+    _imp->midButtonsContainer->setObjectName("midButtonsContainer");
     _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
-
+    _imp->midButtonsLayout->setContentsMargins(0,0,0,0);
 
     if (makeUseRetButton) {
         bool retVariable = hasRetVariable();
@@ -202,14 +197,17 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
 
-    _imp->resultLabel = new Label(tr("Result:"), this);
-    _imp->mainLayout->addWidget(_imp->resultLabel);
-
     _imp->resultEdit = new OutputScriptTextEdit(this);
     _imp->resultEdit->setFixedHeight( TO_DPIY(80) );
     _imp->resultEdit->setFocusPolicy(Qt::NoFocus);
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
+
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, this);
+    _imp->expressionEdit->setAcceptDrops(true);
+    _imp->expressionEdit->setMouseTracking(true);
+    _imp->mainLayout->addWidget(_imp->expressionEdit);
+    _imp->expressionEdit->setPlainText(initialScript);
 
     _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);

@@ -1,3 +1,19 @@
+@mixin OutputScriptTextEdit()
+    padding-left: 7px
+    background: $b15
+    font-size: 13px
+    color: $c0
+    selection-color: mix($base, white, 30%)
+    selection-background-color: mix($base, $b20, 30%)
+@mixin InputScriptTextEdit()
+    font-size: 15px
+    color: $c1
+    background-color: $b25
+    selection-color: mix($base, white, 30%)
+    selection-background-color: mix($base, $b25, 30%)
+    border: 1px solid transparent
+    &:focus
+        border-color: mix($base, $b25, 50%)    
 ScriptEditor
     #buttonsContainer
         background: $b20
@@ -10,18 +26,6 @@ ScriptEditor
             &:pressed
                 border-color: mix($base, $b20, 70%)
     OutputScriptTextEdit
-        padding-left: 7px
-        background: $b15
-        font-size: 13px
-        color: $c0
-        selection-color: mix($base, white, 30%)
-        selection-background-color: mix($base, $b20, 30%)
+        @include OutputScriptTextEdit
     InputScriptTextEdit
-        font-size: 15px
-        color: $c1
-        background-color: $b25
-        selection-color: mix($base, white, 30%)
-        selection-background-color: mix($base, $b25, 30%)
-        border: 1px solid transparent
-        &:focus
-            border-color: mix($base, $b25, 50%)
+        @include InputScriptTextEdit

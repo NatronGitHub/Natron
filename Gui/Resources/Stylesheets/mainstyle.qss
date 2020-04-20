@@ -321,6 +321,57 @@ NodeGraph {
     border-color: #398ac0;
     padding: 0 5px 0 5px; }
 
+ScriptEditor #buttonsContainer {
+  background: #333333;
+  border-bottom: 1px solid #1a1a1a; }
+  ScriptEditor #buttonsContainer QPushButton {
+    background: #404040;
+    color: #cccccc;
+    padding: 4px 10px 4px 10px;
+    border-radius: 3px;
+    border: 1px solid #404040; }
+    ScriptEditor #buttonsContainer QPushButton:hover {
+      border-color: #3f799f; }
+    ScriptEditor #buttonsContainer QPushButton:pressed {
+      background: #404549;
+      color: #3eb2ff; }
+    ScriptEditor #buttonsContainer QPushButton:disabled {
+      color: #787878; }
+  ScriptEditor #buttonsContainer #showAutoDeclVarsB {
+    background: #404040;
+    color: #cccccc;
+    padding: 4px 10px 4px 10px;
+    border-radius: 3px;
+    border: 1px solid #404040;
+    padding: 0; }
+    ScriptEditor #buttonsContainer #showAutoDeclVarsB:hover {
+      border-color: #3f799f; }
+    ScriptEditor #buttonsContainer #showAutoDeclVarsB:pressed {
+      background: #404549;
+      color: #3eb2ff; }
+    ScriptEditor #buttonsContainer #showAutoDeclVarsB:disabled {
+      color: #787878; }
+    ScriptEditor #buttonsContainer #showAutoDeclVarsB:pressed {
+      border-color: #3b8cc2; }
+
+ScriptEditor OutputScriptTextEdit {
+  padding-left: 7px;
+  background: #262626;
+  font-size: 13px;
+  color: #999999;
+  selection-color: #c5e8ff;
+  selection-background-color: #365970; }
+
+ScriptEditor InputScriptTextEdit {
+  font-size: 15px;
+  color: #cccccc;
+  background-color: #404040;
+  selection-color: #c5e8ff;
+  selection-background-color: #3f6279;
+  border: 1px solid transparent; }
+  ScriptEditor InputScriptTextEdit:focus {
+    border-color: #3f799f; }
+
 DockablePanel #headerWidget {
   background: #2b2b2b;
   padding: 4px;
@@ -492,9 +543,9 @@ DockablePanel #horizContainer {
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="2"] {
           background-color: #2379be; }
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="3"] {
-          background-color: #83b641; }
+          background-color: #ad9135; }
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[altered="false"] {
-          color: #91bcdf; }
+          color: #e6e6e6; }
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[dirty="true"] {
           background-color: red; }
       DockablePanel #horizContainer #rightContainer QTabWidget ClickableLabel {
@@ -541,6 +592,35 @@ DockablePanel #horizContainer {
           image: url(:/Resources/Images/up_arrow.png); }
         DockablePanel #horizContainer #rightContainer QTabWidget QTreeView QHeaderView::section {
           background-color: #404040; }
+      DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog {
+        background: #2e2e2e; }
+        DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog QLabel {
+          background: none;
+          margin-bottom: 10px;
+          color: #999999; }
+        DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog InputScriptTextEdit {
+          font-size: 15px;
+          color: #cccccc;
+          background-color: #404040;
+          selection-color: #c5e8ff;
+          selection-background-color: #3f6279;
+          border: 1px solid transparent;
+          margin: 0; }
+          DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog InputScriptTextEdit:focus {
+            border-color: #3f799f; }
+        DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog OutputScriptTextEdit {
+          padding-left: 7px;
+          background: #262626;
+          font-size: 13px;
+          color: #999999;
+          selection-color: #c5e8ff;
+          selection-background-color: #365970;
+          margin: 0;
+          padding: 0;
+          border: 1px solid #303b43; }
+        DockablePanel #horizContainer #rightContainer QTabWidget EditScriptDialog #midButtonsContainer {
+          padding: 30px;
+          background: #2e2e2e; }
 
 #toolBox {
   background: #2e2e2e;

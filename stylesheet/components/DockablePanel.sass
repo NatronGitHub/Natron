@@ -1,3 +1,4 @@
+@import components/EditScriptDialog
 DockablePanel
     #headerWidget
         background: $b17
@@ -61,9 +62,9 @@ DockablePanel
                     &[animation="2"] 
                         background-color: #2379be
                     &[animation="3"] 
-                        background-color: #83b641
+                        background-color: #ad9135
                     &[altered="false"]
-                        color: mix(#2379be, white, 50%)
+                        color: $c2
                     &[dirty="true"] 
                         background-color: red
                 ClickableLabel
@@ -75,3 +76,5 @@ DockablePanel
                     QHeaderView
                         &::section 
                             background-color: $b25
+                EditScriptDialog
+                    @include EditScriptDialog
