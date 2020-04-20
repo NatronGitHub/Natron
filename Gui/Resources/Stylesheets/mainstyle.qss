@@ -494,7 +494,7 @@ DockablePanel #horizContainer {
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[animation="3"] {
           background-color: #83b641; }
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[altered="false"] {
-          color: #f2f2f2; }
+          color: #91bcdf; }
         DockablePanel #horizContainer #rightContainer QTabWidget LineEdit[dirty="true"] {
           background-color: red; }
       DockablePanel #horizContainer #rightContainer QTabWidget ClickableLabel {

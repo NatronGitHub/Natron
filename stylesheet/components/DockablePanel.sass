@@ -29,6 +29,7 @@ DockablePanel
             QTabWidget            
                 border: 1px solid
                 background: $b18
+                GroupBoxLabel
                 QComboBox
                     @include qcombobox
                 QTabBar
@@ -62,7 +63,7 @@ DockablePanel
                     &[animation="3"] 
                         background-color: #83b641
                     &[altered="false"]
-                        color: $c3
+                        color: mix(#2379be, white, 50%)
                     &[dirty="true"] 
                         background-color: red
                 ClickableLabel
