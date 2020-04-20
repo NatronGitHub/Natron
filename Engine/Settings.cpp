@@ -1611,15 +1611,15 @@ Settings::setDefaultValues()
     _sliderColor->setDefaultValue(0.44, 2);
 
     // Apprance/Curve Editor
-    _curveEditorBGColor->setDefaultValue(0., 0);
-    _curveEditorBGColor->setDefaultValue(0., 1);
-    _curveEditorBGColor->setDefaultValue(0., 2);
-    _gridColor->setDefaultValue(0.46, 0);
-    _gridColor->setDefaultValue(0.84, 1);
-    _gridColor->setDefaultValue(0.35, 2);
-    _curveEditorScaleColor->setDefaultValue(0.26, 0);
-    _curveEditorScaleColor->setDefaultValue(0.48, 1);
-    _curveEditorScaleColor->setDefaultValue(0.2, 2);
+    _curveEditorBGColor->setDefaultValue(0.05, 0);
+    _curveEditorBGColor->setDefaultValue(0.05, 1);
+    _curveEditorBGColor->setDefaultValue(0.05, 2);
+    _gridColor->setDefaultValue(0.2, 0);
+    _gridColor->setDefaultValue(0.37, 1);
+    _gridColor->setDefaultValue(0.14, 2);
+    _curveEditorScaleColor->setDefaultValue(0.32, 0);
+    _curveEditorScaleColor->setDefaultValue(0.59, 1);
+    _curveEditorScaleColor->setDefaultValue(0.24, 2);
 
     // Appearance/Dope Sheet
     _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 0);
