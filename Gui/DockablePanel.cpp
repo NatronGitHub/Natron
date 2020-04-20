@@ -1167,7 +1167,9 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     disableUpdate(true);
 
     _imp->_minimized = toggled;
-    if (_imp->_minimized) {
+    _imp->_minimize->setChecked(toggled);
+
+    if (toggled) {
         Q_EMIT minimized();
     } else {
         Q_EMIT maximized();
@@ -1180,7 +1182,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
         _imp->_horizLayout->setContentsMargins(0, 10, 0, 0);
     // ----------------------------
 
-    _imp->_rightContainer->setVisible(!_imp->_minimized);
+    _imp->_rightContainer->setVisible(!toggled);
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {
         if ( QWidget * myItem = dynamic_cast <QWidget*>( _imp->_container->itemAt(i) ) ) {
