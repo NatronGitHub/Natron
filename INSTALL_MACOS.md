@@ -430,13 +430,13 @@ EOF
 ## Build with Makefile
 
 You can generate a makefile by opening a Terminal, setting the current
-directory to the toplevel source directory, and typing
+directory to the top-level source directory, and typing
 
 ```Shell
 qmake -r
 ```
 
-If you get an error `python2-config: command not found` MacOS doesn't have python-config linked correctly.  On MacOS 10.15 this can be fixed by entering the following to add a symlink for the python2.7.config included with MacOS.
+If you get the error `python2-config: command not found` MacOS doesn't have python-config linked correctly.  On MacOS 10.15 this can be fixed by entering the following to add a symlink for the python2.7.config included with MacOS.
 
     sudo ln -s /System/Library/Frameworks/Python.framework/Versions/2.7/bin/python2.7-config /usr/local/bin
     mv /usr/local/bin/python2.7-config /usr/local/bin/python2-config
