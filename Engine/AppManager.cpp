@@ -462,6 +462,7 @@ AppManager::getGILLockedCount() const
     assert(_imp->pythonGILRCount > 0);
     return _imp->pythonGILRCount;
 }
+#endif
 
 void
 AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
@@ -473,7 +474,6 @@ AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& 
     }
 
 }
-#endif
 
 void
 StrUtils::ensureLastPathSeparator(QString& path)
