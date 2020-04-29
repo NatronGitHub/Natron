@@ -436,6 +436,11 @@ directory to the toplevel source directory, and typing
 qmake -r
 ```
 
+If you get an error `python2-config: command not found` MacOS doesn't have python-config linked correctly.  On MacOS 10.15 this can be fixed by entering the following to add a symlink for the python2.7.config included with MacOS.
+
+    sudo ln -s /System/Library/Frameworks/Python.framework/Versions/2.7/bin/python2.7-config /usr/local/bin
+    mv /usr/local/bin/python2.7-config /usr/local/bin/python2-config
+
 then type
 
 ```Shell
