@@ -453,8 +453,8 @@ OUTPUT:
         // See Documentation/templates for how to grab header/footer from the latest Sphinx version
 
         QString groupString; // %2 in plugin_head
-        if ( !pluginGroup.isEmpty() ) {
-            QString group = pluginGroup.at(0);
+        if ( !pluginGroup.empty() ) {
+            QString group = QString::fromStdString(pluginGroup.at(0));
             if (!group.isEmpty()) {
                 groupString = QString::fromUtf8("<li><a href=\"../_group.html?id=%1\">%1 nodes</a> &raquo;</li>").arg(group);
             }
