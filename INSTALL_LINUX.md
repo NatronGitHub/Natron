@@ -220,7 +220,11 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 On Arch Linux you can do the following:
 ```
-sudo pacman -S qt4 expat boost python2-pyside python2-shiboken
+sudo pacman -S expat boost
+```
+Install the following packages from AUR:
+```
+qt4 python2-pyside python2-shiboken
 ```
 
 Cairo has to be build from source, because Arch Linux does not provide a static version (as far as we know). It is fairly easy to do:
