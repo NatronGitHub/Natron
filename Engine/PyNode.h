@@ -203,7 +203,7 @@ public:
     void refreshUserParamsGUI();
 
     virtual bool onKnobValueChanged(KnobI* k,
-                                    ValueChangedReasonEnum reason,
+                                    NATRON_NAMESPACE::ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread)

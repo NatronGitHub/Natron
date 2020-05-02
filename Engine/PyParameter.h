@@ -1189,7 +1189,7 @@ public:
                                                     double rightDerivative);
     NATRON_NAMESPACE::StatusEnum setNthControlPointInterpolation(int dimension,
                                                                  int nThCtl,
-                                                                 KeyframeTypeEnum interpolation);
+                                                                 NATRON_NAMESPACE::KeyframeTypeEnum interpolation);
     NATRON_NAMESPACE::StatusEnum deleteControlPoint(int dimension, int nthCtl);
     NATRON_NAMESPACE::StatusEnum deleteAllControlPoints(int dimension);
 
