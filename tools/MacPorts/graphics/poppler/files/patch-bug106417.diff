@@ -1,8 +1,6 @@
-diff --git glib/CMakeLists.txt glib/CMakeLists.txt
-index 33c66082..53c47ce7 100644
---- glib/CMakeLists.txt
-+++ glib/CMakeLists.txt
-@@ -127,6 +127,7 @@ if (HAVE_INTROSPECTION AND BUILD_SHARED_LIBS)
+--- glib/CMakeLists.txt.orig	2020-04-27 14:26:55.000000000 -0700
++++ glib/CMakeLists.txt	2020-04-29 14:42:20.000000000 -0700
+@@ -128,6 +128,7 @@
    include(GObjectIntrospectionMacros)
    set(INTROSPECTION_GIRS)
    set(INTROSPECTION_SCANNER_ARGS "--add-include-path=${CMAKE_CURRENT_SOURCE_DIR} --warn-all")

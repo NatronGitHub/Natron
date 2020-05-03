@@ -6,8 +6,8 @@ PortGroup               github 1.0
 PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 
-github.setup            OpenImageIO oiio 2.1.11.2
-revision                100
+github.setup            OpenImageIO oiio 2.1.14.0
+revision                1000
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -16,9 +16,9 @@ description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms               darwin
 
-checksums               rmd160  a3860f9e6c8cd24e52be873c07d2d519061773b9 \
-                        sha256  0982f46a6a3107045c06ca825cc1637e023d7e7f16075523a85b10de9acedf55 \
-                        size    29027505
+checksums               rmd160  62cdd56c1800b0f66f19ae32beeb33e807d21fa1 \
+                        sha256  1dc5fd44a9c84dc95370732372fd5adad4e09a8ff28c641397eb90103b7cf0f0 \
+                        size    28981570
 
 compiler.cxx_standard   2011
 
@@ -36,7 +36,8 @@ patchfiles \
 configure.args-append   -DUSE_CCACHE=OFF
 
 # do not "Try to download and build any missing dependencies"
-configure.args-append   -DBUILD_MISSING_DEPS=OFF
+configure.args-append   -DBUILD_MISSING_DEPS=OFF \
+                        -DBUILD_MISSING_FMT=OFF
 
 depends_lib-append      port:robin-map \
                         port:zlib \
@@ -47,7 +48,8 @@ depends_lib-append      port:robin-map \
                         port:tiff \
                         port:ilmbase \
                         port:openexr \
-                        port:squish
+                        port:squish \
+                        port:libfmt
 
 # optional components
 
@@ -215,7 +217,7 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 #if {${set_python_default}} {
-#    default_variants        +python37
+#    default_variants        +python38
 #}
 
 #configure.args-append       -DUSE_FIELD3D=OFF

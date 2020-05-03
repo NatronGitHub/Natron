@@ -211,7 +211,7 @@ public:
     void refreshUserParamsGUI();
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
-                                    ValueChangedReasonEnum reason,
+                                    NATRON_NAMESPACE::ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSetSpec view)
     {

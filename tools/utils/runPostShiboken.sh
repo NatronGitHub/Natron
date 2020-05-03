@@ -51,7 +51,7 @@ sed -e 's@// Extra includes@// Extra includes\
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 # replace NATRON_NAMESPACE with Natron for enums with flags (e.g. StandardButtonEnum)
-sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@"NatronGui\.NATRON_NAMESPACE@"NatronGui.Natron@g' -e 's@"NATRON_NAMESPACE@"Natron@g' -i'.bak' Engine/NatronEngine/natron_namespace_wrapper.cpp
+sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@, NatronEngine\.NATRON_NAMESPACE@, NatronEngine.Natron@g' -e 's@"NatronGui\.NATRON_NAMESPACE@"NatronGui.Natron@g' -e 's@"NATRON_NAMESPACE@"Natron@g' -i'.bak' Engine/NatronEngine/*_wrapper.cpp
 
 # re-add the Natron namespace
 #sed -e 's@" ::\([^s][^t][^d]\)@ NATRON_NAMESPACE::\1@g' -i'.bak' Engine/NatronEngine/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.cpp Gui/NatronGui/*.h

@@ -80,7 +80,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 class Param
 {
     Q_DECLARE_TR_FUNCTIONS(Param)
-    
+
 protected:
     KnobIWPtr _knob;
 
@@ -325,7 +325,7 @@ protected:
     {
         return boost::dynamic_pointer_cast<T>(getRenderCloneKnobInternal());
     }
-    
+
 };
 
 
@@ -1321,7 +1321,7 @@ public:
                             double rightDerivative);
     bool setNthControlPointInterpolation(int dimension,
                                          int nThCtl,
-                                         KeyframeTypeEnum interpolation);
+                                         NATRON_NAMESPACE::KeyframeTypeEnum interpolation);
     bool deleteControlPoint(int dimension, int nthCtl);
     bool deleteAllControlPoints(int dimension);
 

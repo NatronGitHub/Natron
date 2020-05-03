@@ -1,5 +1,5 @@
---- Portfile.orig	2020-03-09 11:42:05.000000000 -0700
-+++ Portfile	2020-03-09 11:46:01.000000000 -0700
+--- Portfile.orig	2020-05-02 12:23:19.000000000 -0700
++++ Portfile	2020-05-02 12:26:55.000000000 -0700
 @@ -2,12 +2,12 @@
  
  PortSystem              1.0
@@ -9,9 +9,9 @@
  PortGroup               cmake 1.1
  PortGroup               active_variants 1.1
  
- github.setup            OpenImageIO oiio 2.1.11.2
+ github.setup            OpenImageIO oiio 2.1.14.0
 -revision                0
-+revision                100
++revision                1000
  name                    openimageio
  categories              graphics
  license                 BSD
@@ -27,7 +27,7 @@
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
  configure.args-append   -DUSE_CCACHE=OFF
-@@ -37,7 +42,7 @@
+@@ -38,7 +43,7 @@
                          port:zlib \
                          port:bzip2 \
                          port:boost \
@@ -36,7 +36,7 @@
                          port:libpng \
                          port:tiff \
                          port:ilmbase \
-@@ -46,12 +51,135 @@
+@@ -48,12 +53,135 @@
  
  # optional components
  
@@ -177,15 +177,15 @@
  
  set pythons_suffixes    {27 36 37 38}
  
-@@ -86,31 +214,31 @@
+@@ -88,31 +216,31 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
 -if {${set_python_default}} {
--    default_variants        +python37
+-    default_variants        +python38
 -}
 +#if {${set_python_default}} {
-+#    default_variants        +python37
++#    default_variants        +python38
 +#}
  
  #configure.args-append       -DUSE_FIELD3D=OFF
@@ -219,7 +219,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -119,21 +247,21 @@
+@@ -121,21 +249,21 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

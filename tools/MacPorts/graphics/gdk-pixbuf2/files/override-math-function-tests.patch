@@ -1,0 +1,23 @@
+--- gdk-pixbuf/fallback-c89.c.orig	2019-10-08 03:44:10.000000000 -0700
++++ gdk-pixbuf/fallback-c89.c	2020-03-30 18:48:56.000000000 -0700
+@@ -18,6 +18,13 @@
+  */
+ 
+ #include <math.h>
++
++/* override results of math lib tests
++** we have these functions but not in mlib
++*/
++
++#define HAVE_ROUND 1
++#define HAVE_LRINT 1
+  
+ /* Workaround for round() for non-GCC/non-C99 compilers */
+ #ifndef HAVE_ROUND
+@@ -46,4 +53,4 @@
+   else
+     return x >= 0 ? floor (x + 0.5) : ceil (x - 0.5);
+ }
+-#endif
+\ No newline at end of file
++#endif

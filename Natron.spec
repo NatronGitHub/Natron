@@ -14,7 +14,7 @@ Release: 1%{?dist}
 License: GPLv2
 
 Group: System Environment/Base
-URL: https://natrongithub.github.io/
+URL: http://natrongithub.github.io
 
 # https://github.com/NatronGitHub/Natron/releases/download/%{version}/Natron-%{version}.tar.xz
 Source0: %{name}-%{version}.tar.xz

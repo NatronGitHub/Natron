@@ -223,7 +223,7 @@ NATRON_NAMESPACE_ENTER
 #define kRotoUIParamDrawEllipseToolButtonActionHint "Draw Ellipse"
 
 #define kRotoUIParamDrawRectangleToolButtonAction "DrawRectangleTool"
-#define kRotoUIParamDrawRectangleToolButtonActionLabel "Rectangle Tol"
+#define kRotoUIParamDrawRectangleToolButtonActionLabel "Rectangle Tool"
 #define kRotoUIParamDrawRectangleToolButtonActionHint "Draw Rectangle"
 
 

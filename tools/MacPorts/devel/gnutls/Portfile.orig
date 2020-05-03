@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       active_variants 1.1
 
 name            gnutls
-version         3.6.12
+version         3.6.13
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -30,9 +30,9 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  f76e05c4a5f6c15277259b874bca475089c02630 \
-                sha256  bfacf16e342949ffd977a9232556092c47164bd26e166736cf3459a870506c4b \
-                size    5942064
+checksums       rmd160  fa5e9136c3a620436a65946f5e2a9f9b878b238b \
+                sha256  32041df447d9f4644570cf573c9f60358e865637d69b7e59d1159b7240b52f38 \
+                size    5958956
 
 use_xz          yes
 
@@ -57,6 +57,14 @@ depends_lib-append \
                 port:zlib
 
 patchfiles      patch-lib-system-certs.c.diff
+
+# see: https://trac.macports.org/ticket/60285
+platform darwin {
+    if {${os.major} == 19} {
+        patchfiles-append \
+                patch-configure.ac.diff
+    }
+}
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.

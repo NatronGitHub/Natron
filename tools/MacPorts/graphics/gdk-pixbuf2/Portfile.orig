@@ -43,6 +43,8 @@ depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
 
 license_noconflict  gobject-introspection
 
+patchfiles          override-math-function-tests.patch
+
 compiler.c_standard 1999
 
 configure.ldflags-append -lintl

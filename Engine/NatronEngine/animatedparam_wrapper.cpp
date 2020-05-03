@@ -1089,7 +1089,7 @@ static PyObject* Sbk_AnimatedParamFunc_setInterpolationAtTime(PyObject* self, Py
     return pyResult;
 
     Sbk_AnimatedParamFunc_setInterpolationAtTime_TypeError:
-        const char* overloads[] = {"float, NatronEngine.NATRON_NAMESPACE.KeyframeTypeEnum, int = -1, unicode = QLatin1String(\"All\")", 0};
+        const char* overloads[] = {"float, NatronEngine.Natron.KeyframeTypeEnum, int = -1, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.AnimatedParam.setInterpolationAtTime", overloads);
         return 0;
 }

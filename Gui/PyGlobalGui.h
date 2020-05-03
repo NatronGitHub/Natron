@@ -60,7 +60,7 @@ public:
     {
     }
 
-    QPixmap getIcon(PixmapEnum val) const;
+    QPixmap getIcon(NATRON_NAMESPACE::PixmapEnum val) const;
     GuiApp* getGuiInstance(int idx) const;
 
     void informationDialog(const QString& title,
@@ -81,8 +81,8 @@ public:
         Dialogs::errorDialog( title.toStdString(), message.toStdString() );
     }
 
-    StandardButtonEnum questionDialog(const QString& title,
-                                      const QString& message)
+    NATRON_NAMESPACE::StandardButtonEnum questionDialog(const QString& title,
+                                                        const QString& message)
     {
         return Dialogs::questionDialog(title.toStdString(), message.toStdString(), false);
     }

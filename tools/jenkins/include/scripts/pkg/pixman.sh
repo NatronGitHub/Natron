@@ -2,7 +2,7 @@
 
 # Install pixman
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/pixman.html
-PIXMAN_VERSION=0.38.4
+PIXMAN_VERSION=0.40.0
 PIXMAN_TAR="pixman-${PIXMAN_VERSION}.tar.gz"
 PIXMAN_SITE="https://www.cairographics.org/releases"
 if download_step; then
