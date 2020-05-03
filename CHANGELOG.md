@@ -16,6 +16,7 @@
 - Fix using Rotopaint with multiple layers. #420 #205
 - Fix loading project settings. #439
 - Fix property panels of PyPlug nodes. #449
+- Fix missing python API entry points. #485
 
 ### Plugins
 
