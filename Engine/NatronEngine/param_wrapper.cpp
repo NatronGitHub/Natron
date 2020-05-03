@@ -2090,7 +2090,7 @@ static PyObject* Sbk_ParamFunc_setViewerUILayoutType(PyObject* self, PyObject* p
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setViewerUILayoutType_TypeError:
-        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.ViewerContextLayoutTypeEnum", 0};
+        const char* overloads[] = {"NatronEngine.Natron.ViewerContextLayoutTypeEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setViewerUILayoutType", overloads);
         return 0;
 }

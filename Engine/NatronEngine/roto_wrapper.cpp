@@ -342,7 +342,7 @@ static PyObject* Sbk_RotoFunc_createStroke(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_RotoFunc_createStroke_TypeError:
-        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.RotoStrokeType", 0};
+        const char* overloads[] = {"NatronEngine.Natron.RotoStrokeType", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Roto.createStroke", overloads);
         return 0;
 }

@@ -699,8 +699,8 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPointInterpolation(PyObjec
 
         if (!PyErr_Occurred()) {
             // setNthControlPointInterpolation(int,int,NATRON_NAMESPACE::KeyframeTypeEnum)
-            NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->setNthControlPointInterpolation(cppArg0, cppArg1, cppArg2));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            bool cppResult = cppSelf->setNthControlPointInterpolation(cppArg0, cppArg1, cppArg2);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
