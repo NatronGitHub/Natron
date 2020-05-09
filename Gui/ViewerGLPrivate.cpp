@@ -103,7 +103,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , userRoI()   // protected by mutex
     , buildUserRoIOnNextPress(false)
     , draggedUserRoI()
-    , zoomCtx()   // protected by mutex
+    , zoomCtx(0.01, 1024.)   // protected by mutex
     , clipToDisplayWindow(true)   // protected by mutex
     , wipeControlsMutex()
     , mixAmount(1.)   // protected by mutex

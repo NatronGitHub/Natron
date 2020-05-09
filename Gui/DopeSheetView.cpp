@@ -325,7 +325,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
     , font( new QFont(appFont, appFontSize) )
     , textRenderer()
     , kfTexturesIDs()
-    , zoomContext()
+    , zoomContext(0.01, 100.)
     , zoomOrPannedSinceLastFit(false)
     , selectionRect()
     , selectedKeysBRect()
@@ -3493,21 +3493,11 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
         _imp->zoomOrPannedSinceLastFit = true;
 
         int deltaX = 2 * ( e->x() - _imp->lastPosOnMouseMove.x() );
-        const double par_min = 0.0001;
-        const double par_max = 10000.;
         double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
         QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMousePress.x(),
                                                                   _imp->lastPosOnMousePress.y() );
 
         // Alt + Wheel: zoom time only, keep point under mouse
-        double par = _imp->zoomContext.aspectRatio() * scaleFactorX;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactorX = par / _imp->zoomContext.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactorX = par / _imp->zoomContext.factor();
-        }
         _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
 
         redraw();
@@ -3644,24 +3634,10 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
         return;
     }
 
-    static const double par_min = 0.01; // 1 pixel for 100 frames
-    static const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
-    double par;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
 
     _imp->zoomOrPannedSinceLastFit = true;
-
-    par = _imp->zoomContext.aspectRatio() * scaleFactor;
-
-    if (par <= par_min) {
-        par = par_min;
-        scaleFactor = par / _imp->zoomContext.aspectRatio();
-    } else if (par > par_max) {
-        par = par_max;
-        scaleFactor = par / _imp->zoomContext.aspectRatio();
-    }
-
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 

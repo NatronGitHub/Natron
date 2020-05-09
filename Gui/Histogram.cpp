@@ -101,7 +101,7 @@ public:
         , widget(widget)
         , mode(Histogram::eDisplayModeRGB)
         , oldClick()
-        , zoomCtx()
+        , zoomCtx(0.000001, 1000000.)
         , state(eEventStateNone)
         , hasBeenModifiedSinceResize(false)
         , _baseAxisColor(118, 215, 90, 255)
@@ -1179,26 +1179,29 @@ Histogram::paintGL()
         glCheckErrorIgnoreOSXBug();
 
         _imp->drawScale();
+        glCheckError();
 
         if (_imp->hasImage) {
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
             _imp->drawHistogramCPU();
+            glCheckError();
 #endif
             if (_imp->drawCoordinates) {
                 _imp->drawPicker();
+                glCheckError();
             }
 
             _imp->drawWarnings();
+            glCheckError();
 
             if (_imp->showViewerPicker) {
                 _imp->drawViewerPicker();
+                glCheckError();
             }
         } else {
             _imp->drawMissingImage();
+            glCheckError();
         }
-
-
-        glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL
 
@@ -1318,7 +1321,7 @@ HistogramPrivate::updatePicker(double x)
 
     xCoordinateStr = QString::fromUtf8("x=") + QString::number(x, 'f', 6);
     double binSize = (vmax - vmin) / binsCount;
-    int index = (int)( (x - vmin) / binSize );
+    int index = binSize <= 0 ? 0 : (int)( (x - vmin) / binSize );
     rValueStr.clear();
     gValueStr.clear();
     bValueStr.clear();
@@ -1393,7 +1396,7 @@ Histogram::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
@@ -1404,7 +1407,7 @@ Histogram::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         }
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
@@ -1501,6 +1504,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
+    assert(vmax > vmin);
 
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 

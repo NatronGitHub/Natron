@@ -316,7 +316,7 @@ SpinBox::increment(int delta,
     if (!useCursorPositionIncr) {
         double val = oldVal;
         _imp->currentDelta += delta;
-        double inc = ipow(10, shift) * _imp->currentDelta * _imp->increment / 120.;
+        double inc = ipow(10., shift) * _imp->currentDelta * _imp->increment / 120.;
         double maxiD = 0.;
         double miniD = 0.;
         switch (_imp->type) {
@@ -491,7 +491,7 @@ SpinBox::increment(int delta,
     int llpowerOfTen = dot - noDotLen; // llval must be post-multiplied by this power of ten
     assert(llpowerOfTen <= 0);
     // check that val and llval*10^llPowerOfTen are close enough (relative error should be less than 1e-8)
-    assert(std::abs(val * ipow(10, -llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
+    assert(std::abs(val * ipow(10., -llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
 
 
     // If pos is at the end
@@ -529,7 +529,7 @@ SpinBox::increment(int delta,
         return;
     }
 
-    double inc = inc_int * ipow(10, powerOfTen);
+    double inc = inc_int * ipow(10., powerOfTen);
 
     // Check that we are within the authorized range
     double maxiD, miniD;
@@ -552,14 +552,14 @@ SpinBox::increment(int delta,
 
     // Adjust llval so that the increment becomes an int, and avoid rounding errors
     if (powerOfTen >= llpowerOfTen) {
-        llval += inc_int * ipow(10, powerOfTen - llpowerOfTen);
+        llval += inc_int * ipow(10., powerOfTen - llpowerOfTen);
     } else {
-        llval *= ipow(10, llpowerOfTen - powerOfTen);
+        llval *= ipow(10., llpowerOfTen - powerOfTen);
         llpowerOfTen -= llpowerOfTen - powerOfTen;
         llval += inc_int;
     }
     // check that val and llval*10^llPowerOfTen are still close enough (relative error should be less than 1e-8)
-    assert(std::abs(val / ipow(10, llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
+    assert(std::abs(val / ipow(10., llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
 
     QString newStr;
     newStr.setNum(llval);
