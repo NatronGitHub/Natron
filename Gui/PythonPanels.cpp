@@ -194,6 +194,8 @@ PyModalDialog::PyModalDialog(Gui* gui,
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
+    appPTR->hideSplashScreen();
+
     _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();

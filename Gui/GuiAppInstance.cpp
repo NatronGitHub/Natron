@@ -443,8 +443,6 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
                       "Would you like to restore it?\n"
                       "Clicking No will remove this auto-save.");
 
-    appPTR->hideSplashScreen();
-
     StandardButtonEnum ret = Dialogs::questionDialog(tr("Auto-save").toStdString(),
                                                      text.toStdString(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                      eStandardButtonYes);
@@ -611,9 +609,7 @@ GuiAppInstance::errorDialog(const std::string & title,
                             const std::string & message,
                             bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -634,9 +630,7 @@ GuiAppInstance::errorDialog(const std::string & title,
                             bool* stopAsking,
                             bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -656,9 +650,7 @@ GuiAppInstance::warningDialog(const std::string & title,
                               const std::string & message,
                               bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -679,9 +671,7 @@ GuiAppInstance::warningDialog(const std::string & title,
                               bool* stopAsking,
                               bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -701,9 +691,7 @@ GuiAppInstance::informationDialog(const std::string & title,
                                   const std::string & message,
                                   bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -724,9 +712,7 @@ GuiAppInstance::informationDialog(const std::string & title,
                                   bool* stopAsking,
                                   bool useHtml) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -748,9 +734,7 @@ GuiAppInstance::questionDialog(const std::string & title,
                                StandardButtons buttons,
                                StandardButtonEnum defaultButton) const
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;
@@ -775,9 +759,7 @@ GuiAppInstance::questionDialog(const std::string & title,
                                StandardButtonEnum defaultButton,
                                bool* stopAsking)
 {
-    if ( appPTR->isSplashcreenVisible() ) {
-        appPTR->hideSplashScreen();
-    }
+    appPTR->hideSplashScreen();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         ++_imp->_showingDialog;

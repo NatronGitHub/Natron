@@ -1090,6 +1090,7 @@ GuiApplicationManager::hideSplashScreen()
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
     if (_imp->_splashScreen) {
+        _imp->_splashScreen->hide();
         _imp->_splashScreen->close();
         delete _imp->_splashScreen;
         _imp->_splashScreen = 0;
