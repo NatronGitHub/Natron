@@ -9,11 +9,11 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.11-7
+version                     6.9.11-10
 revision                    0
-checksums                   rmd160  4e4df5aa941906519bec04324d2928144e1bd244 \
-                            sha256  1a9935b78e3430a4a031602838c4b424e6d6e9420058d1448172a3b8ff9995d5 \
-                            size    9075300
+checksums                   rmd160  7dbddac55a135d1b45c492abb136a04f7e345b10 \
+                            sha256  ea0a48ae4a9fbc9a6808d4726b6e6563c1859237d6ce968fc087530320ea3a33 \
+                            size    9083712
 
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
