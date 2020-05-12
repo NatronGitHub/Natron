@@ -17,6 +17,7 @@
 - Fix loading project settings. #439
 - Fix property panels of PyPlug nodes. #449
 - Fix missing python API entry points. #485
+- Make "Use Host Interact" setting available from user parameters. #490
 
 ### Plugins
 
