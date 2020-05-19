@@ -36,6 +36,7 @@
 - Fix "Fill" PyPlug: was not filling everything if the Source was larger than the project. #475
 - Shadertoy: use the preset name as a sublabel.
 - LensDistortion/IDistort/STMap: add "Use src RoD" option to override format.
+- Blur: fix handling of render scale when computing derivatives. #496
 
 
 ## Version 2.3.14
