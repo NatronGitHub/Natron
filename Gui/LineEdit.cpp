@@ -89,6 +89,11 @@ LineEdit::dropEvent(QDropEvent* e)
     QString path;
     if (urls.size() > 0) {
         path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
+#ifdef __NATRON_WIN32__
+        if ( !path.isEmpty() && ( path.at(0) == QLatin1Char('/') ) ) {
+            path = path.remove(0, 1);
+        }
+#endif
     }
     if ( !path.isEmpty() ) {
         setText(path);
