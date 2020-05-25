@@ -58,7 +58,6 @@ LineEdit::LineEdit(QWidget* parent)
     , altered(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect, 0);
-    connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
     setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
@@ -88,30 +87,28 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
+        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).toLocalFile();
     }
     if ( !path.isEmpty() ) {
         setText(path);
+        selectAll();
+        setFocus( Qt::MouseFocusReason );
+        e->acceptProposedAction();
+        update();
         Q_EMIT textDropped();
     }
 }
 
 void
-LineEdit::onEditingFinished()
-{
-    //clearFocus();
-}
-
-void
 LineEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    e->accept();
+    e->acceptProposedAction();
 }
 
 void
 LineEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    e->accept();
+    e->acceptProposedAction();
 }
 
 void

@@ -1167,7 +1167,7 @@ Gui::dragEnterEvent(QDragEnterEvent* e)
         return;
     }
 
-    e->accept();
+    e->acceptProposedAction();
 
 }
 
@@ -1180,7 +1180,7 @@ Gui::dragMoveEvent(QDragMoveEvent* e)
     }
 
 
-    e->accept();
+    e->acceptProposedAction();
 
 }
 

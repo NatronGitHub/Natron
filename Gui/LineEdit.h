@@ -83,10 +83,6 @@ Q_SIGNALS:
 
     void textPasted();
 
-public Q_SLOTS:
-
-    void onEditingFinished();
-
 protected:
 
 
