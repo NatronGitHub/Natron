@@ -1,6 +1,6 @@
---- base/unix-dll.mak.orig	2013-08-30 19:37:28.000000000 +0900
-+++ base/unix-dll.mak	2013-09-10 14:06:01.000000000 +0900
-@@ -91,12 +91,12 @@
+--- base/unix-dll.mak.orig	2019-01-16 17:24:24.000000000 +0000
++++ base/unix-dll.mak	2020-04-24 02:39:18.000000000 -0700
+@@ -91,13 +91,26 @@
  
  
  # MacOS X
@@ -8,13 +8,73 @@
 -#GS_SONAME=$(GS_SONAME_BASE).$(GS_SOEXT)
 -#GS_SONAME_MAJOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
 -#GS_SONAME_MAJOR_MINOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+-#LDFLAGS_SO=-dynamiclib -flat_namespace
+-#LDFLAGS_SO_MAC=-dynamiclib -install_name $(GS_SONAME_MAJOR_MINOR)
+-#LDFLAGS_SO=-dynamiclib -install_name $(FRAMEWORK_NAME)
 +GS_SOEXT=dylib
 +GS_SONAME=$(GS_SONAME_BASE).$(GS_SOEXT)
 +GS_SONAME_MAJOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
 +GS_SONAME_MAJOR_MINOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
- #LDFLAGS_SO=-dynamiclib -flat_namespace
--#LDFLAGS_SO_MAC=-dynamiclib -install_name $(GS_SONAME_MAJOR_MINOR)
 +GS_LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(GS_SONAME_MAJOR_MINOR)
- #LDFLAGS_SO=-dynamiclib -install_name $(FRAMEWORK_NAME)
++
++PCL_SONAME=$(PCL_SONAME_BASE).$(GS_SOEXT)
++PCL_SONAME_MAJOR=$(PCL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
++PCL_SONAME_MAJOR_MINOR=$(PCL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
++PCL_LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(PCL_SONAME_MAJOR_MINOR)
++
++XPS_SONAME=$(XPS_SONAME_BASE).$(GS_SOEXT)
++XPS_SONAME_MAJOR=$(XPS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
++XPS_SONAME_MAJOR_MINOR=$(XPS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
++XPS_LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(XPS_SONAME_MAJOR_MINOR)
++
++GPDL_SONAME=$(GPDL_SONAME_BASE).$(GS_SOEXT)
++GPDL_SONAME_MAJOR=$(GPDL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
++GPDL_SONAME_MAJOR_MINOR=$(GPDL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
++PDL_LDFLAGS_SO=-dynamiclib -install_name __PREFIX__/lib/$(GPDL_SONAME_MAJOR_MINOR)
  
  GS_SO=$(BINDIR)/$(GS_SONAME)
+ GS_SO_MAJOR=$(BINDIR)/$(GS_SONAME_MAJOR)
+@@ -301,7 +314,7 @@
+ install-sodebug:
+ 	$(MAKE) $(SUB_MAKE_OPTION) install-so-subtarget GENOPT='-DDEBUG' BUILDDIRPREFIX=$(SODEBUGDIRPREFIX)
+ 
+-install-so-subtarget: so-subtarget
++install-so-subtarget: so-subtarget install-so-subtarget-$(PCL_TARGET) install-so-subtarget-$(XPS_TARGET) install-so-subtarget-$(GPDL_TARGET)
+ 	-mkdir -p $(DESTDIR)$(prefix)
+ 	-mkdir -p $(DESTDIR)$(datadir)
+ 	-mkdir -p $(DESTDIR)$(gsdir)
+@@ -321,6 +334,34 @@
+ 	$(INSTALL_DATA) $(GLSRC)gserrors.h $(DESTDIR)$(gsincludedir)gserrors.h
+ 	$(INSTALL_DATA) $(DEVSRC)gdevdsp.h $(DESTDIR)$(gsincludedir)gdevdsp.h
+ 
++install-so-subtarget-gpcl6:
++	$(INSTALL_PROGRAM) $(PCLSOC) $(DESTDIR)$(bindir)/$(PCLSOC_XENAME)
++	$(INSTALL_PROGRAM) $(BINDIR)/$(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR_MINOR)
++	$(RM_) $(DESTDIR)$(libdir)/$(PCL_SONAME)
++	ln -s $(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME)
++	$(RM_) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR)
++	ln -s $(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR)
++
++install-so-subtarget-gxps:
++	$(INSTALL_PROGRAM) $(XPSSOC) $(DESTDIR)$(bindir)/$(XPSSOC_XENAME)
++	$(INSTALL_PROGRAM) $(BINDIR)/$(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR_MINOR)
++	$(RM_) $(DESTDIR)$(libdir)/$(XPS_SONAME)
++	ln -s $(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME)
++	$(RM_) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR)
++	ln -s $(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR)
++
++install-so-subtarget-gpdl:
++	$(INSTALL_PROGRAM) $(GPDLSOC) $(DESTDIR)$(bindir)/$(GPDLSOC_XENAME)
++	$(INSTALL_PROGRAM) $(BINDIR)/$(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR_MINOR)
++	$(RM_) $(DESTDIR)$(libdir)/$(GPDL_SONAME)
++	ln -s $(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME)
++	$(RM_) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR)
++	ln -s $(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR)
++
++# Dummy target if PCL / XPS / PDL not enabled
++install-so-subtarget-:
++	$(NO_OP)
++
+ soinstall:
+ 	$(MAKE) $(SUB_MAKE_OPTION) soinstall-subtarget BUILDDIRPREFIX=$(SODIRPREFIX)
+ 

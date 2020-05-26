@@ -25,17 +25,19 @@ master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releas
 set mappingresources_commit \
                     a709991e67196a87af053e2c16d7a65108613a41
 
+distname            ghostpdl-${version}
 distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-other-6.0.tar.gz:fonts \
                     ghostscript-fonts-std-8.11.tar.gz:fonts \
                     ${mappingresources_commit}.zip:misc
 
-patchfiles          patch-base_unix-dll.mak.diff
+patchfiles          patch-base_unix-dll.mak.diff \
+                    patch-base_unixinst.mak.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  0e345d2ce7122aa973882738210a88a4f8736f36 \
-                    sha256  0f53e89fd647815828fc5171613e860e8535b68f7afbc91bf89aee886769ce89 \
-                    size    44597668 \
+                    rmd160  9498a55e842736fac6a4f3477b37e5a20da44271 \
+                    sha256  dd94c5a06c03c58b47b929d03260f491d4807eaf5be83abd283278927b11c9ee \
+                    size    53564956 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -106,10 +108,14 @@ configure.cppflags-replace \
                     -I${prefix}/include \
                     -isystem${prefix}/include
 
-configure.args      --disable-compile-inits \
+configure.args      --enable-gpdl \
+                    --disable-compile-inits \
                     --disable-cups \
                     --disable-dbus \
                     --disable-gtk \
+                    --without-pcl \
+                    --without-xps \
+                    --without-gpdl \
                     --without-x \
                     --without-luratech \
                     --with-system-libtiff
@@ -126,6 +132,34 @@ if {[variant_isset universal]} {
 destroot.target     soinstall
 post-destroot {
     ln -s gsc ${destroot}${prefix}/bin/gs
+
+    if {[variant_isset ghostpdl]} {
+        ln -s gpcl6c ${destroot}/${prefix}/bin/gpcl6
+        ln -s gxpsc ${destroot}/${prefix}/bin/gxps
+        ln -s gpdlc ${destroot}/${prefix}/bin/gpdl
+    }
+
+    xinstall -m 755 -d ${destroot}${prefix}/share/doc/${name}
+    xinstall -m 0644 -W ${worksrcpath} \
+        LICENSE DroidSansFallback.NOTICE \
+        ${destroot}/${prefix}/share/doc/${name}
+
+    if {[variant_isset ghostpdl]} {
+        xinstall -m 755 -d ${destroot}${prefix}/share/doc/${name}/pcl
+        xinstall -m 0644 -W ${worksrcpath}/pcl \
+            COPYING.AFPL LICENSE NEWS README.txt \
+            ${destroot}${prefix}/share/doc/${name}/pcl
+
+        xinstall -m 755 -d ${destroot}${prefix}/share/doc/${name}/pcl/pcl
+        xinstall -m 0644 -W ${worksrcpath}/pcl/pcl \
+            Anomalies.txt \
+            ${destroot}${prefix}/share/doc/${name}/pcl/pcl
+
+        xinstall -m 755 -d ${destroot}${prefix}/share/doc/${name}/pcl/pxl
+        xinstall -m 0644 -W ${worksrcpath}/pcl/pxl \
+            pxcet.txt pxdiff.txt pxfts.txt pxlib.txt pxspec.txt \
+            ${destroot}${prefix}/share/doc/${name}/pcl/pxl
+    }
 
     # std fonts - install into FontCache-compatible directory.
     # Check: could break on case-sensitive file systems...
@@ -148,6 +182,13 @@ post-destroot {
             COPYING ChangeLog README README.tweaks TODO \
             ${destroot}${prefix}/share/doc/${name}/fonts
 
+    if {[variant_isset ghostpdl]} {
+        # Install PCL base fonts into urwfonts directory
+        xinstall -m 755 -d ${destroot}${prefix}/share/${name}/urwfonts
+        xinstall -m 644 {*}[glob -directory ${worksrcpath}/pcl/urwfonts *.ttf] \
+            ${destroot}${prefix}/share/${name}/urwfonts
+    }
+
     # install missing header
     xinstall -m 0644 ${worksrcpath}/base/gserrors.h \
             ${destroot}${prefix}/include/ghostscript/
@@ -167,6 +208,23 @@ variant x11 {
 
 variant cups description {Enable CUPS driver} {
     configure.args-replace  --disable-cups --enable-cups
+}
+
+variant ghostpdl description {Install GhostPDL} {
+    license-append          noncommercial
+    configure.args-replace  --without-pcl --with-pcl=gpcl6
+    configure.args-replace  --without-xps --with-xps=gxps
+    configure.args-replace  --without-gpdl --with-gpdl=gpdl
+    notes "
+    GhostPCL requires a set of truetype fonts to function properly. To use
+    the default URW font set, add the following to your shell profile:
+
+        export PCLFONTSOURCE='${prefix}/share/${name}/urwfonts/'
+
+    These fonts are distributed under the Aladdin Free Public License which
+    bars commercial use. For more information see
+    ${prefix}/share/doc/${name}/pcl/LICENSE
+    "
 }
 
 default_variants    +x11

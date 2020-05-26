@@ -1,6 +1,6 @@
---- configure.orig	2019-01-14 22:47:25.000000000 -0600
-+++ configure	2019-01-24 18:30:36.000000000 -0600
-@@ -13884,8 +13884,8 @@
+--- configure.orig	2019-12-26 10:59:49.000000000 -0600
++++ configure	2020-05-20 14:16:21.000000000 -0500
+@@ -13881,8 +13881,8 @@
      darwin*)
        # Special case for OSX builds. Append these to give the user a chance to
        # override with --with-gl*
@@ -11,7 +11,7 @@
        # quiet deprecation warnings for glut
        SAVED_CFLAGS="$CFLAGS"
            CFLAGS="-Werror -Wno-deprecated-declarations"
-@@ -13921,7 +13921,7 @@
+@@ -13918,7 +13918,7 @@
        none) ;;
        *) CPPFLAGS="$flag $CPPFLAGS";;
      esac
