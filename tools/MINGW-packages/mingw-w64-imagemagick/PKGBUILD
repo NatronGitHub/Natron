@@ -9,7 +9,7 @@
 
 # v6 is the "safe" option, v7 can break (sometimes)
 #pkgver=7.0.8.55
-pkgver=6.9.11.13
+pkgver=6.9.11.16
 
 _realname=imagemagick
 pkgbase="mingw-w64-${_realname}"
