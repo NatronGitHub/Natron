@@ -16,11 +16,11 @@ Description
 
 Apply a `Shadertoy <http://www.shadertoy.com>`__ fragment shader.
 
-This plugin implements `Shadertoy 0.8.8 <https://www.shadertoy.com/changelog>`__, but multipass shaders and sound are not supported. Some multipass shaders can still be implemented by chaining several Shadertoy nodes, one for each pass.
+This plugin implements `Shadertoy 0.8.8 <https://www.shadertoy.com/about>`__, but multipass shaders and sound are not supported. Some multipass shaders can still be implemented by chaining several Shadertoy nodes, one for each pass.
 
-`Shadertoy 0.8.8 <https://www.shadertoy.com/changelog>`__ uses WebGL 1.0 (a.k.a. `GLSL ES 1.0 <https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf>`__ from GLES 2.0), based on `GLSL 1.20 <https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf>`__
+`Shadertoy 0.8.8 <https://www.shadertoy.com/about>`__ uses WebGL 1.0 (a.k.a. `GLSL ES 1.0 <https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf>`__ from GLES 2.0), based on `GLSL 1.20 <https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf>`__
 
-Note that the more recent `Shadertoy 0.9.1 <https://www.shadertoy.com/changelog>`__ uses WebGL 2.0 (a.k.a. `GLSL ES 3.0 <https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf>`__ from GLES 3.0), based on `GLSL 3.3 <https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.3.30.pdf>`__
+Note that the more recent `Shadertoy 0.9.1 <https://www.shadertoy.com/about>`__ uses WebGL 2.0 (a.k.a. `GLSL ES 3.0 <https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf>`__ from GLES 3.0), based on `GLSL 3.3 <https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.3.30.pdf>`__
 
 This help only covers the parts of GLSL ES that are relevant for Shadertoy. For the complete specification please have a look at `GLSL ES 1.0 specification <https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf>`__ or pages 3 and 4 of the `OpenGL ES 2.0 quick reference card <https://www.khronos.org/opengles/sdk/docs/reference_cards/OpenGL-ES-2_0-Reference-card.pdf>`__. See also the `Shadertoy/GLSL tutorial <https://www.shadertoy.com/view/Md23DV>`__.
 
