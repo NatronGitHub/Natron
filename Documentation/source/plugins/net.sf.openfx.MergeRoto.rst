@@ -14,7 +14,7 @@ Description
 
 Pixel-by-pixel merge operation between two inputs using and external alpha component for input A. All channels from input A arge merged with those from B, using RotoMask as the alpha component for input A: the alpha channel from A is thus merged onto the alpha channel from B using the RotoMask as the alpha value (“a” in the formulas). This may be useful, for example, to “paint” alpha values from A onto the alpha channel of B using a given operation with an external alpha mask (which may be opaque even where the alpha channel of A is zero).
 
-A complete explanation of the Porter-Duff compositing operators can be found in “Compositing Digital Images”, by T. Porter and T. Duff (Proc. SIGGRAPH 1984) http://keithp.com/~keithp/porterduff/p253-porter.pdf
+A description of most operators is available in the W3C Compositing and Blending Level 1 Recommendation https://www.w3.org/TR/compositing-1/ and a complete explanation of the Porter-Duff compositing operators can be found in “Compositing Digital Images”, by T. Porter and T. Duff (Proc. SIGGRAPH 1984) http://keithp.com/~keithp/porterduff/p253-porter.pdf
 
 Note that if an input with only RGB components is connected to A or B, its alpha channel is considered to be transparent (zero) by default, and the “A” checkbox for the given input is automatically unchecked, unless it is set explicitly by the user. In fact, most of the time, RGB images without an alpha channel are only used as background images in the B input, and should be considered as transparent, since they should not occlude anything. That way, the alpha channel on output only contains the opacity of elements that are merged with this background. In some rare cases, though, one may want the RGB image to actually be opaque, and can check the “A” checkbox for the given input to do so.
 
@@ -50,13 +50,13 @@ Blend modes, see https://en.wikipedia.org/wiki/Blend_modes
 Multiply and Screen
 '''''''''''''''''''
 
--  multiply: AB, 0 if A < 0 and B < 0
+-  multiply: AB, A if A < 0 and B < 0
 
 -  screen: A+B-AB if A or B <= 1, otherwise max(A, B)
 
--  overlay: multiply if B < 0.5, screen if B > 0.5
+-  overlay: multiply(A, 2*B) if B < 0.5, screen(A, 2*B - 1) if B > 0.5
 
--  hard-light: multiply if A < 0.5, screen if A > 0.5
+-  hard-light: multiply(2*A, B) if A < 0.5, screen(2*A - 1, B) if A > 0.5
 
 -  soft-light: burn-in if A < 0.5, lighten if A > 0.5
 
@@ -67,7 +67,7 @@ Dodge and burn
 
 -  color-burn: darken B towards A
 
--  pinlight: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2.0 ) else
+-  pinlight: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2) else
 
 -  difference: abs(A-B) (a.k.a. absminus)
 
@@ -129,6 +129,7 @@ Other
 See also:
 
 -  “Digital Image Compositing” by Marc Levoy https://graphics.stanford.edu/courses/cs248-06/comp/comp.html
+-  “Compositing and Blending Level 1” https://www.w3.org/TR/compositing-1/
 -  “SVG Compositing Specification” https://www.w3.org/TR/SVGCompositing/
 -  “ISO 32000-1:2008: Portable Document Format (July 2008)”, Sec. 11.3 “Basic Compositing Operations” http://www.adobe.com/devnet/pdf/pdf_reference.html
 -  “Merge” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Merge
@@ -181,7 +182,7 @@ Controls
 |                                 |         |         | | **geometric**: 2AB/(A+B)                                                                                                                                                                                                                                                     |
 |                                 |         |         | | **grain-extract**: B - A + 0.5                                                                                                                                                                                                                                               |
 |                                 |         |         | | **grain-merge**: B + A - 0.5                                                                                                                                                                                                                                                 |
-|                                 |         |         | | **hard-light**: multiply if A < 0.5, screen if A > 0.5                                                                                                                                                                                                                       |
+|                                 |         |         | | **hard-light**: multiply(2*A, B) if A < 0.5, screen(2*A - 1, B) if A > 0.5                                                                                                                                                                                                   |
 |                                 |         |         | | **hue**: SetLum(SetSat(A, Sat(B)), Lum(B))                                                                                                                                                                                                                                   |
 |                                 |         |         | | **hypot**: sqrt(A*A+B*B)                                                                                                                                                                                                                                                     |
 |                                 |         |         | | **in**: Ab (a.k.a. src-in)                                                                                                                                                                                                                                                   |
@@ -191,11 +192,11 @@ Controls
 |                                 |         |         | | **max**: max(A, B) (a.k.a. lighten only)                                                                                                                                                                                                                                     |
 |                                 |         |         | | **min**: min(A, B) (a.k.a. darken only)                                                                                                                                                                                                                                      |
 |                                 |         |         | | **minus**: A-B                                                                                                                                                                                                                                                               |
-|                                 |         |         | | **multiply**: AB, 0 if A < 0 and B < 0                                                                                                                                                                                                                                       |
+|                                 |         |         | | **multiply**: AB, A if A < 0 and B < 0                                                                                                                                                                                                                                       |
 |                                 |         |         | | **out**: A(1-b) (a.k.a. src-out)                                                                                                                                                                                                                                             |
 |                                 |         |         | | **over**: A+B(1-a) (a.k.a. src-over)                                                                                                                                                                                                                                         |
-|                                 |         |         | | **overlay**: multiply if B < 0.5, screen if B > 0.5                                                                                                                                                                                                                          |
-|                                 |         |         | | **pinlight**: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2.0 ) else                                                                                                                                                                                                       |
+|                                 |         |         | | **overlay**: multiply(A, 2*B) if B < 0.5, screen(A, 2*B - 1) if B > 0.5                                                                                                                                                                                                      |
+|                                 |         |         | | **pinlight**: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2) else                                                                                                                                                                                                          |
 |                                 |         |         | | **plus**: A+B (a.k.a. add)                                                                                                                                                                                                                                                   |
 |                                 |         |         | | **reflect**: A*A / (1 - B)                                                                                                                                                                                                                                                   |
 |                                 |         |         | | **saturation**: SetLum(SetSat(B, Sat(A)), Lum(B))                                                                                                                                                                                                                            |
