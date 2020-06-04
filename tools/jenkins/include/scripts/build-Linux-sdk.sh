@@ -638,6 +638,9 @@ build librevenge
 build libcdr
 build openjpeg
 build libraw
+
+checkpoint
+
 build ilmbase
 build openexr
 build pixman

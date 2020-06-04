@@ -2,7 +2,7 @@
 
 # Install openh264 (for ffmpeg)
 # see https://github.com/cisco/openh264/releases
-OPENH264_VERSION=2.1.0
+OPENH264_VERSION=2.1.1
 OPENH264_TAR="openh264-${OPENH264_VERSION}.tar.gz"
 #OPENH264_SITE="https://github.com/cisco/openh264/archive"
 if download_step; then
