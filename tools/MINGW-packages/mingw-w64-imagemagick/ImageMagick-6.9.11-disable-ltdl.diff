@@ -1,0 +1,24 @@
+--- configure.ac.orig	2020-05-27 00:49:28.575431500 +0200
++++ configure.ac	2020-05-27 00:50:36.845843200 +0200
+@@ -1607,7 +1607,7 @@
+ dnl ===========================================================================
+ 
+ # whether modules are built or not.
+-with_ltdl='yes'
++with_ltdl='no'
+ have_ltdl='no'
+ LTDL_LIBS=''
+ if test "$build_modules" != 'no' || test "X$ax_cv_check_cl_libcl" != Xno; then
+@@ -1634,9 +1634,9 @@
+   else
+     AC_MSG_RESULT([no])
+   fi
+-  if test "$have_ltdl" != 'yes' ; then
+-    AC_MSG_FAILURE([libltdl is required for modules and OpenCL builds],[1])
+-  fi
++  #if test "$have_ltdl" != 'yes' ; then
++  #  AC_MSG_FAILURE([libltdl is required for modules and OpenCL builds],[1])
++  #fi
+ fi
+ AM_CONDITIONAL(WITH_LTDL, test "$have_ltdl" != 'no')
+ 

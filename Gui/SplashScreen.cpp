@@ -42,7 +42,7 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER
 
 SplashScreen::SplashScreen(const QString & filePath)
-    : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
+    : QWidget(0, Qt::FramelessWindowHint)
     , _pixmap()
     , _text()
     , _versionString()

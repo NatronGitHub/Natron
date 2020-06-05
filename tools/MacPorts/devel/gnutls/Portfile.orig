@@ -10,7 +10,7 @@ PortGroup       active_variants 1.1
 
 name            gnutls
 version         3.6.13
-revision        0
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security

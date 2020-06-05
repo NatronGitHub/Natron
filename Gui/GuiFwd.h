@@ -201,6 +201,9 @@ class KnobPageGui;
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
 double getHighDPIScaleFactorInternal(const QWidget* w);
+#if OBJC_OLD_DISPATCH_PROTOTYPES != 1
+void setupDockClickHandler(void (*)(void));
+#endif
 }
 
 

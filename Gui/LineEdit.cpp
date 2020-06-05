@@ -81,10 +81,14 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
+        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).toLocalFile();
     }
     if ( !path.isEmpty() ) {
         setText(path);
+        selectAll();
+        setFocus( Qt::MouseFocusReason );
+        e->acceptProposedAction();
+        update();
         Q_EMIT textDropped();
     }
 }
@@ -93,13 +97,13 @@ LineEdit::dropEvent(QDropEvent* e)
 void
 LineEdit::dragEnterEvent(QDragEnterEvent* e)
 {
-    e->accept();
+    e->acceptProposedAction();
 }
 
 void
 LineEdit::dragMoveEvent(QDragMoveEvent* e)
 {
-    e->accept();
+    e->acceptProposedAction();
 }
 
 void
@@ -151,7 +155,7 @@ LineEdit::refreshStylesheet()
                 break;
         }
     }
-    
+
     double fgColor[3];
     bool fgColorSet = false;
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {

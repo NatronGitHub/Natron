@@ -109,7 +109,7 @@ public:
         , widget(widget)
         , mode(Histogram::eDisplayModeRGB)
         , oldClick()
-        , zoomCtx()
+        , zoomCtx(0.000001, 1000000.)
         , state(eEventStateNone)
         , hasBeenModifiedSinceResize(false)
         , _baseAxisColor(118, 215, 90, 255)
@@ -575,24 +575,28 @@ Histogram::paintGL()
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
         _imp->drawScale();
+        glCheckError();
 
         if (_imp->hasImage) {
             _imp->drawHistogramCPU();
+            glCheckError();
+
             if (_imp->drawCoordinates) {
                 _imp->drawPicker();
+                glCheckError();
             }
 
             _imp->drawWarnings();
+            glCheckError();
 
             if (_imp->showViewerPicker) {
                 _imp->drawViewerPicker();
+                glCheckError();
             }
         } else {
             _imp->drawMissingImage();
+            glCheckError();
         }
-
-
-        glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL
 
@@ -733,7 +737,7 @@ HistogramPrivate::updatePicker(double x)
 
     xCoordinateStr = QString::fromUtf8("x=") + QString::number(x, 'f', 6);
     double binSize = (vmax - vmin) / binsCount;
-    int index = (int)( (x - vmin) / binSize );
+    int index = binSize <= 0 ? 0 : (int)( (x - vmin) / binSize );
     rValueStr.clear();
     gValueStr.clear();
     bValueStr.clear();
@@ -808,7 +812,7 @@ Histogram::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         }
 
         QMutexLocker k(&_imp->zoomContextMutex);
@@ -821,7 +825,7 @@ Histogram::wheelEvent(QWheelEvent* e)
             scaleFactor = par / _imp->zoomCtx.aspectRatio();
         } else if (par > par_max) {
             par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
+            scaleFactor = par / _imp->zoomCtx.aspectRatio();
         }
 
         QMutexLocker k(&_imp->zoomContextMutex);
@@ -967,6 +971,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
+    assert(vmax > vmin);
     _imp->histogramThread->computeHistogram(_imp->mode, viewer->getInternalNode(), textureIndex, roiParam, width(), vmin, vmax, _imp->filterSize);
 
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );

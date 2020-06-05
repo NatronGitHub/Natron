@@ -1094,10 +1094,6 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
-
-        if ( !path.isEmpty() && ( ( path.at(0) == QLatin1Char('/') ) || ( path.at(0) == QLatin1Char('\\') ) ) ) {
-            path = path.remove(0, 1);
-        }
         if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
             path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
         }
@@ -1135,7 +1131,7 @@ Gui::dragEnterEvent(QDragEnterEvent* e)
         return;
     }
 
-    e->accept();
+    e->acceptProposedAction();
 
 }
 
@@ -1147,7 +1143,8 @@ Gui::dragMoveEvent(QDragMoveEvent* e)
         return;
     }
 
-    e->accept();
+
+    e->acceptProposedAction();
 
 }
 

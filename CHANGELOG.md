@@ -44,6 +44,8 @@ Natron multiple times on the same computer, the different processes will share t
 - Fix loading project settings. #439
 - Fix property panels of PyPlug nodes. #449
 - Fix missing python API entry points. #485
+- Make "Use Host Interact" setting available from user parameters. #490
+- Fix deadlock when creating a dialog from initGui.py. #487
 
 ### Plugins
 
@@ -59,6 +61,9 @@ Natron multiple times on the same computer, the different processes will share t
 - AudioCurve (audio curve generator): new plugin.
 - Fix plugin bugs (IO and CImg) with images that take more than 2GiB of memory (e.g. 12000x12000 RGBA float). #456
 - Fix "Fill" PyPlug: was not filling everything if the Source was larger than the project. #475
+- Shadertoy: use the preset name as a sublabel.
+- LensDistortion/IDistort/STMap: add "Use src RoD" option to override format.
+- Blur: fix handling of render scale when computing derivatives. #496
 
 
 ## Version 2.3.14

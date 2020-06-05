@@ -1665,24 +1665,15 @@ ViewerGL::penMotionInternal(int x,
         break;
     }
     case eMouseStateZoomingImage: {
-        const double zoomFactor_min = 0.01;
-        const double zoomFactor_max = 1024.;
         double zoomFactor;
         int delta = 2 * ( ( x - _imp->lastMousePosition.x() ) - ( y - _imp->lastMousePosition.y() ) );
         double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta); // no need to use ipow() here, because the result is not cast to int
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
-            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-            if (zoomFactor <= zoomFactor_min) {
-                zoomFactor = zoomFactor_min;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-            } else if (zoomFactor > zoomFactor_max) {
-                zoomFactor = zoomFactor_max;
-                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-            }
             _imp->zoomCtx.zoom(oldClick_opengl.x(), oldClick_opengl.y(), scaleFactor);
-            _imp->zoomOrPannedSinceLastFit = true;
+            zoomFactor = _imp->zoomCtx.factor();
         }
+        _imp->zoomOrPannedSinceLastFit = true;
         int zoomValue = (int)(100 * zoomFactor);
         if (zoomValue == 0) {
             zoomValue = 1;     // sometimes, floor(100*0.01) makes 0
@@ -2068,28 +2059,22 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
     gui->selectNode(nodeGui);
 
-    const double zoomFactor_min = 0.01;
-    const double zoomFactor_max = 1024.;
     double zoomFactor;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+
         zoomFactor = _imp->zoomCtx.factor();
-
-        zoomFactor *= scaleFactor;
-
-        if (zoomFactor <= zoomFactor_min) {
-            zoomFactor = zoomFactor_min;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > zoomFactor_max) {
-            zoomFactor = zoomFactor_max;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        }
+        //oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        oldMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
-        _imp->zoomOrPannedSinceLastFit = true;
+        zoomFactor = _imp->zoomCtx.factor();
     }
+    //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+    newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
+    _imp->zoomOrPannedSinceLastFit = true;
     int zoomValue = (int)(100 * zoomFactor);
     if (zoomValue == 0) {
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
@@ -2130,12 +2115,6 @@ ViewerGL::zoomViewport(double newZoomFactor)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    assert(newZoomFactor > 0);
-    if (newZoomFactor < 0.01) {
-        newZoomFactor = 0.01;
-    } else if (newZoomFactor > 1024.) {
-        newZoomFactor = 1024.;
-    }
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
 
@@ -2183,7 +2162,6 @@ ViewerGL::fitImageToFormat()
         // leave 4% of margin around
         _imp->zoomCtx.fit(-0.02 * w, 1.02 * w, -0.02 * h, 1.02 * h);
         zoomFactor = _imp->zoomCtx.factor();
-        _imp->zoomOrPannedSinceLastFit = false;
     }
 
     _imp->oldClick = QPoint(); // reset mouse posn

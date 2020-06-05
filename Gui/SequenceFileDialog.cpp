@@ -738,12 +738,6 @@ SequenceFileDialog::restoreState(const QByteArray & state,
         }
         QString urlPath = QString::fromUtf8((*it)[0].c_str());
 
-        // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-        if ( urlPath.startsWith( QLatin1Char('/') ) ) {
-            urlPath.remove(0, 1);
-        }
-#endif
         if ( !urlPath.isEmpty() ) {
             if ( (urlPath.size() > 1) && ( urlPath.endsWith( QLatin1Char('/') ) || urlPath.endsWith( QLatin1Char('\\') ) ) ) {
                 urlPath = urlPath.remove(urlPath.size() - 1, 1);
@@ -751,13 +745,7 @@ SequenceFileDialog::restoreState(const QByteArray & state,
             bool alreadyFound = false;
 
             for (U32 j = 0; j < stdBookMarks.size(); ++j) {
-                QString otherUrl = stdBookMarks[j].path();
-                // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-                if ( otherUrl.startsWith( QLatin1Char('/') ) ) {
-                    otherUrl.remove(0, 1);
-                }
-#endif
+                QString otherUrl = QtCompat::toLocalFileUrlFixed(stdBookMarks[j]).toLocalFile();
 
                 if ( (otherUrl.size() > 1) && ( otherUrl.endsWith( QLatin1Char('/') ) || otherUrl.endsWith( QLatin1Char('\\') ) ) ) {
                     otherUrl = otherUrl.remove(otherUrl.size() - 1, 1);
@@ -1702,13 +1690,7 @@ SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
     QUrl url = index.data(UrlModel::UrlRole).toUrl();
     url = QtCompat::toLocalFileUrlFixed(url);
 
-    QString urlPath = url.path();
-    // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
-        urlPath.remove(0, 1);
-    }
-#endif
+    QString urlPath = QtCompat::toLocalFileUrlFixed(url).toLocalFile();
     setDirectory(urlPath);
 }
 
@@ -1906,14 +1888,8 @@ SequenceFileDialog::doubleClickOpen(const QModelIndex & /*index*/)
 void
 SequenceFileDialog::seekUrl(const QUrl & url)
 {
-    QString urlPath =  url.toLocalFile();
+    QString urlPath =  QtCompat::toLocalFileUrlFixed(url).toLocalFile();
 
-    // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
-        urlPath.remove(0, 1);
-    }
-#endif
     setDirectory(urlPath);
 }
 
@@ -2000,7 +1976,7 @@ UrlModel::setData(const QModelIndex &index,
 {
     if (value.type() == QVariant::Url) {
         QUrl url = value.toUrl();
-        QModelIndex dirIndex = fileSystemModel->index( url.toLocalFile() );
+        QModelIndex dirIndex = fileSystemModel->index( QtCompat::toLocalFileUrlFixed(url).toLocalFile() );
         QStandardItemModel::setData(index, QDir::toNativeSeparators( fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString() ), Qt::ToolTipRole);
         //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
         QVariant deco = fileSystemModel->data(dirIndex, Qt::DecorationRole);
@@ -2028,7 +2004,7 @@ UrlModel::setUrl(const QModelIndex &index,
         QIcon newIcon;
         if ( !dirIndex.isValid() ) {
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
-            newName = QFileInfo( url.toLocalFile() ).fileName();
+            newName = QFileInfo( QtCompat::toLocalFileUrlFixed(url).toLocalFile() ).fileName();
             bool invalidUrlFound = false;
             for (unsigned int i = 0; i < invalidUrls.size(); ++i) {
                 if (invalidUrls[i] == url) {
@@ -2093,7 +2069,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
             continue;
         }
 
-        const QString cleanUrl = QDir::cleanPath( url.toLocalFile() );
+        const QString cleanUrl = QDir::cleanPath( QtCompat::toLocalFileUrlFixed(url).toLocalFile() );
         QModelIndex idx = fileSystemModel->index(cleanUrl);
         if ( !cleanUrl.isEmpty() && !fileSystemModel->isDir(idx) ) {
             continue;
@@ -2417,22 +2393,11 @@ FavoriteView::selectUrl(const QUrl &url)
 
     selectionModel()->clear();
 
-    QString urlPath = url.toLocalFile();
-    // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-    if ( urlPath.startsWith( QLatin1Char('/') ) ) {
-        urlPath.remove(0, 1);
-    }
-#endif
+    QString urlPath = QtCompat::toLocalFileUrlFixed(url).toLocalFile();
 
     for (int i = 0; i < model()->rowCount(); ++i) {
-        QString otherUrlPath =  model()->index(i, 0).data(UrlModel::UrlRole).toUrl().toLocalFile();
-        // On windows url.path() will return something starting with a /
-#ifdef __NATRON_WIN32__
-        if ( otherUrlPath.startsWith( QLatin1Char('/') ) ) {
-            otherUrlPath.remove(0, 1);
-        }
-#endif
+        QUrl otherUrl = model()->index(i, 0).data(UrlModel::UrlRole).toUrl();
+        QString otherUrlPath =  QtCompat::toLocalFileUrlFixed(otherUrl).toLocalFile();
 
         if (otherUrlPath == urlPath) {
             selectionModel()->select(model()->index(i, 0), QItemSelectionModel::Select);

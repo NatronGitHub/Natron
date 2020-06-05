@@ -182,6 +182,10 @@ public:
         // https://bugreports.qt.io/browse/QTBUG-10899
         // https://doc.qt.io/qt-5/qevent.html
 
+#  if OBJC_OLD_DISPATCH_PROTOTYPES != 1
+        // Pure ObjC solution for macOS 10.15 Catalina and later.
+        QtMac::setupDockClickHandler((void (*)(void))dockClickHandler);
+#  else
         id cls = (id)objc_getClass("NSApplication");
         id appInst = objc_msgSend(cls, sel_registerName("sharedApplication"));
 
@@ -202,6 +206,7 @@ public:
                     qWarning() << "Failed to register dock click handler";
             }
         }
+#  endif
 #endif
     }
 

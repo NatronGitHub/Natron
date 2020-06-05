@@ -2,11 +2,15 @@
 
 # Install openexr
 # see https://github.com/openexr/openexr/releases/
-# Note: upgrading to 2.4.1 requires rewriting the download and build scripts
+# Note: upgrading to 2.4.1-2.5.1 requires rewriting the download and build scripts
 # (openexr is now a single package).
-EXR_VERSION=2.3.0
+EXR_VERSION=2.5.1
+
+if version_gt "2.4.0" "${EXR_VERSION}"; then # ilmbase is not a separate build, starting from 2.4.0
+
 EXR_ILM_TAR="ilmbase-${EXR_VERSION}.tar.gz"
 EXR_SITE="https://github.com/openexr/openexr/releases/download/v${EXR_VERSION}"
+
 if download_step; then
     download "$EXR_SITE" "$EXR_ILM_TAR"
 fi
@@ -35,4 +39,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/IlmBase.pc" 
     popd
     rm -rf "ilmbase-${EXR_VERSION}"
     end_build
+fi
+
 fi

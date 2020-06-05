@@ -24,6 +24,7 @@
 
 #include <AppKit/NSView.h>
 #include <AppKit/NSWindow.h>
+#include <objc/runtime.h>
 
 //See:
 //- https://trac.macports.org/ticket/43283
@@ -96,6 +97,15 @@ QtMac::getHighDPIScaleFactorInternal(const QWidget* w) {
     
     return scaleFactor;
 }
+
+#if OBJC_OLD_DISPATCH_PROTOTYPES != 1
+void
+QtMac::setupDockClickHandler(void (*dockClickHandler)(void)) {
+    Class delClass = (Class)[[[NSApplication sharedApplication] delegate] class];
+    SEL shouldHandle = sel_registerName("applicationShouldHandleReopen:hasVisibleWindows:");
+    class_replaceMethod(delClass, shouldHandle, (IMP)dockClickHandler, "B@:");
+}
+#endif
 
 NATRON_NAMESPACE_EXIT
 

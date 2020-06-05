@@ -108,6 +108,8 @@ struct AddKnobDialogPrivate
     QCheckBox* defaultBool;
     Label* menuItemsLabel;
     QTextEdit* menuItemsEdit;
+    Label* usePointInteractLabel;
+    QCheckBox* usePointInteract;
     Label* multiLineLabel;
     QCheckBox* multiLine;
     Label* richTextLabel;
@@ -211,6 +213,8 @@ struct AddKnobDialogPrivate
     void setVisibleViewerUi(bool visible);
 
     void setVisibleRichText(bool visible);
+
+    void setVisibleUsePointInteract(bool visible);
 
     void setVisibleFileStuff(bool visible);
 
@@ -461,7 +465,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* firstRowLayout = new QHBoxLayout(firstRowContainer);
         firstRowLayout->setContentsMargins(0, 0, 0, 0);
 
-        _imp->nameLabel = new Label(tr("Script name:"), this);
+        _imp->nameLabel = new Label(tr("Script Name"), this);
         _imp->nameLineEdit = new LineEdit(firstRowContainer);
         _imp->nameLineEdit->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
@@ -478,14 +482,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QWidget* secondRowContainer = new QWidget(this);
         QHBoxLayout* secondRowLayout = new QHBoxLayout(secondRowContainer);
         secondRowLayout->setContentsMargins(0, 0, 15, 0);
-        _imp->labelLabel = new Label(tr("Label:"), secondRowContainer);
+        _imp->labelLabel = new Label(tr("Label"), secondRowContainer);
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
         _imp->labelLineEdit->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), NATRON_NAMESPACE::WhiteSpaceNormal) );
         if (knob) {
             _imp->labelLineEdit->setText( QString::fromUtf8( knob->getLabel().c_str() ) );
         }
         secondRowLayout->addWidget(_imp->labelLineEdit);
-        _imp->hideLabel = new Label(tr("Hide:"), secondRowContainer);
+        _imp->hideLabel = new Label(tr("Hide"), secondRowContainer);
         secondRowLayout->addWidget(_imp->hideLabel);
         _imp->hideBox = new QCheckBox(secondRowContainer);
         _imp->hideBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface"), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -494,7 +498,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
 
         secondRowLayout->addWidget(_imp->hideBox);
-        _imp->startNewLineLabel = new Label(tr("Start new line:"), secondRowContainer);
+        _imp->startNewLineLabel = new Label(tr("Start New Line"), secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
         _imp->startNewLineBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If unchecked the parameter will be on the same line as the previous parameter"), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -537,23 +541,26 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* thirdRowLayout = new QHBoxLayout(thirdRowContainer);
         thirdRowLayout->setContentsMargins(0, 0, 15, 0);
 
-        if (!knob) {
-            _imp->typeLabel = new Label(tr("Type:"), thirdRowContainer);
-            _imp->typeChoice = new ComboBox(thirdRowContainer);
-            _imp->typeChoice->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The data type of the parameter."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-            for (int i = 0; i < (int)eParamDataTypeCount; ++i) {
-                assert(_imp->typeChoice->count() == i);
-                _imp->typeChoice->addItem( tr( dataTypeString( (ParamDataTypeEnum)i ) ) );
-            }
+        _imp->typeLabel = new Label(tr("Type"), thirdRowContainer);
+        _imp->typeChoice = new ComboBox(thirdRowContainer);
+        _imp->typeChoice->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The data type of the parameter."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        for (int i = 0; i < (int)eParamDataTypeCount; ++i) {
+            assert(_imp->typeChoice->count() == i);
+            _imp->typeChoice->addItem( tr( dataTypeString( (ParamDataTypeEnum)i ) ) );
+        }
+        if (knob) {
+            _imp->typeChoice->setCurrentIndex( getChoiceIndexFromKnobType( knob.get() ) );
+            //_imp->typeChoice->setDisabled(true);
+            _imp->typeChoice->setEnabled_natron(false);
+        } else {
             QObject::connect( _imp->typeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onTypeCurrentIndexChanged(int)) );
-
-            thirdRowLayout->addWidget(_imp->typeChoice);
         }
-        _imp->animatesLabel = new Label(tr("Animates:"), thirdRowContainer);
 
-        if (!knob) {
-            thirdRowLayout->addWidget(_imp->animatesLabel);
-        }
+        thirdRowLayout->addWidget(_imp->typeChoice);
+
+        _imp->animatesLabel = new Label(tr("Animates"), thirdRowContainer);
+        thirdRowLayout->addWidget(_imp->animatesLabel);
+
         _imp->animatesCheckbox = new QCheckBox(thirdRowContainer);
         _imp->animatesCheckbox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         if (knob) {
@@ -561,7 +568,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
 
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
-        _imp->evaluatesLabel = new Label(NATRON_NAMESPACE::convertFromPlainText(tr("Render on change:"), NATRON_NAMESPACE::WhiteSpaceNormal), thirdRowContainer);
+        _imp->evaluatesLabel = new Label(NATRON_NAMESPACE::convertFromPlainText(tr("Render On Change"), NATRON_NAMESPACE::WhiteSpaceNormal), thirdRowContainer);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
         _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
         _imp->evaluatesOnChange->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered."), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -571,14 +578,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         thirdRowLayout->addWidget(_imp->evaluatesOnChange);
         thirdRowLayout->addStretch();
 
-        if (!knob) {
-            _imp->mainLayout->addRow(_imp->typeLabel, thirdRowContainer);
-        } else {
-            _imp->mainLayout->addRow(_imp->animatesLabel, thirdRowContainer);
-        }
+        _imp->mainLayout->addRow(_imp->typeLabel, thirdRowContainer);
     }
     {
-        _imp->tooltipLabel = new Label(tr("ToolTip:"), this);
+        _imp->tooltipLabel = new Label(tr("ToolTip"), this);
         _imp->tooltipArea = new QTextEdit(this);
         _imp->tooltipArea->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         _imp->mainLayout->addRow(_imp->tooltipLabel, _imp->tooltipArea);
@@ -587,7 +590,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     {
-        _imp->menuItemsLabel = new Label(tr("Menu items:"), this);
+        _imp->menuItemsLabel = new Label(tr("Menu Items"), this);
         _imp->menuItemsEdit = new QTextEdit(this);
         QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The entries of the drop-down menu. \n"
                                                        "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
@@ -635,7 +638,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->multiLineLabel = new Label(tr("Multi-line:"), optContainer);
+        _imp->multiLineLabel = new Label(tr("Multiline"), optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
         _imp->multiLine->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Should this text be multi-line or single-line?"), NATRON_NAMESPACE::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->multiLine);
@@ -653,7 +656,26 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->richTextLabel = new Label(tr("Rich text:"), optContainer);
+        _imp->usePointInteractLabel = new Label(tr("Use Point Interact"), optContainer);
+        _imp->usePointInteract = new QCheckBox(optContainer);
+        QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("If checked, display a 2D point interact for this parameter.\n "
+                                                       "This property is only valid for Floating Point 2D parameters."), NATRON_NAMESPACE::WhiteSpaceNormal);
+
+        _imp->usePointInteract->setToolTip(tt);
+        optLayout->addWidget(_imp->usePointInteract);
+        _imp->mainLayout->addRow(_imp->usePointInteractLabel, optContainer);
+
+        KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
+        if ( isDouble && isDouble->getDimension() == 2 && isDouble->getHasHostOverlayHandle() ) {
+            _imp->usePointInteract->setChecked(true);
+        }
+    }
+    {
+        QWidget* optContainer = new QWidget(this);
+        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+        optLayout->setContentsMargins(0, 0, 15, 0);
+
+        _imp->richTextLabel = new Label(tr("Rich Text"), optContainer);
         _imp->richText = new QCheckBox(optContainer);
         QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
                                                        "This property is only valid for multi-line input text only."), NATRON_NAMESPACE::WhiteSpaceNormal);
@@ -674,7 +696,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->sequenceDialogLabel = new Label(tr("Use sequence dialog:"), optContainer);
+        _imp->sequenceDialogLabel = new Label(tr("Use Sequence Dialog"), optContainer);
         _imp->sequenceDialog = new QCheckBox(optContainer);
         _imp->sequenceDialog->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->sequenceDialog);
@@ -706,7 +728,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->multiPathLabel = new Label(NATRON_NAMESPACE::convertFromPlainText(tr("Multiple paths:"), NATRON_NAMESPACE::WhiteSpaceNormal), optContainer);
+        _imp->multiPathLabel = new Label(NATRON_NAMESPACE::convertFromPlainText(tr("Multiple Paths"), NATRON_NAMESPACE::WhiteSpaceNormal), optContainer);
         _imp->multiPath = new QCheckBox(optContainer);
         _imp->multiPath->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->multiPath);
@@ -724,7 +746,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->groupAsTabLabel = new Label(tr("Group as tab:"), optContainer);
+        _imp->groupAsTabLabel = new Label(tr("Group As Tab"), optContainer);
         _imp->groupAsTab = new QCheckBox(optContainer);
         _imp->groupAsTab->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked the group will be a tab instead."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->groupAsTab);
@@ -744,7 +766,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* dminMaxLayout = new QHBoxLayout(dminMaxContainer);
         minMaxLayout->setContentsMargins(0, 0, 0, 0);
         dminMaxLayout->setContentsMargins(0, 0, 0, 0);
-        _imp->minLabel = new Label(tr("Minimum:"), minMaxContainer);
+        _imp->minLabel = new Label(tr("Minimum"), minMaxContainer);
 
         _imp->minBox = new SpinBox(minMaxContainer, SpinBox::eSpinBoxTypeDouble);
         _imp->minBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
@@ -752,7 +774,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                                                                     "real value will be clamped to this interval."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         minMaxLayout->addWidget(_imp->minBox);
 
-        _imp->maxLabel = new Label(tr("Maximum:"), minMaxContainer);
+        _imp->maxLabel = new Label(tr("Maximum"), minMaxContainer);
         _imp->maxBox = new SpinBox(minMaxContainer, SpinBox::eSpinBoxTypeDouble);
         _imp->maxBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
                                                                     "a value higher or lower than the specified min/max range, internally the "
@@ -761,13 +783,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         minMaxLayout->addWidget(_imp->maxBox);
         minMaxLayout->addStretch();
 
-        _imp->dminLabel = new Label(tr("Display Minimum:"), dminMaxContainer);
+        _imp->dminLabel = new Label(tr("Display Minimum"), dminMaxContainer);
         _imp->dminBox = new SpinBox(dminMaxContainer, SpinBox::eSpinBoxTypeDouble);
         _imp->dminBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
                                                                      "used to set the range of the slider."), NATRON_NAMESPACE::WhiteSpaceNormal) );
         dminMaxLayout->addWidget(_imp->dminBox);
 
-        _imp->dmaxLabel = new Label(tr("Display Maximum:"), dminMaxContainer);
+        _imp->dmaxLabel = new Label(tr("Display Maximum"), dminMaxContainer);
         _imp->dmaxBox = new SpinBox(dminMaxContainer, SpinBox::eSpinBoxTypeDouble);
         _imp->dmaxBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
                                                                      "used to set the range of the slider."), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -818,7 +840,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QWidget* defValContainer = new QWidget(this);
         QHBoxLayout* defValLayout = new QHBoxLayout(defValContainer);
         defValLayout->setContentsMargins(0, 0, 0, 0);
-        _imp->defaultValueLabel = new Label(tr("Default value:"), defValContainer);
+        _imp->defaultValueLabel = new Label(tr("Default Value"), defValContainer);
 
         _imp->default0 = new SpinBox(defValContainer, SpinBox::eSpinBoxTypeDouble);
         _imp->default0->setValue(0);
@@ -912,7 +934,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
 
-        _imp->parentGroupLabel = new Label(tr("Group:"), optContainer);
+        _imp->parentGroupLabel = new Label(tr("Group"), optContainer);
         _imp->parentGroup = new ComboBox(optContainer);
 
         _imp->parentGroup->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The name of the group under which this parameter will appear."), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -924,7 +946,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     QWidget* optContainer = new QWidget(this);
     QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
     optLayout->setContentsMargins(0, 0, 15, 0);
-    _imp->parentPageLabel = new Label(tr("Page:"), optContainer);
+    _imp->parentPageLabel = new Label(tr("Page"), optContainer);
     _imp->parentPage = new ComboBox(optContainer);
 
     QObject::connect( _imp->parentPage, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageCurrentIndexChanged(int)) );
@@ -1092,6 +1114,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1114,6 +1137,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(t == eParamDataTypeFloatingPoint2D);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1132,6 +1156,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1149,6 +1174,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1166,6 +1192,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1183,6 +1210,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(true);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1200,6 +1228,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(true);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1217,6 +1246,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(true);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1234,6 +1264,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(true);
         _imp->setVisibleParent(false);
@@ -1251,6 +1282,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(false);
@@ -1268,6 +1300,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(true);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1285,6 +1318,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleViewerUi(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
+        _imp->setVisibleUsePointInteract(false);
         _imp->setVisibleFileStuff(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
@@ -1370,6 +1404,9 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         //double
         int dim = (int)t - 2;
         KnobDoublePtr k = panel->getHolder()->createKnob<KnobDouble>(name, dim);
+        if ( k->getDimension() == 2 && usePointInteract->isChecked() ) {
+            k->setHasHostOverlayHandle(true);
+        }
         setKnobMinMax<double>(k);
         knob = k;
         break;
@@ -1985,6 +2022,15 @@ AddKnobDialogPrivate::setVisibleRichText(bool visible)
 }
 
 void
+AddKnobDialogPrivate::setVisibleUsePointInteract(bool visible)
+{
+    usePointInteractLabel->setVisible(visible);
+    usePointInteract->setVisible(visible);
+    if (!knob) {
+        usePointInteract->setChecked(false);
+    }
+}
+
 AddKnobDialogPrivate::setVisibleFileStuff(bool visible)
 {
     fileDialogSelectExisting->setVisible(visible);

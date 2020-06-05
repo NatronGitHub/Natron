@@ -92,7 +92,7 @@ struct ScaleSliderQWidgetPrivate
                               ScaleSliderQWidget::DataTypeEnum dataType,
                               ScaleTypeEnum type)
         : gui(gui)
-        , zoomCtx()
+        , zoomCtx( (max-min) * 1e-8, (max-min) * 1e8 )
         , oldClick()
         , minimum(min)
         , maximum(max)

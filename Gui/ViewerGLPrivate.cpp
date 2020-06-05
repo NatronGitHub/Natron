@@ -99,7 +99,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , currentViewerInfo_resolutionOverlay()
     , pickerState(ePickerStateInactive)
     , lastPickerPos()
-    , zoomCtx()   // protected by mutex
+    , zoomCtx(0.01, 1024.)   // protected by mutex
     , selectionRectangle()
     , checkerboardTextureID(0)
     , checkerboardTileSize(0)
@@ -239,7 +239,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         rectClippedToRoI.intersect(this->displayTextures[textureIndex].format, &rectClippedToRoI);
     }
 
-    
+
 
 
     //if user RoI is enabled, clip the rod to that roi
