@@ -40,6 +40,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/PointOverlayInteract.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/ActionShortcuts.h"
@@ -549,7 +550,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             _imp->typeChoice->addItem( tr( dataTypeString( (ParamDataTypeEnum)i ) ) );
         }
         if (knob) {
-            _imp->typeChoice->setCurrentIndex( getChoiceIndexFromKnobType( knob.get() ) );
+            _imp->typeChoice->setCurrentIndex( getChoiceIndexFromKnobType(knob) );
             //_imp->typeChoice->setDisabled(true);
             _imp->typeChoice->setEnabled_natron(false);
         } else {
@@ -665,8 +666,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->usePointInteract);
         _imp->mainLayout->addRow(_imp->usePointInteractLabel, optContainer);
 
-        KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
-        if ( isDouble && isDouble->getDimension() == 2 && isDouble->getHasHostOverlayHandle() ) {
+        KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
+        if ( isDouble && isDouble->getNDimensions() == 2 && isDouble->getHasHostOverlayHandle() ) {
             _imp->usePointInteract->setChecked(true);
         }
     }
@@ -1404,7 +1405,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         //double
         int dim = (int)t - 2;
         KnobDoublePtr k = panel->getHolder()->createKnob<KnobDouble>(name, dim);
-        if ( k->getDimension() == 2 && usePointInteract->isChecked() ) {
+        if ( k->getNDimensions() == 2 && usePointInteract->isChecked() ) {
             k->setHasHostOverlayHandle(true);
         }
         setKnobMinMax<double>(k);
@@ -2031,6 +2032,7 @@ AddKnobDialogPrivate::setVisibleUsePointInteract(bool visible)
     }
 }
 
+void
 AddKnobDialogPrivate::setVisibleFileStuff(bool visible)
 {
     fileDialogSelectExisting->setVisible(visible);

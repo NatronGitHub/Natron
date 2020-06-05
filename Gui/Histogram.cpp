@@ -575,27 +575,27 @@ Histogram::paintGL()
         glCheckErrorIgnoreOSXBug(GL_GPU);
 
         _imp->drawScale();
-        glCheckError();
+        glCheckError(GL_GPU);
 
         if (_imp->hasImage) {
             _imp->drawHistogramCPU();
-            glCheckError();
+            glCheckError(GL_GPU);
 
             if (_imp->drawCoordinates) {
                 _imp->drawPicker();
-                glCheckError();
+                glCheckError(GL_GPU);
             }
 
             _imp->drawWarnings();
-            glCheckError();
+            glCheckError(GL_GPU);
 
             if (_imp->showViewerPicker) {
                 _imp->drawViewerPicker();
-                glCheckError();
+                glCheckError(GL_GPU);
             }
         } else {
             _imp->drawMissingImage();
-            glCheckError();
+            glCheckError(GL_GPU);
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL

@@ -2067,13 +2067,11 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
         zoomFactor = _imp->zoomCtx.factor();
         //oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
-        oldMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         zoomFactor = _imp->zoomCtx.factor();
     }
     //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
-    newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
     _imp->zoomOrPannedSinceLastFit = true;
     int zoomValue = (int)(100 * zoomFactor);
     if (zoomValue == 0) {
