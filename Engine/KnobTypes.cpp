@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/LoadKnobsCompat.h"
+#include "Engine/PointOverlayInteract.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
@@ -308,6 +309,82 @@ KnobDouble::KnobDouble(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 , _imp(toKnobDouble(mainKnob)->_imp)
 {
 
+}
+
+void
+KnobDouble::setHasHostOverlayHandle(bool use)
+{
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return;
+    }
+    NodePtr node;
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+
+    if (!isEffect) {
+        return;
+    }
+    std::list<OverlayInteractBasePtr> overlays;
+    isEffect->getOverlays(eOverlayViewportTypeViewer, &overlays);
+    std::string name = getName();
+    // check if PointOverlayInteract already exists for this knob
+    std::list<OverlayInteractBasePtr>::iterator it;
+    PointOverlayInteractPtr found;
+    for(it = overlays.begin(); it != overlays.end(); ++it) {
+        PointOverlayInteractPtr found = boost::dynamic_pointer_cast<PointOverlayInteract>(*it);
+        if (found && found->getName() == name) {
+            // we found a PointOverlayInteract associated to this param name
+            break;
+        }
+    }
+    if (use) {
+        // create it if it doesn't exist, else do nothing
+        if ( it == overlays.end() ) {
+            assert(!found);
+            // same code as in OfxDouble2DInstance::OfxDouble2DInstance()
+            boost::shared_ptr<PointOverlayInteract> interact(new PointOverlayInteract());
+            std::map<std::string,std::string> knobs;
+            knobs["position"] = name;
+            isEffect->registerOverlay(eOverlayViewportTypeViewer, interact, knobs);
+        }
+    } else {
+        // remove it if it exists, else do nothing
+        if ( it != overlays.end() ) {
+            assert(found);
+            isEffect->removeOverlay(eOverlayViewportTypeViewer, found);
+        }
+    }
+}
+
+bool
+KnobDouble::getHasHostOverlayHandle() const
+{
+    KnobHolderPtr holder = getHolder();
+    if (!holder) {
+        return false;
+    }
+    NodePtr node;
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+
+    if (!isEffect) {
+        return false;
+    }
+    std::list<OverlayInteractBasePtr> overlays;
+    isEffect->getOverlays(eOverlayViewportTypeViewer, &overlays);
+    std::string name = getName();
+    // check if PointOverlayInteract already exists for this knob
+    std::list<OverlayInteractBasePtr>::iterator it;
+    PointOverlayInteractPtr found;
+    for(it = overlays.begin(); it != overlays.end(); ++it) {
+        PointOverlayInteractPtr found = boost::dynamic_pointer_cast<PointOverlayInteract>(*it);
+        if (found && found->getName() == name) {
+            // we found a PointOverlayInteract associated to this param name
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void

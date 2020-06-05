@@ -369,6 +369,10 @@ public:
      **/
     double normalize(DimIdx dimension, TimeValue time, double value) const;
 
+    void setHasHostOverlayHandle(bool handle);
+
+    bool getHasHostOverlayHandle() const;
+
     void setAsRectangle();
 
     bool isRectangle() const;

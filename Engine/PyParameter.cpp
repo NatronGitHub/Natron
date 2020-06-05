@@ -2227,9 +2227,10 @@ Double2DParam::setUsePointInteract(bool use)
         return;
     }
     // Natron 2 version:
-    //return knob->setHasHostOverlayHandle(use);
+    return knob->setHasHostOverlayHandle(use);
 
     // Natron 3 version:
+    /*
     KnobHolderPtr holder = knob->getHolder();
     if (!holder) {
         return;
@@ -2270,6 +2271,7 @@ Double2DParam::setUsePointInteract(bool use)
             isEffect->removeOverlay(eOverlayViewportTypeViewer, found);
         }
     }
+    */
 }
 
 
