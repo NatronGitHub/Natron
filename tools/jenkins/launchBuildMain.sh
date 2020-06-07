@@ -171,7 +171,9 @@ echo "$GSED does not work" | $GSED -e "s/does not work/works/"
 # check that curl works
 $CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
 
-GIT_BRANCH=$(echo "$GIT_BRANCH" | sed 's#origin/##')
+if [ -n "${GIT_BRANCH:+}" ]; then
+    GIT_BRANCH=$(echo "$GIT_BRANCH" | sed 's#origin/##')
+fi
 DO_UTEST=0
 
 # Defaults to relwithdebinfo if not set
@@ -278,8 +280,8 @@ if [ "${GIT_URL_IS_NATRON:-}" != "1" ]; then
 else
     if [ -n "${RELEASE_TAG:-}" ]; then
         TYPE="RELEASE"
-        if [ "$NATRON_DEV_STATUS" != "ALPHA" ] && [ "$NATRON_DEV_STATUS" != "BETA" ] && [ "$NATRON_DEV_STATUS" != "RC" ] && [ "$NATRON_DEV_STATUS" != "CUSTOM" ] && [ "$NATRON_DEV_STATUS" != "STABLE" ]; then
-            echo "Invalid NATRON_DEV_STATUS=$NATRON_DEV_STATUS, it must be either [ALPHA, BETA, RC, CUSTOM, STABLE]"
+        if [ "${NATRON_DEV_STATUS:-}" != "ALPHA" ] && [ "${NATRON_DEV_STATUS:-}" != "BETA" ] && [ "${NATRON_DEV_STATUS:-}" != "RC" ] && [ "${NATRON_DEV_STATUS:-}" != "CUSTOM" ] && [ "${NATRON_DEV_STATUS:-}" != "STABLE" ]; then
+            echo "Invalid NATRON_DEV_STATUS=${NATRON_DEV_STATUS:-(unset)}, it must be either [ALPHA, BETA, RC, CUSTOM, STABLE]"
             exit 1
         fi
         NATRON_BUILD_CONFIG="$NATRON_DEV_STATUS"
