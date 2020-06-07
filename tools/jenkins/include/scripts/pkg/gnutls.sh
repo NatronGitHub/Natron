@@ -4,7 +4,7 @@
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
 GNUTLS_VERSION=3.6.13
 GNUTLS_VERSION_MICRO= #.1
-if [ "${CENTOS}" = 6 ] && [ -z "${DTS}" ]; then
+if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     GNUTLS_VERSION=3.6.8
     GNUTLS_VERSION_MICRO=
     # 3.6.9 and later fail on CentOS6 (probably needs an updated binutils/gas) with:

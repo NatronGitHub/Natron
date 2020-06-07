@@ -3,7 +3,7 @@
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
 MAGICK_VERSION=6.9.11-6
-if [ "${CENTOS}" = 6 ] && [ -z "${DTS}" ]; then
+if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK_VERSION=6.9.10-78 # 6.9.10-79 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 fi
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
