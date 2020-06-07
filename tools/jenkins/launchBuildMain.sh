@@ -275,6 +275,9 @@ setBuildOption "BUILD_ARCHIVE_DIRECTORY" "$BUILD_ARCHIVE_DIRECTORY"
 
 # Determine Natron build type
 NATRON_BUILD_CONFIG=""
+echo "RELEASE_TAG is ${RELEASE_TAG:-(unset)}"
+echo "SNAPSHOT_COMMIT is ${SNAPSHOT_COMMIT:-(unset)}"
+echo "SNAPSHOT_BRANCH is ${SNAPSHOT_BRANCH:-(unset)}"
 if [ "${GIT_URL_IS_NATRON:-}" != "1" ]; then
     TYPE="PLUGIN_CI"
 else
@@ -298,6 +301,7 @@ else
         setBuildOption "NATRON_BUILD_CONFIG" "SNAPSHOT"
     fi
 fi
+echo "TYPE is $TYPE"
 
 # Can be set to relwithdebinfo, release, debug
 setBuildOption "COMPILE_TYPE" "$COMPILE_TYPE"
