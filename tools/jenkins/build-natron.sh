@@ -66,7 +66,7 @@ cd "$TMP_PATH"
 # OpenColorIO-Configs setup
 OCIO_CONFIGS_VERSION=""
 if [ "$NATRON_BUILD_CONFIG" = "ALPHA" ] || [ "$NATRON_BUILD_CONFIG" = "BETA" ] || [ "$NATRON_BUILD_CONFIG" = "RC" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
-    OCIO_CONFIGS_VERSION=$(echo $NATRON_GIT_BRANCH | sed 's#tags/##;' | cut -c1-3)
+    OCIO_CONFIGS_VERSION=$(echo $NATRON_GIT_BRANCH | sed 's#tags/v##;' | cut -c1-3)
 else
     case "$NATRON_GIT_BRANCH" in
         RB-*)
