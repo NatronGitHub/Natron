@@ -1,6 +1,6 @@
 # Known Bugs
 
-- https://github.com/NatronGitHub/Natron/issues/445
+- https://github.com/NatronGitHub/Natron/issues/504
 
 # History
 
