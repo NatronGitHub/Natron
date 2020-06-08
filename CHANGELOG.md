@@ -5,6 +5,9 @@
 # History
 
 
+## Version 2.4.0
+
+
 ## Version 2.3.15
 
 - Inputs of the selected nodes are now always visible.

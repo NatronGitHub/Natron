@@ -23,10 +23,11 @@ TARGET = Natron
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
 VERSION_23 = 2.3.15
+VERSION_24 = 2.4.0
 VERSION_30 = 3.0.0
 
 # The version for this branch
-VERSION = $$VERSION_23
+VERSION = $$VERSION_24
 
 TEMPLATE = app
 win32 {

@@ -4,10 +4,11 @@ Name: Natron
 Version21: 2.1.10
 Version22: 2.2.10
 Version23: 2.3.15
+Version24: 2.4.0
 Version30: 3.0.0
 
 # The version for this branch of the sources
-Version: %{version23}
+Version: %{version24}
 
 # The release number (must be incremented whenever changes to this file generate different binaries)
 Release: 1%{?dist}
