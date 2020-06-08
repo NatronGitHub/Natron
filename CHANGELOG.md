@@ -1,6 +1,6 @@
 # Known Bugs
 
-- https://github.com/NatronGitHub/Natron/issues/445
+- https://github.com/NatronGitHub/Natron/issues/504
 
 # History
 
@@ -64,6 +64,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Shadertoy: use the preset name as a sublabel.
 - LensDistortion/IDistort/STMap: add "Use src RoD" option to override format.
 - Blur: fix handling of render scale when computing derivatives. #496
+- Text: fix animating font family and retiming the text output. #482 #476
 
 
 ## Version 2.3.14
