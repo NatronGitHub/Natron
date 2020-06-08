@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,13 +74,13 @@ public:
 
     void getFrameRange(int* firstFrame, int* lastFrame) const;
 
-    void setPlaybackMode(PlaybackModeEnum mode);
+    void setPlaybackMode(NATRON_NAMESPACE::PlaybackModeEnum mode);
 
-    PlaybackModeEnum getPlaybackMode() const;
+    NATRON_NAMESPACE::PlaybackModeEnum getPlaybackMode() const;
 
-    ViewerCompositingOperatorEnum getCompositingOperator() const;
+    NATRON_NAMESPACE::ViewerCompositingOperatorEnum getCompositingOperator() const;
 
-    void setCompositingOperator(ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(NATRON_NAMESPACE::ViewerCompositingOperatorEnum op);
 
     int getAInput() const;
 
@@ -89,9 +90,9 @@ public:
 
     void setBInput(int index);
 
-    void setChannels(DisplayChannelsEnum channels);
+    void setChannels(NATRON_NAMESPACE::DisplayChannelsEnum channels);
 
-    DisplayChannelsEnum getChannels() const;
+    NATRON_NAMESPACE::DisplayChannelsEnum getChannels() const;
 
     void setProxyModeEnabled(bool enabled);
 

@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # install cppunit
-CPPUNIT_VERSION=1.13.2 # does not require c++11
-CPPUNIT_SITE="http://dev-www.libreoffice.org/src/cppunit"
-if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
-    CPPUNIT_VERSION=1.15.1 # 1.14.0 is the first version to require c++11
-    CPPUNIT_SITE="http://dev-www.libreoffice.org/src"
+CPPUNIT_VERSION=1.15.1 # 1.14.0 is the first version to require c++11
+CPPUNIT_SITE="http://dev-www.libreoffice.org/src"
+if version_gt 5.0.0 "$GCC_VERSION"; then
+    CPPUNIT_VERSION=1.13.2 # does not require c++11
+    CPPUNIT_SITE="http://dev-www.libreoffice.org/src/cppunit"
 fi
 CPPUNIT_TAR="cppunit-${CPPUNIT_VERSION}.tar.gz"
 if download_step; then

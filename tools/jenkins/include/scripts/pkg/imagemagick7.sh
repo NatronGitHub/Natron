@@ -2,8 +2,10 @@
 
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.8-68 # latest is 7.0.9-13, but 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
-#MAGICK7_VERSION=7.0.9-13
+MAGICK7_VERSION=7.0.10-6
+if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
+    MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+fi
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.gz"
 #MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"

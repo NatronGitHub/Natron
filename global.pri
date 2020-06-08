@@ -268,6 +268,11 @@ macx {
   #// in /opt/local/libexec/llvm-5.0/include/c++/v1/__config
   #// and /opt/local/libexec/llvm-5.0/include/c++/v1/__locale
   DEFINES += _LIBCPP_DISABLE_AVAILABILITY
+
+  # The ObjC API changed with Catalina, use the old one for now
+  # (there is code to use the new API, but it is untested,
+  # search for OBJC_OLD_DISPATCH_PROTOTYPES in the sources).
+  DEFINES += "OBJC_OLD_DISPATCH_PROTOTYPES=1"
 }
 
 macx-clang-libc++ {

@@ -9,7 +9,7 @@ PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.84.0
+version             0.89.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -19,13 +19,14 @@ homepage            https://poppler.freedesktop.org/
 description         Poppler is a PDF rendering library based on the xpdf-3.0 code base.
 long_description    ${description}
 
-master_sites        ${homepage}
+master_sites        ${homepage} \
+                    gentoo
 
 use_xz              yes
 
-checksums           rmd160  cb87b2e56d0db84679dc693b5938f1d0de069b5f \
-                    sha256  c7a130da743b38a548f7a21fe5940506fb1949f4ebdd3209f0e5b302fa139731 \
-                    size    1561236
+checksums           rmd160  ed31e81e3a316795a4e3dd6c5dea45d82752528d \
+                    sha256  fba230364537782cc5d43b08d693ef69c36586286349683c7b127156a8ef9b5c \
+                    size    1612156
 
 depends_build-append \
                     port:pkgconfig
@@ -65,7 +66,7 @@ patchfiles-append   patch-bug106417.diff
 
 # https://trac.macports.org/ticket/57167
 patchfiles-append   patch-trac-57167.diff
-  
+
 configure.args-append \
                     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
                     -DENABLE_QT5=OFF \

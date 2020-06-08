@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -206,6 +207,10 @@ public:
         // https://bugreports.qt.io/browse/QTBUG-10899
         // https://doc.qt.io/qt-5/qevent.html
 
+#  if OBJC_OLD_DISPATCH_PROTOTYPES != 1
+        // Pure ObjC solution for macOS 10.15 Catalina and later.
+        QtMac::setupDockClickHandler((void (*)(void))dockClickHandler);
+#  else
         id cls = (id)objc_getClass("NSApplication");
         id appInst = objc_msgSend(cls, sel_registerName("sharedApplication"));
 
@@ -226,6 +231,7 @@ public:
                     qWarning() << "Failed to register dock click handler";
             }
         }
+#  endif
 #endif
     }
 

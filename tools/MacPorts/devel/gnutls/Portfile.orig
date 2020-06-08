@@ -2,14 +2,14 @@
 
 PortSystem      1.0
 
+PortGroup       active_variants 1.1
 PortGroup       compiler_blacklist_versions 1.0
 PortGroup       conflicts_build 1.0
-PortGroup       muniversal 1.0
 PortGroup       legacysupport 1.0
-PortGroup       active_variants 1.1
+PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.6.12
+version         3.6.14
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -28,11 +28,11 @@ long_description \
     and is available under the GNU Lesser General Public License (LGPL).
 
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
-                http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
+                https://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  f76e05c4a5f6c15277259b874bca475089c02630 \
-                sha256  bfacf16e342949ffd977a9232556092c47164bd26e166736cf3459a870506c4b \
-                size    5942064
+checksums       rmd160  89c4f89e4453c2d08ad0918fbf099d9fbcfe9cba \
+                sha256  5630751adec7025b8ef955af4d141d00d252a985769f51b4059e5affa3d39d63 \
+                size    6069088
 
 use_xz          yes
 
@@ -57,6 +57,14 @@ depends_lib-append \
                 port:zlib
 
 patchfiles      patch-lib-system-certs.c.diff
+
+# Catalina/Xcode 11.4 issue. See: https://trac.macports.org/ticket/60285
+platform darwin {
+    if {${os.major} == 19 && [vercmp ${xcodeversion} "11.4.1"] <= 0} {
+        patchfiles-append \
+                patch-configure.ac.diff
+    }
+}
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
@@ -155,7 +163,7 @@ if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
     #     _register_x86_crypto in libaccelerated.a(x86-common.o)
     # ld: symbol(s) not found for architecture x86_64
     compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
-    compiler.fallback-append  macports-clang-8.0 macports-clang-7.0 
+    compiler.fallback-append  macports-clang-8.0 macports-clang-7.0
 }
 
 # needs a TLS supporting compiler on older systems

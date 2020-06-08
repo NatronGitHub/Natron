@@ -251,6 +251,8 @@ mingw-w64-nettle
 mingw-w64-gnutls
 mingw-w64-nghttp2
 mingw-w64-curl
+mingw-w64-snappy
+mingw-w64-xvidcore
 mingw-w64-rtmpdump-git
 mingw-w64-libraw-gpl2
 mingw-w64-ffmpeg-gpl2
@@ -265,12 +267,14 @@ mingw-w64-qt4
 mingw-w64-seexpr-git
 mingw-w64-shiboken-qt4
 mingw-w64-pyside-qt4
+mingw-w64-libmad
 mingw-w64-sox
 mingw-w64-osmesa
 mingw-w64-libde265
 mingw-w64-libheif
 mingw-w64-imagemagick
 mingw-w64-openimageio21
+mingw-w64-breakdown
 mingw-w64-natron-sdk
 "
 for pkg in $PKGS; do

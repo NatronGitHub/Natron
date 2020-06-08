@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +55,7 @@ ticks_size_10(double xmin,
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
-    double tick_size = ipow(10, next_p10);
+    double tick_size = ipow(10., next_p10); // ipow(10, next_p10) overflows for next_p10 <= -16)
 
     assert(tick_size / 10 < min_tick_size);
     assert(tick_size >= min_tick_size);
@@ -78,8 +79,7 @@ ticks_size(double xmin,
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
-
-    *t_size = ipow(10, next_p10);
+    *t_size = ipow(10., next_p10); // ipow(10, next_p10) overflows for next_p10 <= -16
     assert(*t_size / 10 < min_tick_size);
     assert(*t_size >= min_tick_size);
     if (*t_size / 2 >= min_tick_size) {

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install patchelf
-# see https://nixos.org/releases/patchelf
+# see https://github.com/NixOS/patchelf/releases
 PATCHELF_VERSION=0.10
 PATCHELF_TAR="patchelf-${PATCHELF_VERSION}.tar.bz2"
 PATCHELF_SITE="https://nixos.org/releases/patchelf/patchelf-${PATCHELF_VERSION}/"

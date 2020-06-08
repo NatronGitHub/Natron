@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,11 +113,13 @@ NATRON_NAMESPACE_ENTER
 class ZoomContext
 {
 public:
-    ZoomContext()
+    ZoomContext(double zoomMin, double zoomMax)
         : _zoomLeft(0.)
         , _zoomBottom(0.)
         , _zoomFactor(1.)
         , _zoomAspectRatio(1.)
+        , _zoomMin(zoomMin)
+        , _zoomMax(zoomMax)
         , _screenWidth(0)
         , _screenHeight(0)
     {
@@ -190,7 +193,17 @@ public:
         assert(boost::math::isfinite(zoomLeft) && boost::math::isfinite(zoomBottom) && boost::math::isfinite(zoomFactor) && boost::math::isfinite(zoomAspectRatio) && zoomFactor > 0 && zoomAspectRatio > 0);
         _zoomLeft = zoomLeft;
         _zoomBottom = zoomBottom;
+        if (zoomFactor <= _zoomMin) {
+            zoomFactor = _zoomMin;
+        } else if (zoomFactor > _zoomMax) {
+            zoomFactor = _zoomMax;
+        }
         _zoomFactor = zoomFactor;
+        if (zoomFactor * zoomAspectRatio <= _zoomMin) {
+            zoomAspectRatio = _zoomMin / zoomFactor;
+        } else if (zoomFactor * zoomAspectRatio > _zoomMax) {
+            zoomAspectRatio = _zoomMax / zoomFactor;
+        }
         _zoomAspectRatio = zoomAspectRatio;
         check();
     }
@@ -209,9 +222,21 @@ public:
               double scale)
     {
         assert(boost::math::isfinite(centerX) && boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
+        double zoomFactor = _zoomFactor * scale;
+        if (zoomFactor <= _zoomMin) {
+            zoomFactor = _zoomMin;
+        } else if (zoomFactor > _zoomMax) {
+            zoomFactor = _zoomMax;
+        }
+        if (zoomFactor * _zoomAspectRatio <= _zoomMin) {
+            zoomFactor = _zoomMin / _zoomAspectRatio;
+        } else if (zoomFactor * _zoomAspectRatio > _zoomMax) {
+            zoomFactor = _zoomMax / _zoomAspectRatio;
+        }
+        scale = zoomFactor / _zoomFactor;
         _zoomLeft = centerX - ( centerX - left() ) / scale;
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
-        _zoomFactor *= scale;
+        _zoomFactor = zoomFactor;
         check();
     }
 
@@ -221,8 +246,15 @@ public:
                double scale)
     {
         assert(boost::math::isfinite(centerX) && /*boost::math::isfinite(centerY) &&*/ boost::math::isfinite(scale) && scale > 0);
+        double zoomAspectRatio = _zoomAspectRatio * scale;
+        if (_zoomFactor * zoomAspectRatio <= _zoomMin) {
+            zoomAspectRatio = _zoomMin / _zoomFactor;
+        } else if (_zoomFactor * zoomAspectRatio > _zoomMax) {
+            zoomAspectRatio = _zoomMax / _zoomFactor;
+        }
+        scale = zoomAspectRatio / _zoomAspectRatio;
         _zoomLeft = centerX - ( centerX - left() ) / scale;
-        _zoomAspectRatio *= scale;
+        _zoomAspectRatio = zoomAspectRatio;
         check();
     }
 
@@ -232,9 +264,22 @@ public:
                double scale)
     {
         assert(/*boost::math::isfinite(centerX) &&*/ boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
+        double zoomFactor = _zoomFactor * scale;
+        double zoomAspectRatio = _zoomAspectRatio / scale;
+        if (zoomFactor <= _zoomMin) {
+            zoomFactor = _zoomMin;
+        } else if (zoomFactor > _zoomMax) {
+            zoomFactor = _zoomMax;
+        }
+        if (zoomFactor * zoomAspectRatio <= _zoomMin) {
+            zoomFactor = _zoomMin / zoomAspectRatio;
+        } else if (zoomFactor * zoomAspectRatio > _zoomMax) {
+            zoomFactor = _zoomMax / zoomAspectRatio;
+        }
+        scale = zoomFactor / _zoomFactor;
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
-        _zoomAspectRatio /= scale;
-        _zoomFactor *= scale;
+        _zoomAspectRatio = zoomAspectRatio;
+        _zoomFactor = zoomFactor;
         check();
     }
 
@@ -257,6 +302,8 @@ public:
             _zoomFactor = screenHeight() / height;
             _zoomLeft = (xmax + xmin) / 2. - ( screenWidth() / ( screenHeight() * aspectRatio() ) ) * height / 2.;
         }
+        // adjust zoom factor
+        zoom( (xmin + xmax) / 2., (ymin + ymax) / 2., 1.);
         check();
     }
 
@@ -274,6 +321,8 @@ public:
         _zoomBottom = ymin;
         _zoomFactor = screenHeight() / height;
         _zoomAspectRatio = (screenWidth() * height) / (screenHeight() * width);
+        // adjust zoom factor
+        zoom( (xmin + xmax) / 2., (ymin + ymax) / 2., 1.);
         check();
     }
 
@@ -353,6 +402,8 @@ private:
     double _zoomBottom; /// the bottom edge of orthographic projection
     double _zoomFactor; /// the zoom factor applied to the current image
     double _zoomAspectRatio; /// the aspect ratio; a 1x1 area in zoom coordinates occupies a size (zoomFactor*zoomPar,zoomFactor)
+    double _zoomMin; /// the min zoom factor on both axes
+    double _zoomMax; /// the max zoom factor on both axes
     double _screenWidth; /// window width in screen pixels
     double _screenHeight; /// window height in screen pixels
 };

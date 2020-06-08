@@ -21,6 +21,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyAppInstance.h>
 #include <PyGuiApp.h>
+#include <qpixmap.h>
 
 
 // Native ---------------------------------------------------------
@@ -259,6 +260,51 @@ static PyObject* Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject* self, PyObjec
         return 0;
 }
 
+static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyArg)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getIcon(NATRON_NAMESPACE::PixmapEnum)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // getIcon(NATRON_NAMESPACE::PixmapEnum)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_getIcon_TypeError;
+
+    // Call function/method
+    {
+        ::NATRON_NAMESPACE::PixmapEnum cppArg0 = ((::NATRON_NAMESPACE::PixmapEnum)0);
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getIcon(NATRON_NAMESPACE::PixmapEnum)const
+            QPixmap cppResult = const_cast<const ::PyGuiApplication*>(cppSelf)->getIcon(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPIXMAP_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_PyGuiApplicationFunc_getIcon_TypeError:
+        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.PixmapEnum", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyGuiApplication.getIcon", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_PyGuiApplicationFunc_informationDialog(PyObject* self, PyObject* args)
 {
     ::PyGuiApplication* cppSelf = 0;
@@ -311,6 +357,64 @@ static PyObject* Sbk_PyGuiApplicationFunc_informationDialog(PyObject* self, PyOb
     Sbk_PyGuiApplicationFunc_informationDialog_TypeError:
         const char* overloads[] = {"unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.informationDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyGuiApplicationFunc_questionDialog(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "questionDialog", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: questionDialog(QString,QString)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+        overloadId = 0; // questionDialog(QString,QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_questionDialog_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = ::QString();
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // questionDialog(QString,QString)
+            NATRON_NAMESPACE::StandardButtonEnum cppResult = NATRON_NAMESPACE::StandardButtonEnum(cppSelf->questionDialog(cppArg0, cppArg1));
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STANDARDBUTTONENUM_IDX]), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_PyGuiApplicationFunc_questionDialog_TypeError:
+        const char* overloads[] = {"unicode, unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.questionDialog", overloads);
         return 0;
 }
 
@@ -373,7 +477,9 @@ static PyMethodDef Sbk_PyGuiApplication_methods[] = {
     {"addMenuCommand", (PyCFunction)Sbk_PyGuiApplicationFunc_addMenuCommand, METH_VARARGS},
     {"errorDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_errorDialog, METH_VARARGS},
     {"getGuiInstance", (PyCFunction)Sbk_PyGuiApplicationFunc_getGuiInstance, METH_O},
+    {"getIcon", (PyCFunction)Sbk_PyGuiApplicationFunc_getIcon, METH_O},
     {"informationDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_informationDialog, METH_VARARGS},
+    {"questionDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_questionDialog, METH_VARARGS},
     {"warningDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_warningDialog, METH_VARARGS},
 
     {0} // Sentinel

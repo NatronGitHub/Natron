@@ -87,7 +87,7 @@ subport ilmbase {
                 patch-configure.diff
 }
 
-set python_versions {27 35 36 37}
+set python_versions {27 35 36 37 38}
 
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {

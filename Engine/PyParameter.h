@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1188,7 +1189,7 @@ public:
                                                     double rightDerivative);
     NATRON_NAMESPACE::StatusEnum setNthControlPointInterpolation(int dimension,
                                                                  int nThCtl,
-                                                                 KeyframeTypeEnum interpolation);
+                                                                 NATRON_NAMESPACE::KeyframeTypeEnum interpolation);
     NATRON_NAMESPACE::StatusEnum deleteControlPoint(int dimension, int nthCtl);
     NATRON_NAMESPACE::StatusEnum deleteAllControlPoints(int dimension);
 

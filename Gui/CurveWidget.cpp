@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1293,47 +1294,17 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
             int deltaY = -2 * ( e->y() - _imp->_lastMousePos.y() );
             // Wheel: zoom values and time, keep point under mouse
-            const double zoomFactor_min = 0.0001;
-            const double zoomFactor_max = 10000.;
-            const double par_min = 0.0001;
-            const double par_max = 10000.;
-            double zoomFactor;
             double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
             double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
             QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
 
-            // Alt + Shift + Wheel: zoom values only, keep point under mouse
-            zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
-
-            if (zoomFactor <= zoomFactor_min) {
-                zoomFactor = zoomFactor_min;
-                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-            } else if (zoomFactor > zoomFactor_max) {
-                zoomFactor = zoomFactor_max;
-                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            if ( modCASIsControlShift(e) ) {
+                // Alt + Shift + Wheel: zoom values only, keep point under mouse
+                _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+            } else if ( modCASIsControl(e) ) {
+                // Alt + Wheel: zoom time only, keep point under mouse
+                _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
             }
-
-            double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
-            if (par <= par_min) {
-                par = par_min;
-                scaleFactorY = par / _imp->zoomCtx.aspectRatio();
-            } else if (par > par_max) {
-                par = par_max;
-                scaleFactorY = par / _imp->zoomCtx.factor();
-            }
-            _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
-
-            // Alt + Wheel: zoom time only, keep point under mouse
-            par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
-            if (par <= par_min) {
-                par = par_min;
-                scaleFactorX = par / _imp->zoomCtx.aspectRatio();
-            } else if (par > par_max) {
-                par = par_max;
-                scaleFactorX = par / _imp->zoomCtx.factor();
-            }
-            _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
-
             if (_imp->_drawSelectedKeyFramesBbox) {
                 refreshSelectedKeysBbox();
             }
@@ -1427,10 +1398,6 @@ CurveWidget::wheelEvent(QWheelEvent* e)
         return;
     }
 
-    const double zoomFactor_min = 0.0001;
-    const double zoomFactor_max = 10000.;
-    const double par_min = 0.0001;
-    const double par_max = 10000.;
     double zoomFactor;
     double par;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
@@ -1439,46 +1406,14 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     if ( modCASIsControlShift(e) ) {
         _imp->zoomOrPannedSinceLastFit = true;
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-        if (zoomFactor <= zoomFactor_min) {
-            zoomFactor = zoomFactor_min;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > zoomFactor_max) {
-            zoomFactor = zoomFactor_max;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        }
-        par = _imp->zoomCtx.aspectRatio() / scaleFactor;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactor = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
-        }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
         _imp->zoomOrPannedSinceLastFit = true;
         // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.aspectRatio() * scaleFactor;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactor = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactor = par / _imp->zoomCtx.factor();
-        }
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
         _imp->zoomOrPannedSinceLastFit = true;
         // Wheel: zoom values and time, keep point under mouse
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
-        if (zoomFactor <= zoomFactor_min) {
-            zoomFactor = zoomFactor_min;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > zoomFactor_max) {
-            zoomFactor = zoomFactor_max;
-            scaleFactor = zoomFactor / _imp->zoomCtx.factor();
-        }
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     }
 

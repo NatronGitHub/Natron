@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -508,7 +509,7 @@ CurveGui::drawCurve(int curveIndex,
 
                 bool singleKey = selectedKeyFrames.size() == 1 && selectedKeyFrames.begin()->second.size() == 1;
                 if (singleKey) { //if one keyframe, also draw the coordinates
-                    double rounding = ipow(10, CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
+                    double rounding = ipow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor( (key.getLeftDerivative() * rounding) + 0.5 ) / rounding);
                     QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor( (key.getRightDerivative() * rounding) + 0.5 ) / rounding);
                     double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0, isSelected->leftTan.second).y();

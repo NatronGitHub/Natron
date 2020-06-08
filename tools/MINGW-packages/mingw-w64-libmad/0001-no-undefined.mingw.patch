@@ -1,0 +1,11 @@
+--- libmad-0.15.1b/Makefile.am.orig	2004-02-17 06:02:03 +0400
++++ libmad-0.15.1b/Makefile.am	2012-04-13 22:45:27 +0400
+@@ -101,7 +101,7 @@
+ 
+ version_info =		$(version_current):$(version_revision):$(version_age)
+ 
+-libmad_la_LDFLAGS =	-version-info $(version_info)
++libmad_la_LDFLAGS =	-version-info $(version_info) -no-undefined
+ 
+ mad.h: config.status config.h Makefile.am  \
+ 		$(srcdir)/COPYRIGHT $(srcdir)/mad.h.sed $(exported_headers)

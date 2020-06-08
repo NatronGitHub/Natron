@@ -1,6 +1,6 @@
 pkgname=natron-sdk
 pkgver=2020
-pkgrel=1
+pkgrel=3
 pkgdesc='Meta package for the Natron Windows SDK'
 url='https://github.com/NatronGitHub'
 arch=('any')
@@ -239,6 +239,9 @@ ${MINGW_PACKAGE_PREFIX}-x264-git
 ${MINGW_PACKAGE_PREFIX}-x265
 ${MINGW_PACKAGE_PREFIX}-xz
 ${MINGW_PACKAGE_PREFIX}-zlib
+${MINGW_PACKAGE_PREFIX}-snappy
+${MINGW_PACKAGE_PREFIX}-libmad
+${MINGW_PACKAGE_PREFIX}-breakdown
 )
 
 

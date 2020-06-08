@@ -23,7 +23,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] 
     start_build
     untar "$SRC_PATH/$CAIRO_TAR"
     pushd "cairo-${CAIRO_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${SDK_HOME}/include/pixman-1" LDFLAGS="-L${SDK_HOME}/lib -lpixman-1" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --with-libpng=yes --enable-shared --enable-static --enable-tee
+    autoreconf -fi
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${SDK_HOME}/include/pixman-1" LDFLAGS="-L${SDK_HOME}/lib -lpixman-1" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static --enable-tee --disable-dependency-tracking
     make -j${MKJOBS}
     make install
     popd

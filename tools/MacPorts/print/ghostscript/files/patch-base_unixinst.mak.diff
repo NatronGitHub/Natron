@@ -1,12 +1,75 @@
-doc symlink should not point into DESTDIR
---- base/unixinst.mak.orig	2018-03-21 03:48:06.000000000 -0500
-+++ base/unixinst.mak	2018-03-27 06:26:37.000000000 -0500
-@@ -165,7 +165,7 @@
- 	$(SH) -c 'for f in $(DOC_PAGES) ;\
- 	do if ( test -f $(PSDOCDIR)/$$f ); then $(INSTALL_DATA) $(PSDOCDIR)/$$f $(DESTDIR)$(docdir); fi;\
- 	done'
--	ln -s $(DESTDIR)$(docdir) $(DESTDIR)$(gsdatadir)/doc
-+	ln -s $(docdir) $(DESTDIR)$(gsdatadir)/doc
+--- base/unixinst.mak.orig	2019-03-26 09:13:42.000000000 +0000
++++ base/unixinst.mak	2020-04-28 01:05:01.000000000 -0700
+@@ -78,6 +78,8 @@
+ PSEXDIR=$(PSLIBDIR)/../examples
+ PSMANDIR=$(PSLIBDIR)/../man
  
++PCLEXDIR=$(PSLIBDIR)/../pcl/examples
++
+ install-data: install-libdata install-resdata$(COMPILE_INITS) install-iccdata$(COMPILE_INITS) install-doc install-man
+ 
+ # There's no point in providing a complete dependency list: we include
+@@ -157,7 +159,9 @@
+ 
+ DOC_PAGE_IMAGES=Artifex_logo.png  favicon.png  ghostscript_logo.png  hamburger-light.png  x-light.png
+ 
+-install-doc: $(PSDOCDIR)/News.htm
++GPDL_DOC_PAGES=ghostpdl.pdf ghostpdl.txt
++
++install-doc: $(PSDOCDIR)/News.htm install-doc-$(PCL_TARGET) install-doc-$(XPS_TARGET) install-doc-$(GPDL_TARGET)
+ 	-mkdir -p $(DESTDIR)$(docdir)
+ 	-mkdir -p $(DESTDIR)$(docdir)/images
+ 	$(SH) -c 'for f in $(DOC_PAGES) ;\
+@@ -167,6 +171,22 @@
+ 	do if ( test -f $(PSDOCDIR)/images/$$f ); then $(INSTALL_DATA) $(PSDOCDIR)/images/$$f $(DESTDIR)$(docdir)/images; fi;\
+ 	done'
+ 
++install-doc-gpcl6: install-doc-gpdl
++	$(NO_OP)
++
++install-doc-gxps: install-doc-gpdl
++	$(NO_OP)
++
++install-doc-gpdl:
++	-mkdir -p $(DESTDIR)$(docdir)/pclxps
++	$(SH) -c 'for f in $(GPDL_DOC_PAGES) ;\
++	do if ( test -f $(PSDOCDIR)/pclxps/$$f ); then $(INSTALL_DATA) $(PSDOCDIR)/pclxps/$$f $(DESTDIR)$(docdir)/pclxps; fi;\
++	done'
++
++# Dummy target
++install-doc-:
++	$(NO_OP)
++
  # install the man pages for each locale
  MAN_LCDIRS=. de
+ MAN1_LINKS_PS2PS=eps2eps
+@@ -201,7 +221,7 @@
+ 	done'
+ 
+ # install the example files
+-install-examples:
++install-examples: install-examples-$(PCL_TARGET)
+ 	-mkdir -p $(DESTDIR)$(exdir)
+ 	for f in \
+         alphabet.ps colorcir.ps escher.ps grayalph.ps snowflak.ps \
+@@ -217,6 +237,20 @@
+ 	do $(INSTALL_DATA) $(PSEXDIR)/cjk/$$f $(DESTDIR)$(exdir)/cjk ;\
+ 	done
+ 
++install-examples-gpcl6:
++	-mkdir -p $(DESTDIR)$(exdir)/pcl
++	for f in \
++	    bitfont.pcl bitfonts.pxl fills.pcl fontpage.pcl fonts.pcl fonts.pxl \
++	    frs96.pxl gl-chars.pcl grashopp.pcl grid.pcl label.tst \
++	    lineprinter.pcl null.pxl opaque.pcl origins.pcl owl.pcl owl2.pcl \
++	    pattern.pcl pattern.pxl tiger.px3 tiger.xps .px3;\
++	do $(INSTALL_DATA) $(PCLEXDIR)/$$f $(DESTDIR)$(exdir)/pcl ;\
++	done
++
++# Dummy target
++install-examples-:
++	$(NO_OP)
++
+ install-shared: $(GS_SHARED_OBJS)
+ 	-mkdir -p $(DESTDIR)$(gssharedir)
+ 	$(SH) -c 'for obj in $(GS_SHARED_OBJS); do \

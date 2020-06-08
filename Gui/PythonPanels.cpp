@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,6 +194,8 @@ PyModalDialog::PyModalDialog(Gui* gui,
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
+    appPTR->hideSplashScreen();
+
     _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();

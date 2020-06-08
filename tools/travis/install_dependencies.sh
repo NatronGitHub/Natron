@@ -326,10 +326,18 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Upgrade the essential packages
     # Python2 is now keg-only
     brew install python@2
-    #PATH="/usr/local/opt/python@2/bin:$PATH"
+    brew unlink python@2 || true
+    for p in python; do
+        brew outdated $p || brew upgrade $p
+    done
+    brew unlink python || true
+    brew link python@2 || true
+    PATH="/usr/local/opt/python@2/bin:$PATH"
+    brew link --overwrite python || true
+
     #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     echo "* Brew upgrade selected packages"
-    for p in python@2 boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
+    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite; do
         brew outdated $p || brew upgrade $p
     done
     # On Nov. 7 2017, the following caused 49 upgrades.
@@ -365,7 +373,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw openimageio seexpr openvdb
+        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw libheif openimageio seexpr openvdb
         # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
         hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
         if [ "$hdf5lib" -a ! -f "$hdf5lib" ]; then

@@ -9,12 +9,12 @@
 
 # v6 is the "safe" option, v7 can break (sometimes)
 #pkgver=7.0.8.55
-pkgver=6.9.10.55
+pkgver=6.9.11.16
 
 _realname=imagemagick
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgrel=2
+pkgrel=1
 pkgdesc="An image viewing/manipulation program (mingw-w64)"
 arch=('any')
 url="https://www.imagemagick.org/"
@@ -47,7 +47,7 @@ source=(
 	ImageMagick-7.0.8-disable-ltdl.diff
 	ImageMagick-6.8.8.1-mingw.patch
 	ImageMagick-6-mingw.patch
-	ImageMagick-6.9.10-disable-ltdl.diff
+	ImageMagick-6.9.11-disable-ltdl.diff
 	ImageMagick-6.9.10-gimp210.diff
        )
 sha256sums=(
@@ -56,7 +56,7 @@ sha256sums=(
             '312a02bdcc2b966322ecca3e76a34a87d796335945401c661b8c4a5327281d5d'
             '90a650f92f6f77231ffbc109b12dba9acca01614d069f31886edaecc17112530'
             '026d8ae551b643ded51f560b3f5db8829854c3ea235f45993da06ba3245219e4'
-            'e68d249856edd63c5a083fa5c6b329b77457a627599309f018ae8de84b2754bc'
+            'eb83e383f720c109b3ef7fb8c774cf108aec6ac6e71722ac5292b60feaaf3dd6'
             '98f5da106e24f49fff16020ceae375c4f46108ad9a786002c1895b1c17f3dbeb'
            )
 
@@ -72,7 +72,7 @@ prepare() {
     patch -p1 -i ${srcdir}/ImageMagick-6.8.8.1-mingw.patch
     patch -p1 -i ${srcdir}/ImageMagick-6-mingw.patch
     # remove dep on ltdl, we don't use modules
-    patch -p0 -i ${srcdir}/ImageMagick-6.9.10-disable-ltdl.diff
+    patch -p0 -i ${srcdir}/ImageMagick-6.9.11-disable-ltdl.diff
     # support gimp 2.10 (until we move to v7)
     patch -p0 -i ${srcdir}/ImageMagick-6.9.10-gimp210.diff
   fi

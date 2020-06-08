@@ -3,7 +3,7 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.1.10.1
+pkgver=2.1.16.0
 pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
@@ -20,7 +20,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
          "${MINGW_PACKAGE_PREFIX}-opencolorio"
          "${MINGW_PACKAGE_PREFIX}-openexr"
-	       "${MINGW_PACKAGE_PREFIX}-libheif"
+         "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
@@ -32,7 +32,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.1.10-mingw.diff
         oiio-2.0.8-invalidatespec.patch
   )
-sha256sums=('640e40b559a59129c14a980cec75668c857b09639fade09395e0824a634b6956'
+sha256sums=('f44e3b3cffe9a8f47395da1ae59e972ecb26adf65f17581e6a489fdcce0cb116'
             'SKIP'
             '5f72ecb129d956735b11d63e7769ccc99f2ea11616029e735d26f49f9bc01597'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'

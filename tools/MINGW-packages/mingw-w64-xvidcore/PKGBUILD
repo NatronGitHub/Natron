@@ -1,0 +1,39 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=xvidcore
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.3.7
+pkgrel=1
+pkgdesc="XviD is an open source MPEG-4 video codec (mingw-w64)"
+arch=('any')
+license=('GPL')
+url="http://www.xvid.com/"
+options=('strip' '!libtool' 'staticlibs')
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-yasm")
+source=(http://downloads.xvid.com/downloads/${_realname}-${pkgver}.tar.bz2)
+sha256sums=('aeeaae952d4db395249839a3bd03841d6844843f5a4f84c271ff88f7aa1acff7')
+
+prepare() {
+  cd ${srcdir}/${_realname}
+}
+
+build() {
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  cp -rf ${srcdir}/${_realname} ${srcdir}/build-${MINGW_CHOST}
+
+  cd ${srcdir}/build-${MINGW_CHOST}/build/generic
+  ./configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST}
+
+  make
+}
+
+package() {
+  cd ${srcdir}/build-${MINGW_CHOST}/build/generic
+  make DESTDIR="${pkgdir}" install
+}

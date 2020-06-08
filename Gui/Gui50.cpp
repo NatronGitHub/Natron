@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1126,10 +1127,6 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
-
-        if ( !path.isEmpty() && ( ( path.at(0) == QLatin1Char('/') ) || ( path.at(0) == QLatin1Char('\\') ) ) ) {
-            path = path.remove(0, 1);
-        }
         if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
             path = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(path);
         }
@@ -1166,7 +1163,7 @@ Gui::dragEnterEvent(QDragEnterEvent* e)
         return;
     }
 
-    e->accept();
+    e->acceptProposedAction();
 
 }
 
@@ -1179,7 +1176,7 @@ Gui::dragMoveEvent(QDragMoveEvent* e)
     }
 
 
-    e->accept();
+    e->acceptProposedAction();
 
 }
 

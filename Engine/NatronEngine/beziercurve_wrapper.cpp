@@ -1281,7 +1281,7 @@ static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyOb
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setCompositingOperator_TypeError:
-        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.MergingFunctionEnum", 0};
+        const char* overloads[] = {"NatronEngine.Natron.MergingFunctionEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.setCompositingOperator", overloads);
         return 0;
 }

@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +59,7 @@ public:
     {
     }
 
-    QPixmap getIcon(PixmapEnum val) const
+    QPixmap getIcon(NATRON_NAMESPACE::PixmapEnum val) const
     {
         QPixmap ret;
 
@@ -100,8 +101,8 @@ public:
         Dialogs::errorDialog( title.toStdString(), message.toStdString() );
     }
 
-    StandardButtonEnum questionDialog(const QString& title,
-                                      const QString& message)
+    NATRON_NAMESPACE::StandardButtonEnum questionDialog(const QString& title,
+                                                        const QString& message)
     {
         return Dialogs::questionDialog(title.toStdString(), message.toStdString(), false);
     }

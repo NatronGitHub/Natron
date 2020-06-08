@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 
 #include <AppKit/NSView.h>
 #include <AppKit/NSWindow.h>
+#include <objc/runtime.h>
 
 //See:
 //- https://trac.macports.org/ticket/43283
@@ -95,6 +97,15 @@ QtMac::isHighDPIInternal(const QWidget* w) {
     
     return (scaleFactor > 1.0);
 }
+
+#if OBJC_OLD_DISPATCH_PROTOTYPES != 1
+void
+QtMac::setupDockClickHandler(void (*dockClickHandler)(void)) {
+    Class delClass = (Class)[[[NSApplication sharedApplication] delegate] class];
+    SEL shouldHandle = sel_registerName("applicationShouldHandleReopen:hasVisibleWindows:");
+    class_replaceMethod(delClass, shouldHandle, (IMP)dockClickHandler, "B@:");
+}
+#endif
 
 NATRON_NAMESPACE_EXIT
 

@@ -1,6 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2018-2020 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,7 +70,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        TimeLinePtr timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
-    , zoomCtx()
+    , zoomCtx(0.000001, 1000000.)
     , _state(eEventStateNone)
     , _rightClickMenu( new Menu(widget) )
     , _selectedCurveColor(255, 255, 89, 255)
@@ -826,7 +827,7 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
         BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
         if (!isBezier) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                double rounding = ipow(10, CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
+                double rounding = ipow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                 QPointF topLeft_LeftTanWidget = zoomCtx.toWidgetCoordinates( (*it2)->leftTan.first, (*it2)->leftTan.second );
                 QPointF topLeft_RightTanWidget = zoomCtx.toWidgetCoordinates( (*it2)->rightTan.first, (*it2)->rightTan.second );
                 topLeft_LeftTanWidget.ry() += yOffset;

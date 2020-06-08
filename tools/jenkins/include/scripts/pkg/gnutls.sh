@@ -2,15 +2,17 @@
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.8
-#GNUTLS_VERSION=3.6.12
-# 3.6.9 and later fail on CentOS6 (probably needs an updated binutils/gas) with:
-#  CCAS     elf/sha512-ssse3-x86_64.lo
-#elf/sha1-ssse3-x86_64.s: Assembler messages:
-#elf/sha1-ssse3-x86_64.s:3825: Error: no such instruction: `vinserti128 $1,(%r13),%ymm0,%ymm0'
-#...
-
+GNUTLS_VERSION=3.6.13
 GNUTLS_VERSION_MICRO= #.1
+if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
+    GNUTLS_VERSION=3.6.8
+    GNUTLS_VERSION_MICRO=
+    # 3.6.9 and later fail on CentOS6 (probably needs an updated binutils/gas) with:
+    #  CCAS     elf/sha512-ssse3-x86_64.lo
+    #elf/sha1-ssse3-x86_64.s: Assembler messages:
+    #elf/sha1-ssse3-x86_64.s:3825: Error: no such instruction: `vinserti128 $1,(%r13),%ymm0,%ymm0'
+    #...
+fi
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}${GNUTLS_VERSION_MICRO}.tar.xz"
 GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"

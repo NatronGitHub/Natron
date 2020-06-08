@@ -1,4 +1,4 @@
-Please read the [contribution guidelines](https://github.com/MrKepzie/Natron/blob/master/CONTRIBUTING.md), and be sure we have a [Contributor License Agreement](http://natron.fr/cla) on record with the project.
+Please read the [contribution guidelines](https://github.com/NatronGitHub/Natron/blob/master/CONTRIBUTING.md).
 
 ## Description
 

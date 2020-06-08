@@ -9,7 +9,7 @@ Text node
 
 |pluginIcon| 
 
-*This documentation is for version 6.10 of Text (net.fxarena.openfx.Text).*
+*This documentation is for version 6.13 of Text (net.fxarena.openfx.Text).*
 
 Description
 -----------
@@ -93,9 +93,17 @@ Controls
 |                                             |         |                     | | **Center**                                                                                                                                                                       |
 |                                             |         |                     | | **Bottom**                                                                                                                                                                       |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Font family / ``name``                      | Choice  |                     | The name of the font to be used.                                                                                                                                                   |
+| Select font / ``name``                      | Choice  |                     | | Select font family to be used.                                                                                                                                                   |
+|                                             |         |                     | |                                                                                                                                                                                  |
+|                                             |         |                     | | This parameter is only used to set font family in the ‘font’ parameter. This parameter does not support animation, use the ‘font’ parameter for animation.                       |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Custom font / ``custom``                    | N/A     |                     | Add custom font.                                                                                                                                                                   |
+| Custom font(s) / ``custom``                 | N/A     |                     | | Add custom font(s) to the font list. This can be a font file or a directory with fonts.                                                                                          |
+|                                             |         |                     | |                                                                                                                                                                                  |
+|                                             |         |                     | | If you want a portable project copy all used fonts to [Project]/fonts (or similar) and reference them here.                                                                      |
++---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Font family / ``font``                      | String  | Arial               | | The name of the font to be used.                                                                                                                                                 |
+|                                             |         |                     | |                                                                                                                                                                                  |
+|                                             |         |                     | | This parameter can also be used to animate the font family.                                                                                                                      |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Font size / ``size``                        | Integer | 64                  | The height of the characters to render in pixels. Should not be used for animation, see the scale param.                                                                           |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -179,6 +187,8 @@ Controls
 | Scroll X / ``scrollX``                      | Double  | 0                   | Scroll canvas X. Only works if Transform, AutoSize, Circle and Arc is disabled/not used.                                                                                           |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Scroll Y / ``scrollY``                      | Double  | 0                   | Scroll canvas Y. Only works if Transform, AutoSize, Circle and Arc is disabled/not used.                                                                                           |
++---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Frame Range / ``frameRange``                | Integer | min: 1 max: 1       | Time domain.                                                                                                                                                                       |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.fxarena.openfx.Text.png

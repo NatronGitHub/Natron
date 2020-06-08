@@ -40,7 +40,7 @@ addons:
     # this one is for xenial ffmpeg
     - sourceline: 'ppa:jonathonf/ffmpeg-4'
     #- kalakris-cmake
-    - pythonxy-devel
+    #- pythonxy-devel
     packages:
     - ca-certificates
     #- gcc-4.9
@@ -127,8 +127,8 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
-  allow_failures:
-    - os: osx # if we exceed the time limit, if if qt4 is still using openssl 1.0
+  #allow_failures:
+  #  - os: osx # if we exceed the time limit
   fast_finish: true
 
 
