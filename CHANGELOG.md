@@ -5,6 +5,13 @@
 # History
 
 
+## Version 2.3.16
+
+### Plugins
+
+- Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
+
+
 ## Version 2.3.15
 
 - Inputs of the selected nodes are now always visible.
