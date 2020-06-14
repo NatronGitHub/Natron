@@ -1,6 +1,7 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# Copyright (C) 2013-2018 INRIA and Alexandre Gauthier
+# (C) 2018-2020 The Natron developers
+# (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
