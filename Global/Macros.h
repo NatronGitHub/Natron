@@ -1,7 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
- * Copyright (C) 2018-2020 The Natron developers
+ * (C) 2018-2020 The Natron developers
+ * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_NAMESPACE_ANONYMOUS_EXIT }
 
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal video compositing software."
-#define NATRON_COPYRIGHT "Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
+#define NATRON_COPYRIGHT "(C) 2018-2020 The Natron developers. (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
@@ -139,10 +139,15 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
-// RB-2: 2.3.15
+// RB-2.4: 2.4.0
+#define NATRON_VERSION_MAJOR_24 2
+#define NATRON_VERSION_MINOR_24 4
+#define NATRON_VERSION_REVISION_24 0
+
+// RB-2.3: 2.3.16
 #define NATRON_VERSION_MAJOR_23 2
 #define NATRON_VERSION_MINOR_23 3
-#define NATRON_VERSION_REVISION_23 15
+#define NATRON_VERSION_REVISION_23 16
 
 // RB-2.2: 2.2.10
 #define NATRON_VERSION_MAJOR_22 2

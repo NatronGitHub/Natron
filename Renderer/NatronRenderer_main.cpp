@@ -1,7 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
- * Copyright (C) 2018-2020 The Natron developers
+ * (C) 2018-2020 The Natron developers
+ * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ extern "C" {
      Increase the number of file descriptors that the process can open to the maximum allowed.
      - By default, Mac OS X only allows 256 file descriptors, which can easily be reached.
      - On Linux, the default limit is usually 1024.
-     
+
      Note that due to a bug in stdio on OS X, the limit on the number of files opened using fopen()
      cannot be changed after the first call to stdio (e.g. printf() or fopen()).
      Consequently, this has to be the first thing to do in main().
