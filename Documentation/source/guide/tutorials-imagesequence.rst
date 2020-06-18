@@ -171,10 +171,18 @@ The preferred file format to render out composited frames is TIFF.(image attache
 In the write node:
 
 - output components can be RGB(no transparency) or RGBA(with transparency)
+<<<<<<< HEAD
+- Use filename_###.tiff (where # is the frame number and padding) ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
+- Bit depth can be auto/8i/16i (Don't use float)
+- compression can be none/lzw (HD). for 4k deflate is ok.
+
+.. figure:: _images/imagesequence_1.jpg
+=======
 - Use filename_###.tiff (where # is the frame number and padding) 
 ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
 - Bit depth can be auto/8i/16i (Don't use float)
 - compression can be none/lzw (HD). for 4k deflate is ok.
+>>>>>>> cd1aa5ea7a99d4fa4bf0dec8f0fcf660a3757888
 
 PNG is also a good format:
 
@@ -185,8 +193,12 @@ In the write node:
 ### will create yourfilename001.png and ## will create yourfilename01.png
 - Bit depth can be 8/16bit
 - compression can be 0 for HD, 6 for 4k is fair enough.
+<<<<<<< HEAD
+=======
 
+>>>>>>> cd1aa5ea7a99d4fa4bf0dec8f0fcf660a3757888
 
+.. figure:: _images/imagesequence_2.jpg
 
 
 Open Questions for this document:
