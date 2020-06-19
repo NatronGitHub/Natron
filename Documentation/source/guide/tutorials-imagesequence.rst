@@ -1,14 +1,14 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-How to convert videos to image sequences
+How To Convert Videos To Image Sequences
 ========================================
 
 Natron works best when using image sequences as input.
 
 Video can be used (mp4, mov etc) as input but may face stability issues.
 
-Converting the video to a sequence of images is recommended.
+**Converting the video to a sequence of images is recommended.**
 
 There are a number of solutions for converting the video to frames:
 
@@ -18,7 +18,7 @@ FFmpeg
 
 `FFmpeg <https://ffmpeg.org/>`__ provides a convenient command-line solution for converting video to images.
 
-1. Open a terminal and navigate to the folder containing the video
+1. Open a terminal and navigate to the folder containing the video.
 2. Use this command to extract the video to a png image sequence:
 
 ``ffmpeg -i input.mp4 -pix_fmt rgba output_%04d.png``
@@ -47,12 +47,6 @@ If alpha is needed:
 
 For more information on support pix format and compression for TIFF in ffmpeg in the terminal type: ``ffmpeg -v error -h encoder=tiff``
 
-FFmpeg GUIs
-~~~~~~~~~~~
-Here are some graphical user interfaces (GUI) which can be used instead of the terminal
-
-- `ffmulticonv <https://sourceforge.net/projects/ffmulticonv/>`__ (Linux)
-- `WinFF <https://github.com/WinFF/winff>`__ (Windows and Mac)
 
 
 More information of FFmpeg's command line options https://ffmpeg.org/ffmpeg-formats.html
@@ -75,10 +69,10 @@ Blender
 https://www.blender.org/
 
 - Import the movie file in Blender Video Sequencer.
-- Go to render properties
-- In Color management change view transform standard
-- GO to output properties
-- Select File format PNG/TIFF
+- Go to render properties.
+- In Color management change view transform standard.
+- Go to output properties.
+- Select File format PNG/TIFF.
 - Select RGB/RGBA, 8/16 Color depth, and preferred compression NONE/Any.
 
 Full instructions on how to use the Blender VSE can be found here https://docs.blender.org/manual/en/latest/video_editing/index.html
@@ -86,12 +80,25 @@ Full instructions on how to use the Blender VSE can be found here https://docs.b
 
 Adobe Media Encoder
 ~~~~~~~~~~~~~~~~~~~
-- Open media encoder
-- Add source video to the queue
+- Open Media Encoder.
+- Add source video to the queue.
 - Set the output format to OpenEXR.
-- Set compression to "Zip"
-- If the source has an alpha channel be sure to scroll down to the bottom of the Video section of the Export Settings and check "Include Alpha Channel"
+- Set compression to "Zip".
+- If the source has an alpha channel be sure to scroll down to the bottom of the Video section of the Export Settings and check "Include Alpha Channel".
 - Close the Export Settings by clicking Ok and press the Start Queue button.
+
+
+DaVinci Resolve
+~~~~~~~~~~~~~~~~
+- In Resolve, select your videoclip.
+- Go to File => Media Management.
+- Select Clips.
+- Select Media Destination.
+- Select Video format => TIFF or EXR.
+- Click Start.
+
+
+
 
 How To Convert Image Sequences To Video Files
 =============================================
@@ -113,25 +120,13 @@ It is can also specify the framerate and the codec, here is an example for frame
 
 ``ffmpeg -framerate 30 -i input%04d.png -c:v libx264 -r 30 -pix_fmt yuv420p out.mp4``
 
-Using an NLE
-============
+Using NLE
+==========
 
-Kdenlive
-~~~~~~~~
+Kdenlive, Shotcut, Da Vinci Resolve, Adobe Premiere
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in your preferred video format. 
 
-Shotcut
-~~~~~~~
-
-Da Vinci Resolve
-~~~~~~~~~~~~~~~~
-
-Blender VSE
-~~~~~~~~~~~
-For Blender VSE, (go to render tab>file format FFmpeg Video>your preferred codec and container)
-
-Adobe Premiere
-~~~~~~~~~~~~~~
-Import the image "as sequence" in the timeline and render in your preferred video format. 
 
 
 Creating Digital Intermediate For Editing Servers
@@ -153,10 +148,10 @@ Shotcut/Kdenlive
 - Use TIFF/PNG image as sequence in the timeline.
 - Then Render with this newly created prores 4444 profile.
 
-A Tutorial on PRORES in LINUX by CGVIRUS:
+A tutorial on PRORES in LINUX by CGVIRUS:
 https://youtu.be/oBiaBYthZSo
 
-It can be done with Adobe Premiere/avid/fcpx/resolve etc as well by importing TIFF/PNG as sequence and render as MOV prores 4444.
+It can be done with Adobe Premiere/Avid/Fcpx/Resolve etc as well by importing TIFF/PNG as sequence and render as MOV prores 4444.
 
 DaVinci Resolve, Adobe Premiere etc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,18 +166,17 @@ The preferred file format to render out composited frames is TIFF.(image attache
 In the write node:
 
 - output components can be RGB(no transparency) or RGBA(with transparency)
-<<<<<<< HEAD
+
 - Use filename_###.tiff (where # is the frame number and padding) ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
 - Bit depth can be auto/8i/16i (Don't use float)
 - compression can be none/lzw (HD). for 4k deflate is ok.
 
 .. figure:: _images/imagesequence_1.jpg
-=======
+
 - Use filename_###.tiff (where # is the frame number and padding) 
-### will create yourfilename001.tiff and ## will create yourfilename01.tiff
+- ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
 - Bit depth can be auto/8i/16i (Don't use float)
 - compression can be none/lzw (HD). for 4k deflate is ok.
->>>>>>> cd1aa5ea7a99d4fa4bf0dec8f0fcf660a3757888
 
 PNG is also a good format:
 
@@ -190,13 +184,9 @@ In the write node:
 
 - output components can be RGB(no transparency) or RGBA(with transparency)
 - Use filename###.png (where # is the frame number and padding) 
-### will create yourfilename001.png and ## will create yourfilename01.png
+- ### will create yourfilename001.png and ## will create yourfilename01.png
 - Bit depth can be 8/16bit
 - compression can be 0 for HD, 6 for 4k is fair enough.
-<<<<<<< HEAD
-=======
-
->>>>>>> cd1aa5ea7a99d4fa4bf0dec8f0fcf660a3757888
 
 .. figure:: _images/imagesequence_2.jpg
 
