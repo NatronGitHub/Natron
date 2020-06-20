@@ -1,7 +1,6 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-===========   
 Environment
 ===========
 
@@ -32,7 +31,7 @@ The Toolbar
 .. image:: _images\toolbar_02.jpg
  :width: 600px
 
-is the list of icons on the left-hand side of Natron.
+It is the list of icons on the left-hand side of Natron.
 
 Each icon is a menu giving access to different categories of nodes (ie. image processing tools) that Natron offers to process or create images.
 
@@ -41,7 +40,7 @@ The Menu bar
 .. image:: _images\menubar_01.jpg
  :width: 600px
 
-located on top of Natron window, it gives acces to various actions other than adding nodes to the node graph.
+Located on top of Natron window, it gives acces to various actions other than adding nodes to the node graph.
 Most actions are done on the whole project like saving, rendering...
 
 The Viewer panel
@@ -50,28 +49,28 @@ The Viewer panel
  :width: 600px
 
 
-Here is displayed the result of the image processing. To choose what is displayed, each viewer is related to a viewer node in the graph that can be connected to any intermediate point in the graph
+Here is displayed the result of the image processing. To choose what is displayed, each viewer is related to a viewer node in the graph that can be connected to any intermediate point in the graph.
 
 The Properties editor
 ######################
 .. image:: _images\properties_01.png
  :width: 300px
 
-This panel shows the parameters of one or several nodes from the graph
+This panel shows the parameters of one or several nodes from the graph.
 
 The Node graph
 #################
 .. image:: _images\nodegraph_01.png
  :width: 600px
 
-This panel is were connections are made between the nodes to define the processing order of the image
+This panel is were connections are made between the nodes to define the processing order of the image.
 
 The Curve editor
 #################
 .. image:: _images\curve_editor_01.png
  :width: 600px
 
-This panel allows to edit graphically the changes intime of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor)
+This panel allows to edit graphically the changes intime of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
 
 The Dopesheet
 ################
