@@ -27,17 +27,49 @@ Replace ``input.mp4`` with the name of your video and ``output_`` with the name 
 
 ``%04d`` specifies the position of the characters representing a sequential number in each file name matched by the pattern. Using the above example the output files will be called ``output_0001.png``, ``output_0002.png``, ``output_0002.png`` and so on. For longer videos you will need to use a higher number (``%08d.png``).
 
-If the video has an alpha channel, it can be extracted as an image sequence with an alpha channel with the ``alphaextract`` option:
+Here are some more options:
 
-``ffmpeg -i input.mov -vf alphaextract output_%04d.png``
+PNG (with Alpha)
+
+for 8 bit
+
+``ffmpeg -i input.mp4 -pix_fmt rgba output_%04d.png``
+
+for 16 bit
+
+``ffmpeg -i input.mp4 -pix_fmt rgba64be output_%04d.png``
+
+PNG (without Alpha)
+
+for 8 bit
+
+``ffmpeg -i input.mp4 -pix_fmt rgb24 output_%04d.png``
+
+for 16 bit
+
+``ffmpeg -i input.mp4 -pix_fmt rgb48be output_%04d.png``
 
 To extract TIFF 16 bit image sequence:
 
-``ffmpeg -i input.mov -compression_algo lzw -pix_fmt rgb24 output%04d.tiff``
+TIFF (with Alpha)
 
-If alpha is needed:
+for 8 bit
 
-``ffmpeg -i input.mov -compression_algo lzw -pix_fmt rgba output%04d.tiff``
+``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgba output_%04d.tiff``
+
+for 16 bit
+
+``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgba64le output_%04d.tiff``
+
+TIFF (without Alpha)
+
+for 8 bit
+
+``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgb24 output_%04d.tiff``
+
+for 16 bit
+
+``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgb48le output_%04d.tiff``
 
 .. note:: "-compression_algo packbits or raw or lzw or deflate" - is optional. Using it for 4k/+ is recommended. For 4k/+ deflate can be used. For HD lzw can be used to lower the file size.
 
