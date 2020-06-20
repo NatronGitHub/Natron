@@ -1,14 +1,13 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-=================
 Using the menus
-=================
+===============
 
 .. toctree::
    :maxdepth: 2
 
-Modifications of your project are done using items located in menus located in different places of the interface
+Modifications of your project are done using items located in menus located in different places of the interface.
 
 The menu bar
 ############
@@ -23,31 +22,31 @@ File menu
 
 
 New Project
-  clear the node graph to start from scratch a new process
+  Clear the node graph to start from scratch a new process.
 Open Project...
-  load a .ntp files that is the description of a node graph. the .ntp contains no image data but only the instructions on how to process the images.
+  Load a ``.ntp`` file that is the description of a node graph. The ``.ntp`` contains no image data but only the instructions on how to process the images.
 Open Recent...
-  shortcut access to the most recently loaded .ntp files.
+  Shortcut access to the most recently loaded ``.ntp`` files.
 
-if a saved project is currently opened, the open functions will open in a new window
+If a saved project is currently opened, the open functions will open in a new window.
 
 Reload Project
-  Reload the current .ntp from disk. This can be used if you break something in your graph and don't know exactly what.
+  Reload the current ``.ntp`` from disk. This can be used if you break something in your graph and don't know exactly what.
 Close Project
-  Close the current project but keep other projects opened if other Natron windows
+  Close the current project but keep other projects opened.
 Save Project
-  Save the current node graph
+  Save the current node graph.
 Save Project As...
   Save the current node graph with a new name
 New Project Version
   Increment the version number in the project file.
   
-Project files are very small files. It is thus recommended to save different files for the different steps of your work. Would you want to recover a previous state or in case your .ntp gets corrupted.
+Project files are very small files. It is thus recommended to save different files for the different steps of your work. Would you want to recover a previous state or in case your ``.ntp`` gets corrupted.
 
-Natron expects the version number to be in the form name_001.ntp, name_002.ntp and so on
+Natron expects the version number to be in the form ``name_001.ntp``, ``name_002.ntp`` and so on.
   
 
-.. note::  You can number your files with different patterns like "name_v01" but you will have to increment manually with "Save Project As..."
+.. note::  You can number your files with different patterns like ``name_v01`` but you will have to increment manually with "Save Project As..."
 
 Export Project As Group
   With this item you can export a group of nodes to be reused later. This way you can create custom tools for Natron named plugins or Pyplugs.
@@ -60,12 +59,10 @@ Edit menu
 
 
 Preferences...
-  many preferences let you change the display of informations inside Natron. Many optimisation settings are also located in this menu.
+  Many preferences let you change the display of informations inside Natron. Many optimisation settings are also located in this menu.
 
 Undo/Redo
   The Undo item is modified dynamically to hint you about the last operation that can be undone.
-
-.. note::  You can number your files with different patterns like "name_v01" but you will have to increment manually with "Save Project As..."
 
 Layout menu
 -------------
@@ -81,10 +78,10 @@ Useful for:
 - create separate viewer and tools windows when using a dual monitor setup.
 
 Import Layout...
-   Load a file containing the position of UI elements. The file extension is usually .nl
+   Load a file containing the position of UI elements. The file extension is usually ``.nl``
    
 Export Layout...
-  Save a file .nl file.
+  Save a ``.nl`` file.
   
 Restore default layout
 
@@ -92,7 +89,7 @@ Some UI elements are stacked in the same screen position to acees these you can 
 
 In default Layout: Node Graph, Curve Editor, Dope Sheet are in the same lower left pane accessible through Tab navigation
 
-Here are 3 commands better used through their keyboard shortcuts
+Here are 3 commands better used through their keyboard shortcuts:
 
 Previous Tab
   Shortcut: CTrl+Shift+T
@@ -134,13 +131,13 @@ Viewer(s)>Connect to A/B side>Connect Viewer to input 1/.../10
 Show project Settings...
 
 Show project errors log...
-  This console shows error issued while rendering.(e.g. GPU specific errors can be inspected here as this is a sensitive area depending on your computer configuration)
+  This console shows error issued while rendering.(e.g. GPU specific errors can be inspected here as this is a sensitive area depending on your computer configuration).
 
 Show/Hide application console
-  This console shows error that may occur when Natron's configuration change (e.g. new plugins installed). Also handy to get the result of your python scripts
+  This console shows error that may occur when Natron's configuration change (e.g. new plugins installed). Also handy to get the result of your python scripts.
 
 Enter Full Screen
-  Save some screen space removing the title bar of Natron
+  Save some screen space removing the title bar of Natron.
 
   
 
@@ -168,15 +165,15 @@ Cache menu
 To improve Natron speed, some intermediate images of the node graph are kept in memory/on disk. This caching mechanism sometimes need to be cleared to free up memory/disk space. Use this if Natron seems to slow down or warn you about memory usage.
 
 Clear Disk Cache
-  clears data generated by "DiskCache" nodes
+  Clears the internal disk cache (which is persistent between Natron runs), and data generated by "DiskCache" nodes.
 Clear Playback Cache
-  clears final images sent to the viewer. Useful for previewing long sequences
+  Clears final images sent to the viewer. Useful for previewing long sequences
 Clear Per-Node Cache
-  clears intermediate results. Useful when you make change high up in the node tree or have nodes with "Force caching" enabled.
+  Clears in-memory intermediate results. Useful when you make change high up in the node tree or have nodes with "Force caching" enabled.
 Clear All caches
-  Best way to free up space in Natron
+  Best way to free up space in Natron.
 Clear Plug-Ins Load Cache
-  Free up additional memory
+  Will trigger a full plugins scan on next Natron run.
 
 
 Help menu
@@ -208,7 +205,7 @@ In this menu additional functions are added through python scripting. Natron int
 Context menus
 -------------
 
-You can right clic in many places of Natron to get quick access to a contextual menu. Here are the main ones
+You can right-click in many places of Natron to get quick access to a contextual menu. Here are the main ones:
 
 
 .. figure:: _images\menu_context_curve_01.png
@@ -257,7 +254,7 @@ You can right clic in many places of Natron to get quick access to a contextual 
 
 
 Menus Usage
------------------
+-----------
 
-When a menu item has a keyboard shortcut associated, it is visible inside the menus
+When a menu item has a keyboard shortcut associated, it is visible inside the menus.
 
