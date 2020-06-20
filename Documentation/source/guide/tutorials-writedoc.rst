@@ -56,6 +56,9 @@ The Natron documentation has now been generated in the *Documentation/html* fold
 
 When your are satisfied with your modifications do a pull request against the master repository on GitHub.
 
+.. note::  If you want to preview your files interactively you can use dedicated file editors. `RstPad <https://github.com/ShiraNai7/rstpad/releases>`_ for example is available on Mac and Windows 
+
+
 .. _writing-plugins-manual:
 
 Plugins Manual
