@@ -79,7 +79,7 @@ Dope sheet:
 Non destructive workflow
 ########################
 
-In the .ntp project files saved by Natron no actual pixels are stored. Only the description of the graph is stored.
+In the ``.ntp`` project files saved by Natron no actual pixels are stored. Only the description of the graph is stored.
 
 To display an image in the viewer, Natron reloads the source files, reprocesses each node one after the other then bring it to the display.
 
