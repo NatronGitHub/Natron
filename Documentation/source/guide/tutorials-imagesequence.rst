@@ -120,17 +120,6 @@ Adobe Media Encoder
 - Close the Export Settings by clicking Ok and press the Start Queue button.
 
 
-DaVinci Resolve
-~~~~~~~~~~~~~~~~
-- In Resolve, select your videoclip.
-- Go to File => Media Management.
-- Select Clips.
-- Select Media Destination.
-- Select Video format => TIFF or EXR.
-- Click Start.
-
-
-
 
 How To Convert Image Sequences To Video Files
 =============================================
@@ -153,11 +142,29 @@ It is can also specify the framerate and the codec, here is an example for frame
 ``ffmpeg -framerate 30 -i input%04d.png -c:v libx264 -r 30 -pix_fmt yuv420p out.mp4``
 
 Using NLE
-==========
+=========
 
 Kdenlive, Shotcut, Da Vinci Resolve, Adobe Premiere
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in your preferred video format. 
+Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in the preferred video format. 
+
+Using Media Management tools
+============================
+
+Adobe Prelude
+~~~~~~~~~~~~~
+Locate/Import the image sequence then Transcode it to the preferred format.
+
+DaVinci Resolve
+~~~~~~~~~~~~~~~
+- In Resolve, select the videoclip.
+- Go to File => Media Management.
+- Select Clips.
+- Select "Transcode" mode.
+- Select Media Destination.
+- Select Video format => TIFF or EXR.
+- Select your codec and resolution.
+- Click Start.
 
 
 
