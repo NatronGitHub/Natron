@@ -34,7 +34,7 @@ The *Natron documentation authors* are:
 - Omar Brown
 - Frédéric Devernay <devernay@github>
 - Alexandre Bon <bonalex01dev@github>
-- <hellocatfood@github>
+- Antonio Roberts <hellocatfood@github>
 - <magdesign@github>
 - Huân Lê-Vương <lehuan5062@github>
 - Fahad Hasan Pathik <cgvirus@github>
