@@ -1,0 +1,703 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>GuiApp &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PyGuiApplication" href="PyGuiApplication.html" />
+    <link rel="prev" title="NatronGui" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>GuiApp</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/GuiApp.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="guiapp">
+<span id="id1"></span><h1>GuiApp<a class="headerlink" href="#guiapp" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="../NatronEngine/App.html"><span class="doc">App</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This class is used for GUI application instances.
+See <a class="reference internal" href="#guiapp-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.createModalDialog" title="NatronGui.NatronGui.GuiApp.createModalDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createModalDialog</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getFilenameDialog" title="NatronGui.NatronGui.GuiApp.getFilenameDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFilenameDialog</span></code></a> (filters[, location=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getSequenceDialog" title="NatronGui.NatronGui.GuiApp.getSequenceDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getSequenceDialog</span></code></a> (filters[, location=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getDirectoryDialog" title="NatronGui.NatronGui.GuiApp.getDirectoryDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDirectoryDialog</span></code></a> ([location=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getRGBColorDialog" title="NatronGui.NatronGui.GuiApp.getRGBColorDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getRGBColorDialog</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getTabWidget" title="NatronGui.NatronGui.GuiApp.getTabWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getTabWidget</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getSelectedNodes" title="NatronGui.NatronGui.GuiApp.getSelectedNodes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getSelectedNodes</span></code></a> ([group=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getViewer" title="NatronGui.NatronGui.GuiApp.getViewer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getViewer</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getUserPanel" title="NatronGui.NatronGui.GuiApp.getUserPanel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getUserPanel</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.moveTab" title="NatronGui.NatronGui.GuiApp.moveTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">moveTab</span></code></a> (tabScriptName,pane)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.saveFilenameDialog" title="NatronGui.NatronGui.GuiApp.saveFilenameDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveFilenameDialog</span></code></a> (filters[, location=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.saveSequenceDialog" title="NatronGui.NatronGui.GuiApp.saveSequenceDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveSequenceDialog</span></code></a> (filters[, location=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.selectNode" title="NatronGui.NatronGui.GuiApp.selectNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">selectNode</span></code></a> (node,clearPreviousSelection)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.deselectNode" title="NatronGui.NatronGui.GuiApp.deselectNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">deselectNode</span></code></a> (node)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.setSelection" title="NatronGui.NatronGui.GuiApp.setSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setSelection</span></code></a> (nodes)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.selectAllNodes" title="NatronGui.NatronGui.GuiApp.selectAllNodes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">selectAllNodes</span></code></a> ([group=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.clearSelection" title="NatronGui.NatronGui.GuiApp.clearSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">clearSelection</span></code></a> ([group=None])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.registerPythonPanel" title="NatronGui.NatronGui.GuiApp.registerPythonPanel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">registerPythonPanel</span></code></a> (panel,pythonFunction)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.unregisterPythonPanel" title="NatronGui.NatronGui.GuiApp.unregisterPythonPanel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unregisterPythonPanel</span></code></a> (panel)</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">renderBlocking</span></code> (effect,firstFrame,lastFrame,frameStep)</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">renderBlocking</span></code> (tasks)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="guiapp-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../NatronEngine/App.html"><span class="doc">App</span></a> for the documentation of base functionalities of this class.</p>
+<p>To create a new <a class="reference internal" href="PyModalDialog.html"><span class="doc">modal dialog</span></a> , use the
+<a class="reference internal" href="#NatronGui.NatronGui.GuiApp.createModalDialog" title="NatronGui.NatronGui.GuiApp.createModalDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">createModalDialog()</span></code></a> function.</p>
+<p>Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
+See <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getFilenameDialog" title="NatronGui.NatronGui.GuiApp.getFilenameDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">getFilenameDialog(filters,location)</span></code></a> and
+<a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getRGBColorDialog" title="NatronGui.NatronGui.GuiApp.getRGBColorDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">getRGBColorDialog()</span></code></a>.</p>
+<p>To create a new custom python panel, there are several ways to do it:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Sub-class the <a class="reference internal" href="PyPanel.html"><span class="doc">PyPanel</span></a> class and make your own PySide widget</li>
+<li>Create a <a class="reference internal" href="PyPanel.html"><span class="doc">PyPanel</span></a> object and add controls using user parameters (as done for modal dialogs)</li>
+</ul>
+</div></blockquote>
+<p>Once created, you can register the panel in the project so that it gets saved into the layout
+by calling <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.registerPythonPanel" title="NatronGui.NatronGui.GuiApp.registerPythonPanel"><code class="xref py py-func docutils literal notranslate"><span class="pre">registerPythonPanel(panel,pythonFunction)</span></code></a></p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.createModalDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">createModalDialog</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.createModalDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="PyModalDialog.html"><span class="doc">PyModalDialog</span></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a <a class="reference internal" href="PyModalDialog.html"><span class="doc">modal dialog</span></a> : the control will not be returned to the user until the dialog is not closed.
+Once the dialog is created, you can enrich it with <a class="reference internal" href="../NatronEngine/Param.html"><span class="doc">parameters</span></a> or even
+raw PySide Qt widgets.
+To show the dialog call the function <code class="xref py py-func docutils literal notranslate"><span class="pre">exec()</span></code> on the dialog.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getFilenameDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getFilenameDialog</code><span class="sig-paren">(</span><em>filters</em><span class="optional">[</span>, <em>location=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getFilenameDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filters</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></li>
+<li><strong>location</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Opens-up a file dialog to ask the user for a single filename which already exists.</p>
+<p><em>filters</em> is a list of  file extensions that should be displayed in the file dialog.</p>
+<p><em>location</em> is the initial location the dialog should display, unless it is empty in which
+case the dialog will display the last location that was opened previously by a dialog.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getSequenceDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getSequenceDialog</code><span class="sig-paren">(</span><em>filters</em><span class="optional">[</span>, <em>location=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getSequenceDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filters</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></li>
+<li><strong>location</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getFilenameDialog" title="NatronGui.NatronGui.GuiApp.getFilenameDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">getFilenameDialog(filters,location)</span></code></a> but
+the dialog will accept sequence of files.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getDirectoryDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getDirectoryDialog</code><span class="sig-paren">(</span><span class="optional">[</span><em>location=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getDirectoryDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>location</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.getFilenameDialog" title="NatronGui.NatronGui.GuiApp.getFilenameDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">getFilenameDialog(filters,location)</span></code></a> but
+the dialog will only accept directories as a result.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.saveFilenameDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">saveFilenameDialog</code><span class="sig-paren">(</span><em>filters</em><span class="optional">[</span>, <em>location=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.saveFilenameDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filters</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></li>
+<li><strong>location</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Opens-up a file dialog to ask the user for a single filename. If the file already exists,
+the user will be warned about potential overriding of the file.</p>
+<p><em>filters</em> is a list of  file extensions that should be displayed in the file dialog.</p>
+<p><em>location</em> is the initial location the dialog should display, unless it is empty in which
+case the dialog will display the last location that was opened previously by a dialog.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.saveSequenceDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">saveSequenceDialog</code><span class="sig-paren">(</span><em>filters</em><span class="optional">[</span>, <em>location=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.saveSequenceDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filters</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></li>
+<li><strong>location</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.saveFilenameDialog" title="NatronGui.NatronGui.GuiApp.saveFilenameDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">saveFilenameDialog(filters,location)</span></code></a> but
+the dialog will accept sequence of files.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getRGBColorDialog">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getRGBColorDialog</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getRGBColorDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="../NatronEngine/ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Opens-up a color dialog to ask the user for an RGB color.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getTabWidget">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getTabWidget</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getTabWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTabWidget</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the tab-widget with the given <em>scriptName</em>. The <em>scriptName</em> of a tab-widget can
+be found in the user interface when hovering with the mouse the “Manage layout” button (in the top left-hand
+corner of the pane)</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../_images/paneScriptName.png"><img alt="../../../_images/paneScriptName.png" src="../../../_images/paneScriptName.png" style="width: 300px;" /></a>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.moveTab">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">moveTab</code><span class="sig-paren">(</span><em>tabScriptName</em>, <em>pane</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.moveTab" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tabScriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>pane</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PyTabWidget</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Attempts to move the tab with the given <em>tabScriptName</em> into the given <em>pane</em> and make it current in the <em>pane</em>.
+This function returns True upon success or False otherwise.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Moving tabs that are not registered to
+the application via <a class="reference internal" href="#NatronGui.NatronGui.GuiApp.registerPythonPanel" title="NatronGui.NatronGui.GuiApp.registerPythonPanel"><code class="xref py py-func docutils literal notranslate"><span class="pre">registerPythonPanel(panel,pythonFunction)</span></code></a>
+will not work.</p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.registerPythonPanel">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">registerPythonPanel</code><span class="sig-paren">(</span><em>panel</em>, <em>pythonFunction</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.registerPythonPanel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>panel</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PyPanel</span></code></li>
+<li><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Registers the <em>given</em> panel into the project. When registered, the panel will be saved
+into the layout for the current project and a new entry in the “Panes” sub-menu of the
+“Manage layouts” button  (in the top left-hand corner of each tab widget) will appear
+for this panel.
+<em>pythonFunction</em> is the name of a python-defined function that takes no argument that should
+be used to re-create the panel.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.unregisterPythonPanel">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">unregisterPythonPanel</code><span class="sig-paren">(</span><em>panel</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.unregisterPythonPanel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>panel</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PyPanel</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Unregisters a previously registered panel.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getSelectedNodes">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getSelectedNodes</code><span class="sig-paren">(</span><span class="optional">[</span><em>group = None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getSelectedNodes" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a sequence of <a class="reference internal" href="../NatronEngine/Effect.html#effect"><span class="std std-ref">nodes</span></a> currently selected in the given <em>group</em>.
+You can pass the <em>app</em> object to get the top-level
+NodeGraph. If passing None, the last user-selected NodeGraph will be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topLevelSelection</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getSelectedNodes</span><span class="p">()</span>
+
+<span class="n">group</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.built-in.Group&quot;</span><span class="p">)</span>
+
+<span class="n">groupSelection</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getSelectedNodes</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getViewer">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getViewer</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getViewer" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the viewer with the given <em>scriptName</em> if one can be found.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.getUserPanel">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">getUserPanel</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.getUserPanel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a user panel matching the given <em>scriptName</em> if there is any.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.selectNode">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">selectNode</code><span class="sig-paren">(</span><em>node</em>, <em>clearPreviousSelection</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.selectNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></li>
+<li><strong>clearPreviousSelection</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Select the given <em>node</em> in its containing nodegraph. If <em>clearPreviousSelection</em> is set to <em>True</em>, all
+the current selection will be wiped prior to selecting the <em>node</em>; otherwise the <em>node</em>
+will just be added to the selection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.deselectNode">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">deselectNode</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.deselectNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>node</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Deselect the given <em>node</em> in its containing nodegraph. If the <em>node</em> is not selected,
+this function does nothing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.setSelection">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">setSelection</code><span class="sig-paren">(</span><em>nodes</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.setSelection" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Set all the given <em>nodes</em> selected in the nodegraph containing them and wipe
+any current selection.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All nodes must be part of the same nodegraph (group), otherwise this function will fail.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.selectAllNodes">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">selectAllNodes</code><span class="sig-paren">(</span><span class="optional">[</span><em>group=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.selectAllNodes" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>group</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Select all nodes in the given <em>group</em>. You can pass the <em>app</em> object to get the top-level
+NodeGraph. If passing None, the last user-selected NodeGraph will be used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.clearSelection">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">clearSelection</code><span class="sig-paren">(</span><span class="optional">[</span><em>group=None</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.clearSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wipe any current selection in the given <em>group</em>. You can pass the <em>app</em> object to get the top-level
+NodeGraph. If passing None, the last user-selected NodeGraph will be used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronGui.NatronGui.GuiApp.renderBlocking">
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">renderBlocking</code><span class="sig-paren">(</span><em>effect</em>, <em>firstFrame</em>, <em>lastFrame</em>, <em>frameStep</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.GuiApp.renderBlocking" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>effect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></li>
+<li><strong>firstFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lastFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>frameStep</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Starts rendering the given <em>effect</em> on the frame-range defined by [<em>firstFrame</em>,*lastFrame*].
+The <em>frameStep</em> parameter indicates how many frames the timeline should step after rendering
+each frame. The value must be greater or equal to 1.
+The <em>frameStep</em> parameter is optional and if not given will default to the value of the
+<strong>Frame Increment</strong> parameter in the Write node.</p>
+<p>For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">render</span><span class="p">(</span><span class="n">effect</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Would render the frames 1,3,5,7,9</p>
+<p>This is a blocking function.
+A blocking render means that this function returns only when the render finishes (from failure or success).</p>
+<p>This function should only be used to render with a Write node or DiskCache node.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronGui.GuiApp.</code><code class="descname">renderBlocking</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tasks</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>This function takes a sequence of tuples of the form <em>(effect,firstFrame,lastFrame[,frameStep])</em>
+The <em>frameStep</em> is optional in the tuple and if not set will default to the value of the
+<strong>Frame Increment</strong> parameter in the Write node.</p>
+<p>This is an overloaded function. Same as <code class="xref py py-func docutils literal notranslate"><span class="pre">render(effect,firstFrame,lastFrame,frameStep)</span></code>
+but all <em>tasks</em> will be rendered concurrently.</p>
+<p>This function is called when rendering a script in background mode with
+multiple writers.</p>
+<p>This is a blocking call.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PyGuiApplication.html" class="btn btn-neutral float-right" title="PyGuiApplication" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="NatronGui" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

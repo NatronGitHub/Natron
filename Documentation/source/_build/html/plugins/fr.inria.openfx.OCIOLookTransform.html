@@ -1,0 +1,610 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>OCIOLookTransform node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PLogLin node" href="net.sf.openfx.PLogLin.html" />
+    <link rel="prev" title="OCIOLogConvert node" href="fr.inria.openfx.OCIOLogConvert.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupColor.html">Color nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.AddPlugin.html">Add node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Clamp.html">Clamp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ClipTestPlugin.html">ClipTest node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorCorrectPlugin.html">ColorCorrect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorLookupPlugin.html">ColorLookup node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorMatrixPlugin.html">ColorMatrix node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorSuppress.html">ColorSuppress node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgEqualize.html">Equalize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GammaPlugin.html">Gamma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GradePlugin.html">Grade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HSIToRGB.html">HSIToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HSLToRGB.html">HSLToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HSVToRGB.html">HSVToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HSVToolPlugin.html">HSVTool node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgHistEQ.html">HistEQ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HueCorrect.html">HueCorrect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Invert.html">Invert node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LabToRGB709.html">LabToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LabToXYZ.html">LabToXYZ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Log2Lin.html">Log2Lin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MultiplyPlugin.html">Multiply node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OCIOCDLTransform.html">OCIOCDLTransform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OCIOColorSpace.html">OCIOColorSpace node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OCIODisplay.html">OCIODisplay node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OCIOFileTransform.html">OCIOFileTransform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OCIOLogConvert.html">OCIOLogConvert node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">OCIOLookTransform node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.PLogLin.html">PLogLin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Quantize.html">Quantize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGB709ToLab.html">RGB709ToLab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGB709ToXYZ.html">RGB709ToXYZ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToHSI.html">RGBToHSI node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToHSL.html">RGBToHSL node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToHSV.html">RGBToHSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYCbCr601.html">RGBToYCbCr601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYCbCr709.html">RGBToYCbCr709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYPbPr601.html">RGBToYPbPr601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYPbPr709.html">RGBToYPbPr709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYUV601.html">RGBToYUV601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.RGBToYUV709.html">RGBToYUV709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SaturationPlugin.html">Saturation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.VectorToColorPlugin.html">VectorToColor node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.XYZToLab.html">XYZToLab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.XYZToRGB709.html">XYZToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.XYZToxyY.html">XYZToxyY node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YCbCrToRGB601.html">YCbCrToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YCbCrToRGB709.html">YCbCrToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YPbPrToRGB601.html">YPbPrToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YPbPrToRGB709.html">YPbPrToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YUVToRGB601.html">YUVToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.YUVToRGB709.html">YUVToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.xyYToXYZ.html">xyYToXYZ node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupColor.html">Color nodes</a> &raquo;</li>
+        
+      <li>OCIOLookTransform node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.openfx.OCIOLookTransform.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="ociolooktransform-node">
+<span id="fr-inria-openfx-ociolooktransform"></span><h1>OCIOLookTransform node<a class="headerlink" href="#ociolooktransform-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/fr.inria.openfx.OCIOLookTransform.png"><img alt="pluginIcon" src="../_images/fr.inria.openfx.OCIOLookTransform.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of OCIOLookTransform (fr.inria.openfx.OCIOLookTransform).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>OpenColorIO LookTransform</p>
+<p>A ‘look’ is a named color transform, intended to modify the look of an image in a ‘creative’ manner (as opposed to a colorspace definion which tends to be technically/mathematically defined).</p>
+<p>Examples of looks may be a neutral grade, to be applied to film scans prior to VFX work, or a per-shot DI grade decided on by the director, to be applied just before the viewing transform.</p>
+<p>OCIOLooks must be predefined in the OpenColorIO configuration before usage, and often reference per-shot/sequence LUTs/CCs.</p>
+<p>See the ‘Look Combination’ parameter for further syntax details.</p>
+<p>See opencolorio.org for look configuration customization examples.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="17%" />
+<col width="3%" />
+<col width="11%" />
+<col width="68%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>OCIO Config File / <code class="docutils literal notranslate"><span class="pre">ocioConfigFile</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>OpenColorIO configuration file</td>
+</tr>
+<tr class="row-odd"><td>Input Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioInputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Input data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-even"><td>Single Look / <code class="docutils literal notranslate"><span class="pre">singleLook</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>When checked, only the selected Look is applied. When not checked, the Look Combination is applied.</td>
+</tr>
+<tr class="row-odd"><td>Look / <code class="docutils literal notranslate"><span class="pre">lookChoice</span></code></td>
+<td>Choice</td>
+<td>Filmic - Very High Contrast</td>
+<td><div class="first last line-block">
+<div class="line">Look to apply (if “Single Look” is checked) or append to the Look Combination (when the “Append” button is pressed).</div>
+<div class="line"><strong>Filmic - Very High Contrast</strong></div>
+<div class="line"><strong>Filmic - High Contrast</strong></div>
+<div class="line"><strong>Filmic - Medium High Contrast</strong></div>
+<div class="line"><strong>Filmic - Base Contrast</strong></div>
+<div class="line"><strong>Filmic - Medium Low Contrast</strong></div>
+<div class="line"><strong>Filmic - Low Contrast</strong></div>
+<div class="line"><strong>Filmic - Very Low Contrast</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura 100</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura 200</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura 400</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura II 100</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura II 200</strong></div>
+<div class="line"><strong>Agfa Agfacolor Futura II 400</strong></div>
+<div class="line"><strong>Agfa Agfacolor HDC 100 plus</strong></div>
+<div class="line"><strong>Agfa Agfacolor HDC 400 plus</strong></div>
+<div class="line"><strong>Agfa Agfacolor HDC 200 plus</strong></div>
+<div class="line"><strong>Agfa Agfacolor Optima II 100</strong></div>
+<div class="line"><strong>Agfa Agfacolor Optima II 200</strong></div>
+<div class="line"><strong>Agfa Agfacolor Ultra 050</strong></div>
+<div class="line"><strong>Agfa Agfacolor Vista 100</strong></div>
+<div class="line"><strong>Agfa Agfacolor Vista 200</strong></div>
+<div class="line"><strong>Agfa Agfacolor Vista 400</strong></div>
+<div class="line"><strong>Agfa Agfacolor Vista 800</strong></div>
+<div class="line"><strong>Agfa Agfachrome CT Precisa 100</strong></div>
+<div class="line"><strong>Agfa Agfachrome CT Precisa 200</strong></div>
+<div class="line"><strong>Agfa Agfachrome RSX2 050</strong></div>
+<div class="line"><strong>Agfa Agfachrome RSX2 100</strong></div>
+<div class="line"><strong>Agfa Agfachrome RSX2 200</strong></div>
+<div class="line"><strong>Agfa Advantix 100</strong></div>
+<div class="line"><strong>Agfa Advantix 200</strong></div>
+<div class="line"><strong>Agfa Advantix 400</strong></div>
+<div class="line"><strong>Kodak Gold 100</strong></div>
+<div class="line"><strong>Kodak Gold 200</strong></div>
+<div class="line"><strong>Kodak Max Zoom 800</strong></div>
+<div class="line"><strong>Kodak Portra 100T</strong></div>
+<div class="line"><strong>Kodak Portra 160NC</strong></div>
+<div class="line"><strong>Kodak Portra 160VC</strong></div>
+<div class="line"><strong>Kodak Portra 800</strong></div>
+<div class="line"><strong>Kodak Portra 400VC</strong></div>
+<div class="line"><strong>Kodak Portra 400NC</strong></div>
+<div class="line"><strong>Kodak Ektachrome 100 plus</strong></div>
+<div class="line"><strong>Kodak Ektachrome 320T</strong></div>
+<div class="line"><strong>Kodak Ektachrome 400X</strong></div>
+<div class="line"><strong>Kodak Ektachrome 64</strong></div>
+<div class="line"><strong>Kodak Ektachrome 64T</strong></div>
+<div class="line"><strong>Kodak Ektachrome E100S</strong></div>
+<div class="line"><strong>Kodak Ektachrome 100</strong></div>
+<div class="line"><strong>Kodak Kodachrome 200</strong></div>
+<div class="line"><strong>Kodak Kodachrome 25</strong></div>
+<div class="line"><strong>Kodak Kodachrome 64</strong></div>
+<div class="line"><strong>Kodak DSCS 3151</strong></div>
+<div class="line"><strong>Kodak DSCS 3152</strong></div>
+<div class="line"><strong>Kodak DSCS 3153</strong></div>
+<div class="line"><strong>Kodak DSCS 3154</strong></div>
+<div class="line"><strong>Kodak DSCS 3155</strong></div>
+<div class="line"><strong>Kodak DSCS 3156</strong></div>
+<div class="line"><strong>Kodak KAI-0311</strong></div>
+<div class="line"><strong>Kodak KAF-2001</strong></div>
+<div class="line"><strong>Kodak KAF-3000</strong></div>
+<div class="line"><strong>Kodak KAI-0372</strong></div>
+<div class="line"><strong>Kodak KAI-1010</strong></div>
+<div class="line"><strong>Eastman Double X Neg 12min</strong></div>
+<div class="line"><strong>Eastman Double X Neg 6min</strong></div>
+<div class="line"><strong>Eastman Double X Neg 5min</strong></div>
+<div class="line"><strong>Eastman Double X Neg 4min</strong></div>
+<div class="line"><strong>Fujifilm F-125</strong></div>
+<div class="line"><strong>Fujifilm F-250</strong></div>
+<div class="line"><strong>Fujifilm F-400</strong></div>
+<div class="line"><strong>Fujifilm FCI</strong></div>
+<div class="line"><strong>Fujifilm FP2900Z</strong></div>
+<div class="line"><strong>Canon Optura 981111</strong></div>
+<div class="line"><strong>Canon Optura 981113</strong></div>
+<div class="line"><strong>Canon Optura 981114</strong></div>
+<div class="line"><strong>Canon Optura 981111.SLRR</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Append Look to Combination / <code class="docutils literal notranslate"><span class="pre">append</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Append the selected Look to the Look Combination</td>
+</tr>
+<tr class="row-odd"><td>Look Combination / <code class="docutils literal notranslate"><span class="pre">lookCombination</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">Specify the look(s) to apply.</div>
+<div class="line">This may be empty, the name of a single look, or a combination of looks using the ‘look syntax’.</div>
+<div class="line">If it is empty, no look is applied.</div>
+<div class="line">Look Syntax:</div>
+<div class="line">Multiple looks are combined with commas: ‘firstlook, secondlook’</div>
+<div class="line">Direction is specified with +/- prefixes: ‘+firstlook, -secondlook’</div>
+<div class="line">Missing look ‘fallbacks’ specified with |: ‘firstlook, -secondlook | -secondlook’</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Direction / <code class="docutils literal notranslate"><span class="pre">direction</span></code></td>
+<td>Choice</td>
+<td>Forward</td>
+<td><div class="first last line-block">
+<div class="line">Transform direction.</div>
+<div class="line"><strong>Forward (forward)</strong></div>
+<div class="line"><strong>Inverse (inverse)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Output Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioOutputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Output data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-even"><td>key1 / <code class="docutils literal notranslate"><span class="pre">key1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value1 / <code class="docutils literal notranslate"><span class="pre">value1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key2 / <code class="docutils literal notranslate"><span class="pre">key2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value2 / <code class="docutils literal notranslate"><span class="pre">value2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key3 / <code class="docutils literal notranslate"><span class="pre">key3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value3 / <code class="docutils literal notranslate"><span class="pre">value3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key4 / <code class="docutils literal notranslate"><span class="pre">key4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value4 / <code class="docutils literal notranslate"><span class="pre">value4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>OCIO config help… / <code class="docutils literal notranslate"><span class="pre">ocioHelpLooks</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Help about the OpenColorIO configuration.</td>
+</tr>
+<tr class="row-odd"><td>Enable GPU Render / <code class="docutils literal notranslate"><span class="pre">enableGPU</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td><div class="first last line-block">
+<div class="line">Enable GPU-based OpenGL render.</div>
+<div class="line">Note that GPU render is not as accurate as CPU render, so this should be enabled with care.</div>
+<div class="line">If the checkbox is checked but is not enabled (i.e. it cannot be unchecked), GPU render can not be enabled or disabled from the plugin and is probably part of the host options.</div>
+<div class="line">If the checkbox is not checked and is not enabled (i.e. it cannot be checked), GPU render is not available on this host.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>(Un)premult / <code class="docutils literal notranslate"><span class="pre">premult</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.</td>
+</tr>
+<tr class="row-odd"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-even"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.PLogLin.html" class="btn btn-neutral float-right" title="PLogLin node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.openfx.OCIOLogConvert.html" class="btn btn-neutral float-left" title="OCIOLogConvert node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

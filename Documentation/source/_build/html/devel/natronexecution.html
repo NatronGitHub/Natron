@@ -1,0 +1,523 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Natron in command-line &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Objects hierarchy Overview" href="natronobjects.html" />
+    <link rel="prev" title="Start-up scripts" href="startupscripts.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="introduction.html">Introduction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="natronpath.html">Natron plug-in paths</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scriptvslabel.html">Python Auto-declared variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="startupscripts.html">Start-up scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="startupscripts.html#examples">Examples</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Natron in command-line</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#general-options">General options:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options-for-the-execution-of-natron-projects">Options for the execution of Natron projects:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options-for-the-execution-of-python-scripts">Options for the execution of Python scripts:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options-for-the-execution-of-the-interpreter-mode">Options for the execution of the interpreter mode:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#with-a-natron-project-ntp-file">With a Natron project (.ntp) file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#with-a-python-script-file">With a Python script file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#with-a-natron-project-file">With a Natron project file:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="natronobjects.html">Objects hierarchy Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="introduction.html">Introduction</a> &raquo;</li>
+        
+      <li>Natron in command-line</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/natronexecution.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="natron-in-command-line">
+<span id="natronexec"></span><h1>Natron in command-line<a class="headerlink" href="#natron-in-command-line" title="Permalink to this headline">¶</a></h1>
+<p>Natron has 3 different execution modes:</p>
+<ul class="simple">
+<li>The execution of Natron projects (.ntp)</li>
+<li>The execution of Python scripts that contain commands for Natron</li>
+<li>An interpreter mode where commands can be given directly to the Python interpreter</li>
+</ul>
+<div class="section" id="general-options">
+<h2>General options:<a class="headerlink" href="#general-options" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong>[–background]</strong> or <strong>[-b]</strong> enables background mode rendering.</dt>
+<dd>No graphical interface will be shown.
+When using <em>NatronRenderer</em> or the <em>-t</em> option this argument is implicit and you don’t need to use it.
+If using Natron and this option is not specified then it will load the project as if opened from the file menu.</dd>
+</dl>
+<p><strong>[–interpreter]</strong> or <strong>[-t]</strong> [optional] <em>&lt;python script file path&gt;</em> enables Python interpreter mode.
+Python commands can be given to the interpreter and executed on the fly.
+An optional Python script filename can be specified to source a script before the interpreter is made accessible.
+Note that Natron will not start rendering any Write node of the sourced script, you must explicitly start it.
+<em>NatronRenderer</em> and <em>Natron</em> will do the same thing in this mode, only the <em>init.py</em> script will be loaded.</p>
+</div>
+<div class="section" id="options-for-the-execution-of-natron-projects">
+<h2>Options for the execution of Natron projects:<a class="headerlink" href="#options-for-the-execution-of-natron-projects" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">&lt;</span><span class="n">project</span> <span class="n">file</span> <span class="n">path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p><strong>``–writer``</strong> or <strong>``-w``</strong> <em>&lt;Writer node script name&gt;</em> [optional] <em>&lt;filename&gt;</em> [optional] <em>&lt;frameRange&gt;</em> specifies a Write node to render.
+When in background mode, the renderer will only try to render with the node script name following this argument.
+If no such node exists in the project file, the process will abort.
+Note that if you don’t pass the <em>–writer</em> argument, it will try to start rendering with all the writers in the project.</p>
+<p>After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g. 10-40).</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>You may only specify absolute file paths with the <em>-i</em> option, things like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">~/</span><span class="n">pictures</span><span class="o">.</span><span class="n">png</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="n">rendered</span><span class="c1">###.exr</span>
+</pre></div>
+</div>
+<p>would not work. This would work on the other hand:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">me</span><span class="o">/</span><span class="n">Images</span><span class="o">/</span><span class="n">pictures</span><span class="o">.</span><span class="n">png</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">me</span><span class="o">/</span><span class="n">Images</span><span class="o">/</span><span class="n">rendered</span><span class="c1">###.exr</span>
+</pre></div>
+</div>
+</div>
+<p>Note that several <em>``-w``</em> options can be set to specify multiple Write nodes to render.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that if specified, then the frame range will be the same for all Write nodes that will render.</p>
+</div>
+<p><strong>``–reader``* or **``-i``</strong> &lt;reader node script name&gt; &lt;filename&gt; :
+Specify the input file/sequence/video to load for the given Reader node.
+If the specified reader node cannot be found, the process will abort.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>You may only specify absolute file paths with the <em>-i</em> option, things like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">~/</span><span class="n">pictures</span><span class="o">.</span><span class="n">png</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="n">rendered</span><span class="c1">###.exr</span>
+</pre></div>
+</div>
+<p>would not work. This would work on the other hand:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">me</span><span class="o">/</span><span class="n">Images</span><span class="o">/</span><span class="n">pictures</span><span class="o">.</span><span class="n">png</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">me</span><span class="o">/</span><span class="n">Images</span><span class="o">/</span><span class="n">rendered</span><span class="c1">###.exr</span>
+</pre></div>
+</div>
+</div>
+<p><strong>``–onload``</strong> or <strong>``-l``</strong> <em>&lt;python script file path&gt;</em> specifies a Python script to be executed
+after a project is created or loaded.
+Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python function
+set to the callback onProjectLoaded or onProjectCreated.
+The same rules apply to this script as the rules below on the execution of Python scripts.</p>
+<p><strong>``–render-stats``</strong> or <strong>``-s``</strong> Enables render statistics that will be produced for each frame in form of a file located
+next to the image produced by the Writer node, with the same name and a <code class="docutils literal notranslate"><span class="pre">-stats.txt</span></code> extension.
+The breakdown contains information about each nodes, render times, etc.
+This option is useful for debugging purposes or to control that a render is working correctly.
+<strong>Please note</strong> that it does not work when writing video files.</p>
+<p>Some examples of usage of the tool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronProjects</span><span class="o">/</span><span class="n">MyProject</span><span class="o">.</span><span class="n">ntp</span>
+
+<span class="n">Natron</span> <span class="o">-</span><span class="n">b</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronProjects</span><span class="o">/</span><span class="n">MyProject</span><span class="o">.</span><span class="n">ntp</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronProjects</span><span class="o">/</span><span class="n">MyProject</span><span class="o">.</span><span class="n">ntp</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">FastDisk</span><span class="o">/</span><span class="n">Pictures</span><span class="o">/</span><span class="n">sequence</span><span class="c1">###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">-</span><span class="n">w</span> <span class="n">MySecondWriter</span> <span class="mi">1</span><span class="o">-</span><span class="mi">10</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronProjects</span><span class="o">/</span><span class="n">MyProject</span><span class="o">.</span><span class="n">ntp</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="mi">1</span><span class="o">-</span><span class="mi">10</span> <span class="o">-</span><span class="n">l</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">Scripts</span><span class="o">/</span><span class="n">onProjectLoaded</span><span class="o">.</span><span class="n">py</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronProjects</span><span class="o">/</span><span class="n">MyProject</span><span class="o">.</span><span class="n">ntp</span>
+</pre></div>
+</div>
+<p>Example of a script passed to –onload:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">NatronEngine</span>
+
+<span class="c1">#Create a writer when loading/creating a project</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.WriteOIIO&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="options-for-the-execution-of-python-scripts">
+<h2>Options for the execution of Python scripts:<a class="headerlink" href="#options-for-the-execution-of-python-scripts" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">&lt;</span><span class="n">Python</span> <span class="n">script</span> <span class="n">path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Note that the following does not apply if the <em>-t</em> option was given.</p>
+<p>The script argument can either be the script of a Group that was exported from the graphical user interface or
+an exported project or even a script written by hand.</p>
+<p>When executing a script, Natron first looks for a function with the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">createInstance</span><span class="p">(</span><span class="n">app</span><span class="p">,</span><span class="n">group</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>If this function is found, the script will be imported as a module and it will be executed.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that when imported, the script will not have access to any external variable declared by Natron
+except the variable passed to the createInstance function.</p>
+</div>
+<p>If this function is not found the whole content of the script will be interpreted as though it were given to Python natively.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In this case the script <strong>can</strong> have access to the external variables declared by Natron.</p>
+</div>
+<p>Either cases, the “app” variable will always be defined and pointing to the correct application instance.
+Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
+When in command-line mode (<em>-b</em> option or NatronRenderer) you must specify the nodes to render.
+If nothing is specified, all Write nodes that were created in the Python script will be rendered.</p>
+<p>You can render specific Write nodes either with the <em>-w</em> option as described above or with the following option:</p>
+<p><strong>[–output]</strong> or <strong>[-o]</strong> <em>&lt;filename&gt;</em> <em>&lt;frameRange&gt;</em> specifies an <em>Output</em> node in the script that should be replaced with a <em>Write</em> node.</p>
+<p>The option looks for a node named <em>Output1</em> in the script and will replace it by a <em>Write</em> node
+much like when creating a Write node in the user interface.</p>
+<p>A filename must be specified, it is the filename of the output files to render.
+Also a frame range must be specified if it was not specified earlier.</p>
+<p>This option can also be used to render out multiple Output nodes, in which case it has to be used like this:</p>
+<p><strong>[–output1]</strong> or <strong>[-o1]</strong> looks for a node named <em>Output1</em>
+<strong>[–output2]</strong> or <strong>[-o2]</strong> looks for a node named <em>Output2</em></p>
+<p>etc…</p>
+<p><strong>-c</strong> or <strong>[ –cmd ]</strong> “PythonCommand” :
+Execute custom Python code passed as a script prior to executing the Python script passed in parameter.
+This option may be used multiple times and each python command will be executed in the order they were given to the command-line.</p>
+<p>Some examples of usage of the tool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronScripts</span><span class="o">/</span><span class="n">MyScript</span><span class="o">.</span><span class="n">py</span>
+
+<span class="n">Natron</span> <span class="o">-</span><span class="n">b</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronScripts</span><span class="o">/</span><span class="n">MyScript</span><span class="o">.</span><span class="n">py</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronScripts</span><span class="o">/</span><span class="n">MyScript</span><span class="o">.</span><span class="n">py</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">o</span> <span class="o">/</span><span class="n">FastDisk</span><span class="o">/</span><span class="n">Pictures</span><span class="o">/</span><span class="n">sequence</span><span class="c1">###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">o1</span> <span class="o">/</span><span class="n">FastDisk</span><span class="o">/</span><span class="n">Pictures</span><span class="o">/</span><span class="n">sequence</span><span class="c1">###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">-</span><span class="n">o</span> <span class="o">/</span><span class="n">FastDisk</span><span class="o">/</span><span class="n">Pictures</span><span class="o">/</span><span class="n">sequence</span><span class="c1">###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="o">/</span><span class="n">FastDisk</span><span class="o">/</span><span class="n">Pictures</span><span class="o">/</span><span class="n">sequence</span><span class="o">.</span><span class="n">mov</span> <span class="mi">1</span><span class="o">-</span><span class="mi">100</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronScripts</span><span class="o">/</span><span class="n">MyScript</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;print </span><span class="se">\&quot;</span><span class="s2">Now executing MyScript.py...</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="options-for-the-execution-of-the-interpreter-mode">
+<h2>Options for the execution of the interpreter mode:<a class="headerlink" href="#options-for-the-execution-of-the-interpreter-mode" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">-</span><span class="n">t</span> <span class="p">[</span><span class="n">optional</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">Python</span> <span class="n">script</span> <span class="n">path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Natron will first source the script passed in argument, if any and then return control to the user.
+In this mode, the user can freely input Python commands that will be interpreted by the Python interpreter shipped with Natron.</p>
+<p>Some examples of usage of the tool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">-</span><span class="n">t</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">t</span>
+
+<span class="n">NatronRenderer</span> <span class="o">-</span><span class="n">t</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Me</span><span class="o">/</span><span class="n">MyNatronScripts</span><span class="o">/</span><span class="n">MyScript</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="example">
+<h1>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h1>
+<p>A typical example would be to convert an input image sequence to another format. There are
+multiple ways to do it from the command-line in Natron and we are going to show them all:</p>
+<ul class="simple">
+<li>Passing a .ntp file to the command line and passing the correct arguments</li>
+<li>Passing a Python script file to the command-line to setup the graph and render</li>
+</ul>
+<div class="section" id="with-a-natron-project-ntp-file">
+<h2>With a Natron project (.ntp) file<a class="headerlink" href="#with-a-natron-project-ntp-file" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="with-a-python-script-file">
+<h2>With a Python script file<a class="headerlink" href="#with-a-python-script-file" title="Permalink to this headline">¶</a></h2>
+<p>We would write a customized Python script that we pass to the command-line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This is the content of myStartupScript.py</span>
+
+<span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createReader</span><span class="p">(</span><span class="s2">&quot;/Users/Toto/Sequences/Sequence__####.exr&quot;</span><span class="p">)</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createWriter</span><span class="p">(</span><span class="s2">&quot;/Users/Toto/Sequences/Sequence.mov&quot;</span><span class="p">)</span>
+
+<span class="c1">#The node will be accessible via app.MyWriter after this call</span>
+<span class="c1">#We do this so that we can reference it from the command-line arguments</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">setScriptName</span><span class="p">(</span><span class="s2">&quot;MyWriter&quot;</span><span class="p">)</span>
+
+<span class="c1">#The node will be accessible via app.MyReader after this call</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">setScriptName</span><span class="p">(</span><span class="s2">&quot;MyReader&quot;</span><span class="p">)</span>
+
+
+<span class="c1">#Set the format type parameter of the Write node to Input Stream Format so that the video</span>
+<span class="c1">#is written to the size of the input images and not to the size of the project</span>
+<span class="n">formatType</span> <span class="o">=</span>  <span class="n">writer</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;formatType&quot;</span><span class="p">)</span>
+<span class="n">formatType</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1">#Connect the Writer to the Reader</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">reader</span><span class="p">)</span>
+
+<span class="c1">#When using Natron (Gui) then the render must explicitly be requested.</span>
+<span class="c1">#Otherwise if using NatronRenderer or Natron -b the render will be automatically started</span>
+<span class="c1">#using the command-line arguments</span>
+
+<span class="c1">#To use with Natron (Gui) to start render</span>
+<span class="c1">#app.render(writer, 10, 20)</span>
+</pre></div>
+</div>
+<p>To launch this script in the background, you can do it like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myStartupScript</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="mi">10</span><span class="o">-</span><span class="mi">20</span>
+</pre></div>
+</div>
+<p>For now the output filename and the input sequence are <em>static</em> and would need to be changed
+by hand to execute this script on another sequence.</p>
+<p>We can customize the Reader filename and Writer filename parameters using the command-line
+arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myStartupScript</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Toto</span><span class="o">/</span><span class="n">Sequences</span><span class="o">/</span><span class="n">AnotherSequence__</span><span class="c1">####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20</span>
+</pre></div>
+</div>
+<p>Let’s imagine that now we would need to also set the frame-rate of the video in output and
+we would need it to vary for each different sequence we are going to transcode.
+This is for the sake of this example, you could also need to modify other parameters in
+a real use-case.</p>
+<p>Since the fps cannot be specified from the command-line arguments, we could do it in Python with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MyWriter</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;fps&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">48</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And change the value in the Python script for each call to the command-line, but that would
+require manual intervention.</p>
+<p>That’s where another option from the command-line comes into play: the <strong>``-c``</strong> option
+(or <code class="docutils literal notranslate"><span class="pre">--cmd</span></code>): It allows to pass custom Python code in form of a string that will be
+executed before the actual script.</p>
+<p>To set the fps from the command-line we could do as such now:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myStartupScript</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;fpsValue=60&quot;</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="mi">10</span><span class="o">-</span><span class="mi">20</span>
+</pre></div>
+</div>
+<p>Which would require the following modifications to the Python script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MyWriter</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;fps&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">fpsValue</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We could also set the same way the Reader and Writer file names:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myStartupScript</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;fpsValue=60; readFileName=</span><span class="se">\&quot;</span><span class="s2">/Users/Toto/Sequences/AnotherSequence__####.exr</span><span class="se">\&quot;</span><span class="s2">; writeFileName=</span><span class="se">\&quot;</span><span class="s2">/Users/Toto/Sequences/mySequence.mov</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>And modify the Python script to take into account the new <em>readFileName</em> and <em>writeFileName</em> parameters:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createReader</span><span class="p">(</span><span class="n">readFileName</span><span class="p">)</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="n">writeFileName</span><span class="p">)</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>The <strong>``-c``</strong> option can be given multiple times to the command-line and each command passed will
+be executed once, in the order they were given.</p>
+</div>
+<div class="section" id="with-a-natron-project-file">
+<h2>With a Natron project file:<a class="headerlink" href="#with-a-natron-project-file" title="Permalink to this headline">¶</a></h2>
+<p>Let’s suppose the user already setup the project via the GUI as such:</p>
+<p>MyReader—&gt;MyWriter</p>
+<p>We can then launch the render from the command-line this way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myProject</span><span class="o">.</span><span class="n">ntp</span> <span class="o">-</span><span class="n">w</span> <span class="n">MyWriter</span> <span class="mi">10</span><span class="o">-</span><span class="mi">20</span>
+</pre></div>
+</div>
+<p>We can customize the Reader filename and Writer filename parameters using the command-line
+arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronRenderer</span>  <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">myProject</span><span class="o">.</span><span class="n">ntp</span> <span class="o">-</span><span class="n">i</span> <span class="n">MyReader</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">Toto</span><span class="o">/</span><span class="n">Sequences</span><span class="o">/</span><span class="n">AnotherSequence__</span><span class="c1">####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="natronobjects.html" class="btn btn-neutral float-right" title="Objects hierarchy Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="startupscripts.html" class="btn btn-neutral float-left" title="Start-up scripts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

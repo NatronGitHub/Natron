@@ -1,0 +1,433 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Keyer node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="MatteMonitor node" href="net.sf.openfx.MatteMonitorPlugin.html" />
+    <link rel="prev" title="HueKeyer node" href="net.sf.openfx.HueKeyer.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ChromaKeyerPlugin.html">ChromaKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Despill.html">Despill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DifferencePlugin.html">Difference node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HueKeyer.html">HueKeyer node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Keyer node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MatteMonitorPlugin.html">MatteMonitor node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.PIK.html">PIK node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.PIKColor.html">PIKColor node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupKeyer.html">Keyer nodes</a> &raquo;</li>
+        
+      <li>Keyer node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.KeyerPlugin.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="keyer-node">
+<span id="net-sf-openfx-keyerplugin"></span><h1>Keyer node<a class="headerlink" href="#keyer-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.KeyerPlugin.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.KeyerPlugin.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of Keyer (net.sf.openfx.KeyerPlugin).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>A collection of simple keyers. These work by computing a foreground key from the RGB values of the input image (see the keyerMode parameter).</p>
+<p>This foreground key is is a scalar from 0 to 1. From the foreground key, a background key (or transparency) is computed.</p>
+<p>The function that maps the foreground key to the background key is piecewise linear:</p>
+<ul class="simple">
+<li>it is 0 below A = (center+toleranceLower+softnessLower)</li>
+<li>it is linear between A = (center+toleranceLower+softnessLower) and B = (center+toleranceLower)</li>
+</ul>
+<p>-it is 1 between B = (center+toleranceLower) and C = (center+toleranceUpper)</p>
+<ul class="simple">
+<li>it is linear between C = (center+toleranceUpper) and D = (center+toleranceUpper+softnessUpper)</li>
+<li>it is 0 above D = (center+toleranceUpper+softnessUpper)</li>
+</ul>
+<p>Keyer can pull mattes that correspond to the RGB channels, the luminance and the red, green and blue colors. One very useful application for a luminance mask is to mask out a sky (almost always it is the brightest thing in a landscape).</p>
+<p>Conversion from A, B, C, D to Keyer parameters is:</p>
+<p>softnessLower = (A-B)</p>
+<p>toleranceLower = (B-C)/2</p>
+<p>center = (B+C)/2</p>
+<p>toleranceUpper = (C-B)/2</p>
+<p>softnessUpper = (D-C)</p>
+<p>See also:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Keyer">http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Keyer</a></li>
+<li><a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=Green_Screen">http://opticalenquiry.com/nuke/index.php?title=Green_Screen</a></li>
+<li><a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=Keying_Tips">http://opticalenquiry.com/nuke/index.php?title=Keying_Tips</a></li>
+</ul>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="3%" />
+<col width="93%" />
+<col width="4%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>The foreground image to key.</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>InM</td>
+<td>The Inside Mask, or holdout matte, or core matte, used to confirm areas that are definitely foreground.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>OutM</td>
+<td>The Outside Mask, or garbage matte, used to remove unwanted objects (lighting rigs, and so on) from the foreground. The Outside Mask has priority over the Inside Mask, so that areas where both are one are considered to be outside.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Bg</td>
+<td>The background image to replace the blue/green screen in the foreground.</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="12%" />
+<col width="2%" />
+<col width="5%" />
+<col width="81%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Key Color / <code class="docutils literal notranslate"><span class="pre">keyColor</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Foreground key color. foreground areas containing the key color are replaced with the background image.</td>
+</tr>
+<tr class="row-odd"><td>Keyer Mode / <code class="docutils literal notranslate"><span class="pre">mode</span></code></td>
+<td>Choice</td>
+<td>Luminance</td>
+<td><div class="first last line-block">
+<div class="line">The operation used to compute the foreground key.</div>
+<div class="line"><strong>Luminance (luminance)</strong>: Use the luminance for keying. The foreground key value is in luminance.</div>
+<div class="line"><strong>Color (color)</strong>: Use the color for keying. If the key color is pure green, this corresponds a green keyer, etc.</div>
+<div class="line"><strong>Screen (screen)</strong>: Use the color minus the other components for keying. If the key color is pure green, this corresponds a greenscreen, etc. When in screen mode, the upper tolerance should be set to 1.</div>
+<div class="line"><strong>None (none)</strong>: No keying, just despill color values. You can control despill areas using either set the inside mask, or use with ‘Source Alpha’ set to ‘Add to Inside Mask’. If ‘Output Mode’ is set to ‘Unpremultiplied’, this despills the image even if no mask is present.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Luminance Math / <code class="docutils literal notranslate"><span class="pre">luminanceMath</span></code></td>
+<td>Choice</td>
+<td>Rec. 709</td>
+<td><div class="first last line-block">
+<div class="line">Formula used to compute luminance from RGB values.</div>
+<div class="line"><strong>Rec. 709 (rec709)</strong>: Use Rec. 709 (0.2126r + 0.7152g + 0.0722b).</div>
+<div class="line"><strong>Rec. 2020 (rec2020)</strong>: Use Rec. 2020 (0.2627r + 0.6780g + 0.0593b).</div>
+<div class="line"><strong>ACES AP0 (acesap0)</strong>: Use ACES AP0 (0.3439664498r + 0.7281660966g + -0.0721325464b).</div>
+<div class="line"><strong>ACES AP1 (acesap1)</strong>: Use ACES AP1 (0.2722287168r + 0.6740817658g + 0.0536895174b).</div>
+<div class="line"><strong>CCIR 601 (ccir601)</strong>: Use CCIR 601 (0.2989r + 0.5866g + 0.1145b).</div>
+<div class="line"><strong>Average (average)</strong>: Use average of r, g, b.</div>
+<div class="line"><strong>Max (max)</strong>: Use max or r, g, b.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Softness (lower) / <code class="docutils literal notranslate"><span class="pre">softnessLower</span></code></td>
+<td>Double</td>
+<td>-0.5</td>
+<td>Width of the lower softness range [key-tolerance-softness,key-tolerance]. Background key value goes from 0 to 1 when foreground key is over this range.</td>
+</tr>
+<tr class="row-even"><td>Tolerance (lower) / <code class="docutils literal notranslate"><span class="pre">toleranceLower</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Width of the lower tolerance range [key-tolerance,key]. Background key value is 1 when foreground key is over this range.</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">center</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Foreground key value forresponding to the key color, where the background key should be 1.</td>
+</tr>
+<tr class="row-even"><td>Tolerance (upper) / <code class="docutils literal notranslate"><span class="pre">toleranceUpper</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Width of the upper tolerance range [key,key+tolerance]. Background key value is 1 when foreground key is over this range. Ignored in Screen keyer mode.</td>
+</tr>
+<tr class="row-odd"><td>Softness (upper) / <code class="docutils literal notranslate"><span class="pre">softnessUpper</span></code></td>
+<td>Double</td>
+<td>0.5</td>
+<td>Width of the upper softness range [key+tolerance,key+tolerance+softness]. Background key value goes from 1 to 0 when foreground key is over this range. Ignored in Screen keyer mode.</td>
+</tr>
+<tr class="row-even"><td>Despill / <code class="docutils literal notranslate"><span class="pre">despill</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Reduces color spill on the foreground object (Screen mode only). Between 0 and 1, only mixed foreground/background regions are despilled. Above 1, foreground regions are despilled too.</td>
+</tr>
+<tr class="row-odd"><td>Despill Angle / <code class="docutils literal notranslate"><span class="pre">despillAngle</span></code></td>
+<td>Double</td>
+<td>120</td>
+<td>Opening of the cone centered around the keyColor where colors are despilled. A larger angle means that more colors are modified.</td>
+</tr>
+<tr class="row-even"><td>Output Mode / <code class="docutils literal notranslate"><span class="pre">show</span></code></td>
+<td>Choice</td>
+<td>Intermediate</td>
+<td><div class="first last line-block">
+<div class="line">What image to output.</div>
+<div class="line"><strong>Intermediate (intermediate)</strong>: Color is the source color. Alpha is the foreground key. Use for multi-pass keying.</div>
+<div class="line"><strong>Premultiplied (premultiplied)</strong>: Color is the Source color after key color suppression, multiplied by alpha. Alpha is the foreground key.</div>
+<div class="line"><strong>Unpremultiplied (unpremultiplied)</strong>: Color is the Source color after key color suppression. Alpha is the foreground key.</div>
+<div class="line"><strong>Composite (composite)</strong>: Color is the composite of Source and Bg. Alpha is the foreground key.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Source Alpha / <code class="docutils literal notranslate"><span class="pre">sourceAlphaHandling</span></code></td>
+<td>Choice</td>
+<td>Ignore</td>
+<td><div class="first last line-block">
+<div class="line">How the alpha embedded in the Source input should be used</div>
+<div class="line"><strong>Ignore (ignore)</strong>: Ignore the source alpha.</div>
+<div class="line"><strong>Add to Inside Mask (inside)</strong>: Source alpha is added to the inside mask. Use for multi-pass keying.</div>
+<div class="line"><strong>Normal (normal)</strong>: Foreground key is multiplied by source alpha when compositing.</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.MatteMonitorPlugin.html" class="btn btn-neutral float-right" title="MatteMonitor node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.HueKeyer.html" class="btn btn-neutral float-left" title="HueKeyer node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

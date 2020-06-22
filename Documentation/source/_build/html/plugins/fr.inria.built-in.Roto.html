@@ -1,0 +1,581 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Roto node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="RotoPaint node" href="fr.inria.built-in.RotoPaint.html" />
+    <link rel="prev" title="Rectangle node" href="net.sf.openfx.Rectangle.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.LightWrap.html">LightWrap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgNoise.html">Noise node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgPlasma.html">Plasma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Radial.html">Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Ramp.html">Ramp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Noise.html">Rand node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Rectangle.html">Rectangle node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Roto node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.RotoPaint.html">RotoPaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SeGrain.html">SeGrain node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SeNoise.html">SeNoise node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Text.html">Text node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupDraw.html">Draw nodes</a> &raquo;</li>
+        
+      <li>Roto node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.built-in.Roto.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="roto-node">
+<span id="fr-inria-built-in-roto"></span><h1>Roto node<a class="headerlink" href="#roto-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of Roto (fr.inria.built-in.Roto).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Create masks and shapes</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="43%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Bg</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Bg2</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>Bg3</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Bg4</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="13%" />
+<col width="3%" />
+<col width="13%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Opacity / <code class="docutils literal notranslate"><span class="pre">opacity</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Controls the opacity of the selected shape(s).</td>
+</tr>
+<tr class="row-odd"><td>Color / <code class="docutils literal notranslate"><span class="pre">color</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1</td>
+<td>The color of the shape. This parameter is used when the output components are set to RGBA.</td>
+</tr>
+<tr class="row-even"><td>Life Time / <code class="docutils literal notranslate"><span class="pre">lifeTime</span></code></td>
+<td>Choice</td>
+<td>All</td>
+<td><div class="first last line-block">
+<div class="line">Controls the life-time of the shape/stroke</div>
+<div class="line"><strong>All</strong>: All frames</div>
+<div class="line"><strong>Single</strong>: Only for the specified frame</div>
+<div class="line"><strong>From start</strong>: From the start of the sequence up to the specified frame</div>
+<div class="line"><strong>To end</strong>: From the specified frame to the end of the sequence</div>
+<div class="line"><strong>Custom</strong>: Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Activated / <code class="docutils literal notranslate"><span class="pre">activated</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Controls whether the selected shape(s) should be rendered or not.Note that you can animate this parameter so you can activate/deactivate the shape throughout the time.</td>
+</tr>
+<tr class="row-even"><td>Feather / <code class="docutils literal notranslate"><span class="pre">feather</span></code></td>
+<td>Double</td>
+<td>1.5</td>
+<td>Controls the distance of feather (in pixels) to add around the selected shape(s)</td>
+</tr>
+<tr class="row-odd"><td>Feather fall-off / <code class="docutils literal notranslate"><span class="pre">featherFallOff</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Controls the rate at which the feather is applied on the selected shape(s).</td>
+</tr>
+<tr class="row-even"><td>Source / <code class="docutils literal notranslate"><span class="pre">sourceType</span></code></td>
+<td>Choice</td>
+<td>background</td>
+<td><div class="first last line-block">
+<div class="line">Source color used for painting the stroke when the Reveal/Clone tools are used.</div>
+<div class="line"><strong>foreground</strong>: The painted result at this point in the hierarchy.</div>
+<div class="line"><strong>background</strong>: The original image unpainted connected to bg.</div>
+<div class="line"><strong>background 2</strong>: The original image unpainted connected to bg1.</div>
+<div class="line"><strong>background 3</strong>: The original image unpainted connected to bg2.</div>
+<div class="line"><strong>background 4</strong>: The original image unpainted connected to bg3.</div>
+<div class="line"><strong>background 5</strong>: The original image unpainted connected to bg4.</div>
+<div class="line"><strong>background 6</strong>: The original image unpainted connected to bg5.</div>
+<div class="line"><strong>background 7</strong>: The original image unpainted connected to bg6.</div>
+<div class="line"><strong>background 8</strong>: The original image unpainted connected to bg7.</div>
+<div class="line"><strong>background 9</strong>: The original image unpainted connected to bg8.</div>
+<div class="line"><strong>background 10</strong>: The original image unpainted connected to bg9.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Translate / <code class="docutils literal notranslate"><span class="pre">cloneTranslate</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Rotate / <code class="docutils literal notranslate"><span class="pre">cloneRotate</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Scale / <code class="docutils literal notranslate"><span class="pre">cloneScale</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Uniform / <code class="docutils literal notranslate"><span class="pre">cloneUniform</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Skew X / <code class="docutils literal notranslate"><span class="pre">cloneSkewx</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Skew Y / <code class="docutils literal notranslate"><span class="pre">cloneSkewy</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Skew Order / <code class="docutils literal notranslate"><span class="pre">cloneSkewOrder</span></code></td>
+<td>Choice</td>
+<td>XY</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>XY</strong></div>
+<div class="line"><strong>YX</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Center / <code class="docutils literal notranslate"><span class="pre">cloneCenter</span></code></td>
+<td>Double</td>
+<td>x: 0.5 y: 0.5</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Reset Center / <code class="docutils literal notranslate"><span class="pre">resetCloneCenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reset the clone transform center</td>
+</tr>
+<tr class="row-even"><td>Reset Transform / <code class="docutils literal notranslate"><span class="pre">resetCloneTransform</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reset the clone transform to an identity</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">cloneFilter</span></code></td>
+<td>Choice</td>
+<td>Cubic</td>
+<td><div class="first last line-block">
+<div class="line">Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+).</div>
+<div class="line"><strong>Impulse</strong>: (nearest neighbor / box) Use original values.</div>
+<div class="line"><strong>Bilinear</strong>: (tent / triangle) Bilinear interpolation between original values.</div>
+<div class="line"><strong>Cubic</strong>: (cubic spline) Some smoothing.</div>
+<div class="line"><strong>Keys</strong>: (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*).</div>
+<div class="line"><strong>Simon</strong>: Some smoothing, plus medium sharpening (*).</div>
+<div class="line"><strong>Rifman</strong>: Some smoothing, plus significant sharpening (*).</div>
+<div class="line"><strong>Mitchell</strong>: Some smoothing, plus blurring to hide pixelation (*)(+).</div>
+<div class="line"><strong>Parzen</strong>: (cubic B-spline) Greatest smoothing of all filters (+).</div>
+<div class="line"><strong>Notch</strong>: Flat smoothing (which tends to hide moire’ patterns) (+).</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Black Outside / <code class="docutils literal notranslate"><span class="pre">blackOutside</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Fill the area outside the source image with black</td>
+</tr>
+<tr class="row-odd"><td>Clone time offset / <code class="docutils literal notranslate"><span class="pre">timeOffset</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>When the Clone tool is used, this determines depending on the time offset mode the source frame to clone. When in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame.</td>
+</tr>
+<tr class="row-even"><td>Mode / <code class="docutils literal notranslate"><span class="pre">timeOffsetMode</span></code></td>
+<td>Choice</td>
+<td>Relative</td>
+<td><div class="first last line-block">
+<div class="line">Time offset mode: when in absolute mode, this is the frame number of the source, when in relative mode, this is an offset relative to the current frame.</div>
+<div class="line"><strong>Relative</strong></div>
+<div class="line"><strong>Absolute</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Brush Size / <code class="docutils literal notranslate"><span class="pre">brushSize</span></code></td>
+<td>Double</td>
+<td>25</td>
+<td>This is the diameter of the brush in pixels. Shift + drag on the viewer to modify this value</td>
+</tr>
+<tr class="row-even"><td>Brush Spacing / <code class="docutils literal notranslate"><span class="pre">brushSpacing</span></code></td>
+<td>Double</td>
+<td>0.1</td>
+<td>Spacing between stamps of the paint brush</td>
+</tr>
+<tr class="row-odd"><td>Brush Hardness / <code class="docutils literal notranslate"><span class="pre">brushHardness</span></code></td>
+<td>Double</td>
+<td>0.2</td>
+<td>Fall off of the brush effect from the center to the edge</td>
+</tr>
+<tr class="row-even"><td>Brush effect / <code class="docutils literal notranslate"><span class="pre">brushEffect</span></code></td>
+<td>Double</td>
+<td>15</td>
+<td>The strength of the effect</td>
+</tr>
+<tr class="row-odd"><td>Opacity / <code class="docutils literal notranslate"><span class="pre">pressureOpacity</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Alters the opacity of the paint brush proportionate to changes in pen pressure</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">pressureSize</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Alters the size of the paint brush proportionate to changes in pen pressure</td>
+</tr>
+<tr class="row-odd"><td>Hardness / <code class="docutils literal notranslate"><span class="pre">pressureHardness</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Alters the hardness of the paint brush proportionate to changes in pen pressure</td>
+</tr>
+<tr class="row-even"><td>Build-up / <code class="docutils literal notranslate"><span class="pre">buildUp</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the paint stroke builds up when painted over itself</td>
+</tr>
+<tr class="row-odd"><td>Visible portion / <code class="docutils literal notranslate"><span class="pre">strokeVisiblePortion</span></code></td>
+<td>Double</td>
+<td>start: 0 end: 1</td>
+<td>Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end.</td>
+</tr>
+<tr class="row-even"><td>Translate / <code class="docutils literal notranslate"><span class="pre">translate</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Rotate / <code class="docutils literal notranslate"><span class="pre">rotate</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Scale / <code class="docutils literal notranslate"><span class="pre">scale</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Uniform / <code class="docutils literal notranslate"><span class="pre">uniform</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Skew X / <code class="docutils literal notranslate"><span class="pre">skewx</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Skew Y / <code class="docutils literal notranslate"><span class="pre">skewy</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Skew Order / <code class="docutils literal notranslate"><span class="pre">skewOrder</span></code></td>
+<td>Choice</td>
+<td>XY</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>XY</strong></div>
+<div class="line"><strong>YX</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">center</span></code></td>
+<td>Double</td>
+<td>x: 0.5 y: 0.5</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Reset Center / <code class="docutils literal notranslate"><span class="pre">resetTransformCenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reset the transform center</td>
+</tr>
+<tr class="row-odd"><td>Interactive / <code class="docutils literal notranslate"><span class="pre">RotoTransformInteractive</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>When check, modifying the transform will directly render the shape in the viewer. When unchecked, modifications are applied when releasing the mouse button.</td>
+</tr>
+<tr class="row-even"><td>Extra Matrix / <code class="docutils literal notranslate"><span class="pre">extraMatrix</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 0 z: 0 w: 0 &nbsp;: 1 &nbsp;: 0 &nbsp;: 0 &nbsp;: 0 &nbsp;: 1</td>
+<td>This matrix gets concatenated to the transform resulting from the parameter above.</td>
+</tr>
+<tr class="row-odd"><td>Reset Transform / <code class="docutils literal notranslate"><span class="pre">resetTransform</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reset the transform to an identity</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.built-in.RotoPaint.html" class="btn btn-neutral float-right" title="RotoPaint node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.Rectangle.html" class="btn btn-neutral float-left" title="Rectangle node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

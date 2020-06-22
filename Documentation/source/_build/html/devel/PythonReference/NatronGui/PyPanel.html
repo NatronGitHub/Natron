@@ -1,0 +1,637 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyPanel &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PyTabWidget" href="PyTabWidget.html" />
+    <link rel="prev" title="PyModalDialog" href="PyModalDialog.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>PyPanel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/PyPanel.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="pypanel">
+<span id="id1"></span><h1>PyPanel<a class="headerlink" href="#pypanel" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> :<cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite> <a class="reference internal" href="../NatronEngine/UserParamHolder.html"><span class="doc">UserParamHolder</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A custom PySide pane that can be docked into <a class="reference internal" href="PyTabWidget.html"><span class="doc">PyTabWidget</span></a>.
+See <a class="reference internal" href="#pypanel-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.PyPanel" title="NatronGui.NatronGui.PyPanel.PyPanel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PyPanel</span></code></a> (scriptName,label,useUserParameters,app)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.addWidget" title="NatronGui.NatronGui.PyPanel.addWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addWidget</span></code></a> (widget)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.getPanelLabel" title="NatronGui.NatronGui.PyPanel.getPanelLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPanelLabel</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.getPanelScriptName" title="NatronGui.NatronGui.PyPanel.getPanelScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPanelScriptName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.getParam" title="NatronGui.NatronGui.PyPanel.getParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParam</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.getParams" title="NatronGui.NatronGui.PyPanel.getParams"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParams</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.insertWidget" title="NatronGui.NatronGui.PyPanel.insertWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">insertWidget</span></code></a> (index,widget)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.onUserDataChanged" title="NatronGui.NatronGui.PyPanel.onUserDataChanged"><code class="xref py py-meth docutils literal notranslate"><span class="pre">onUserDataChanged</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.setParamChangedCallback" title="NatronGui.NatronGui.PyPanel.setParamChangedCallback"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setParamChangedCallback</span></code></a> (callback)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.setPanelLabel" title="NatronGui.NatronGui.PyPanel.setPanelLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPanelLabel</span></code></a> (label)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.restore" title="NatronGui.NatronGui.PyPanel.restore"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restore</span></code></a> (data)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="pypanel-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#"><span class="doc">PyPanel</span></a> class can be used to implement custom PySide widgets that can then be
+inserted as tabs into <a class="reference internal" href="PyTabWidget.html"><span class="doc">tab-widgets</span></a> .</p>
+<p>There are 2 possible usage of this class:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Sub-class it and create your own GUI using <a class="reference external" href="http://qt-project.org/wiki/PySideDocumentation">PySide</a></li>
+<li>Use the API proposed by <a class="reference internal" href="#"><span class="doc">PyPanel</span></a> to add custom user <a class="reference internal" href="../NatronEngine/Param.html"><span class="doc">parameters</span></a> as done for <a class="reference internal" href="PyModalDialog.html"><span class="doc">PyModalDialog</span></a>.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="sub-classing">
+<h3>Sub-classing:<a class="headerlink" href="#sub-classing" title="Permalink to this headline">¶</a></h3>
+<p>When sub-classing the <a class="reference internal" href="#"><span class="doc">PyPanel</span></a> class, you should specify when calling the base class
+constructor that you do not want to use user parameters, as this might conflict with the
+layout that you will use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyPanel</span><span class="p">(</span><span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="n">scriptName</span><span class="p">,</span><span class="n">label</span><span class="p">,</span><span class="n">app</span><span class="p">):</span>
+        <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">scriptName</span><span class="p">,</span><span class="n">label</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>You’re then free to use all features proposed by <a class="reference external" href="http://qt-project.org/wiki/PySideDocumentation">PySide</a>
+in your class, including <a class="reference external" href="http://qt-project.org/wiki/Signals_and_Slots_in_PySide">signal/slots</a>
+See the following <a class="reference internal" href="../../pysidePanelExample.html#pysideexample"><span class="std std-ref">example</span></a>.</p>
+</div>
+<div class="section" id="using-the-pypanel-api">
+<h3>Using the PyPanel API:<a class="headerlink" href="#using-the-pypanel-api" title="Permalink to this headline">¶</a></h3>
+<p>You can start adding user parameters using all the <code class="xref py py-func docutils literal notranslate"><span class="pre">createXParam</span></code> functions inherited from the <a class="reference internal" href="../NatronEngine/UserParamHolder.html"><span class="doc">UserParamHolder</span></a> class.</p>
+<p>Once all your parameters are created, create the GUI for them using the <code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">panel</span> <span class="o">=</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.mypanel&quot;</span><span class="p">,</span><span class="s2">&quot;My Panel&quot;</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+<span class="n">myInteger</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">createIntParam</span><span class="p">(</span><span class="s2">&quot;myInt&quot;</span><span class="p">,</span><span class="s2">&quot;This is an integer very important&quot;</span><span class="p">)</span>
+<span class="n">myInteger</span><span class="o">.</span><span class="n">setAnimationEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">myInteger</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1">#Create a boolean on the same line</span>
+<span class="n">myBoolean</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">createBooleanParam</span><span class="p">(</span><span class="s2">&quot;myBool&quot;</span><span class="p">,</span><span class="s2">&quot;Yet another important boolean&quot;</span><span class="p">)</span>
+
+<span class="n">panel</span><span class="o">.</span><span class="n">refreshUserParamsGUI</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can then retrieve the value of a parameter at any time using the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.getParam" title="NatronGui.NatronGui.PyPanel.getParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(scriptName)</span></code></a> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">intValue</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;myInt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">boolValue</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;myBool&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Unlike the <a class="reference internal" href="../NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> class, parameters on panels are not automatically declared by Natron,
+which means you cannot do stuff like <em>panel.intValue</em></p>
+</div>
+<p>You can get notified when a parameter’s value changed, by setting a callback using the
+<a class="reference internal" href="#NatronGui.NatronGui.PyPanel.setParamChangedCallback" title="NatronGui.NatronGui.PyPanel.setParamChangedCallback"><code class="xref py py-func docutils literal notranslate"><span class="pre">setParamChangedCallback(callback)</span></code></a> function that takes
+the name of a Python-defined function in parameters.
+The variable <strong>thisParam</strong> will be declared prior to calling the callback, referencing the parameter
+which just had its value changed.</p>
+</div>
+<div class="section" id="managing-the-panel">
+<h3>Managing the panel:<a class="headerlink" href="#managing-the-panel" title="Permalink to this headline">¶</a></h3>
+<p>Once created, you must add your panel to a <a class="reference internal" href="PyTabWidget.html"><span class="doc">PyTabWidget</span></a> so it can be visible.
+Use the <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.getTabWidget" title="NatronGui.NatronGui.GuiApp.getTabWidget"><code class="xref py py-func docutils literal notranslate"><span class="pre">getTabWidget(scriptName)</span></code></a> function to get a
+particular pane and then use the <a class="reference internal" href="PyTabWidget.html#NatronGui.NatronGui.PyTabWidget.appendTab" title="NatronGui.NatronGui.PyTabWidget.appendTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">appendTab(tab)</span></code></a> function
+to add this panel to the pane.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that the lifetime of the widget will be by default the same as the project’s GUI
+because <a class="reference internal" href="#"><span class="doc">PyPanel</span></a> is <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> by Natron.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">panel</span> <span class="o">=</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.mypanel&quot;</span><span class="p">,</span><span class="s2">&quot;My Panel&quot;</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="o">...</span>
+<span class="n">pane</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getTabWidget</span><span class="p">(</span><span class="s2">&quot;pane1&quot;</span><span class="p">)</span>
+<span class="n">pane</span><span class="o">.</span><span class="n">appendTab</span><span class="p">(</span><span class="n">panel</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mypanel</span> <span class="o">=</span> <span class="n">panel</span>
+</pre></div>
+</div>
+<p>If you want the panel to persist in the project so that it gets recreated and placed at its original position
+when the user loads the project, you must use the <code class="xref py py-func docutils literal notranslate"><span class="pre">registerPythonPanel(panel,function)</span></code> function.</p>
+<p>Note that the <em>function</em> parameter is the <strong>name</strong> of a Python-defined function that takes no parameter used to create the widget, e.g.:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>def createMyPanel():</dt>
+<dd>panel = NatronGui.PyPanel(“MyPanel”,True,app)
+…
+#Make it live after the scope of the function
+app.mypanel = panel</dd>
+</dl>
+<p>app.registerPythonPanel(app.mypanel,”createMyPanel”)</p>
+</div></blockquote>
+<p>This function will also add a custom menu entry to the “Manage layout” button (located in the top-left hand
+corner of every pane) which the user can trigger to move the custom pane on the selected pane.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../_images/customPaneEntry.png"><img alt="../../../_images/customPaneEntry.png" src="../../../_images/customPaneEntry.png" style="width: 600px;" /></a>
+</div>
+</div>
+<div class="section" id="saving-and-restoring-state">
+<span id="panelserialization"></span><h3>Saving and restoring state:<a class="headerlink" href="#saving-and-restoring-state" title="Permalink to this headline">¶</a></h3>
+<p>When the panel is registered in the project using the  <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.registerPythonPanel" title="NatronGui.NatronGui.GuiApp.registerPythonPanel"><code class="xref py py-func docutils literal notranslate"><span class="pre">registerPythonPanel(panel,function)</span></code></a> function,
+you may want to also save the state of your widgets and/or special values.</p>
+<p>To do so, you must sub-class <code class="xref py py-class docutils literal notranslate"><span class="pre">PyPanel</span></code> and implement the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> and
+<a class="reference internal" href="#NatronGui.NatronGui.PyPanel.restore" title="NatronGui.NatronGui.PyPanel.restore"><code class="xref py py-func docutils literal notranslate"><span class="pre">restore(data)</span></code></a> functions.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">User parameters, if used, will be automatically saved and restored, you don’t have to save it yourself.
+Hence if the panel is only composed of user parameters that you want to save, you do not need to sub-class
+PyPanel as it will be done automatically for you.</p>
+</div>
+<p>The function <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> should return a <code class="xref py py-class docutils literal notranslate"><span class="pre">string</span></code> containing the serialization of your
+custom data.</p>
+<p>The function <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.restore" title="NatronGui.NatronGui.PyPanel.restore"><code class="xref py py-func docutils literal notranslate"><span class="pre">restore(data)</span></code></a> will be called upon loading of a project containing
+an instance of your panel. You should then restore the state of the panel from your custom serialized data.</p>
+<p>Note that the auto-save of Natron occurs in a separate thread and for this reason it cannot call directly
+your <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> function because it might create a race condition if the user is
+actively modifying the user interface using the main-thread.</p>
+<p>To overcome this, Natron has an hidden thread-safe way to recover the data you have serialized using the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> function.
+The downside is that you have to call the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.onUserDataChanged" title="NatronGui.NatronGui.PyPanel.onUserDataChanged"><code class="xref py py-func docutils literal notranslate"><span class="pre">onUserDataChanged()</span></code></a> function whenever
+a value that you want to be persistent has changed (unless this is a user parameter in which case you do not need to call it).</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you do not call   <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.onUserDataChanged" title="NatronGui.NatronGui.PyPanel.onUserDataChanged"><code class="xref py py-func docutils literal notranslate"><span class="pre">onUserDataChanged()</span></code></a>, the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> function
+will never be called, and the data never serialized.</p>
+</div>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.PyPanel">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">PyPanel</code><span class="sig-paren">(</span><em>label</em>, <em>useUserParameters</em>, <em>app</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.PyPanel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>useUserParameters</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+<li><strong>app</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">GuiApp</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Make a new PyPanel with the given <em>label</em> that will be used to display in the tab header.
+If <em>useUserParameters</em> is True then user parameters support will be activated,
+attempting to modify the underlying layout in these circumstances will result in undefined behaviour.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.addWidget">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">addWidget</code><span class="sig-paren">(</span><em>widget</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.addWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>widget</strong> – <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Append a <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite> inherited <em>widget</em> at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+that will be inserted <strong>after</strong> any custom parameter.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.getParam">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">getParam</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.getParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the user parameter with the given <em>scriptName</em> if it exists or <em>None</em> otherwise.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.getParams">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">getParams</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.getParams" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns all the user parameters used by the panel.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.insertWidget">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">insertWidget</code><span class="sig-paren">(</span><em>index</em>, <em>widget</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.insertWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>widget</strong> – <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Inserts a <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite> inherited <em>widget</em> at the given <em>index</em> of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+The widget will always be inserted <strong>after</strong> any user parameter.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.setParamChangedCallback">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">setParamChangedCallback</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.setParamChangedCallback" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>callback</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Registers the given Python <a class="reference internal" href="../../callbacks.html#callbacks"><span class="std std-ref">callback</span></a> to be called whenever a user parameter changed.
+The parameter <em>callback</em> is a string that should contain the name of a Python function.</p>
+<p>The signature of the <a class="reference internal" href="../../callbacks.html#callbacks"><span class="std std-ref">callback</span></a> used on <a class="reference internal" href="PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>paramName</strong> indicating the <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">script-name</span></a> of the parameter which just had its value changed.</li>
+<li><strong>app</strong> : This variable will be set so it points to the correct <a class="reference internal" href="../NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>userEdited</strong> : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
+the value by theirself) or due to another parameter changing the value of the parameter
+via a derivative of the <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> function.</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">myParamChangedCallback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;myInt&quot;</span><span class="p">:</span>
+        <span class="n">intValue</span> <span class="o">=</span> <span class="n">thisParam</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">intValue</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">myBoolean</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">panel</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;myParamChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.setPanelLabel">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">setPanelLabel</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.setPanelLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>callback</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the label of the panel as it will be displayed on the tab header of the <a class="reference internal" href="PyTabWidget.html"><span class="doc">PyTabWidget</span></a>.
+This name should be unique.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.getPanelLabel">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">getPanelLabel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.getPanelLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Get the label of the panel as displayed on the tab header of the <a class="reference internal" href="PyTabWidget.html"><span class="doc">PyTabWidget</span></a>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.getPanelScriptName">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">getPanelScriptName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.getPanelScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Get the script-name of the panel as used internally. This is a unique string identifying the tab in Natron.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.onUserDataChanged">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">onUserDataChanged</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.onUserDataChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Callback to be called whenever a parameter/value (that is not a user parameter) that you want to be
+saved has changed.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you do not call   <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.onUserDataChanged" title="NatronGui.NatronGui.PyPanel.onUserDataChanged"><code class="xref py py-func docutils literal notranslate"><span class="pre">onUserDataChanged()</span></code></a>, the <code class="xref py py-func docutils literal notranslate"><span class="pre">save()NatronGui.PyPanel.save()</span></code> function
+will never be called, and the data never serialized.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should be used exclusively when the widget was created using <em>useUserParameters = True</em></p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.save">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.save" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">You should overload this function in a derived class. The base version does nothing.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">User parameters, if used, will be automatically saved and restored, you don’t have to save it yourself.
+Hence if the panel is only composed of user parameters that you want to save, you do not need to sub-class
+PyPanel as it will be done automatically for you.</p>
+</div>
+<p>Returns a string with the serialization of your custom data you need to be persistent.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyPanel.restore">
+<code class="descclassname">NatronGui.PyPanel.</code><code class="descname">restore</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyPanel.restore" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">You should overload this function in a derived class. The base version does nothing.</p>
+</div>
+<p>This function should restore the state of your custom <a class="reference internal" href="#"><span class="doc">PyPanel</span></a> using the custom <em>data</em>
+that you serialized.
+The <em>data</em> are exactly the return value that was returned from the <a class="reference internal" href="#NatronGui.NatronGui.PyPanel.save" title="NatronGui.NatronGui.PyPanel.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a>  function.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PyTabWidget.html" class="btn btn-neutral float-right" title="PyTabWidget" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PyModalDialog.html" class="btn btn-neutral float-left" title="PyModalDialog" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

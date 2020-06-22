@@ -1,0 +1,585 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>RectI &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Roto" href="Roto.html" />
+    <link rel="prev" title="RectD" href="RectD.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>RectI</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/RectI.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="recti">
+<span id="id1"></span><h1>RectI<a class="headerlink" href="#recti" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A rectangle defined with integer precision. See <a class="reference internal" href="#rectidtails"><span class="std std-ref">detailed</span></a> description below</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.bottom" title="NatronEngine.NatronEngine.RectI.bottom"><code class="xref py py-meth docutils literal notranslate"><span class="pre">bottom</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.clear" title="NatronEngine.NatronEngine.RectI.clear"><code class="xref py py-meth docutils literal notranslate"><span class="pre">clear</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.contains" title="NatronEngine.NatronEngine.RectI.contains"><code class="xref py py-meth docutils literal notranslate"><span class="pre">contains</span></code></a> (otherRect)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.height" title="NatronEngine.NatronEngine.RectI.height"><code class="xref py py-meth docutils literal notranslate"><span class="pre">height</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.intersect" title="NatronEngine.NatronEngine.RectI.intersect"><code class="xref py py-meth docutils literal notranslate"><span class="pre">intersect</span></code></a> (otherRect)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.intersects" title="NatronEngine.NatronEngine.RectI.intersects"><code class="xref py py-meth docutils literal notranslate"><span class="pre">intersects</span></code></a> (otherRect)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.isInfinite" title="NatronEngine.NatronEngine.RectI.isInfinite"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isInfinite</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.isNull" title="NatronEngine.NatronEngine.RectI.isNull"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isNull</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.left" title="NatronEngine.NatronEngine.RectI.left"><code class="xref py py-meth docutils literal notranslate"><span class="pre">left</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.merge" title="NatronEngine.NatronEngine.RectI.merge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge</span></code></a> (otherRect)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.right" title="NatronEngine.NatronEngine.RectI.right"><code class="xref py py-meth docutils literal notranslate"><span class="pre">right</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set" title="NatronEngine.NatronEngine.RectI.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span></code></a> (x1,y1,x2,y2)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set_bottom" title="NatronEngine.NatronEngine.RectI.set_bottom"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_bottom</span></code></a> (y1)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set_left" title="NatronEngine.NatronEngine.RectI.set_left"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_left</span></code></a> (x1)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set_right" title="NatronEngine.NatronEngine.RectI.set_right"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_right</span></code></a> (x2)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set_top" title="NatronEngine.NatronEngine.RectI.set_top"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_top</span></code></a> (y2)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.top" title="NatronEngine.NatronEngine.RectI.top"><code class="xref py py-meth docutils literal notranslate"><span class="pre">top</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.translate" title="NatronEngine.NatronEngine.RectI.translate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">translate</span></code></a> (dx,dy)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.width" title="NatronEngine.NatronEngine.RectI.width"><code class="xref py py-meth docutils literal notranslate"><span class="pre">width</span></code></a> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="rectidtails"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>A rectangle where x1 &lt; x2 and y1 &lt; y2 such as width() == (x2 - x1) &amp;&amp; height() == (y2 - y1)
+(x1,y1) is are the coordinates of the bottom left corner of the rectangle.
+The last element valid in the y dimension is y2 - 1 and the last valid in the x dimension is x2 - 1.
+x1,x2,y1 and y2 are with integer precision.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.bottom">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">bottom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.bottom" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the bottom edge, that is the</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.clear">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.RectI.set" title="NatronEngine.NatronEngine.RectI.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set</span></code></a> (0,0,0,0)</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.contains">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">contains</code><span class="sig-paren">(</span><em>otherRect</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.contains" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>otherRect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if <em>otherRect</em> is contained in or equals this rectangle, that is if:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">otherRect</span><span class="o">.</span><span class="n">x1</span> <span class="o">&gt;=</span> <span class="n">x1</span> <span class="ow">and</span>
+<span class="n">otherRect</span><span class="o">.</span><span class="n">y1</span> <span class="o">&gt;=</span> <span class="n">y1</span> <span class="ow">and</span>
+<span class="n">otherRect</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="n">x2</span> <span class="ow">and</span>
+<span class="n">otherRect</span><span class="o">.</span><span class="n">y2</span> <span class="o">&lt;=</span> <span class="n">y2</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.height">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">height</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.height" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the height of the rectangle, that is: y2 - y1</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.intersect">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">intersect</code><span class="sig-paren">(</span><em>otherRect</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.intersect" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>otherRect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the intersection between this rectangle and <em>otherRect</em>. If the intersection is empty,
+the return value will have the <code class="xref py py-func docutils literal notranslate"><span class="pre">isNull()</span></code> function return True.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.intersects">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">intersects</code><span class="sig-paren">(</span><em>otherRect</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.intersects" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>otherRect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if rectangle and <em>otherRect</em> intersect.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.isInfinite">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">isInfinite</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.isInfinite" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if this rectangle is considered to cover an infinite area. Some generator
+effects use this to indicate that they can potentially generate an image of infinite size.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.isNull">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">isNull</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.isNull" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns true if x2 &lt;= x1 or y2 &lt;= y1</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.left">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">left</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.left" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns x1, that is the position of the left edge of the rectangle.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.merge">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">merge</code><span class="sig-paren">(</span><em>otherRect</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.merge" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>otherRect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Unions this rectangle with <em>otherRect</em>. In other words, this rectangle becomes the bounding box of this rectangle and  <em>otherRect</em>.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">left</code><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns x1, that is the position of the left edge of the rectangle.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.right">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">right</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.right" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns x2, that is the position of the right edge of the rectangle. x2 is considered to be
+the first element outside the rectangle.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.set">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">set</code><span class="sig-paren">(</span><em>x1</em>, <em>y1</em>, <em>x2</em>, <em>y2</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.set" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x1</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>y1</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>x2</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>y2</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the x1, y1, x2, y2 coordinates of this rectangle.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.set_bottom">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">set_bottom</code><span class="sig-paren">(</span><em>y1</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.set_bottom" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y1</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set y1</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.set_left">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">set_left</code><span class="sig-paren">(</span><em>x1</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.set_left" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y1</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set x1</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.set_right">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">set_right</code><span class="sig-paren">(</span><em>x2</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.set_right" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x2</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set x2</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.set_top">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">set_top</code><span class="sig-paren">(</span><em>y2</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.set_top" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y2</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set y2</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.top">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">top</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.top" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns y2, that is the position of the top edge of the rectangle.
+y2 is considered to be the first element outside the rectangle.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.translate">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">translate</code><span class="sig-paren">(</span><em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.translate" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dy</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Moves all edges of the rectangle by <em>dx</em>, <em>dy</em>, that is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x1</span> <span class="o">+=</span> <span class="n">dx</span><span class="p">;</span>
+<span class="n">y1</span> <span class="o">+=</span> <span class="n">dy</span><span class="p">;</span>
+<span class="n">x2</span> <span class="o">+=</span> <span class="n">dx</span><span class="p">;</span>
+<span class="n">y2</span> <span class="o">+=</span> <span class="n">dy</span><span class="p">;</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.RectI.width">
+<code class="descclassname">NatronEngine.RectI.</code><code class="descname">width</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.RectI.width" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the width of the rectangle, that is x2 - x1.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Roto.html" class="btn btn-neutral float-right" title="Roto" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="RectD.html" class="btn btn-neutral float-left" title="RectD" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

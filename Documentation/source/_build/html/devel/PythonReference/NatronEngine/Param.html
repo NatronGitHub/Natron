@@ -1,0 +1,1095 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Param &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="ParametricParam" href="ParametricParam.html" />
+    <link rel="prev" title="PageParam" href="PageParam.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>Param</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/Param.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="param">
+<span id="id1"></span><h1>Param<a class="headerlink" href="#param" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherited by:</strong> <a class="reference internal" href="ParametricParam.html"><span class="doc">ParametricParam</span></a>, <a class="reference internal" href="PageParam.html"><span class="doc">PageParam</span></a>, <a class="reference internal" href="GroupParam.html"><span class="doc">GroupParam</span></a>, <a class="reference internal" href="ButtonParam.html"><span class="doc">ButtonParam</span></a>, <a class="reference internal" href="AnimatedParam.html"><span class="doc">AnimatedParam</span></a>, <a class="reference internal" href="StringParamBase.html"><span class="doc">StringParamBase</span></a>, <a class="reference internal" href="PathParam.html"><span class="doc">PathParam</span></a>, <a class="reference internal" href="OutputFileParam.html"><span class="doc">OutputFileParam</span></a>, <a class="reference internal" href="FileParam.html"><span class="doc">FileParam</span></a>, <a class="reference internal" href="StringParam.html"><span class="doc">StringParam</span></a>, <a class="reference internal" href="BooleanParam.html"><span class="doc">BooleanParam</span></a>, <a class="reference internal" href="ChoiceParam.html"><span class="doc">ChoiceParam</span></a>, <a class="reference internal" href="ColorParam.html"><span class="doc">ColorParam</span></a>, <a class="reference internal" href="DoubleParam.html"><span class="doc">DoubleParam</span></a>, <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a>, <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a>, <a class="reference internal" href="IntParam.html"><span class="doc">IntParam</span></a>, <a class="reference internal" href="Int2DParam.html"><span class="doc">Int2DParam</span></a>, <a class="reference internal" href="Int3DParam.html"><span class="doc">Int3DParam</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This is the base class for all parameters. Parameters are the controls found in the settings
+panel of a node. See <a class="reference internal" href="#paramdetails"><span class="std std-ref">details here</span></a>.</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.copy" title="NatronEngine.NatronEngine.Param.copy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">copy</span></code></a> (param[, dimension=-1])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.curve" title="NatronEngine.NatronEngine.Param.curve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">curve</span></code></a> (time[, dimension=-1])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getAddNewLine" title="NatronEngine.NatronEngine.Param.getAddNewLine"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getAddNewLine</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getCanAnimate" title="NatronEngine.NatronEngine.Param.getCanAnimate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCanAnimate</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getEvaluateOnChange" title="NatronEngine.NatronEngine.Param.getEvaluateOnChange"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getEvaluateOnChange</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getHelp" title="NatronEngine.NatronEngine.Param.getHelp"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getHelp</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsAnimationEnabled" title="NatronEngine.NatronEngine.Param.getIsAnimationEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsAnimationEnabled</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsEnabled" title="NatronEngine.NatronEngine.Param.getIsEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsEnabled</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsPersistant" title="NatronEngine.NatronEngine.Param.getIsPersistant"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsPersistant</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsVisible" title="NatronEngine.NatronEngine.Param.getIsVisible"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsVisible</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getLabel" title="NatronEngine.NatronEngine.Param.getLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getLabel</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getNumDimensions" title="NatronEngine.NatronEngine.Param.getNumDimensions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumDimensions</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getParent" title="NatronEngine.NatronEngine.Param.getParent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParent</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getScriptName" title="NatronEngine.NatronEngine.Param.getScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getScriptName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getTypeName" title="NatronEngine.NatronEngine.Param.getTypeName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getTypeName</span></code></a> ()</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">random&lt;NatronEngine.Param.random()</span></code> ([min=0.,max=1.])</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">random&lt;NatronEngine.Param.random()</span></code> (seed)</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">randomInt&lt;NatronEngine.Param.randomInt()</span></code> (min,max)</li>
+<li>def <code class="xref py py-meth docutils literal notranslate"><span class="pre">randomInt&lt;NatronEngine.Param.randomInt()</span></code> (seed)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setAddNewLine" title="NatronEngine.NatronEngine.Param.setAddNewLine"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setAddNewLine</span></code></a> (a)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setAnimationEnabled" title="NatronEngine.NatronEngine.Param.setAnimationEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setAnimationEnabled</span></code></a> (e)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setEnabled" title="NatronEngine.NatronEngine.Param.setEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setEnabled</span></code></a> (enabled[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setEnabledByDefault" title="NatronEngine.NatronEngine.Param.setEnabledByDefault"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setEnabledByDefault</span></code></a> (enabled)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setEvaluateOnChange" title="NatronEngine.NatronEngine.Param.setEvaluateOnChange"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setEvaluateOnChange</span></code></a> (eval)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setIconFilePath" title="NatronEngine.NatronEngine.Param.setIconFilePath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setIconFilePath</span></code></a> (icon)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setHelp" title="NatronEngine.NatronEngine.Param.setHelp"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setHelp</span></code></a> (help)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setPersistant" title="NatronEngine.NatronEngine.Param.setPersistant"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPersistant</span></code></a> (persistant)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setVisible" title="NatronEngine.NatronEngine.Param.setVisible"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setVisible</span></code></a> (visible)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setVisibleByDefault" title="NatronEngine.NatronEngine.Param.setVisibleByDefault"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setVisibleByDefault</span></code></a> (visible)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setAsAlias" title="NatronEngine.NatronEngine.Param.setAsAlias"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setAsAlias</span></code></a> (otherParam)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.slaveTo" title="NatronEngine.NatronEngine.Param.slaveTo"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slaveTo</span></code></a> (otherParam, thisDimension, otherDimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Param.unslave" title="NatronEngine.NatronEngine.Param.unslave"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unslave</span></code></a> (dimension)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="paramdetails"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The Param object can be used to control a specific parameter of a node.
+There are different types of parameters, ranging from the single
+checkbox (boolean) to parametric curves.
+Each type of parameter has specific functions to control the parameter according to
+its internal value type.
+In this base class, all common functionalities for parameters have been gathered.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that since each child class has a different value type, all the functions to set/get values, and set/get keyframes
+are specific for each class.</p>
+</div>
+<p>A Param can have several functions to control some properties, namely:</p>
+<blockquote>
+<div><ul class="simple">
+<li>addNewLine:   When True, the next parameter declared will be on the same line as this parameter</li>
+<li>canAnimate: This is a static property that you cannot control which tells whether animation can be enabled for a specific type of parameter</li>
+<li>animationEnabled: For all parameters that have canAnimate=True, this property controls whether this parameter should be able to animate (= have keyframes) or not</li>
+<li>evaluateOnChange: This property controls whether a new render should be issues when the value of this parameter changes</li>
+<li>help: This is the tooltip visible when hovering the parameter with the mouse</li>
+<li>enabled: Should this parameter be editable by the user or not. Generally, disabled parameters have their text in painted in black.</li>
+<li>visible: Should this parameter be visible in the user interface or not</li>
+<li>persistant: If true then the parameter value will be saved in the project</li>
+<li>dimension: How many dimensions this parameter has. For instance a <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a> has 3 dimensions. A <a class="reference internal" href="ParametricParam.html"><span class="doc">ParametricParam</span></a> has as many dimensions as there are curves.</li>
+</ul>
+</div></blockquote>
+<p>Note that most of the functions in the API of Params take a <em>dimension</em> parameter. This is a 0-based index of the dimension on which to operate.</p>
+<p>The following table sums up the different properties for all parameters including type-specific properties not listed above.</p>
+<p>Note that  most of the properties are not dynamic:
+they need to be set before calling <code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code> which will create the GUI for these parameters.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">A non-dynamic property can no longer be changed once refreshUserParamsGUI() has been called.</p>
+</div>
+<p>For non <em>user-parameters</em> (i.e: parameters that were defined by the underlying OpenFX plug-in), only
+their <strong>dynamic</strong> properties can be changed since  <code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code>
+will only refresh user parameters.</p>
+<p>If a Setter function contains a (*) that means it can only be called for user parameters,
+it has no effect on already declared non-user parameters.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="11%" />
+<col width="11%" />
+<col width="26%" />
+<col width="18%" />
+<col width="19%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name:</th>
+<th class="head">Type:</th>
+<th class="head">Dynamic:</th>
+<th class="head">Setter:</th>
+<th class="head">Getter:</th>
+<th class="head">Default:</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>no</td>
+<td>None</td>
+<td>getScriptName</td>
+<td>“”</td>
+</tr>
+<tr class="row-odd"><td>label</td>
+<td>string</td>
+<td>no</td>
+<td>None</td>
+<td>getLabel</td>
+<td>“”</td>
+</tr>
+<tr class="row-even"><td>help</td>
+<td>string</td>
+<td>yes</td>
+<td>setHelp(*)</td>
+<td>getHelp</td>
+<td>“”</td>
+</tr>
+<tr class="row-odd"><td>addNewLine</td>
+<td>bool</td>
+<td>no</td>
+<td>setAddNewLine(*)</td>
+<td>getAddNewLine</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td>persistent</td>
+<td>bool</td>
+<td>yes</td>
+<td>setPersistant(*)</td>
+<td>getIsPersistant</td>
+<td>True</td>
+</tr>
+<tr class="row-odd"><td>evaluatesOnChange</td>
+<td>bool</td>
+<td>yes</td>
+<td>setEvaluateOnChange(*)</td>
+<td>getEvaluateOnChange</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td>animates</td>
+<td>bool</td>
+<td>no</td>
+<td>setAnimationEnabled(*)</td>
+<td>getIsAnimationEnabled</td>
+<td>See <a class="reference internal" href="#id2"><span class="std std-ref">(1)</span></a></td>
+</tr>
+<tr class="row-odd"><td>visible</td>
+<td>bool</td>
+<td>yes</td>
+<td>setVisible</td>
+<td>getIsVisible</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td>enabled</td>
+<td>bool</td>
+<td>yes</td>
+<td>setEnabled</td>
+<td>getIsEnabled</td>
+<td>True</td>
+</tr>
+<tr class="row-odd"><td colspan="6"><em>Properties on IntParam, Int2DParam, Int3DParam, DoubleParam, Double2DParam, Double3DParam, ColorParam only:</em></td>
+</tr>
+<tr class="row-even"><td>min</td>
+<td>int/double</td>
+<td>yes</td>
+<td>setMinimum(*)</td>
+<td>getMinimum</td>
+<td>INT_MIN</td>
+</tr>
+<tr class="row-odd"><td>max</td>
+<td>int/double</td>
+<td>yes</td>
+<td>setMaximum(*)</td>
+<td>getMaximum</td>
+<td>INT_MAX</td>
+</tr>
+<tr class="row-even"><td>displayMin</td>
+<td>int/double</td>
+<td>yes</td>
+<td>setDisplayMinimum(*)</td>
+<td>getDisplayMinimum</td>
+<td>INT_MIN</td>
+</tr>
+<tr class="row-odd"><td>displayMax</td>
+<td>int/double</td>
+<td>yes</td>
+<td>setDisplayMaximum(*)</td>
+<td>getDisplayMaximum</td>
+<td>INT_MAX</td>
+</tr>
+<tr class="row-even"><td colspan="6"><em>Properties on ChoiceParam only:</em></td>
+</tr>
+<tr class="row-odd"><td>options</td>
+<td>list&lt;string&gt;</td>
+<td>yes</td>
+<td>setOptions/addOption(*)</td>
+<td>getOption</td>
+<td>empty list</td>
+</tr>
+<tr class="row-even"><td colspan="6"><em>Properties on FileParam, OutputFileParam only:</em></td>
+</tr>
+<tr class="row-odd"><td>sequenceDialog</td>
+<td>bool</td>
+<td>yes</td>
+<td>setSequenceEnabled(*)</td>
+<td>None</td>
+<td>False</td>
+</tr>
+<tr class="row-even"><td colspan="6"><em>Properties on StringParam only:</em></td>
+</tr>
+<tr class="row-odd"><td>type</td>
+<td>TypeEnum</td>
+<td>no</td>
+<td>setType(*)</td>
+<td>None</td>
+<td>eStringTypeDefault</td>
+</tr>
+<tr class="row-even"><td colspan="6"><em>Properties on PathParam only:</em></td>
+</tr>
+<tr class="row-odd"><td>multiPathTable</td>
+<td>bool</td>
+<td>no</td>
+<td>setAsMultiPathTable(*)</td>
+<td>None</td>
+<td>False</td>
+</tr>
+<tr class="row-even"><td colspan="6"><em>Properties on GroupParam only:</em></td>
+</tr>
+<tr class="row-odd"><td>isTab</td>
+<td>bool</td>
+<td>no</td>
+<td>setAsTab(*)</td>
+<td>None</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<div><blockquote id="id2">
+<div><p>(1): animates is set to True by default only if it is one of the following parameters:
+IntParam Int2DParam Int3DParam
+DoubleParam Double2DParam Double3DParam
+ColorParam</p>
+<p>Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
+PathParam cannot animate at all.</p>
+</div></blockquote>
+</div></blockquote>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.copy">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">copy</code><span class="sig-paren">(</span><em>other</em><span class="optional">[</span>, <em>dimension=-1</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.copy" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>other</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Copies the <em>other</em> parameter values, animation and expressions at the given <em>dimension</em>.
+If <em>dimension</em> is -1, all dimensions in <strong>min(getNumDimensions(), other.getNumDimensions())</strong> will
+be copied.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Note that types must be convertible:</p>
+<p class="last">IntParam,DoubleParam, ChoiceParam, ColorParam and BooleanParam can convert between types but StringParam cannot.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>When copying a parameter, only values are copied, not properties, hence if copying a
+choice parameter, make sure that the value you copy has a meaning to the receiver otherwise
+you might end-up with an undefined behaviour, e.g.:</p>
+<p class="last">If ChoiceParam1 has 3 entries and the current index is 2 and ChoiceParam2 has 15 entries
+and current index is 10, copying ChoiceParam2 to ChoiceParam1 will end-up in undefined behaviour.</p>
+</div>
+<p>This function returns <strong>True</strong> upon success and <strong>False</strong> otherwise.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.curve">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">curve</code><span class="sig-paren">(</span><em>time</em><span class="optional">[</span>, <em>dimension=-1</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.curve" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>If this parameter has an animation curve on the given <em>dimension</em>, then the value of
+that curve at the given <em>time</em> is returned. If the parameter has an expression on top
+of the animation curve, the expression will be ignored, ie.g. the value of the animation
+curve will still be returned.
+This is useful to write custom expressions for motion design such as looping, reversing, etc…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getAddNewLine">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getAddNewLine</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getAddNewLine" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the parameter is on a new line or not.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getCanAnimate">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getCanAnimate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getCanAnimate" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether this class can have any animation or not. This cannot be changed.
+calling <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setAnimationEnabled" title="NatronEngine.NatronEngine.Param.setAnimationEnabled"><code class="xref py py-func docutils literal notranslate"><span class="pre">setAnimationEnabled(True)</span></code></a> will
+not enable animation for parameters that cannot animate.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getEvaluateOnChange">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getEvaluateOnChange</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getEvaluateOnChange" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether this parameter can evaluate on change. A parameter evaluating on change
+means that a new render will be triggered when its value changes due to a call of one of
+the setValue functions.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getHelp">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getHelp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getHelp" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the help tooltip visible when hovering the parameter with the mouse on the GUI;</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getIsAnimationEnabled">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getIsAnimationEnabled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getIsAnimationEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether animation is enabled for this parameter. This is dynamic and can be
+changed by <a class="reference internal" href="#NatronEngine.NatronEngine.Param.setAnimationEnabled" title="NatronEngine.NatronEngine.Param.setAnimationEnabled"><code class="xref py py-func docutils literal notranslate"><span class="pre">setAnimationEnabled(bool)</span></code></a> if the
+parameter <em>can animate</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getIsEnabled">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getIsEnabled</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getIsEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the given <em>dimension</em> is enabled or not.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getIsPersistant">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getIsPersistant</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getIsPersistant" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether this parameter should be persistant in the project or not.
+Non-persistant parameter will not have their value saved when saving a project.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getIsVisible">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getIsVisible</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getIsVisible" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns whether the parameter is visible on the user interface or not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getLabel">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getLabel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>label</em> of the parameter. This is what is displayed in the settings panel
+of the node. See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this section</span></a> for an explanation of the difference between
+the <em>label</em> and the <em>script name</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getNumDimensions">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getNumDimensions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getNumDimensions" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of dimensions. For exampel a <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a> has 3 dimensions.
+A <a class="reference internal" href="ParametricParam.html"><span class="doc">ParametricParam</span></a> has as many dimensions as there are curves.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getParent">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getParent" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Param</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>If this param is within a <a class="reference internal" href="GroupParam.html"><span class="doc">group</span></a>, then the parent will be the group.
+Otherwise the param’s parent will be the:doc:<cite>page&lt;PageParam&gt;</cite> onto which the param
+appears in the settings panel.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getScriptName">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getScriptName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>script-name</em> of the param as used internally. The script-name is visible
+in the tooltip of the parameter when hovering the mouse over it on the GUI.
+See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this section</span></a> for an explanation of the difference between
+the <em>label</em> and the <em>script name</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.getTypeName">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">getTypeName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.getTypeName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the type-name of the parameter.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.random">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">random</code><span class="sig-paren">(</span><span class="optional">[</span><em>min=0.</em>, <em>max=1.</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.random" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>max</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a pseudo-random value in the interval [<em>min</em>, <em>max</em>[.
+The value is produced such that for a given parameter it will always be the same for a
+given time on the timeline, so that the value can be reproduced exactly.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Note that if you are calling multiple times random() in the same parameter expression,
+each call would return a different value, but they would all return the same value again
+if the expressions is interpreted at the same time, e.g.:</p>
+<blockquote class="last">
+<div># Would always return the same value at a given timeline’s time.
+random() - random()</div></blockquote>
+</div>
+<p>Note that you can ensure that random() returns a given value by calling the overloaded
+function <a class="reference internal" href="#NatronEngine.NatronEngine.Param.random" title="NatronEngine.NatronEngine.Param.random"><code class="xref py py-func docutils literal notranslate"><span class="pre">random(min,max,time,seed)</span></code></a> instead.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">random</code><span class="sig-paren">(</span><em>min</em>, <em>max</em>, <em>time</em><span class="optional">[</span>, <em>seed=0</em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>max</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>seed</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">unsigned</span> <span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.Param.random" title="NatronEngine.NatronEngine.Param.random"><code class="xref py py-func docutils literal notranslate"><span class="pre">random()</span></code></a> but takes <strong>time</strong> and <strong>seed</strong> in parameters to control
+the value returned by the function. E.g:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="n">random</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">frame</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">random</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">frame</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1"># ret == 0 always</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.randomInt">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">randomInt</code><span class="sig-paren">(</span><em>min</em>, <em>max</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.randomInt" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>max</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as  <a class="reference internal" href="#NatronEngine.NatronEngine.Param.random" title="NatronEngine.NatronEngine.Param.random"><code class="xref py py-func docutils literal notranslate"><span class="pre">random(min,max)</span></code></a> but returns an integer in the
+range [<em>min</em>,*max*[</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">randomInt</code><span class="sig-paren">(</span><em>min</em>, <em>max</em>, <em>time</em><span class="optional">[</span>, <em>seed=0</em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>max</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>seed</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">unsigned</span> <span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.Param.random" title="NatronEngine.NatronEngine.Param.random"><code class="xref py py-func docutils literal notranslate"><span class="pre">random(min,max,time,seed)</span></code></a> but returns an integer in the range
+[0, INT_MAX] instead.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setAddNewLine">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setAddNewLine</code><span class="sig-paren">(</span><em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setAddNewLine" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>a</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether the parameter should be on a new line or not.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getAddNewLine" title="NatronEngine.NatronEngine.Param.getAddNewLine"><code class="xref py py-func docutils literal notranslate"><span class="pre">getAddNewLine()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setAnimationEnabled">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setAnimationEnabled</code><span class="sig-paren">(</span><em>e</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setAnimationEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>e</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether animation should be enabled (= can have keyframes).
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsAnimationEnabled" title="NatronEngine.NatronEngine.Param.getIsAnimationEnabled"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsAnimationEnabled()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setEnabled">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setEnabled</code><span class="sig-paren">(</span><em>enabled</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>enabled</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether the given <em>dimension</em> of the parameter should be enabled or not.
+When disabled, the parameter will be displayed in black and the user will not be able
+to edit it.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsEnabled" title="NatronEngine.NatronEngine.Param.getIsEnabled"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsEnabled(dimension)</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setEnabledByDefault">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setEnabledByDefault</code><span class="sig-paren">(</span><em>enabled</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setEnabledByDefault" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>enabled</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether the parameter should be enabled or not by default.
+When disabled, the parameter will be displayed in black and the user will not be able
+to edit it.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setEvaluateOnChange">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setEvaluateOnChange</code><span class="sig-paren">(</span><em>eval</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setEvaluateOnChange" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>eval</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether evaluation should be enabled for this parameter. When True, calling any
+function that change the value of the parameter will trigger a new render.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getEvaluateOnChange" title="NatronEngine.NatronEngine.Param.getEvaluateOnChange"><code class="xref py py-func docutils literal notranslate"><span class="pre">getEvaluateOnChange()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setIconFilePath">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setIconFilePath</code><span class="sig-paren">(</span><em>icon</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setIconFilePath" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>icon</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set here the icon file path for the label. This should be either an absolute path or
+a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
+label of the parameter.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setHelp">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setHelp</code><span class="sig-paren">(</span><em>help</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setHelp" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>help</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the help tooltip of the parameter.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getHelp" title="NatronEngine.NatronEngine.Param.getHelp"><code class="xref py py-func docutils literal notranslate"><span class="pre">getHelp()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setPersistant">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setPersistant</code><span class="sig-paren">(</span><em>persistant</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setPersistant" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>persistant</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether this parameter should be persistant or not.
+Non persistant parameter will not be saved in the project.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsPersistant" title="NatronEngine.NatronEngine.Param.getIsPersistant"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsPersistant</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setVisible">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setVisible</code><span class="sig-paren">(</span><em>visible</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setVisible" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>visible</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether this parameter should be visible or not to the user.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Param.getIsVisible" title="NatronEngine.NatronEngine.Param.getIsVisible"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsVisible()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setVisibleByDefault">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setVisibleByDefault</code><span class="sig-paren">(</span><em>visible</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setVisibleByDefault" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>visible</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether this parameter should be visible or not to the user in its default state.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.setAsAlias">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">setAsAlias</code><span class="sig-paren">(</span><em>otherParam</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.setAsAlias" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>otherParam</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set this parameter as an alias of <em>otherParam</em>.
+They need to be both of the same <em>type</em> and of the same <em>dimension</em>.
+This parameter will control <em>otherParam</em> entirely and in case of a choice param, its
+drop-down menu will be updated whenever the <em>otherParam</em> menu is updated.</p>
+<p>This is used generally to make user parameters on groups with the “Pick” option of the
+“Manage User Parameters” dialog.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.slaveTo">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">slaveTo</code><span class="sig-paren">(</span><em>otherParam</em>, <em>thisDimension</em>, <em>otherDimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.slaveTo" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>otherParam</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></li>
+<li><strong>thisDimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>otherDimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set this parameter as a slave of <em>otherParam</em>.
+They need to be both of the same <em>type</em> but may vary in dimension, as long as
+<em>thisDimension</em> is valid according to the number of dimensions of this parameter and
+<em>otherDimension</em> is valid according to the number of dimensions of <em>otherParam</em>.</p>
+<p>This parameter <em>thisDimension</em> will be controlled entirely by the <em>otherDimension</em> of
+<em>otherParam</em> until a call to <a class="reference internal" href="#NatronEngine.NatronEngine.Param.unslave" title="NatronEngine.NatronEngine.Param.unslave"><code class="xref py py-func docutils literal notranslate"><span class="pre">unslave(thisDimension)</span></code></a> is made</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Param.unslave">
+<code class="descclassname">NatronEngine.Param.</code><code class="descname">unslave</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Param.unslave" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>If the given <em>dimension</em> of this parameter was previously slaved, then this function will
+remove the link between parameters, and the user will be free again to use this parameter
+as any other.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The animation and values that were present before the link will remain.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ParametricParam.html" class="btn btn-neutral float-right" title="ParametricParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PageParam.html" class="btn btn-neutral float-left" title="PageParam" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

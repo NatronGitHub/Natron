@@ -1,0 +1,331 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Modal dialogs &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="User menu commands" href="userCommands.html" />
+    <link rel="prev" title="Using the tracker functionalities" href="tracker.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Modal dialogs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#simple-dialogs">Simple dialogs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#more-refined-dialogs">More refined dialogs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Modal dialogs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/modalDialogs.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="modal-dialogs">
+<span id="modaldialogs"></span><h1>Modal dialogs<a class="headerlink" href="#modal-dialogs" title="Permalink to this headline">¶</a></h1>
+<p>Modal dialogs are windows (or popup) that inform the user about something or ask for some
+information and that does not allow any other action to be performed while the dialog is opened.</p>
+<p>This can be used as a quick way to retrieve user inputs.</p>
+<div class="section" id="simple-dialogs">
+<h2>Simple dialogs<a class="headerlink" href="#simple-dialogs" title="Permalink to this headline">¶</a></h2>
+<p>The most simple dialogs in Natron are the information/warning/error/question dialog
+which basically just take some text in input and may return a reply from the user</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">informationDialog</span><span class="p">(</span><span class="s2">&quot;Info&quot;</span><span class="p">,</span><span class="s2">&quot;Here is a relevant info&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/infoDialog.png"><img alt="../_images/infoDialog.png" src="../_images/infoDialog.png" style="width: 300px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">warningDialog</span><span class="p">(</span><span class="s2">&quot;Warning&quot;</span><span class="p">,</span><span class="s2">&quot;Warning you might lose everything on your computer&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/warnDialog.png"><img alt="../_images/warnDialog.png" src="../_images/warnDialog.png" style="width: 300px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">errorDialog</span><span class="p">(</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span><span class="s2">&quot;Something went wrong, oops.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/errorDialog.png"><img alt="../_images/errorDialog.png" src="../_images/errorDialog.png" style="width: 300px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reply</span> <span class="o">=</span> <span class="n">natron</span><span class="o">.</span><span class="n">questionDialog</span><span class="p">(</span><span class="s2">&quot;Question&quot;</span><span class="p">,</span><span class="s2">&quot;Are you sure you paid the license for Natron ?;)&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">reply</span> <span class="o">==</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">Natron</span><span class="o">.</span><span class="n">StandardButtonEnum</span><span class="o">.</span><span class="n">eStandardButtonNo</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="k">elif</span> <span class="n">reply</span> <span class="o">==</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">Natron</span><span class="o">.</span><span class="n">StandardButtonEnum</span><span class="o">.</span><span class="n">eStandardButtonYes</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/questionDialog.png"><img alt="../_images/questionDialog.png" src="../_images/questionDialog.png" style="width: 300px;" /></a>
+</div>
+</div>
+<div class="section" id="more-refined-dialogs">
+<h2>More refined dialogs<a class="headerlink" href="#more-refined-dialogs" title="Permalink to this headline">¶</a></h2>
+<p>To create dialogs that may request some information such as colors, frame range, coordinates
+or text input, you can create <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">modal dialogs</span></a>.</p>
+<p>Basically you can add <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">user parameters</span></a>, and retrieve their value afterwards
+when the user pressed <strong>OK</strong>.</p>
+<p>You can start adding user parameters using all the <code class="xref py py-func docutils literal notranslate"><span class="pre">createXParam</span></code> functions inherited from the <a class="reference internal" href="PythonReference/NatronEngine/UserParamHolder.html"><span class="doc">UserParamHolder</span></a> class.
+See the documentation of the <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> for more information:</p>
+<blockquote>
+<div><p>dialog = app.createModalDialog()
+myInteger = dialog.createIntParam(“myInt”,”This is an integer very important”)
+myInteger.setAnimationEnabled(False)
+myInteger.setAddNewLine(False)</p>
+<p>#Create a boolean on the same line
+myBoolean = dialog.createBooleanParam(“myBool”,”Yet another important boolean”)</p>
+<p>dialog.refreshUserParamsGUI()</p>
+</div></blockquote>
+<p>You can also add custom PySide widgets that can be inserted <strong>after</strong> any user parameter(s)
+using the <code class="xref py py-func docutils literal notranslate"><span class="pre">addWidget(widget)</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">insertWidget(index,widget)</span></code> functions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;This is a PySide label&quot;</span><span class="p">)</span>
+<span class="n">dialog</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To make the dialog show-up, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">exec()</span></code> function on the dialog.
+This function will return once the user pressed either “OK” or “Canceled”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">dialog</span><span class="o">.</span><span class="n">exec</span><span class="p">():</span>
+    <span class="c1">#User pressed OK</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/customModalDialog.png"><img alt="../_images/customModalDialog.png" src="../_images/customModalDialog.png" style="width: 400px;" /></a>
+</div>
+<p>You can add a custom callback when a parameter changes, for instance to hide another parameter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Callback called when a parameter of  changes</span>
+<span class="c1">#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed</span>
+<span class="k">def</span> <span class="nf">paramChangedCallback</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;myBool&quot;</span><span class="p">:</span>
+        <span class="n">myInteger</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="n">myBoolean</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+
+<span class="n">dialog</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;paramChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="userCommands.html" class="btn btn-neutral float-right" title="User menu commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tracker.html" class="btn btn-neutral float-left" title="Using the tracker functionalities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

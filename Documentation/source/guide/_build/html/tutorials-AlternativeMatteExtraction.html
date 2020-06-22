@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alternative Matte Extraction Tutorial &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Vector graphics workflow" href="tutorials-svgworkflow.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="alternative-matte-extraction-tutorial">
+<h1>Alternative Matte Extraction Tutorial<a class="headerlink" href="#alternative-matte-extraction-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/ArticleCoverPage.jpg"><img alt="_images/ArticleCoverPage.jpg" src="_images/ArticleCoverPage.jpg" style="width: 650px;" /></a>
+</div>
+<p>In the world of vfx in current films these days, it is hard to even phathom that <strong>pulling keys (aka chromakeying)</strong> or generally just creating mattes from images is not common place. Today I want to share some features in a few nodes that are in <strong>Natron VFX Digital Compositor</strong>. The nodes that I want to discuss are <strong>Despill</strong>, <strong>Ip_ChillSpill</strong> and <strong>ColorSuppression</strong>. You can guess by the name the functions that they perform. Basically, they <strong>subtract any blue or green screen spillage that happens to contaminate your foreground objects during the production process</strong>. These types of functions are common place in every post-production facilities in the industry. It doesn’t matter if you are a beginner wanting to produce your own short films or a professional working on block buster films. The needs are the same. The attached image is a greenscreen image that I pulled off google to demonstrate what the Natron developers had implemented to take these despillers to another level or just added functionality.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/HeBeGreeen.jpg"><img alt="_images/HeBeGreeen.jpg" src="_images/HeBeGreeen.jpg" style="width: 200px;" /></a>
+</div>
+<p>The added functionality is having the ability to use the suppressed or despill color information and convert it to a matte or alpha. I am unaware if any other compositing applications has these abilities. Natron is my main compositing app and from time to time I use these <strong>despilling node algorithms</strong> to help generate masks, general mattes and scaled alphas. This is Natron’s node graph pipeline for each node that I will be discussing. The pipeline for each node is really simple. You just connect the green/blue screen footage to the input of the nodes, adjust whatever you have to adjust, click on the very simple knob that says “Spillmap to Alpha” if you are using the Despill node, “Shuffle Spillmatte to Alpha” if you are using the community openfx plugin called <strong>Ip_ChillSpill Node</strong>, and <strong>“Output: Image, Alpha &amp; Image and Alpha”</strong> if you are using the ColorSuppression node.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/ArticleCoverPage.jpg"><img alt="_images/ArticleCoverPage.jpg" src="_images/ArticleCoverPage.jpg" style="width: 200px;" /></a>
+</div>
+<p>The first screenshot demonstration if for the node <strong>Ip_ChillSpill</strong>. This despilling node has the most of features and functions that I can tell that exist amongst all the despilling nodes. in the image below you will see the spill suppression on the left and the alpha channel from selecting <strong>“Shuffle Spillmatte to Alpha”</strong> on the right.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/Ip_ChillSpill-FullComp.jpg"><img alt="_images/Ip_ChillSpill-FullComp.jpg" src="_images/Ip_ChillSpill-FullComp.jpg" style="width: 200px;" /></a>
+</div>
+<p>Now just selecting the <strong>Shuffle Spillmatte to Alpha</strong> feature is not some magic trick and you get a perfect matte, not by a long shot. For a matter a fact its not for any of them. Attached are example of the nodes in their default state before the scaling process begins. The first image is the <strong>Ip_ChillSpill</strong> default matte output and the second in the ColorSuppression default matte output. It looks like if I was trying to use the <strong>HSVTool Node</strong> to pull a <strong>Saturation or Brightness Key</strong>. You can read more about that in my HSVTool node <a class="reference external" href="https://colorgrade13.wordpress.com/2015/05/07/natron-digital-compositor-hsvtool-node-tutorial/">tutorial</a>. I used a very underated and under used node amongst beginners called the <strong>ColorLookup Node</strong>. You can be very familiar with the node if you have used Photoshop or Gimp’s curve tool.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/Ip_ChillSpill-default.jpg"><img alt="_images/Ip_ChillSpill-default.jpg" src="_images/Ip_ChillSpill-default.jpg" style="width: 200px;" /></a>
+</div>
+<p>Here are the nodes and their settings to show what I had to do to get it to scale my suppression mattes. The key tool is to use the <strong>ColorLookup Node</strong> connected after the despilling nodes. The <strong>ColorLookup Node</strong> four color channels and the channel that you use the scale your mattes is the <strong>“alpha curve channel”</strong>. The bottom left of the <strong>alpha curve is used the to crush your blacks/shadows</strong> and the top right is used to <strong>extend your white/highlights</strong>. In the <strong>ColorLookup Node</strong> you will also see a feature called “Luminance Math”. This feature will yield its full benefits based off the resolution and color spaces of your footage. The ColorLookup node is very powerful in a sense because the channel curves can have multiple points to limit its effects.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/ColorSuppression-default.jpg"><img alt="_images/ColorSuppression-default.jpg" src="_images/ColorSuppression-default.jpg" style="width: 200px;" /></a>
+</div>
+<p>As you can see these nodes all perform the same functions but some has different parameters to accomplishes the same thing and well as providing other color processing effects. Here are some screen captures of the effects using the <strong>ColorLookup Node</strong>.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/Ip_ChillSpill.jpg"><img alt="_images/Ip_ChillSpill.jpg" src="_images/Ip_ChillSpill.jpg" style="width: 200px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/AllColorLookup.jpg"><img alt="_images/AllColorLookup.jpg" src="_images/AllColorLookup.jpg" style="width: 200px;" /></a>
+</div>
+<p><strong>Now this by node means a primary replacement for powerful keying node in Natron. The extended functionality should only be considered as compliment to Chromakeyer, PIK/PIK Color and Keyer nodes</strong>. Just remember that the Here are some screen captures of the effects using the <strong>ColorLookup node is needed to scaled that matte</strong>. Also this process doesn’t treat your edges with a choking or eroding effect. You would have to experiment with some of the filters to process them. Now you can try and cheat by using the <strong>Shuffle Node</strong> to convert to this matte output to an real alpha channel and maybe you can process your edges directly as if you were coming out of a keyer. You will need to do some serious testing. After you have done that, please feel free to talk about it and join <a class="reference external" href="https://www.facebook.com/groups/NatronNation/">NatronNation</a> and read my <a class="reference external" href="https://colorgrade13.wordpress.com/">blog</a>.</p>
+<div class="section" id="despill-and-color-suppression-pipeline">
+<h2>Despill and Color Suppression Pipeline<a class="headerlink" href="#despill-and-color-suppression-pipeline" title="Permalink to this headline">¶</a></h2>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/Ip_ChillSpill-FullComp.jpg"><img alt="_images/Ip_ChillSpill-FullComp.jpg" src="_images/Ip_ChillSpill-FullComp.jpg" style="width: 200px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/Despill.jpg"><img alt="_images/Despill.jpg" src="_images/Despill.jpg" style="width: 200px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/ColorSuppression.jpg"><img alt="_images/ColorSuppression.jpg" src="_images/ColorSuppression.jpg" style="width: 200px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/ReversedMatte.jpg"><img alt="_images/ReversedMatte.jpg" src="_images/ReversedMatte.jpg" style="width: 200px;" /></a>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

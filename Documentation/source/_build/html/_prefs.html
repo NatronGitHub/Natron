@@ -1,0 +1,530 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Preferences &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Environment Variables" href="_environment.html" />
+    <link rel="prev" title="Reference Guide" href="_group.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Preferences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general">General</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#threading">Threading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rendering">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gpu-rendering">GPU Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#project-setup">Project Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-interface">User Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#color-management">Color Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#caching">Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#viewer">Viewer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nodegraph">Nodegraph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plug-ins">Plug-ins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python">Python</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#appearance">Appearance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#main-window">Main Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#curve-editor">Curve Editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dope-sheet">Dope Sheet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#node-graph">Node Graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#script-editor">Script Editor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="_group.html">Reference Guide</a> &raquo;</li>
+        
+      <li>Preferences</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/_prefs.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <!--Do not edit this file! It is generated automatically by Natron itself. --><div class="section" id="preferences">
+<h1>Preferences<a class="headerlink" href="#preferences" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="general">
+<h2>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
+<p><strong>Always check for updates on start-up</strong></p>
+<p>When checked, Natron will check for new updates on start-up of the application.</p>
+<p><strong>Auto-save trigger delay</strong></p>
+<p>The number of seconds after an event that Natron should wait before auto-saving. Note that if a render is in progress, Natron will wait until it is done to actually auto-save.</p>
+<p><strong>Enable Auto-save for unsaved projects</strong></p>
+<p>When activated Natron will auto-save projects that have never been saved and will prompt you on startup if an auto-save of that unsaved project was found. Disabling this will no longer save un-saved project.</p>
+<p><strong>Appear to plug-ins as</strong></p>
+<p>Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the “Custom” entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.</p>
+</div>
+<div class="section" id="threading">
+<h2>Threading<a class="headerlink" href="#threading" title="Permalink to this headline">¶</a></h2>
+<p><strong>Number of render threads (0=“guess”)</strong></p>
+<p>Controls how many threads Natron should use to render.</p>
+<p>-1: Disable multithreading totally (useful for debugging)</p>
+<p>0: Guess the thread count from the number of cores.</p>
+<p><strong>Number of parallel renders (0=“guess”)</strong></p>
+<p>Controls the number of parallel frame that will be rendered at the same time by the renderer.A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.</p>
+<p><strong>Effects use the thread-pool</strong></p>
+<p>When checked, all effects will use a global thread-pool to do their processing instead of launching their own threads. This suppresses the overhead created by the operating system creating new threads on demand for each rendering of a special effect. As a result of this, the rendering might be faster on systems with a lot of cores (&gt;= 8).</p>
+<p>WARNING: This is known not to work when using The Foundry’s Furnace plug-ins (and potentially some other plug-ins that the dev team hasn’t not tested against it). When using these plug-ins, make sure to uncheck this option first otherwise it will crash Natron.</p>
+<p><strong>Max threads usable per effect (0=“guess”)</strong></p>
+<p>Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing.By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.</p>
+<p><strong>Render in a separate process</strong></p>
+<p>If true, Natron will render frames to disk in a separate process so that if the main application crashes, the render goes on.</p>
+<p><strong>Append new renders to queue</strong></p>
+<p>When checked, renders will be queued in the Progress Panel and will start only when all other prior tasks are done.</p>
+</div>
+<div class="section" id="rendering">
+<h2>Rendering<a class="headerlink" href="#rendering" title="Permalink to this headline">¶</a></h2>
+<p><strong>Convert NaN values</strong></p>
+<p>When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an undefined behavior.</p>
+<p><strong>Copy input image before rendering any plug-in</strong></p>
+<p>If checked, when before rendering any node, Natron will copy the input image to a local temporary image. This is to work-around some plug-ins that write to the source image, thus modifying the output of the node upstream in the cache. This is a known bug of an old version of RevisionFX REMap for instance. By default, this parameter should be leaved unchecked, as this will require an extra image allocation and copy before rendering any plug-in.</p>
+<p><strong>RGB components support</strong></p>
+<p>When checked Natron is able to process images with only RGB components (support for images with RGBA and Alpha components is always enabled). Un-checking this option may prevent plugins that do not well support RGB components from crashing Natron. Changing this option requires a restart of the application.</p>
+<p><strong>Transforms concatenation support</strong></p>
+<p>When checked Natron is able to concatenate transform effects when they are chained in the compositing tree. This yields better results and faster render times because the image is only filtered once instead of as many times as there are transformations.</p>
+</div>
+<div class="section" id="gpu-rendering">
+<h2>GPU Rendering<a class="headerlink" href="#gpu-rendering" title="Permalink to this headline">¶</a></h2>
+<p><strong>Active OpenGL renderer</strong></p>
+<p>The currently active OpenGL renderer.</p>
+<p><strong>OpenGL renderer</strong></p>
+<p>The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.</p>
+<p><strong>No. of OpenGL Contexts</strong></p>
+<p>The number of OpenGL contexts created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread, allowing for more frames to be rendered simultaneously. Increasing this value may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.</p>
+<p><strong>OpenGL Rendering</strong></p>
+<p>Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.</p>
+</div>
+<div class="section" id="project-setup">
+<h2>Project Setup<a class="headerlink" href="#project-setup" title="Permalink to this headline">¶</a></h2>
+<p><strong>First image read set project format</strong></p>
+<p>If checked, the project size is set to this of the first image or video read within the project.</p>
+<p><strong>Auto-preview enabled by default for new projects</strong></p>
+<p>If checked, then when creating a new project, the Auto-preview option is enabled.</p>
+<p><strong>Auto fix relative file-paths</strong></p>
+<p>If checked, when a project-path changes (either the name or the value pointed to), Natron checks all file-path parameters in the project and tries to fix them.</p>
+<p><strong>Use drive letters instead of server names (Windows only)</strong></p>
+<p>This is only relevant for Windows: If checked, Natron will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p><strong>Documentation Source</strong></p>
+<p>Documentation source.</p>
+<p><strong>Documentation local port (0=auto)</strong></p>
+<p>The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.</p>
+</div>
+<div class="section" id="user-interface">
+<h2>User Interface<a class="headerlink" href="#user-interface" title="Permalink to this headline">¶</a></h2>
+<p><strong>Warn when a file changes externally</strong></p>
+<p>When checked, if a file read from a file parameter changes externally, a warning will be displayed on the viewer. Turning this off will suspend the notification system.</p>
+<p><strong>Prompt with file dialog when creating Write node</strong></p>
+<p>When checked, opens-up a file dialog when creating a Write node</p>
+<p><strong>Refresh viewer only when editing is finished</strong></p>
+<p>When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves or the timeline. This setting doesn’t apply to roto splines editing.</p>
+<p><strong>Linear color pickers</strong></p>
+<p>When activated, all colors picked from the color parameters are linearized before being fetched. Otherwise they are in the same colorspace as the viewer they were picked from.</p>
+<p><strong>Maximum number of open settings panels (0=“unlimited”)</strong></p>
+<p>This property holds the maximum number of settings panels that can be held by the properties dock at the same time.The special value of 0 indicates there can be an unlimited number of panels opened.</p>
+<p><strong>Value increments based on cursor position</strong></p>
+<p>When enabled, incrementing the value fields of parameters with the mouse wheel or with arrow keys will increment the digits on the right of the cursor.</p>
+<p>When disabled, the value fields are incremented given what the plug-in decided it should be. You can alter this increment by holding Shift (x10) or Control (/10) while incrementing.</p>
+<p><strong>Default layout file</strong></p>
+<p>When set, Natron uses the given layout file as default layout for new projects. You can export/import a layout to/from a file from the Layout menu. If empty, the default application layout is used.</p>
+<p><strong>Load workspace embedded within projects</strong></p>
+<p>When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it will use your current layout.</p>
+</div>
+<div class="section" id="color-management">
+<h2>Color Management<a class="headerlink" href="#color-management" title="Permalink to this headline">¶</a></h2>
+<p><strong>OpenColorIO configuration</strong></p>
+<p>Select the OpenColorIO configuration you would like to use globally for all operators and plugins that use OpenColorIO, by setting the “OCIO” environment variable. Only nodes created after changing this parameter will take it into account, and it is better to restart the application after changing it. When “Custom config” is selected, the “Custom OpenColorIO config file” parameter is used.</p>
+<p><strong>Custom OpenColorIO configuration file</strong></p>
+<p>OpenColorIO configuration file (config.ocio) to use when “Custom config” is selected as the OpenColorIO config.</p>
+<p><strong>Warn on OpenColorIO config change</strong></p>
+<p>Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.</p>
+</div>
+<div class="section" id="caching">
+<h2>Caching<a class="headerlink" href="#caching" title="Permalink to this headline">¶</a></h2>
+<p><strong>Aggressive caching</strong></p>
+<p>When checked, Natron will cache the output of all images rendered by all nodes, regardless of their “Force caching” parameter. When enabling this option you need to have at least 8GiB of RAM, and 16GiB is recommended.</p>
+<p>If not checked, Natron will only cache the nodes which have multiple outputs, or their parameter “Force caching” checked or if one of its output has its settings panel opened.</p>
+<p><strong>Maximum amount of RAM memory used for caching (% of total RAM)</strong></p>
+<p>This setting indicates the percentage of the total RAM which can be used by the memory caches.</p>
+<p><strong>System RAM to keep free (% of total RAM)</strong></p>
+<p>This determines how much RAM should be kept free for other applications running on the same system. When this limit is reached, the caches start recycling memory instead of growing. This value should reflect the amount of memory you want to keep available on your computer for other usage. A low value may result in a massive slowdown and high disk usage.</p>
+<p><strong>Maximum playback disk cache size (GiB)</strong></p>
+<p>The maximum size that may be used by the playback cache on disk (in GiB)</p>
+<p><strong>Maximum DiskCache node disk usage (GiB)</strong></p>
+<p>The maximum size that may be used by the DiskCache node on disk (in GiB)</p>
+<p><strong>Disk cache path</strong></p>
+<p>WARNING: Changing this parameter requires a restart of the application.</p>
+<p>This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overriden by the value of the environment variable NATRON_DISK_CACHE_PATH.</p>
+<p>If the parameter is left empty or the location set is invalid, the default location will be used.</p>
+<p><strong>Wipe Disk Cache</strong></p>
+<p>Cleans-up all caches, deleting all folders that may contain cached data. This is provided in case Natron lost track of cached images for some reason.</p>
+</div>
+<div class="section" id="viewer">
+<h2>Viewer<a class="headerlink" href="#viewer" title="Permalink to this headline">¶</a></h2>
+<p><strong>Viewer textures bit depth</strong></p>
+<p>Bit depth of the viewer textures used for rendering. Hover each option with the mouse for a detailed description.</p>
+<p><strong>Viewer tile size is 2 to the power of…</strong></p>
+<p>The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). A high value means that the viewer renders large tiles, so that rendering is done less often, but on larger areas.</p>
+<p><strong>Checkerboard tile size (pixels)</strong></p>
+<p>The size (in screen pixels) of one tile of the checkerboard.</p>
+<p><strong>Checkerboard color 1</strong></p>
+<p>The first color used by the checkerboard.</p>
+<p><strong>Checkerboard color 2</strong></p>
+<p>The second color used by the checkerboard.</p>
+<p><strong>Automatically enable wipe</strong></p>
+<p>When checked, the wipe tool of the viewer will be automatically enabled when the mouse is hovering the viewer and changing an input of a viewer.</p>
+<p><strong>Automatically enable proxy when scrubbing the timeline</strong></p>
+<p>When checked, the proxy mode will be at least at the level indicated by the auto-proxy parameter.</p>
+<p><strong>Max. opened node viewer interface</strong></p>
+<p>Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer</p>
+<p><strong>Use number keys for the viewer</strong></p>
+<p>When enabled, the row of number keys on the keyboard is used for switching input (&lt;key&gt; connects input to A side, &lt;shift-key&gt; connects input to B side), even if the corresponding character in the current keyboard layout is not a number.</p>
+<p>This may have to be disabled when using a remote display connection to Linux from a different OS.</p>
+</div>
+<div class="section" id="nodegraph">
+<h2>Nodegraph<a class="headerlink" href="#nodegraph" title="Permalink to this headline">¶</a></h2>
+<p><strong>Auto Scroll</strong></p>
+<p>When checked the node graph will auto scroll if you move a node outside the current graph view.</p>
+<p><strong>Auto-turbo</strong></p>
+<p>When checked the Turbo-mode will be enabled automatically when playback is started and disabled when finished.</p>
+<p><strong>Snap to node</strong></p>
+<p>When moving nodes on the node graph, snap to positions where they are lined up with the inputs and output nodes.</p>
+<p><strong>Maximum undo/redo for the node graph</strong></p>
+<p>Set the maximum of events related to the node graph Natron remembers. Past this limit, older events will be deleted forever, allowing to re-use the RAM for other purposes.</p>
+<p>Changing this value will clear the undo/redo stack.</p>
+<p><strong>Disconnected arrow length</strong></p>
+<p>The size of a disconnected node input arrow in pixels.</p>
+<p><strong>Auto hide masks inputs</strong></p>
+<p>When checked, any diconnected mask input of a node in the nodegraph will be visible only when the mouse is hovering the node or when it is selected.</p>
+<p><strong>Merge node connect to A input</strong></p>
+<p>If checked, upon creation of a new Merge node, or any other node with inputs named A and B, input A is be preferred for auto-connection. When the node is disabled, B is always output, whether this is checked or not.</p>
+</div>
+<div class="section" id="plug-ins">
+<h2>Plug-ins<a class="headerlink" href="#plug-ins" title="Permalink to this headline">¶</a></h2>
+<p><strong>Use bundled plug-ins</strong></p>
+<p>When checked, Natron also uses the plug-ins bundled with the binary distribution.</p>
+<p>When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the “Extra plug-ins search paths” setting).</p>
+<p><strong>Prefer bundled plug-ins over system-wide plug-ins</strong></p>
+<p>When checked, and if “Use bundled plug-ins” is also checked, plug-ins bundled with the Natron binary distribution will take precedence over system-wide plug-ins if they have the same internal ID.</p>
+<p><strong>Enable default OpenFX plugins location</strong></p>
+<p>When checked, Natron also uses the OpenFX plug-ins found in the default location (/Library/OFX/Plugins).</p>
+<p><strong>OpenFX plug-ins search path</strong></p>
+<p>Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.</p>
+<p>The priority order for system-wide plug-ins, from high to low, is:</p>
+<ul class="simple">
+<li>plugins bundled with the binary distribution of Natron (if “Prefer bundled plug-ins over system-wide plug-ins” is checked)</li>
+<li>plug-ins found in OFX_PLUGIN_PATH</li>
+<li>plug-ins found in /Library/OFX/Plugins (if “Enable default OpenFX plug-ins location” is checked)</li>
+<li>plugins bundled with the binary distribution of Natron (if “Prefer bundled plug-ins over system-wide plug-ins” is not checked)</li>
+</ul>
+<p>Any change will take effect on the next launch of Natron.</p>
+<p><strong>PyPlugs search path</strong></p>
+<p>Search path where Natron should scan for Python group scripts (PyPlugs). The search paths for groups can also be specified using the NATRON_PLUGIN_PATH environment variable.</p>
+</div>
+<div class="section" id="python">
+<h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
+<p><strong>After project created</strong></p>
+<p>Callback called once a new project is created (this is never called when “After project loaded” is called.)</p>
+<p>The signature of the callback is: callback(app) where:</p>
+<ul class="simple">
+<li>app: points to the current application instance</li>
+</ul>
+<p><strong>Default after project loaded</strong></p>
+<p>The default afterProjectLoad callback that will be set for new projects.</p>
+<p><strong>Default before project save</strong></p>
+<p>The default beforeProjectSave callback that will be set for new projects.</p>
+<p><strong>Default before project close</strong></p>
+<p>The default beforeProjectClose callback that will be set for new projects.</p>
+<p><strong>Default after node created</strong></p>
+<p>The default afterNodeCreated callback that will be set for new projects.</p>
+<p><strong>Default before node removal</strong></p>
+<p>The default beforeNodeRemoval callback that will be set for new projects.</p>
+<p><strong>Load PyPlugs in projects from .py if possible</strong></p>
+<p>When checked, if a project contains a PyPlug, it will try to first load the PyPlug from the .py file. If the version of the PyPlug has changed Natron will ask you whether you want to upgrade to the new version of the PyPlug in your project. If the .py file is not found, it will fallback to the same behavior as when this option is unchecked. When unchecked the PyPlug will load as a regular group with the information embedded in the project file.</p>
+<p><strong>Print auto-declared variables in the Script Editor</strong></p>
+<p>When checked, Natron will print in the Script Editor all variables that are automatically declared, such as the app variable or node attributes.</p>
+</div>
+<div class="section" id="appearance">
+<h2>Appearance<a class="headerlink" href="#appearance" title="Permalink to this headline">¶</a></h2>
+<p><strong>Font</strong></p>
+<p>List of all fonts available on your system</p>
+<p><strong>Stylesheet file (.qss)</strong></p>
+<p>When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default stylesheet. You can adapt the default stylesheet that can be found in your distribution of Natron.</p>
+<div class="section" id="main-window">
+<h3>Main Window<a class="headerlink" href="#main-window" title="Permalink to this headline">¶</a></h3>
+<p><strong>Use black &amp; white toolbutton icons</strong></p>
+<p>When checked, the tools icons in the left toolbar are greyscale. Changing this takes effect upon the next launch of the application.</p>
+</div>
+<div class="section" id="curve-editor">
+<h3>Curve Editor<a class="headerlink" href="#curve-editor" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="dope-sheet">
+<h3>Dope Sheet<a class="headerlink" href="#dope-sheet" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="node-graph">
+<h3>Node Graph<a class="headerlink" href="#node-graph" title="Permalink to this headline">¶</a></h3>
+<p><strong>Display plug-in icon on node-graph</strong></p>
+<p>When checked, each node that has a plug-in icon will display it in the node-graph.Changing this option will not affect already existing nodes, unless a restart of Natron is made.</p>
+<p><strong>Anti-Aliasing</strong></p>
+<p>When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances. Changing this requires a restart of Natron</p>
+<p><strong>Default node color</strong></p>
+<p>The default color used for newly created nodes.</p>
+<p><strong>Default backdrop color</strong></p>
+<p>The default color used for newly created backdrop nodes.</p>
+<p><strong>Readers</strong></p>
+<p>The color used for newly created Reader nodes.</p>
+<p><strong>Writers</strong></p>
+<p>The color used for newly created Writer nodes.</p>
+<p><strong>Generators</strong></p>
+<p>The color used for newly created Generator nodes.</p>
+<p><strong>Color group</strong></p>
+<p>The color used for newly created Color nodes.</p>
+<p><strong>Filter group</strong></p>
+<p>The color used for newly created Filter nodes.</p>
+<p><strong>Transform group</strong></p>
+<p>The color used for newly created Transform nodes.</p>
+<p><strong>Time group</strong></p>
+<p>The color used for newly created Time nodes.</p>
+<p><strong>Draw group</strong></p>
+<p>The color used for newly created Draw nodes.</p>
+<p><strong>Keyer group</strong></p>
+<p>The color used for newly created Keyer nodes.</p>
+<p><strong>Channel group</strong></p>
+<p>The color used for newly created Channel nodes.</p>
+<p><strong>Merge group</strong></p>
+<p>The color used for newly created Merge nodes.</p>
+<p><strong>Views group</strong></p>
+<p>The color used for newly created Views nodes.</p>
+<p><strong>Deep group</strong></p>
+<p>The color used for newly created Deep nodes.</p>
+</div>
+<div class="section" id="script-editor">
+<h3>Script Editor<a class="headerlink" href="#script-editor" title="Permalink to this headline">¶</a></h3>
+<p><strong>Font</strong></p>
+<p>List of all fonts available on your system</p>
+<p><strong>Font Size</strong></p>
+<p>The font size</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="_environment.html" class="btn btn-neutral float-right" title="Environment Variables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="_group.html" class="btn btn-neutral float-left" title="Reference Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

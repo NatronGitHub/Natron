@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Controlling parameters &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Parameters expressions" href="paramExpressions.html" />
+    <link rel="prev" title="Creating and controlling nodes" href="creatingNode.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Controlling parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-a-node-s-parameters">Accessing a node’s parameters:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parameters-type">Parameters type:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#retrieving-a-parameter-s-value">Retrieving a parameter’s value:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modifying-a-parameter-s-value">Modifying a parameter’s value:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controlling-other-properties-of-parameters">Controlling other properties of parameters:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-new-parameters">Creating new parameters:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Controlling parameters</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/controllingParameters.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="controlling-parameters">
+<span id="controlparams"></span><h1>Controlling parameters<a class="headerlink" href="#controlling-parameters" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="accessing-a-node-s-parameters">
+<h2>Accessing a node’s parameters:<a class="headerlink" href="#accessing-a-node-s-parameters" title="Permalink to this headline">¶</a></h2>
+<p>As for nodes, <a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">parameters</span></a> are <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> objects.
+You can access an existing parameter of a node by its <em>script-name</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="o">.</span><span class="n">size</span>
+</pre></div>
+</div>
+<p>Note that you can also access a parameter with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(scriptName)</span></code> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">param</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;size&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>but you should not ever need it because Natron pre-declared all variables for you.</p>
+<p>The <em>script-name</em> of a parameter is visible in the user interface when hovering the parameter
+in the settings panel with the mouse. This is the name in <strong>bold</strong>:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/paramScriptName.png"><img alt="../_images/paramScriptName.png" src="../_images/paramScriptName.png" style="width: 200px;" /></a>
+</div>
+</div>
+<div class="section" id="parameters-type">
+<h2>Parameters type:<a class="headerlink" href="#parameters-type" title="Permalink to this headline">¶</a></h2>
+<p>Each parameter has a type to represent internally different data-types, here is a list of
+all existing parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="PythonReference/NatronEngine/IntParam.html"><span class="doc">IntParam</span></a> to store 1-dimensional integers</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Int2DParam.html"><span class="doc">Int2DParam</span></a> to store 2-dimensional integers</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Int3DParam.html"><span class="doc">Int3DParam</span></a> to store 3-dimensional integers</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/DoubleParam.html"><span class="doc">DoubleParam</span></a> to store 1-dimensional floating point</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Double2DParam.html"><span class="doc">Double2DParam</span></a> to store 2-dimensional floating point</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Double3DParam.html"><span class="doc">Double3DParam</span></a> to store 3-dimensional floating point</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/BooleanParam.html"><span class="doc">BooleanParam</span></a> to store 1-dimensional boolean (checkbox)</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/ButtonParam.html"><span class="doc">ButtonParam</span></a> to add a push-button</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/ChoiceParam.html"><span class="doc">ChoiceParam</span></a> a 1-dimensional drop-down (combobox)</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/DoubleParam.html"><span class="doc">StringParam</span></a> to store a 1-dimensional string</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/FileParam.html"><span class="doc">FileParam</span></a> to specify an input-file</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/OutputFileParam.html"><span class="doc">OutputFileParam</span></a> to specify an output-file param</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/PathParam.html"><span class="doc">PathParam</span></a> to specify a path to a single or multiple directories</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/ParametricParam.html"><span class="doc">ParametricParam</span></a> to store N-dimensional parametric curves</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/GroupParam.html"><span class="doc">GroupParam</span></a> to graphically gather parameters under a group</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/PageParam.html"><span class="doc">PageParam</span></a> to store parameters into a page</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="retrieving-a-parameter-s-value">
+<h2>Retrieving a parameter’s value:<a class="headerlink" href="#retrieving-a-parameter-s-value" title="Permalink to this headline">¶</a></h2>
+<p>Since each underlying type is different for parameters, each sub-class has its own version
+of the functions.</p>
+<p>To get the value of the parameter at the timeline’s current time, call the <code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code> or
+<code class="xref py py-func docutils literal notranslate"><span class="pre">getValue()</span></code> function.</p>
+<p>If the parameter is animated and you want to retrieve its value at a specific time on the timeline,
+you would use the <code class="xref py py-func docutils literal notranslate"><span class="pre">get(frame)</span></code> or <code class="xref py py-func docutils literal notranslate"><span class="pre">getValueAtTime(frame,dimension)</span></code> function.</p>
+<p>Note that when animated and the given <em>frame</em> time is not a time at which a keyframe exists,
+Natron will interpolate the value of the parameter between surrounding keyframes with the
+interpolation filter selected (by default it is <em>smooth</em>).</p>
+</div>
+<div class="section" id="modifying-a-parameter-s-value">
+<h2>Modifying a parameter’s value:<a class="headerlink" href="#modifying-a-parameter-s-value" title="Permalink to this headline">¶</a></h2>
+<p>You would set the parameter value by calling the <code class="xref py py-func docutils literal notranslate"><span class="pre">set(value)</span></code> or <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> function.
+If the parameter is animated (= has 1 or more keyframe) then calling this function would
+create (or modify) a keyframe at the timeline’s current time.</p>
+<p>To add a new keyframe the <code class="xref py py-func docutils literal notranslate"><span class="pre">set(value,frame)</span></code> or <code class="xref py py-func docutils literal notranslate"><span class="pre">setValueAtTime(value,frame,dimension)</span></code> function can be used.</p>
+<p>To remove a keyframe you can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">deleteValueAtTime(frame,dimension)</span></code> function.
+If you want to remove all the animation on the parameter at a given <em>dimension</em>, use the
+<code class="xref py py-func docutils literal notranslate"><span class="pre">removeAnimation(dimension)</span></code> function.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that the dimension is a 0-based index referring to the dimension on which to operate.
+For instance a <a class="reference internal" href="PythonReference/NatronEngine/Double2DParam.html"><span class="doc">Double2DParam</span></a> has 2 dimensions <em>x</em> and <em>y</em>.
+To set a value on <strong>x</strong> you would use <em>dimension = 0</em>, to set a value on <strong>y</strong> you would use <em>dimension = 1</em>.</p>
+</div>
+</div>
+<div class="section" id="controlling-other-properties-of-parameters">
+<h2>Controlling other properties of parameters:<a class="headerlink" href="#controlling-other-properties-of-parameters" title="Permalink to this headline">¶</a></h2>
+<p>See the documentation for the <a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">Param</span></a> class for a detailed
+explanation of other properties and how they affect the parameter.</p>
+</div>
+<div class="section" id="creating-new-parameters">
+<h2>Creating new parameters:<a class="headerlink" href="#creating-new-parameters" title="Permalink to this headline">¶</a></h2>
+<p>In Natron, the user has the possibility to add new parameters, called <em>User parameters</em>.
+They are pretty much the same than the parameters defined by the underlying OpenFX plug-in itself.</p>
+<p>In the Python API, to create a new <em>user parameter</em>, you would need to call one of the
+<code class="xref py py-func docutils literal notranslate"><span class="pre">createXParam(name,label,...)</span></code> of the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">Effect</span></a> class.</p>
+<p>These parameters can have their default values and properties changed as explained in the
+documentation page of the <a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">Param</span></a> class.</p>
+<p>To remove a user created parameter you would need to call the <code class="xref py py-func docutils literal notranslate"><span class="pre">removeParam(param)</span></code> function
+of the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">Effect</span></a> class.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Only <strong>user parameters</strong> can be removed. Removing parameters defined by the OpenFX plug-in
+will not work.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="paramExpressions.html" class="btn btn-neutral float-right" title="Parameters expressions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="creatingNode.html" class="btn btn-neutral float-left" title="Creating and controlling nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

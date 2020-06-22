@@ -1,0 +1,973 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Natron documentation &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Guide" href="guide/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Natron documentation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="natron-documentation">
+<h1>Natron documentation<a class="headerlink" href="#natron-documentation" title="Permalink to this headline">¶</a></h1>
+<p>The Natron documentation is organized as follows:</p>
+<ul class="simple">
+<li>The <a class="reference internal" href="guide/index.html#user-guide"><span class="std std-ref">User Guide</span></a> contains everything to get started with Natron, including tutorials.</li>
+<li>The <a class="reference internal" href="_group.html#reference-guide"><span class="std std-ref">Reference Guide</span></a> contains the documentation about the user settings and environment variables for Natron, as well as the documentation for each node in Natron.</li>
+<li>The <a class="reference internal" href="devel/index.html#developers-guide"><span class="std std-ref">Developers Guide</span></a> contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).</li>
+</ul>
+<p>This documentation is also
+<a class="reference external" href="http://natron.readthedocs.io/en/rb-2.3/">available online</a>
+and can be downloaded as a
+<a class="reference external" href="https://readthedocs.org/projects/natron/downloads/pdf/rb-2.3/">PDF</a>,
+<a class="reference external" href="https://readthedocs.org/projects/natron/downloads/htmlzip/rb-2.3/">HTML zip</a>
+or
+<a class="reference external" href="https://readthedocs.org/projects/natron/downloads/epub/rb-2.3/">ePub</a>
+file.</p>
+<p>This manual is maintained largely by volunteers.</p>
+<p>The <a class="reference external" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License (CC-BY-SA 4.0)</a> is used for this manual, which is a free and open license. Though there are certain restrictions that come with this license you may in general freely reproduce it and even make changes to it. However, rather than distribute your own version of this manual, we would much prefer if you would send any corrections or changes to the Natron project.</p>
+<p>The <em>Natron documentation authors</em> are:</p>
+<ul class="simple">
+<li>Alexandre Gauthier-Foichat</li>
+<li>Ole-André Rodlie &lt;<a class="reference external" href="mailto:rodlie&#37;&#52;&#48;github">rodlie<span>&#64;</span>github</a>&gt;</li>
+<li>Omar Brown</li>
+<li>Frédéric Devernay &lt;<a class="reference external" href="mailto:devernay&#37;&#52;&#48;github">devernay<span>&#64;</span>github</a>&gt;</li>
+<li>Alexandre Bon &lt;<a class="reference external" href="mailto:bonalex01dev&#37;&#52;&#48;github">bonalex01dev<span>&#64;</span>github</a>&gt;</li>
+<li>&lt;<a class="reference external" href="mailto:hellocatfood&#37;&#52;&#48;github">hellocatfood<span>&#64;</span>github</a>&gt;</li>
+<li>&lt;<a class="reference external" href="mailto:magdesign&#37;&#52;&#48;github">magdesign<span>&#64;</span>github</a>&gt;</li>
+<li>Huân Lê-Vương &lt;<a class="reference external" href="mailto:lehuan5062&#37;&#52;&#48;github">lehuan5062<span>&#64;</span>github</a>&gt;</li>
+<li>Fahad Hasan Pathik &lt;<a class="reference external" href="mailto:cgvirus&#37;&#52;&#48;github">cgvirus<span>&#64;</span>github</a>&gt;</li>
+</ul>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/intro.html">What is compositing?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/intro.html#theory">Theory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/intro.html#practice">Practice</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide/getstarted.html">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/getstarted-about.html">About</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/getstarted-installation.html">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/getstarted-environment.html">Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/getstarted-troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide/compositing.html">Compositing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-projects.html">Managing Projects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-reformat.html">Reformatting elements (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-channels.html">Channels (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-merge.html">Merging images (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-denoise.html">Noise removal (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-keying.html">Keying (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-rotopaint.html">Using Rotopaint (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-tracking.html">Tracking and stabilizing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-transform.html">Transforming elements (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-color.html">Working with color (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-stereo.html">Stereoscopic compositing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-render.html">Preview and rendering (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/compositing-exprs.html">Expressions (empty)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide/tutorials.html">Tutorials</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-writedoc.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-imagesequence.html">How To Convert Videos To Image Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-imagesequence.html#how-to-convert-image-sequences-to-video-files">How To Convert Image Sequences To Video Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-imagesequence.html#using-nle">Using NLE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-imagesequence.html#creating-digital-intermediate-for-editing-servers">Creating Digital Intermediate For Editing Servers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-hsvtool.html">HSVTool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-ffmpeg.html">FFmpeg (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-hugin.html">Using PanoTools projects within Natron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-svgworkflow.html">Vector graphics workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/tutorials-AlternativeMatteExtraction.html">Alternative Matte Extraction Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_group.html">Reference Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_prefs.html">Preferences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#general">General</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#threading">Threading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#rendering">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#gpu-rendering">GPU Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#project-setup">Project Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#documentation">Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#user-interface">User Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#color-management">Color Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#caching">Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#viewer">Viewer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#nodegraph">Nodegraph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#plug-ins">Plug-ins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#python">Python</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_prefs.html#appearance">Appearance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_environment.html">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="_environment.html#what-are-environment-variables">What are Environment Variables?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_environment.html#how-do-i-set-an-environment-variable">How do I set an environment variable?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_environment.html#natron-environment-variables">Natron Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupImage.html">Image nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.CheckerBoardPlugin.html">CheckerBoard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorBars.html">ColorBars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorWheel.html">ColorWheel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ConstantPlugin.html">Constant node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OpenRaster.html">OpenRaster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Read.html">Read node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadCDR.html">ReadCDR node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadFFmpeg.html">ReadFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadKrita.html">ReadKrita node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadMisc.html">ReadMisc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadOIIO.html">ReadOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadPDF.html">ReadPDF node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadPFM.html">ReadPFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.ReadPNG.html">ReadPNG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.ReadPSD.html">ReadPSD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.ReadSVG.html">ReadSVG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.RunScript.html">RunScript node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Solid.html">Solid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Write.html">Write node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.WriteFFmpeg.html">WriteFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.WriteOIIO.html">WriteOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.WritePFM.html">WritePFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.WritePNG.html">WritePNG node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupDraw.html">Draw nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.LightWrap.html">LightWrap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgNoise.html">Noise node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgPlasma.html">Plasma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Radial.html">Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Ramp.html">Ramp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Noise.html">Rand node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Rectangle.html">Rectangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Roto.html">Roto node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.RotoPaint.html">RotoPaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.SeGrain.html">SeGrain node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.SeNoise.html">SeNoise node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Text.html">Text node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTime.html">Time nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.AppendClip.html">AppendClip node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Deinterlace.html">Deinterlace node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.FrameBlend.html">FrameBlend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.FrameHold.html">FrameHold node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.FrameRange.html">FrameRange node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.NoTimeBlurPlugin.html">NoTimeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Retime.html">Retime node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.SlitScan.html">SlitScan node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.TimeBlur.html">TimeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.timeOffset.html">TimeOffset node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupChannel.html">Channel nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ShufflePlugin.html">Shuffle node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupColor.html">Color nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.AddPlugin.html">Add node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Clamp.html">Clamp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ClipTestPlugin.html">ClipTest node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorCorrectPlugin.html">ColorCorrect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorLookupPlugin.html">ColorLookup node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorMatrixPlugin.html">ColorMatrix node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ColorSuppress.html">ColorSuppress node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgEqualize.html">Equalize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.GammaPlugin.html">Gamma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.GradePlugin.html">Grade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HSIToRGB.html">HSIToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HSLToRGB.html">HSLToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HSVToRGB.html">HSVToRGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HSVToolPlugin.html">HSVTool node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgHistEQ.html">HistEQ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HueCorrect.html">HueCorrect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Invert.html">Invert node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.LabToRGB709.html">LabToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.LabToXYZ.html">LabToXYZ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Log2Lin.html">Log2Lin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MultiplyPlugin.html">Multiply node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIOCDLTransform.html">OCIOCDLTransform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIOColorSpace.html">OCIOColorSpace node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIODisplay.html">OCIODisplay node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIOFileTransform.html">OCIOFileTransform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIOLogConvert.html">OCIOLogConvert node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OCIOLookTransform.html">OCIOLookTransform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.PLogLin.html">PLogLin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Quantize.html">Quantize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGB709ToLab.html">RGB709ToLab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGB709ToXYZ.html">RGB709ToXYZ node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToHSI.html">RGBToHSI node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToHSL.html">RGBToHSL node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToHSV.html">RGBToHSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYCbCr601.html">RGBToYCbCr601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYCbCr709.html">RGBToYCbCr709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYPbPr601.html">RGBToYPbPr601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYPbPr709.html">RGBToYPbPr709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYUV601.html">RGBToYUV601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.RGBToYUV709.html">RGBToYUV709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.SaturationPlugin.html">Saturation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.VectorToColorPlugin.html">VectorToColor node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.XYZToLab.html">XYZToLab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.XYZToRGB709.html">XYZToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.XYZToxyY.html">XYZToxyY node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YCbCrToRGB601.html">YCbCrToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YCbCrToRGB709.html">YCbCrToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YPbPrToRGB601.html">YPbPrToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YPbPrToRGB709.html">YPbPrToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YUVToRGB601.html">YUVToRGB601 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.YUVToRGB709.html">YUVToRGB709 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.xyYToXYZ.html">xyYToXYZ node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupFilter.html">Filter nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.DenoiseSharpen.html">DenoiseSharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgExpression.html">GMICExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.GodRays.html">GodRays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Shadertoy.html">Shadertoy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.cimg.CImgSoften.html">Soften node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupKeyer.html">Keyer nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ChromaKeyerPlugin.html">ChromaKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Despill.html">Despill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.DifferencePlugin.html">Difference node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.HueKeyer.html">HueKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.KeyerPlugin.html">Keyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MatteMonitorPlugin.html">MatteMonitor node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.PIK.html">PIK node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.PIKColor.html">PIKColor node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupMerge.html">Merge nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeDifference.html">Absminus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ContactSheetOFX.html">ContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.CopyRectanglePlugin.html">CopyRectangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.DissolvePlugin.html">Dissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeIn.html">In node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.KeyMix.html">KeyMix node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.LayerContactSheetOFX.html">LayerContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeMatte.html">Matte node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeMax.html">Max node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergePlugin.html">Merge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeMin.html">Min node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeMultiply.html">Multiply node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeOut.html">Out node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergePlus.html">Plus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Premult.html">Premult node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeRoto.html">RotoMerge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.MergeScreen.html">Screen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.SeExpr.html">SeExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.SeExprSimple.html">SeExprSimple node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.switchPlugin.html">Switch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.TimeDissolvePlugin.html">TimeDissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Unpremult.html">Unpremult node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTransform.html">Transform nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.AdjustRoDPlugin.html">AdjustRoD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Card3D.html">Card3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.CornerPinPlugin.html">CornerPin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.CornerPinMaskedPlugin.html">CornerPinMasked node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.CropPlugin.html">Crop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.IDistort.html">IDistort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.LensDistortion.html">LensDistortion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Mirror.html">Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Position.html">Position node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.Reformat.html">Reformat node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.openfx.OIIOResize.html">Resize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.STMap.html">STMap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.SpriteSheet.html">SpriteSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Tracker.html">Tracker node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.TransformPlugin.html">Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.TransformMaskedPlugin.html">TransformMasked node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupViews.html">Views nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.anaglyphPlugin.html">Anaglyph node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.JoinViews.html">JoinViews node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.mixViewsPlugin.html">MixViews node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.OneView.html">OneView node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.sideBySidePlugin.html">SideBySide node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupOther.html">Other nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.AudioCurve.html">AudioCurve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.BackDrop.html">Backdrop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.DiskCache.html">DiskCache node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Dot.html">Dot node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Group.html">Group node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.ImageStatistics.html">ImageStatistics node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Input.html">Input node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.sf.openfx.NoOpPlugin.html">NoOp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Output.html">Output node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/fr.inria.built-in.Precomp.html">Precomp node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupGMIC.html">GMIC nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.AboutGMIC.html">About G’MIC node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DBlocks.html">G’MIC 3D Blocks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DColoredObject.html">G’MIC 3D Colored Object node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DElevation.html">G’MIC 3D Elevation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DExtrusion.html">G’MIC 3D Extrusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DImageObject.html">G’MIC 3D Image Object node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DLathing.html">G’MIC 3D Lathing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.3DRandomObjects.html">G’MIC 3D Random Objects node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Abstraction.html">G’MIC Abstraction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.AddGrain.html">G’MIC Add Grain node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.AlignLayers.html">G’MIC Align Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ApplyExternalCLUT.html">G’MIC Apply External CLUT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ArrayFaded.html">G’MIC Array Faded node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ArrayMirrored.html">G’MIC Array Mirrored node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ArrayRandom.html">G’MIC Array Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ArrayRandomColors.html">G’MIC Array Random Colors node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ArrayRegular.html">G’MIC Array Regular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.AsciiArt.html">G’MIC Ascii Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BWStencil.html">G’MIC B&amp;W Stencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Ball.html">G’MIC Ball node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Bandpass.html">G’MIC Bandpass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BarnsleyFern.html">G’MIC Barnsley Fern node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BasicAdjustments.html">G’MIC Basic Adjustments node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BayerFilter.html">G’MIC Bayer Filter node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BayerReconstruction.html">G’MIC Bayer Reconstruction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlackWhite.html">G’MIC Black &amp; White node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendAverageAll.html">G’MIC Blend Average All node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendEdges.html">G’MIC Blend Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendFade.html">G’MIC Blend Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendMedian.html">G’MIC Blend Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendSeamless.html">G’MIC Blend Seamless node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlendStandard.html">G’MIC Blend Standard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurAngular.html">G’MIC Blur Angular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurBloom.html">G’MIC Blur Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurDepthofField.html">G’MIC Blur Depth-of-Field node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurGaussian.html">G’MIC Blur Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurGlow.html">G’MIC Blur Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurLinear.html">G’MIC Blur Linear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BlurRadial.html">G’MIC Blur Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Bokeh.html">G’MIC Bokeh node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BoostChromaticity.html">G’MIC Boost Chromaticity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BoostFade.html">G’MIC Boost-Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.BoxFitting.html">G’MIC Box Fitting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Brushify.html">G’MIC Brushify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Burn.html">G’MIC Burn node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CLUTfromAfterBeforeLayers.html">G’MIC CLUT from After Before Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Camouflage.html">G’MIC Camouflage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Canvas.html">G’MIC Canvas node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CanvasTexture.html">G’MIC Canvas Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CartesianTransform.html">G’MIC Cartesian Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Cartoon.html">G’MIC Cartoon node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ChannelProcessing.html">G’MIC Channel Processing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ChannelstoLayers.html">G’MIC Channels to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Charcoal.html">G’MIC Charcoal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Chessboard.html">G’MIC Chessboard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ChromaticAberrations.html">G’MIC Chromatic Aberrations node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CircleAbstraction.html">G’MIC Circle Abstraction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CircleArt.html">G’MIC Circle Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CircleTransform.html">G’MIC Circle Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorBalance.html">G’MIC Color Balance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorBlindness.html">G’MIC Color Blindness node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorPresets.html">G’MIC Color Presets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorfulBlobs.html">G’MIC Colorful Blobs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorizeLineartAutoFill.html">G’MIC Colorize Lineart Auto-Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorizeLineartPropagation.html">G’MIC Colorize Lineart Propagation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorizeLineartSmartColoring.html">G’MIC Colorize Lineart Smart Coloring node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorizePhotographs.html">G’MIC Colorize Photographs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorizewithColormap.html">G’MIC Colorize with Colormap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Colormap.html">G’MIC Colormap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ColorstoLayers.html">G’MIC Colors to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ConformalMaps.html">G’MIC Conformal Maps node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ContrastSwissMask.html">G’MIC Contrast Swiss Mask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Convolve.html">G’MIC Convolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Cracks.html">G’MIC Cracks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Crease.html">G’MIC Crease node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Crystal.html">G’MIC Crystal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CrystalBackground.html">G’MIC Crystal Background node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Cubism.html">G’MIC Cubism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Cupid.html">G’MIC Cupid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Curvature.html">G’MIC Curvature node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CustomCodeGlobal.html">G’MIC Custom Code Global node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CustomCodeLocal.html">G’MIC Custom Code Local node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.CustomizeCLUT.html">G’MIC Customize CLUT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Cutout.html">G’MIC Cutout node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DecomposeChannels.html">G’MIC Decompose Channels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Deinterlace.html">G’MIC Deinterlace node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DetailsEqualizer.html">G’MIC Details Equalizer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DetectSkin.html">G’MIC Detect Skin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Dices.html">G’MIC Dices node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DifferenceofGaussians.html">G’MIC Difference of Gaussians node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DiffusionTensors.html">G’MIC Diffusion Tensors node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Dirty.html">G’MIC Dirty node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DistanceTransform.html">G’MIC Distance Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DistortLens.html">G’MIC Distort Lens node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Dithering.html">G’MIC Dithering node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DragonCurve.html">G’MIC Dragon Curve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DrawnMontage.html">G’MIC Drawn Montage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DropShadow.html">G’MIC Drop Shadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DropShadow3D.html">G’MIC Drop Shadow 3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.DropWater.html">G’MIC Drop Water node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Droste.html">G’MIC Droste node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Edges.html">G’MIC Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EdgesOffsets.html">G’MIC Edges Offsets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Ellipsionism.html">G’MIC Ellipsionism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Engrave.html">G’MIC Engrave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EqualizeHSIHSLHSV.html">G’MIC Equalize HSI-HSL-HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EqualizeHSV.html">G’MIC Equalize HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EqualizeLocalHistograms.html">G’MIC Equalize Local Histograms node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EqualizeShadow.html">G’MIC Equalize Shadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EquationPlotParametric.html">G’MIC Equation Plot Parametric node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EquationPlotYfX.html">G’MIC Equation Plot Y=f(X) node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EquirectangulartoNadirZenith.html">G’MIC Equirectangular to Nadir-Zenith node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.EuclideanPolar.html">G’MIC Euclidean Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ExtractObjects.html">G’MIC Extract Objects node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FadeLayers.html">G’MIC Fade Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FeltPen.html">G’MIC Felt Pen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FishEye.html">G’MIC Fish-Eye node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FlipRotateBlocs.html">G’MIC Flip &amp; Rotate Blocs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Flower.html">G’MIC Flower node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FourierAnalysis.html">G’MIC Fourier Analysis node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FourierTransform.html">G’MIC Fourier Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FourierWatermark.html">G’MIC Fourier Watermark node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Fractalize.html">G’MIC Fractalize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameBlur.html">G’MIC Frame Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameCube.html">G’MIC Frame Cube node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameFuzzy.html">G’MIC Frame Fuzzy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameMirror.html">G’MIC Frame Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FramePainting.html">G’MIC Frame Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FramePattern.html">G’MIC Frame Pattern node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameRegular.html">G’MIC Frame Regular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameRound.html">G’MIC Frame Round node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FrameSmooth.html">G’MIC Frame Smooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FreakyBW.html">G’MIC Freaky B&amp;W node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.FreakyDetails.html">G’MIC Freaky Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GamesDemos.html">G’MIC Games &amp; Demos node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Gear.html">G’MIC Gear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientCorners.html">G’MIC Gradient Corners node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientCustomShape.html">G’MIC Gradient Custom Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientLinear.html">G’MIC Gradient Linear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientNorm.html">G’MIC Gradient Norm node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientRGB.html">G’MIC Gradient RGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientRadial.html">G’MIC Gradient Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientRandom.html">G’MIC Gradient Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GradientfromLine.html">G’MIC Gradient from Line node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GridCartesian.html">G’MIC Grid Cartesian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GridHexagonal.html">G’MIC Grid Hexagonal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.GridTriangular.html">G’MIC Grid Triangular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Halftone.html">G’MIC Halftone node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.HardSketch.html">G’MIC Hard Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Heart.html">G’MIC Heart node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Hearts.html">G’MIC Hearts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.HighlightBloom.html">G’MIC Highlight Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.HistogramAnalysis.html">G’MIC Histogram Analysis node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.HopePoster.html">G’MIC Hope Poster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.HoughSketch.html">G’MIC Hough Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Illuminate2DShape.html">G’MIC Illuminate 2D Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ImportData.html">G’MIC Import Data node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InkWash.html">G’MIC Ink Wash node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InpaintHoles.html">G’MIC Inpaint Holes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InpaintMorphological.html">G’MIC Inpaint Morphological node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InpaintMultiScale.html">G’MIC Inpaint Multi-Scale node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InpaintPatchBased.html">G’MIC Inpaint Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.InpaintTransportDiffusion.html">G’MIC Inpaint Transport-Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Intarsia.html">G’MIC Intarsia node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Isophotes.html">G’MIC Isophotes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.JPEGArtefacts.html">G’MIC JPEG Artefacts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.KaleidoscopeBlended.html">G’MIC Kaleidoscope Blended node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.KaleidoscopePolar.html">G’MIC Kaleidoscope Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.KaleidoscopeSymmetry.html">G’MIC Kaleidoscope Symmetry node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Kuwahara.html">G’MIC Kuwahara node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Laplacian.html">G’MIC Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Lava.html">G’MIC Lava node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LayerstoTiles.html">G’MIC Layers to Tiles node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LightGlow.html">G’MIC Light Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LightLeaks.html">G’MIC Light Leaks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LightPatch.html">G’MIC Light Patch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LightRays.html">G’MIC Light Rays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Lightning.html">G’MIC Lightning node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Linify.html">G’MIC Linify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Lissajous.html">G’MIC Lissajous node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LocalNormalization.html">G’MIC Local Normalization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LocalOrientation.html">G’MIC Local Orientation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LocalProcessing.html">G’MIC Local Processing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Lomo.html">G’MIC Lomo node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.LylejksPainting.html">G’MIC Lylejk’s Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MagicDetails.html">G’MIC Magic Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MakeSeamlessDiffusion.html">G’MIC Make Seamless Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MakeSeamlessPatchBased.html">G’MIC Make Seamless Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MandelbrotJuliaSets.html">G’MIC Mandelbrot Julia Sets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Marble.html">G’MIC Marble node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Maze.html">G’MIC Maze node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MesswithBits.html">G’MIC Mess with Bits node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MightyDetails.html">G’MIC Mighty Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MineralMosaic.html">G’MIC Mineral Mosaic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Ministeck.html">G’MIC Ministeck node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerCMYK.html">G’MIC Mixer CMYK node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerHSV.html">G’MIC Mixer HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerLab.html">G’MIC Mixer Lab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerPCA.html">G’MIC Mixer PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerRGB.html">G’MIC Mixer RGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MixerYCbCr.html">G’MIC Mixer YCbCr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Montage.html">G’MIC Montage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MorphLayers.html">G’MIC Morph Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MorphologicalFilter.html">G’MIC Morphological Filter node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Mosaic.html">G’MIC Mosaic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.MultiscaleOperator.html">G’MIC Multiscale Operator node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.NeonLightning.html">G’MIC Neon Lightning node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.NewtonFractal.html">G’MIC Newton Fractal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.NoiseAdditive.html">G’MIC Noise Additive node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.NoisePerlin.html">G’MIC Noise Perlin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.NoiseSpread.html">G’MIC Noise Spread node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.OldPhotograph.html">G’MIC Old Photograph node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.OldMovieStripes.html">G’MIC Old-Movie Stripes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Oldschool8bits.html">G’MIC Oldschool 8bits node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.OpArt.html">G’MIC Op Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Pack.html">G’MIC Pack node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PackSprites.html">G’MIC Pack Sprites node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Painting.html">G’MIC Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PaperTexture.html">G’MIC Paper Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PenDrawing.html">G’MIC Pen Drawing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Pencil.html">G’MIC Pencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PencilPortrait.html">G’MIC Pencil Portrait node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Perspective.html">G’MIC Perspective node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PixelSort.html">G’MIC Pixel Sort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Plaid.html">G’MIC Plaid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Plasma.html">G’MIC Plasma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PolarTransform.html">G’MIC Polar Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Polaroid.html">G’MIC Polaroid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PolkaDots.html">G’MIC Polka Dots node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PolygonizeDelaunay.html">G’MIC Polygonize Delaunay node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PolygonizeEnergy.html">G’MIC Polygonize Energy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PopShadows.html">G’MIC Pop Shadows node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.PosterEdges.html">G’MIC Poster Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Posterize.html">G’MIC Posterize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Puzzle.html">G’MIC Puzzle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Quadrangle.html">G’MIC Quadrangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.QuadtreeVariations.html">G’MIC Quadtree Variations node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.QuickCopyright.html">G’MIC Quick Copyright node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RainSnow.html">G’MIC Rain &amp; Snow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Rainbow.html">G’MIC Rainbow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Raindrops.html">G’MIC Raindrops node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Random.html">G’MIC Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RandomColorEllipses.html">G’MIC Random Color Ellipses node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RandomShadeStripes.html">G’MIC Random Shade Stripes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RedEyeAttenuation.html">G’MIC Red-Eye Attenuation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Reflection.html">G’MIC Reflection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ReliefLight.html">G’MIC Relief Light node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RemoveHotPixels.html">G’MIC Remove Hot Pixels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ResynthetizeTextureFFT.html">G’MIC Resynthetize Texture FFT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ResynthetizeTexturePatchBased.html">G’MIC Resynthetize Texture Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Retinex.html">G’MIC Retinex node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.RetroFade.html">G’MIC Retro Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Ripple.html">G’MIC Ripple node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Rodilius.html">G’MIC Rodilius node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Rorschach.html">G’MIC Rorschach node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SampleImage.html">G’MIC Sample Image node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Satin.html">G’MIC Satin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Scanlines.html">G’MIC Scanlines node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Seamcarve.html">G’MIC Seamcarve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SeamlessTurbulence.html">G’MIC Seamless Turbulence node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Segmentation.html">G’MIC Segmentation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SelectReplaceColor.html">G’MIC Select-Replace Color node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SelectiveDesaturation.html">G’MIC Selective Desaturation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SelfGlitching.html">G’MIC Self Glitching node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Sepia.html">G’MIC Sepia node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ShadeBobs.html">G’MIC Shade Bobs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ShadowPatch.html">G’MIC Shadow Patch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Shapeism.html">G’MIC Shapeism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpAbstract.html">G’MIC Sharp Abstract node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenDeblur.html">G’MIC Sharpen Deblur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenGoldMeinel.html">G’MIC Sharpen Gold-Meinel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenInverseDiffusion.html">G’MIC Sharpen Inverse Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenMultiscale.html">G’MIC Sharpen Multiscale node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenOctaveSharpening.html">G’MIC Sharpen Octave Sharpening node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenRichardsonLucy.html">G’MIC Sharpen Richardson-Lucy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenShockFilters.html">G’MIC Sharpen Shock Filters node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenTexture.html">G’MIC Sharpen Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SharpenUnsharpMask.html">G’MIC Sharpen Unsharp Mask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ShockWaves.html">G’MIC Shock Waves node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SierpinskiTriangle.html">G’MIC Sierpinski Triangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SimulateFilm.html">G’MIC Simulate Film node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Skeleton.html">G’MIC Skeleton node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Sketch.html">G’MIC Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SliceLuminosity.html">G’MIC Slice Luminosity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothAbstract.html">G’MIC Smooth Abstract node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothAnisotropic.html">G’MIC Smooth Anisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothAntialias.html">G’MIC Smooth Antialias node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothBilateral.html">G’MIC Smooth Bilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothDiffusion.html">G’MIC Smooth Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothGuided.html">G’MIC Smooth Guided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothMeanCurvature.html">G’MIC Smooth Mean-Curvature node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothMedian.html">G’MIC Smooth Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothNLMeans.html">G’MIC Smooth NL-Means node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothPatchBased.html">G’MIC Smooth Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothPatchPCA.html">G’MIC Smooth Patch-PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothPeronaMalik.html">G’MIC Smooth Perona-Malik node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothSelectiveGaussian.html">G’MIC Smooth Selective Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothSkin.html">G’MIC Smooth Skin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothThinBrush.html">G’MIC Smooth Thin Brush node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothTotalVariation.html">G’MIC Smooth Total Variation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SmoothWavelets.html">G’MIC Smooth Wavelets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Snowflake.html">G’MIC Snowflake node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Solidify.html">G’MIC Solidify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SolveMaze.html">G’MIC Solve Maze node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Sphere.html">G’MIC Sphere node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Spherize.html">G’MIC Spherize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SplitDetailsAlpha.html">G’MIC Split Details Alpha node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SplitDetailsGaussian.html">G’MIC Split Details Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SplitDetailsWavelets.html">G’MIC Split Details Wavelets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Sponge.html">G’MIC Sponge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SquaretoCircle.html">G’MIC Square to Circle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.StainedGlass.html">G’MIC Stained Glass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Stamp.html">G’MIC Stamp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Stars.html">G’MIC Stars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Stencil.html">G’MIC Stencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.StereographicProjection.html">G’MIC Stereographic Projection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Streak.html">G’MIC Streak node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Stroke.html">G’MIC Stroke node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Stylize.html">G’MIC Stylize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.SuperPixels.html">G’MIC Super-Pixels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Superformula.html">G’MIC Superformula node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Symmetric2DShape.html">G’MIC Symmetric 2D Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Symmetrize.html">G’MIC Symmetrize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Taquin.html">G’MIC Taquin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Tetris.html">G’MIC Tetris node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TexturedGlass.html">G’MIC Textured Glass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ThinEdges.html">G’MIC Thin Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TileableRotation.html">G’MIC Tileable Rotation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TiledIsolation.html">G’MIC Tiled Isolation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TiledNormalization.html">G’MIC Tiled Normalization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TiledParameterization.html">G’MIC Tiled Parameterization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TiledRandomShifts.html">G’MIC Tiled Random Shifts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TiledRotation.html">G’MIC Tiled Rotation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TilestoLayers.html">G’MIC Tiles to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ToneMapping.html">G’MIC Tone Mapping node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.ToneMappingFast.html">G’MIC Tone Mapping Fast node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TonestoLayers.html">G’MIC Tones to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TransferColorsHistogram.html">G’MIC Transfer Colors Histogram node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TransferColorsPCA.html">G’MIC Transfer Colors PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.TransferColorsVariational.html">G’MIC Transfer Colors Variational node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Truchet.html">G’MIC Truchet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Tunnel.html">G’MIC Tunnel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Turbulence.html">G’MIC Turbulence node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Twirl.html">G’MIC Twirl node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.UpscaleDCCI2x.html">G’MIC Upscale DCCI2x node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.UpscaleDiffusion.html">G’MIC Upscale Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.UpscaleScale2x.html">G’MIC Upscale Scale2x node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.UserDefined.html">G’MIC User-Defined node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.VectorPainting.html">G’MIC Vector Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Vignette.html">G’MIC Vignette node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.VisibleWatermark.html">G’MIC Visible Watermark node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Warhol.html">G’MIC Warhol node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.WarpbyIntensity.html">G’MIC Warp by Intensity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Water.html">G’MIC Water node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Wave.html">G’MIC Wave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Weave.html">G’MIC Weave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.WhirlDrawing.html">G’MIC Whirl Drawing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Whirls.html">G’MIC Whirls node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Wind.html">G’MIC Wind node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/eu.gmic.Zoom.html">G’MIC Zoom node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupExtra.html">Extra nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Arc.html">Arc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Charcoal.html">Charcoal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Edges.html">Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Implode.html">Implode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Modulate.html">Modulate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Morphology.html">Morphology node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Oilpaint.html">Oilpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Polar.html">Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Polaroid.html">Polaroid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Reflection.html">Reflection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Roll.html">Roll node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Sketch.html">Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Swirl.html">Swirl node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Texture.html">Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Tile.html">Tile node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plugins/net.fxarena.openfx.Wave.html">Wave node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">Developers Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="devel/APIReference.html">Python API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="devel/PythonReference/NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/PythonReference/NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel/introduction.html">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="devel/natronpath.html">Natron plug-in paths</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/scriptvslabel.html">Python Auto-declared variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/startupscripts.html">Start-up scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/startupscripts.html#examples">Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/natronexecution.html">Natron in command-line</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/natronexecution.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/natronobjects.html">Objects hierarchy Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel/gettingstarted.html">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="devel/creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel/devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/tutorials.html">Tutorials</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="devel/PythonTutorials/nodes.html">Nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/PythonTutorials/roto.html">Roto/RotoPaint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="devel/PythonTutorials/tracker.html">Tracker</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="guide/index.html" class="btn btn-neutral float-right" title="User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

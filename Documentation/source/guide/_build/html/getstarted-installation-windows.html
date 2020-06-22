@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="macOS" href="getstarted-installation-mac.html" />
+    <link rel="prev" title="Installation" href="getstarted-installation.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="windows">
+<h1>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>This chapter will guide your through the installation and maintenance of Natron on Windows.</p>
+<div class="section" id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>Natron will work on Windows 7, 8.x, 10 with latest updates.</p>
+<p>The basic requirements are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>x86 compatible CPU (Core2 x86_64 or higher recommended)</p></li>
+<li><dl class="simple">
+<dt>OpenGL 2.0 or higher with the following extensions:</dt><dd><ul>
+<li><p><strong>GL_ARB_texture_non_power_of_two</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_shader_objects</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_pixel_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_array_object</strong> or <strong>GL_APPLE_vertex_array_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_framebuffer_object</strong> or <strong>GL_EXT_framebuffer_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_texture_float</strong> <em>(OpenGL rendering only)</em></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>If you don’t have the minimum required OpenGL extensions we provide a Software OpenGL solution, install the package <em>Software OpenGL</em> from the installer. If you have the portable ZIP file copy <em>bin\mesa\opengl32.dll</em> to <em>bin\</em>.</p>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<p>Navigate to <a class="reference external" href="https://natrongithub.github.io/#download">https://natrongithub.github.io/#download</a> and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).</p>
+<a class="reference internal image-reference" href="_images/win_install_01.png"><img alt="_images/win_install_01.png" src="_images/win_install_01.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>You are now ready to start the installation, double-click on the setup file to start the installation.</p>
+<a class="reference internal image-reference" href="_images/win_install_02.png"><img alt="_images/win_install_02.png" src="_images/win_install_02.png" style="width: 15%;" /></a>
+<p>You should now be greated with the installation wizard.</p>
+<a class="reference internal image-reference" href="_images/win_install_03.png"><img alt="_images/win_install_03.png" src="_images/win_install_03.png" style="width: 40%;" /></a>
+<p>Click ‘Next’ to start the installation, you first option is where to install Natron. The default location is recommended.</p>
+<a class="reference internal image-reference" href="_images/win_install_04.png"><img alt="_images/win_install_04.png" src="_images/win_install_04.png" style="width: 40%;" /></a>
+<p>Your next option is the package selection, most users should accept the default. Each package has an more in-depth description if you want to know what they provide.</p>
+<a class="reference internal image-reference" href="_images/win_install_05.png"><img alt="_images/win_install_05.png" src="_images/win_install_05.png" style="width: 40%;" /></a>
+<p>Then comes the standard license agreement, Natron and it’s plug-ins are licensed under the GPL version 2. You can read more about the licenses for each component included in Natron after installation (in menu Help→About).</p>
+<a class="reference internal image-reference" href="_images/win_install_06.png"><img alt="_images/win_install_06.png" src="_images/win_install_06.png" style="width: 40%;" /></a>
+<p>The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).</p>
+<a class="reference internal image-reference" href="_images/win_install_07.png"><img alt="_images/win_install_07.png" src="_images/win_install_07.png" style="width: 40%;" /></a>
+<p>The installation is now over! Start Natron and enjoy.</p>
+<a class="reference internal image-reference" href="_images/win_install_08.png"><img alt="_images/win_install_08.png" src="_images/win_install_08.png" style="width: 40%;" /></a>
+<p>Natron can now be started from the desktop icon or from the start menu.</p>
+<a class="reference internal image-reference" href="_images/win_install_09.png"><img alt="_images/win_install_09.png" src="_images/win_install_09.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="maintenance">
+<h2>Maintenance<a class="headerlink" href="#maintenance" title="Permalink to this headline">¶</a></h2>
+<p>Natron includes a maintenance tool called ‘NatronSetup’, with this application you can easily upgrade Natron and it’s components when a new version is available. You can also add or remove individual packages, or remove Natron completely. The application should be in the same start menu folder as Natron, or you can start it from the folder where you installed Natron.</p>
+<a class="reference internal image-reference" href="_images/win_install_10.png"><img alt="_images/win_install_10.png" src="_images/win_install_10.png" style="width: 40%;" /></a>
+<a class="reference internal image-reference" href="_images/win_install_11.png"><img alt="_images/win_install_11.png" src="_images/win_install_11.png" style="width: 40%;" /></a>
+<p>The application also include a basic settings category, where you can configure proxy and other advanced options.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

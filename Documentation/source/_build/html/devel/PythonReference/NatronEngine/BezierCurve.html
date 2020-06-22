@@ -1,0 +1,971 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>BezierCurve &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="BooleanParam" href="BooleanParam.html" />
+    <link rel="prev" title="AppSettings" href="AppSettings.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>BezierCurve</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/BezierCurve.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="beziercurve">
+<span id="id1"></span><h1>BezierCurve<a class="headerlink" href="#beziercurve" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="ItemBase.html"><span class="doc">ItemBase</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A BezierCurve is the class used for beziers, ellipses and rectangles.
+See <a class="reference internal" href="#bezier-details"><span class="std std-ref">detailed</span></a> description….</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.addControlPoint" title="NatronEngine.NatronEngine.BezierCurve.addControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addControlPoint</span></code></a> (x, y)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment" title="NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addControlPointOnSegment</span></code></a> (index, t)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getActivatedParam" title="NatronEngine.NatronEngine.BezierCurve.getActivatedParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getActivatedParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getColor" title="NatronEngine.NatronEngine.BezierCurve.getColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getColor</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getColorParam" title="NatronEngine.NatronEngine.BezierCurve.getColorParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getColorParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getCompositingOperator" title="NatronEngine.NatronEngine.BezierCurve.getCompositingOperator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCompositingOperator</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getCompositingOperatorParam" title="NatronEngine.NatronEngine.BezierCurve.getCompositingOperatorParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCompositingOperatorParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getControlPointPosition" title="NatronEngine.NatronEngine.BezierCurve.getControlPointPosition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getControlPointPosition</span></code></a> (index,time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherDistance" title="NatronEngine.NatronEngine.BezierCurve.getFeatherDistance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFeatherDistance</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherDistanceParam" title="NatronEngine.NatronEngine.BezierCurve.getFeatherDistanceParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFeatherDistanceParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherFallOff" title="NatronEngine.NatronEngine.BezierCurve.getFeatherFallOff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFeatherFallOff</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherFallOffParam" title="NatronEngine.NatronEngine.BezierCurve.getFeatherFallOffParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFeatherFallOffParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getControlPointPosition" title="NatronEngine.NatronEngine.BezierCurve.getControlPointPosition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFeatherPointPosition</span></code></a> (index,time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getIsActivated" title="NatronEngine.NatronEngine.BezierCurve.getIsActivated"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsActivated</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getKeyframes" title="NatronEngine.NatronEngine.BezierCurve.getKeyframes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getKeyframes</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getNumControlPoints" title="NatronEngine.NatronEngine.BezierCurve.getNumControlPoints"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumControlPoints</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getOpacity" title="NatronEngine.NatronEngine.BezierCurve.getOpacity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getOpacity</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getOpacityParam" title="NatronEngine.NatronEngine.BezierCurve.getOpacityParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getOpacityParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getOverlayColor" title="NatronEngine.NatronEngine.BezierCurve.getOverlayColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getOverlayColor</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.isCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.isCurveFinished"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isCurveFinished</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.moveFeatherByIndex" title="NatronEngine.NatronEngine.BezierCurve.moveFeatherByIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">moveFeatherByIndex</span></code></a> (index, time, dx, dy)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.moveLeftBezierPoint" title="NatronEngine.NatronEngine.BezierCurve.moveLeftBezierPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">moveLeftBezierPoint</span></code></a> (index, time, dx, dy)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.movePointByIndex" title="NatronEngine.NatronEngine.BezierCurve.movePointByIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">movePointByIndex</span></code></a> (index, time, dx, dy)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.moveRightBezierPoint" title="NatronEngine.NatronEngine.BezierCurve.moveRightBezierPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">moveRightBezierPoint</span></code></a> (index, time, dx, dy)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.removeControlPointByIndex" title="NatronEngine.NatronEngine.BezierCurve.removeControlPointByIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">removeControlPointByIndex</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setActivated" title="NatronEngine.NatronEngine.BezierCurve.setActivated"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setActivated</span></code></a> (time, activated)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setColor" title="NatronEngine.NatronEngine.BezierCurve.setColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setColor</span></code></a> (time, r, g, b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setCompositingOperator" title="NatronEngine.NatronEngine.BezierCurve.setCompositingOperator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCompositingOperator</span></code></a> (op)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.setCurveFinished"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCurveFinished</span></code></a> (finished)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherDistance" title="NatronEngine.NatronEngine.BezierCurve.setFeatherDistance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setFeatherDistance</span></code></a> (dist, time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherFallOff" title="NatronEngine.NatronEngine.BezierCurve.setFeatherFallOff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setFeatherFallOff</span></code></a> (falloff, time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherPointAtIndex" title="NatronEngine.NatronEngine.BezierCurve.setFeatherPointAtIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setFeatherPointAtIndex</span></code></a> (index, time, x, y, lx, ly, rx, ry)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setOpacity" title="NatronEngine.NatronEngine.BezierCurve.setOpacity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setOpacity</span></code></a> (opacity, time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setOverlayColor" title="NatronEngine.NatronEngine.BezierCurve.setOverlayColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setOverlayColor</span></code></a> (r, g, b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setPointAtIndex" title="NatronEngine.NatronEngine.BezierCurve.setPointAtIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPointAtIndex</span></code></a> (index, time, x, y, lx, ly, rx, ry)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="bezier-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>Almost all functionalities available to the user have been made available to the Python API,
+although in practise making a shape just by calling functions might be tedious due to the
+potential huge number of control points and keyframes. You can use the Natron Group node’s export
+functionality to generate automatically a script from a Roto node within that group.</p>
+<p>A Bezier initially is in an <em>opened</em> state, meaning it doesn’t produce a shape yet.
+At this stage you can then add control points using the <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.addControlPoint" title="NatronEngine.NatronEngine.BezierCurve.addControlPoint"><code class="xref py py-func docutils literal notranslate"><span class="pre">addControlPoint(x,y)</span></code></a>
+function.
+Once you’re one adding control points, call the function <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.setCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.setCurveFinished"><code class="xref py py-func docutils literal notranslate"><span class="pre">setCurveFinished(finished)</span></code></a>
+to close the shape by connecting the last control point with the first.</p>
+<p>Once finished, you can refine the Bezier curve by adding control points with the <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment" title="NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment"><code class="xref py py-func docutils literal notranslate"><span class="pre">addControlPointOnSegment(index,t)</span></code></a> function.
+You can then move and remove control points of the Bezier.</p>
+<p>To get the position of the control points of the Bezier as well as the position of the feather
+points, use the functions <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getControlPointPosition" title="NatronEngine.NatronEngine.BezierCurve.getControlPointPosition"><code class="xref py py-func docutils literal notranslate"><span class="pre">getControlPointPosition</span></code></a> and
+<a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherPointPosition" title="NatronEngine.NatronEngine.BezierCurve.getFeatherPointPosition"><code class="xref py py-func docutils literal notranslate"><span class="pre">getFeatherPointPosition</span></code></a>.
+The <em>index</em> passed to the function must be between 0 and <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getNumControlPoints" title="NatronEngine.NatronEngine.BezierCurve.getNumControlPoints"><code class="xref py py-func docutils literal notranslate"><span class="pre">getNumControlPoints</span></code></a> -1.</p>
+<p>The <em>time</em> passed to the function corresponds to a time on the timeline’s in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes.</p>
+<p>To get a list of all keyframes time for a Bezier call the function <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getKeyframes" title="NatronEngine.NatronEngine.BezierCurve.getKeyframes"><code class="xref py py-func docutils literal notranslate"><span class="pre">getKeyframes()</span></code></a>.</p>
+<p>A Bezier curve has several parameters that the API allows you to modify:</p>
+<ul class="simple">
+<li>opacity</li>
+<li>color</li>
+<li>feather distance</li>
+<li>feather fall-off</li>
+<li>enable state</li>
+<li>overlay color</li>
+<li>compositing operator</li>
+</ul>
+<p>Each of them is a regular <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code> that you can access to modify
+or query its properties.
+All parameters can be retrieved with their <em>script-name</em> with the function <a class="reference internal" href="ItemBase.html#NatronEngine.NatronEngine.ItemBase.getParam" title="NatronEngine.NatronEngine.ItemBase.getParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(scriptName)</span></code></a>.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="attribute">
+<dt id="NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">CairoOperatorEnum</code><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum" title="Permalink to this definition">¶</a></dt>
+<dd><p>This enumeration represents the different blending modes of a shape. See the user interface
+for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
+the different values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.addControlPoint">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">addControlPoint</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.addControlPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>y</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Adds a new control point to an <em>opened</em> shape (see <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.isCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.isCurveFinished"><code class="xref py py-func docutils literal notranslate"><span class="pre">isCurveFinished()</span></code></a>) at coordinates (x,y).
+By default the feather point attached to this point will be equivalent to the control point.
+If the auto-keying is enabled in the user interface, then this function will set a keyframe at
+the timeline’s current time for this shape.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">addControlPointOnSegment</code><span class="sig-paren">(</span><em>index</em>, <em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.addControlPointOnSegment" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide.QtCore.int</span></code></li>
+<li><strong>t</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide.QtCore.double</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Adds a new control point to a <em>closed</em> shape (see <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.isCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.isCurveFinished"><code class="xref py py-func docutils literal notranslate"><span class="pre">isCurveFinished()</span></code></a>).
+The <em>index</em> is the index of the Bezier segment linking the control points at <em>index</em> and <em>index + 1</em>.
+<em>t</em> is a value between [0,1] indicating the distance from the control point <em>index</em> the new control point should be.
+The closer to 1 <em>t</em> is, the closer the new control point will be to the control point at <em>index +1</em>.
+By default the feather point attached to this point will be equivalent to the control point.</p>
+<p>If the auto-keying is enabled in the user interface, then this function will set a keyframe at
+the timeline’s current time for this shape.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getActivatedParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getActivatedParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getActivatedParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">BooleanParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the enabled state of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getColor">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getColor</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of the color parameter at the given time as an [R,G,B,A] tuple. Note that
+alpha will always be 1.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getColorParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getColorParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getColorParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the color of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getCompositingOperator">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getCompositingOperator</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getCompositingOperator" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum" title="NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NatronEngine.BezierCurve.CairoOperatorEnum</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the blending mode for this shape. Type help(NatronEngine.BezierCurve.CairoOperatorEnum)
+to see the different values possible.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getCompositingOperatorParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getCompositingOperatorParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getCompositingOperatorParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.ChoiceParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the blending mode of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getControlPointPosition">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getControlPointPosition</code><span class="sig-paren">(</span><em>index</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getControlPointPosition" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTuple</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a tuple with the position of the control point at the given <em>index</em> as well as the
+position of its left and right tangents.</p>
+<p>The tuple is encoded as such:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">leftTangentX</span><span class="p">,</span> <span class="n">leftTangentY</span><span class="p">,</span> <span class="n">rightTangentX</span><span class="p">,</span> <span class="n">rightTangentY</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The position of the left and right tangents is absolute and not relative to (x,y).</p>
+<p>The <em>index</em> passed to the function must be between 0 and <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getNumControlPoints" title="NatronEngine.NatronEngine.BezierCurve.getNumControlPoints"><code class="xref py py-func docutils literal notranslate"><span class="pre">getNumControlPoints</span></code></a> -1.
+The <em>time</em> passed to the function corresponds to a time on the timeline’s in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes.</p>
+<p>To get a list of all keyframes time for a Bezier call the function <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getKeyframes" title="NatronEngine.NatronEngine.BezierCurve.getKeyframes"><code class="xref py py-func docutils literal notranslate"><span class="pre">getKeyframes()</span></code></a>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getFeatherDistance">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getFeatherDistance</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherDistance" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the feather distance of this shape at the given <em>time</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getFeatherDistanceParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getFeatherDistanceParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherDistanceParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.DoubleParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the feather distance of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getFeatherFallOff">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getFeatherFallOff</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherFallOff" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the feather fall-off of this shape at the given <em>time</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getFeatherFallOffParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getFeatherFallOffParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherFallOffParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoubleParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the color of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getFeatherPointPosition">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getFeatherPointPosition</code><span class="sig-paren">(</span><em>index</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getFeatherPointPosition" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTuple</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a tuple with the position of the feather point at the given <em>index</em> as well as the
+position of its left and right tangents.</p>
+<p>The tuple is encoded as such:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">leftTangentX</span><span class="p">,</span> <span class="n">leftTangentY</span><span class="p">,</span> <span class="n">rightTangentX</span><span class="p">,</span> <span class="n">rightTangentY</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The position of the left and right tangents is absolute and not relative to (x,y).</p>
+<p>The <em>index</em> passed to the function must be between 0 and <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getNumControlPoints" title="NatronEngine.NatronEngine.BezierCurve.getNumControlPoints"><code class="xref py py-func docutils literal notranslate"><span class="pre">getNumControlPoints</span></code></a> -1.
+The <em>time</em> passed to the function corresponds to a time on the timeline’s in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes.</p>
+<p>To get a list of all keyframes time for a Bezier call the function <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.getKeyframes" title="NatronEngine.NatronEngine.BezierCurve.getKeyframes"><code class="xref py py-func docutils literal notranslate"><span class="pre">getKeyframes()</span></code></a>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getIsActivated">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getIsActivated</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getIsActivated" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the curve is enabled or not at the given <em>time</em>. When
+not activated the curve will not be rendered at all in the image.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getKeyframes">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getKeyframes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getKeyframes" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyList</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a list of all keyframes set on the Bezier animation.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getNumControlPoints">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getNumControlPoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getNumControlPoints" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of control points for this shape.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getOpacity">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getOpacity</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getOpacity" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the opacity of the curve at the given <em>time</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getOpacityParam">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getOpacityParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getOpacityParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoubleParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> controlling the opacity of the Bezier.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.getOverlayColor">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">getOverlayColor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.getOverlayColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the overlay color of this shape as a [R,G,B,A] tuple. Alpha will always be 1.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.isCurveFinished">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">isCurveFinished</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.isCurveFinished" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the curve is finished or not. A finished curve will have a Bezier segment between
+the last control point and the first control point and the Bezier will be rendered in the image.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.moveFeatherByIndex">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">moveFeatherByIndex</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.moveFeatherByIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dy</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Moves the feather point at the given <em>index</em> (zero-based) by the given delta (dx,dy).
+The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.moveLeftBezierPoint">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">moveLeftBezierPoint</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.moveLeftBezierPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dy</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Moves the left Bezier point of the control point at the given <em>index</em> by the given delta.
+The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.movePointByIndex">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">movePointByIndex</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.movePointByIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dy</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Moves the point at the given <em>index</em> (zero-based) by the given delta (dx,dy).
+The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.moveRightBezierPoint">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">moveRightBezierPoint</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.moveRightBezierPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dy</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Moves the right Bezier point at the given <em>index</em> (zero-based) by the given delta (dx,dy).
+The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.removeControlPointByIndex">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">removeControlPointByIndex</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.removeControlPointByIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes the control point at the given <em>index</em> (zero-based).</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setActivated">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setActivated</code><span class="sig-paren">(</span><em>time</em>, <em>activated</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setActivated" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>activated</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe for the <em>activated</em> parameter at the given <em>time</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setColor">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setColor</code><span class="sig-paren">(</span><em>time</em>, <em>r</em>, <em>g</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>r</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>g</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe for the <em>color</em> parameter at the given <em>time</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setCompositingOperator">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setCompositingOperator</code><span class="sig-paren">(</span><em>op</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setCompositingOperator" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>op</strong> – <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum" title="NatronEngine.NatronEngine.BezierCurve.CairoOperatorEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NatronEngine.BezierCurve.CairoOperatorEnum</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the compositing operator for this shape.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setCurveFinished">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setCurveFinished</code><span class="sig-paren">(</span><em>finished</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setCurveFinished" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>finished</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set whether the curve should be finished or not. See <a class="reference internal" href="#NatronEngine.NatronEngine.BezierCurve.isCurveFinished" title="NatronEngine.NatronEngine.BezierCurve.isCurveFinished"><code class="xref py py-func docutils literal notranslate"><span class="pre">isCurveFinished()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setFeatherDistance">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setFeatherDistance</code><span class="sig-paren">(</span><em>dist</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherDistance" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dist</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe for the <em>feather distance</em> parameter at the given <em>time</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setFeatherFallOff">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setFeatherFallOff</code><span class="sig-paren">(</span><em>falloff</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherFallOff" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>falloff</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe for the <em>feather fall-off</em> parameter at the given <em>time</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setFeatherPointAtIndex">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setFeatherPointAtIndex</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>x</em>, <em>y</em>, <em>lx</em>, <em>ly</em>, <em>rx</em>, <em>ry</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setFeatherPointAtIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>y</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>lx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>ly</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>rx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>ry</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the feather point at the given <em>index</em> at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).</p>
+<p>The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setOpacity">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setOpacity</code><span class="sig-paren">(</span><em>opacity</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setOpacity" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>opacity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe for the <em>opacity</em> parameter at the given <em>time</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setOverlayColor">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setOverlayColor</code><span class="sig-paren">(</span><em>r</em>, <em>g</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setOverlayColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>r</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>g</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the overlay color of this shape</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BezierCurve.setPointAtIndex">
+<code class="descclassname">NatronEngine.BezierCurve.</code><code class="descname">setPointAtIndex</code><span class="sig-paren">(</span><em>index</em>, <em>time</em>, <em>x</em>, <em>y</em>, <em>lx</em>, <em>ly</em>, <em>rx</em>, <em>ry</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BezierCurve.setPointAtIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>y</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>lx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>ly</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>rx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>ry</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the point at the given <em>index</em> at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).</p>
+<p>The <em>time</em> parameter is given so that if auto-keying is enabled a new keyframe will be set.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="BooleanParam.html" class="btn btn-neutral float-right" title="BooleanParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="AppSettings.html" class="btn btn-neutral float-left" title="AppSettings" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

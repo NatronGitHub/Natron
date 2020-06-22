@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Start-up scripts &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Natron in command-line" href="natronexecution.html" />
+    <link rel="prev" title="Python Auto-declared variables" href="scriptvslabel.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="introduction.html">Introduction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="natronpath.html">Natron plug-in paths</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scriptvslabel.html">Python Auto-declared variables</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Start-up scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#initgui-py">initGui.py</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#init-py">init.py</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="natronexecution.html">Natron in command-line</a></li>
+<li class="toctree-l3"><a class="reference internal" href="natronexecution.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="natronobjects.html">Objects hierarchy Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="introduction.html">Introduction</a> &raquo;</li>
+        
+      <li>Start-up scripts</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/startupscripts.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="start-up-scripts">
+<span id="startupscripts"></span><h1>Start-up scripts<a class="headerlink" href="#start-up-scripts" title="Permalink to this headline">¶</a></h1>
+<p>On start-up Natron will run different start-up scripts to let you setup anything like callbacks,
+menus, etc…</p>
+<p>There are 2 different initialization scripts that Natron will look for in the <a class="reference internal" href="natronpath.html#natronpath"><span class="std std-ref">search paths</span></a>.</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><strong>init.py</strong></p>
+<blockquote>
+<div><p>This script is always run and should only initialize non-GUI stuff. You may not use
+it to initialize e.g. new menus or windows. Generally this is a good place to initialize
+all the callbacks that you may want to use in your projects.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>initGui.py</strong></p>
+<blockquote>
+<div><p>This script is only run in GUI mode (that is with the user interface). It should
+initialize all gui-specific stuff like new menus or windows.</p>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>All the scripts with the above name found in the search paths will be run in the order
+of the <a class="reference internal" href="natronpath.html#natronpath"><span class="std std-ref">search paths</span></a>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This is important that the 2 scripts above are named <strong>init.py</strong> and <strong>initGui.py</strong>
+otherwise they will not be loaded.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">These scripts are run well before any <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a> (i.e: project) is created.
+You should therefore not run any function directly that might rely on the <em>app</em> variable (or <em>app1</em>, etc…).
+However you’re free to define classes and functions that may rely on these variable being declared, but that
+will be called only later on, when a project will actually be created.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="initgui-py">
+<h2>initGui.py<a class="headerlink" href="#initgui-py" title="Permalink to this headline">¶</a></h2>
+<p>A complete example of a <strong>iniGui.py</strong> can be found <a class="reference internal" href="pysidePanelExample.html#sourcecodeex"><span class="std std-ref">here</span></a> .</p>
+</div>
+<div class="section" id="init-py">
+<span id="initexample"></span><h2>init.py<a class="headerlink" href="#init-py" title="Permalink to this headline">¶</a></h2>
+<p>Here is an example of a <strong>init.py</strong> script, featuring:</p>
+<ul class="simple">
+<li>Formats addition to the project</li>
+<li>Modifications of the default values of parameters for nodes</li>
+<li>PyPlug search paths modifications</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#file, You can obtain one at http://mozilla.org/MPL/2.0/. */</span>
+<span class="c1">#Created by Alexandre GAUTHIER-FOICHAT on 01/27/2015.</span>
+
+
+<span class="c1">#To import the variable &quot;natron&quot;</span>
+<span class="kn">import</span> <span class="nn">NatronEngine</span>
+
+
+<span class="k">def</span> <span class="nf">addFormats</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">addFormat</span> <span class="p">(</span><span class="s2">&quot;720p 1280x720 1.0&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">addFormat</span> <span class="p">(</span><span class="s2">&quot;2k_185 2048x1108 1.0&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">afterNodeCreatedCallback</span><span class="p">(</span><span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    
+    <span class="c1">#Turn-off the Clamp black for new grade nodes</span>
+    <span class="k">if</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">getPluginID</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;net.sf.openfx.GradePlugin&quot;</span><span class="p">:</span>
+        <span class="n">thisNode</span><span class="o">.</span><span class="n">clampBlack</span><span class="o">.</span><span class="n">setDefaultValue</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="c1">#Set the blur size to (3,3) upon creation</span>
+    <span class="k">elif</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">getPluginID</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;net.sf.cimg.CImgBlur&quot;</span><span class="p">:</span>
+        <span class="n">thisNode</span><span class="o">.</span><span class="n">size</span><span class="o">.</span><span class="n">setDefaultValue</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">thisNode</span><span class="o">.</span><span class="n">size</span><span class="o">.</span><span class="n">setDefaultValue</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="c1">#This will set the After Node Created callback on the project to tweek default values for parameters</span>
+<span class="k">def</span> <span class="nf">setNodeDefaults</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">afterNodeCreated</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;afterNodeCreatedCallback&quot;</span><span class="p">)</span>
+
+    
+<span class="k">def</span> <span class="nf">setProjectDefaults</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;autoPreviews&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;outputFormat&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="s2">&quot;2k_185&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;frameRate&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;frameRange&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;frameRange&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">getProjectParam</span><span class="p">(</span><span class="s1">&#39;lockRange&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">myCallback</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="n">addFormats</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">setNodeDefaults</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">setProjectDefaults</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+
+
+<span class="c1">#Set the After Project Created/Loaded callbacks</span>
+<span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span><span class="o">.</span><span class="n">setOnProjectCreatedCallback</span><span class="p">(</span><span class="s2">&quot;init.myCallback&quot;</span><span class="p">)</span>
+<span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span><span class="o">.</span><span class="n">setOnProjectLoadedCallback</span><span class="p">(</span><span class="s2">&quot;init.myCallback&quot;</span><span class="p">)</span>
+
+<span class="c1">#Add this path to the Natron search paths so that our PyPlug can be found.</span>
+<span class="c1">#Note that we could also set this from the NATRON_PLUGIN_PATH environment variable</span>
+<span class="c1">#or even in the Preferences panel, Plug-ins tab, with the &quot;Pyplugs search path&quot;</span>
+<span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span><span class="o">.</span><span class="n">appendToNatronPath</span><span class="p">(</span><span class="s2">&quot;/Library/Natron/PyPlugs&quot;</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="natronexecution.html" class="btn btn-neutral float-right" title="Natron in command-line" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="scriptvslabel.html" class="btn btn-neutral float-left" title="Python Auto-declared variables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

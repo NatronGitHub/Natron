@@ -1,0 +1,541 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ParametricParam &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PathParam" href="PathParam.html" />
+    <link rel="prev" title="Param" href="Param.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>ParametricParam</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/ParametricParam.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="parametricparam">
+<span id="id1"></span><h1>ParametricParam<a class="headerlink" href="#parametricparam" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="Param.html"><span class="doc">Param</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A parametric param represents one or more parametric functions as curves.
+See <a class="reference internal" href="#parametric-details"><span class="std std-ref">detailed</span></a> explanation below.</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.addControlPoint" title="NatronEngine.NatronEngine.ParametricParam.addControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addControlPoint</span></code></a> (dimension, key, value[,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.addControlPoint" title="NatronEngine.NatronEngine.ParametricParam.addControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addControlPoint</span></code></a> (dimension, key, value, leftDerivative, rightDerivative, [,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.deleteAllControlPoints" title="NatronEngine.NatronEngine.ParametricParam.deleteAllControlPoints"><code class="xref py py-meth docutils literal notranslate"><span class="pre">deleteAllControlPoints</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.deleteControlPoint" title="NatronEngine.NatronEngine.ParametricParam.deleteControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">deleteControlPoint</span></code></a> (dimension, nthCtl)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.getCurveColor" title="NatronEngine.NatronEngine.ParametricParam.getCurveColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurveColor</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.getNControlPoints" title="NatronEngine.NatronEngine.ParametricParam.getNControlPoints"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNControlPoints</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.getNthControlPoint" title="NatronEngine.NatronEngine.ParametricParam.getNthControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNthControlPoint</span></code></a> (dimension, nthCtl)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.getValue" title="NatronEngine.NatronEngine.ParametricParam.getValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getValue</span></code></a> (dimension, parametricPosition)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.setCurveColor" title="NatronEngine.NatronEngine.ParametricParam.setCurveColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCurveColor</span></code></a> (dimension, r, g, b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.setNthControlPoint" title="NatronEngine.NatronEngine.ParametricParam.setNthControlPoint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setNthControlPoint</span></code></a> (dimension, nthCtl, key, value, leftDerivative, rightDerivative)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.setNthControlPointInterpolation" title="NatronEngine.NatronEngine.ParametricParam.setNthControlPointInterpolation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setNthControlPointInterpolation</span></code></a> (dimension, nthCtl, interpolation)</li>
+<li>def :meth: <cite>setDefaultCurvesFromCurrentCurves&lt;NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves&gt;</cite> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="parametric-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../_images/parametricParam.png"><img alt="../../../_images/parametricParam.png" src="../../../_images/parametricParam.png" style="width: 500px;" /></a>
+</div>
+<p>A parametric parameter has as many dimensions as there are curves. Currently the number of
+curves is static and you may only specify the number of curves via the <em>nbCurves</em> argument
+of the <code class="xref py py-func docutils literal notranslate"><span class="pre">createParametricParam(name,label,nbCurves)</span></code> function.</p>
+<p>Parametric curves work almost the same way that animation curves do: you can add
+control points and remove them.</p>
+<p>You can peak the value of the curve at a special <em>parametric position</em>  with the <a class="reference internal" href="#NatronEngine.NatronEngine.ParametricParam.getValue" title="NatronEngine.NatronEngine.ParametricParam.getValue"><code class="xref py py-func docutils literal notranslate"><span class="pre">getValue(dimension,parametricPosition)</span></code></a>
+function. The <em>parametric position</em> is represented by the X axis on the graphical user interface.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.addControlPoint">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">addControlPoint</code><span class="sig-paren">(</span><em>dimension</em>, <em>key</em>, <em>value</em><span class="optional">[</span>, <em>interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.addControlPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>key</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>interpolation</strong> – <a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.KeyframeTypeEnum" title="NatronEngine.NatronEngine.Natron.KeyframeTypeEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyFrameTypeEnum</span></code></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Attempts to add a new control point to the curve at the given <em>dimension</em>.
+The new point will have the coordinate (key,value).
+This function returns a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">addControlPoint</code><span class="sig-paren">(</span><em>dimension</em>, <em>key</em>, <em>value</em>, <em>leftDerivative</em>, <em>rightDerivative</em><span class="optional">[</span>, <em>interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth</em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>key</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>leftDerivative</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>rightDerivative</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>interpolation</strong> – <a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.KeyframeTypeEnum" title="NatronEngine.NatronEngine.Natron.KeyframeTypeEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyFrameTypeEnum</span></code></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Attempts to add a new control point to the curve at the given <em>dimension</em>.
+The new point will have the coordinate (key,value) and the derivatives (leftDerivative, rightDerivative).
+This function returns a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.deleteAllControlPoints">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">deleteAllControlPoints</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.deleteAllControlPoints" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes all control points of the curve at the given <em>dimension</em>.
+This function returns a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.deleteControlPoint">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">deleteControlPoint</code><span class="sig-paren">(</span><em>dimension</em>, <em>nthCtl</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.deleteControlPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>nthCtl</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Attempts to remove the <em>nth</em> control point (sorted in increasing X order) of the parametric
+curve at the given <em>dimension</em>.</p>
+<p>This function returns a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.getCurveColor">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">getCurveColor</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.getCurveColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a <a class="reference internal" href="ColorTuple.html"><span class="doc">ColorTuple</span></a> with the [R,G,B] color of the parametric curve at the given <em>dimension</em>
+on the graphical user interface.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.getNControlPoints">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">getNControlPoints</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.getNControlPoints" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of control points of the curve at the given <em>dimension</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.getNthControlPoint">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">getNthControlPoint</code><span class="sig-paren">(</span><em>dimension</em>, <em>nthCtl</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.getNthControlPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>nthCtl</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a <em>tuple</em> containing information about the <em>nth</em> control point (sorted by increasing X order)
+control point of the curve at the given <em>dimension</em>.
+The tuple is composed of 5 members:</p>
+<blockquote>
+<div>[status: <a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatusEnum</span></code></a>,
+key : <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>,
+value: <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>,
+left derivative: <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>,
+right derivative: <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</div></blockquote>
+<p>This function returns in the status a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.getValue">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">getValue</code><span class="sig-paren">(</span><em>dimension</em>, <em>parametricPosition</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.getValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>parametricPosition</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">double</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">double</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the Y value of the curve at the given <em>parametricPosition</em> (on the X axis) of the
+curve at the given <em>dimension</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.setCurveColor">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">setCurveColor</code><span class="sig-paren">(</span><em>dimension</em>, <em>r</em>, <em>g</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.setCurveColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>r</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>g</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the color of the curve at the given <em>dimension</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.setNthControlPoint">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">setNthControlPoint</code><span class="sig-paren">(</span><em>dimension</em>, <em>nthCtl</em>, <em>key</em>, <em>value</em>, <em>leftDerivative</em>, <em>rightDerivative</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.setNthControlPoint" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>nthCtl</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>key</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>leftDerivative</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>rightDerivative</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the value of an existing control point on the curve at the given <em>dimension</em>.
+The <em>nthCtl</em> parameter is the (zero based) index of the control point (by increasing X order).
+The point will be placed at the coordinates defined by (key,value) and will have the derivatives
+given by <em>leftDerivative</em> and <em>rightDerivatives</em>.</p>
+<p>This function returns a NatronEngine.Natron.StatusEnum.eStatusOK upon success, otherwise
+NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.setNthControlPointInterpolation">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">setNthControlPointInterpolation</code><span class="sig-paren">(</span><em>dimension</em>, <em>nthCtl</em>, <em>interpolation</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.setNthControlPointInterpolation" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>nthCtl</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>interpolation</strong> – <a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.KeyframeTypeEnum" title="NatronEngine.NatronEngine.Natron.KeyframeTypeEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyFrameTypeEnum</span></code></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.StatusEnum" title="NatronEngine.NatronEngine.Natron.StatusEnum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">StatusEnum</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the interpolation type of the curve surrounding the control point at the given index <em>nthCtl</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves">
+<code class="descclassname">NatronEngine.ParametricParam.</code><code class="descname">setDefaultCurvesFromCurrentCurves</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Set the default curves of the parameter from the current state of the curves. The default
+state will be used when the parameter is restored to default.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PathParam.html" class="btn btn-neutral float-right" title="PathParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Param.html" class="btn btn-neutral float-left" title="Param" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

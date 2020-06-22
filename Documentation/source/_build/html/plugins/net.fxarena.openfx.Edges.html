@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Edges node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Implode node" href="net.fxarena.openfx.Implode.html" />
+    <link rel="prev" title="Charcoal node" href="net.fxarena.openfx.Charcoal.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Arc.html">Arc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Charcoal.html">Charcoal node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Edges node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Implode.html">Implode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Modulate.html">Modulate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Morphology.html">Morphology node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Oilpaint.html">Oilpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Polar.html">Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Polaroid.html">Polaroid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Reflection.html">Reflection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Roll.html">Roll node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Sketch.html">Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Swirl.html">Swirl node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Texture.html">Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Tile.html">Tile node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.Wave.html">Wave node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupExtra.html">Extra nodes</a> &raquo;</li>
+        
+      <li>Edges node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.fxarena.openfx.Edges.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="edges-node">
+<span id="net-fxarena-openfx-edges"></span><h1>Edges node<a class="headerlink" href="#edges-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.fxarena.openfx.Edges.png"><img alt="pluginIcon" src="../_images/net.fxarena.openfx.Edges.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 2.0 of Edges (net.fxarena.openfx.Edges).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Edge extraction node.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="19%" />
+<col width="6%" />
+<col width="10%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Width / <code class="docutils literal notranslate"><span class="pre">width</span></code></td>
+<td>Double</td>
+<td>2</td>
+<td>Width of edges</td>
+</tr>
+<tr class="row-odd"><td>Brightness / <code class="docutils literal notranslate"><span class="pre">brightness</span></code></td>
+<td>Double</td>
+<td>5</td>
+<td>Adjust edge brightness</td>
+</tr>
+<tr class="row-even"><td>Smoothing / <code class="docutils literal notranslate"><span class="pre">smoothing</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Adjust edge smoothing</td>
+</tr>
+<tr class="row-odd"><td>Grayscale / <code class="docutils literal notranslate"><span class="pre">gray</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Convert to grayscale before effect</td>
+</tr>
+<tr class="row-even"><td>Kernel / <code class="docutils literal notranslate"><span class="pre">kernel</span></code></td>
+<td>Choice</td>
+<td>DiamondKernel</td>
+<td><div class="first last line-block">
+<div class="line">Convolution Kernel</div>
+<div class="line"><strong>BinomialKernel</strong></div>
+<div class="line"><strong>LaplacianKernel</strong></div>
+<div class="line"><strong>SobelKernel</strong></div>
+<div class="line"><strong>FreiChenKernel</strong></div>
+<div class="line"><strong>RobertsKernel</strong></div>
+<div class="line"><strong>PrewittKernel</strong></div>
+<div class="line"><strong>CompassKernel</strong></div>
+<div class="line"><strong>KirschKernel</strong></div>
+<div class="line"><strong>DiamondKernel</strong></div>
+<div class="line"><strong>SquareKernel</strong></div>
+<div class="line"><strong>RectangleKernel</strong></div>
+<div class="line"><strong>OctagonKernel</strong></div>
+<div class="line"><strong>DiskKernel</strong></div>
+<div class="line"><strong>PlusKernel</strong></div>
+<div class="line"><strong>CrossKernel</strong></div>
+<div class="line"><strong>RingKernel</strong></div>
+<div class="line"><strong>EdgesKernel</strong></div>
+<div class="line"><strong>CornersKernel</strong></div>
+<div class="line"><strong>DiagonalsKernel</strong></div>
+<div class="line"><strong>LineEndsKernel</strong></div>
+<div class="line"><strong>LineJunctionsKernel</strong></div>
+<div class="line"><strong>RidgesKernel</strong></div>
+<div class="line"><strong>ConvexHullKernel</strong></div>
+<div class="line"><strong>ThinSEKernel</strong></div>
+<div class="line"><strong>SkeletonKernel</strong></div>
+<div class="line"><strong>ChebyshevKernel</strong></div>
+<div class="line"><strong>ManhattanKernel</strong></div>
+<div class="line"><strong>OctagonalKernel</strong></div>
+<div class="line"><strong>EuclideanKernel</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>OpenMP / <code class="docutils literal notranslate"><span class="pre">openmp</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.fxarena.openfx.Implode.html" class="btn btn-neutral float-right" title="Implode node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.fxarena.openfx.Charcoal.html" class="btn btn-neutral float-left" title="Charcoal node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,321 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using the tracker functionalities &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Modal dialogs" href="modalDialogs.html" />
+    <link rel="prev" title="Using the rotoscoping functionalities" href="roto.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using the tracker functionalities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#getting-data-out-of-the-tracks">Getting data out of the tracks:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-tracks">Creating Tracks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Using the tracker functionalities</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/tracker.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-the-tracker-functionalities">
+<span id="tracking"></span><h1>Using the tracker functionalities<a class="headerlink" href="#using-the-tracker-functionalities" title="Permalink to this headline">¶</a></h1>
+<p>All tracking functionalities are gathered in the <a class="reference internal" href="PythonReference/NatronEngine/Tracker.html#tracker"><span class="std std-ref">Tracker</span></a> class.
+For now, only the tracker node can have a <a class="reference internal" href="PythonReference/NatronEngine/Tracker.html#tracker"><span class="std std-ref">Tracker</span></a> object.
+The <a class="reference internal" href="PythonReference/NatronEngine/Tracker.html#tracker"><span class="std std-ref">Tracker</span></a> object is <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> by Natron and can be accessed
+as an attribute of the tracker node:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span>
+</pre></div>
+</div>
+<p>The tracker object itself is a container for <a class="reference internal" href="PythonReference/NatronEngine/Track.html#track"><span class="std std-ref">tracks</span></a>.
+The <a class="reference internal" href="PythonReference/NatronEngine/Track.html#track"><span class="std std-ref">Track</span></a> class represent one marker as visible by the user
+on the viewer.</p>
+<p><a class="reference internal" href="PythonReference/NatronEngine/Track.html#track"><span class="std std-ref">Tracks</span></a> can be accessed via their script-name directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track1</span>
+</pre></div>
+</div>
+<p>The <em>script-name</em> of the tracks can be found in the <a class="reference internal" href="scriptvslabel.html#trackerscriptname"><span class="std std-ref">settings panel</span></a> of the Tracker node.</p>
+<div class="section" id="getting-data-out-of-the-tracks">
+<h2>Getting data out of the tracks:<a class="headerlink" href="#getting-data-out-of-the-tracks" title="Permalink to this headline">¶</a></h2>
+<p>In Natron, a <a class="reference internal" href="PythonReference/NatronEngine/Track.html#track"><span class="std std-ref">track</span></a> contains internally just <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameters</span></a>
+which can hold animated data just like regular parameters of the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">effect class</span></a></p>
+<p>You can access the parameters directly with their script-name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track1</span><span class="o">.</span><span class="n">centerPoint</span>
+</pre></div>
+</div>
+<p>Or you can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(paramScriptName)</span></code> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track1</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;centerPoint&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here is an example that retrieves all keyframes available on the center point for a given
+track:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myTrack</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track1</span>
+
+<span class="n">keyframes</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># get the number of keys for the X dimension only and try match the Y keyframes</span>
+<span class="n">nKeys</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getNumKeys</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nKeys</span><span class="p">):</span>
+
+    <span class="c1"># getKeyTime returns a tuple with a boolean value indicating if it succeeded and</span>
+    <span class="c1"># the keyframe time</span>
+
+    <span class="n">gotXKeyTuple</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getKeyTime</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">gotXKeyTuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Only consider keyframes which have an X and Y value</span>
+    <span class="c1"># If Y does not have a keyframe at this frame, ignore the keyframe</span>
+    <span class="c1"># getKeyIndex returns a value &gt;=0 if there is a keyframe</span>
+    <span class="n">yKeyIndex</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getKeyIndex</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">yKeyIndex</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Note that even if the x curve or y curve didn&#39;t have a keyframe we</span>
+    <span class="c1"># could still call getValueAtTime but the value would be interpolated by</span>
+    <span class="c1"># Natron with surrounding keyframes, which is not what we want.</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getValueAtTime</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getValueAtTime</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">keyframes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+
+<span class="nb">print</span> <span class="n">keyframes</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="creating-tracks">
+<h2>Creating Tracks<a class="headerlink" href="#creating-tracks" title="Permalink to this headline">¶</a></h2>
+<p>To create a new <a class="reference internal" href="PythonReference/NatronEngine/Track.html#track"><span class="std std-ref">track</span></a>, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">createTrack()</span></code> function made available by the <a class="reference internal" href="PythonReference/NatronEngine/Tracker.html#tracker"><span class="std std-ref">Tracker</span></a> class.
+You can then set values on parameters much like everything else in Natron.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modalDialogs.html" class="btn btn-neutral float-right" title="Modal dialogs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="roto.html" class="btn btn-neutral float-left" title="Using the rotoscoping functionalities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

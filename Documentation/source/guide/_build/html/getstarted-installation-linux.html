@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Environment" href="getstarted-environment.html" />
+    <link rel="prev" title="macOS" href="getstarted-installation-mac.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="linux">
+<h1>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>This chapter will guide your through the installation and maintenance of Natron on Linux.</p>
+<div class="section" id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>Natron will work on any Linux distribution which still receives seccurity updates.
+This includes (but not limited to):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://www.centos.org/">CentOS</a> / <a class="reference external" href="https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux">RHEL</a> 6.10 and later</p></li>
+<li><p><a class="reference external" href="https://www.debian.org/">Debian</a> 8 “Jessie” and later</p></li>
+<li><p><a class="reference external" href="https://www.ubuntu.com/">Ubuntu</a> 16.04 LTS (Xenial Xerus) and later</p></li>
+<li><p><a class="reference external" href="https://getfedora.org">Fedora</a> 28 and later</p></li>
+</ul>
+</div></blockquote>
+<p>The official binaries are built on CentOS 6.10, thus the basic system requirements are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>x86 compatible CPU (Core2 x86_64 or higher recommended)</p></li>
+<li><p>Linux 2.6.32 and higher</p></li>
+<li><p>Glibc 2.12 and higher</p></li>
+<li><p>libgcc 4.4 and higher</p></li>
+<li><dl class="simple">
+<dt>OpenGL 2.0 or higher with the following extensions:</dt><dd><ul>
+<li><p><strong>GL_ARB_texture_non_power_of_two</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_shader_objects</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_pixel_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_array_object</strong> or <strong>GL_APPLE_vertex_array_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_framebuffer_object</strong> or <strong>GL_EXT_framebuffer_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_texture_float</strong> <em>(OpenGL rendering only)</em></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<p>Navigate to <a class="reference external" href="https://natrongithub.github.io/1#download">https://natrongithub.github.io/1#download</a> and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).</p>
+<a class="reference internal image-reference" href="_images/linux_install_01.png"><img alt="_images/linux_install_01.png" src="_images/linux_install_01.png" style="width: 30%;" /></a>
+</div>
+<div class="section" id="extract">
+<h2>Extract<a class="headerlink" href="#extract" title="Permalink to this headline">¶</a></h2>
+<p>When the file has been downloaded, extract the file. This can be done in your file browser, usually just right-click and select ‘Extract Here’.</p>
+<a class="reference internal image-reference" href="_images/linux_install_02.png"><img alt="_images/linux_install_02.png" src="_images/linux_install_02.png" style="width: 30%;" /></a>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>You are now ready to start the installation, double-click on the extracted file to start the installation.</p>
+<a class="reference internal image-reference" href="_images/linux_install_04.png"><img alt="_images/linux_install_04.png" src="_images/linux_install_04.png" style="width: 30%;" /></a>
+<p><em>On some installations you are not allowed to execute downloaded files, right-click and select properties, then tick the ‘Execute file as program’ option. This option may have a different name depending on your distribution and desktop environment. You can also make the file executable through the terminal, type chmod +x filename.</em></p>
+<p>You should now be greated with the installation wizard.</p>
+<a class="reference internal image-reference" href="_images/linux_install_05.png"><img alt="_images/linux_install_05.png" src="_images/linux_install_05.png" style="width: 30%;" /></a>
+<p>Click ‘Next’ to start the installation, you first option is where to install Natron. Usually the default location is good enough. If you select a installation path outside your home directory you will need to supply the root (administrator) password before you can continue.</p>
+<a class="reference internal image-reference" href="_images/linux_install_06.png"><img alt="_images/linux_install_06.png" src="_images/linux_install_06.png" style="width: 30%;" /></a>
+<p>Your next option is the package selection, most users should accept the default. Each package has an more in-depth description if you want to know what they provide.</p>
+<a class="reference internal image-reference" href="_images/linux_install_07.png"><img alt="_images/linux_install_07.png" src="_images/linux_install_07.png" style="width: 30%;" /></a>
+<p>Then comes the standard license agreement, Natron and it’s plug-ins are licensed under the GPL version 2. You can read more about the licenses for each component included in Natron after installation (in Help=&gt;About).</p>
+<a class="reference internal image-reference" href="_images/linux_install_08.png"><img alt="_images/linux_install_08.png" src="_images/linux_install_08.png" style="width: 30%;" /></a>
+<p>The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).</p>
+<a class="reference internal image-reference" href="_images/linux_install_09.png"><img alt="_images/linux_install_09.png" src="_images/linux_install_09.png" style="width: 30%;" /></a>
+<p>The installation is now over! Start Natron and enjoy.</p>
+<a class="reference internal image-reference" href="_images/linux_install_10.png"><img alt="_images/linux_install_10.png" src="_images/linux_install_10.png" style="width: 30%;" /></a>
+<p>Natron can be started from the desktop menu (under Graphics) or by executing the ‘Natron’ file in the folder you installed Natron.</p>
+<a class="reference internal image-reference" href="_images/linux_install_11.png"><img alt="_images/linux_install_11.png" src="_images/linux_install_11.png" style="width: 30%;" /></a>
+<a class="reference internal image-reference" href="_images/linux_install_12.png"><img alt="_images/linux_install_12.png" src="_images/linux_install_12.png" style="width: 30%;" /></a>
+</div>
+<div class="section" id="maintenance">
+<h2>Maintenance<a class="headerlink" href="#maintenance" title="Permalink to this headline">¶</a></h2>
+<p>Natron includes a maintenance tool called ‘NatronSetup’, with this application you can easily upgrade Natron and it’s components when a new version is available. You can also add or remove individual packages, or remove Natron completely. The application is in the ‘Graphics’ section in the desktop menu, or you can start it from the folder where you installed Natron.</p>
+<a class="reference internal image-reference" href="_images/linux_install_11.png"><img alt="_images/linux_install_11.png" src="_images/linux_install_11.png" style="width: 30%;" /></a>
+<a class="reference internal image-reference" href="_images/linux_install_13.png"><img alt="_images/linux_install_13.png" src="_images/linux_install_13.png" style="width: 30%;" /></a>
+<a class="reference internal image-reference" href="_images/linux_install_14.png"><img alt="_images/linux_install_14.png" src="_images/linux_install_14.png" style="width: 30%;" /></a>
+<p>The application also include a basic settings category, where you can configure proxy and other advanced options.</p>
+</div>
+<div class="section" id="advanced-installation">
+<h2>Advanced installation<a class="headerlink" href="#advanced-installation" title="Permalink to this headline">¶</a></h2>
+<p>Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at <a class="reference external" href="https://natrongithub.github.io/">https://natrongithub.github.io/</a> .</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

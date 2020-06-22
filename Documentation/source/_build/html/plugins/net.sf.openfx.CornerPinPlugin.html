@@ -1,0 +1,498 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CornerPin node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CornerPinMasked node" href="net.sf.openfx.CornerPinMaskedPlugin.html" />
+    <link rel="prev" title="Card3D node" href="net.sf.openfx.Card3D.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.AdjustRoDPlugin.html">AdjustRoD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Card3D.html">Card3D node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CornerPin node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinMaskedPlugin.html">CornerPinMasked node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CropPlugin.html">Crop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.IDistort.html">IDistort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LensDistortion.html">LensDistortion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Mirror.html">Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Position.html">Position node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Reformat.html">Reformat node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OIIOResize.html">Resize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.STMap.html">STMap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SpriteSheet.html">SpriteSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Tracker.html">Tracker node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformPlugin.html">Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformMaskedPlugin.html">TransformMasked node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupTransform.html">Transform nodes</a> &raquo;</li>
+        
+      <li>CornerPin node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.CornerPinPlugin.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cornerpin-node">
+<span id="net-sf-openfx-cornerpinplugin"></span><h1>CornerPin node<a class="headerlink" href="#cornerpin-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.CornerPinPlugin.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.CornerPinPlugin.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of CornerPin (net.sf.openfx.CornerPinPlugin).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Allows an image to fit another in translation, rotation and scale.</p>
+<p>The resulting transform is a translation if 1 point is enabled, a similarity if 2 are enabled, an affine transform if 3 are enabled, and a homography if they are all enabled.</p>
+<p>An effect where an image transitions from a full-frame image to an image placed on a billboard or a screen, or a crash zoom effect, can be obtained by combining the Transform and CornerPin effects and using the Amount parameter on both effects.</p>
+<p>Apply a CornerPin followed by a Transform effect (the order is important) and visualize the output superimposed on the target image. While leaving the value of the Amount parameter at 1, tune the Transform parameters (including Scale and Skew) so that the transformed image is as close as possible to the desired target location.</p>
+<p>Then, adjust the ‘to’ points of the CornerPin effect (which should be affected by the Transform) so that the warped image perfectly matches the desired target location. Link the Amount parameter of the Transform and CornerPin effects.</p>
+<p>Finally, by animating the Amount parameter of both effects from 0 to 1, the image goes progressively, and with minimal deformations, from full-frame to the target location, creating the desired effect (motion blur can be added on the Transform node, too).</p>
+<p>Note that if only the CornerPin effect is used instead of combining CornerPin and Transform, the position of the CornerPin points is linearly interpolated between their ‘from’ position and their ‘to’ position, which may result in unrealistic image motion, where the image shrinks and expands, especially when the image rotates.</p>
+<p>This plugin concatenates transforms.</p>
+<p>See also: <a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=CornerPin">http://opticalenquiry.com/nuke/index.php?title=CornerPin</a></p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="2%" />
+<col width="10%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>to1 / <code class="docutils literal notranslate"><span class="pre">to1</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>enable1 / <code class="docutils literal notranslate"><span class="pre">enable1</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enables the point on the left.</td>
+</tr>
+<tr class="row-even"><td>to2 / <code class="docutils literal notranslate"><span class="pre">to2</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>enable2 / <code class="docutils literal notranslate"><span class="pre">enable2</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enables the point on the left.</td>
+</tr>
+<tr class="row-even"><td>to3 / <code class="docutils literal notranslate"><span class="pre">to3</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>enable3 / <code class="docutils literal notranslate"><span class="pre">enable3</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enables the point on the left.</td>
+</tr>
+<tr class="row-even"><td>to4 / <code class="docutils literal notranslate"><span class="pre">to4</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>enable4 / <code class="docutils literal notranslate"><span class="pre">enable4</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enables the point on the left.</td>
+</tr>
+<tr class="row-even"><td>Copy “From” / <code class="docutils literal notranslate"><span class="pre">copyFrom</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Copy the contents (including animation) of the “from” points to the “to” points.</td>
+</tr>
+<tr class="row-odd"><td>Copy “From” (Single) / <code class="docutils literal notranslate"><span class="pre">copyFromSingle</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Copy the current values of the “from” points to the “to” points.</td>
+</tr>
+<tr class="row-even"><td>from1 / <code class="docutils literal notranslate"><span class="pre">from1</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>from2 / <code class="docutils literal notranslate"><span class="pre">from2</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>from3 / <code class="docutils literal notranslate"><span class="pre">from3</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>from4 / <code class="docutils literal notranslate"><span class="pre">from4</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Set to input rod / <code class="docutils literal notranslate"><span class="pre">setToInputRod</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Copy the values from the source region of definition into the “from” points.</td>
+</tr>
+<tr class="row-odd"><td>Copy “To” / <code class="docutils literal notranslate"><span class="pre">copyTo</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Copy the contents (including animation) of the “to” points to the “from” points.</td>
+</tr>
+<tr class="row-even"><td>Copy “To” (Single) / <code class="docutils literal notranslate"><span class="pre">copyToSingle</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Copy the current values of the “to” points to the “from” points.</td>
+</tr>
+<tr class="row-odd"><td>Amount / <code class="docutils literal notranslate"><span class="pre">transformAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Amount of transform to apply (excluding the extra matrix, which is always applied). 0 means the transform is identity, 1 means to apply the full transform. Intermediate transforms are computed by linear interpolation between the ‘from’ and the ‘to’ points. See the plugin description on how to use the amount parameter for a crash zoom effect.</td>
+</tr>
+<tr class="row-even"><td>Extra Matrix / <code class="docutils literal notranslate"><span class="pre">transform</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 0 z: 0 x: 0 y: 1 z: 0 x: 0 y: 0 z: 1</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Overlay Points / <code class="docutils literal notranslate"><span class="pre">overlayPoints</span></code></td>
+<td>Choice</td>
+<td>To</td>
+<td><div class="first last line-block">
+<div class="line">Whether to display the “from” or the “to” points in the overlay</div>
+<div class="line"><strong>To (to)</strong>: Display the “to” points.</div>
+<div class="line"><strong>From (from)</strong>: Display the “from” points.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-odd"><td>Invert / <code class="docutils literal notranslate"><span class="pre">invert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Invert the transform.</td>
+</tr>
+<tr class="row-even"><td>Filter / <code class="docutils literal notranslate"><span class="pre">filter</span></code></td>
+<td>Choice</td>
+<td>Cubic</td>
+<td><div class="first last line-block">
+<div class="line">Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+).</div>
+<div class="line"><strong>Impulse (impulse)</strong>: (nearest neighbor / box) Use original values.</div>
+<div class="line"><strong>Box (box)</strong>: Integrate the source image over the bounding box of the back-transformed pixel.</div>
+<div class="line"><strong>Bilinear (bilinear)</strong>: (tent / triangle) Bilinear interpolation between original values.</div>
+<div class="line"><strong>Cubic (cubic)</strong>: (cubic spline) Some smoothing.</div>
+<div class="line"><strong>Keys (keys)</strong>: (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*).</div>
+<div class="line"><strong>Simon (simon)</strong>: Some smoothing, plus medium sharpening (*).</div>
+<div class="line"><strong>Rifman (rifman)</strong>: Some smoothing, plus significant sharpening (*).</div>
+<div class="line"><strong>Mitchell (mitchell)</strong>: Some smoothing, plus blurring to hide pixelation (*)(+).</div>
+<div class="line"><strong>Parzen (parzen)</strong>: (cubic B-spline) Greatest smoothing of all filters (+).</div>
+<div class="line"><strong>Notch (notch)</strong>: Flat smoothing (which tends to hide moire’ patterns) (+).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Clamp / <code class="docutils literal notranslate"><span class="pre">clamp</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Clamp filter output within the original range - useful to avoid negative values in mattes</td>
+</tr>
+<tr class="row-even"><td>Black outside / <code class="docutils literal notranslate"><span class="pre">black_outside</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Fill the area outside the source image with black</td>
+</tr>
+<tr class="row-odd"><td>Motion Blur / <code class="docutils literal notranslate"><span class="pre">motionBlur</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Quality of motion blur rendering. 0 disables motion blur, 1 is a good value. Increasing this slows down rendering.</td>
+</tr>
+<tr class="row-even"><td>Directional Blur Mode / <code class="docutils literal notranslate"><span class="pre">directionalBlur</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Motion blur is computed from the original image to the transformed image, each parameter being interpolated linearly. The motionBlur parameter must be set to a nonzero value, and the blackOutside parameter may have an important effect on the result.</td>
+</tr>
+<tr class="row-odd"><td>Shutter / <code class="docutils literal notranslate"><span class="pre">shutter</span></code></td>
+<td>Double</td>
+<td>0.5</td>
+<td>Controls how long (in frames) the shutter should remain open.</td>
+</tr>
+<tr class="row-even"><td>Shutter Offset / <code class="docutils literal notranslate"><span class="pre">shutterOffset</span></code></td>
+<td>Choice</td>
+<td>Start</td>
+<td><div class="first last line-block">
+<div class="line">Controls when the shutter should be open/closed. Ignored if there is no motion blur (i.e. shutter=0 or motionBlur=0).</div>
+<div class="line"><strong>Centered (centered)</strong>: Centers the shutter around the frame (from t-shutter/2 to t+shutter/2)</div>
+<div class="line"><strong>Start (start)</strong>: Open the shutter at the frame (from t to t+shutter)</div>
+<div class="line"><strong>End (end)</strong>: Close the shutter at the frame (from t-shutter to t)</div>
+<div class="line"><strong>Custom (custom)</strong>: Open the shutter at t+shuttercustomoffset (from t+shuttercustomoffset to t+shuttercustomoffset+shutter)</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Custom Offset / <code class="docutils literal notranslate"><span class="pre">shutterCustomOffset</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>When custom is selected, the shutter is open at current time plus this offset (in frames). Ignored if there is no motion blur (i.e. shutter=0 or motionBlur=0).</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.CornerPinMaskedPlugin.html" class="btn btn-neutral float-right" title="CornerPinMasked node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.Card3D.html" class="btn btn-neutral float-left" title="Card3D node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

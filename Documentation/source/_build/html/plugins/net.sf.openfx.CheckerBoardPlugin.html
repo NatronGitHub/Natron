@@ -1,0 +1,450 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CheckerBoard node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ColorBars node" href="net.sf.openfx.ColorBars.html" />
+    <link rel="prev" title="Image nodes" href="../_groupImage.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupImage.html">Image nodes</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CheckerBoard node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorBars.html">ColorBars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorWheel.html">ColorWheel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ConstantPlugin.html">Constant node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OpenRaster.html">OpenRaster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Read.html">Read node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadCDR.html">ReadCDR node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadFFmpeg.html">ReadFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadKrita.html">ReadKrita node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadMisc.html">ReadMisc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadOIIO.html">ReadOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPDF.html">ReadPDF node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPFM.html">ReadPFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPNG.html">ReadPNG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadPSD.html">ReadPSD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadSVG.html">ReadSVG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.RunScript.html">RunScript node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Solid.html">Solid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Write.html">Write node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteFFmpeg.html">WriteFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteOIIO.html">WriteOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePFM.html">WritePFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePNG.html">WritePNG node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupImage.html">Image nodes</a> &raquo;</li>
+        
+      <li>CheckerBoard node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.CheckerBoardPlugin.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="checkerboard-node">
+<span id="net-sf-openfx-checkerboardplugin"></span><h1>CheckerBoard node<a class="headerlink" href="#checkerboard-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.CheckerBoardPlugin.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.CheckerBoardPlugin.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of CheckerBoard (net.sf.openfx.CheckerBoardPlugin).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Generate an image with a checkerboard.</p>
+<p>A frame range may be specified for operators that need it.</p>
+<p>See also: <a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel">http://opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel</a></p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="18%" />
+<col width="4%" />
+<col width="12%" />
+<col width="67%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Extent / <code class="docutils literal notranslate"><span class="pre">extent</span></code></td>
+<td>Choice</td>
+<td>Default</td>
+<td><div class="first last line-block">
+<div class="line">Extent (size and offset) of the output.</div>
+<div class="line"><strong>Format (format)</strong>: Use a pre-defined image format.</div>
+<div class="line"><strong>Size (size)</strong>: Use a specific extent (size and offset).</div>
+<div class="line"><strong>Project (project)</strong>: Use the project extent (size and offset).</div>
+<div class="line"><strong>Default (default)</strong>: Use the default extent (e.g. the source clip extent, if connected).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">recenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Centers the region of definition to the input region of definition. If there is no input, then the region of definition is centered to the project window.</td>
+</tr>
+<tr class="row-even"><td>Reformat / <code class="docutils literal notranslate"><span class="pre">reformat</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Set the output format to the given extent, except if the Bottom Left or Size parameters is animated.</td>
+</tr>
+<tr class="row-odd"><td>Format / <code class="docutils literal notranslate"><span class="pre">NatronParamFormatChoice</span></code></td>
+<td>Choice</td>
+<td>HD 1920x1080</td>
+<td><div class="first last line-block">
+<div class="line">The output format</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super_35(full-ap) 1024x778 (1K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2.00 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super_35(full-ap) 2048x1556 (2K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2.00 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super_35(full-ap) 4096x3112 (4K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2.00 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Coordinates of the bottom left corner of the size rectangle.</td>
+</tr>
+<tr class="row-odd"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 1 h: 1</td>
+<td>Width and height of the size rectangle.</td>
+</tr>
+<tr class="row-even"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-odd"><td>Frame Range / <code class="docutils literal notranslate"><span class="pre">frameRange</span></code></td>
+<td>Integer</td>
+<td>min: 1 max: 1</td>
+<td>Time domain.</td>
+</tr>
+<tr class="row-even"><td>Output Components / <code class="docutils literal notranslate"><span class="pre">outputComponents</span></code></td>
+<td>Choice</td>
+<td>RGBA</td>
+<td><div class="first last line-block">
+<div class="line">Components in the output</div>
+<div class="line"><strong>RGBA</strong></div>
+<div class="line"><strong>RGB</strong></div>
+<div class="line"><strong>Alpha</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Box Size / <code class="docutils literal notranslate"><span class="pre">boxSize</span></code></td>
+<td>Double</td>
+<td>x: 64 y: 64</td>
+<td>Size of the checkerboard boxes in pixels.</td>
+</tr>
+<tr class="row-even"><td>Color 0 / <code class="docutils literal notranslate"><span class="pre">color0</span></code></td>
+<td>Color</td>
+<td>r: 0.1 g: 0.1 b: 0.1 a: 1</td>
+<td>Color to fill the box on top-left of image center and every other row and column.</td>
+</tr>
+<tr class="row-odd"><td>Color 1 / <code class="docutils literal notranslate"><span class="pre">color1</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5 a: 1</td>
+<td>Color to fill the box on top-right of image center and every other row and column.</td>
+</tr>
+<tr class="row-even"><td>Color 2 / <code class="docutils literal notranslate"><span class="pre">color2</span></code></td>
+<td>Color</td>
+<td>r: 0.1 g: 0.1 b: 0.1 a: 1</td>
+<td>Color to fill the box on bottom-right of image center and every other row and column.</td>
+</tr>
+<tr class="row-odd"><td>Color 3 / <code class="docutils literal notranslate"><span class="pre">color3</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5 a: 1</td>
+<td>Color to fill the box on bottom-left of image center and every other row and column.</td>
+</tr>
+<tr class="row-even"><td>Line Color / <code class="docutils literal notranslate"><span class="pre">lineColor</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1 a: 1</td>
+<td>Color of the line drawn between boxes.</td>
+</tr>
+<tr class="row-odd"><td>Line Width / <code class="docutils literal notranslate"><span class="pre">lineWidth</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Width, in pixels, of the lines drawn between boxes.</td>
+</tr>
+<tr class="row-even"><td>Centerline Color / <code class="docutils literal notranslate"><span class="pre">centerlineColor</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 0 a: 1</td>
+<td>Color of the center lines.</td>
+</tr>
+<tr class="row-odd"><td>Centerline Width / <code class="docutils literal notranslate"><span class="pre">centerlineWidth</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Width, in pixels, of the center lines.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.ColorBars.html" class="btn btn-neutral float-right" title="ColorBars node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../_groupImage.html" class="btn btn-neutral float-left" title="Image nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

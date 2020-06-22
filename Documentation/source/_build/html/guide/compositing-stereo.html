@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Stereoscopic compositing &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Preview and rendering (empty)" href="compositing-render.html" />
+    <link rel="prev" title="Working with color (empty)" href="compositing-color.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">What is compositing?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html">Getting started</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="compositing.html">Compositing</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="compositing-projects.html">Managing Projects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-reformat.html">Reformatting elements (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-channels.html">Channels (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-merge.html">Merging images (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-denoise.html">Noise removal (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-keying.html">Keying (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-rotopaint.html">Using Rotopaint (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-tracking.html">Tracking and stabilizing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-transform.html">Transforming elements (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-color.html">Working with color (empty)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Stereoscopic compositing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#importing-stereoscopic-sequences">Importing stereoscopic sequences</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#joining-separate-views">Joining separate views</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exporting-stereoscopic-sequences">Exporting stereoscopic sequences</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-to-separate-files">Writing to separate files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-render.html">Preview and rendering (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compositing-exprs.html">Expressions (empty)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+          <li><a href="compositing.html">Compositing</a> &raquo;</li>
+        
+      <li>Stereoscopic compositing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/compositing-stereo.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="stereoscopic-compositing">
+<h1>Stereoscopic compositing<a class="headerlink" href="#stereoscopic-compositing" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="importing-stereoscopic-sequences">
+<h2>Importing stereoscopic sequences<a class="headerlink" href="#importing-stereoscopic-sequences" title="Permalink to this headline">¶</a></h2>
+<p>When creating a new project in Natron, by default there is a single view present. It is called the “Main” view.</p>
+<a class="reference internal image-reference" href="../_images/multiview01.png"><img alt="../_images/multiview01.png" src="../_images/multiview01.png" style="width: 50%;" /></a>
+<p>You can add, remove and rename views as desired. Clicking the “Setup views for stereo” button will make exactly 2 views named “Left” and “Right”.</p>
+<p>Upon importing an EXR file containing multiple views within the file, Natron will prompt you to create the appropriate views in the project:</p>
+<a class="reference internal image-reference" href="../_images/multiview02.png"><img alt="../_images/multiview02.png" src="../_images/multiview02.png" style="width: 60%;" /></a>
+<p>If clicking yes,  Natron will create the missing views in the project:</p>
+<a class="reference internal image-reference" href="../_images/multiview08.png"><img alt="../_images/multiview08.png" src="../_images/multiview08.png" style="width: 40%;" /></a>
+<p>You can remove the “Main” view if needed (in our case it does not make sense to leave it in the project). You can do so by clicking either Remove and selecting the “Main” view or clicking “Setup views for stereo”:</p>
+<a class="reference internal image-reference" href="../_images/multiview09.png"><img alt="../_images/multiview09.png" src="../_images/multiview09.png" style="width: 40%;" /></a>
+<p>The Read node will have a special “V” mark on its top-left corner, indicating that it has multiple views available. When hovering the “V” indicator with the mouse, more information is available regarding which views are present in this Read node</p>
+<a class="reference internal image-reference" href="../_images/multiview10.png"><img alt="../_images/multiview10.png" src="../_images/multiview10.png" style="width: 30%;" /></a>
+<p>Hovering your mouse over the Output Layer parameter will detail which layer is available in which view:</p>
+<a class="reference internal image-reference" href="../_images/multiview11.png"><img alt="../_images/multiview11.png" src="../_images/multiview11.png" style="width: 30%;" /></a>
+<p>When the project has multiple views available, each viewer will have a drop-down with available views. You can select with view to display:</p>
+<a class="reference internal image-reference" href="../_images/multiview03.png"><img alt="../_images/multiview03.png" src="../_images/multiview03.png" style="width: 40%;" /></a>
+<p>If we take a look at our Read node’s properties, you can see that we have 2 layers in this file: RGBA and depth. Layers may sometimes not be present in all views in the file, but the Read node will show the union of all layers available across all views:</p>
+<a class="reference internal image-reference" href="../_images/multiview04.png"><img alt="../_images/multiview04.png" src="../_images/multiview04.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="joining-separate-views">
+<h2>Joining separate views<a class="headerlink" href="#joining-separate-views" title="Permalink to this headline">¶</a></h2>
+<p>In Natron you can join different simple-view files to a multiple-view stream by using the JoinViews node, like this:</p>
+<a class="reference internal image-reference" href="../_images/multiview12.png"><img alt="../_images/multiview12.png" src="../_images/multiview12.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="exporting-stereoscopic-sequences">
+<h2>Exporting stereoscopic sequences<a class="headerlink" href="#exporting-stereoscopic-sequences" title="Permalink to this headline">¶</a></h2>
+<p>Exporting multi-view files in Natron can be done multiple ways: Either you want to have a separate file for each view, or you want all views to be in the same file. The later is only supported by the EXR file format.
+When exporting to EXR, the Write node properties panel will have an extra “Views” parameter:</p>
+<a class="reference internal image-reference" href="../_images/multiview05.png"><img alt="../_images/multiview05.png" src="../_images/multiview05.png" style="width: 40%;" /></a>
+<p>This is quite straight-forward: you can select which views you decide to export.</p>
+<p>You can also select which layer you would like to export:</p>
+<a class="reference internal image-reference" href="../_images/multiview06.png"><img alt="../_images/multiview06.png" src="../_images/multiview06.png" style="width: 40%;" /></a>
+<p>The “All” choice is only available for the EXR and TIFF file formats which allow embedding more than 1 layer per-file.</p>
+<p>Another interesting parameter controls how the EXR/TIFF file is written, this is the “Parts” parameter:</p>
+<a class="reference internal image-reference" href="../_images/multiview07.png"><img alt="../_images/multiview07.png" src="../_images/multiview07.png" style="width: 40%;" /></a>
+<p>When set to “Single Part”, the Write node will aggregate all views requested to render in a single “part” of the file. Single part files are what is written by OpenEXR 1.x applications, thus selecting “Single Part” ensures compatibility with other applications that do not support OpenEXR 2.</p>
+<p>When set to “Split Views”, all views will be scattered in different parts of the file. The resulting file will only be readable in applications that support OpenEXR 2 but with the advantage of being faster to read than the single-part files. Note that if you select “All” layers to render all layers will be aggregated for each view.</p>
+<p>When set to “Split Views,Layers” each layer of each view will be written to a separate part, ensuring EXR optimized for decoding speed, though the file will be larger.</p>
+</div>
+<div class="section" id="writing-to-separate-files">
+<h2>Writing to separate files<a class="headerlink" href="#writing-to-separate-files" title="Permalink to this headline">¶</a></h2>
+<p>You can choose to export views to a separate files by adding a %v (which will expand to the letter ‘l’ or ‘r’) or %V (which will expand to the word “left” or “right”) to the output filename:</p>
+<a class="reference internal image-reference" href="../_images/multiview13.png"><img alt="../_images/multiview13.png" src="../_images/multiview13.png" style="width: 30%;" /></a>
+<p>In that case the “Views” parameter will no longer be available. This is how you should proceed if you want to output multiple views but do not want to write EXR’s.</p>
+<p>By default for files that do not support multi-view (I.e: anything besides EXR), if requesting to write multiple views to the same file, Natron will only write the first view in the project’s views.
+If you do not want to render all views but a specific one, you can use a “OneView” node prior to your Write node to specify which view you would like to write-out:</p>
+<a class="reference internal image-reference" href="../_images/multiview14.png"><img alt="../_images/multiview14.png" src="../_images/multiview14.png" style="width: 40%;" /></a>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="compositing-render.html" class="btn btn-neutral float-right" title="Preview and rendering (empty)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="compositing-color.html" class="btn btn-neutral float-left" title="Working with color (empty)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

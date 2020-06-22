@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>HSVTool &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FFmpeg (empty)" href="tutorials-ffmpeg.html" />
+    <link rel="prev" title="How To Convert Videos To Image Sequences" href="tutorials-imagesequence.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">What is compositing?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compositing.html">Compositing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="tutorials-writedoc.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html">How To Convert Videos To Image Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#how-to-convert-image-sequences-to-video-files">How To Convert Image Sequences To Video Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#using-nle">Using NLE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#creating-digital-intermediate-for-editing-servers">Creating Digital Intermediate For Editing Servers</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">HSVTool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#brightness-adjustment-ranges">Brightness adjustment ranges</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hsvtool-keyer">HSVTool Keyer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-ffmpeg.html">FFmpeg (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-hugin.html">Using PanoTools projects within Natron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-svgworkflow.html">Vector graphics workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-AlternativeMatteExtraction.html">Alternative Matte Extraction Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+          <li><a href="tutorials.html">Tutorials</a> &raquo;</li>
+        
+      <li>HSVTool</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/tutorials-hsvtool.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="hsvtool">
+<h1>HSVTool<a class="headerlink" href="#hsvtool" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> node converts the input color space to a HSV color space and converts the adjusted values back to the image input color space for further processing for the output. The <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> node is used to adjust the HSV channel components of an image the the Read node stream. It’s basic operation are to adjust the Hue: which is the color of the input image, Saturation: which is the color range of the input image, and Brightness: which is the color value level and the grayscale of the input image.</p>
+<p>Each section has a rang controls that can be adjusted to limit the effects of a node by narrowing the input color ranges.</p>
+<p>What are some standard work-flow using <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a>?</p>
+<ol class="arabic simple">
+<li>You can do secondary color corrections or color replacements with the source/destination eyedropper tool.</li>
+<li>You can use the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> for linear/color keying.</li>
+<li>You can do an overall color shift by using the rotation range adjuster in the Hue parameters etc.</li>
+</ol>
+<div class="figure">
+<img alt="../_images/hsvtool_01.png" src="../_images/hsvtool_01.png" />
+</div>
+<p>The following screen captures are based on a single pixel selection without manual component modifications. You will see different alpha mattes display based on the alpha output components.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_02.png" src="../_images/hsvtool_02.png" />
+</div>
+<p>The image above is the result of a single color pixel selection using the blue destination replacement color.</p>
+<div class="section" id="brightness-adjustment-ranges">
+<h2>Brightness adjustment ranges<a class="headerlink" href="#brightness-adjustment-ranges" title="Permalink to this headline">¶</a></h2>
+<div class="figure">
+<img alt="../_images/hsvtool_03.png" src="../_images/hsvtool_03.png" />
+</div>
+<p>This is when you make adjustments to Hue, Saturation, and Brightness to limit the input color ranges for the desired effect. You can look at the third viewer on the right that has matte/alpha generated by the color selection key using the source color eyedropper. This is the alpha interpretation of the alpha output component which is the to Hue.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_04.png" src="../_images/hsvtool_04.png" />
+</div>
+<p>There are several alpha output component that the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> uses to limit effects. The next images are the results of the output alpha mode from the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Each of the matte generated displays are based from the colors that are spread across the image  on a single pixel selection and it HSV values.</p>
+</div>
+<div class="figure">
+<img alt="../_images/hsvtool_05.png" src="../_images/hsvtool_05.png" />
+</div>
+<div class="figure">
+<img alt="../_images/hsvtool_06.png" src="../_images/hsvtool_06.png" />
+</div>
+<div class="figure">
+<img alt="../_images/hsvtool_07.png" src="../_images/hsvtool_07.png" />
+</div>
+<p>By using a low resolution and/or compressed image you will see the artifacts in the alpha channel. This makes it harder to do a replacement or secondary color correction. Is is evident that the blue channel has the most artifacts/noise, you can use the <a class="reference internal" href="../plugins/net.sf.cimg.CImgDenoise.html#net-sf-cimg-cimgdenoise"><span class="std std-ref">CImgDenoise</span></a> or <a class="reference internal" href="../plugins/net.sf.cimg.CImgBlur.html#net-sf-cimg-cimgblur"><span class="std std-ref">CImgBlur</span></a> node and blur one or two pixels in the blue channel to soften the pixel edges. This technique will not always work, remember to apply dynamic range applications when using the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a>. You can only push the Saturation and Brightness so far. Also remember that <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> need color input in order to apply any color filtering even though it can output greyscale and matte data.</p>
+</div>
+<div class="section" id="hsvtool-keyer">
+<h2>HSVTool Keyer<a class="headerlink" href="#hsvtool-keyer" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> can be used as a color keyer. It uses the same principles as the <a class="reference internal" href="../plugins/net.sf.openfx.ChromaKeyerPlugin.html#net-sf-openfx-chromakeyerplugin"><span class="std std-ref">ChromaKeyer</span></a> and the <a class="reference internal" href="../plugins/net.sf.openfx.KeyerPlugin.html#net-sf-openfx-keyerplugin"><span class="std std-ref">Keyer</span></a> nodes. What separates the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> as a keyer is that the matte is inverted with it’s selection.</p>
+<p>When you need to pull a key with the <a class="reference internal" href="../plugins/net.sf.openfx.ChromaKeyerPlugin.html#net-sf-openfx-chromakeyerplugin"><span class="std std-ref">ChromaKeyer</span></a> the key color is outputted as black or represents a transparency. See node grap below for an example.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_08.png" src="../_images/hsvtool_08.png" />
+</div>
+<p>The image below is the <a class="reference internal" href="../plugins/net.sf.openfx.ChromaKeyerPlugin.html#net-sf-openfx-chromakeyerplugin"><span class="std std-ref">ChromaKeyer</span></a> parameters panel. You can see that the eyedropper has a chroma green selection from the input image. You may also notice the acceptance angle is very high, this is because the source material is compressed.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_09.png" src="../_images/hsvtool_09.png" />
+</div>
+<p>As you can see from the panel the chromakey subtracted the chroma green, replacing it with black/transparent. The “Key Lift” and “Key Gain” clamps the black/white to make a clean matte from the keyed selection.</p>
+<p>Even if the chromakey generates transparency from the node, it still outputs a black and white matte that can be used as an inverted mask or holdout matte to apply needed filter effects.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A holdout matte is a section of your image that tells the keyer not to key the selected area. A holdout matte is commonly used to define a area within your image that might have similar colors to the color being keyed.</p>
+</div>
+<p>The node graph below is using the same green screen image when pulling a key with the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a>. The alpha output shows up as the white color. This <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> does not subtract the color to generate a matte, as oppose to the <a class="reference internal" href="../plugins/net.sf.openfx.ChromaKeyerPlugin.html#net-sf-openfx-chromakeyerplugin"><span class="std std-ref">ChromaKeyer</span></a> and <a class="reference internal" href="../plugins/net.sf.openfx.KeyerPlugin.html#net-sf-openfx-keyerplugin"><span class="std std-ref">Keyer</span></a> nodes that subtracts the color to generate a matte. If you are concerned about color spaces, <a class="reference internal" href="../plugins/net.sf.openfx.ChromaKeyerPlugin.html#net-sf-openfx-chromakeyerplugin"><span class="std std-ref">ChromaKeyer</span></a> and <a class="reference internal" href="../plugins/net.sf.openfx.KeyerPlugin.html#net-sf-openfx-keyerplugin"><span class="std std-ref">Keyer</span></a> process data in RGB color space and the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> process in HSV color space.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_10.png" src="../_images/hsvtool_10.png" />
+</div>
+<p>The image below is the <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> parameters panel. You can see that the source color eyedropper operator has a chroma green selected. As you look further down the panel you will notice the Hue, Saturation, and Brightness parameters which has all the values the make up the chroma green selection.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_11.png" src="../_images/hsvtool_11.png" />
+</div>
+<p>The important part to remember is that Hue, Saturation, and Brightness are used to generate and adjust the matte(s) based on the output alpha mode. The image output alpha is set to min(All), when selected, Hue, Saturation, and Brightness can be used to adjust the matte/mask output.</p>
+<p>There are eight output alpha modes. The only mode that can’t generate a matte is the “Source” mode. Even if there’s no matte generated you can still do color replacements and color corrections.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_12.png" src="../_images/hsvtool_12.png" />
+</div>
+<p>The image above displays two <a class="reference internal" href="../plugins/net.sf.openfx.HSVToolPlugin.html#net-sf-openfx-hsvtoolplugin"><span class="std std-ref">HSVTool</span></a> nodes that is keying the same input, but generating two different mattes based on the output alpha. The middle viewer is the Hue mode output. The viewer on the right is the min(Hue, Saturation) mode output. When you are working with compressed source images the output alpha modes will yield different results.</p>
+<div class="figure">
+<img alt="../_images/hsvtool_13.png" src="../_images/hsvtool_13.png" />
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you need more control on the alpha/matte output, the <a class="reference internal" href="../plugins/net.sf.openfx.ColorLookupPlugin.html#net-sf-openfx-colorlookupplugin"><span class="std std-ref">ColorLookup</span></a> node can help adjusting edges.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorials-ffmpeg.html" class="btn btn-neutral float-right" title="FFmpeg (empty)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorials-imagesequence.html" class="btn btn-neutral float-left" title="How To Convert Videos To Image Sequences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

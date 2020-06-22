@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PIKColor node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Merge nodes" href="../_groupMerge.html" />
+    <link rel="prev" title="PIK node" href="net.sf.openfx.PIK.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ChromaKeyerPlugin.html">ChromaKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Despill.html">Despill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DifferencePlugin.html">Difference node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HueKeyer.html">HueKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.KeyerPlugin.html">Keyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MatteMonitorPlugin.html">MatteMonitor node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.PIK.html">PIK node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">PIKColor node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupKeyer.html">Keyer nodes</a> &raquo;</li>
+        
+      <li>PIKColor node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.PIKColor.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pikcolor-node">
+<span id="fr-inria-pikcolor"></span><h1>PIKColor node<a class="headerlink" href="#pikcolor-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/fr.inria.PIKColor.png"><img alt="pluginIcon" src="../_images/fr.inria.PIKColor.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of PIKColor (fr.inria.PIKColor).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.</p>
+<p>The idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.</p>
+<p>Attach the output of this node to the ‘C’ input of a PIK node. Attach the input of this node and the ‘PFg’ input of PIK to the original screen, or preferably the denoised screen.</p>
+<p>Pick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The ‘erode’ slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.</p>
+<p>The ‘Patch Black’ slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it’ll fix it.</p>
+<p>The optional ‘InM’ input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.</p>
+<p>The above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with ‘erode’ and ‘patch black’ activated is not really going to work.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>InM</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="24%" />
+<col width="5%" />
+<col width="10%" />
+<col width="61%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Convert to Group / <code class="docutils literal notranslate"><span class="pre">convertToGroup</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Converts this node to a Group: the internal node-graph and the user parameters will become editable</td>
+</tr>
+<tr class="row-odd"><td>Screen Type / <code class="docutils literal notranslate"><span class="pre">screenType</span></code></td>
+<td>Choice</td>
+<td>Blue</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Green</strong></div>
+<div class="line"><strong>Blue</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>10</td>
+<td>Size of color expansion.</td>
+</tr>
+<tr class="row-odd"><td>Darks / <code class="docutils literal notranslate"><span class="pre">off</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td><div class="first last line-block">
+<div class="line">adjust the color values to get the best separation between black and the screen type color.</div>
+<div class="line">You want to be left with only shades of the screen color and black.</div>
+<div class="line">If a green screen is selected start by bringing down darks-&gt;green</div>
+<div class="line">If a blue screen is selected start by bringing down darks-&gt;blue</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Lights / <code class="docutils literal notranslate"><span class="pre">mult</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1</td>
+<td><div class="first last line-block">
+<div class="line">adjust the color values to get the best separation between black and the screen type color.</div>
+<div class="line">You want to be left with only shades of the screen color and black.</div>
+<div class="line">If a green screen is selected start by bringing down darks-&gt;green</div>
+<div class="line">If a blue screen is selected start by bringing down darks-&gt;blue</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Erode / <code class="docutils literal notranslate"><span class="pre">erode</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>increase this value if you still see traces of the foreground edge color in the output</td>
+</tr>
+<tr class="row-even"><td>Patch Black / <code class="docutils literal notranslate"><span class="pre">multi</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td><div class="first last line-block">
+<div class="line">Increase this to optionally remove the black from the output.</div>
+<div class="line">This should only be used once the the above darks/lights have been set.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">filt</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Level / <code class="docutils literal notranslate"><span class="pre">level</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>multiply the rgb output. Helps remove noise from main key</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../_groupMerge.html" class="btn btn-neutral float-right" title="Merge nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.PIK.html" class="btn btn-neutral float-left" title="PIK node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,545 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyTabWidget &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PyViewer" href="PyViewer.html" />
+    <link rel="prev" title="PyPanel" href="PyPanel.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>PyTabWidget</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/PyTabWidget.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="pytabwidget">
+<span id="id1"></span><h1>PyTabWidget<a class="headerlink" href="#pytabwidget" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A PyTabWidget is one of the GUI pane onto which the user can dock tabs such as the
+NodeGraph, CurveEditor…
+See <a class="reference internal" href="#pytabwidget-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.appendTab" title="NatronGui.NatronGui.PyTabWidget.appendTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">appendTab</span></code></a> (tab)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.closeCurrentTab" title="NatronGui.NatronGui.PyTabWidget.closeCurrentTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">closeCurrentTab</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.closeTab" title="NatronGui.NatronGui.PyTabWidget.closeTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">closeTab</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.closePane" title="NatronGui.NatronGui.PyTabWidget.closePane"><code class="xref py py-meth docutils literal notranslate"><span class="pre">closePane</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.count" title="NatronGui.NatronGui.PyTabWidget.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.currentWidget" title="NatronGui.NatronGui.PyTabWidget.currentWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">currentWidget</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.floatCurrentTab" title="NatronGui.NatronGui.PyTabWidget.floatCurrentTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">floatCurrentTab</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.floatPane" title="NatronGui.NatronGui.PyTabWidget.floatPane"><code class="xref py py-meth docutils literal notranslate"><span class="pre">floatPane</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getCurrentIndex" title="NatronGui.NatronGui.PyTabWidget.getCurrentIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurrentIndex</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getScriptName" title="NatronGui.NatronGui.PyTabWidget.getScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getScriptName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getTabLabel" title="NatronGui.NatronGui.PyTabWidget.getTabLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getTabLabel</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.insertTab" title="NatronGui.NatronGui.PyTabWidget.insertTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">insertTab</span></code></a> (index,tab)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.removeTab" title="NatronGui.NatronGui.PyTabWidget.removeTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">removeTab</span></code></a> (tab)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.removeTab" title="NatronGui.NatronGui.PyTabWidget.removeTab"><code class="xref py py-meth docutils literal notranslate"><span class="pre">removeTab</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setCurrentIndex" title="NatronGui.NatronGui.PyTabWidget.setCurrentIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCurrentIndex</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setNextTabCurrent" title="NatronGui.NatronGui.PyTabWidget.setNextTabCurrent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setNextTabCurrent</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.splitHorizontally" title="NatronGui.NatronGui.PyTabWidget.splitHorizontally"><code class="xref py py-meth docutils literal notranslate"><span class="pre">splitHorizontally</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.splitVertically" title="NatronGui.NatronGui.PyTabWidget.splitVertically"><code class="xref py py-meth docutils literal notranslate"><span class="pre">splitVertically</span></code></a> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="pytabwidget-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#"><span class="doc">PyTabWidget</span></a> class is used to represent panes visible in the user interface:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../_images/tabwidgets.png"><img alt="../../../_images/tabwidgets.png" src="../../../_images/tabwidgets.png" style="width: 500px;" /></a>
+</div>
+<p>On the screenshot above, each <a class="reference internal" href="#"><span class="doc">PyTabWidget</span></a> is surrounded by a red box.</p>
+<p>You cannot construct tab widgets on your own, you must call one of the
+<a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.splitVertically" title="NatronGui.NatronGui.PyTabWidget.splitVertically"><code class="xref py py-func docutils literal notranslate"><span class="pre">splitVertically()</span></code></a> or
+<a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.splitHorizontally" title="NatronGui.NatronGui.PyTabWidget.splitHorizontally"><code class="xref py py-func docutils literal notranslate"><span class="pre">splitHorizontally()</span></code></a> functions to make a new
+one based on another existing ones.</p>
+<p>By default the GUI of Natron cannot have less than 1 tab widget active, hence you can always
+split it to make new panes.</p>
+<p>To retrieve an existing <a class="reference internal" href="#"><span class="doc">PyTabWidget</span></a> you can call the <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.getTabWidget" title="NatronGui.NatronGui.GuiApp.getTabWidget"><code class="xref py py-func docutils literal notranslate"><span class="pre">getTabWidget(scriptName)</span></code></a>
+function of <a class="reference internal" href="GuiApp.html"><span class="doc">GuiApp</span></a>.</p>
+<blockquote>
+<div>pane1 = app.getTabWidget(“Pane1”)</div></blockquote>
+<p>Note that the script-name of a pane can be seen on the graphical user interface by hovering
+the mouse over the “Manage layout” button (in the top left hand corner of a pane).</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../_images/paneScriptName.png"><img alt="../../../_images/paneScriptName.png" src="../../../_images/paneScriptName.png" style="width: 300px;" /></a>
+</div>
+<div class="section" id="managing-tabs">
+<h3>Managing tabs<a class="headerlink" href="#managing-tabs" title="Permalink to this headline">¶</a></h3>
+<p>To insert tabs in the TabWidget you can call either <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.appendTab" title="NatronGui.NatronGui.PyTabWidget.appendTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">appendTab(tab)</span></code></a>
+or <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.insertTab" title="NatronGui.NatronGui.PyTabWidget.insertTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">insertTab(index,tab)</span></code></a>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that to insert a tab, it must be first removed from the tab into which it was.</p>
+</div>
+<p>To remove a tab, use the function <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.removeTab" title="NatronGui.NatronGui.PyTabWidget.removeTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">removeTab(tab)</span></code></a> on the parent <a class="reference internal" href="#"><span class="doc">PyTabWidget</span></a></p>
+<p>For convenience to move tabs around, there is a  <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.moveTab" title="NatronGui.NatronGui.GuiApp.moveTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">moveTab(tab,pane)</span></code></a>
+function in <a class="reference internal" href="GuiApp.html"><span class="doc">GuiApp</span></a>.</p>
+<p>The function <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.closeTab" title="NatronGui.NatronGui.PyTabWidget.closeTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">closeTab(index)</span></code></a> can be used to close permanently
+a tab, effectively destroying it.</p>
+<p>To change the current tab, you can use one of the following functions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>setCurrentIndex(index)&lt;NatronGui.PyTabWidget.setCurrentIndex&gt;</cite></li>
+<li><cite>setNextTabCurrent()&lt;NatronGui.PyTabWidget.setNextTabCurrent&gt;</cite></li>
+</ul>
+</div></blockquote>
+<p>To float the current tab into a new floating window, use the <cite>floatCurrentTab()&lt;NatronGui.PyTabWidget.floatCurrentTab&gt;</cite> function.</p>
+</div>
+<div class="section" id="managing-the-pane">
+<h3>Managing the pane<a class="headerlink" href="#managing-the-pane" title="Permalink to this headline">¶</a></h3>
+<p>To close the pane permanently, use the <cite>closePane()&lt;NatronGui.PyTabWidget.closePane&gt;</cite> function.
+To float the pane into a new floating window with all its tabs, use the <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.floatPane" title="NatronGui.NatronGui.PyTabWidget.floatPane"><code class="xref py py-func docutils literal notranslate"><span class="pre">floatPane()</span></code></a> function.</p>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.appendTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">appendTab</code><span class="sig-paren">(</span><em>tab</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.appendTab" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tab</strong> – <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Appends a new tab to the tab widget and makes it current.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.closeCurrentTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">closeCurrentTab</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.closeCurrentTab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Closes the current tab, effectively destroying it.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.closeTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">closeTab</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.closeTab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Closes the tab at the given <em>index</em>, effectively destroying it.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.closePane">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">closePane</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.closePane" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Closes this pane, effectively destroying it. Note that all tabs will not be destroyed but instead
+moved to another existing pane.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If this pane is the last one on the GUI, this function does nothing.</p>
+</div>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.count">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.count" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of tabs in this pane.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.currentWidget">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">currentWidget</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.currentWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current active tab.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.floatCurrentTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">floatCurrentTab</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.floatCurrentTab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Make a new floating window with a single pane and moves the current tab of this pane to
+the new pane of the floating window.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.floatPane">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">floatPane</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.floatPane" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Make a new floating window and moves this pane to the new window (including all tabs).</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getCurrentIndex">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getCurrentIndex</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getCurrentIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the index of the current tab. This is 0-based (starting from the left).</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getScriptName">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getScriptName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the script-name of the pane, as used by the <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.getTabWidget" title="NatronGui.NatronGui.GuiApp.getTabWidget"><code class="xref py py-func docutils literal notranslate"><span class="pre">getTabWidget(scriptName)</span></code></a> function.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getTabLabel">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getTabLabel</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getTabLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the name of the tab at the given <em>index</em> if it exists or an empty string otherwise.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.insertTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">insertTab</code><span class="sig-paren">(</span><em>index</em>, <em>tab</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.insertTab" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tab</strong> – <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></li>
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Inserts the given <em>tab</em> at the given <em>index</em> in this tab-widget.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.removeTab">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">removeTab</code><span class="sig-paren">(</span><em>tab</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.removeTab" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tab</strong> – <cite>QWidget &lt;https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html&gt;</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes the given <em>tab</em> from this pane if it is found. Note that this function
+does not destroy the <em>tab</em>, unlike <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.closeTab" title="NatronGui.NatronGui.PyTabWidget.closeTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">closeTab(index)</span></code></a>.</p>
+<p>This is used internally by <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.moveTab" title="NatronGui.NatronGui.GuiApp.moveTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">moveTab(tab,pane)</span></code></a>.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">removeTab</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.removeTab" title="NatronGui.NatronGui.PyTabWidget.removeTab"><code class="xref py py-func docutils literal notranslate"><span class="pre">removeTab(tab)</span></code></a> but the <em>index</em> of a tab
+is given instead.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setCurrentIndex">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setCurrentIndex</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setCurrentIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Makes the tab at the given <em>index</em> (0-based) the current one (if the index is valid).</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setNextTabCurrent">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setNextTabCurrent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setNextTabCurrent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Set the tab at <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getCurrentIndex" title="NatronGui.NatronGui.PyTabWidget.getCurrentIndex"><code class="xref py py-func docutils literal notranslate"><span class="pre">getCurrentIndex()</span></code></a> + 1 the current one.
+This functions cycles back to the first tab once the last tab is reached.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.splitHorizontally">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">splitHorizontally</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.splitHorizontally" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTabWidget</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Splits this pane into 2 horizontally-separated panes. The new pane will be returned.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.splitVertically">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">splitVertically</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.splitVertically" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTabWidget</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Splits this pane into 2 vertically-separated panes. The new pane will be returned.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PyViewer.html" class="btn btn-neutral float-right" title="PyViewer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PyPanel.html" class="btn btn-neutral float-left" title="PyPanel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

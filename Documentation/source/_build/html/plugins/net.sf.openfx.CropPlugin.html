@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Crop node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="IDistort node" href="net.sf.openfx.IDistort.html" />
+    <link rel="prev" title="CornerPinMasked node" href="net.sf.openfx.CornerPinMaskedPlugin.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.AdjustRoDPlugin.html">AdjustRoD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Card3D.html">Card3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinPlugin.html">CornerPin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinMaskedPlugin.html">CornerPinMasked node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Crop node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.IDistort.html">IDistort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LensDistortion.html">LensDistortion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Mirror.html">Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Position.html">Position node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Reformat.html">Reformat node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OIIOResize.html">Resize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.STMap.html">STMap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SpriteSheet.html">SpriteSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Tracker.html">Tracker node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformPlugin.html">Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformMaskedPlugin.html">TransformMasked node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupTransform.html">Transform nodes</a> &raquo;</li>
+        
+      <li>Crop node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.CropPlugin.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="crop-node">
+<span id="net-sf-openfx-cropplugin"></span><h1>Crop node<a class="headerlink" href="#crop-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.CropPlugin.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.CropPlugin.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of Crop (net.sf.openfx.CropPlugin).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Removes everything outside the defined rectangle and optionally adds black edges so everything outside is black.</p>
+<p>If the ‘Extent’ parameter is set to ‘Format’, and ‘Reformat’ is checked, the output pixel aspect ratio is also set to this of the format.</p>
+<p>This plugin does not concatenate transforms.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="6%" />
+<col width="2%" />
+<col width="3%" />
+<col width="89%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Extent / <code class="docutils literal notranslate"><span class="pre">extent</span></code></td>
+<td>Choice</td>
+<td>Size</td>
+<td><div class="first last line-block">
+<div class="line">Extent (size and offset) of the output.</div>
+<div class="line"><strong>Format (format)</strong>: Use a pre-defined image format.</div>
+<div class="line"><strong>Size (size)</strong>: Use a specific extent (size and offset).</div>
+<div class="line"><strong>Project (project)</strong>: Use the project extent (size and offset).</div>
+<div class="line"><strong>Default (default)</strong>: Use the default extent (e.g. the source clip extent, if connected).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">recenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Centers the region of definition to the input region of definition. If there is no input, then the region of definition is centered to the project window.</td>
+</tr>
+<tr class="row-even"><td>Format / <code class="docutils literal notranslate"><span class="pre">NatronParamFormatChoice</span></code></td>
+<td>Choice</td>
+<td>HD 1920x1080</td>
+<td><div class="first last line-block">
+<div class="line">The output format</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super_35(full-ap) 1024x778 (1K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2.00 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super_35(full-ap) 2048x1556 (2K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2.00 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super_35(full-ap) 4096x3112 (4K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2.00 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Coordinates of the bottom left corner of the size rectangle.</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 1 h: 1</td>
+<td>Width and height of the size rectangle.</td>
+</tr>
+<tr class="row-odd"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-even"><td>Frame Range / <code class="docutils literal notranslate"><span class="pre">frameRange</span></code></td>
+<td>Integer</td>
+<td>min: 1 max: 1</td>
+<td>Time domain.</td>
+</tr>
+<tr class="row-odd"><td>Softness / <code class="docutils literal notranslate"><span class="pre">softness</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Size of the fade to black around edges to apply.</td>
+</tr>
+<tr class="row-even"><td>Reformat / <code class="docutils literal notranslate"><span class="pre">reformat</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Translates the bottom left corner of the crop rectangle to be in (0,0). This sets the output format only if ‘Format’ or ‘Project’ is selected as the output Extend. In order to actually change the format of this image stream for other Extent choices, feed the output of this node to a either a NoOp node which sets the proper format, or a Reformat node with the same extent and with ‘Resize Type’ set to None and ‘Center’ unchecked. The reason is that the Crop size may be animated, but the output format can not be animated.</td>
+</tr>
+<tr class="row-odd"><td>Intersect / <code class="docutils literal notranslate"><span class="pre">intersect</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Intersects the crop rectangle with the input region of definition instead of extending it.</td>
+</tr>
+<tr class="row-even"><td>Black Outside / <code class="docutils literal notranslate"><span class="pre">blackOutside</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Add 1 black and transparent pixel to the region of definition so that all the area outside the crop rectangle is black.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.IDistort.html" class="btn btn-neutral float-right" title="IDistort node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.CornerPinMaskedPlugin.html" class="btn btn-neutral float-left" title="CornerPinMasked node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

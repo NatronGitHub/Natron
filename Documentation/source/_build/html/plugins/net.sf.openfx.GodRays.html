@@ -1,0 +1,467 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>GodRays node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Inpaint node" href="eu.cimg.Inpaint.html" />
+    <link rel="prev" title="Glow node" href="fr.inria.Glow.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DenoiseSharpen.html">DenoiseSharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgExpression.html">GMICExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">GodRays node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Shadertoy.html">Shadertoy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSoften.html">Soften node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupFilter.html">Filter nodes</a> &raquo;</li>
+        
+      <li>GodRays node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.GodRays.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="godrays-node">
+<span id="net-sf-openfx-godrays"></span><h1>GodRays node<a class="headerlink" href="#godrays-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.GodRays.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.GodRays.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of GodRays (net.sf.openfx.GodRays).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Average an image over a range of transforms.</p>
+<p>This can be used to create crepuscular rays (also called God rays) by setting the scale and center parameters: scale governs the length of rays, and center should be set to the Sun or light position (which may be outside of the image).</p>
+<p>Setting toColor to black and gamma to 1 causes an exponential decay which is very similar to the real crepuscular rays.</p>
+<p>This can also be used to create directional blur using a fixed number of samples (as opposed to DirBlur, which uses an adaptive sampling method).</p>
+<p>This plugin concatenates transforms upstream.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="18%" />
+<col width="4%" />
+<col width="10%" />
+<col width="68%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Rotate / <code class="docutils literal notranslate"><span class="pre">rotate</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Rotation angle in degrees around the Center. Can also be adjusted by clicking and dragging the rotation bar in the Viewer.</td>
+</tr>
+<tr class="row-odd"><td>Scale / <code class="docutils literal notranslate"><span class="pre">scale</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>Scale factor along the x and y axes. Can also be adjusted by clicking and dragging the outer circle or the diameter handles in the Viewer.</td>
+</tr>
+<tr class="row-even"><td>Uniform / <code class="docutils literal notranslate"><span class="pre">uniform</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Use the X scale for both directions</td>
+</tr>
+<tr class="row-odd"><td>Skew X / <code class="docutils literal notranslate"><span class="pre">skewX</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Skew along the x axis. Can also be adjusted by clicking and dragging the skew bar in the Viewer.</td>
+</tr>
+<tr class="row-even"><td>Skew Y / <code class="docutils literal notranslate"><span class="pre">skewY</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Skew along the y axis.</td>
+</tr>
+<tr class="row-odd"><td>Skew Order / <code class="docutils literal notranslate"><span class="pre">skewOrder</span></code></td>
+<td>Choice</td>
+<td>XY</td>
+<td><div class="first last line-block">
+<div class="line">The order in which skew transforms are applied: X then Y, or Y then X.</div>
+<div class="line"><strong>XY</strong></div>
+<div class="line"><strong>YX</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Amount / <code class="docutils literal notranslate"><span class="pre">transformAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Amount of transform to apply. 0 means the transform is identity, 1 means to apply the full transform.</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">center</span></code></td>
+<td>Double</td>
+<td>x: 0.5 y: 0.5</td>
+<td>Center of rotation and scale.</td>
+</tr>
+<tr class="row-even"><td>Reset Center / <code class="docutils literal notranslate"><span class="pre">resetCenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reset the position of the center to the center of the input region of definition</td>
+</tr>
+<tr class="row-odd"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-even"><td>Invert / <code class="docutils literal notranslate"><span class="pre">invert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Invert the transform.</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">filter</span></code></td>
+<td>Choice</td>
+<td>Cubic</td>
+<td><div class="first last line-block">
+<div class="line">Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+).</div>
+<div class="line"><strong>Impulse (impulse)</strong>: (nearest neighbor / box) Use original values.</div>
+<div class="line"><strong>Box (box)</strong>: Integrate the source image over the bounding box of the back-transformed pixel.</div>
+<div class="line"><strong>Bilinear (bilinear)</strong>: (tent / triangle) Bilinear interpolation between original values.</div>
+<div class="line"><strong>Cubic (cubic)</strong>: (cubic spline) Some smoothing.</div>
+<div class="line"><strong>Keys (keys)</strong>: (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*).</div>
+<div class="line"><strong>Simon (simon)</strong>: Some smoothing, plus medium sharpening (*).</div>
+<div class="line"><strong>Rifman (rifman)</strong>: Some smoothing, plus significant sharpening (*).</div>
+<div class="line"><strong>Mitchell (mitchell)</strong>: Some smoothing, plus blurring to hide pixelation (*)(+).</div>
+<div class="line"><strong>Parzen (parzen)</strong>: (cubic B-spline) Greatest smoothing of all filters (+).</div>
+<div class="line"><strong>Notch (notch)</strong>: Flat smoothing (which tends to hide moire’ patterns) (+).</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Clamp / <code class="docutils literal notranslate"><span class="pre">clamp</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Clamp filter output within the original range - useful to avoid negative values in mattes</td>
+</tr>
+<tr class="row-odd"><td>Black outside / <code class="docutils literal notranslate"><span class="pre">black_outside</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Fill the area outside the source image with black</td>
+</tr>
+<tr class="row-even"><td>From Color / <code class="docutils literal notranslate"><span class="pre">fromColor</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1 a: 1</td>
+<td>Color by which the initial image is multiplied.</td>
+</tr>
+<tr class="row-odd"><td>To Color / <code class="docutils literal notranslate"><span class="pre">toColor</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1 a: 1</td>
+<td>Color by which the final image is multiplied.</td>
+</tr>
+<tr class="row-even"><td>Gamma / <code class="docutils literal notranslate"><span class="pre">gamma</span></code></td>
+<td>Color</td>
+<td>r: 1 g: 1 b: 1 a: 1</td>
+<td>Gamma space in which the colors are interpolated. Higher values yield brighter intermediate images.</td>
+</tr>
+<tr class="row-odd"><td>Steps / <code class="docutils literal notranslate"><span class="pre">steps</span></code></td>
+<td>Integer</td>
+<td>5</td>
+<td>The number of intermediate images is 2^steps, i.e. 32 for steps=5.</td>
+</tr>
+<tr class="row-even"><td>Max / <code class="docutils literal notranslate"><span class="pre">max</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Output the brightest value at each pixel rather than the average.</td>
+</tr>
+<tr class="row-odd"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-even"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="eu.cimg.Inpaint.html" class="btn btn-neutral float-right" title="Inpaint node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.Glow.html" class="btn btn-neutral float-left" title="Glow node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking and stabilizing &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Transforming elements (empty)" href="compositing-transform.html" />
+    <link rel="prev" title="Using Rotopaint (empty)" href="compositing-rotopaint.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tracking-and-stabilizing">
+<h1>Tracking and stabilizing<a class="headerlink" href="#tracking-and-stabilizing" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="workflow-summary">
+<h2>Workflow Summary<a class="headerlink" href="#workflow-summary" title="Permalink to this headline">¶</a></h2>
+<p>In order to track a planar shape and move a Roto mask or a texture corresponding to that shape:</p>
+<ul class="simple">
+<li><p>Track some points inside your mask (shape)</p></li>
+<li><p>In the Transform tab, set the transform to CornerPin and to match-move</p></li>
+<li><p>Disable the CornerPin and set the from points of the corner pin at the reference frame where you want your object to move in (basically the bounding box of the shape to track)</p></li>
+<li><p>Export to CornerPin</p></li>
+<li><p>Append your CornerPin to the Roto node</p></li>
+</ul>
+<p>In a future version we will have a planar tracker that will do that automatically for you in a single click.</p>
+</div>
+<div class="section" id="detailed-usage">
+<h2>Detailed Usage<a class="headerlink" href="#detailed-usage" title="Permalink to this headline">¶</a></h2>
+<p>To link parameters in Natron, it is the same as in Nuke except that you drag and drop the widget of a parameter onto another one by holding the control key (or cmd on macOS).</p>
+<p>The tracker works differently than the Nuke tracker regarding the “Transform” part. For the tracking itself, almost everything is the same. Basically, in Nuke they can only output a CornerPin with exactly 4 points, and they map 1 track to each corner of the CornerPin. For the Transform node they may use 1 (translation only), 2, or N points to find the final transformation, however that will never be something other than a <a class="reference external" href="https://en.wikipedia.org/wiki/Similarity_(geometry)">similarity</a>, which means that it cannot handle perspective deformation.</p>
+<p>In Natron, we offer the possibility to compute a CornerPin with N points, that is an <a class="reference external" href="https://en.wikipedia.org/wiki/Homography">homography</a>, which encompasses all distortion-free perspective transforms.</p>
+<p>This is much better, because the more tracks you use to compute that CornerPin, the more robust it will be.</p>
+<p>An homography is typically used to contain information about a perspective deformation, whereas a similarity is more constrained: a similarity is translation, rotation and uniform scale.</p>
+<p>In The Transform tab, this is what we call “the model”.
+Basically, the problem we are trying to solve is to fit a model (i.e. similarity or homography) so it is the closest to the N point correspondences. Each correspondence is the position of a track at the reference frame and its position at the tracked time.</p>
+<p>Hence the more correspondences you have (i.e. the more tracks), the more robust the homography is in the region where you tracked features.</p>
+<p>The <em>Fitting error</em> parameter (in the Transform tab) is an indication of how much difference there is in pixels between the reference point on which we applied the computed transformation and the original tracked point. This is the RMS (root mean square) error across all tracks, and gives an estimate of the quality of the model found in pixel units.</p>
+<p>For each tracked frame, the <em>correspondences</em> we use to compute the CornerPin are the tracks that are <em>enabled</em> at this frame (i.e. the Enabled parameter is checked at this time) and that have a keyframe on the center (i.e. they successfully tracked).</p>
+<p>When you press <em>Compute</em>, it computes the model (CornerPin/Transform) with all the tracks that meet the aforementioned requirements <em>over all keyframes</em>.</p>
+<p>When <em>Compute Transform Automatically</em> is checked, whenever a parameter that has an effect on the output model is changed, this will recompute the Corner/Pin transform <em>over all keyframes</em> again.</p>
+<p>The parameters that have an effect on the output model are:</p>
+<ul class="simple">
+<li><p>The motion type</p></li>
+<li><p>The Transform Type (i.e. Similarity or Homography)</p></li>
+<li><p>The Reference Frame</p></li>
+<li><p>Jitter Period</p></li>
+<li><p>Smooth: this can be used to smooth the resulting curve to remove some of the noise in the high frequencies of the CornerPin/Transform. Note that in “Add Jitter” mode, you can increase High frequencies to simulate a camera shake that follows the original camera movements.</p></li>
+<li><p>Robust model: this is quite complicated, but in short: When trying to find a model that <em>best fits</em> all correspondences, you may have correspondences that are just wrong (bad tracking for example). These bad correspondences are called <em>outliers</em>, and this parameter when checked tells  we should not take into account those outliers to compute the final model. In most cases this should be checked. However sometimes, the user may have for example required to compute an homography (i.e. CornerPin), but the given tracked points (correspondences) just cannot make-up an homography. In this case, if the parameter were to be checked, it would fail to compute a model. If you uncheck this, it will take into account all the points and compute a model that averages the motion of all correspondences.</p></li>
+</ul>
+<p>Also when <em>Compute Transform Automatically</em> is checked, the model will be computed automatically when the tracking ends.</p>
+<p>We cannot compute the model after each track step (i.e. during tracking) because the model at each frame depends on the model at other frames since we may smooth the curve or add jitter.</p>
+<p>So all in all it works differently than Nuke, the whole transformation computation can be more robust and happens as a second pass after the tracking is actually done.</p>
+<p>One last thing: to compute the CornerPin in the “Transform” tab of the tracker, the <strong>to</strong> points are computed using the <strong>from</strong> points as reference.</p>
+<p>Basically what happens is that the tracking outputs a transformation matrix at each frame. Then when computing the model, this matrix is applied to the <strong>from</strong> points at each frame in order to obtain the <strong>to</strong> points.</p>
+<p>So if you were to change the reference points (i.e. the <strong>from</strong> points) with the <em>Set to input RoD</em> for example, then you would need to recompute the model at all frames, because the <strong>to</strong> points would just not be the same.</p>
+<p>The work is usually done in two steps:</p>
+<ul class="simple">
+<li><p>First, disable the CornerPin so that even if the viewer is connected to the Tracker there is no deformation going on, and set the <strong>from</strong> points to be the RoD (bounding box) of the Roto shape at the reference frame.</p></li>
+<li><p>Then, export the CornerPin. It just links the parameters of the CornerPin to the ones in the tracker, so if you change something in the tracker transform tab the changes will reflect onto the CornerPin.</p></li>
+</ul>
+<p>Basically what the Planar tracker will do in the future is automatically do all the steps for you: it will place markers inside the mask for you, track them and output a CornerPin from the bounding box of the roto shape.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>
