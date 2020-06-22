@@ -17,21 +17,21 @@ These connected nodes are called the node graph.
 
 .. note::  If you place your nodes in a top to bottom order you can compare your process to water flowing in pipes that will be collected as a result in the last node of the graph.
 
-.. image:: _images\mainconcepts_tree_01.png
+.. image:: _images/mainconcepts_tree_01.png
  :width: 600px
 
 Here is what happens in the node graph shown above.
 
 We bring an image with the read node (grey).
 
-.. image:: _images\mainconcepts_tree_03.png
+.. image:: _images/mainconcepts_tree_03.png
  :width: 200px
 
 Then we blur it with the Blur Node (orange).
 
 We create a repetitive texture with the cell node.
 
-.. image:: _images\mainconcepts_tree_02.png
+.. image:: _images/mainconcepts_tree_02.png
  :width: 200px
 
 Sometimes procedural images can be generated from scratch in Natron. This is the only case when a node has no input.
@@ -40,7 +40,7 @@ We mix together both images with a merge node (blue). The mixer nodes can have s
 
 To see the result in the viewer we connect the Viewer node to the output of the Merge.
 
-.. image:: _images\mainconcepts_tree_04.png
+.. image:: _images/mainconcepts_tree_04.png
  :width: 200px
 
 To save the result to disk, we connect the Write node (yellow).
@@ -57,18 +57,18 @@ Each node has parameters allowing to customize the effect produced on the incomi
 Properties pane:
   Here we can move sliders, type in numbers to change their values
   
-  .. image:: _images\properties_01.png
+  .. image:: _images/properties_01.png
     :width: 600px
 Curve editor:
   When parameters are animated along time, their value can be displayed and modified as a curve.
   
-  .. image:: _images\curve_editor_01.png
+  .. image:: _images/curve_editor_01.png
     :width: 600px
 
 Dope sheet:
   Here each keyframe value you entered for parameters are displayed as small blocks that you can move in time (left-right). This is handy to retime an  animation without modifying its content.
   
-  .. image:: _images\dopesheet_01.png
+  .. image:: _images/dopesheet_01.png
     :width: 600px
 
 
