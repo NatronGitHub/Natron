@@ -1,0 +1,569 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PySide panels &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Controlling the viewer" href="viewersInteraction.html" />
+    <link rel="prev" title="User menu commands" href="userCommands.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">PySide panels</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#using-user-parameters">Using user parameters:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managing-panels-and-panes">Managing panels and panes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#source-code-of-the-example-initgui-py">Source code of the example initGui.py</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>PySide panels</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/pysidePanelExample.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pyside-panels">
+<span id="pysideexample"></span><h1>PySide panels<a class="headerlink" href="#pyside-panels" title="Permalink to this headline">¶</a></h1>
+<p>To create a non-modal <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">panel</span></a> that can be saved in the project’s layout and
+docked into the application’s <a class="reference internal" href="PythonReference/NatronGui/PyTabWidget.html#pytabwidget"><span class="std std-ref">tab-widgets</span></a>, there is 2 possible way of
+doing it:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Sub-class <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> and create your own GUI using <a class="reference external" href="http://qt-project.org/wiki/PySideDocumentation">PySide</a></li>
+<li>Use the API proposed by <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> to add custom user <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameters</span></a> as done for <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a>.</li>
+</ul>
+</div></blockquote>
+<p>Generally you should define your panels in the <strong>initGui.py</strong> script (see <a class="reference internal" href="startupscripts.html#startupscripts"><span class="std std-ref">startup-scripts</span></a>).
+You can also define the panel in the <em>Script Editor</em> at run-time of Natron, though this will not persist
+when Natron is closed.</p>
+<p>To make your panel be created upon new project created, register a Python callback in the <em>Preferences–&gt;Python</em> tab
+in the parameter <em>After project created</em>.
+This callback will not be called for project being loaded either via an auto-save or via a user action.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This goes in initGui.py</span>
+
+<span class="k">def</span> <span class="nf">createMyPanel</span><span class="p">():</span>
+    <span class="c1">#Create panel</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">onProjectCreatedCallback</span><span class="p">():</span>
+    <span class="n">createMyPanel</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">When the initGui.py script is executed, the <em>app</em> variable (or any derivative such as <em>app1</em> <em>app2</em> etc…)
+does not exist since no project is instantiated yet. The purpose of the script is not to instantiate the GUI per-say
+but to define classes and functions that will be used later on by <a class="reference internal" href="PythonReference/NatronGui/GuiApp.html#guiapp"><span class="std std-ref">application instances</span></a>.</p>
+</div>
+<p>Python panels can be re-created for existing projects using serialization
+functionalities explained <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#panelserialization"><span class="std std-ref">here</span></a>
+See the example below (the whole script is available attached below)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># We override the save() function and save the filename</span>
+<span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+<span class="c1"># We override the restore(data) function and restore the current image</span>
+<span class="k">def</span> <span class="nf">restore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">):</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">QPixmap</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The sole requirement to save a panel in the layout is to call the <code class="xref py py-func docutils literal notranslate"><span class="pre">registerPythonPanel(panel,function)</span></code> function
+of <a class="reference internal" href="PythonReference/NatronGui/GuiApp.html#guiapp"><span class="std std-ref">GuiApp</span></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">registerPythonPanel</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">mypanel</span><span class="p">,</span><span class="s2">&quot;createIconViewer&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See the details of the <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> class for more explanation on how to
+sub-class it.</p>
+<p>Also check-out the complete example <a class="reference internal" href="#sourcecodeex"><span class="std std-ref">source code</span></a> below.</p>
+<div class="section" id="using-user-parameters">
+<h2>Using user parameters:<a class="headerlink" href="#using-user-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Let’s assume we have no use to make our own widgets and want quick <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameters</span></a> fresh and ready,
+we just have to use the <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> class without sub-classing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Callback called when a parameter of the player changes</span>
+<span class="c1">#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed</span>
+<span class="k">def</span> <span class="nf">myPlayerParamChangedCallback</span><span class="p">():</span>
+
+    <span class="n">viewer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getViewer</span><span class="p">(</span><span class="s2">&quot;Viewer1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">viewer</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;previous&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">viewer</span><span class="o">.</span><span class="n">getCurrentFrame</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+
+<span class="k">def</span> <span class="nf">createMyPlayer</span><span class="p">():</span>
+
+    <span class="c1">#Create a panel named &quot;My Panel&quot; that will use user parameters</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span> <span class="o">=</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.myplayer&quot;</span><span class="p">,</span><span class="s2">&quot;My Player&quot;</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="c1">#Add a push-button parameter named &quot;Previous&quot;</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">previousFrameButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;previous&quot;</span><span class="p">,</span><span class="s2">&quot;Previous&quot;</span><span class="p">)</span>
+
+    <span class="c1">#Refresh user parameters GUI, necessary after changes to static properties of parameters.</span>
+    <span class="c1">#See the Param class documentation</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">refreshUserParamsGUI</span><span class="p">()</span>
+
+    <span class="c1">#Set a callback that will be called upon parameter change</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;myPlayerParamChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For convenience, there is a way to also add custom widgets to python panels that are
+using user parameters with the <code class="xref py py-func docutils literal notranslate"><span class="pre">addWidget(widget)</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">insertWidget(index,widget)</span></code>
+functions. However the widgets will be appended <strong>after</strong> any user parameter defined.</p>
+</div>
+</div>
+<div class="section" id="managing-panels-and-panes">
+<h2>Managing panels and panes<a class="headerlink" href="#managing-panels-and-panes" title="Permalink to this headline">¶</a></h2>
+<p>Panels in Natron all have an underlying script-name, that is the one you gave as first parameter
+to the constructor of <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a>.</p>
+<p>You can then move the <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> between the application’s <a class="reference internal" href="PythonReference/NatronGui/PyTabWidget.html#pytabwidget"><span class="std std-ref">panes</span></a> by calling
+the function <code class="xref py py-func docutils literal notranslate"><span class="pre">moveTab(scriptName,pane)</span></code> of <a class="reference internal" href="PythonReference/NatronGui/GuiApp.html#guiapp"><span class="std std-ref">GuiApp</span></a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>All application’s panes are <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> by Natron and can be referenced directly
+by a variable, such as:</p>
+<blockquote class="last">
+<div>app.pane2</div></blockquote>
+</div>
+<p>Panels also have a script-name but only <a class="reference internal" href="PythonReference/NatronGui/PyViewer.html#pyviewer"><span class="std std-ref">viewers</span></a> and <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">user panels</span></a>
+are auto-declared by Natron:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">pane2</span><span class="o">.</span><span class="n">Viewer1</span>
+<span class="n">app</span><span class="o">.</span><span class="n">pane1</span><span class="o">.</span><span class="n">myPySidePanelScriptName</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="source-code-of-the-example-initgui-py">
+<span id="sourcecodeex"></span><h2>Source code of the example initGui.py<a class="headerlink" href="#source-code-of-the-example-initgui-py" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#file, You can obtain one at http://mozilla.org/MPL/2.0/. */</span>
+<span class="c1">#Created by Alexandre GAUTHIER-FOICHAT on 01/27/2015.</span>
+
+<span class="c1">#PySide is already imported by Natron, but we remove the cumbersome PySide.QtGui and PySide.QtCore prefix</span>
+<span class="kn">from</span> <span class="nn">PySide.QtGui</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">PySide.QtCore</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1">#To import the variable &quot;natron&quot;</span>
+<span class="kn">from</span> <span class="nn">NatronGui</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1">#Callback called when a parameter of the player changes</span>
+<span class="c1">#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed</span>
+<span class="k">def</span> <span class="nf">myPlayerParamChangedCallback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+
+    <span class="n">viewer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getViewer</span><span class="p">(</span><span class="s2">&quot;Viewer1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">viewer</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;previous&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">viewer</span><span class="o">.</span><span class="n">getCurrentFrame</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;backward&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">startBackward</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;forward&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">startForward</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;next&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">viewer</span><span class="o">.</span><span class="n">getCurrentFrame</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;stop&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">createMyPlayer</span><span class="p">():</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span> <span class="o">=</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.myplayer&quot;</span><span class="p">,</span><span class="s2">&quot;My Player&quot;</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">previousFrameButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;previous&quot;</span><span class="p">,</span><span class="s2">&quot;Previous&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">previousFrameButton</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">playBackwardButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;backward&quot;</span><span class="p">,</span><span class="s2">&quot;Rewind&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">playBackwardButton</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">stopButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;stop&quot;</span><span class="p">,</span><span class="s2">&quot;Pause&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">stopButton</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">playForwardButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span><span class="s2">&quot;Play&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">playForwardButton</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">nextFrameButton</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createButtonParam</span><span class="p">(</span><span class="s2">&quot;next&quot;</span><span class="p">,</span><span class="s2">&quot;Next&quot;</span><span class="p">)</span>
+
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">helpLabel</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">createStringParam</span><span class="p">(</span><span class="s2">&quot;help&quot;</span><span class="p">,</span><span class="s2">&quot;Help&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">helpLabel</span><span class="o">.</span><span class="n">setType</span><span class="p">(</span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">StringParam</span><span class="o">.</span><span class="n">TypeEnum</span><span class="o">.</span><span class="n">eStringTypeLabel</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">helpLabel</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;&lt;br&gt;&lt;b&gt;Previous:&lt;/b&gt; Seek the previous frame on the timeline&lt;/br&gt;&quot;</span>
+                        <span class="s2">&quot;&lt;br&gt;&lt;b&gt;Rewind:&lt;/b&gt; Play backward&lt;/br&gt;&quot;</span>
+                        <span class="s2">&quot;&lt;br&gt;&lt;b&gt;Pause:&lt;/b&gt; Pauses the playback&lt;/br&gt;&quot;</span>
+                        <span class="s2">&quot;&lt;br&gt;&lt;b&gt;Play:&lt;/b&gt; Play forward&lt;/br&gt;&quot;</span>
+                        <span class="s2">&quot;&lt;br&gt;&lt;b&gt;Next:&lt;/b&gt; Seek the next frame on the timeline&lt;/br&gt;&quot;</span><span class="p">)</span>
+                        
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">refreshUserParamsGUI</span><span class="p">()</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;myPlayerParamChangedCallback&quot;</span><span class="p">)</span>
+
+    <span class="c1">#Add it to the &quot;pane2&quot; tab widget</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">pane2</span><span class="o">.</span><span class="n">appendTab</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="p">);</span>
+    
+    <span class="c1">#Register the tab to the application, so it is saved into the layout of the project</span>
+    <span class="c1">#and can appear in the Panes sub-menu of the &quot;Manage layout&quot; button (in top left-hand corner of each tab widget)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">registerPythonPanel</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="p">,</span><span class="s2">&quot;createMyPlayer&quot;</span><span class="p">)</span>
+
+
+<span class="c1">#A small panel to load and visualize icons/images</span>
+<span class="k">class</span> <span class="nc">IconViewer</span><span class="p">(</span><span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">):</span>
+
+    <span class="c1">#Register a custom signal</span>
+    <span class="n">userFileChanged</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
+    <span class="c1">#Slots should be decorated:</span>
+    <span class="c1">#http://qt-project.org/wiki/Signals_and_Slots_in_PySide</span>
+    
+    <span class="c1">#This is called upon a user click on the button</span>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">onButtonClicked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentApp</span><span class="o">.</span><span class="n">getFilenameDialog</span><span class="p">((</span><span class="s2">&quot;jpg&quot;</span><span class="p">,</span><span class="s2">&quot;png&quot;</span><span class="p">,</span><span class="s2">&quot;bmp&quot;</span><span class="p">,</span><span class="s2">&quot;tif&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">location</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+            
+            <span class="c1">#Save the file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">onUserDataChanged</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">userFileChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+    
+    <span class="c1">#This is called when the user finish editing of the line edit (when return is pressed or focus out)</span>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">onLocationEditEditingFinished</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#Save the file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onUserDataChanged</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">userFileChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+    
+    <span class="c1">#This is called when our custom userFileChanged signal is emitted</span>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">onFileChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">QPixmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+    
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scriptName</span><span class="p">,</span><span class="n">label</span><span class="p">,</span><span class="n">app</span><span class="p">):</span>
+        
+        <span class="c1">#Init base class, important! otherwise signals/slots won&#39;t work.</span>
+        <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scriptName</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+        
+        <span class="c1">#Store the current app as it might no longer be pointing to the app at the time being called</span>
+        <span class="c1">#when a slot will be invoked later on</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentApp</span> <span class="o">=</span> <span class="n">app</span>
+        
+        <span class="c1">#Set the layout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span> <span class="n">QVBoxLayout</span><span class="p">())</span>
+        
+        <span class="c1">#Create a widget container for the line edit + button</span>
+        <span class="n">fileContainer</span> <span class="o">=</span> <span class="n">QWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">fileLayout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">fileContainer</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">fileLayout</span><span class="p">)</span>
+        
+        <span class="c1">#Create the line edit, make it expand horizontally</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">(</span><span class="n">fileContainer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span> <span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Preferred</span><span class="p">)</span>
+        
+        <span class="c1">#Create a pushbutton</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">button</span> <span class="o">=</span> <span class="n">QPushButton</span><span class="p">(</span><span class="n">fileContainer</span><span class="p">)</span>
+        <span class="c1">#Decorate it with the open-file pixmap built-in into Natron</span>
+        <span class="n">buttonPixmap</span> <span class="o">=</span> <span class="n">natron</span><span class="o">.</span><span class="n">getIcon</span><span class="p">(</span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">Natron</span><span class="o">.</span><span class="n">PixmapEnum</span><span class="o">.</span><span class="n">NATRON_PIXMAP_OPEN_FILE</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">button</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">QIcon</span><span class="p">(</span><span class="n">buttonPixmap</span><span class="p">))</span>
+        
+        <span class="c1">#Add widgets to the layout</span>
+        <span class="n">fileLayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="p">)</span>
+        <span class="n">fileLayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">button</span><span class="p">)</span>
+        
+        <span class="c1">#Use a QLabel to display the images</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="c1">#Init the label with the icon of Natron</span>
+        <span class="n">natronPixmap</span> <span class="o">=</span> <span class="n">natron</span><span class="o">.</span><span class="n">getIcon</span><span class="p">(</span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">Natron</span><span class="o">.</span><span class="n">PixmapEnum</span><span class="o">.</span><span class="n">NATRON_PIXMAP_APP_ICON</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">natronPixmap</span><span class="p">)</span>
+        <span class="c1">#Built-in icons of Natron are in the resources</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;:/Resources/Images/natronIcon256_linux.png&quot;</span><span class="p">)</span>
+        
+        <span class="c1">#Make it expand in both directions so it takes all space</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span> <span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">)</span>
+
+        <span class="c1">#Add widgets to the layout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">fileContainer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        
+        <span class="c1">#Make signal/slot connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">button</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onButtonClicked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">editingFinished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onLocationEditEditingFinished</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">userFileChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onFileChanged</span><span class="p">)</span>
+
+    <span class="c1"># We override the save() function and save the filename</span>
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+
+    <span class="c1"># We override the restore(data) function and restore the current image</span>
+    <span class="k">def</span> <span class="nf">restore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">locationEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">setPixmap</span><span class="p">(</span><span class="n">QPixmap</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+<span class="c1">#To be called to create a new icon viewer panel:</span>
+<span class="c1">#Note that *app* should be defined. Generally when called from onProjectCreatedCallback</span>
+<span class="c1">#this is set, but when called from the Script Editor you should set it yourself beforehand:</span>
+<span class="c1">#app = app1</span>
+<span class="c1">#See http://natron.readthedocs.org/en/python/natronobjects.html for more info</span>
+<span class="k">def</span> <span class="nf">createIconViewer</span><span class="p">():</span>
+    
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">app</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">):</span>
+        <span class="c1">#The icon viewer already exists, it we override the app.p variable, then it will destroy the previous widget</span>
+        <span class="c1">#and create a new one but we don&#39;t really need it</span>
+        
+        <span class="c1">#The warning will be displayed in the Script Editor</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Note for us developers: this widget already exists!&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    
+    <span class="c1">#Create our icon viewer</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">IconViewer</span><span class="p">(</span><span class="s2">&quot;fr.inria.iconViewer&quot;</span><span class="p">,</span><span class="s2">&quot;Icon viewer&quot;</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+    
+    <span class="c1">#Add it to the &quot;pane2&quot; tab widget</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">pane2</span><span class="o">.</span><span class="n">appendTab</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">p</span><span class="p">);</span>
+    
+    <span class="c1">#Register the tab to the application, so it is saved into the layout of the project</span>
+    <span class="c1">#and can appear in the Panes sub-menu of the &quot;Manage layout&quot; button (in top left-hand corner of each tab widget)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">registerPythonPanel</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">p</span><span class="p">,</span><span class="s2">&quot;createIconViewer&quot;</span><span class="p">)</span>
+
+
+<span class="c1">#Callback set in the &quot;After project created&quot; parameter in the Preferences--&gt;Python tab of Natron</span>
+<span class="c1">#This will automatically create our panels when a new project is created</span>
+<span class="k">def</span> <span class="nf">onProjectCreatedCallback</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="c1">#Always create our icon viewer on project creation, you must register this call-back in the</span>
+    <span class="c1">#&quot;After project created callback&quot; parameter of the Preferences--&gt;Python tab.</span>
+    <span class="n">createIconViewer</span><span class="p">()</span>
+
+    <span class="n">createMyPlayer</span><span class="p">()</span>
+
+<span class="c1">#Add a custom menu entry with a shortcut to create our icon viewer</span>
+<span class="n">natron</span><span class="o">.</span><span class="n">addMenuCommand</span><span class="p">(</span><span class="s2">&quot;Inria/Scripts/IconViewer&quot;</span><span class="p">,</span><span class="s2">&quot;createIconViewer&quot;</span><span class="p">,</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_L</span><span class="p">,</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">KeyboardModifier</span><span class="o">.</span><span class="n">ShiftModifier</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="viewersInteraction.html" class="btn btn-neutral float-right" title="Controlling the viewer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="userCommands.html" class="btn btn-neutral float-left" title="User menu commands" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,920 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ExprUtils &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="FileParam" href="FileParam.html" />
+    <link rel="prev" title="Effect" href="Effect.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>ExprUtils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/ExprUtils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="exprutils">
+<span id="id1"></span><h1>ExprUtils<a class="headerlink" href="#exprutils" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>Various functions useful for expressions. Most noise functions have been taken from the
+Walt Disney Animation Studio SeExpr library.</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.boxstep" title="NatronEngine.NatronEngine.ExprUtils.boxstep"><code class="xref py py-meth docutils literal notranslate"><span class="pre">boxstep</span></code></a> (x,a)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.linearstep" title="NatronEngine.NatronEngine.ExprUtils.linearstep"><code class="xref py py-meth docutils literal notranslate"><span class="pre">linearstep</span></code></a> (x,a,b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.boxstep" title="NatronEngine.NatronEngine.ExprUtils.boxstep"><code class="xref py py-meth docutils literal notranslate"><span class="pre">smoothstep</span></code></a> (x,a,b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.gaussstep" title="NatronEngine.NatronEngine.ExprUtils.gaussstep"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gaussstep</span></code></a> (x,a,b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.remap" title="NatronEngine.NatronEngine.ExprUtils.remap"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remap</span></code></a> (x,source,range,falloff,interp)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.mix" title="NatronEngine.NatronEngine.ExprUtils.mix"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mix</span></code></a> (x,y,alpha)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.hash" title="NatronEngine.NatronEngine.ExprUtils.hash"><code class="xref py py-meth docutils literal notranslate"><span class="pre">hash</span></code></a> (args)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.noise" title="NatronEngine.NatronEngine.ExprUtils.noise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">noise</span></code></a> (x)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.noise" title="NatronEngine.NatronEngine.ExprUtils.noise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">noise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.noise" title="NatronEngine.NatronEngine.ExprUtils.noise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">noise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.noise" title="NatronEngine.NatronEngine.ExprUtils.noise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">noise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.snoise" title="NatronEngine.NatronEngine.ExprUtils.snoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">snoise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.vnoise" title="NatronEngine.NatronEngine.ExprUtils.vnoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vnoise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cnoise" title="NatronEngine.NatronEngine.ExprUtils.cnoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cnoise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.snoise4" title="NatronEngine.NatronEngine.ExprUtils.snoise4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">snoise4</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.vnoise4" title="NatronEngine.NatronEngine.ExprUtils.vnoise4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vnoise4</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cnoise4" title="NatronEngine.NatronEngine.ExprUtils.cnoise4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cnoise4</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.turbulence" title="NatronEngine.NatronEngine.ExprUtils.turbulence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">turbulence</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.vturbulence" title="NatronEngine.NatronEngine.ExprUtils.vturbulence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vturbulence</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cturbulence" title="NatronEngine.NatronEngine.ExprUtils.cturbulence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cturbulence</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.fbm" title="NatronEngine.NatronEngine.ExprUtils.fbm"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fbm</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.vfbm" title="NatronEngine.NatronEngine.ExprUtils.vfbm"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vfbm</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.fbm4" title="NatronEngine.NatronEngine.ExprUtils.fbm4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fbm4</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.vfbm4" title="NatronEngine.NatronEngine.ExprUtils.vfbm4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vfbm4</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cfbm" title="NatronEngine.NatronEngine.ExprUtils.cfbm"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cfbm</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cfbm4" title="NatronEngine.NatronEngine.ExprUtils.cfbm4"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cfbm4</span></code></a> (p[,ocaves=6, lacunarity=2, gain=0.5])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.cellnoise" title="NatronEngine.NatronEngine.ExprUtils.cellnoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cellnoise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.ccellnoise" title="NatronEngine.NatronEngine.ExprUtils.ccellnoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ccellnoise</span></code></a> (p)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ExprUtils.pnoise" title="NatronEngine.NatronEngine.ExprUtils.pnoise"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pnoise</span></code></a> (p, period)</li>
+</ul>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.boxstep">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">boxstep</code><span class="sig-paren">(</span><em>x</em>, <em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.boxstep" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>a</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+<p>if x &lt; a then 0 otherwise 1</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.linearstep">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">linearstep</code><span class="sig-paren">(</span><em>x</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.linearstep" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>a</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+<p>Transitions linearly when a &lt; x &lt; b</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">boxstep</code><span class="sig-paren">(</span><em>x</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>a</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Transitions smoothly (cubic) when a &lt; x &lt; b</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.gaussstep">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">gaussstep</code><span class="sig-paren">(</span><em>x</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.gaussstep" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>a</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Transitions smoothly (exponentially) when a &lt; x &lt; b</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.remap">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">remap</code><span class="sig-paren">(</span><em>x</em>, <em>source</em>, <em>range</em>, <em>falloff</em>, <em>interp</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.remap" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>source</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>range</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>falloff</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>interp</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>General remapping function.
+When <strong>x</strong> is within +/- <strong>range</strong> of <strong>source</strong>, the result is 1.
+The result falls to 0 beyond that range over <strong>falloff</strong> distance.
+The falloff shape is controlled by <strong>interp</strong>:
+linear = 0
+smooth = 1
+gaussian = 2</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.mix">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">mix</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>alpha</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.mix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>y</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>alpha</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Linear interpolation of a and b according to alpha</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.hash">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">hash</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.hash" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Like random, but with no internal seeds. Any number of seeds may be given
+and the result will be a random function based on all the seeds.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.noise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">noise</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.noise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">noise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double2DTuple.html#NatronEngine.Double2DTuple" title="NatronEngine.Double2DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double2DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">noise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">noise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.snoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">snoise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.snoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Signed noise w/ range -1 to 1 formed with original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.vnoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">vnoise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.vnoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Vector noise formed with original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cnoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cnoise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cnoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Color noise formed with original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.snoise4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">snoise4</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.snoise4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>4D signed noise w/ range -1 to 1 formed with original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.vnoise4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">vnoise4</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.vnoise4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>4D vector noise formed with original perlin noise at location (C2 interpolant)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cnoise4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cnoise4</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cnoise4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="ColorTuple.html#NatronEngine.ColorTuple" title="NatronEngine.ColorTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>4D color noise formed with original perlin noise at location (C2 interpolant)”</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.turbulence">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">turbulence</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.turbulence" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.vturbulence">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">vturbulence</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.vturbulence" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cturbulence">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cturbulence</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cturbulence" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.fbm">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">fbm</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.fbm" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.vfbm">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">vfbm</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.vfbm" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.fbm4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">fbm4</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.fbm4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.vfbm4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">vfbm4</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.vfbm4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cfbm">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cfbm</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cfbm" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cfbm4">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cfbm4</code><span class="sig-paren">(</span><em>p</em><span class="optional">[</span>, <em>ocaves=6</em>, <em>lacunarity=2</em>, <em>gain=0.5</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cfbm4" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>octaves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lacunarity</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>gain</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></p>
+<p>FBM (Fractal Brownian Motion) is a multi-frequency noise function.
+The base frequency is the same as the noise function. The total
+number of frequencies is controlled by <strong>octaves</strong>. The <strong>lacunarity</strong> is the
+spacing between the frequencies - A value of 2 means each octave is
+twice the previous frequency. The <strong>gain</strong> controls how much each
+frequency is scaled relative to the previous frequency.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.cellnoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">cellnoise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.cellnoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code><p>cellnoise generates a field of constant colored cubes based on the integer location
+This is the same as the prman cellnoise function</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.ccellnoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">ccellnoise</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.ccellnoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>cellnoise generates a field of constant colored cubes based on the integer location
+This is the same as the prman cellnoise function</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ExprUtils.pnoise">
+<code class="descclassname">NatronEngine.ExprUtils.</code><code class="descname">pnoise</code><span class="sig-paren">(</span><em>p</em>, <em>period</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ExprUtils.pnoise" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+<li><strong>period</strong> – <a class="reference internal" href="Double3DTuple.html#NatronEngine.Double3DTuple" title="NatronEngine.Double3DTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DTuple</span></code></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Periodic noise</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="FileParam.html" class="btn btn-neutral float-right" title="FileParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Effect.html" class="btn btn-neutral float-left" title="Effect" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

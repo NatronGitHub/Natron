@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>NatronEngine &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="AnimatedParam" href="AnimatedParam.html" />
+    <link rel="prev" title="Python API" href="../../APIReference.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">NatronEngine</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+      <li>NatronEngine</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="natronengine">
+<span id="id1"></span><h1>NatronEngine<a class="headerlink" href="#natronengine" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="detailed-description">
+<h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>Here are listed all classes being part of NatronEngine module. This module is always
+loaded by Natron natively, meaning access is granted to these classes in your scripts
+without importing anything.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="AnimatedParam.html">AnimatedParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="App.html">App</a></li>
+<li class="toctree-l1"><a class="reference internal" href="AppSettings.html">AppSettings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BezierCurve.html">BezierCurve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BooleanParam.html">BooleanParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ButtonParam.html">ButtonParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ChoiceParam.html">ChoiceParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ColorParam.html">ColorParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ColorTuple.html">ColorTuple</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Double2DParam.html">Double2DParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Double2DTuple.html">Double2DTuple</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Double3DParam.html">Double3DParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Double3DTuple.html">Double3DTuple</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DoubleParam.html">DoubleParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Effect.html">Effect</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ExprUtils.html">ExprUtils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FileParam.html">FileParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Group.html">Group</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GroupParam.html">GroupParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ImageLayer.html">ImageLayer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Int2DParam.html">Int2DParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Int2DTuple.html">Int2DTuple</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Int3DParam.html">Int3DParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Int3DTuple.html">Int3DTuple</a></li>
+<li class="toctree-l1"><a class="reference internal" href="IntParam.html">IntParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ItemBase.html">ItemBase</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Layer.html">Layer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Natron.html">Natron</a></li>
+<li class="toctree-l1"><a class="reference internal" href="OutputFileParam.html">OutputFileParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PageParam.html">PageParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Param.html">Param</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ParametricParam.html">ParametricParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PathParam.html">PathParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PyCoreApplication.html">PyCoreApplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="RectD.html">RectD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="RectI.html">RectI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Roto.html">Roto</a></li>
+<li class="toctree-l1"><a class="reference internal" href="StringParam.html">StringParam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="StringParamBase.html">StringParamBase</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Track.html">Track</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Tracker.html">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="UserParamHolder.html">UserParamHolder</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="AnimatedParam.html" class="btn btn-neutral float-right" title="AnimatedParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../../APIReference.html" class="btn btn-neutral float-left" title="Python API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

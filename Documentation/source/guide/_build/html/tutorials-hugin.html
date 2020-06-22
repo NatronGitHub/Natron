@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Using PanoTools projects within Natron &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Vector graphics workflow" href="tutorials-svgworkflow.html" />
+    <link rel="prev" title="Encoding HEVC (empty)" href="tutorials-ffmpeg-hevc.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-panotools-projects-within-natron">
+<h1>Using PanoTools projects within Natron<a class="headerlink" href="#using-panotools-projects-within-natron" title="Permalink to this headline">¶</a></h1>
+<p>Those are preliminary notes on using PanoTools or Hugin projects from
+within Natron.</p>
+<div class="section" id="creating-a-panotools-pto-project">
+<h2>Creating a PanoTools (pto) project<a class="headerlink" href="#creating-a-panotools-pto-project" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-the-hugin-gui">
+<h3>Using the Hugin GUI<a class="headerlink" href="#using-the-hugin-gui" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>download <a class="reference external" href="http://hugin.sourceforge.net/">Hugin</a> - on macOS this
+can be done using <a class="reference external" href="https://brew.sh/">homebrew</a>, by typing the
+command <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">cask</span> <span class="pre">install</span> <span class="pre">hugin</span></code> in a terminal.</p></li>
+<li><p>read the <a class="reference external" href="http://wiki.panotools.org/Hugin">Hugin documentation</a> or
+start with a <a class="reference external" href="http://hugin.sourceforge.net/tutorials/overview/">Hugin
+tutorial</a></p></li>
+<li><p>make your panorama</p></li>
+</ul>
+</div>
+<div class="section" id="using-command-line-tools">
+<h3>Using command-line tools<a class="headerlink" href="#using-command-line-tools" title="Permalink to this headline">¶</a></h3>
+<p>Full details on using command-line tools are given in the <a class="reference external" href="http://wiki.panotools.org/Panorama_scripting_in_a_nutshell">Panorama
+scripting in a
+nutshell</a>
+documentation.</p>
+<p>On macOS, if Hugin was installed using homebrew, the tools are available
+in various directories, and they can be added to the PATH using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$PATH:/Applications/Hugin/tools_mac:/Applications/Hugin/Hugin.app/Contents/MacOS:/Applications/Hugin/HuginStitchProject.app/Contents/MacOS&quot;</span>
+</pre></div>
+</div>
+<p>Here is an example of running the panorama tools from a set of JPEG
+images (with suffix <code class="docutils literal notranslate"><span class="pre">.jpg</span></code>) placed in the current directory to
+generate e perspective panorama (other options are described in the
+documentation):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pto_gen</span> <span class="o">-</span><span class="n">o</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span> <span class="o">*.</span><span class="n">JPG</span>
+<span class="n">cpfind</span> <span class="o">--</span><span class="n">multirow</span> <span class="o">-</span><span class="n">o</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span>
+
+<span class="n">celeste_standalone</span> <span class="o">-</span><span class="n">i</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span> <span class="o">-</span><span class="n">o</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span>
+<span class="n">cpclean</span> <span class="o">-</span><span class="n">v</span> <span class="o">--</span><span class="n">output</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span>
+
+<span class="n">autooptimiser</span> <span class="o">-</span><span class="n">a</span> <span class="o">-</span><span class="n">l</span> <span class="o">-</span><span class="n">s</span> <span class="o">-</span><span class="n">m</span> <span class="o">-</span><span class="n">o</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span>
+
+<span class="n">nona</span> <span class="o">-</span><span class="n">m</span> <span class="n">TIFF_m</span> <span class="o">-</span><span class="n">o</span> <span class="n">project</span> <span class="n">project</span><span class="o">.</span><span class="n">pto</span>
+
+<span class="n">enblend</span> <span class="o">--</span><span class="n">save</span><span class="o">-</span><span class="n">masks</span> <span class="o">-</span><span class="n">o</span> <span class="n">panorama</span><span class="o">.</span><span class="n">tif</span> <span class="n">project</span><span class="o">*.</span><span class="n">tif</span>
+</pre></div>
+</div>
+<p>The result is:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">project.pto</span></code> file, which is the Hugin project itself</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">project*.tif</span></code> images, which are images warped to the reference
+projection.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">mask-*.tif</span></code> images, which are masks generated by <code class="docutils literal notranslate"><span class="pre">enblend</span></code>.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">panorama.tif</span></code> image, which is the final panorama.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="using-hugin-panotools-parameters-in-natron">
+<h2>Using Hugin/PanoTools parameters in Natron<a class="headerlink" href="#using-hugin-panotools-parameters-in-natron" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">pto</span></code> file syntax is described is the
+<a class="reference external" href="http://wiki.panotools.org/PTOptimizer">PTOptimizer</a> and
+<a class="reference external" href="http://wiki.panotools.org/PTStitcher">PTStitcher</a> docs.</p>
+<p>This file can be viewed and edited in any text editor.</p>
+<div class="section" id="project-size">
+<h3>Project size<a class="headerlink" href="#project-size" title="Permalink to this headline">¶</a></h3>
+<p>The project size, or format, should be set to the panorama size, which
+is given in pixels on the <code class="docutils literal notranslate"><span class="pre">p</span></code> line (at the start of the file).</p>
+</div>
+<div class="section" id="distortion-correction">
+<h3>Distortion correction<a class="headerlink" href="#distortion-correction" title="Permalink to this headline">¶</a></h3>
+<p>The distortion correction parameters for the input images are given in
+the <code class="docutils literal notranslate"><span class="pre">i</span></code> lines (one for each image).</p>
+<p>The values for the <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, <code class="docutils literal notranslate"><span class="pre">c</span></code>, <code class="docutils literal notranslate"><span class="pre">d</span></code>, <code class="docutils literal notranslate"><span class="pre">e</span></code>, <code class="docutils literal notranslate"><span class="pre">g</span></code>, <code class="docutils literal notranslate"><span class="pre">t</span></code>
+parameters should be entered in a <strong>LensDistortion</strong> node, with
+<em>Model</em>/<code class="docutils literal notranslate"><span class="pre">model</span></code>=PanoTools and <em>Direction</em>/<code class="docutils literal notranslate"><span class="pre">direction</span></code>=Undistort,
+placed after the <strong>Read</strong> node for each input image or video. The script
+name for these values are <code class="docutils literal notranslate"><span class="pre">pt_a</span></code>, <code class="docutils literal notranslate"><span class="pre">pt_b</span></code>, <code class="docutils literal notranslate"><span class="pre">pt_c</span></code>, <code class="docutils literal notranslate"><span class="pre">pt_d</span></code>,
+<code class="docutils literal notranslate"><span class="pre">pt_e</span></code>, <code class="docutils literal notranslate"><span class="pre">pt_g</span></code>, <code class="docutils literal notranslate"><span class="pre">pt_t</span></code>.</p>
+<p>Note that if all images share the same distortion parameters (this is
+written as <code class="docutils literal notranslate"><span class="pre">a=0</span> <span class="pre">b=0</span> <span class="pre">c=0</span> <span class="pre">d=0</span> <span class="pre">e=0</span> <span class="pre">g=0</span> <span class="pre">t=0</span></code> on the <code class="docutils literal notranslate"><span class="pre">i</span></code> line), the
+<strong>LensDistortion</strong> node can be cloned in Natron (right-click on node,
+<em>Edit</em>, <em>Clone Nodes</em>).</p>
+</div>
+<div class="section" id="projection">
+<h3>Projection<a class="headerlink" href="#projection" title="Permalink to this headline">¶</a></h3>
+<p>The projection (which can be performed by the
+<a class="reference external" href="http://wiki.panotools.org/Nona">Nona</a> tool) can be done using
+<strong>Card3D</strong> nodes placed after each <strong>LensDistortion</strong> node.</p>
+<p>Each <strong>Card3D</strong> node must have its <em>Transform Order</em>/<code class="docutils literal notranslate"><span class="pre">cardXFormOrder</span></code>
+set to STR, and the <em>Rotation Order</em>/<code class="docutils literal notranslate"><span class="pre">cardRotOrder</span></code> should be left to
+the default value (ZXY). Be careful, these are neither the Axis nor the
+Cam Transform Order, which are in the two first groups of the
+<strong>Card3D</strong>node.</p>
+<p>Set the <em>Output Format</em> to Project.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">r</span></code> <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> values from the <code class="docutils literal notranslate"><span class="pre">i</span></code> line are roll, yaw,
+pitch angles. Their values should be put in the <em>Rotate</em> parameter of
+the <strong>Card3D</strong> (script name is <code class="docutils literal notranslate"><span class="pre">cardRotate</span></code>), using the following
+convention: <code class="docutils literal notranslate"><span class="pre">cardRotate.x</span> <span class="pre">=</span> <span class="pre">p</span></code>, <code class="docutils literal notranslate"><span class="pre">cardRotate.y</span> <span class="pre">=</span> <span class="pre">-y</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cardRotate.z</span> <span class="pre">=</span> <span class="pre">-r</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">v</span></code> value from the <code class="docutils literal notranslate"><span class="pre">i</span></code> line corresponds to the horizontal field
+of view, and has to be converted to an aperture value. The <strong>Lens-In
+H.Aperture</strong>/<code class="docutils literal notranslate"><span class="pre">lensInHAperture</span></code> param should be set to
+<code class="docutils literal notranslate"><span class="pre">2*tan(v*pi/360)</span></code>. This expression can be directly typed in the value
+field, with <code class="docutils literal notranslate"><span class="pre">v</span></code> replaced by the actual value from the corresponding
+<code class="docutils literal notranslate"><span class="pre">i</span></code> line of the <code class="docutils literal notranslate"><span class="pre">pto</span></code> file.</p>
+<p>Setup all the Card3D nodes for each input image that way.</p>
+</div>
+<div class="section" id="camera">
+<h3>Camera<a class="headerlink" href="#camera" title="Permalink to this headline">¶</a></h3>
+<p>In Natron 2, the camera used by the <strong>Card3D</strong> node is set in the <em>Cam</em>
+group at the top of the parameters list.</p>
+<p>In the <strong>Card3D</strong> node for the first image, unfold this group, and
+unfold the <em>Cam Projection</em> group.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">v</span></code> value on the <code class="docutils literal notranslate"><span class="pre">p</span></code> line (usually at the top of the <code class="docutils literal notranslate"><span class="pre">pto</span></code>
+file) gives the horizontal field of view of the output panorama.</p>
+<p>Set the <em>Focal Length</em>/<code class="docutils literal notranslate"><span class="pre">camfocal</span></code> to 1., and set the <em>Horiz.
+Aperture</em>/<code class="docutils literal notranslate"><span class="pre">camhaperture</span></code> to <code class="docutils literal notranslate"><span class="pre">2*tan(v*pi/360)</span></code>, replacing <code class="docutils literal notranslate"><span class="pre">v</span></code> with
+its actual value.</p>
+<p>You can then copy these two parameters to all the <strong>Card3D</strong> nodes, or -
+even better - link these parameters, so that the output camera for the
+panorama can then be modified: Right-click on the parameter from the
+first <strong>Card3D</strong>, Copy Link, then right-click on the same parameter of
+every other <strong>Card3D</strong> node, Paste Link.</p>
+<p>If you intend to modify the camera orientation later, you can also link
+the same way the <em>Rotate</em>/<code class="docutils literal notranslate"><span class="pre">camRotate</span></code> parameter (those for the camera,
+not the card).</p>
+<p>Note that when the Natron <strong>Card3D</strong> node is used in Nuke (where it
+appears as <strong>Card3DOFX</strong>), the node has an external Cam input, to which
+a Camera node may be connected. There may be a similar concept in future
+versions of Natron.</p>
+</div>
+</div>
+<div class="section" id="building-the-panorama-in-natron">
+<h2>Building the panorama in Natron<a class="headerlink" href="#building-the-panorama-in-natron" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="first-sketch-overlap-the-images">
+<h3>First sketch: overlap the images<a class="headerlink" href="#first-sketch-overlap-the-images" title="Permalink to this headline">¶</a></h3>
+<p>Make sure that the <em>Output Components</em> parameter in all readers is set
+to RGBA, so that images have a transparent value outside of their
+domain.</p>
+<p>Now, connect the outpput of the first <em>Card3D</em> to the B input of a
+<strong>Merge</strong> node, connect the secont to the A input, the third to the A2
+input, etc…</p>
+<p>The output of the <strong>Merge</strong> node should show a first panorama, obtained
+by overlapping all images.</p>
+</div>
+<div class="section" id="drawing-the-masks">
+<h3>Drawing the masks<a class="headerlink" href="#drawing-the-masks" title="Permalink to this headline">¶</a></h3>
+<p>Add a <strong>Roto</strong> node after each <strong>LensDistortion</strong>, before each
+<strong>Card3D</strong>.</p>
+<p>Only leave connected the A and B inputs to the <strong>Merge</strong> node to the two
+first <strong>Card3D</strong> nodes.</p>
+<p>Check <em>Premultiply</em> in each Roto node, check that only the A channel is
+affected by <strong>Roto</strong> in its parameters, and start editing the roto mask
+on the second image, for which the <strong>LensDistortion</strong> output is
+connected to the A input of the <strong>Merge</strong>, while viewing the output of
+the <strong>Merge</strong>.</p>
+<p>Set the compositing operator of each roto shape to “min” instead of
+“over”, so that the original image alpha gets masked by the roto shape.</p>
+<p>Do not forget to add feather, especially in the overlap area.</p>
+<p>Then, reconnect the A2 input to the third <strong>Card3D</strong>, and start editing
+its roto mask, always in “min” compositing mode.</p>
+<p>Do the same with A3, A4, etc… and you should end up with a full
+panorama.</p>
+</div>
+</div>
+<div class="section" id="future-work">
+<h2>Future work<a class="headerlink" href="#future-work" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="camera-response">
+<h3>Camera response<a class="headerlink" href="#camera-response" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference external" href="http://wiki.panotools.org/Camera_response_curve">Camera response
+curve</a> and
+<a class="reference external" href="http://wiki.panotools.org/Vig_optimize">Vig_optimize</a>.</p>
+<p>The values <code class="docutils literal notranslate"><span class="pre">Ra</span></code> <code class="docutils literal notranslate"><span class="pre">Rb</span></code> <code class="docutils literal notranslate"><span class="pre">Rc</span></code> <code class="docutils literal notranslate"><span class="pre">Rd</span></code> <code class="docutils literal notranslate"><span class="pre">Re</span></code> on the <code class="docutils literal notranslate"><span class="pre">i</span></code> line encode a
+color response curve (EMoR). See <code class="docutils literal notranslate"><span class="pre">EMoRParams</span></code>in the hugin source
+code.</p>
+</div>
+<div class="section" id="exposure-and-color">
+<h3>Exposure and color<a class="headerlink" href="#exposure-and-color" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference external" href="http://wiki.panotools.org/Vignetting">Vignetting</a> and
+<a class="reference external" href="http://wiki.panotools.org/Vig_optimize">Vig_optimize</a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Eev</span></code> encodes the exposure, see <code class="docutils literal notranslate"><span class="pre">ExposureValue</span></code> in the hugin source
+code.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Er</span></code> and <code class="docutils literal notranslate"><span class="pre">Eb</span></code> encode the red and blue multipliers, see
+<code class="docutils literal notranslate"><span class="pre">WhiteBalanceRed</span></code> and <code class="docutils literal notranslate"><span class="pre">WhiteBalanceBlue</span></code> in the hugin source code.</p>
+</div>
+<div class="section" id="vignetting">
+<h3>Vignetting<a class="headerlink" href="#vignetting" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference external" href="http://wiki.panotools.org/Vignetting">Vignetting</a> and
+<a class="reference external" href="http://wiki.panotools.org/Vig_optimize">Vig_optimize</a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Va</span></code> is always 1, see <code class="docutils literal notranslate"><span class="pre">VigCorrMode</span></code> in the hugin source code.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Vb</span></code> <code class="docutils literal notranslate"><span class="pre">Vc</span></code> <code class="docutils literal notranslate"><span class="pre">Vd</span></code> encode the degree 2, 4 and 6 coefficients for
+vignette correction, see <code class="docutils literal notranslate"><span class="pre">RadialVigCorrCoeff</span></code> in the hugin source
+code.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Vx</span></code> and <code class="docutils literal notranslate"><span class="pre">Vy</span></code> encode the vignetting center shift, see
+<code class="docutils literal notranslate"><span class="pre">RadialVigCorrCenterShift</span></code> in the hugin source code.</p>
+</div>
+<div class="section" id="blending">
+<h3>Blending<a class="headerlink" href="#blending" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>importing enblend masks, using them as roto masks</p></li>
+<li><p>executing enblend externally (using RunScript maybe?)</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

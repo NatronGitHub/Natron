@@ -1,0 +1,791 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>LensDistortion node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Mirror node" href="net.sf.openfx.Mirror.html" />
+    <link rel="prev" title="IDistort node" href="net.sf.openfx.IDistort.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.AdjustRoDPlugin.html">AdjustRoD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Card3D.html">Card3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinPlugin.html">CornerPin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinMaskedPlugin.html">CornerPinMasked node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CropPlugin.html">Crop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.IDistort.html">IDistort node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">LensDistortion node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Mirror.html">Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Position.html">Position node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Reformat.html">Reformat node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OIIOResize.html">Resize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.STMap.html">STMap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SpriteSheet.html">SpriteSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Tracker.html">Tracker node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformPlugin.html">Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformMaskedPlugin.html">TransformMasked node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupTransform.html">Transform nodes</a> &raquo;</li>
+        
+      <li>LensDistortion node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.LensDistortion.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="lensdistortion-node">
+<span id="net-sf-openfx-lensdistortion"></span><h1>LensDistortion node<a class="headerlink" href="#lensdistortion-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.LensDistortion.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.LensDistortion.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 4.0 of LensDistortion (net.sf.openfx.LensDistortion).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Add or remove lens distortion, or produce an STMap that can be used to apply that transform.</p>
+<p>The region of definition of the transformed image is computed from the region of definition of the Source input. If the input is defined outside of the project format, this may result in a very large region. A Crop effect may be inserted before LensDistortion to avoid this. If the input region of definition is inside the format, the Crop To Format parameter may be used to avoid expanding it.</p>
+<p>LensDistortion can directly apply distortion/undistortion, but if the distortion parameters are not animated, the most efficient way to use LensDistortion and avoid repeated distortion function calculations is the following:</p>
+<ul class="simple">
+<li>If the footage size is not the same as the project size, insert a FrameHold plugin between the footage to distort or undistort and the Source input of LensDistortion. This connection is only used to get the size of the input footage.</li>
+<li>Set Output Mode to “STMap” in LensDistortion.</li>
+<li>feed the LensDistortion output into the UV input of STMap, and feed the footage into the Source input of STMap.</li>
+</ul>
+<p>This plugin concatenates transforms upstream.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="20%" />
+<col width="3%" />
+<col width="4%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Format / <code class="docutils literal notranslate"><span class="pre">extent</span></code></td>
+<td>Choice</td>
+<td>Default</td>
+<td><div class="first last line-block">
+<div class="line">Reference format for lens distortion.</div>
+<div class="line"><strong>Format (format)</strong>: Use a pre-defined image format.</div>
+<div class="line"><strong>Size (size)</strong>: Use a specific extent (size and offset).</div>
+<div class="line"><strong>Project (project)</strong>: Use the project extent (size and offset).</div>
+<div class="line"><strong>Default (default)</strong>: Use the default extent (e.g. the source clip extent, if connected).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Center / <code class="docutils literal notranslate"><span class="pre">recenter</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Centers the region of definition to the input region of definition. If there is no input, then the region of definition is centered to the project window.</td>
+</tr>
+<tr class="row-even"><td>Format / <code class="docutils literal notranslate"><span class="pre">NatronParamFormatChoice</span></code></td>
+<td>Choice</td>
+<td>HD 1920x1080</td>
+<td><div class="first last line-block">
+<div class="line">The output format</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super_35(full-ap) 1024x778 (1K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2.00 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super_35(full-ap) 2048x1556 (2K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2.00 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super_35(full-ap) 4096x3112 (4K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2.00 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Coordinates of the bottom left corner of the size rectangle.</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 1 h: 1</td>
+<td>Width and height of the size rectangle.</td>
+</tr>
+<tr class="row-odd"><td>Model / <code class="docutils literal notranslate"><span class="pre">model</span></code></td>
+<td>Choice</td>
+<td>Nuke</td>
+<td><div class="first last line-block">
+<div class="line">Choice of the distortion model, i.e. the function that goes from distorted to undistorted image coordinates.</div>
+<div class="line"><strong>Nuke (nuke)</strong>: The model used in Nuke’s LensDistortion plugin.</div>
+<div class="line"><strong>PFBarrel (pfbarrel)</strong>: The PFBarrel model used in PFTrack by PixelFarm.</div>
+<div class="line"><strong>3DE Classic (3declassic)</strong>: Degree-2 anamorphic and degree-4 radial mixed model, used in 3DEqualizer by Science-D-Visions. Works, but it is recommended to use 3DE4 Radial Standard Degree 4 or 3DE4 Anamorphic Standard Degree 4 instead.</div>
+<div class="line"><strong>3DE4 Anamorphic Degree 6 (3deanamorphic6)</strong>: Degree-6 anamorphic model, used in 3DEqualizer by Science-D-Visions.</div>
+<div class="line"><strong>3DE4 Radial Fisheye Degree 8 (3defisheye8)</strong>: Radial lens distortion model with equisolid-angle fisheye projection, used in 3DEqualizer by Science-D-Visions.</div>
+<div class="line"><strong>3DE4 Radial Standard Degree 4 (3deradial4)</strong>: Radial lens distortion model, a.k.a. radial decentered cylindric degree 4, which compensates for decentered lenses (and beam splitter artefacts in stereo rigs), used in 3DEqualizer by Science-D-Visions.</div>
+<div class="line"><strong>3DE4 Anamorphic Standard Degree 4 (3deanamorphic4)</strong>: Degree-4 anamorphic model with anamorphic lens rotation, which handles ‘human-touched’ mounted anamorphic lenses, used in 3DEqualizer by Science-D-Visions.</div>
+<div class="line"><strong>PanoTools (panotools)</strong>: The model used in PanoTools, PTGui, PTAssembler, Hugin. See <a class="reference external" href="http://wiki.panotools.org/Lens_correction_model">http://wiki.panotools.org/Lens_correction_model</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Direction / <code class="docutils literal notranslate"><span class="pre">direction</span></code></td>
+<td>Choice</td>
+<td>Distort</td>
+<td><div class="first last line-block">
+<div class="line">Should the output correspond to applying or to removing distortion.</div>
+<div class="line"><strong>Distort</strong>: The output corresponds to applying distortion.</div>
+<div class="line"><strong>Undistort</strong>: The output corresponds to removing distortion.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Output Mode / <code class="docutils literal notranslate"><span class="pre">outputMode</span></code></td>
+<td>Choice</td>
+<td>Image</td>
+<td><div class="first last line-block">
+<div class="line">Choice of the output, which may be either a distorted/undistorted image, or a distortion/undistortion STMap.</div>
+<div class="line"><strong>Image</strong>: The output is the distorted/undistorted Source.</div>
+<div class="line"><strong>STMap</strong>: The output is a distortion/undistortion STMap. It is recommended to insert a FrameHold node at the Source input so that the STMap is computed only once if the parameters are not animated.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>K1 / <code class="docutils literal notranslate"><span class="pre">k1</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Nuke: First radial distortion coefficient (coefficient for r^2).</td>
+</tr>
+<tr class="row-odd"><td>K2 / <code class="docutils literal notranslate"><span class="pre">k2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Nuke: Second radial distortion coefficient (coefficient for r^4).</td>
+</tr>
+<tr class="row-even"><td>Center / <code class="docutils literal notranslate"><span class="pre">center</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Nuke: Offset of the distortion center from the image center.</td>
+</tr>
+<tr class="row-odd"><td>Squeeze / <code class="docutils literal notranslate"><span class="pre">anamorphicSqueeze</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Nuke: Anamorphic squeeze (only for anamorphic lens).</td>
+</tr>
+<tr class="row-even"><td>Asymmetric / <code class="docutils literal notranslate"><span class="pre">asymmetricDistortion</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Nuke: Asymmetric distortion (only for anamorphic lens).</td>
+</tr>
+<tr class="row-odd"><td>File / <code class="docutils literal notranslate"><span class="pre">pfFile</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>The location of the PFBarrel .pfb file to use. Keyframes are set if present in the file.</td>
+</tr>
+<tr class="row-even"><td>C3 / <code class="docutils literal notranslate"><span class="pre">pfC3</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PFBarrel: Low order radial distortion coefficient.</td>
+</tr>
+<tr class="row-odd"><td>C5 / <code class="docutils literal notranslate"><span class="pre">pfC5</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PFBarrel: Low order radial distortion coefficient.</td>
+</tr>
+<tr class="row-even"><td>Center / <code class="docutils literal notranslate"><span class="pre">pfP</span></code></td>
+<td>Double</td>
+<td>x: 0.5 y: 0.5</td>
+<td>PFBarrel: The distortion center of the lens (specified as a factor rather than a pixel value)</td>
+</tr>
+<tr class="row-odd"><td>Squeeze / <code class="docutils literal notranslate"><span class="pre">pfSqueeze</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>PFBarrel: Anamorphic squeeze (only for anamorphic lens).</td>
+</tr>
+<tr class="row-even"><td>fov left [unit coord] / <code class="docutils literal notranslate"><span class="pre">tde4_field_of_view_xa_unit</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE4: Field of view.</td>
+</tr>
+<tr class="row-odd"><td>fov bottom [unit coord] / <code class="docutils literal notranslate"><span class="pre">tde4_field_of_view_ya_unit</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE4: Field of view.</td>
+</tr>
+<tr class="row-even"><td>fov right [unit coord] / <code class="docutils literal notranslate"><span class="pre">tde4_field_of_view_xb_unit</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE4: Field of view.</td>
+</tr>
+<tr class="row-odd"><td>fov top [unit coord] / <code class="docutils literal notranslate"><span class="pre">tde4_field_of_view_yb_unit</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE4: Field of view.</td>
+</tr>
+<tr class="row-even"><td>tde4 focal length [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_focal_length_cm</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE4: Focal length.</td>
+</tr>
+<tr class="row-odd"><td>tde4 focus distance [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_custom_focus_distance_cm</span></code></td>
+<td>Double</td>
+<td>100</td>
+<td>3DE4: Focus distance.</td>
+</tr>
+<tr class="row-even"><td>tde4 filmback width [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_filmback_width_cm</span></code></td>
+<td>Double</td>
+<td>0.8</td>
+<td>3DE4: Filmback width.</td>
+</tr>
+<tr class="row-odd"><td>tde4 filmback height [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_filmback_height_cm</span></code></td>
+<td>Double</td>
+<td>0.6</td>
+<td>3DE4: Filmback height.</td>
+</tr>
+<tr class="row-even"><td>tde4 lens center offset x [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_lens_center_offset_x_cm</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE4: Lens center horizontal offset.</td>
+</tr>
+<tr class="row-odd"><td>tde4 lens center offset y [cm] / <code class="docutils literal notranslate"><span class="pre">tde4_lens_center_offset_y_cm</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE4: Lens center vertical offset.</td>
+</tr>
+<tr class="row-even"><td>tde4 pixel aspect / <code class="docutils literal notranslate"><span class="pre">tde4_pixel_aspect</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE4: Pixel aspect ratio.</td>
+</tr>
+<tr class="row-odd"><td>Distortion / <code class="docutils literal notranslate"><span class="pre">tde4_Distortion</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Classic: Distortion.</td>
+</tr>
+<tr class="row-even"><td>Anamorphic Squeeze / <code class="docutils literal notranslate"><span class="pre">tde4_Anamorphic_Squeeze</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE Classic: Anamorphic Squeeze.</td>
+</tr>
+<tr class="row-odd"><td>Curvature X / <code class="docutils literal notranslate"><span class="pre">tde4_Curvature_X</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Classic: Curvature X.</td>
+</tr>
+<tr class="row-even"><td>Curvature Y / <code class="docutils literal notranslate"><span class="pre">tde4_Curvature_Y</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Classic: Curvature Y.</td>
+</tr>
+<tr class="row-odd"><td>Quartic Distortion / <code class="docutils literal notranslate"><span class="pre">tde4_Quartic_Distortion</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Classic: Quartic Distortion.</td>
+</tr>
+<tr class="row-even"><td>Distortion - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_Distortion_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard and Fisheye: Distortion.</td>
+</tr>
+<tr class="row-odd"><td>U - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_U_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: U - Degree 2.</td>
+</tr>
+<tr class="row-even"><td>V - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_V_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: V - Degree 2.</td>
+</tr>
+<tr class="row-odd"><td>Quartic Distortion - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Quartic_Distortion_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard and Fisheye: Quartic Distortion - Degree 4.</td>
+</tr>
+<tr class="row-even"><td>U - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_U_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: U - Degree 4.</td>
+</tr>
+<tr class="row-odd"><td>V - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_V_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: V - Degree 4.</td>
+</tr>
+<tr class="row-even"><td>Phi - Cylindric Direction / <code class="docutils literal notranslate"><span class="pre">tde4_Phi_Cylindric_Direction</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: Phi - Cylindric Direction.</td>
+</tr>
+<tr class="row-odd"><td>B - Cylindric Bending / <code class="docutils literal notranslate"><span class="pre">tde4_B_Cylindric_Bending</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Standard: B - Cylindric Bending.</td>
+</tr>
+<tr class="row-even"><td>Cx02 - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx02_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cx02 - Degree 2.</td>
+</tr>
+<tr class="row-odd"><td>Cy02 - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy02_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cy02 - Degree 2.</td>
+</tr>
+<tr class="row-even"><td>Cx22 - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx22_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cx22 - Degree 2.</td>
+</tr>
+<tr class="row-odd"><td>Cy22 - Degree 2 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy22_Degree_2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cy22 - Degree 2.</td>
+</tr>
+<tr class="row-even"><td>Cx04 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx04_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cx04 - Degree 4.</td>
+</tr>
+<tr class="row-odd"><td>Cy04 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy04_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cy04 - Degree 4.</td>
+</tr>
+<tr class="row-even"><td>Cx24 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx24_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cx24 - Degree 4.</td>
+</tr>
+<tr class="row-odd"><td>Cy24 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy24_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cy24 - Degree 4.</td>
+</tr>
+<tr class="row-even"><td>Cx44 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx44_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cx44 - Degree 4.</td>
+</tr>
+<tr class="row-odd"><td>Cy44 - Degree 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy44_Degree_4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4 and 6: Cy44 - Degree 4.</td>
+</tr>
+<tr class="row-even"><td>Cx06 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx06_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cx06 - Degree 6.</td>
+</tr>
+<tr class="row-odd"><td>Cy06 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy06_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cy06 - Degree 6.</td>
+</tr>
+<tr class="row-even"><td>Cx26 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx26_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cx26 - Degree 6.</td>
+</tr>
+<tr class="row-odd"><td>Cy26 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy26_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cy26 - Degree 6.</td>
+</tr>
+<tr class="row-even"><td>Cx46 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx46_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cx46 - Degree 6.</td>
+</tr>
+<tr class="row-odd"><td>Cy46 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy46_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cy46 - Degree 6.</td>
+</tr>
+<tr class="row-even"><td>Cx66 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cx66_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cx66 - Degree 6.</td>
+</tr>
+<tr class="row-odd"><td>Cy66 - Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Cy66_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 6: Cy66 - Degree 6.</td>
+</tr>
+<tr class="row-even"><td>Lens Rotation 4 / <code class="docutils literal notranslate"><span class="pre">tde4_Lens_Rotation</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Anamorphic 4: Lens Rotation 4.</td>
+</tr>
+<tr class="row-odd"><td>Squeeze-X / <code class="docutils literal notranslate"><span class="pre">tde4_Squeeze_X</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE Anamorphic 4: Squeeze-X.</td>
+</tr>
+<tr class="row-even"><td>Squeeze-Y / <code class="docutils literal notranslate"><span class="pre">tde4_Squeeze_Y</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>3DE Anamorphic 4: Squeeze-Y.</td>
+</tr>
+<tr class="row-odd"><td>Degree 6 / <code class="docutils literal notranslate"><span class="pre">tde4_Degree_6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Fisheye: Degree 6.</td>
+</tr>
+<tr class="row-even"><td>Degree 8 / <code class="docutils literal notranslate"><span class="pre">tde4_Degree_8</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>3DE Fisheye: Degree 8.</td>
+</tr>
+<tr class="row-odd"><td>a / <code class="docutils literal notranslate"><span class="pre">pt_a</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Radial lens distortion 3rd degree coefficient a.</td>
+</tr>
+<tr class="row-even"><td>b / <code class="docutils literal notranslate"><span class="pre">pt_b</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Radial lens distortion 2nd degree coefficient b.</td>
+</tr>
+<tr class="row-odd"><td>c / <code class="docutils literal notranslate"><span class="pre">pt_c</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Radial lens distortion 1st degree coefficient c.</td>
+</tr>
+<tr class="row-even"><td>d / <code class="docutils literal notranslate"><span class="pre">pt_d</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Horizontal lens shift (in pixels).</td>
+</tr>
+<tr class="row-odd"><td>e / <code class="docutils literal notranslate"><span class="pre">pt_e</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Vertical lens shift (in pixels).</td>
+</tr>
+<tr class="row-even"><td>g / <code class="docutils literal notranslate"><span class="pre">pt_g</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Vertical lens shear (in pixels). Use to remove slight misalignment of the line scanner relative to the film transport.</td>
+</tr>
+<tr class="row-odd"><td>t / <code class="docutils literal notranslate"><span class="pre">pt_t</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>PanoTools: Horizontal lens shear (in pixels).</td>
+</tr>
+<tr class="row-even"><td>Filter / <code class="docutils literal notranslate"><span class="pre">filter</span></code></td>
+<td>Choice</td>
+<td>Cubic</td>
+<td><div class="first last line-block">
+<div class="line">Filtering algorithm - some filters may produce values outside of the initial range (*) or modify the values even if there is no movement (+).</div>
+<div class="line"><strong>Impulse (impulse)</strong>: (nearest neighbor / box) Use original values.</div>
+<div class="line"><strong>Box (box)</strong>: Integrate the source image over the bounding box of the back-transformed pixel.</div>
+<div class="line"><strong>Bilinear (bilinear)</strong>: (tent / triangle) Bilinear interpolation between original values.</div>
+<div class="line"><strong>Cubic (cubic)</strong>: (cubic spline) Some smoothing.</div>
+<div class="line"><strong>Keys (keys)</strong>: (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*).</div>
+<div class="line"><strong>Simon (simon)</strong>: Some smoothing, plus medium sharpening (*).</div>
+<div class="line"><strong>Rifman (rifman)</strong>: Some smoothing, plus significant sharpening (*).</div>
+<div class="line"><strong>Mitchell (mitchell)</strong>: Some smoothing, plus blurring to hide pixelation (*)(+).</div>
+<div class="line"><strong>Parzen (parzen)</strong>: (cubic B-spline) Greatest smoothing of all filters (+).</div>
+<div class="line"><strong>Notch (notch)</strong>: Flat smoothing (which tends to hide moire’ patterns) (+).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Clamp / <code class="docutils literal notranslate"><span class="pre">clamp</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Clamp filter output within the original range - useful to avoid negative values in mattes</td>
+</tr>
+<tr class="row-even"><td>Black outside / <code class="docutils literal notranslate"><span class="pre">black_outside</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Fill the area outside the source image with black</td>
+</tr>
+<tr class="row-odd"><td>Crop To Format / <code class="docutils literal notranslate"><span class="pre">cropToFormat</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>If the source is inside the format and the effect extends it outside of the format, crop it to avoid unnecessary calculations. To avoid unwanted crops, only the borders that were inside of the format in the source clip will be cropped.</td>
+</tr>
+<tr class="row-even"><td>Use Source RoD / <code class="docutils literal notranslate"><span class="pre">useRoD</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Use the region of definition of the source as the source format.</td>
+</tr>
+<tr class="row-odd"><td>(Un)premult / <code class="docutils literal notranslate"><span class="pre">premult</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.</td>
+</tr>
+<tr class="row-even"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-odd"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.Mirror.html" class="btn btn-neutral float-right" title="Mirror node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.IDistort.html" class="btn btn-neutral float-left" title="IDistort node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

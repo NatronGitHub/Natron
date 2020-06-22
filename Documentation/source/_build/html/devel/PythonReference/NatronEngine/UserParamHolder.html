@@ -1,0 +1,841 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>UserParamHolder &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="NatronGui" href="../NatronGui/index.html" />
+    <link rel="prev" title="Tracker" href="Tracker.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>UserParamHolder</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/UserParamHolder.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="userparamholder">
+<span id="id1"></span><h1>UserParamHolder<a class="headerlink" href="#userparamholder" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherited by</strong> : <a class="reference internal" href="Effect.html"><span class="doc">Effect</span></a>, <a class="reference internal" href="../NatronGui/PyModalDialog.html"><span class="doc">PyModalDialog</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This is an abstract class that serves as a base interface for all objects that can hold
+user parameters.
+See <a class="reference internal" href="#userparams-details"><span class="std std-ref">Detailed Description</span></a></p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createBooleanParam" title="NatronEngine.NatronEngine.UserParamHolder.createBooleanParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createBooleanParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createButtonParam" title="NatronEngine.NatronEngine.UserParamHolder.createButtonParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createButtonParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createChoiceParam" title="NatronEngine.NatronEngine.UserParamHolder.createChoiceParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createChoiceParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createColorParam" title="NatronEngine.NatronEngine.UserParamHolder.createColorParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createColorParam</span></code></a> (name, label, useAlpha)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createDouble2DParam" title="NatronEngine.NatronEngine.UserParamHolder.createDouble2DParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createDouble2DParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createDouble3DParam" title="NatronEngine.NatronEngine.UserParamHolder.createDouble3DParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createDouble3DParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createDoubleParam" title="NatronEngine.NatronEngine.UserParamHolder.createDoubleParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createDoubleParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createFileParam" title="NatronEngine.NatronEngine.UserParamHolder.createFileParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createFileParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createGroupParam" title="NatronEngine.NatronEngine.UserParamHolder.createGroupParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createGroupParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createInt2DParam" title="NatronEngine.NatronEngine.UserParamHolder.createInt2DParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createInt2DParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createInt3DParam" title="NatronEngine.NatronEngine.UserParamHolder.createInt3DParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createInt3DParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createIntParam" title="NatronEngine.NatronEngine.UserParamHolder.createIntParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createIntParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createOutputFileParam" title="NatronEngine.NatronEngine.UserParamHolder.createOutputFileParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createOutputFileParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createPageParam" title="NatronEngine.NatronEngine.UserParamHolder.createPageParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createPageParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createParametricParam" title="NatronEngine.NatronEngine.UserParamHolder.createParametricParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createParametricParam</span></code></a> (name, label, nbCurves)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createPathParam" title="NatronEngine.NatronEngine.UserParamHolder.createPathParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createPathParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.createStringParam" title="NatronEngine.NatronEngine.UserParamHolder.createStringParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createStringParam</span></code></a> (name, label)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.removeParam" title="NatronEngine.NatronEngine.UserParamHolder.removeParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">removeParam</span></code></a> (param)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-meth docutils literal notranslate"><span class="pre">refreshUserParamsGUI</span></code></a> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="userparams-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>To create a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> on the object, use one of the <strong>createXParam</strong>
+function. To remove a user parameter created, use the <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.removeParam" title="NatronEngine.NatronEngine.UserParamHolder.removeParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">removeParam(param)</span></code></a>
+function. Note that this function can only be used to remove <strong>user parameters</strong> and cannot
+be used to remove parameters that were defined by the OpenFX plug-in.</p>
+<p>Once you have made modifications to the user parameters, you must call the
+<a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a> function to notify
+the GUI, otherwise no change will appear on the GUI.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createBooleanParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createBooleanParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createBooleanParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">BooleanParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type boolean which will appear in the user
+interface as a checkbox.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createButtonParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createButtonParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createButtonParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type button which will appear as a
+push button. Use the onParamChanged callback of the Effect to handle user clicks.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createChoiceParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createChoiceParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createChoiceParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChoiceParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type choice which will appear as a
+dropdown combobox.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createColorParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createColorParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em>, <em>useAlpha</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createColorParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>useAlpha</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type color.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createDouble2DParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createDouble2DParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createDouble2DParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double2DParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type double with 2 dimensions.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createDouble3DParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createDouble3DParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createDouble3DParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Double3DParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type double with 3 dimensions.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createDoubleParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createDoubleParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createDoubleParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoubleParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type double with single dimension.
+A double is similar to a floating point value.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createFileParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createFileParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createFileParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type double with 2 dimensions.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createGroupParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createGroupParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createGroupParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroupParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type group. It can contain other
+children parameters and can be expanded or folded.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createInt2DParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createInt2DParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createInt2DParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Int2DParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type integer with 2 dimensions.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createInt3DParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createInt3DParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createInt3DParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Int3DParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type integer with 3 dimensions.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createIntParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createIntParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createIntParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type integer with a single dimension.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createOutputFileParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createOutputFileParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createOutputFileParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputFileParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type string dedicated to specify
+paths to output files.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createPageParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createPageParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createPageParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">PageParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type page. A page is a tab within the
+settings panel of the node.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createParametricParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createParametricParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em>, <em>nbCurves</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createParametricParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>nbCurves</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParametricParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type parametric. A parametric parameter
+is what can be found in the ColorLookup node or in the Ranges tab of the ColorCorrect
+node.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createPathParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createPathParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createPathParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">PathParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type string. This parameter is dedicated
+to specify path to single or multiple directories.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.createStringParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">createStringParam</code><span class="sig-paren">(</span><em>name</em>, <em>label</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.createStringParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">StringParam</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new user <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> with the given <em>name</em> and <em>label</em>. See
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">here</span></a> for an explanation of the difference between the <em>name</em> and <em>label</em>.
+This function will return a new parameter of type string.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.removeParam">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">removeParam</code><span class="sig-paren">(</span><em>param</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.removeParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>param</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes the given <em>param</em> from the parameters of this Effect.
+This function works only if <em>param</em> is a user parameter and does nothing otherwise.
+This function returns True upon success and False otherwise.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">After calling this function you should call <a class="reference internal" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI"><code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code></a>
+to refresh the user interface. The refreshing is done in a separate function because it may
+be expensive and thus allows you to make multiple changes to user parameters at once
+while keeping the user interface responsive.</p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI">
+<code class="descclassname">NatronEngine.UserParamHolder.</code><code class="descname">refreshUserParamsGUI</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.UserParamHolder.refreshUserParamsGUI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>This function must be called after new user parameter were created or removed.
+This will re-create the user interface for the parameters and can be expensive.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../NatronGui/index.html" class="btn btn-neutral float-right" title="NatronGui" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Tracker.html" class="btn btn-neutral float-left" title="Tracker" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

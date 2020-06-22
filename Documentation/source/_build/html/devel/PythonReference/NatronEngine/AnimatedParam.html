@@ -1,0 +1,525 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>AnimatedParam &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="App" href="App.html" />
+    <link rel="prev" title="NatronEngine" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>AnimatedParam</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/AnimatedParam.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="animatedparam">
+<span id="id1"></span><h1>AnimatedParam<a class="headerlink" href="#animatedparam" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="Param.html"><span class="doc">Param</span></a></p>
+<p><strong>Inherited by:</strong> <a class="reference internal" href="StringParamBase.html"><span class="doc">StringParamBase</span></a>, <a class="reference internal" href="PathParam.html"><span class="doc">PathParam</span></a>, <a class="reference internal" href="OutputFileParam.html"><span class="doc">OutputFileParam</span></a>, <a class="reference internal" href="FileParam.html"><span class="doc">FileParam</span></a>, <a class="reference internal" href="StringParam.html"><span class="doc">StringParam</span></a>, <a class="reference internal" href="BooleanParam.html"><span class="doc">BooleanParam</span></a>, <a class="reference internal" href="ChoiceParam.html"><span class="doc">ChoiceParam</span></a>, <a class="reference internal" href="ColorParam.html"><span class="doc">ColorParam</span></a>, <a class="reference internal" href="DoubleParam.html"><span class="doc">DoubleParam</span></a>, <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a>, <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a>, <a class="reference internal" href="IntParam.html"><span class="doc">IntParam</span></a>, <a class="reference internal" href="Int2DParam.html"><span class="doc">Int2DParam</span></a>, <a class="reference internal" href="Int3DParam.html"><span class="doc">Int3DParam</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This is the base class for all parameters which have the property <a class="reference internal" href="Param.html#NatronEngine.NatronEngine.Param.getCanAnimate" title="NatronEngine.NatronEngine.Param.getCanAnimate"><code class="xref py py-func docutils literal notranslate"><span class="pre">canAnimate</span></code></a> set to True.
+See the <a class="reference internal" href="#details"><span class="std std-ref">detailed description</span></a> below</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.deleteValueAtTime" title="NatronEngine.NatronEngine.AnimatedParam.deleteValueAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">deleteValueAtTime</span></code></a> (time[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getCurrentTime" title="NatronEngine.NatronEngine.AnimatedParam.getCurrentTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurrentTime</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getDerivativeAtTime" title="NatronEngine.NatronEngine.AnimatedParam.getDerivativeAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDerivativeAtTime</span></code></a> (time[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getExpression" title="NatronEngine.NatronEngine.AnimatedParam.getExpression"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getExpression</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getIntegrateFromTimeToTime" title="NatronEngine.NatronEngine.AnimatedParam.getIntegrateFromTimeToTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIntegrateFromTimeToTime</span></code></a> (time1, time2[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getIsAnimated</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getKeyIndex" title="NatronEngine.NatronEngine.AnimatedParam.getKeyIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getKeyIndex</span></code></a> (time[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getKeyTime" title="NatronEngine.NatronEngine.AnimatedParam.getKeyTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getKeyTime</span></code></a> (index, dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.getNumKeys" title="NatronEngine.NatronEngine.AnimatedParam.getNumKeys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumKeys</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.removeAnimation" title="NatronEngine.NatronEngine.AnimatedParam.removeAnimation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">removeAnimation</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.setExpression" title="NatronEngine.NatronEngine.AnimatedParam.setExpression"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setExpression</span></code></a> (expr, hasRetVariable[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.AnimatedParam.setInterpolationAtTime" title="NatronEngine.NatronEngine.AnimatedParam.setInterpolationAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setInterpolationAtTime</span></code></a> (time, interpolation[, dimension=0])</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>Animating parameters have values that may change throughout the time. To enable animation
+the parameter should have at least 1 keyframe. Keyframes can be added in the derived class
+(since function signature is type specific) with the <em>setValueAtTime</em> function.
+Once 2 keyframes are active on the parameter, the value of the parameter will be interpolated
+automatically by Natron for a given time.
+You can control keyframes by adding,removing, changing their values and their <a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.KeyframeTypeEnum" title="NatronEngine.NatronEngine.Natron.KeyframeTypeEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyFrameTypeEnum</span></code></a> type.</p>
+<p>Note that by default new keyframes are always with a <strong>Smooth</strong> interpolation.</p>
+<p>Moreover parameters can have Python expressions set on them to control their value. In that case, the expression takes
+precedence over any animation that the parameter may have, meaning that the value of the parameter would be computed
+using the expression provided.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.deleteValueAtTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">deleteValueAtTime</code><span class="sig-paren">(</span><em>time</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.deleteValueAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes a keyframe at the given <em>time</em> and <em>dimension</em> for this parameter, if such
+keyframe exists.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getCurrentTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getCurrentTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getCurrentTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Convenience function: returns the current time on the timeline</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getDerivativeAtTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getDerivativeAtTime</code><span class="sig-paren">(</span><em>time</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getDerivativeAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">double</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the derivative of the parameter at the given <em>time</em> and for the given
+<em>dimension</em>. The derivative is computed on the animation curve of the parameter.
+This function is irrelevant for parameters that have an expression.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getExpression">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getExpression</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getExpression" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the Python expression set on the parameter at the given dimension.
+When no expression is set, this function returns an empty string.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getIntegrateFromTimeToTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getIntegrateFromTimeToTime</code><span class="sig-paren">(</span><em>time1</em>, <em>time2</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getIntegrateFromTimeToTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time1</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time2</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Integrates the value of the parameter over the range [<em>time1</em> - <em>time2</em>].
+This is done using the animation curve of the parameter of the given <em>dimension</em>.
+Note that if this parameter has an expression, the return value is irrelevant.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getIsAnimated</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the given <em>dimension</em> has an animation or not.
+This returns true if the underlying animation curve has 1 or more keyframes.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getKeyIndex">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getKeyIndex</code><span class="sig-paren">(</span><em>time</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getKeyIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the index of the keyframe at the given <em>time</em> for the animation curve
+at the given <em>dimension</em>, or -1 if no such keyframe could be found.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getKeyTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getKeyTime</code><span class="sig-paren">(</span><em>index</em>, <em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getKeyTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a tuple [bool,float] where the first member is True if a keyframe exists at
+the given <em>index</em> for the animation curve at the given <em>dimension</em>.
+The second <em>float</em> member is the keyframe exact time.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.getNumKeys">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">getNumKeys</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.getNumKeys" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of keyframes for the animation curve at the given <em>dimension</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.removeAnimation">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">removeAnimation</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.removeAnimation" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes all animation for the animation curve at the given <em>dimension</em>.
+Note that this will not remove any expression set.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.setExpression">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">setExpression</code><span class="sig-paren">(</span><em>expr</em>, <em>hasRetVariable</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.setExpression" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>expr</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>hasRetVariable</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the Python expression <em>expr</em> on the parameter at the given <em>dimension</em>
+If <em>hasRetVariable</em> is True, then <em>expr</em> is assumed to have a variable <em>ret</em> declared.
+Otherwise, Natron will declare the <em>ret</em> variable itself.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.AnimatedParam.setInterpolationAtTime">
+<code class="descclassname">NatronEngine.AnimatedParam.</code><code class="descname">setInterpolationAtTime</code><span class="sig-paren">(</span><em>time</em>, <em>interpolation</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.AnimatedParam.setInterpolationAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>interpolation</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">KeyFrameTypeEnum</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the interpolation of the animation curve of the given dimension at the given keyframe.
+If no such keyframe could be found, this method returns False.
+Upon success, this method returns True.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="o">.</span><span class="n">Blur2</span><span class="o">.</span><span class="n">size</span><span class="o">.</span><span class="n">setInterpolationAtTime</span><span class="p">(</span><span class="mi">56</span><span class="p">,</span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">Natron</span><span class="o">.</span><span class="n">KeyframeTypeEnum</span><span class="o">.</span><span class="n">eKeyframeTypeConstant</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="App.html" class="btn btn-neutral float-right" title="App" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="NatronEngine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

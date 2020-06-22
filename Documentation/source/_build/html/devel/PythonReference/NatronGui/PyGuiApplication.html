@@ -1,0 +1,434 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyGuiApplication &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PyModalDialog" href="PyModalDialog.html" />
+    <link rel="prev" title="GuiApp" href="GuiApp.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>PyGuiApplication</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/PyGuiApplication.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="pyguiapplication">
+<span id="id1"></span><h1>PyGuiApplication<a class="headerlink" href="#pyguiapplication" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="../NatronEngine/PyCoreApplication.html"><span class="doc">PyCoreApplication</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../NatronEngine/PyCoreApplication.html"><span class="doc">PyCoreApplication</span></a> for a detailed explanation of the purpose of this object.
+This class is only used when Natron is run in GUI mode (with user interface).
+It gives you access to more GUI functionalities via the <a class="reference internal" href="GuiApp.html"><span class="doc">GuiApp</span></a> class.</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.addMenuCommand" title="NatronGui.NatronGui.PyGuiApplication.addMenuCommand"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addMenuCommand</span></code></a> (grouping,function)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.addMenuCommand" title="NatronGui.NatronGui.PyGuiApplication.addMenuCommand"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addMenuCommand</span></code></a> (grouping,function,key,modifiers)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.getGuiInstance" title="NatronGui.NatronGui.PyGuiApplication.getGuiInstance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getGuiInstance</span></code></a> (idx)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.informationDialog" title="NatronGui.NatronGui.PyGuiApplication.informationDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">informationDialog</span></code></a> (title,message)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.warningDialog" title="NatronGui.NatronGui.PyGuiApplication.warningDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">warningDialog</span></code></a> (title,message)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.errorDialog" title="NatronGui.NatronGui.PyGuiApplication.errorDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">errorDialog</span></code></a> (title,message)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.questionDialog" title="NatronGui.NatronGui.PyGuiApplication.questionDialog"><code class="xref py py-meth docutils literal notranslate"><span class="pre">questionDialog</span></code></a> (title,question)</li>
+</ul>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="NatronGui.PyGuiApplication">
+<em class="property">class </em><code class="descclassname">NatronGui.</code><code class="descname">PyGuiApplication</code><a class="headerlink" href="#NatronGui.PyGuiApplication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">PyCoreApplication()</span></code></p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.addMenuCommand">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">addMenuCommand</code><span class="sig-paren">(</span><em>grouping</em>, <em>function</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.addMenuCommand" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>grouping</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>function</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Adds a new menu entry in the menubar of Natron. This should be used <strong>exclusively</strong> in the
+<em>initGui.py</em> initialisation script.</p>
+<p>The <em>grouping</em> is a string indicating a specific menu entry where each submenu is separated
+from its parent menu with a <em>/</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">File</span><span class="o">/</span><span class="n">Do</span> <span class="n">something</span> <span class="n">special</span>
+
+<span class="n">MyStudio</span><span class="o">/</span><span class="n">Scripts</span><span class="o">/</span><span class="n">Our</span> <span class="n">special</span> <span class="n">trick</span>
+</pre></div>
+</div>
+<p>The <em>function</em> is the name of a python defined function.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If called anywhere but from the <em>initGui.py</em> script, this function will fail to
+dynamically add a new menu entry.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">printLala</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Lala&quot;</span><span class="p">)</span>
+
+<span class="n">natron</span><span class="o">.</span><span class="n">addMenuCommand</span><span class="p">(</span><span class="s2">&quot;Inria/Scripts/Print lala script&quot;</span><span class="p">,</span><span class="s2">&quot;printLala&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This registers in the menu <em>Inria–&gt;Scripts</em> an entry named <em>Print lala script</em> which will
+print <em>Lala</em> to the Script Editor when triggered.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">addMenuCommand</code><span class="sig-paren">(</span><em>grouping</em>, <em>function</em>, <em>key</em>, <em>modifiers</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>grouping</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>function</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>key</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide.QtCore.Qt.Key</span></code></li>
+<li><strong>modifiers</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide.QtCore.Qt.KeyboardModifiers</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronGui.NatronGui.PyGuiApplication.addMenuCommand" title="NatronGui.NatronGui.PyGuiApplication.addMenuCommand"><code class="xref py py-func docutils literal notranslate"><span class="pre">addMenuCommand(grouping,function)</span></code></a>
+excepts that it accepts a default shortcut for the action.
+See PySide documentation for possible keys and modifiers.</p>
+<p>The user will always be able to modify the shortcut from the built-in shortcut editor of Natron anyway.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.getGuiInstance">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">getGuiInstance</code><span class="sig-paren">(</span><em>idx</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.getGuiInstance" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>idx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">GuiApp</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <code class="xref py py-func docutils literal notranslate"><span class="pre">getInstance(idx)</span></code> but returns
+instead an instance of a GUI project.</p>
+<p>Basically you should never call this function as Natron pre-declares all opened projects
+with the following variables: <em>app1</em> for the first opened project, <em>app2</em> for the second, and so on…</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.informationDialog">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">informationDialog</code><span class="sig-paren">(</span><em>title</em>, <em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.informationDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>title</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>message</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Shows a modal information dialog to the user with the given window <em>title</em> and
+containing the given <em>message</em>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.warningDialog">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">warningDialog</code><span class="sig-paren">(</span><em>title</em>, <em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.warningDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>title</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>message</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Shows a modal warning dialog to the user with the given window <em>title</em> and
+containing the given <em>message</em>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.errorDialog">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">errorDialog</code><span class="sig-paren">(</span><em>title</em>, <em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.errorDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>title</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>message</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Shows a modal error dialog to the user with the given window <em>title</em> and
+containing the given <em>message</em>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyGuiApplication.questionDialog">
+<code class="descclassname">NatronGui.PyGuiApplication.</code><code class="descname">questionDialog</code><span class="sig-paren">(</span><em>title</em>, <em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyGuiApplication.questionDialog" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>title</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>message</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.StandardButtonEnum</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Shows a modal question dialog to the user with the given window <em>title</em> and
+containing the given <em>message</em>.
+The dialog will be a “Yes” “No” dialog, and you can compare the result to the <code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.StandardButtonEnum</span></code> members.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PyModalDialog.html" class="btn btn-neutral float-right" title="PyModalDialog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="GuiApp.html" class="btn btn-neutral float-left" title="GuiApp" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

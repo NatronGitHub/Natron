@@ -1,0 +1,569 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ReadPFM node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ReadPNG node" href="fr.inria.openfx.ReadPNG.html" />
+    <link rel="prev" title="ReadPDF node" href="fr.inria.openfx.ReadPDF.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupImage.html">Image nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CheckerBoardPlugin.html">CheckerBoard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorBars.html">ColorBars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorWheel.html">ColorWheel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ConstantPlugin.html">Constant node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OpenRaster.html">OpenRaster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Read.html">Read node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadCDR.html">ReadCDR node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadFFmpeg.html">ReadFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadKrita.html">ReadKrita node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadMisc.html">ReadMisc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadOIIO.html">ReadOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPDF.html">ReadPDF node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ReadPFM node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPNG.html">ReadPNG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadPSD.html">ReadPSD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadSVG.html">ReadSVG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.RunScript.html">RunScript node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Solid.html">Solid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Write.html">Write node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteFFmpeg.html">WriteFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteOIIO.html">WriteOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePFM.html">WritePFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePNG.html">WritePNG node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupImage.html">Image nodes</a> &raquo;</li>
+        
+      <li>ReadPFM node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.openfx.ReadPFM.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="readpfm-node">
+<span id="fr-inria-openfx-readpfm"></span><h1>ReadPFM node<a class="headerlink" href="#readpfm-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/fr.inria.openfx.ReadPFM.png"><img alt="pluginIcon" src="../_images/fr.inria.openfx.ReadPFM.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of ReadPFM (fr.inria.openfx.ReadPFM).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Read PFM (Portable Float Map) files.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="43%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Sync</td>
+<td>Sync</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="9%" />
+<col width="2%" />
+<col width="3%" />
+<col width="87%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>File / <code class="docutils literal notranslate"><span class="pre">filename</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>The input image sequence/video stream file(s).</td>
+</tr>
+<tr class="row-odd"><td>First Frame / <code class="docutils literal notranslate"><span class="pre">firstFrame</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>The first frame number to read from this image sequence or video file. This cannot be less than the first frame of the image sequence or video file, and cannot be greater than the last frame of the image sequence or video file. The first frame of a video file is numbered 1. If startingTime is 1 or timeOffset is 0, this is also the first output frame.</td>
+</tr>
+<tr class="row-even"><td>Before / <code class="docutils literal notranslate"><span class="pre">before</span></code></td>
+<td>Choice</td>
+<td>Hold</td>
+<td><div class="first last line-block">
+<div class="line">What to do before the first frame of the sequence.</div>
+<div class="line"><strong>Hold (hold)</strong>: While before the sequence, load the first frame.</div>
+<div class="line"><strong>Loop (loop)</strong>: Repeat the sequence before the first frame</div>
+<div class="line"><strong>Bounce (bounce)</strong>: Repeat the sequence in reverse before the first frame</div>
+<div class="line"><strong>Black (black)</strong>: Render a black image</div>
+<div class="line"><strong>Error (error)</strong>: Report an error</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Last Frame / <code class="docutils literal notranslate"><span class="pre">lastFrame</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>The last frame number to read from this image sequence or video file. This cannot be less than the first frame of the image sequence or video file, and cannot be greater than the last frame of the image sequence or video file. The first frame of a video file is numbered 1. If startingTime is 1 or timeOffset is 0, this is also the last output frame.</td>
+</tr>
+<tr class="row-even"><td>After / <code class="docutils literal notranslate"><span class="pre">after</span></code></td>
+<td>Choice</td>
+<td>Hold</td>
+<td><div class="first last line-block">
+<div class="line">What to do after the last frame of the sequence.</div>
+<div class="line"><strong>Hold (hold)</strong>: While before the sequence, load the first frame.</div>
+<div class="line"><strong>Loop (loop)</strong>: Repeat the sequence before the first frame</div>
+<div class="line"><strong>Bounce (bounce)</strong>: Repeat the sequence in reverse before the first frame</div>
+<div class="line"><strong>Black (black)</strong>: Render a black image</div>
+<div class="line"><strong>Error (error)</strong>: Report an error</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>On Missing Frame / <code class="docutils literal notranslate"><span class="pre">onMissingFrame</span></code></td>
+<td>Choice</td>
+<td>Error</td>
+<td><div class="first last line-block">
+<div class="line">What to do when a frame is missing from the sequence/stream.</div>
+<div class="line"><strong>Hold previous (previous)</strong>: Try to load the previous frame in the sequence/stream, if any.</div>
+<div class="line"><strong>Load next (next)</strong>: Try to load the next frame in the sequence/stream, if any.</div>
+<div class="line"><strong>Load nearest (nearest)</strong>: Try to load the nearest frame in the sequence/stream, if any.</div>
+<div class="line"><strong>Error (error)</strong>: Report an error</div>
+<div class="line"><strong>Black (black)</strong>: Render a black image</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Frame Mode / <code class="docutils literal notranslate"><span class="pre">frameMode</span></code></td>
+<td>Choice</td>
+<td>Starting Time</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Starting Time (startingTime)</strong>: Set at what output frame the first sequence frame is output. The sequence frame designated by the firstFrame parameter is output at frame timeOffset.</div>
+<div class="line"><strong>Time Offset (timeOffset)</strong>: Set an offset to be applied as a number of frames. The sequence frame designated by the firstFrame parameter is output at frame firstFrame+timeOffset.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Starting Time / <code class="docutils literal notranslate"><span class="pre">startingTime</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>At what time (on the timeline) should this sequence/video start.</td>
+</tr>
+<tr class="row-even"><td>Time Offset / <code class="docutils literal notranslate"><span class="pre">timeOffset</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Offset applied to the sequence in time units (i.e. frames).</td>
+</tr>
+<tr class="row-odd"><td>Proxy File / <code class="docutils literal notranslate"><span class="pre">proxy</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>Filename of the proxy images. They will be used instead of the images read from the File parameter when the proxy mode (downscaling of the images) is activated.</td>
+</tr>
+<tr class="row-even"><td>Proxy threshold / <code class="docutils literal notranslate"><span class="pre">proxyThreshold</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>The scale of the proxy images. By default it will be automatically computed out of the images headers when you set the proxy file(s) path. When the render scale (proxy) is set to a scale lower or equal to this value then the proxy image files will be used instead of the original images. You can change this parameter by checking the “Custom scale” checkbox so that you can change the scale at which the proxy images should be used instead of the original images.</td>
+</tr>
+<tr class="row-odd"><td>Custom Proxy Scale / <code class="docutils literal notranslate"><span class="pre">customProxyScale</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Check to enable the Proxy scale edition.</td>
+</tr>
+<tr class="row-even"><td>File Premult / <code class="docutils literal notranslate"><span class="pre">filePremult</span></code></td>
+<td>Choice</td>
+<td>PreMultiplied</td>
+<td><div class="first last line-block">
+<div class="line">The image file being read is considered to have this premultiplication state.</div>
+<div class="line">To get UnPremultiplied (or “unassociated alpha”) images, set the “Output Premult” parameter to Unpremultiplied.</div>
+<div class="line">By default the value should be correctly be guessed by the image file, but this parameter can be edited if the metadatas inside the file are wrong.</div>
+<div class="line">- Opaque means that the alpha channel is considered to be 1 (one), and it is not taken into account in colorspace conversion.</div>
+<div class="line">- Premultiplied, red, green and blue channels are divided by the alpha channel before applying the colorspace conversion, and re-multiplied by alpha after colorspace conversion.</div>
+<div class="line">- UnPremultiplied, means that red, green and blue channels are not modified before applying the colorspace conversion, and are multiplied by alpha after colorspace conversion.</div>
+<div class="line">This is set automatically from the image file and the plugin, but can be adjusted if this information is wrong in the file metadata.</div>
+<div class="line">RGB images can only be Opaque, and Alpha images can only be Premultiplied (the value of this parameter doesn’t matter).</div>
+<div class="line"><strong>Opaque (opaque)</strong>: The image is opaque and so has no premultiplication state, as if the alpha component in all pixels were set to the white point.</div>
+<div class="line"><strong>PreMultiplied (premult)</strong>: The image is premultiplied by its alpha (also called “associated alpha”).</div>
+<div class="line"><strong>UnPreMultiplied (unpremult)</strong>: The image is unpremultiplied (also called “unassociated alpha”).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Output Premult / <code class="docutils literal notranslate"><span class="pre">outputPremult</span></code></td>
+<td>Choice</td>
+<td>PreMultiplied</td>
+<td><div class="first last line-block">
+<div class="line">The alpha premultiplication in output of this node will have this state.</div>
+<div class="line"><strong>Opaque (opaque)</strong>: The image is opaque and so has no premultiplication state, as if the alpha component in all pixels were set to the white point.</div>
+<div class="line"><strong>PreMultiplied (premult)</strong>: The image is premultiplied by its alpha (also called “associated alpha”).</div>
+<div class="line"><strong>UnPreMultiplied (unpremult)</strong>: The image is unpremultiplied (also called “unassociated alpha”).</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Output Components / <code class="docutils literal notranslate"><span class="pre">outputComponents</span></code></td>
+<td>Choice</td>
+<td>RGBA</td>
+<td><div class="first last line-block">
+<div class="line">What type of components this effect should output when the main color plane is requested. For the Read node it will map (in number of components) the Output Layer choice to these.</div>
+<div class="line"><strong>RGBA</strong></div>
+<div class="line"><strong>RGB</strong></div>
+<div class="line"><strong>Alpha</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Frame rate / <code class="docutils literal notranslate"><span class="pre">frameRate</span></code></td>
+<td>Double</td>
+<td>24</td>
+<td>By default this value is guessed from the file. You can override it by checking the Custom fps parameter. The value of this parameter is what will be visible by the effects down-stream.</td>
+</tr>
+<tr class="row-even"><td>Custom FPS / <code class="docutils literal notranslate"><span class="pre">customFps</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, you can freely force the value of the frame rate parameter. The frame-rate is just the meta-data that will be passed downstream to the graph, no retime will actually take place.</td>
+</tr>
+<tr class="row-odd"><td>OCIO Config File / <code class="docutils literal notranslate"><span class="pre">ocioConfigFile</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>OpenColorIO configuration file</td>
+</tr>
+<tr class="row-even"><td>File Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioInputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Input data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-odd"><td>Output Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioOutputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Output data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-even"><td>key1 / <code class="docutils literal notranslate"><span class="pre">key1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value1 / <code class="docutils literal notranslate"><span class="pre">value1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key2 / <code class="docutils literal notranslate"><span class="pre">key2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value2 / <code class="docutils literal notranslate"><span class="pre">value2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key3 / <code class="docutils literal notranslate"><span class="pre">key3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value3 / <code class="docutils literal notranslate"><span class="pre">value3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>key4 / <code class="docutils literal notranslate"><span class="pre">key4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>value4 / <code class="docutils literal notranslate"><span class="pre">value4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td><div class="first last line-block">
+<div class="line">OCIO Contexts allow you to apply specific LUTs or grades to different shots.</div>
+<div class="line">Here you can specify the context name (key) and its corresponding value.</div>
+<div class="line">Full details of how to set up contexts and add them to your config can be found in the OpenColorIO documentation:</div>
+<div class="line"><a class="reference external" href="http://opencolorio.org/userguide/contexts.html">http://opencolorio.org/userguide/contexts.html</a></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>OCIO config help… / <code class="docutils literal notranslate"><span class="pre">ocioHelp</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Help about the OpenColorIO configuration.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.openfx.ReadPNG.html" class="btn btn-neutral float-right" title="ReadPNG node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.openfx.ReadPDF.html" class="btn btn-neutral float-left" title="ReadPDF node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

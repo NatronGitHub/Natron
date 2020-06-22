@@ -1,0 +1,401 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyModalDialog &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="PyPanel" href="PyPanel.html" />
+    <link rel="prev" title="PyGuiApplication" href="PyGuiApplication.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>PyModalDialog</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/PyModalDialog.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="pymodaldialog">
+<span id="id1"></span><h1>PyModalDialog<a class="headerlink" href="#pymodaldialog" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference external" href="https://pyside.github.io/docs/pyside/PySide/QtGui/QDialog.html">QDialog</a> <a class="reference internal" href="../NatronEngine/UserParamHolder.html"><span class="doc">UserParamHolder</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A modal dialog to ask information to the user or to warn about something.
+See <a class="reference internal" href="#modaldialog-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyModalDialog.addWidget" title="NatronGui.NatronGui.PyModalDialog.addWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addWidget</span></code></a> (widget)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyModalDialog.getParam" title="NatronGui.NatronGui.PyModalDialog.getParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParam</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyModalDialog.insertWidget" title="NatronGui.NatronGui.PyModalDialog.insertWidget"><code class="xref py py-meth docutils literal notranslate"><span class="pre">insertWidget</span></code></a> (index,widget)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyModalDialog.setParamChangedCallback" title="NatronGui.NatronGui.PyModalDialog.setParamChangedCallback"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setParamChangedCallback</span></code></a> (callback)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="modaldialog-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The modal dialog is a way to ask the user for data or to inform him/her about something going on.
+A modal window means that control will not be returned to the user (i.e. no event will be processed) until
+the user closed the dialog.</p>
+<p>If you are looking for a simple way to just ask a question or report an error, warning or even
+just a miscenalleous information, use the <a class="reference internal" href="PyGuiApplication.html#NatronGui.NatronGui.PyGuiApplication.informationDialog" title="NatronGui.NatronGui.PyGuiApplication.informationDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">informationDialog(title,message)</span></code></a> function.</p>
+<p>To create a new <a class="reference internal" href="#"><span class="doc">PyModalDialog</span></a>, just use the <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.createModalDialog" title="NatronGui.NatronGui.GuiApp.createModalDialog"><code class="xref py py-func docutils literal notranslate"><span class="pre">createModalDialog()</span></code></a> function, e.g.:</p>
+<blockquote>
+<div><p># In the Script Editor</p>
+<p>dialog = app1.createModalDialog()</p>
+</div></blockquote>
+<p>To show the dialog to the user, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">exec_()</span></code> function inherited from <code class="xref py py-class docutils literal notranslate"><span class="pre">QDialog</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dialog</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Note that once <code class="xref py py-func docutils literal notranslate"><span class="pre">exec_()</span></code> is called, no instruction will be executed until the user closed the dialog.</p>
+<p>The modal dialog always has <em>OK</em> and <em>Cancel</em> buttons. To query which button the user pressed, inspect the return value of the <code class="xref py py-func docutils literal notranslate"><span class="pre">exec_()</span></code> call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">dialog</span><span class="o">.</span><span class="n">exec_</span><span class="p">():</span>
+    <span class="c1">#The user pressed OK</span>
+    <span class="o">...</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1">#The user pressed Cancel or Escape</span>
+</pre></div>
+</div>
+<div class="section" id="adding-user-parameters">
+<h3>Adding user parameters:<a class="headerlink" href="#adding-user-parameters" title="Permalink to this headline">¶</a></h3>
+<p>You can start adding user parameters using all the <code class="xref py py-func docutils literal notranslate"><span class="pre">createXParam</span></code> functions inherited from the <code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.UserParamHolder</span></code> class.</p>
+<p>Once all your parameters are created, create the GUI for them using the <code class="xref py py-func docutils literal notranslate"><span class="pre">refreshUserParamsGUI()</span></code> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myInteger</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">createIntParam</span><span class="p">(</span><span class="s2">&quot;myInt&quot;</span><span class="p">,</span><span class="s2">&quot;This is an integer very important&quot;</span><span class="p">)</span>
+<span class="n">myInteger</span><span class="o">.</span><span class="n">setAnimationEnabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">myInteger</span><span class="o">.</span><span class="n">setAddNewLine</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1">#Create a boolean on the same line</span>
+<span class="n">myBoolean</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">createBooleanParam</span><span class="p">(</span><span class="s2">&quot;myBool&quot;</span><span class="p">,</span><span class="s2">&quot;Yet another important boolean&quot;</span><span class="p">)</span>
+
+<span class="n">dialog</span><span class="o">.</span><span class="n">refreshUserParamsGUI</span><span class="p">()</span>
+
+<span class="n">dialog</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can then retrieve the value of a parameter once the dialog is finished using the <a class="reference internal" href="#NatronGui.NatronGui.PyModalDialog.getParam" title="NatronGui.NatronGui.PyModalDialog.getParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(scriptName)</span></code></a> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">dialog</span><span class="o">.</span><span class="n">exec_</span><span class="p">():</span>
+    <span class="n">intValue</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;myInt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="n">boolValue</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">getParam</span><span class="p">(</span><span class="s2">&quot;myBool&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Unlike the <a class="reference internal" href="../NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> class, parameters on modal dialogs are not automatically declared by Natron,
+which means you cannot do stuff like <em>dialog.intValue</em></p>
+</div>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyModalDialog.addWidget">
+<code class="descclassname">NatronGui.PyModalDialog.</code><code class="descname">addWidget</code><span class="sig-paren">(</span><em>widget</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyModalDialog.addWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>widget</strong> – <a class="reference external" href="https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html">QWidget</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Append a QWidget inherited <em>widget</em> at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+that will be inserted <strong>after</strong> any custom parameter.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyModalDialog.getParam">
+<code class="descclassname">NatronGui.PyModalDialog.</code><code class="descname">getParam</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyModalDialog.getParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the user parameter with the given <em>scriptName</em> if it exists or <em>None</em> otherwise.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyModalDialog.insertWidget">
+<code class="descclassname">NatronGui.PyModalDialog.</code><code class="descname">insertWidget</code><span class="sig-paren">(</span><em>index</em>, <em>widget</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyModalDialog.insertWidget" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>widget</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide.QtGui.QWidget</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Inserts a QWidget inherited <em>widget</em> at the given <em>index</em> of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+The widget will always be inserted <strong>after</strong> any user parameter.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyModalDialog.setParamChangedCallback">
+<code class="descclassname">NatronGui.PyModalDialog.</code><code class="descname">setParamChangedCallback</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyModalDialog.setParamChangedCallback" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>callback</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Registers the given Python <a class="reference internal" href="../../callbacks.html#callbacks"><span class="std std-ref">callback</span></a> to be called whenever a user parameter changed.
+The parameter <em>callback</em> is a string that should contain the name of a Python function.</p>
+<p>The signature of the <a class="reference internal" href="../../callbacks.html#callbacks"><span class="std std-ref">callback</span></a> used on <a class="reference internal" href="#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>paramName</strong> indicating the <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">script-name</span></a> of the parameter which just had its value changed.</li>
+<li><strong>app</strong> : This variable will be set so it points to the correct <a class="reference internal" href="../NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>userEdited</strong> : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
+the value by theirself) or due to another parameter changing the value of the parameter
+via a derivative of the <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> function.</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">myParamChangedCallback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;myInt&quot;</span><span class="p">:</span>
+        <span class="n">intValue</span> <span class="o">=</span> <span class="n">thisParam</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">intValue</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">myBoolean</span><span class="o">.</span><span class="n">setVisible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">dialog</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;myParamChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="PyPanel.html" class="btn btn-neutral float-right" title="PyPanel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PyGuiApplication.html" class="btn btn-neutral float-left" title="PyGuiApplication" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,488 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PIK node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PIKColor node" href="fr.inria.PIKColor.html" />
+    <link rel="prev" title="MatteMonitor node" href="net.sf.openfx.MatteMonitorPlugin.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ChromaKeyerPlugin.html">ChromaKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Despill.html">Despill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DifferencePlugin.html">Difference node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.HueKeyer.html">HueKeyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.KeyerPlugin.html">Keyer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MatteMonitorPlugin.html">MatteMonitor node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">PIK node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.PIKColor.html">PIKColor node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupKeyer.html">Keyer nodes</a> &raquo;</li>
+        
+      <li>PIK node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.PIK.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pik-node">
+<span id="net-sf-openfx-pik"></span><h1>PIK node<a class="headerlink" href="#pik-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.PIK.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.PIK.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of PIK (net.sf.openfx.PIK).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>A keyer that works by generating a clean plate from the green/blue screen sequences. Inspired by Nuke’s IBK by Paul Lambert and Fusion’s KAK by Pieter Van Houte.</p>
+<p>There are 2 options to pull a key with PIK. One is to use PIKColor to automatically extract a clean plate from the foreground image and use it as the the C input, and the other is to pick a color which best represents the area you are trying to key.</p>
+<p>The blue- or greenscreen image should be used as the Fg input, which is used to compute the output color. If that image contains significant noise, a denoised version should be used as the PFg input, which is used to pull the key. The C input should either be a clean plate or the output of PIKColor, and is used as the screen color if the ‘Screen Type’ is not ‘Pick’. The Bg image is used in calculating fine edge detail when either ‘Use Bg Luminance’ or ‘Use Bg Chroma’ is checked. Optionally, an inside mask (a.k.a. holdout matte or core matte) and an outside mask (a.k.a. garbage matte) can be connected to inputs InM and OutM. Note that the outside mask takes precedence over the inside mask.</p>
+<p>If PIKcolor is used to build the clean plate, the PIKColor Source input should be the same as the PFg input to PIK, e.g. the denoised footage, and the inside mask of PIK can also be fed into the InM input of PIKColor.</p>
+<p>The color weights deal with the hardness of the matte. When viewing the output (with screen subtraction checked), one may notice areas where edges have a slight discoloration due to the background not being fully removed from the original plate. This is not spill but a result of the matte being too strong. Lowering one of the weights will correct that particular edge. For example, if it is a red foreground image with an edge problem, lower the red weight. This may affect other edges so the use of multiple PIKs with different weights, split with KeyMixes, is recommended.</p>
+<p>The Alpha Bias setting may be used either if there is a strong global color cast on the scene (e.g. the green or blue screen color is not pure), or if parts of the foreground are transparent in the output. This color is considered by the algorithm as being a grey reference: all colors from the PFg input are first normalized by this color before computation.</p>
+<p>If the Alpha Bias is set, but the screen subtraction has a strong color bias (e.g. the despilled areas show the screen color), uncheck ‘Use Alpha for Despill’ and set the Despill Bias to the color of the foreground elements that are most affected by the color bias.</p>
+<p>‘Screen Subtraction’ (a.k.a. despill) removes the background color from the output via a subtraction process (1-alpha times the screen color is subtracted at each pixel). When unchecked, the output is simply the original Fg premultiplied with the generated matte.</p>
+<p>‘Use Bkg Luminance’ and ‘Use Bkg Chroma’ affect the output color by the new background. This feature can also sometimes really help with screens that exhibit some form of fringing artifact - usually a darkening or lightening of an edge on one of the color channels on the screen. The effect can be offset by grading the Bg input up or down with a grade node just before input. If it is just an area which needs help then just rotoscope that area and locally grade the Bg input up or down to remove the artifact.</p>
+<p>The output of PIK is controlled by the “Output Mode” option. For example, if the output is “Premultiplied”, it should be composited with the background using a Merge-over operation.</p>
+<p>The basic equation used to extract the key in PIK is (in the case of “green” keying):</p>
+<p>alpha = 0 if (Ag-Ar*rw-Ab*gbw) is negative, else 1-(Ag-Ar*rw-Ab*gbw)/(Bg-Br*rw-Bb*gbw)</p>
+<p>A is input PFg and B is input C, rw is the value of “Red Weight” and gbw is the value of “Green/Blue Weight”.</p>
+<p>See also:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#IBK">http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#IBK</a></li>
+<li><a class="reference external" href="https://compositingmentor.com/2014/07/19/advanced-keying-breakdown-alpha-1-4-ibk-stacked-technique/">https://compositingmentor.com/2014/07/19/advanced-keying-breakdown-alpha-1-4-ibk-stacked-technique/</a></li>
+</ul>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="3%" />
+<col width="92%" />
+<col width="5%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Fg</td>
+<td>The blue- or greenscreen image. Used to compute the output color.</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>PFg</td>
+<td>(optional) The preprocessed/denoised blue- or greenscreen image. Used to compute the output key (alpha). A denoised image usually gives a less noisy key. If not connected, the Fg input is used instead.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>C</td>
+<td>(optional) A clean plate if available, or the output of PIKColor to generate the clean plate at each frame.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Bg</td>
+<td>(optional) The background image. This is used in calculating fine edge detail when the ‘Use Bg Luminance’ or ‘Use Bg Chroma’ options are checked.</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="17%" />
+<col width="3%" />
+<col width="7%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Screen Type / <code class="docutils literal notranslate"><span class="pre">screenType</span></code></td>
+<td>Choice</td>
+<td>C-Blue</td>
+<td><div class="first last line-block">
+<div class="line">The type of background screen used for the key.</div>
+<div class="line"><strong>C-Green (green)</strong>: Background screen with a green tint.</div>
+<div class="line"><strong>C-Blue (blue)</strong>: Background screen with a blue tint.</div>
+<div class="line"><strong>Pick (pick)</strong>: The background screen color is selected by the “color” parameter, and the type of screen (green or blue) is set automatically from this color.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Color / <code class="docutils literal notranslate"><span class="pre">color</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 1</td>
+<td>The screen color in case ‘Pick’ was chosen as the ‘Screen Type’.</td>
+</tr>
+<tr class="row-even"><td>No Key / <code class="docutils literal notranslate"><span class="pre">noKey</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Apply despill, background luminance and chroma to Fg rgba input using the Fg alpha channel as the key - no key is pulled, but Inside Mask and Outside Mask are applied if connected.</td>
+</tr>
+<tr class="row-odd"><td>Red Weight / <code class="docutils literal notranslate"><span class="pre">redWeight</span></code></td>
+<td>Double</td>
+<td>0.5</td>
+<td>Determines how the red channel and complement channel (blue for a green screen, green for a blue screen) are weighted in the keying calculation.</td>
+</tr>
+<tr class="row-even"><td>Blue/Green Weight / <code class="docutils literal notranslate"><span class="pre">blueGreenWeight</span></code></td>
+<td>Double</td>
+<td>0.5</td>
+<td>Determines how the red channel and complement channel (blue for a green screen, green for a blue screen) are weighted in the keying calculation.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Bias / <code class="docutils literal notranslate"><span class="pre">alphaBias</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5</td>
+<td>Divide C and PFg colors by this color before computing alpha. This may be used when the whole scene, including the background, has a strong color cast.</td>
+</tr>
+<tr class="row-even"><td>Despill Bias / <code class="docutils literal notranslate"><span class="pre">despillBias</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5</td>
+<td>Divide C color by this color before despill.</td>
+</tr>
+<tr class="row-odd"><td>Use Alpha Bias for Despill / <code class="docutils literal notranslate"><span class="pre">despillBiasIsAlphaBias</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Use alpha bias color for despill instead of despill bias color.</td>
+</tr>
+<tr class="row-even"><td>Screen Subtraction / <code class="docutils literal notranslate"><span class="pre">ss</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Have the keyer subtract the foreground or just premult.</td>
+</tr>
+<tr class="row-odd"><td>Clamp / <code class="docutils literal notranslate"><span class="pre">clampAlpha</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Clamp matte to 0-1.</td>
+</tr>
+<tr class="row-even"><td>Clip Black / <code class="docutils literal notranslate"><span class="pre">screenClipMin</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Any alpha below this value is set to 0.</td>
+</tr>
+<tr class="row-odd"><td>Clip White / <code class="docutils literal notranslate"><span class="pre">screenClipMax</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Any alpha above this value is set to 1.</td>
+</tr>
+<tr class="row-even"><td>Screen Replace / <code class="docutils literal notranslate"><span class="pre">screenReplace</span></code></td>
+<td>Choice</td>
+<td>Soft Color</td>
+<td><div class="first last line-block">
+<div class="line">What to do with the color of the pixels for which alpha was modified by the screen matte settings.</div>
+<div class="line"><strong>None (none)</strong>: Subtracted image is not affected by alpha modifications.</div>
+<div class="line"><strong>Source (source)</strong>: When alpha is modified, a corresponding amount of the Fg color is added.</div>
+<div class="line"><strong>Hard Color (hardcolor)</strong>: When alpha is modified, a corresponding amount of the replace color is added.</div>
+<div class="line"><strong>Soft Color (softcolor)</strong>: When alpha is modified, a corresponding amount of the replace color is added, but the resulting luminance is matched with Fg.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Screen Replace Color / <code class="docutils literal notranslate"><span class="pre">screenReplaceColor</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5</td>
+<td>The color to use when the Screen Replace parameter is set to Soft or Hard Color.</td>
+</tr>
+<tr class="row-even"><td>Source Alpha / <code class="docutils literal notranslate"><span class="pre">sourceAlphaHandling</span></code></td>
+<td>Choice</td>
+<td>Ignore</td>
+<td><div class="first last line-block">
+<div class="line">How the alpha embedded in the Source input should be used</div>
+<div class="line"><strong>Ignore (ignore)</strong>: Ignore the source alpha.</div>
+<div class="line"><strong>Add to Inside Mask (inside)</strong>: Source alpha is added to the inside mask. Use for multi-pass keying.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Inside Replace / <code class="docutils literal notranslate"><span class="pre">insideReplace</span></code></td>
+<td>Choice</td>
+<td>Soft Color</td>
+<td><div class="first last line-block">
+<div class="line">What to do with the color of the pixels for which alpha was modified by the inside mask.</div>
+<div class="line"><strong>None (none)</strong>: Subtracted image is not affected by alpha modifications.</div>
+<div class="line"><strong>Source (source)</strong>: When alpha is modified, a corresponding amount of the Fg color is added.</div>
+<div class="line"><strong>Hard Color (hardcolor)</strong>: When alpha is modified, a corresponding amount of the replace color is added.</div>
+<div class="line"><strong>Soft Color (softcolor)</strong>: When alpha is modified, a corresponding amount of the replace color is added, but the resulting luminance is matched with Fg.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Inside Replace Color / <code class="docutils literal notranslate"><span class="pre">insideReplaceColor</span></code></td>
+<td>Color</td>
+<td>r: 0.5 g: 0.5 b: 0.5</td>
+<td>The color to use when the Inside Replace parameter is set to Soft or Hard Color.</td>
+</tr>
+<tr class="row-odd"><td>Use Bg Luminance / <code class="docutils literal notranslate"><span class="pre">ubl</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Have the output RGB be biased by the difference between the Bg luminance and the C luminance). Luminance is computed using the given Colorspace.</td>
+</tr>
+<tr class="row-even"><td>Use Bg Chroma / <code class="docutils literal notranslate"><span class="pre">ubc</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Have the output RGB be biased by the Bg chroma. Chroma is computed using the given Colorspace</td>
+</tr>
+<tr class="row-odd"><td>Colorspace / <code class="docutils literal notranslate"><span class="pre">colorspace</span></code></td>
+<td>Choice</td>
+<td>Rec. 709</td>
+<td><div class="first last line-block">
+<div class="line">Formula used to compute luminance and chrominance from RGB values for the “Use Bg Luminance” and “Use Bg Choma” options.</div>
+<div class="line"><strong>Rec. 709 (rec709)</strong>: Use Rec. 709 with D65 illuminant.</div>
+<div class="line"><strong>Rec. 2020 (rec2020)</strong>: Use Rec. 2020 with D65 illuminant.</div>
+<div class="line"><strong>ACES AP0 (acesap0)</strong>: Use ACES AP0 with ACES (approx. D60) illuminant.</div>
+<div class="line"><strong>ACES AP1 (acesap1)</strong>: Use ACES AP1 with ACES (approx. D60) illuminant.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Output Mode / <code class="docutils literal notranslate"><span class="pre">show</span></code></td>
+<td>Choice</td>
+<td>Premultiplied</td>
+<td><div class="first last line-block">
+<div class="line">What image to output.</div>
+<div class="line"><strong>Source (source)</strong>: The PFg input (or Fg input, if PFg is not connected).</div>
+<div class="line"><strong>Source Alpha (sourcealpha)</strong>: The Alpha channel from the PFg input (or Fg input, if PFg is not connected), displayed as luminance.</div>
+<div class="line"><strong>Clean Plate (cleanplate)</strong>: The clean plate from the C input (or the screen color, if C is not connected).</div>
+<div class="line"><strong>Screen Matte (screenmatte)</strong>: The screen matte after keying and screen matte processing, but before applying the inside and outside mask, displayed as luminance.</div>
+<div class="line"><strong>Inside Mask (insidemask)</strong>: The inside mask, displayed as luminance.</div>
+<div class="line"><strong>Outside Mask (outsidemask)</strong>: The outside mask, displayed as luminance.</div>
+<div class="line"><strong>Combined Matte (matte)</strong>: The final matte, after applying inside and outside mask, displayed as luminance.</div>
+<div class="line"><strong>Status (status)</strong>: An image showing which pixels are pure background (black), pure foreground (white), partially transparent (grey), affected by Screen Replace (green), affected by Inside Replace (blue), or affected by Outside Mask (red).</div>
+<div class="line"><strong>Intermediate (intermediate)</strong>: Color is the source color. Alpha is the foreground key. Use for multi-pass keying.</div>
+<div class="line"><strong>Premultiplied (premultiplied)</strong>: Color is the Source color after key color suppression, multiplied by alpha. Alpha is the foreground key.</div>
+<div class="line"><strong>Unpremultiplied (unpremultiplied)</strong>: Color is the Source color after key color suppression. Alpha is the foreground key.</div>
+<div class="line"><strong>Composite (composite)</strong>: Color is the composite of Source and Bg. Alpha is the foreground key.</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.PIKColor.html" class="btn btn-neutral float-right" title="PIKColor node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.MatteMonitorPlugin.html" class="btn btn-neutral float-left" title="MatteMonitor node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

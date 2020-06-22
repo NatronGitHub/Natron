@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>BooleanParam &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="ButtonParam" href="ButtonParam.html" />
+    <link rel="prev" title="BezierCurve" href="BezierCurve.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>BooleanParam</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/BooleanParam.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="booleanparam">
+<span id="id1"></span><h1>BooleanParam<a class="headerlink" href="#booleanparam" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="AnimatedParam.html"><span class="doc">AnimatedParam</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A parameter that contains a boolean value. See <a class="reference internal" href="#bparam-details"><span class="std std-ref">detailed</span></a> description below</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.get" title="NatronEngine.NatronEngine.BooleanParam.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.get" title="NatronEngine.NatronEngine.BooleanParam.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> (frame)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.getDefaultValue" title="NatronEngine.NatronEngine.BooleanParam.getDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDefaultValue</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.getValue" title="NatronEngine.NatronEngine.BooleanParam.getValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getValue</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.getValueAtTime" title="NatronEngine.NatronEngine.BooleanParam.getValueAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getValueAtTime</span></code></a> (time)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.restoreDefaultValue" title="NatronEngine.NatronEngine.BooleanParam.restoreDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restoreDefaultValue</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.set" title="NatronEngine.NatronEngine.BooleanParam.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span></code></a> (x)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.set" title="NatronEngine.NatronEngine.BooleanParam.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span></code></a> (x, frame)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.setDefaultValue" title="NatronEngine.NatronEngine.BooleanParam.setDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setDefaultValue</span></code></a> (value)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.setValue" title="NatronEngine.NatronEngine.BooleanParam.setValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setValue</span></code></a> (value)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.setValueAtTime" title="NatronEngine.NatronEngine.BooleanParam.setValueAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setValueAtTime</span></code></a> (value, time)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="bparam-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>A BooleanParam looks like a checkbox in the user interface.</p>
+<div class="figure">
+<img alt="../../../_images/booleanParam.png" src="../../../_images/booleanParam.png" />
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.get">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.get" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of the parameter at the current timeline’s time.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">get</code><span class="sig-paren">(</span><em>frame</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of the parameter at the given <em>frame</em>. This value may be interpolated
+given the <em>interpolation</em> of the underlying animation curve.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.getDefaultValue">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">getDefaultValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.getDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the default value for this parameter.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.getValue">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">getValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.getValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.get" title="NatronEngine.NatronEngine.BooleanParam.get"><code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.getValueAtTime">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">getValueAtTime</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.getValueAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.get" title="NatronEngine.NatronEngine.BooleanParam.get"><code class="xref py py-func docutils literal notranslate"><span class="pre">get(frame)</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.restoreDefaultValue">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">restoreDefaultValue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.restoreDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Removes all animation and expression set on this parameter and set the value
+to be the default value.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.set">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">set</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.set" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the value of this parameter to be <em>x</em>. If this parameter is animated (see <a class="reference internal" href="AnimatedParam.html#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsAnimated(dimension)</span></code></a>
+then this function will automatically add a keyframe at the timeline’s current time.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">set</code><span class="sig-paren">(</span><em>x</em>, <em>frame</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+<li><strong>frame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe on the parameter with the value <em>x</em> at the given <em>frame</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.setDefaultValue">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">setDefaultValue</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.setDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the default <em>value</em> for this parameter.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.setValue">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">setValue</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.setValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.set" title="NatronEngine.NatronEngine.BooleanParam.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set(value)</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.BooleanParam.setValueAtTime">
+<code class="descclassname">NatronEngine.BooleanParam.</code><code class="descname">setValueAtTime</code><span class="sig-paren">(</span><em>value</em>, <em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.BooleanParam.setValueAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.BooleanParam.set" title="NatronEngine.NatronEngine.BooleanParam.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set(value,time)</span></code></a></p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ButtonParam.html" class="btn btn-neutral float-right" title="ButtonParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="BezierCurve.html" class="btn btn-neutral float-left" title="BezierCurve" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parameters expressions &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Working with groups" href="groups.html" />
+    <link rel="prev" title="Controlling parameters" href="controllingParameters.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Parameters expressions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setting-an-expression">Setting an expression:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-an-expression">Writing an expression:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copying-another-parameter-through-expressions">Copying another parameter through expressions:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-random-in-expressions">Using random in expressions:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-expressions">Advanced expressions:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#expressions-persistence">Expressions persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Parameters expressions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/paramExpressions.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parameters-expressions">
+<span id="paramexpr"></span><h1>Parameters expressions<a class="headerlink" href="#parameters-expressions" title="Permalink to this headline">¶</a></h1>
+<p>The value of a <a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">parameter</span></a> can be set by
+Python expressions. An expression is a line of code that can either reference the value
+of other parameters or apply mathematical functions to the current value.</p>
+<p>The expression will be executed every times the value of the parameter is fetched from a call
+to <code class="xref py py-func docutils literal notranslate"><span class="pre">getValue(dimension)</span></code> or <code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that when an expression is active, all animation is ignored
+and only the result of the expression will be used to return the value of the parameter.</p>
+</div>
+<p>When executing an expression, the expression itself has a <strong>scope</strong>.
+The <strong>scope</strong> of the expression defines all nodes and parameters that are possible to use
+in the expression in order to produce the output value.</p>
+<p>Any node in the <em>scope</em> can has a variable declared corresponding to its script-name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Blur1</span>
+</pre></div>
+</div>
+<p>You would then access a parameter of Blur1 also by its script-name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Blur1</span><span class="o">.</span><span class="n">size</span>
+
+<span class="n">Group1</span><span class="o">.</span><span class="n">Blur1</span><span class="o">.</span><span class="n">size</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Referencing the value of the same parameter which expression is being edited can lead
+to an infinite recursion which Python should warn you about</p>
+</div>
+<p>In fact this is exactly like referencing <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> nodes via the <em>Script Editor</em>
+except that the <em>app</em> prefix was removed for nodes in the scope.</p>
+<p>See <a class="reference internal" href="scriptvslabel.html#nodescriptname"><span class="std std-ref">this section</span></a> to learn how to determine the <em>script-name</em> of a node.</p>
+<p>See <a class="reference internal" href="scriptvslabel.html#paramscriptname"><span class="std std-ref">this section</span></a> to learn how to determine the <em>script-name</em> of a parameter.</p>
+<p>By default a parameter’s expression can only refer to parameters of nodes belonging to the
+same Group, or to parameters belonging to the parent <a class="reference internal" href="PythonReference/NatronEngine/Group.html"><span class="doc">Group</span></a> node.</p>
+<p>Parameters of a Group node are also granted in the scope the parameters contained within that group.</p>
+<p>For instance if your graph hierarchy looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Read1</span>
+<span class="n">Blur1</span>
+<span class="n">Group1</span><span class="o">/</span>
+    <span class="n">Input1</span>
+    <span class="n">Blur1</span>
+    <span class="n">Convolve1</span>
+    <span class="n">Roto1</span>
+    <span class="n">Output1</span>
+<span class="n">Viewer1</span>
+</pre></div>
+</div>
+<p>A parameter of <em>Read1</em> would be able to reference any parameter of <em>Read1</em>, <em>Blur1</em>, <em>Group1</em>, <em>Viewer1</em>
+but could not reference any parameter of the nodes within <em>Group1</em>.</p>
+<p>Similarly, a parameter of <em>Group1.Blur1</em> would be able to reference any parameter of
+<em>Group1</em>, <em>Group1.Input1</em> , <em>Group1.Blur1</em> , <em>Group1.Convolve1</em> , <em>Group1.Roto1</em> , <em>Group1.Output1</em> but
+would not be able to reference any top-level node (<em>Read1</em>, <em>Blur1</em>, <em>Viewer1</em>) except the
+<em>Group1</em> node.</p>
+<p>A parameter of <em>Group1</em> would on the other hand be able to reference any parameter in
+top-level nodes and in the nodes of <em>Group1</em>.</p>
+<p>The <em>scope</em> was introduced to deal with problems where the user would write expressions
+referencing parameters that would probably no longer be referable when loading the script
+again in another project.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Note that you would still be able to reach any node or parameter in the project using the
+<em>app1</em> (or <em>app</em> prefix in command-line mode)  but is not recommended to do so:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="o">.</span><span class="n">Blur1</span><span class="o">.</span><span class="n">size</span>
+</pre></div>
+</div>
+</div>
+<p>All functions available in the Python API are made available to expressions. Also for
+convenience the <strong>math</strong> Python module has been made available by default to expressions.</p>
+<div class="section" id="setting-an-expression">
+<span id="settingexpr"></span><h2>Setting an expression:<a class="headerlink" href="#setting-an-expression" title="Permalink to this headline">¶</a></h2>
+<p>To create an expression from the user interface, right click a parameter and choose <em>Set Expression…</em></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/setExprRightClick.png"><img alt="../_images/setExprRightClick.png" src="../_images/setExprRightClick.png" style="width: 200px;" /></a>
+</div>
+<p>Note that for multi-dimensional parameters such as <a class="reference internal" href="PythonReference/NatronEngine/ColorParam.html"><span class="doc">ColorParam</span></a>, the
+<em>Set Expression…</em> entry will <strong>only set an expression for the right-clicked dimension</strong>.</p>
+<p>The <em>Set Expression (all dimensions)</em> entry will on the other hand set the same expression on all
+dimensions of the parameter at once.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/multiDimSetExprMenu.png"><img alt="../_images/multiDimSetExprMenu.png" src="../_images/multiDimSetExprMenu.png" style="width: 300px;" /></a>
+</div>
+<p>A dialog will open where you can write the expression:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/setExprDialog.png"><img alt="../_images/setExprDialog.png" src="../_images/setExprDialog.png" style="width: 600px;" /></a>
+</div>
+<p>By default you do not have to assign any variable as the result of the expression, Natron
+will do it by itself:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Expression for Blur1.size</span>
+
+<span class="n">Transform1</span><span class="o">.</span><span class="n">translate</span><span class="o">.</span><span class="n">get</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1">#Will be expanded automatically by Natron to</span>
+
+<span class="n">ret</span> <span class="o">=</span> <span class="n">Transform1</span><span class="o">.</span><span class="n">translate</span><span class="o">.</span><span class="n">get</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>However if you were to write an expression that spans over multiple lines you would need
+to specifically set the <strong>ret</strong> variable yourself and toggle-on the <em>multi-line</em> button:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">acos</span><span class="p">(</span><span class="n">Transform1</span><span class="o">.</span><span class="n">translate</span><span class="o">.</span><span class="n">get</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">Transform1</span><span class="o">.</span><span class="n">rotate</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">tan</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="n">Group1</span><span class="o">.</span><span class="n">customParam</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also set an expression from a script using the <code class="xref py py-func docutils literal notranslate"><span class="pre">setExpression(expr,hasRetVariable,dimension)</span></code> function
+of <a class="reference internal" href="PythonReference/NatronEngine/AnimatedParam.html"><span class="doc">AnimatedParam</span></a>.</p>
+</div>
+<div class="section" id="writing-an-expression">
+<h2>Writing an expression:<a class="headerlink" href="#writing-an-expression" title="Permalink to this headline">¶</a></h2>
+<p>For convenience the following variables have been declared to Python when executing the expression:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>thisNode</strong>: It references the node holding the parameter being edited</li>
+<li><strong>thisGroup</strong>: It references the group containing <em>thisNode</em></li>
+<li><strong>thisParam</strong>: It references the param being edited</li>
+<li><strong>dimension</strong>: Defined only for multi-dimensional parameters, it indicates the dimension (0-based index)
+of the parameter on which the expression has effect.</li>
+<li><strong>frame</strong>: It references the current time on the timeline</li>
+<li>The <strong>app</strong> variable will be set so it points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+</ul>
+</div></blockquote>
+<p>To reference the value of another parameter use the <code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code> function which retrieves the value
+of the parameter at the current timeline’s time. If the parameter is multi-dimensional, you need to use
+the subscript operator to retrieve the value of a particular dimension.</p>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">getValue(dimension)</span></code> does the same thing but takes a <em>dimension</em> parameter to retrieve
+the value of the parameter at a specific <em>dimension</em>. The following is equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ColorCorrect1</span><span class="o">.</span><span class="n">MasterSaturation</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="n">dimension</span><span class="p">]</span>
+
+<span class="n">ColorCorrect1</span><span class="o">.</span><span class="n">MasterSaturation</span><span class="o">.</span><span class="n">getValue</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that for 1-dimensional parameter, the <code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code> function cannot be used with subscript, e.g.:</p>
+<blockquote>
+<div>Blur1.size.get()</div></blockquote>
+<p>To retrieve the value of the parameter at a specific <em>frame</em> because the parameter is animated,
+you can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">get(frame)</span></code> function.</p>
+<p>Again the <code class="xref py py-func docutils literal notranslate"><span class="pre">getValueAtTime(frame,dimension)</span></code> does the same thing but takes a <em>dimension</em> parameter to retrieve
+the value of the parameter at a specific <em>dimension</em>. The following lines are equivalent to
+the 2 lines above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ColorCorrect1</span><span class="o">.</span><span class="n">MasterSaturation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frame</span><span class="p">)[</span><span class="n">dimension</span><span class="p">]</span>
+
+<span class="n">ColorCorrect1</span><span class="o">.</span><span class="n">MasterSaturation</span><span class="o">.</span><span class="n">getValueAtTime</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span><span class="n">dimension</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We ask for the value of the <em>MasterSaturation</em> parameter of the <em>ColorCorrect1</em> node its value
+at the current <em>frame</em> and at the current <em>dimension</em>, which is the same as calling the <code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code> function
+without a <em>frame</em> in parameter.</p>
+</div>
+<div class="section" id="copying-another-parameter-through-expressions">
+<h2>Copying another parameter through expressions:<a class="headerlink" href="#copying-another-parameter-through-expressions" title="Permalink to this headline">¶</a></h2>
+<p>If we want the value of the parameter <strong>size</strong> of the node <em>BlurCImg1</em>  to copy the
+parameter <strong>mix</strong> of the node <em>DilateCImg1</em>, we would set the following expression on the
+<strong>size</strong> parameter of the node <em>BlurCImg1</em> (see <a class="reference internal" href="#settingexpr"><span class="std std-ref">setting an expression</span></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DilateCImg1</span><span class="o">.</span><span class="n">mix</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If mix has an animation and we wanted to get the value of the mix at the previous <em>frame</em>,
+the following code would work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DilateCImg1</span><span class="o">.</span><span class="n">mix</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that when choosing the <em>Link to…</em> option when right-clicking a parameter, Natron writes
+automatically an expression to copy the parameter to link to for you.</p>
+</div>
+<div class="section" id="using-random-in-expressions">
+<h2>Using random in expressions:<a class="headerlink" href="#using-random-in-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes it might be useful to add a random generator to produce noise on a value.
+However the noise produced must be reproducible such that when rendering multiple times the same
+frame or when loading the project again it would use the same value.</p>
+<p>We had to add a specific random function in Natron that takes into account the state of a
+parameter and the current time on the timeline as a seed function to random.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">We advise against using the functions provided by the module random.py of the Python
+standard library, as the values produced by these functions will not be reproducible
+between 2 runs of Natron for the same project.</p>
+</div>
+<p>The Natron specific random functions are exposed in the <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">Param</span></a> class.</p>
+<p>When executing an expression, Natron pre-declares the <strong>random()</strong> function so that you do not
+have to do stuff like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">thisParam</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Instead you can just type the following in your expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myOtherNode</span><span class="o">.</span><span class="n">myOtherNodeParam</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">*</span> <span class="n">random</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">random(min</span> <span class="pre">=</span> <span class="pre">0.,max</span> <span class="pre">=</span> <span class="pre">1.)</span></code> function also takes 2 optional arguments indicating
+the range into which the return value should fall in. The range is defined by [min,max[.</p>
+<blockquote>
+<div>#Returns a random floating point value in the range [1., 10.[
+random(1.,10.)</div></blockquote>
+<p>For integers, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">randomInt(min,max)</span></code> function instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Returns a random integer in the range [1,100[</span>
+<span class="n">randomInt</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1">#Using the randomInt function with a given seed</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">randomInt</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="n">frame</span><span class="p">,</span><span class="n">seed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="advanced-expressions">
+<h2>Advanced expressions:<a class="headerlink" href="#advanced-expressions" title="Permalink to this headline">¶</a></h2>
+<p>To write more advanced expressions based on fractal noise or perlin noise you may use
+the functions available in the <a class="reference internal" href="PythonReference/NatronEngine/ExprUtils.html#exprutils"><span class="std std-ref">ExprUtils</span></a> class.</p>
+</div>
+<div class="section" id="expressions-persistence">
+<h2>Expressions persistence<a class="headerlink" href="#expressions-persistence" title="Permalink to this headline">¶</a></h2>
+<p>If you were to write a group plug-in and then want to have your expressions persist when
+your group will be instantiated, it is important to prefix the name of the nodes you reference
+in your expression by the <strong>thisGroup.</strong> prefix. Without it, Natron thinks you’re referencing
+a top-level node, i.e: a node which belongs to the main node-graph, however, since you’re using
+a group, all your nodes are no longer top-level and the expression will fail.</p>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="setting-the-label-of-a-node-so-it-displays-the-value-of-a-parameter-on-the-node-graph">
+<h3>Setting the label of a Node so it displays the value of a parameter on the node-graph:<a class="headerlink" href="#setting-the-label-of-a-node-so-it-displays-the-value-of-a-parameter-on-the-node-graph" title="Permalink to this headline">¶</a></h3>
+<p>For instance, we may want to have on the shuffle node, the values of the output RGBA channels
+so we don’t have to open the settings panel to understand what the node is doing.</p>
+<p>To do so, we set an expression on the “Label” parameter located in the “Node” tab of the
+settings panel.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/shuffleSubLabel.png"><img alt="../_images/shuffleSubLabel.png" src="../_images/shuffleSubLabel.png" style="width: 300px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/shuffleLabelExpression.png"><img alt="../_images/shuffleLabelExpression.png" src="../_images/shuffleLabelExpression.png" style="width: 300px;" /></a>
+</div>
+<p>Set the following expression on the parameter</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">thisNode</span><span class="o">.</span><span class="n">outputR</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">outputR</span><span class="o">.</span><span class="n">get</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">outputG</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">outputG</span><span class="o">.</span><span class="n">get</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">outputB</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">outputB</span><span class="o">.</span><span class="n">get</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">outputA</span><span class="o">.</span><span class="n">getOption</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">outputA</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generating-custom-animation-for-motion-editing">
+<h3>Generating custom animation for motion editing:<a class="headerlink" href="#generating-custom-animation-for-motion-editing" title="Permalink to this headline">¶</a></h3>
+<p>In this example we will demonstrate how to perform Loop,Negate and Reverse effects
+on an animation even though this is already available as a preset in Natron.</p>
+<p>To do be able to do this we make use of the <code class="xref py py-func docutils literal notranslate"><span class="pre">curve(frame,dimension)</span></code>
+function of the <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">Param</span></a> class. This function returns the value of the animation
+curve (of the given dimension) at the given time.</p>
+<p>If we were to write the following expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curve</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The result would be exactly the animation curve of the parameter.</p>
+<p>On the other hand if we write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curve</span><span class="p">(</span><span class="o">-</span><span class="n">frame</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/CE_reverse.png"><img alt="../_images/CE_reverse.png" src="../_images/CE_reverse.png" style="width: 300px;" /></a>
+</div>
+<p>We have just reversed the curve, meaning that the actual result at the frame F will be in fact
+the value of the curve at the frame -F.</p>
+<p>In the same way we can apply a negate effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">curve</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/CE_negate.png"><img alt="../_images/CE_negate.png" src="../_images/CE_negate.png" style="width: 300px;" /></a>
+</div>
+<p>The loop effect is a bit more complicated and needs to have a frame-range in parameter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">firstFrame</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">lastFrame</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">curve</span><span class="p">(((</span><span class="n">frame</span> <span class="o">-</span> <span class="n">firstFrame</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">lastFrame</span> <span class="o">-</span> <span class="n">firstFrame</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">firstFrame</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/CE_loop.png"><img alt="../_images/CE_loop.png" src="../_images/CE_loop.png" style="width: 300px;" /></a>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="groups.html" class="btn btn-neutral float-right" title="Working with groups" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="controllingParameters.html" class="btn btn-neutral float-left" title="Controlling parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

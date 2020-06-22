@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>What is compositing? &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Getting started" href="getstarted.html" />
+    <link rel="prev" title="User Guide" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">What is compositing?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#theory">Theory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#practice">Practice</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compositing.html">Compositing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+      <li>What is compositing?</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/intro.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="what-is-compositing">
+<h1>What is compositing?<a class="headerlink" href="#what-is-compositing" title="Permalink to this headline">¶</a></h1>
+<p>Compositing is the combining of visual elements from separate sources into single images, often to create the illusion that all those elements are parts of the same scene <a class="reference internal" href="#wikipedia" id="id1">[Wikipedia]</a>.</p>
+<p>Typical examples of compositing are, for example:</p>
+<ul class="simple">
+<li>The superimposition of a character filmed on a green background over a scene shot in another place, at another time, or a computer-generated scene;</li>
+<li>The manual detouring (also called rotoscopy) of an element in a video to embed it in another video, possibly with a different motion;</li>
+<li>Artistic modifications of a video, after shooting a live-action scene or rendering a CGI scene, in order to modify its lighting, colors, depth of field, camera motion, or to remove noise or add film grain.</li>
+</ul>
+<p>A video compositing software is not a 3D computer graphics software, like Blender or Maya, but it is perfectly suited for combining computer-generated elements produced by other software with live-action video or 2D animation. Rather than rendering a full 3D scene with the 3D software, which may cost many hours of computation, the video compositing software can assemble the elements produced separately with a much more reactive interface and an almost instantaneous visual feedback.</p>
+<div class="section" id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Permalink to this headline">¶</a></h2>
+<p>The math behind compositing was formalized by Porter &amp; Duff <a class="reference internal" href="#porterduff1984" id="id2">[PorterDuff1984]</a> after the preliminary work by Wallace <a class="reference internal" href="#wallace1981" id="id3">[Wallace1981]</a>. More informating about the theory behind compositing can be found in the works of Jim Blinn <a class="reference internal" href="#blinn1994a" id="id4">[Blinn1994a]</a> <a class="reference internal" href="#blinn1994b" id="id5">[Blinn1994b]</a> and Alvy Ray Smith <a class="reference internal" href="#smith1995" id="id6">[Smith1995]</a>.</p>
+<p>The compositing theory also introduces the notion of “premultipled” RGB values, or “associated alpha”, and there is still a lot of <a class="reference external" href="https://groups.google.com/forum/#!topic/ocio-dev/ZehKhUFqhjc">debate</a> about <a class="reference external" href="http://lists.openimageio.org/pipermail/oiio-dev-openimageio.org/2011-December/004709.html">premultiplying or not</a>.</p>
+<p>Natron made the choice of using premultiplied alpha by default in the compositing workflow, like all modern compositing software, because images are stored internally with floating-point values.</p>
+</div>
+<div class="section" id="practice">
+<h2>Practice<a class="headerlink" href="#practice" title="Permalink to this headline">¶</a></h2>
+<p>There are excellent books that introduce how to do compositing in practice, and using compositing software: <a class="reference internal" href="#wright2010" id="id7">[Wright2010]</a>, <a class="reference internal" href="#brinkmann2008" id="id8">[Brinkmann2008]</a>, <a class="reference internal" href="#lanier2009" id="id9">[Lanier2009]</a>, <a class="reference internal" href="#ves2014" id="id10">[VES2014]</a>.</p>
+<p>Most of what is described in these books also apply to Natron. It is thus strongly recommended to become familiar with the techniques and workflows described in these books before starting to use Natron.</p>
+<p>There are also video tutorials available on video streaming platforms (youtube, vimeo) for Natron or other reference compositing software, such as Nuke of Fusion. These tutorials can be used to get acquainted with compositing.</p>
+<table class="docutils citation" frame="void" id="wikipedia" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Wikipedia]</a></td><td><a class="reference external" href="https://en.wikipedia.org/wiki/Compositing">Compositing</a>, in Wikipedia, retrieved Sep. 14, 2016 from <a class="reference external" href="https://en.wikipedia.org/wiki/Compositing">https://en.wikipedia.org/wiki/Compositing</a></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="porterduff1984" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[PorterDuff1984]</a></td><td>Porter, Thomas; Tom Duff (1984). <a class="reference external" href="https://keithp.com/~keithp/porterduff/p253-porter.pdf">“Compositing Digital Images”</a>. Computer Graphics. 18 (3): 253–259. <a class="reference external" href="https://dx.doi.org/10.1145%2F800031.808606">doi:10.1145/800031.808606</a></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="wallace1981" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Wallace1981]</a></td><td>Wallace,  Bruce  A., <a class="reference external" href="https://graphics.stanford.edu/papers/merging-sig81/">Merging  and  Transformation  of  Raster  Images  for Cartoon  Animation</a>, Computer  Graphics,  Vol  15,  No  3,  Aug  1981, 253-262. SIGGRAPH’81 Conference Proceedings, <a class="reference external" href="http://dx.doi.org/10.1145/800224.806813">doi:10.1145/800224.806813</a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="blinn1994a" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[Blinn1994a]</a></td><td>Blinn, James F., Jim Blinn’s Corner: Compositing Part 1: Theory, IEEE Computer Graphics &amp; Applications, Sep 1994, 83-87, <a class="reference external" href="http://dx.doi.org/10.1109/38.310740">doi:10.1109/38.310740</a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="blinn1994b" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[Blinn1994b]</a></td><td>Blinn,  James  F., Jim Blinn’s Corner: Compositing Part 2: Practice, IEEE Computer Graphics &amp; Applications, Nov 1994, 78-82, <a class="reference external" href="http://dx.doi.org/10.1109/38.329100">doi:10.1109/38.329100</a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="smith1995" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[Smith1995]</a></td><td>Alvy Ray Smith, <a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.27.5956">Image Compositing Fundamentals</a>, 1995.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="brinkmann2008" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id8">[Brinkmann2008]</a></td><td>Ron Brinkmann, The Art and Science of Digital Compositing, 2nd Edition, 2008 (ISBN  0123706386)</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="lanier2009" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id9">[Lanier2009]</a></td><td>Lee Lanier, Professional Digital Compositing: Essential Tools and Techniques, 2009 (ISBN 0470452617)</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="wright2010" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[Wright2010]</a></td><td>Steve Wright, Digital Compositing for Film and Video, Third Edition, 2010 (ISBN 78-0-240-81309-7)</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="ves2014" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id10">[VES2014]</a></td><td>The VES Handbook of Visual Effects: Industry Standard VFX Practices and Procedures, 2nd Edition (ISBM 0240825187)</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="getstarted.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

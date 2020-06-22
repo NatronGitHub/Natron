@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ImageLayer &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Int2DParam" href="Int2DParam.html" />
+    <link rel="prev" title="GroupParam" href="GroupParam.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>ImageLayer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/ImageLayer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="imagelayer">
+<span id="id1"></span><h1>ImageLayer<a class="headerlink" href="#imagelayer" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A small object representing a layer of an image. For example, the base image layer is
+the color layer, or sometimes called “RGBA”. Some other default layers include
+ForwardMotion, BackwardMotion, DisparityLeft,DisparityRight, etc…
+.</p>
+<p>See <a class="reference internal" href="#imagelayer-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.ImageLayer" title="NatronEngine.NatronEngine.ImageLayer.ImageLayer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ImageLayer</span></code></a> (layerName,componentsPrettyName,componentsName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.isColorPlane" title="NatronEngine.NatronEngine.ImageLayer.isColorPlane"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isColorPlane</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getNumComponents" title="NatronEngine.NatronEngine.ImageLayer.getNumComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getLayerName" title="NatronEngine.NatronEngine.ImageLayer.getLayerName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getLayerName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getComponentsNames" title="NatronEngine.NatronEngine.ImageLayer.getComponentsNames"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getComponentsNames</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getComponentsPrettyName" title="NatronEngine.NatronEngine.ImageLayer.getComponentsPrettyName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getComponentsPrettyName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getNoneComponents" title="NatronEngine.NatronEngine.ImageLayer.getNoneComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNoneComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getRGBAComponents" title="NatronEngine.NatronEngine.ImageLayer.getRGBAComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getRGBAComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getRGBComponents" title="NatronEngine.NatronEngine.ImageLayer.getRGBComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getRGBComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getAlphaComponents" title="NatronEngine.NatronEngine.ImageLayer.getAlphaComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getAlphaComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getBackwardMotionComponents" title="NatronEngine.NatronEngine.ImageLayer.getBackwardMotionComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getBackwardMotionComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getForwardMotionComponents" title="NatronEngine.NatronEngine.ImageLayer.getForwardMotionComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getForwardMotionComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getDisparityLeftComponents" title="NatronEngine.NatronEngine.ImageLayer.getDisparityLeftComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDisparityLeftComponents</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getDisparityRightComponents" title="NatronEngine.NatronEngine.ImageLayer.getDisparityRightComponents"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDisparityRightComponents</span></code></a> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="imagelayer-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>A Layer is constituted of a layer <em>name</em> and a set of channel names (also called components).
+You can get a sequence with all the channels in the layer with the function <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.getComponentsNames" title="NatronEngine.NatronEngine.ImageLayer.getComponentsNames"><code class="xref py py-func docutils literal notranslate"><span class="pre">getComponentsNames()</span></code></a>.
+For some default layers, the components may be represented by a prettier name for the end-user,
+such as <em>DisparityLeft</em> instead of XY.
+When the ImageLayer does not have a pretty name, its pretty name will just be a concatenation
+of all channel names in order.</p>
+<p>There is one special layer in Natron: the color layer. It be represented as 3 different types:
+RGBA, RGB or Alpha. If the ImageLayer is a color layer, the method <a class="reference internal" href="#NatronEngine.NatronEngine.ImageLayer.isColorPlane" title="NatronEngine.NatronEngine.ImageLayer.isColorPlane"><code class="xref py py-func docutils literal notranslate"><span class="pre">isColorPlane()</span></code></a> will
+return True</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.ImageLayer">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">ImageLayer</code><span class="sig-paren">(</span><em>layerName</em>, <em>componentsPrettyName</em>, <em>componentsName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.ImageLayer" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>layerName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Make a new image layer with the given layer name, optional components pretty name and
+the set of channels (also called components) in the layer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.isColorPlane">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">isColorPlane</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.isColorPlane" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns True if this layer is a color layer, i.e: it is RGBA, RGB or alpha.
+The color layer is what is output by default by all nodes in Natron.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getNumComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getNumComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getNumComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the number of channels in this layer. Can be between 0 and 4 included.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getLayerName">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getLayerName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getLayerName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the layer name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getComponentsNames">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getComponentsNames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getComponentsNames" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns a sequence with all channels in this layer in order</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getComponentsPrettyName">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getComponentsPrettyName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getComponentsPrettyName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the channels pretty name. E.g: DisparityLeft instead of XY</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getNoneComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getNoneComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getNoneComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “none” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getRGBAComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getRGBAComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getRGBAComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “RGBA” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getRGBComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getRGBComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getRGBComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “RGB” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getAlphaComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getAlphaComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getAlphaComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “Alpha” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getBackwardMotionComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getBackwardMotionComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getBackwardMotionComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “Backward” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getForwardMotionComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getForwardMotionComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getForwardMotionComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “Forward” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getDisparityLeftComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getDisparityLeftComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getDisparityLeftComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “DisparityLeft” layer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.ImageLayer.getDisparityRightComponents">
+<code class="descclassname">NatronEngine.ImageLayer.</code><code class="descname">getDisparityRightComponents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.ImageLayer.getDisparityRightComponents" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the default “DisparityRight” layer</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Int2DParam.html" class="btn btn-neutral float-right" title="Int2DParam" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="GroupParam.html" class="btn btn-neutral float-left" title="GroupParam" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,634 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DoubleParam &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Effect" href="Effect.html" />
+    <link rel="prev" title="Double3DTuple" href="Double3DTuple.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>DoubleParam</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/DoubleParam.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="doubleparam">
+<span id="id1"></span><h1>DoubleParam<a class="headerlink" href="#doubleparam" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="AnimatedParam.html"><span class="doc">AnimatedParam</span></a></p>
+<p><strong>Inherited by:</strong> <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a>, <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A double param can contain one or multiple floating point values.
+See <a class="reference internal" href="#double-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.get" title="NatronEngine.NatronEngine.DoubleParam.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.get" title="NatronEngine.NatronEngine.DoubleParam.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> (frame)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getDefaultValue" title="NatronEngine.NatronEngine.DoubleParam.getDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDefaultValue</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getDisplayMaximum" title="NatronEngine.NatronEngine.DoubleParam.getDisplayMaximum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDisplayMaximum</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getDisplayMinimum" title="NatronEngine.NatronEngine.DoubleParam.getDisplayMinimum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getDisplayMinimum</span></code></a> (dimension)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getMaximum" title="NatronEngine.NatronEngine.DoubleParam.getMaximum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getMaximum</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getMinimum" title="NatronEngine.NatronEngine.DoubleParam.getMinimum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getMinimum</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getValue" title="NatronEngine.NatronEngine.DoubleParam.getValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getValue</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.getValueAtTime" title="NatronEngine.NatronEngine.DoubleParam.getValueAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getValueAtTime</span></code></a> (time[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.restoreDefaultValue" title="NatronEngine.NatronEngine.DoubleParam.restoreDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restoreDefaultValue</span></code></a> ([dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.set" title="NatronEngine.NatronEngine.DoubleParam.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span></code></a> (x)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.set" title="NatronEngine.NatronEngine.DoubleParam.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span></code></a> (x, frame)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setDefaultValue" title="NatronEngine.NatronEngine.DoubleParam.setDefaultValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setDefaultValue</span></code></a> (value[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setDisplayMaximum" title="NatronEngine.NatronEngine.DoubleParam.setDisplayMaximum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setDisplayMaximum</span></code></a> (maximum[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setDisplayMinimum" title="NatronEngine.NatronEngine.DoubleParam.setDisplayMinimum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setDisplayMinimum</span></code></a> (minimum[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setMaximum" title="NatronEngine.NatronEngine.DoubleParam.setMaximum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setMaximum</span></code></a> (maximum[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setMinimum" title="NatronEngine.NatronEngine.DoubleParam.setMinimum"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setMinimum</span></code></a> (minimum[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setValue" title="NatronEngine.NatronEngine.DoubleParam.setValue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setValue</span></code></a> (value[, dimension=0])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.setValueAtTime" title="NatronEngine.NatronEngine.DoubleParam.setValueAtTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setValueAtTime</span></code></a> (value, time[, dimension=0])</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="double-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>A double param can have 1 to 3 dimensions. (See <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a> and <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a>).
+Usually this is used to represent a single floating point value that may animate over time.</p>
+<p>The user interface for them varies depending on the number of dimensions.</p>
+<p>A 1-dimensional <a class="reference internal" href="#"><span class="doc">DoubleParam</span></a></p>
+<div class="figure">
+<img alt="../../../_images/doubleParam.png" src="../../../_images/doubleParam.png" />
+</div>
+<p>A 2-dimensional <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a></p>
+<div class="figure">
+<img alt="../../../_images/double2DParam.png" src="../../../_images/double2DParam.png" />
+</div>
+<p>A 3-dimensional <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a></p>
+<div class="figure">
+<img alt="../../../_images/double3DParam.png" src="../../../_images/double3DParam.png" />
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.get">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">get</code><span class="sig-paren">(</span><em>frame</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.get" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of this parameter at the given <em>frame</em>. If the animation curve has an
+animation (see <a class="reference internal" href="AnimatedParam.html#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsAnimated(dimension)</span></code></a> then the
+value will be interpolated using the <em>interpolation</em> chosen by the user for the curve.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of this parameter at the given current timeline’s time.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getDefaultValue">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getDefaultValue</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the default value for this parameter. <em>dimension</em> is meaningless for the DoubleParam
+class because it is 1-dimensional, but is useful for inherited classes <a class="reference internal" href="Double2DParam.html"><span class="doc">Double2DParam</span></a>
+and <a class="reference internal" href="Double3DParam.html"><span class="doc">Double3DParam</span></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getDisplayMaximum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getDisplayMaximum</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getDisplayMaximum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">double</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the display maximum for this parameter at the given <em>dimension</em>.
+The display maximum is the maximum value visible on the slider, internally the value
+can exceed this range.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getDisplayMinimum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getDisplayMinimum</code><span class="sig-paren">(</span><em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getDisplayMinimum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the display minimum for this parameter at the given <em>dimension</em>.
+The display minimum is the minimum value visible on the slider, internally the value
+can exceed this range.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getMaximum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getMaximum</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getMaximum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the maximum for this parameter at the given <em>dimension</em>.
+The maximum value cannot be exceeded and any higher value will be clamped to this value.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getMinimum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getMinimum</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getMinimum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the minimum for this parameter at the given <em>dimension</em>.
+The minimum value cannot be exceeded and any lower value will be clamped to this value.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getValue">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getValue</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of this parameter at the given <em>dimension</em> at the current timeline’s time.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.getValueAtTime">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">getValueAtTime</code><span class="sig-paren">(</span><em>time</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.getValueAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of this parameter at the given <em>dimension</em> at the given <em>time</em>.</p>
+<p>If the animation curve has an
+animation (see <a class="reference internal" href="AnimatedParam.html#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsAnimated(dimension)</span></code></a> then the
+value will be interpolated using the <em>interpolation</em> chosen by the user for the curve.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.restoreDefaultValue">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">restoreDefaultValue</code><span class="sig-paren">(</span><span class="optional">[</span><em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.restoreDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the value of this parameter at the given <em>dimension</em> at the given <em>time</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.set">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">set</code><span class="sig-paren">(</span><em>x</em>, <em>frame</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.set" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>frame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set a new keyframe on the parameter with the value <em>x</em> at the given <em>frame</em>.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">set</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the value of this parameter to be <em>x</em>.
+If this parameter is animated (see <a class="reference internal" href="AnimatedParam.html#NatronEngine.NatronEngine.AnimatedParam.getIsAnimated" title="NatronEngine.NatronEngine.AnimatedParam.getIsAnimated"><code class="xref py py-func docutils literal notranslate"><span class="pre">getIsAnimated(dimension)</span></code></a>
+then this function will automatically add a keyframe at the timeline’s current time.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setDefaultValue">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setDefaultValue</code><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setDefaultValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the default <em>value</em> for this parameter at the given <em>dimension</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setDisplayMaximum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setDisplayMaximum</code><span class="sig-paren">(</span><em>maximum</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setDisplayMaximum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>maximum</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the display maximum of the parameter to be <em>maximum</em> for the given <em>dimension</em>.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">getDisplayMaximum</span></code></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setDisplayMinimum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setDisplayMinimum</code><span class="sig-paren">(</span><em>minimum</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setDisplayMinimum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>minimum</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the display minimum of the parameter to be <em>minmum</em> for the given <em>dimension</em>.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">getDisplayMinimum</span></code></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setMaximum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setMaximum</code><span class="sig-paren">(</span><em>maximum</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setMaximum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>maximum</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the maximum of the parameter to be <em>maximum</em> for the given <em>dimension</em>.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">getMaximum</span></code></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setMinimum">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setMinimum</code><span class="sig-paren">(</span><em>minimum</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setMinimum" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>minimum</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int&lt;PySide.QtCore.int&lt;</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the minimum of the parameter to be <em>minimum</em> for the given <em>dimension</em>.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">getMinimum</span></code></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setValue">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setValue</code><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setValue" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.set" title="NatronEngine.NatronEngine.DoubleParam.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set(value,dimension)</span></code></a></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.DoubleParam.setValueAtTime">
+<code class="descclassname">NatronEngine.DoubleParam.</code><code class="descname">setValueAtTime</code><span class="sig-paren">(</span><em>value</em>, <em>time</em><span class="optional">[</span>, <em>dimension=0</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.DoubleParam.setValueAtTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>dimension</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.DoubleParam.set" title="NatronEngine.NatronEngine.DoubleParam.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set(value,time,dimension)</span></code></a></p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Effect.html" class="btn btn-neutral float-right" title="Effect" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Double3DTuple.html" class="btn btn-neutral float-left" title="Double3DTuple" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

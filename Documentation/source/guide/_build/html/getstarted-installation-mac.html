@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>macOS &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Linux" href="getstarted-installation-linux.html" />
+    <link rel="prev" title="Windows" href="getstarted-installation-windows.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="macos">
+<h1>macOS<a class="headerlink" href="#macos" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>This chapter will guide your through the installation of Natron on macOS (formerly known as Mac OS X or OS X).</p>
+<div class="section" id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Mac OS X 10.6 (Snow Leopard) or higher</p></li>
+<li><p>x86 compatible CPU (Core2 x86_64 or higher recommended)</p></li>
+<li><dl class="simple">
+<dt>OpenGL 2.0 or higher with the following extensions:</dt><dd><ul>
+<li><p><strong>GL_ARB_texture_non_power_of_two</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_shader_objects</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_pixel_buffer_object</strong> <em>(Viewer and OpenGL rendering)</em></p></li>
+<li><p><strong>GL_ARB_vertex_array_object</strong> or <strong>GL_APPLE_vertex_array_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_framebuffer_object</strong> or <strong>GL_EXT_framebuffer_object</strong> <em>(OpenGL rendering only)</em></p></li>
+<li><p><strong>GL_ARB_texture_float</strong> <em>(OpenGL rendering only)</em></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<p>Navigate to <a class="reference external" href="https://natrongithub.github.io/#download">https://natrongithub.github.io/#download</a> and download the latest version.</p>
+<a class="reference internal image-reference" href="_images/mac_install_01.png"><img alt="_images/mac_install_01.png" src="_images/mac_install_01.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>Double-click the DMG file and copy Natron where you want it.</p>
+<a class="reference internal image-reference" href="_images/mac_install_02.png"><img alt="_images/mac_install_02.png" src="_images/mac_install_02.png" style="width: 40%;" /></a>
+</div>
+<div class="section" id="run">
+<h2>Run<a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h2>
+<p>On OS X 10.7 and later, you may get the message <em>“Natron has not been signed by a recognized distributor and may damage your computer. You should move it to the trash”</em>.</p>
+<p>The macOS binaries are not signed with an Apple Developer ID, because of incompatibilities between the Apple code signing tools and the compiler (GCC 4.9) and target OS (Mac OS X 10.6) we use.</p>
+<p>There are at least four options to launch Natron on macOS:</p>
+<ul class="simple">
+<li><p>rather than double-clicking on the Natron application, right-click or control-click on it and select Open</p></li>
+<li><p>after an unsuccessful launch of Natron, go to the Security &amp; Privacy preferences panel, and enable it.</p></li>
+<li><p>from the terminal command-line, execute <code class="docutils literal notranslate"><span class="pre">spctl</span> <span class="pre">--add</span> <span class="pre">/Applications/Natron.app</span></code>, as explained in <a class="reference external" href="http://osxdaily.com/2015/07/15/add-remove-gatekeeper-app-command-line-mac-os-x/">this OSXDaily article</a>.</p></li>
+<li><p>(not recommended) click “Allow apps downloaded from: Anywhere” in the Security &amp; Privacy preferences panel. Since macOS 10.12 Sierra, this option is not available anymore, but it is possible to re-enable it, as explained in <a class="reference external" href="http://osxdaily.com/2016/09/27/allow-apps-from-anywhere-macos-gatekeeper/">that OSXDaily article</a>.</p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Precomp node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GMIC nodes" href="../_groupGMIC.html" />
+    <link rel="prev" title="Output node" href="fr.inria.built-in.Output.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupOther.html">Other nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.AudioCurve.html">AudioCurve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.BackDrop.html">Backdrop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.DiskCache.html">DiskCache node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Dot.html">Dot node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Group.html">Group node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ImageStatistics.html">ImageStatistics node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Input.html">Input node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.NoOpPlugin.html">NoOp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Output.html">Output node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Precomp node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupOther.html">Other nodes</a> &raquo;</li>
+        
+      <li>Precomp node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.built-in.Precomp.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="precomp-node">
+<span id="fr-inria-built-in-precomp"></span><h1>Precomp node<a class="headerlink" href="#precomp-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of Precomp (fr.inria.built-in.Precomp).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.</p>
+<p>This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:</p>
+<p>It can be used to reduce portions of the node tree to pre-rendered image inputs. This speeds up render time: Natron only has to process the single image input instead of all the nodes within the project. Since this is a separate project, you also maintain access to the internal tree and can edit it any time.</p>
+<p>It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="43%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>&#160;</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="11%" />
+<col width="2%" />
+<col width="2%" />
+<col width="84%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Project Filename (.ntp) / <code class="docutils literal notranslate"><span class="pre">projectFilename</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>The absolute file path of the project to use as a pre-comp.</td>
+</tr>
+<tr class="row-odd"><td>Edit Project… / <code class="docutils literal notranslate"><span class="pre">editProject</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Opens the specified project in a new Natron instance</td>
+</tr>
+<tr class="row-even"><td>Pre-Render / <code class="docutils literal notranslate"><span class="pre">preRender</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td><div class="first last line-block">
+<div class="line">When checked the output of this node will be the images read directly from what is rendered by the node indicated by “Write Node”. If no Write is selected, or if the rendered images do not exist this node will have the behavior determined by the “On Error” parameter. To pre-render images, select a write node, a frame-range and hit “Render”.</div>
+<div class="line"><br /></div>
+<div class="line">When unchecked, this node will output the image rendered by the node indicated in the “Output Node” parameter by rendering the full-tree of the sub-project. In that case no writing on disk will occur and the images will be cached with the same policy as if the nodes were used in the active project in the first place.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Write Node / <code class="docutils literal notranslate"><span class="pre">writeNode</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Choose here the Write node in the pre-comp from which to render images then specify a frame-range and hit the “Render” button.</td>
+</tr>
+<tr class="row-even"><td>First-Frame / <code class="docutils literal notranslate"><span class="pre">first</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>The first-frame to render</td>
+</tr>
+<tr class="row-odd"><td>Last-Frame / <code class="docutils literal notranslate"><span class="pre">last</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>The last-frame to render</td>
+</tr>
+<tr class="row-even"><td>On Error / <code class="docutils literal notranslate"><span class="pre">onError</span></code></td>
+<td>Choice</td>
+<td>Error</td>
+<td><div class="first last line-block">
+<div class="line">Indicates the behavior when an image is missing from the render of the pre-comp project</div>
+<div class="line"><strong>Load previous</strong>: Loads the previous frame in the sequence.</div>
+<div class="line"><strong>Load next</strong>: Loads the next frame in the sequence.</div>
+<div class="line"><strong>Load nearest</strong>: Loads the nearest frame in the sequence.</div>
+<div class="line"><strong>Error</strong>: Fails to render.</div>
+<div class="line"><strong>Black</strong>: Black Image.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Render / <code class="docutils literal notranslate"><span class="pre">render</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../_groupGMIC.html" class="btn btn-neutral float-right" title="GMIC nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.built-in.Output.html" class="btn btn-neutral float-left" title="Output node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
