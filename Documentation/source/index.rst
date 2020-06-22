@@ -30,9 +30,14 @@ The `Creative Commons Attribution-ShareAlike 4.0 International License (CC-BY-SA
 The *Natron documentation authors* are:
 
 - Alexandre Gauthier-Foichat
-- Ole-André Rodlie
+- Ole-André Rodlie <rodlie@github>
 - Omar Brown
-- Frédéric Devernay
+- Frédéric Devernay <devernay@github>
+- Alexandre Bon <bonalex01dev@github>
+- <hellocatfood@github>
+- <magdesign@github>
+- Huân Lê-Vương <lehuan5062@github>
+- Fahad Hasan Pathik <cgvirus@github>
 
 .. toctree::
     :maxdepth: 3
