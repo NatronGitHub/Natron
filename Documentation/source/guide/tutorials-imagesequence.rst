@@ -142,7 +142,7 @@ It is can also specify the framerate and the codec, here is an example for frame
 ``ffmpeg -framerate 30 -i input%04d.png -c:v libx264 -r 30 -pix_fmt yuv420p out.mp4``
 
 Using NLE
-==========
+=========
 
 Kdenlive, Shotcut, Da Vinci Resolve, Adobe Premiere
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,7 +152,7 @@ Using Media Management tools
 ============================
 
 Adobe Prelude
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 Locate/Import the image sequence then Transcode it to the preferred format.
 
 DaVinci Resolve
