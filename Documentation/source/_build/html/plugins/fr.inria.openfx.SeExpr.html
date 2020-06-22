@@ -1,0 +1,762 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SeExpr node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SeExprSimple node" href="fr.inria.openfx.SeExprSimple.html" />
+    <link rel="prev" title="Screen node" href="net.sf.openfx.MergeScreen.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeDifference.html">Absminus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ContactSheetOFX.html">ContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CopyRectanglePlugin.html">CopyRectangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DissolvePlugin.html">Dissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeIn.html">In node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.KeyMix.html">KeyMix node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LayerContactSheetOFX.html">LayerContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMatte.html">Matte node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMax.html">Max node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergePlugin.html">Merge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMin.html">Min node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMultiply.html">Multiply node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeOut.html">Out node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergePlus.html">Plus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Premult.html">Premult node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeRoto.html">RotoMerge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeScreen.html">Screen node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">SeExpr node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.SeExprSimple.html">SeExprSimple node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.switchPlugin.html">Switch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TimeDissolvePlugin.html">TimeDissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Unpremult.html">Unpremult node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupMerge.html">Merge nodes</a> &raquo;</li>
+        
+      <li>SeExpr node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.openfx.SeExpr.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="seexpr-node">
+<span id="fr-inria-openfx-seexpr"></span><h1>SeExpr node<a class="headerlink" href="#seexpr-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/fr.inria.openfx.SeExpr.png"><img alt="pluginIcon" src="../_images/fr.inria.openfx.SeExpr.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 2.0 of SeExpr (fr.inria.openfx.SeExpr).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Use the SeExpr expression language (by Walt Disney Animation Studios) to process images.</p>
+<div class="section" id="what-is-seexpr">
+<h3>What is SeExpr?<a class="headerlink" href="#what-is-seexpr" title="Permalink to this headline">¶</a></h3>
+<p>SeExpr is a very simple mathematical expression language used in graphics software (RenderMan, Maya, Mudbox, Yeti).</p>
+<p>See the <a class="reference external" href="http://www.disneyanimation.com/technology/seexpr.html">SeExpr Home Page</a> and <a class="reference external" href="http://wdas.github.io/SeExpr/doxygen/userdoc.html">SeExpr Language Documentation</a> for more information.</p>
+<p>SeExpr is licensed under the Apache License, Version 2.0, and is Copyright Disney Enterprises, Inc.</p>
+</div>
+<div class="section" id="seexpr-vs-seexprsimple">
+<h3>SeExpr vs.&nbsp;SeExprSimple<a class="headerlink" href="#seexpr-vs-seexprsimple" title="Permalink to this headline">¶</a></h3>
+<p>The SeExpr plugin comes in two versions:</p>
+<ul class="simple">
+<li><em>SeExpr</em> has a single vector expression for the color channels, and a scalar expression for the alpha channel. The source color is accessed through the <code class="docutils literal notranslate"><span class="pre">Cs</span></code>vector, and alpha through the <code class="docutils literal notranslate"><span class="pre">As</span></code> scalar, as specified in the original SeExpr language.</li>
+<li><em>SeExprSimple</em> has one scalar expression per channel, and the source channels may also be accessed through scalars (<code class="docutils literal notranslate"><span class="pre">r</span></code>, <code class="docutils literal notranslate"><span class="pre">g</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code>).</li>
+</ul>
+</div>
+<div class="section" id="seexpr-extensions">
+<h3>SeExpr extensions<a class="headerlink" href="#seexpr-extensions" title="Permalink to this headline">¶</a></h3>
+<p>A few pre-defined variables and functions were added to the language for filtering and blending several input images.</p>
+<p>The following pre-defined variables can be used in the script:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">x</span></code>: X coordinate (in pixel units) of the pixel to render.</li>
+<li><code class="docutils literal notranslate"><span class="pre">y</span></code>: Y coordinate (in pixel units) of the pixel to render.</li>
+<li><code class="docutils literal notranslate"><span class="pre">u</span></code>: X coordinate (normalized in the [0,1] range) of the output pixel to render.</li>
+<li><code class="docutils literal notranslate"><span class="pre">v</span></code>: Y coordinate (normalized in the [0,1] range) of the output pixel to render.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sx</span></code>, <code class="docutils literal notranslate"><span class="pre">sy</span></code>: Scale at which the image is being rendered. Depending on the zoom level of the viewer, the image might be rendered at a lower scale than usual. This parameter is useful when producing spatial effects that need to be invariant to the pixel scale, especially when using X and Y coordinates. (0.5,0.5) means that the image is being rendered at half of its original size.</li>
+<li><code class="docutils literal notranslate"><span class="pre">par</span></code>: The pixel aspect ratio.</li>
+<li><code class="docutils literal notranslate"><span class="pre">cx</span></code>, <code class="docutils literal notranslate"><span class="pre">cy</span></code>: Shortcuts for <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">+</span> <span class="pre">0.5)/par/sx</span></code> and <code class="docutils literal notranslate"><span class="pre">(y</span> <span class="pre">+</span> <span class="pre">0.5)/sy</span></code>, i.e.&nbsp;the canonical coordinates of the current pixel.</li>
+<li><code class="docutils literal notranslate"><span class="pre">frame</span></code>: Current frame being rendered</li>
+<li><code class="docutils literal notranslate"><span class="pre">Cs</span></code>, <code class="docutils literal notranslate"><span class="pre">As</span></code>: Color (RGB vector) and alpha (scalar) of the image from input 1.</li>
+<li><code class="docutils literal notranslate"><span class="pre">CsN</span></code>, <code class="docutils literal notranslate"><span class="pre">AsN</span></code>: Color (RGB vector) and alpha (scalar) of the image from input N, e.g. <code class="docutils literal notranslate"><span class="pre">Cs2</span></code> and <code class="docutils literal notranslate"><span class="pre">As2</span></code> for input 2.</li>
+<li><code class="docutils literal notranslate"><span class="pre">output_width</span></code>, <code class="docutils literal notranslate"><span class="pre">output_height</span></code>: Dimensions of the output image being rendered.</li>
+<li><code class="docutils literal notranslate"><span class="pre">input_width</span></code>, <code class="docutils literal notranslate"><span class="pre">input_height</span></code>: Dimensions of image from input 1, in pixels.</li>
+<li><code class="docutils literal notranslate"><span class="pre">input_widthN</span></code>, <code class="docutils literal notranslate"><span class="pre">input_heightN</span></code>: Dimensions of image from input N, e.g. <code class="docutils literal notranslate"><span class="pre">input_width2</span></code> and <code class="docutils literal notranslate"><span class="pre">input_height2</span></code> for input 2.</li>
+</ul>
+<p>The following additional functions are available:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">color</span> <span class="pre">cpixel(int</span> <span class="pre">i,</span> <span class="pre">int</span> <span class="pre">f,</span> <span class="pre">float</span> <span class="pre">x,</span> <span class="pre">float</span> <span class="pre">y,</span> <span class="pre">int</span> <span class="pre">interp</span> <span class="pre">=</span> <span class="pre">0)</span></code>: interpolates the color from input i at the pixel position (x,y) in the image, at frame f.</li>
+<li><code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">apixel(int</span> <span class="pre">i,</span> <span class="pre">int</span> <span class="pre">f,</span> <span class="pre">float</span> <span class="pre">x,</span> <span class="pre">float</span> <span class="pre">y,</span> <span class="pre">int</span> <span class="pre">interp</span> <span class="pre">=</span> <span class="pre">0)</span></code>: interpolates the alpha from input i at the pixel position (x,y) in the image, at frame f.</li>
+</ul>
+<p>The pixel position of the center of the bottom-left pixel is (0., 0.).</p>
+<p>The first input has index i=1.</p>
+<p><code class="docutils literal notranslate"><span class="pre">interp</span></code> controls the interpolation filter, and can take one of the following values:</p>
+<ul class="simple">
+<li>0: impulse - (nearest neighbor / box) Use original values</li>
+<li>1: bilinear - (tent / triangle) Bilinear interpolation between original values</li>
+<li>2: cubic - (cubic spline) Some smoothing</li>
+<li>3: Keys - (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*)</li>
+<li>4: Simon - Some smoothing, plus medium sharpening (*)</li>
+<li>5: Rifman - Some smoothing, plus significant sharpening (*)</li>
+<li>6: Mitchell - Some smoothing, plus blurring to hide pixelation (*)(+)</li>
+<li>7: Parzen - (cubic B-spline) Greatest smoothing of all filters (+)</li>
+<li>8: notch - Flat smoothing (which tends to hide moire’ patterns) (+)</li>
+</ul>
+<p>Some filters may produce values outside of the initial range (*) or modify the values even at integer positions (+).</p>
+</div>
+<div class="section" id="sample-scripts">
+<h3>Sample scripts<a class="headerlink" href="#sample-scripts" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="add-green-channel-to-red-keep-green-and-apply-a-50-gain-on-blue">
+<h4>Add green channel to red, keep green, and apply a 50% gain on blue<a class="headerlink" href="#add-green-channel-to-red-keep-green-and-apply-a-50-gain-on-blue" title="Permalink to this headline">¶</a></h4>
+<p><em>SeExprSimple:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">r</span><span class="o">+</span><span class="n">g</span>
+<span class="n">g</span>
+<span class="mf">0.5</span><span class="o">*</span><span class="n">b</span>
+</pre></div>
+</div>
+<p><em>SeExpr:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">Cs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">Cs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">Cs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">Cs</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiply-merge-operator-on-inputs-1-and-2">
+<h4>“Multiply” merge operator on inputs 1 and 2<a class="headerlink" href="#multiply-merge-operator-on-inputs-1-and-2" title="Permalink to this headline">¶</a></h4>
+<p><em>SeExprSimple:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">r</span><span class="o">*</span><span class="n">r2</span>
+<span class="n">g</span><span class="o">*</span><span class="n">g2</span>
+<span class="n">b</span><span class="o">*</span><span class="n">b2</span>
+<span class="n">a</span><span class="o">+</span><span class="n">a2</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">a2</span>
+</pre></div>
+</div>
+<p><em>SeExpr:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Cs</span> <span class="o">*</span> <span class="n">Cs2</span>
+<span class="n">As</span> <span class="o">+</span> <span class="n">As2</span> <span class="o">-</span> <span class="n">As</span> <span class="o">*</span> <span class="n">As2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="over-merge-operator-on-inputs-1-and-2">
+<h4>“Over” merge operator on inputs 1 and 2<a class="headerlink" href="#over-merge-operator-on-inputs-1-and-2" title="Permalink to this headline">¶</a></h4>
+<p><em>SeExprSimple:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">r</span><span class="o">+</span><span class="n">r2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+<span class="n">g</span><span class="o">+</span><span class="n">g2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+<span class="n">b</span><span class="o">+</span><span class="n">b2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+<span class="n">a</span><span class="o">+</span><span class="n">a2</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">a2</span>
+</pre></div>
+</div>
+<p><em>SeExpr:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Cs</span> <span class="o">+</span> <span class="n">Cs2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span>  <span class="n">As</span><span class="p">)</span>
+<span class="n">As</span> <span class="o">+</span> <span class="n">As2</span> <span class="o">-</span> <span class="n">As</span> <span class="o">*</span> <span class="n">As2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generating-a-time-varying-colored-perlin-noise-with-size-x1">
+<h4>Generating a time-varying colored Perlin noise with size x1<a class="headerlink" href="#generating-a-time-varying-colored-perlin-noise-with-size-x1" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cnoise</span><span class="p">([</span><span class="n">cx</span><span class="o">/</span><span class="n">x1</span><span class="p">,</span><span class="n">cy</span><span class="o">/</span><span class="n">x1</span><span class="p">,</span><span class="n">frame</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="average-pixels-over-the-previous-current-and-next-frame">
+<h4>Average pixels over the previous, current and next frame<a class="headerlink" href="#average-pixels-over-the-previous-current-and-next-frame" title="Permalink to this headline">¶</a></h4>
+<p><em>SeExpr:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">prev</span> <span class="o">=</span> <span class="n">cpixel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">);</span>
+<span class="n">cur</span> <span class="o">=</span> <span class="n">Cs</span><span class="p">;</span>
+<span class="nb">next</span> <span class="o">=</span> <span class="n">cpixel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">frame</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">);</span>
+<span class="p">(</span><span class="n">prev</span> <span class="o">+</span> <span class="n">cur</span> <span class="o">+</span> <span class="nb">next</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wave-displace-columns-of-pixels-vertically-according-to-a-sine-wave-function">
+<h4>“Wave” - displace columns of pixels vertically according to a sine wave function<a class="headerlink" href="#wave-displace-columns-of-pixels-vertically-according-to-a-sine-wave-function" title="Permalink to this headline">¶</a></h4>
+<p><em>SeExpr:</em></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cpixel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">frame</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">+</span><span class="n">x2</span><span class="o">*</span><span class="n">sy</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="mf">3.1416</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">sx</span> <span class="o">-</span> <span class="n">x3</span><span class="p">)</span><span class="o">/</span><span class="n">x1</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Set the No.&nbsp;of scalar params to 3.</p>
+<ul class="simple">
+<li>x1 is the horizontal wavelength in pixels.</li>
+<li>x2 is the vertical amplitude in pixels.</li>
+<li>x3 is the horizontal shift in pixels.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="custom-parameters">
+<h3>Custom parameters<a class="headerlink" href="#custom-parameters" title="Permalink to this headline">¶</a></h3>
+<p>To use custom variables that are pre-defined in the plug-in (scalars, positions and colors) you must reference them using their script-name in the expression. For example, the parameter x1 can be referenced using x1 in the script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Cs</span> <span class="o">+</span> <span class="n">x1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multi-instruction-expressions">
+<h3>Multi-instruction expressions<a class="headerlink" href="#multi-instruction-expressions" title="Permalink to this headline">¶</a></h3>
+<p>If an expression spans multiple instructions (usually written one per line), each instruction must end with a semicolon (‘;’). The last instruction of the expression is considered as the final value of the pixel (a RGB vector or an Alpha scalar, depending on the script), and must not be terminated by a semicolon. More documentation is available on the <a class="reference external" href="http://www.disneyanimation.com/technology/seexpr.html">SeExpr website</a>.</p>
+</div>
+<div class="section" id="accessing-pixel-values-from-other-frames">
+<h3>Accessing pixel values from other frames<a class="headerlink" href="#accessing-pixel-values-from-other-frames" title="Permalink to this headline">¶</a></h3>
+<p>The input frame range used to render a given output frame is computed automatically if the following conditions hold:</p>
+<ul>
+<li><p class="first">The <code class="docutils literal notranslate"><span class="pre">frame</span></code> parameter to cpixel/apixel must not depend on the color or alpha of a pixel, nor on the result of another call to cpixel/apixel</p>
+</li>
+<li><p class="first">A call to cpixel/apixel must not depend on the color or alpha of a pixel, as in the following:</p>
+<p>if (As &gt; 0.1) { src = cpixel(1,frame,x,y); } else { src = [0,0,0]; }</p>
+</li>
+</ul>
+<p>If one of these conditions does not hold, all frames from the specified input frame range are asked for.</p>
+</div>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="43%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="15%" />
+<col width="3%" />
+<col width="6%" />
+<col width="76%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Region of Definition / <code class="docutils literal notranslate"><span class="pre">rod</span></code></td>
+<td>Choice</td>
+<td>Union</td>
+<td><div class="first last line-block">
+<div class="line">Region of definition (extent) of the output.</div>
+<div class="line"><strong>Union (union)</strong>: The output region is the union of the regions of definition of all connected inputs.</div>
+<div class="line"><strong>Intersection (intersection)</strong>: The output region is the intersection the regions of definition of all connected inputs.</div>
+<div class="line"><strong>Size (size)</strong>: The output region is the size of the rectangle overlay.</div>
+<div class="line"><strong>Format (format)</strong>: The output region is the specified format.</div>
+<div class="line"><strong>Project (project)</strong>: The output region is the size of the project.</div>
+<div class="line"><strong>Input1 (input1)</strong>: The output region is the region of definition of input 1</div>
+<div class="line"><strong>Input2 (input2)</strong>: The output region is the region of definition of input 2</div>
+<div class="line"><strong>Input3 (input3)</strong>: The output region is the region of definition of input 3</div>
+<div class="line"><strong>Input4 (input4)</strong>: The output region is the region of definition of input 4</div>
+<div class="line"><strong>Input5 (input5)</strong>: The output region is the region of definition of input 5</div>
+<div class="line"><strong>Input6 (input6)</strong>: The output region is the region of definition of input 6</div>
+<div class="line"><strong>Input7 (input7)</strong>: The output region is the region of definition of input 7</div>
+<div class="line"><strong>Input8 (input8)</strong>: The output region is the region of definition of input 8</div>
+<div class="line"><strong>Input9 (input9)</strong>: The output region is the region of definition of input 9</div>
+<div class="line"><strong>Input10 (input10)</strong>: The output region is the region of definition of input 10</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Output components / <code class="docutils literal notranslate"><span class="pre">outputComponents</span></code></td>
+<td>Choice</td>
+<td>RGBA</td>
+<td><div class="first last line-block">
+<div class="line">Specify what components to output. In RGB only, the alpha script will not be executed. Similarly, in alpha only, the RGB script will not be executed.</div>
+<div class="line"><strong>RGBA</strong></div>
+<div class="line"><strong>RGB</strong></div>
+<div class="line"><strong>Alpha</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Format / <code class="docutils literal notranslate"><span class="pre">format</span></code></td>
+<td>Choice</td>
+<td>PC_Video 640x480</td>
+<td><div class="first last line-block">
+<div class="line">The output format</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x1720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super35(full-ap) 1024x778 (1K_Super35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super35(full-ap) 2048x1556 (2K_Super35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super35(full-ap) 4096x3112 (4K_Super35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Coordinates of the bottom left corner of the size rectangle.</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 1 w: 1</td>
+<td>Width and height of the size rectangle.</td>
+</tr>
+<tr class="row-odd"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-even"><td>No. of Scalar Params / <code class="docutils literal notranslate"><span class="pre">doubleParamsNb</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Use this to control how many scalar parameters should be exposed to the SeExpr expression.</td>
+</tr>
+<tr class="row-odd"><td>x1 / <code class="docutils literal notranslate"><span class="pre">x1</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x1</td>
+</tr>
+<tr class="row-even"><td>x2 / <code class="docutils literal notranslate"><span class="pre">x2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x2</td>
+</tr>
+<tr class="row-odd"><td>x3 / <code class="docutils literal notranslate"><span class="pre">x3</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x3</td>
+</tr>
+<tr class="row-even"><td>x4 / <code class="docutils literal notranslate"><span class="pre">x4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x4</td>
+</tr>
+<tr class="row-odd"><td>x5 / <code class="docutils literal notranslate"><span class="pre">x5</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x5</td>
+</tr>
+<tr class="row-even"><td>x6 / <code class="docutils literal notranslate"><span class="pre">x6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x6</td>
+</tr>
+<tr class="row-odd"><td>x7 / <code class="docutils literal notranslate"><span class="pre">x7</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x7</td>
+</tr>
+<tr class="row-even"><td>x8 / <code class="docutils literal notranslate"><span class="pre">x8</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x8</td>
+</tr>
+<tr class="row-odd"><td>x9 / <code class="docutils literal notranslate"><span class="pre">x9</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x9</td>
+</tr>
+<tr class="row-even"><td>x10 / <code class="docutils literal notranslate"><span class="pre">x10</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>A custom 1-dimensional variable that can be referenced in the expression by its script-name, x10</td>
+</tr>
+<tr class="row-odd"><td>No. of 2D Params / <code class="docutils literal notranslate"><span class="pre">double2DParamsNb</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Use this to control how many 2D (position) parameters should be exposed to the SeExpr expression.</td>
+</tr>
+<tr class="row-even"><td>pos1 / <code class="docutils literal notranslate"><span class="pre">pos1</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos1</td>
+</tr>
+<tr class="row-odd"><td>pos2 / <code class="docutils literal notranslate"><span class="pre">pos2</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos2</td>
+</tr>
+<tr class="row-even"><td>pos3 / <code class="docutils literal notranslate"><span class="pre">pos3</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos3</td>
+</tr>
+<tr class="row-odd"><td>pos4 / <code class="docutils literal notranslate"><span class="pre">pos4</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos4</td>
+</tr>
+<tr class="row-even"><td>pos5 / <code class="docutils literal notranslate"><span class="pre">pos5</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos5</td>
+</tr>
+<tr class="row-odd"><td>pos6 / <code class="docutils literal notranslate"><span class="pre">pos6</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos6</td>
+</tr>
+<tr class="row-even"><td>pos7 / <code class="docutils literal notranslate"><span class="pre">pos7</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos7</td>
+</tr>
+<tr class="row-odd"><td>pos8 / <code class="docutils literal notranslate"><span class="pre">pos8</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos8</td>
+</tr>
+<tr class="row-even"><td>pos9 / <code class="docutils literal notranslate"><span class="pre">pos9</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos9</td>
+</tr>
+<tr class="row-odd"><td>pos10 / <code class="docutils literal notranslate"><span class="pre">pos10</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>A custom 2-dimensional variable that can be referenced in the expression by its script-name, pos10</td>
+</tr>
+<tr class="row-even"><td>No. of Color Params / <code class="docutils literal notranslate"><span class="pre">colorParamsNb</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Use this to control how many color parameters should be exposed to the SeExpr expression.</td>
+</tr>
+<tr class="row-odd"><td>color1 / <code class="docutils literal notranslate"><span class="pre">color1</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color1</td>
+</tr>
+<tr class="row-even"><td>color2 / <code class="docutils literal notranslate"><span class="pre">color2</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color2</td>
+</tr>
+<tr class="row-odd"><td>color3 / <code class="docutils literal notranslate"><span class="pre">color3</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color3</td>
+</tr>
+<tr class="row-even"><td>color4 / <code class="docutils literal notranslate"><span class="pre">color4</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color4</td>
+</tr>
+<tr class="row-odd"><td>color5 / <code class="docutils literal notranslate"><span class="pre">color5</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color5</td>
+</tr>
+<tr class="row-even"><td>color6 / <code class="docutils literal notranslate"><span class="pre">color6</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color6</td>
+</tr>
+<tr class="row-odd"><td>color7 / <code class="docutils literal notranslate"><span class="pre">color7</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color7</td>
+</tr>
+<tr class="row-even"><td>color8 / <code class="docutils literal notranslate"><span class="pre">color8</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color8</td>
+</tr>
+<tr class="row-odd"><td>color9 / <code class="docutils literal notranslate"><span class="pre">color9</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color9</td>
+</tr>
+<tr class="row-even"><td>color10 / <code class="docutils literal notranslate"><span class="pre">color10</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>A custom RGB variable that can be referenced in the expression by its script-name, color10</td>
+</tr>
+<tr class="row-odd"><td>Input Frame Range / <code class="docutils literal notranslate"><span class="pre">frameRange</span></code></td>
+<td>Integer</td>
+<td>min: 0 max: 0</td>
+<td>Default input frame range to fetch images from (may be relative or absolute, depending on the “frameRangeAbsolute” parameter). Only used if the frame range cannot be statically computed from the expression. This parameter can be animated.</td>
+</tr>
+<tr class="row-even"><td>Absolute Frame Range / <code class="docutils literal notranslate"><span class="pre">frameRangeAbsolute</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, the frame range is given as absolute frame numbers, else it is relative to the current frame.</td>
+</tr>
+<tr class="row-odd"><td>RGB Script / <code class="docutils literal notranslate"><span class="pre">script</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Contents of the SeExpr expression. This expression should output the RGB components as a SeExpr vector. See the description of the plug-in and <a class="reference external" href="http://www.disneyanimation.com/technology/seexpr.html">http://www.disneyanimation.com/technology/seexpr.html</a> for documentation.</td>
+</tr>
+<tr class="row-even"><td>Alpha Script / <code class="docutils literal notranslate"><span class="pre">alphaScript</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Contents of the SeExpr expression. This expression should output the alpha component only as a scalar. See the description of the plug-in and <a class="reference external" href="http://www.disneyanimation.com/technology/seexpr.html">http://www.disneyanimation.com/technology/seexpr.html</a> for documentation.</td>
+</tr>
+<tr class="row-odd"><td>Help… / <code class="docutils literal notranslate"><span class="pre">helpButton</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Display help about using SeExpr.</td>
+</tr>
+<tr class="row-even"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-odd"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.openfx.SeExprSimple.html" class="btn btn-neutral float-right" title="SeExprSimple node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.MergeScreen.html" class="btn btn-neutral float-left" title="Screen node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

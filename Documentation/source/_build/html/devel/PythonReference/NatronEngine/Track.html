@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Track &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Tracker" href="Tracker.html" />
+    <link rel="prev" title="StringParamBase" href="StringParamBase.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>Track</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/Track.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="track">
+<span id="id1"></span><h1>Track<a class="headerlink" href="#track" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This class represents one track marker as visible in the tracker node or on the viewer.
+It is available to Python to easily retrieve the tracked data.
+See <a class="reference internal" href="#track-details"><span class="std std-ref">detailed</span></a> description below.</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Track.setScriptName" title="NatronEngine.NatronEngine.Track.setScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setScriptName</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Track.getScriptName" title="NatronEngine.NatronEngine.Track.getScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getScriptName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Track.getParam" title="NatronEngine.NatronEngine.Track.getParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParam</span></code></a> (paramScriptName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Track.getParams" title="NatronEngine.NatronEngine.Track.getParams"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParams</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Track.reset" title="NatronEngine.NatronEngine.Track.reset"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reset</span></code></a> ()</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="track-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The track is internally represented by multiple <a class="reference internal" href="Param.html"><span class="doc">parameters</span></a> which holds
+animation curve for various data, such as: the track center, the pattern 4 corners,
+the error score, the search-window, etc…
+Each of them can be retrieved with the <a class="reference internal" href="#NatronEngine.NatronEngine.Track.getParam" title="NatronEngine.NatronEngine.Track.getParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(scriptName)</span></code></a> function.</p>
+<p>Here is an example briefly explaining how to retrieve the tracking data for a track:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myTrack</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track1</span>
+
+<span class="n">keyframes</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># get the number of keys for the X dimension only and try match the Y keyframes</span>
+<span class="n">nKeys</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getNumKeys</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nKeys</span><span class="p">):</span>
+
+    <span class="c1"># getKeyTime returns a tuple with a boolean value indicating if it succeeded and</span>
+    <span class="c1"># the keyframe time</span>
+
+    <span class="n">gotXKeyTuple</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getKeyTime</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">gotXKeyTuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Only consider keyframes which have an X and Y value</span>
+    <span class="c1"># If Y does not have a keyframe at this frame, ignore the keyframe</span>
+    <span class="c1"># getKeyIndex returns a value &gt;=0 if there is a keyframe</span>
+    <span class="n">yKeyIndex</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getKeyIndex</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">yKeyIndex</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Note that even if the x curve or y curve didn&#39;t have a keyframe we</span>
+    <span class="c1"># could still call getValueAtTime but the value would be interpolated by</span>
+    <span class="c1"># Natron with surrounding keyframes, which is not what we want.</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getValueAtTime</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">myTrack</span><span class="o">.</span><span class="n">centerPoint</span><span class="o">.</span><span class="n">getValueAtTime</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">keyframes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+
+<span class="nb">print</span> <span class="n">keyframes</span>
+</pre></div>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Track.setScriptName">
+<code class="descclassname">NatronEngine.Track.</code><code class="descname">setScriptName</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Track.setScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the script-name of the track. It will then be accessible via a Python script as such:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">MyTrackScriptName</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Track.getScriptName">
+<code class="descclassname">NatronEngine.Track.</code><code class="descname">getScriptName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Track.getScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Get the script-name of the track</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Track.getParam">
+<code class="descclassname">NatronEngine.Track.</code><code class="descname">getParam</code><span class="sig-paren">(</span><em>paramScriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Track.getParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Get the <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code> with the given <em>paramScriptName</em>.
+The parameter can also be retrieved as an attribute of the <em>tracker</em> object like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Tracker1</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">center</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Track.getParams">
+<code class="descclassname">NatronEngine.Track.</code><code class="descname">getParams</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Track.getParams" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns a list of all the <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code> for this track.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Track.reset">
+<code class="descclassname">NatronEngine.Track.</code><code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Track.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the track completely removing any animation on all parameters and any keyframe
+on the pattern.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Tracker.html" class="btn btn-neutral float-right" title="Tracker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="StringParamBase.html" class="btn btn-neutral float-left" title="StringParamBase" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

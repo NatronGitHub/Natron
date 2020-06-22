@@ -1,0 +1,499 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>GMICExpr node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Glow node" href="fr.inria.Glow.html" />
+    <link rel="prev" title="Fill node" href="fr.inria.Fill.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DenoiseSharpen.html">DenoiseSharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">GMICExpr node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GodRays.html">GodRays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Shadertoy.html">Shadertoy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSoften.html">Soften node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupFilter.html">Filter nodes</a> &raquo;</li>
+        
+      <li>GMICExpr node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.cimg.CImgExpression.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="gmicexpr-node">
+<span id="net-sf-cimg-cimgexpression"></span><h1>GMICExpr node<a class="headerlink" href="#gmicexpr-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.cimg.CImgExpression.png"><img alt="pluginIcon" src="../_images/net.sf.cimg.CImgExpression.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 2.1 of GMICExpr (net.sf.cimg.CImgExpression).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Quickly generate or process image from mathematical formula evaluated for each pixel. Full documentation for <a class="reference external" href="http://gmic.eu/">G’MIC</a>/<a class="reference external" href="http://cimg.eu/">CImg</a> expressions is reproduced below and available online from the <a class="reference external" href="http://gmic.eu/reference.shtml#section9">G’MIC help</a>. The only additions of this plugin are the predefined variables <code class="docutils literal notranslate"><span class="pre">T</span></code> (current time) and <code class="docutils literal notranslate"><span class="pre">K</span></code> (render scale).</p>
+<p>Uses the ‘fill’ function from the CImg library. CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see <a class="reference external" href="http://cimg.eu">http://cimg.eu</a>).</p>
+<div class="section" id="sample-expressions">
+<h3>Sample expressions<a class="headerlink" href="#sample-expressions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>‘<code class="docutils literal notranslate"><span class="pre">j(sin(y/100/K+T/10)*20*K,sin(x/100/K+T/10)*20*K)</span></code>’ distorts the image with time-varying waves.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">0.5*(j(1)-j(-1))</span></code>’ estimates the X-derivative of an image with a classical finite difference scheme.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">if(x%10==0,1,i)</span></code>’ draws blank vertical lines on every 10th column of an image.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">sqrt(zr=-1.2+2.4*x/w;zi=-1.2+2.4*y/h;for(i=0,zr*zr+zi*zi&lt;=4&amp;&amp;i&lt;256,t=zr*zr-zi*zi+0.4;zi=2*zr*zi+0.2;zr=t;</span> <span class="pre">i=i+1))/255</span></code>’ draws the Mandelbrot fractal (give it a 1024x1024 image as input).</li>
+</ul>
+</div>
+<div class="section" id="expression-language">
+<h3>Expression language<a class="headerlink" href="#expression-language" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>The expression is evaluated for each pixel of the selected images.</li>
+<li>The mathematical parser understands the following set of functions, operators and variables:<ul>
+<li><strong>Usual operators:</strong> <code class="docutils literal notranslate"><span class="pre">||</span></code> (logical or), <code class="docutils literal notranslate"><span class="pre">&amp;&amp;</span></code> (logical and), <code class="docutils literal notranslate"><span class="pre">|</span></code> (bitwise or), <code class="docutils literal notranslate"><span class="pre">&amp;</span></code> (bitwise and), <code class="docutils literal notranslate"><span class="pre">!=</span></code>, <code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code> (left bitwise shift), <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code> (right bitwise shift), <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>, <code class="docutils literal notranslate"><span class="pre">%</span></code> (modulo), <code class="docutils literal notranslate"><span class="pre">^</span></code> (power), <code class="docutils literal notranslate"><span class="pre">!</span></code> (logical not), <code class="docutils literal notranslate"><span class="pre">~</span></code> (bitwise not), <code class="docutils literal notranslate"><span class="pre">++</span></code>, <code class="docutils literal notranslate"><span class="pre">--</span></code>, <code class="docutils literal notranslate"><span class="pre">+=</span></code>, <code class="docutils literal notranslate"><span class="pre">-=</span></code>, <code class="docutils literal notranslate"><span class="pre">*=</span></code>, <code class="docutils literal notranslate"><span class="pre">/=</span></code>, <code class="docutils literal notranslate"><span class="pre">%=</span></code>, <code class="docutils literal notranslate"><span class="pre">&amp;=</span></code>, <code class="docutils literal notranslate"><span class="pre">|=</span></code>, <code class="docutils literal notranslate"><span class="pre">^=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;&gt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;&lt;=</span></code> (in-place operators).</li>
+<li><strong>Usual math functions:</strong> <code class="docutils literal notranslate"><span class="pre">abs()</span></code>, <code class="docutils literal notranslate"><span class="pre">acos()</span></code>, <code class="docutils literal notranslate"><span class="pre">arg()</span></code>, <code class="docutils literal notranslate"><span class="pre">argkth()</span></code>, <code class="docutils literal notranslate"><span class="pre">argmax()</span></code>, <code class="docutils literal notranslate"><span class="pre">argmin()</span></code>, <code class="docutils literal notranslate"><span class="pre">asin()</span></code>, <code class="docutils literal notranslate"><span class="pre">atan()</span></code>, <code class="docutils literal notranslate"><span class="pre">atan2()</span></code>, <code class="docutils literal notranslate"><span class="pre">avg()</span></code>, <code class="docutils literal notranslate"><span class="pre">bool()</span></code>, <code class="docutils literal notranslate"><span class="pre">cbrt()</span></code>, <code class="docutils literal notranslate"><span class="pre">ceil()</span></code>, <code class="docutils literal notranslate"><span class="pre">cos()</span></code>, <code class="docutils literal notranslate"><span class="pre">cosh()</span></code>, <code class="docutils literal notranslate"><span class="pre">cut()</span></code>, <code class="docutils literal notranslate"><span class="pre">exp()</span></code>, <code class="docutils literal notranslate"><span class="pre">fact()</span></code>, <code class="docutils literal notranslate"><span class="pre">fibo()</span></code>, <code class="docutils literal notranslate"><span class="pre">floor()</span></code>, <code class="docutils literal notranslate"><span class="pre">gauss()</span></code>, <code class="docutils literal notranslate"><span class="pre">int()</span></code>, <code class="docutils literal notranslate"><span class="pre">isval()</span></code>, <code class="docutils literal notranslate"><span class="pre">isnan()</span></code>, <code class="docutils literal notranslate"><span class="pre">isinf()</span></code>, <code class="docutils literal notranslate"><span class="pre">isint()</span></code>, <code class="docutils literal notranslate"><span class="pre">isbool()</span></code>, <code class="docutils literal notranslate"><span class="pre">isfile()</span></code>, <code class="docutils literal notranslate"><span class="pre">isdir()</span></code>, <code class="docutils literal notranslate"><span class="pre">isin()</span></code>, <code class="docutils literal notranslate"><span class="pre">kth()</span></code>, <code class="docutils literal notranslate"><span class="pre">log()</span></code>, <code class="docutils literal notranslate"><span class="pre">log2()</span></code>, <code class="docutils literal notranslate"><span class="pre">log10()</span></code>, <code class="docutils literal notranslate"><span class="pre">max()</span></code>, <code class="docutils literal notranslate"><span class="pre">mean()</span></code>, med()<code class="docutils literal notranslate"><span class="pre">,</span></code>min()<code class="docutils literal notranslate"><span class="pre">,</span></code>narg()<code class="docutils literal notranslate"><span class="pre">,</span></code>prod()<code class="docutils literal notranslate"><span class="pre">,</span></code>rol()<code class="docutils literal notranslate"><span class="pre">(left</span> <span class="pre">bit</span> <span class="pre">rotation),</span></code>ror()<code class="docutils literal notranslate"><span class="pre">(right</span> <span class="pre">bit</span> <span class="pre">rotation),</span></code>round()<code class="docutils literal notranslate"><span class="pre">,</span></code>sign()<code class="docutils literal notranslate"><span class="pre">,</span></code>sin()<code class="docutils literal notranslate"><span class="pre">,</span></code>sinc()<code class="docutils literal notranslate"><span class="pre">,</span></code>sinh()<code class="docutils literal notranslate"><span class="pre">,</span></code>sqrt()<code class="docutils literal notranslate"><span class="pre">,</span></code>std()<code class="docutils literal notranslate"><span class="pre">,</span></code>srand(_seed)<code class="docutils literal notranslate"><span class="pre">,</span></code>sum()<code class="docutils literal notranslate"><span class="pre">,</span></code>tan()<code class="docutils literal notranslate"><span class="pre">,</span></code>tanh()<code class="docutils literal notranslate"><span class="pre">,</span></code>variance()<code class="docutils literal notranslate"><span class="pre">,</span></code>xor()<code class="docutils literal notranslate"><span class="pre">.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>atan2(y,x)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">is</span> <span class="pre">the</span> <span class="pre">version</span> <span class="pre">of</span> <span class="pre">'</span></code>atan()<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">with</span> <span class="pre">two</span> <span class="pre">arguments</span> <span class="pre">__'y'__</span> <span class="pre">and</span> <span class="pre">__'x'__</span> <span class="pre">(as</span> <span class="pre">in</span> <span class="pre">C/C\+\+).</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>permut(k,n,with_order)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">computes</span> <span class="pre">the</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">permutations</span> <span class="pre">of</span> <span class="pre">__k__</span> <span class="pre">objects</span> <span class="pre">from</span> <span class="pre">a</span> <span class="pre">set</span> <span class="pre">of</span> <span class="pre">__n__</span> <span class="pre">objects.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>gauss(x,_sigma)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">returns</span> <span class="pre">__'exp(-x\^2/(2\*s\^2))/sqrt(2\*pi\*sigma\^2)'__.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>cut(value,min,max)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">returns</span> <span class="pre">value</span> <span class="pre">if</span> <span class="pre">it</span> <span class="pre">is</span> <span class="pre">in</span> <span class="pre">range</span> <span class="pre">__\[min,max\]__,</span> <span class="pre">or</span> <span class="pre">__min__</span> <span class="pre">or</span> <span class="pre">__max__</span> <span class="pre">otherwise.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>narg(a_1,…,a_N)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">returns</span> <span class="pre">the</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">specified</span> <span class="pre">arguments</span> <span class="pre">(here,</span> <span class="pre">__N__).</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>arg(i,a_1,..,a_N)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">returns</span> <span class="pre">the</span> <span class="pre">__ith__</span> <span class="pre">argument</span> <span class="pre">__a_i__.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>isval()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>isnan()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>isinf()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>isint()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>isbool()<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">test</span> <span class="pre">the</span> <span class="pre">type</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">given</span> <span class="pre">number</span> <span class="pre">or</span> <span class="pre">expression,</span> <span class="pre">and</span> <span class="pre">return</span> <span class="pre">__0</span> <span class="pre">(false)__</span> <span class="pre">or</span> <span class="pre">__1</span> <span class="pre">(true)__.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>isfile()<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">(resp.</span> <span class="pre">'</span></code>isdir()<code class="docutils literal notranslate"><span class="pre">')</span> <span class="pre">returns</span> <span class="pre">__0</span> <span class="pre">(false)__</span> <span class="pre">or</span> <span class="pre">__1</span> <span class="pre">(true)__</span> <span class="pre">whether</span> <span class="pre">its</span> <span class="pre">argument</span> <span class="pre">is</span> <span class="pre">a</span> <span class="pre">path</span> <span class="pre">to</span> <span class="pre">an</span> <span class="pre">existing</span> <span class="pre">file</span> <span class="pre">(resp.</span> <span class="pre">to</span> <span class="pre">a</span> <span class="pre">directory)</span> <span class="pre">or</span> <span class="pre">not.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>isin(v,a_1,…,a_n)<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">returns</span> <span class="pre">__0</span> <span class="pre">(false)__</span> <span class="pre">or</span> <span class="pre">__1</span> <span class="pre">(true)__</span> <span class="pre">whether</span> <span class="pre">the</span> <span class="pre">first</span> <span class="pre">value</span> <span class="pre">__'v'__</span> <span class="pre">appears</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">set</span> <span class="pre">of</span> <span class="pre">other</span> <span class="pre">values</span> <span class="pre">'a_i'.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>argmin()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>argmax()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>kth()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>max()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>mean()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>med()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>min()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>std()<code class="docutils literal notranslate"><span class="pre">',</span> <span class="pre">'</span></code>sum()<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">and</span> <span class="pre">'</span></code>variance()<code class="docutils literal notranslate"><span class="pre">'</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">called</span> <span class="pre">with</span> <span class="pre">an</span> <span class="pre">arbitrary</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">scalar/vector</span> <span class="pre">arguments.</span>&#160;&#160; <span class="pre">*</span> <span class="pre">'</span></code>round(value,rounding_value,direction)`’ returns a rounded value. <strong>‘direction’</strong> can be <strong>{ -1=to-lowest | 0=to-nearest | 1=to-highest }</strong>.</li>
+<li><strong>Variable names</strong> below are pre-defined. They can be overridden.<ul>
+<li>‘<code class="docutils literal notranslate"><span class="pre">l</span></code>’: length of the associated list of images.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">w</span></code>’: width of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">h</span></code>’: height of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">d</span></code>’: depth of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">s</span></code>’: spectrum of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">r</span></code>’: shared state of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">wh</span></code>’: shortcut for width x height.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">whd</span></code>’: shortcut for width x height x depth.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">whds</span></code>’: shortcut for width x height x depth x spectrum (i.e.&nbsp;number of image values).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">im</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">iM</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">ia</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">iv</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">is</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">ip</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">ic</span></code>’: Respectively the minimum, maximum, average, variance, sum, product and median value of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">xm</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">ym</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">zm</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">cm</span></code>’: The pixel coordinates of the minimum value in the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">xM</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">yM</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">zM</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">cM</span></code>’: The pixel coordinates of the maximum value in the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>All these variables are considered as <strong>constant values</strong> by the math parser (for optimization purposes) which is indeed the case most of the time. Anyway, this might not be the case, if function ‘<code class="docutils literal notranslate"><span class="pre">resize(#ind,..)</span></code>’ is used in the math expression. If so, it is safer to invoke functions ‘<code class="docutils literal notranslate"><span class="pre">l()</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">w(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">h(_#ind)</span></code>’, … ‘<code class="docutils literal notranslate"><span class="pre">s(_#ind)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">ic(_#ind)</span></code>’ instead of the corresponding named variables.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">i</span></code>’: current processed pixel value (i.e.&nbsp;value located at <strong>(x,y,z,c)</strong>) in the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">iN</span></code>’: Nth channel value of current processed pixel (i.e.&nbsp;value located at <strong>(x,y,z,N)</strong>) in the associated image, if any (<strong>0</strong> otherwise). <strong>‘N’</strong> must be an integer in range <strong>[0,9]</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">R</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">G</span></code>’,‘<code class="docutils literal notranslate"><span class="pre">B</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">A</span></code>’ are equivalent to ‘<code class="docutils literal notranslate"><span class="pre">i0</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">i1</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">i2</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">i3</span></code>’ respectively.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">I</span></code>’: current vector-valued processed pixel in the associated image, if any (<strong>0</strong> otherwise). The number of vector components is equal to the number of image channels (e.g. <strong>I = [ R,G,B ]</strong> for a <strong>RGB</strong> image).</li>
+<li>You may add ‘<code class="docutils literal notranslate"><span class="pre">#ind</span></code>’ to any of the variable name above to retrieve the information for any numbered image <strong>[ind]</strong> of the list (when this makes sense). For instance ‘<code class="docutils literal notranslate"><span class="pre">ia#0</span></code>’ denotes the average value of the first image of the list).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">x</span></code>’: current processed column of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">y</span></code>’: current processed row of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">z</span></code>’: current processed slice of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">c</span></code>’: current processed channel of the associated image, if any (<strong>0</strong> otherwise).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">t</span></code>’: thread id when an expression is evaluated with multiple threads (<strong>0</strong> means ‘master thread’).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">T</span></code>’: current time [OpenFX-only].</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">K</span></code>’: render scale (1 means full scale, 0.5 means half scale) [OpenFX-only].</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">e</span></code>’: value of e, i.e. <strong>2.71828…</strong></li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">pi</span></code>’: value of pi, i.e. <strong>3.1415926…</strong></li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">u</span></code>’: a random value between <strong>[0,1]</strong>, following a uniform distribution.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">g</span></code>’: a random value, following a gaussian distribution of variance 1 (roughly in <strong>[-6,6]</strong>).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">interpolation</span></code>’: value of the default interpolation mode used when reading pixel values with the pixel access operators (i.e.&nbsp;when the interpolation argument is not explicitly specified, see below for more details on pixel access operators). Its initial default value is <strong>0</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">boundary</span></code>’: value of the default boundary conditions used when reading pixel values with the pixel access operators (i.e.&nbsp;when the boundary condition argument is not explicitly specified, see below for more details on pixel access operators). Its initial default value is <strong>0</strong>.</li>
+</ul>
+</li>
+<li><strong>Vector calculus:</strong> Most operators are also able to work with vector-valued elements.<ul>
+<li>‘<code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">a0,a1,...,aN</span> <span class="pre">]</span></code>’ defines a <strong>(N+1)</strong>-dimensional vector with scalar coefficients <strong>ak</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">vectorN(a0,a1,,...,)</span></code>’ does the same, with the <strong>ak</strong> being repeated periodically if only a few are specified.</li>
+<li>In both previous expressions, the <strong>ak</strong> can be vectors themselves, to be concatenated into a single vector.</li>
+<li>The scalar element <strong>ak</strong> of a vector <strong>X</strong> is retrieved by ‘<code class="docutils literal notranslate"><span class="pre">X[k]</span></code>’.</li>
+<li>The sub-vector <strong>[ X[p]…X[p+q-1] ]</strong> (of size <strong>q</strong>) of a vector <strong>X</strong> is retrieved by ‘<code class="docutils literal notranslate"><span class="pre">X[p,q]</span></code>’.</li>
+<li>Equality/inequality comparisons between two vectors is done with operators ‘<code class="docutils literal notranslate"><span class="pre">==</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">!=</span></code>’.</li>
+<li>Some vector-specific functions can be used on vector values: ‘<code class="docutils literal notranslate"><span class="pre">cross(X,Y)</span></code>’ (cross product), ‘<code class="docutils literal notranslate"><span class="pre">dot(X,Y)</span></code>’ (dot product), ‘<code class="docutils literal notranslate"><span class="pre">size(X)</span></code>’ (vector dimension), ‘<code class="docutils literal notranslate"><span class="pre">sort(X,_is_increasing,_chunk_size)</span></code>’ (sorting values), ‘<code class="docutils literal notranslate"><span class="pre">reverse(A)</span></code>’ (reverse order of components), ‘<code class="docutils literal notranslate"><span class="pre">shift(A,_length,_boundary_conditions)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">same(A,B,_nb_vals,_is_case_sensitive)</span></code>’ (vector equality test).</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">normP(u1,...,un)</span></code>’ computes the LP-norm of the specified vector (<code class="docutils literal notranslate"><span class="pre">P</span></code> being an <strong>unsigned integer</strong> constant or <strong>’inf</strong>’). If <code class="docutils literal notranslate"><span class="pre">P</span></code> is omitted, the L2 norm is used.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">resize(A,size,_interpolation,_boundary_conditions)</span></code>’ returns a resized version of a vector <strong>‘A’</strong> with specified interpolation mode. <strong>‘interpolation’</strong> can be <strong>{ -1=none (memory content) | 0=none | 1=nearest | 2=average | 3=linear | 4=grid | 5=bicubic | 6=lanczos }</strong>, and <strong>‘boundary_conditions’</strong> can be <strong>{ 0=dirichlet | 1=neumann | 2=periodic | 3=mirror }</strong>.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">find(A,B,_is_forward,_starting_indice)</span></code>’ returns the index where sub-vector <strong>B</strong> appears in vector <strong>A</strong>, (or <strong>-1</strong> if <strong>B</strong> is not found in <strong>A</strong>). Argument <strong>A</strong> can be also replaced by an image indice <strong>#ind</strong>.</li>
+<li>A <strong>2</strong>-dimensional vector may be seen as a complex number and used in those particular functions/operators: ‘<code class="docutils literal notranslate"><span class="pre">**</span></code>’ (complex multiplication), ‘<code class="docutils literal notranslate"><span class="pre">//</span></code>’ (complex division), ‘<code class="docutils literal notranslate"><span class="pre">^^</span></code>’ (complex exponentiation), ‘<code class="docutils literal notranslate"><span class="pre">**=</span></code>’ (complex self-multiplication), ‘<code class="docutils literal notranslate"><span class="pre">//=</span></code>’ (complex self-division), ‘<code class="docutils literal notranslate"><span class="pre">^^=</span></code>’ (complex self-exponentiation), ‘<code class="docutils literal notranslate"><span class="pre">cabs()</span></code>’ (complex modulus), ‘<code class="docutils literal notranslate"><span class="pre">carg()</span></code>’ (complex argument), ‘<code class="docutils literal notranslate"><span class="pre">cconj()</span></code>’ (complex conjugate), ‘<code class="docutils literal notranslate"><span class="pre">cexp()</span></code>’ (complex exponential) and ‘<code class="docutils literal notranslate"><span class="pre">clog()</span></code>’ (complex logarithm).</li>
+<li>A <strong>MN</strong>-dimensional vector may be seen as a <strong>M</strong> x <strong>N</strong> matrix and used in those particular functions/operators: ‘<code class="docutils literal notranslate"><span class="pre">*</span></code>’ (matrix-vector multiplication), ‘<code class="docutils literal notranslate"><span class="pre">det(A)</span></code>’ (determinant), ‘<code class="docutils literal notranslate"><span class="pre">diag(V)</span></code>’ (diagonal matrix from a vector), ‘<code class="docutils literal notranslate"><span class="pre">eig(A)</span></code>’ (eigenvalues/eigenvectors), ‘<code class="docutils literal notranslate"><span class="pre">eye(n)</span></code>’ (n x n identity matrix), ‘<code class="docutils literal notranslate"><span class="pre">inv(A)</span></code>’ (matrix inverse), ‘<code class="docutils literal notranslate"><span class="pre">mul(A,B,_nb_colsB)</span></code>’ (matrix-matrix multiplication), ‘<code class="docutils literal notranslate"><span class="pre">pseudoinv(A,_nb_colsA)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">rot(u,v,w,angle)</span></code>’ (3d rotation matrix), ‘<code class="docutils literal notranslate"><span class="pre">rot(angle)</span></code>’ (2d rotation matrix), ‘<code class="docutils literal notranslate"><span class="pre">solve(A,B,_nb_colsB)</span></code>’ (least-square solver of linear system A.X = B), ‘<code class="docutils literal notranslate"><span class="pre">svd(A,_nb_colsA)</span></code>’ (singular value decomposition), ‘<code class="docutils literal notranslate"><span class="pre">trace(A)</span></code>’ (matrix trace) and ‘<code class="docutils literal notranslate"><span class="pre">transp(A,nb_colsA)</span></code>’ (matrix transpose). Argument ‘<code class="docutils literal notranslate"><span class="pre">nb_colsB</span></code>’ may be omitted if it is equal to <strong>1</strong>.</li>
+<li>Specifying a vector-valued math expression as an argument of a command that operates on image values (e.g. ‘<code class="docutils literal notranslate"><span class="pre">fill</span></code>’) modifies the whole spectrum range of the processed image(s), for each spatial coordinates <strong>(x,y,z)</strong>. The command does not loop over the <strong>C</strong>-axis in this case.</li>
+</ul>
+</li>
+<li><strong>String manipulation:</strong> Character strings are defined and managed as vectors objects. Dedicated functions and initializers to manage strings are<ul>
+<li><code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">'string'</span> <span class="pre">]</span></code> and <code class="docutils literal notranslate"><span class="pre">'string'</span></code> define a vector whose values are the ascii codes of the specified <strong>character string</strong> (e.g. <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> is equal to <strong>[ 102,111,111 ]</strong>).</li>
+<li><code class="docutils literal notranslate"><span class="pre">_'character'</span></code> returns the (scalar) ascii code of the specified character (e.g. <code class="docutils literal notranslate"><span class="pre">_'A'</span></code> is equal to <strong>65</strong>).</li>
+<li>A special case happens for <strong>empty</strong> strings: Values of both expressions <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">''</span> <span class="pre">]</span></code> and <code class="docutils literal notranslate"><span class="pre">''</span></code> are <strong>0</strong>.</li>
+<li>Functions ‘<code class="docutils literal notranslate"><span class="pre">lowercase()</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">uppercase()</span></code>’ return string with all string characters lowercased or uppercased.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">stov(str,_starting_indice,_is_strict)</span></code>’ parses specified string ‘<code class="docutils literal notranslate"><span class="pre">str</span></code>’ and returns the value contained in it.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">vtos(expr,_nb_digits,_siz)</span></code>’ returns a vector of size ‘<code class="docutils literal notranslate"><span class="pre">siz</span></code>’ which contains the ascii representation of values described by expression ‘<code class="docutils literal notranslate"><span class="pre">expr</span></code>’. ‘<code class="docutils literal notranslate"><span class="pre">nb_digits</span></code>’ can be <strong>{ -1=auto-reduced | 0=all | &gt;0=max number of digits }</strong>.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">echo(str1,str2,...,strN)</span></code>’ prints the concatenation of given string arguments on the console.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">cats(str1,str2,...,strN,siz)</span></code>’ returns the concatenation of given string arguments as a new vector of size ‘<code class="docutils literal notranslate"><span class="pre">siz</span></code>’.</li>
+</ul>
+</li>
+<li><strong>Special operators</strong> can be used:<ul>
+<li>‘<code class="docutils literal notranslate"><span class="pre">;</span></code>’: expression separator. The returned value is always the last encountered expression. For instance expression ‘<code class="docutils literal notranslate"><span class="pre">1;2;pi</span></code>’ is evaluated as ‘<code class="docutils literal notranslate"><span class="pre">pi</span></code>’.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">=</span></code>’: variable assignment. Variables in mathematical parser can only refer to numerical values (vectors or scalars). Variable names are case-sensitive. Use this operator in conjunction with ‘<code class="docutils literal notranslate"><span class="pre">;</span></code>’ to define more complex evaluable expressions, such as ‘<code class="docutils literal notranslate"><span class="pre">t=cos(x);3*t^2+2*t+1</span></code>’. These variables remain <strong>local</strong> to the mathematical parser and cannot be accessed outside the evaluated expression.</li>
+<li>Variables defined in math parser may have a <strong>constant</strong> property, by specifying keyword <code class="docutils literal notranslate"><span class="pre">const</span></code> before the variable name (e.g. <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">foo</span> <span class="pre">=</span> <span class="pre">pi/4;</span></code>). The value set to such a variable must be indeed a <code class="docutils literal notranslate"><span class="pre">constant</span> <span class="pre">scalar</span></code>. Constant variables allows certain types of optimizations in the math JIT compiler.</li>
+</ul>
+</li>
+<li>The following <strong>specific functions</strong> are also defined:<ul>
+<li>‘<code class="docutils literal notranslate"><span class="pre">u(max)</span></code>’ or ‘<code class="docutils literal notranslate"><span class="pre">u(min,max)</span></code>’: return a random value between <strong>[0,max]</strong> or <strong>[min,max]</strong>, following a uniform distribution.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">i(_a,_b,_c,_d,_interpolation_type,_boundary_conditions)</span></code>’: return the value of the pixel located at position <strong>(a,b,c,d)</strong> in the associated image, if any (<strong>0</strong> otherwise). <strong>‘interpolation_type’</strong> can be <strong>{ 0=nearest neighbor | other=linear }</strong>. <strong>‘boundary_conditions’</strong> can be <strong>{ 0=dirichlet | 1=neumann | 2=periodic | 3=mirror }</strong>. Omitted coordinates are replaced by their default values which are respectively <code class="docutils literal notranslate"><span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z,</span> <span class="pre">c,</span> <span class="pre">interpolation</span></code> and <code class="docutils literal notranslate"><span class="pre">boundary</span></code>. For instance command ‘<code class="docutils literal notranslate"><span class="pre">fill</span> <span class="pre">0.5*(i(x+1)-i(x-1))</span></code>’ will estimate the X-derivative of an image with a classical finite difference scheme.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">j(_dx,_dy,_dz,_dc,_interpolation_type,_boundary_conditions)</span></code>’ does the same for the pixel located at position <strong>(x+dx,y+dy,z+dz,c+dc)</strong> (pixel access relative to the current coordinates).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">i[offset,_boundary_conditions]</span></code>’ returns the value of the pixel located at specified <strong>‘offset’</strong> in the associated image buffer (or <strong>0</strong> if offset is out-of-bounds).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">j[offset,_boundary_conditions]</span></code>’ does the same for an offset relative to the current pixel coordinates <strong>(x,y,z,c)</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">i(#ind,_x,_y,_z,_c,_interpolation,_boundary_conditions)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">j(#ind,_dx,_dy,_dz,_dc,_interpolation,_boundary_conditions)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">i[#ind,offset,_boundary_conditions]</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">i[offset,_boundary_conditions]</span></code>’ are similar expressions used to access pixel values for any numbered image <strong>[ind]</strong> of the list.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">I/J[offset,_boundary_conditions]</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">I/J(#ind,_x,_y,_z,_interpolation,_boundary_conditions)</span></code>’ do the same as ‘<code class="docutils literal notranslate"><span class="pre">i/j[offset,_boundary_conditions]</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">i/j(#ind,_x,_y,_z,_c,_interpolation,_boundary_conditions)</span></code>’ but return a vector instead of a scalar (e.g.&nbsp;a vector <strong>[ R,G,B ]</strong> for a pixel at <strong>(a,b,c)</strong> in a color image).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">sort(#ind,_is_increasing,_axis)</span></code>’ sorts the values in the specified image <strong>[ind]</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">crop(_#ind,_x,_y,_z,_c,_dx,_dy,_dz,_dc,_boundary_conditions)</span></code>’ returns a vector whose values come from the cropped region of image <strong>[ind]</strong> (or from default image selected if ‘<code class="docutils literal notranslate"><span class="pre">ind</span></code>’ is not specified). Cropped region starts from point <strong>(x,y,z,c)</strong> and has a size of <strong>dx x dy x dz x dc</strong>. Arguments for coordinates and sizes can be omitted if they are not ambiguous (e.g. ‘<code class="docutils literal notranslate"><span class="pre">crop(#ind,x,y,dx,dy)</span></code>’ is a valid invocation of this function).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">draw(_#ind,S,x,y,z,c,dx,_dy,_dz,_dc,_opacity,_M,_max_M)</span></code>’ draws a sprite <strong>S</strong> in image <strong>[ind]</strong> (or in default image selected if ‘<code class="docutils literal notranslate"><span class="pre">ind</span></code>’ is not specified) at coordinates <strong>(x,y,z,c)</strong>. The size of the sprite <strong>dx x dy x dz x dc</strong> must be specified. You can also specify a corresponding opacity mask <strong>M</strong> if its size matches <strong>S</strong>.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">resize(#ind,w,_h,_d,_s,_interp,_boundary_conditions,cx,_cy,_cz,_cc)</span></code>’ resizes an image of the associated list with specified dimension and interpolation method. When using this, function, you should consider retrieving the (non-constant) image dimensions using the dynamic functions ‘<code class="docutils literal notranslate"><span class="pre">w(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">h(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">d(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">s(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">wh(_#ind)</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">whd(_#ind)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">whds(_#ind)</span></code>’ instead of the corresponding constant variables.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">if(condition,expr_then,_expr_else)</span></code>’: return value of ‘<code class="docutils literal notranslate"><span class="pre">expr_then</span></code>’ or ‘<code class="docutils literal notranslate"><span class="pre">expr_else</span></code>’, depending on the value of ‘<code class="docutils literal notranslate"><span class="pre">condition</span></code>’ <strong>(0=false, other=true)</strong>. ‘<code class="docutils literal notranslate"><span class="pre">expr_else</span></code>’ can be omitted in which case <strong>0</strong> is returned if the condition does not hold. Using the ternary operator ‘<code class="docutils literal notranslate"><span class="pre">condition?expr_then[:expr_else]</span></code>’ gives an equivalent expression. For instance, expressions ‘<code class="docutils literal notranslate"><span class="pre">if(x%10==0,255,i)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">x%10?i:255</span></code>’ both draw blank vertical lines on every 10th column of an image.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">dowhile(expression,_condition)</span></code>’ repeats the evaluation of ‘<code class="docutils literal notranslate"><span class="pre">expression</span></code>’ until ‘<code class="docutils literal notranslate"><span class="pre">condition</span></code>’ vanishes (or until ‘<code class="docutils literal notranslate"><span class="pre">expression</span></code>’ vanishes if no ‘<code class="docutils literal notranslate"><span class="pre">condition</span></code>’ is specified). For instance, the expression: ‘<code class="docutils literal notranslate"><span class="pre">if(N&lt;2,N,n=N-1;F0=0;F1=1;dowhile(F2=F0+F1;F0=F1;F1=F2,n=n-1))</span></code>’ returns the Nth value of the Fibonacci sequence, for <strong>N&gt;=0</strong> (e.g., <strong>46368</strong> for <strong>N=24</strong>). ‘<code class="docutils literal notranslate"><span class="pre">dowhile(expression,condition)</span></code>’ always evaluates the specified expression at least once, then check for the loop condition. When done, it returns the last value of ‘<code class="docutils literal notranslate"><span class="pre">expression</span></code>’.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">for(init,condition,_procedure,body)</span></code>’ first evaluates the expression ‘<code class="docutils literal notranslate"><span class="pre">init</span></code>’, then iteratively evaluates ‘<code class="docutils literal notranslate"><span class="pre">body</span></code>’ (followed by ‘<code class="docutils literal notranslate"><span class="pre">procedure</span></code>’ if specified) while ‘<code class="docutils literal notranslate"><span class="pre">condition</span></code>’ is verified (i.e.&nbsp;not zero). It may happen that no iteration is done, in which case the function returns <strong>nan</strong>. Otherwise, it returns the last value of ‘<code class="docutils literal notranslate"><span class="pre">body</span></code>’. For instance, the expression: ‘<code class="docutils literal notranslate"><span class="pre">if(N&lt;2,N,for(n=N;F0=0;F1=1,n=n-1,F2=F0+F1;F0=F1;F1=F2))</span></code>’ returns the <strong>Nth</strong> value of the Fibonacci sequence, for <strong>N&gt;=0</strong> (e.g., <strong>46368</strong> for <strong>N=24</strong>).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">whiledo(condition,expression)</span></code>’ is exactly the same as ‘<code class="docutils literal notranslate"><span class="pre">for(init,condition,expression)</span></code>’ without the specification of an initializing expression.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">break()</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">continue()</span></code>’ respectively breaks and continues the current running bloc (loop, init or main environment).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">date(attr,path)</span></code>’ returns the date attribute for the given ‘path’ (file or directory), with <strong>‘attr’</strong> being <strong>{ 0=year | 1=month | 2=day | 3=day of week | 4=hour | 5=minute | 6=second }</strong>, or a vector of those values.</li>
+<li>’<code class="docutils literal notranslate"><span class="pre">date(_attr)</span></code> returns the specified attribute for the current (locale) date.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">print(expr1,expr2,...)</span></code> or’<code class="docutils literal notranslate"><span class="pre">print(#ind)</span></code> prints the value of the specified expressions (or image information) on the console, and returns the value of the last expression (or <strong>nan</strong> in case of an image). Function ‘<code class="docutils literal notranslate"><span class="pre">prints(expr)</span></code>’ also prints the string composed of the ascii characters defined by the vector-valued expression (e.g. ‘<code class="docutils literal notranslate"><span class="pre">prints('Hello')</span></code>’).</li>
+<li>’<code class="docutils literal notranslate"><span class="pre">debug(expression)</span></code> prints detailed debug information about the sequence of operations done by the math parser to evaluate the expression (and returns its value).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">display(_X,_w,_h,_d,_s)</span></code> or’<code class="docutils literal notranslate"><span class="pre">display(#ind)</span></code> display the contents of the vector ‘<code class="docutils literal notranslate"><span class="pre">X</span></code>’ (or specified image) and wait for user events. if no arguments are provided, a memory snapshot of the math parser environment is displayed instead.</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">init(expression)</span></code> and’<code class="docutils literal notranslate"><span class="pre">end(expression)</span></code> evaluates the specified expressions only once, respectively at the beginning and end of the evaluation procedure, and this, even when multiple evaluations are required (e.g.&nbsp;in ‘<code class="docutils literal notranslate"><span class="pre">fill</span> <span class="pre">init(foo=0);++foo</span></code>’).</li>
+<li>‘<code class="docutils literal notranslate"><span class="pre">copy(dest,src,_nb_elts,_inc_d,_inc_s,_opacity)</span></code> copies an entire memory block of’<code class="docutils literal notranslate"><span class="pre">nb_elts</span></code>’ elements starting from a source value ‘<code class="docutils literal notranslate"><span class="pre">src</span></code>’ to a specified destination ‘<code class="docutils literal notranslate"><span class="pre">dest</span></code>’, with increments defined by ‘<code class="docutils literal notranslate"><span class="pre">inc_d</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">inc_s</span></code>’ respectively for the destination and source pointers.</li>
+<li>’<code class="docutils literal notranslate"><span class="pre">unref(a,b,...)</span></code> destroys references to the named variable given as arguments.</li>
+<li>’<code class="docutils literal notranslate"><span class="pre">stats(_#ind)</span></code> returns the statistics vector of the running image <strong>[ind]</strong>, i.e the vector <strong>[ im,iM,ia,iv,xm,ym,zm,cm,xM,yM,zM,cM,is,ip ]</strong> (14 values).</li>
+<li>’<code class="docutils literal notranslate"><span class="pre">_(expr)</span></code> just ignores its arguments (mainly useful for debugging).</li>
+</ul>
+</li>
+<li><strong>User-defined macros:</strong><ul>
+<li>Custom macro functions can be defined in a math expression, using the assignment operator ‘<code class="docutils literal notranslate"><span class="pre">=</span></code>’, e.g. ‘<code class="docutils literal notranslate"><span class="pre">foo(x,y)</span> <span class="pre">=</span> <span class="pre">cos(x</span> <span class="pre">+</span> <span class="pre">y);</span> <span class="pre">result</span> <span class="pre">=</span> <span class="pre">foo(1,2)</span> <span class="pre">+</span> <span class="pre">foo(2,3)</span></code>’.</li>
+<li>Trying to override a built-in function (e.g. ‘<code class="docutils literal notranslate"><span class="pre">abs()</span></code>’) has no effect.</li>
+<li>Overloading macros with different number of arguments is possible. Re-defining a previously defined macro with the same number of arguments discards its previous definition.</li>
+<li>Macro functions are indeed processed as <strong>macros</strong> by the mathematical evaluator. You should avoid invoking them with arguments that are themselves results of assignments or self-operations. For instance, ‘<code class="docutils literal notranslate"><span class="pre">foo(x)</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">x;</span> <span class="pre">z</span> <span class="pre">=</span> <span class="pre">0;</span> <span class="pre">foo(++z)</span></code>’ returns <strong>‘4’</strong> rather than expected value <strong>‘2’</strong>.</li>
+<li>When substituted, macro arguments are placed inside parentheses, except if a number sign ‘<code class="docutils literal notranslate"><span class="pre">#</span></code>’ is located just before or after the argument name. For instance, expression ‘<code class="docutils literal notranslate"><span class="pre">foo(x,y)</span> <span class="pre">=</span> <span class="pre">x*y;</span> <span class="pre">foo(1+2,3)</span></code>’ returns <strong>‘9’</strong> (being substituted as ‘<code class="docutils literal notranslate"><span class="pre">(1+2)*(3)</span></code>’), while expression ‘<code class="docutils literal notranslate"><span class="pre">foo(x,y)</span> <span class="pre">=</span> <span class="pre">x#*y#;</span> <span class="pre">foo(1+2,3)</span></code>’ returns <strong>‘7’</strong> (being substituted as ‘<code class="docutils literal notranslate"><span class="pre">1+2*3</span></code>’).</li>
+<li>Number signs appearing between macro arguments function actually count for ‘<code class="docutils literal notranslate"><span class="pre">empty</span></code>’ separators. They may be used to force the substitution of macro arguments in unusual places, e.g.&nbsp;as in ‘<code class="docutils literal notranslate"><span class="pre">str(N)</span> <span class="pre">=</span> <span class="pre">['I</span> <span class="pre">like</span> <span class="pre">N#'];</span></code>’.</li>
+</ul>
+</li>
+<li><strong>Multi-threaded</strong> and <strong>in-place</strong> evaluation:<ul>
+<li>If your image data are large enough and you have several CPUs available, it is likely that the math expression passed to a ‘<code class="docutils literal notranslate"><span class="pre">fill</span></code>’ or ‘<code class="docutils literal notranslate"><span class="pre">input</span></code>’ command is evaluated in parallel, using multiple computation threads.</li>
+<li>Starting an expression with ‘<code class="docutils literal notranslate"><span class="pre">:</span></code>’ or ‘<code class="docutils literal notranslate"><span class="pre">*</span></code>’ forces the evaluations required for an image to be run in parallel, even if the amount of data to process is small (beware, it may be slower to evaluate in this case!). Specify ‘<code class="docutils literal notranslate"><span class="pre">:</span></code>’ (instead of ‘<code class="docutils literal notranslate"><span class="pre">*</span></code>’) to avoid possible image copy done before evaluating the expression (this saves memory, but do this only if you are sure this step is not required!)</li>
+<li>If the specified expression starts with ‘<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>’ or ‘<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>’, the pixel access operators ‘<code class="docutils literal notranslate"><span class="pre">i()</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">i[]</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">j()</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">j[]</span></code>’ return values of the image being currently modified, in forward (‘<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>’) or backward (‘<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>’) order. The multi-threading evaluation of the expression is also disabled in this case.</li>
+<li>Function ‘<code class="docutils literal notranslate"><span class="pre">critical(operands)</span></code>’ forces the execution of the given operands in a single thread at a time.</li>
+</ul>
+</li>
+<li>Expressions ‘<code class="docutils literal notranslate"><span class="pre">i(_#ind,x,_y,_z,_c)=value</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">j(_#ind,x,_y,_z,_c)=value</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">i[_#ind,offset]=value</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">j[_#ind,offset]=value</span></code>’ set a pixel value at a different location than the running one in the image <strong>[ind]</strong> (or in the associated image if argument ‘<code class="docutils literal notranslate"><span class="pre">#ind</span></code>’ is omitted), either with global coordinates/offsets (with ‘<code class="docutils literal notranslate"><span class="pre">i(...)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">i[...]</span></code>’), or relatively to the current position <strong>(x,y,z,c)</strong> (with ‘<code class="docutils literal notranslate"><span class="pre">j(...)</span></code>’ and ‘<code class="docutils literal notranslate"><span class="pre">j[...]</span></code>’). These expressions always return ‘<code class="docutils literal notranslate"><span class="pre">value</span></code>’.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="17%" />
+<col width="5%" />
+<col width="5%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Expression / <code class="docutils literal notranslate"><span class="pre">expression</span></code></td>
+<td>String</td>
+<td>i</td>
+<td>G’MIC/CImg expression, see the plugin description/help, or <a class="reference external" href="http://gmic.eu/reference.shtml#section9">http://gmic.eu/reference.shtml#section9</a></td>
+</tr>
+<tr class="row-odd"><td>Help… / <code class="docutils literal notranslate"><span class="pre">help</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Display help for writing GMIC expressions.</td>
+</tr>
+<tr class="row-even"><td>(Un)premult / <code class="docutils literal notranslate"><span class="pre">premult</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.</td>
+</tr>
+<tr class="row-odd"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-even"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.Glow.html" class="btn btn-neutral float-right" title="Glow node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.Fill.html" class="btn btn-neutral float-left" title="Fill node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

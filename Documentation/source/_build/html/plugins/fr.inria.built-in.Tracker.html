@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tracker node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Transform node" href="net.sf.openfx.TransformPlugin.html" />
+    <link rel="prev" title="SpriteSheet node" href="net.sf.openfx.SpriteSheet.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.AdjustRoDPlugin.html">AdjustRoD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Card3D.html">Card3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinPlugin.html">CornerPin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CornerPinMaskedPlugin.html">CornerPinMasked node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CropPlugin.html">Crop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.IDistort.html">IDistort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LensDistortion.html">LensDistortion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Mirror.html">Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Position.html">Position node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Reformat.html">Reformat node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OIIOResize.html">Resize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.STMap.html">STMap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.SpriteSheet.html">SpriteSheet node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Tracker node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goal">Goal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tracking">Tracking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-tracks-data">Using the tracks data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-transform-within-the-tracker-node">Using the Transform within the Tracker node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exporting-the-tracking-data">Exporting the tracking data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformPlugin.html">Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TransformMaskedPlugin.html">TransformMasked node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupTransform.html">Transform nodes</a> &raquo;</li>
+        
+      <li>Tracker node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.built-in.Tracker.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tracker-node">
+<span id="fr-inria-built-in-tracker"></span><h1>Tracker node<a class="headerlink" href="#tracker-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of Tracker (fr.inria.built-in.Tracker).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Track one or more 2D point(s) using LibMV from the Blender open-source software.</p>
+</div>
+<div class="section" id="goal">
+<h2>Goal<a class="headerlink" href="#goal" title="Permalink to this headline">¶</a></h2>
+<p>Track one or more 2D point and use them to either make another object/image match-move their motion or to stabilize the input image.</p>
+</div>
+<div class="section" id="tracking">
+<h2>Tracking<a class="headerlink" href="#tracking" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Connect a Tracker node to the image containing the item you need to track</li>
+<li>Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the <strong>+</strong> button below the track table in the settings panel</li>
+<li>Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is underoing a translation. Other motion models can be used for complex tracks but may be slower.</li>
+<li>Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer.</li>
+<li>If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline.</li>
+</ul>
+</div>
+<div class="section" id="using-the-tracks-data">
+<h2>Using the tracks data<a class="headerlink" href="#using-the-tracks-data" title="Permalink to this headline">¶</a></h2>
+<p>You can either use the Tracker node itself to use the track data or you may export it to another node.</p>
+</div>
+<div class="section" id="using-the-transform-within-the-tracker-node">
+<h2>Using the Transform within the Tracker node<a class="headerlink" href="#using-the-transform-within-the-tracker-node" title="Permalink to this headline">¶</a></h2>
+<p>Go to the Transform tab in the settings panel, and set the Transform Type to the operation you want to achieve. During tracking, the Transform Type should always been set to None if you want to correctly see the tracks on the Viewer.</p>
+<p>You will notice that the transform parameters will be set automatically when the tracking is finished. Depending on the Transform Type, the values will be computed either to match-move the motion of the tracked points or to stabilize the image.</p>
+</div>
+<div class="section" id="exporting-the-tracking-data">
+<h2>Exporting the tracking data<a class="headerlink" href="#exporting-the-tracking-data" title="Permalink to this headline">¶</a></h2>
+<p>You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="9%" />
+<col width="1%" />
+<col width="3%" />
+<col width="87%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Motion Type / <code class="docutils literal notranslate"><span class="pre">motionType</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line">The type of motion in output of this node.</div>
+<div class="line"><strong>None</strong>: No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correctly see the input image on the viewer</div>
+<div class="line"><strong>Stabilize</strong>: Transforms the image so that the tracked points do not move</div>
+<div class="line"><strong>Match-Move</strong>: Transforms a different image so that it moves to match the tracked points</div>
+<div class="line"><strong>Remove Jitter</strong>: Transforms the image so that the tracked points move smoothly with high frequencies removed</div>
+<div class="line"><strong>Add Jitter</strong>: Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Transform Type / <code class="docutils literal notranslate"><span class="pre">transformType</span></code></td>
+<td>Choice</td>
+<td>CornerPin</td>
+<td><div class="first last line-block">
+<div class="line">The type of transform used to produce the results.</div>
+<div class="line"><strong>Transform</strong>: The tracks motion will be used to compute the translation, scale and rotation parameter of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, the more stable and precise the resulting transform will be.</div>
+<div class="line"><strong>CornerPin</strong>: The tracks motion will be used to compute a CornerPin. A CornerPin is useful if you are tracking an image portion that has a perspective distortion. At least 1 track is required to compute the homography transforming the “From” points to the “To” points, and 4 required to track a perspective transformation.The more points you add, the more stable and precise the resulting CornerPin will be.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Reference Frame / <code class="docutils literal notranslate"><span class="pre">referenceFrame</span></code></td>
+<td>Integer</td>
+<td>1</td>
+<td>When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity.</td>
+</tr>
+<tr class="row-odd"><td>Set to Current Frame / <code class="docutils literal notranslate"><span class="pre">setReferenceButton</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Set the reference frame to the timeline’s current frame</td>
+</tr>
+<tr class="row-even"><td>Jitter Period / <code class="docutils literal notranslate"><span class="pre">jitterPeriod</span></code></td>
+<td>Integer</td>
+<td>10</td>
+<td>Number of frames to average together to remove high frequencies for the add/remove jitter transform type</td>
+</tr>
+<tr class="row-odd"><td>Smooth / <code class="docutils literal notranslate"><span class="pre">smooth</span></code></td>
+<td>Integer</td>
+<td>t: 0 r: 0 s: 0</td>
+<td>Smooth the translation/rotation/scale by averaging this number of frames together</td>
+</tr>
+<tr class="row-even"><td>Smooth / <code class="docutils literal notranslate"><span class="pre">smoothCornerPin</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Smooth the CornerPin by averaging this number of frames together</td>
+</tr>
+<tr class="row-odd"><td>Compute Transform Automatically / <code class="docutils literal notranslate"><span class="pre">autoComputeransform</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>When checked, whenever changing a parameter controlling the Transform Generation (such as Motion Type, Transform Type, Reference Frame, etc…) or changing the Enabled parameter of a track, the transform parameters will be re-computed automatically. When unchecked, you must press the Compute button to compute it.</td>
+</tr>
+<tr class="row-even"><td>Compute / <code class="docutils literal notranslate"><span class="pre">computeTransform</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Click to compute the parameters of the Transform Controls or CornerPin Controls (depending on the Transform Type) from the data acquired on the tracks during the tracking. This should be done after the tracking is finished and when you feel the results are satisfying. For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (e.g: are valid).</td>
+</tr>
+<tr class="row-odd"><td>Robust Model / <code class="docutils literal notranslate"><span class="pre">robustModel</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>When checked, the solver will assume that the model generated (i.e: the Transform or the CornerPin) is possible given the motion of the video and will eliminate points that do not match the model to compute the resulting parameters. When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video.</td>
+</tr>
+<tr class="row-even"><td>Fitting Error (px) / <code class="docutils literal notranslate"><span class="pre">fittingError</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>This parameter indicates the error for each frame of the fitting of the model (i.e: Transform / CornerPin) to the tracks data. This value is in pixels and represents the rooted weighted sum of squared errors for each track. The error is essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point.</td>
+</tr>
+<tr class="row-odd"><td>Warn If Error Is Above / <code class="docutils literal notranslate"><span class="pre">fittingErrorWarnAbove</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>A warning will appear if the model fitting error reaches this value (or higher). The warning indicates that the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick another model</td>
+</tr>
+<tr class="row-even"><td>Disable Transform / <code class="docutils literal notranslate"><span class="pre">disableProcess</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the CornerPin/Transform applied by the parameters is disabled temporarily. This is useful if you are using a CornerPin and you need to edit the From or To points. For example, in match-move mode to replace a portion of the image by another one. To achieve such effect, you would need to place the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicle, in which case you would want to set the CornerPin points to enclose the vehicle.</td>
+</tr>
+<tr class="row-odd"><td>Set to Input Rod / <code class="docutils literal notranslate"><span class="pre">setToInputRod</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Set the 4 from points to the image rectangle in input of the tracker node</td>
+</tr>
+<tr class="row-even"><td>Export / <code class="docutils literal notranslate"><span class="pre">export</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Creates a node referencing the tracked data. The node type depends on the node selected by the Transform Type parameter. The type of transformation applied by the created node depends on the Motion Type parameter. To activate this button you must select set the Motion Type to something other than None</td>
+</tr>
+<tr class="row-odd"><td>Mag. Window Size / <code class="docutils literal notranslate"><span class="pre">magWindowSize</span></code></td>
+<td>Integer</td>
+<td>200</td>
+<td>The size of the selected track magnification winow in pixels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.TransformPlugin.html" class="btn btn-neutral float-right" title="Transform node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.SpriteSheet.html" class="btn btn-neutral float-left" title="SpriteSheet node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,622 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyViewer &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Introduction" href="../../introduction.html" />
+    <link rel="prev" title="PyTabWidget" href="PyTabWidget.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../NatronEngine/index.html">NatronEngine</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronGui</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronGui</a> &raquo;</li>
+        
+      <li>PyViewer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronGui/PyViewer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronGui"></span><div class="section" id="pyviewer">
+<span id="id1"></span><h1>PyViewer<a class="headerlink" href="#pyviewer" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>A PyViewer is a wrapper around a Natron Viewer.
+See <a class="reference internal" href="#pyviewer-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.seek" title="NatronGui.NatronGui.PyTabWidget.seek"><code class="xref py py-meth docutils literal notranslate"><span class="pre">seek</span></code></a> (frame)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getCurrentFrame" title="NatronGui.NatronGui.PyTabWidget.getCurrentFrame"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurrentFrame</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.startForward" title="NatronGui.NatronGui.PyTabWidget.startForward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">startForward</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.startBackward" title="NatronGui.NatronGui.PyTabWidget.startBackward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">startBackward</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.pause" title="NatronGui.NatronGui.PyTabWidget.pause"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pause</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.redraw" title="NatronGui.NatronGui.PyTabWidget.redraw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">redraw</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.renderCurrentFrame" title="NatronGui.NatronGui.PyTabWidget.renderCurrentFrame"><code class="xref py py-meth docutils literal notranslate"><span class="pre">renderCurrentFrame</span></code></a> ([useCache=True])</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setFrameRange" title="NatronGui.NatronGui.PyTabWidget.setFrameRange"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setFrameRange</span></code></a> (firstFrame,lastFrame)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getFrameRange" title="NatronGui.NatronGui.PyTabWidget.getFrameRange"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFrameRange</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setPlaybackMode" title="NatronGui.NatronGui.PyTabWidget.setPlaybackMode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPlaybackMode</span></code></a> (mode)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getPlaybackMode" title="NatronGui.NatronGui.PyTabWidget.getPlaybackMode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPlaybackMode</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getCompositingOperator" title="NatronGui.NatronGui.PyTabWidget.getCompositingOperator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCompositingOperator</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setCompositingOperator" title="NatronGui.NatronGui.PyTabWidget.setCompositingOperator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCompositingOperator</span></code></a> (operator)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getAInput" title="NatronGui.NatronGui.PyTabWidget.getAInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getAInput</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setAInput" title="NatronGui.NatronGui.PyTabWidget.setAInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setAInput</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getBInput" title="NatronGui.NatronGui.PyTabWidget.getBInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getBInput</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setBInput" title="NatronGui.NatronGui.PyTabWidget.setBInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setBInput</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setChannels" title="NatronGui.NatronGui.PyTabWidget.setChannels"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setChannels</span></code></a> (channels)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getChannels" title="NatronGui.NatronGui.PyTabWidget.getChannels"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getChannels</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setProxyModeEnabled" title="NatronGui.NatronGui.PyTabWidget.setProxyModeEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setProxyModeEnabled</span></code></a> (enabled)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.isProxyModeEnabled" title="NatronGui.NatronGui.PyTabWidget.isProxyModeEnabled"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isProxyModeEnabled</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setProxyIndex" title="NatronGui.NatronGui.PyTabWidget.setProxyIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setProxyIndex</span></code></a> (index)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getProxyIndex" title="NatronGui.NatronGui.PyTabWidget.getProxyIndex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getProxyIndex</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.setCurrentView" title="NatronGui.NatronGui.PyTabWidget.setCurrentView"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setCurrentView</span></code></a> (viewIndex)</li>
+<li>def <a class="reference internal" href="#NatronGui.NatronGui.PyTabWidget.getCurrentView" title="NatronGui.NatronGui.PyTabWidget.getCurrentView"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurrentView</span></code></a> (channels)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="pyviewer-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>This class is a wrapper around a Natron Viewer, exposing all functionalities available as
+user interaction to the Python API.</p>
+<p>To get a <a class="reference internal" href="#"><span class="doc">PyViewer</span></a> , use the <a class="reference internal" href="GuiApp.html#NatronGui.NatronGui.GuiApp.getViewer" title="NatronGui.NatronGui.GuiApp.getViewer"><code class="xref py py-func docutils literal notranslate"><span class="pre">getViewer(scriptName)</span></code></a> function,
+passing it the <em>script-name</em> of a viewer node.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.seek">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">seek</code><span class="sig-paren">(</span><em>frame</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.seek" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Seek the timeline to a particular frame. All other viewers in the project will be synchronized
+to that frame.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getCurrentFrame">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getCurrentFrame</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getCurrentFrame" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current frame on the timeline.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.startForward">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">startForward</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.startForward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Starts playback, playing the video normally.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.startBackward">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">startBackward</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.startBackward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Starts playback backward, like a rewind.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.pause">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">pause</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.pause" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Pauses the viewer if the playback is ongoing.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.redraw">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">redraw</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.redraw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Redraws the OpenGL widget without actually re-rendering the internal image. This is
+provided for convenience as sometimes the viewer might need refreshing for OpenGL overlays.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.renderCurrentFrame">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">renderCurrentFrame</code><span class="sig-paren">(</span><span class="optional">[</span><em>useCache=True</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.renderCurrentFrame" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>useCache</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Renders the current frame on the timeline. If <em>useCache</em> is False, the cache will not be used
+and the frame will be completely re-rendered.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setFrameRange">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setFrameRange</code><span class="sig-paren">(</span><em>firstFrame</em>, <em>lastFrame</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setFrameRange" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>firstFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lastFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the frame range on the Viewer to be [<em>firstFrame</em> , <em>lastFrame</em>] (included).</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getFrameRange">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getFrameRange</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getFrameRange" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a 2-dimensional tuple of <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> containing [<em>firstFrame</em> , <em>lastFrame</em>].</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setPlaybackMode">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setPlaybackMode</code><span class="sig-paren">(</span><em>mode</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setPlaybackMode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.PlaybackModeEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the playback mode for the Viewer, it can be either <strong>bouncing</strong>, <strong>looping</strong> or
+<strong>playing once</strong>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getPlaybackMode">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getPlaybackMode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getPlaybackMode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.PlaybackModeEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the playback mode for this Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getCompositingOperator">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getCompositingOperator</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getCompositingOperator" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.ViewerCompositingOperatorEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current compositing operator applied by the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setCompositingOperator">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setCompositingOperator</code><span class="sig-paren">(</span><em>operator</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setCompositingOperator" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operator</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.ViewerCompositingOperatorEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the current compositing operator applied by the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getAInput">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getAInput</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getAInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <strong>index</strong> of the input (the same index used by <code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(index)</span></code>) used by
+the <strong>A</strong> choice of the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setAInput">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setAInput</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setAInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the <strong>index</strong> of the input (the same index used by <code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(index)</span></code>) used by
+the <strong>A</strong> choice of the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getBInput">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getBInput</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getBInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <strong>index</strong> of the input (the same index used by <code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(index)</span></code>) used by
+the <strong>B</strong> choice of the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setBInput">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setBInput</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setBInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the <strong>index</strong> of the input (the same index used by <code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(index)</span></code>) used by
+the <strong>B</strong> choice of the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setChannels">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setChannels</code><span class="sig-paren">(</span><em>channels</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setChannels" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>channels</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.DisplayChannelsEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the <em>channels</em> to be displayed on the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getChannels">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getChannels</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getChannels" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">NatronEngine.Natron.DisplayChannelsEnum</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current <em>channels</em>  displayed on the Viewer.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setProxyModeEnabled">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setProxyModeEnabled</code><span class="sig-paren">(</span><em>enabled</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setProxyModeEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>enabled</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the proxy mode <em>enabled</em>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.isProxyModeEnabled">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">isProxyModeEnabled</code><span class="sig-paren">(</span><em>enabled</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.isProxyModeEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the proxy mode is <em>enabled</em>.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setProxyIndex">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setProxyIndex</code><span class="sig-paren">(</span><em>index</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setProxyIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the <em>index</em> of the proxy to use. This is the index in the combobox on the graphical
+user interface, e.g.  <em>index = 0</em> will be <em>2</em></p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getProxyIndex">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getProxyIndex</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getProxyIndex" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>index</em> of the proxy in use. This is the index in the combobox on the graphical
+user interface, e.g.  <em>index = 0</em> will be <em>2</em></p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.setCurrentView">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">setCurrentView</code><span class="sig-paren">(</span><em>viewIndex</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.setCurrentView" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>viewIndex</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the view to display the given <em>viewIndex</em>. This is the index in the multi-view combobox
+visible when the number of views in the project settings has been set to a value greater than 1.</p>
+<dl class="method">
+<dt id="NatronGui.NatronGui.PyTabWidget.getCurrentView">
+<code class="descclassname">NatronGui.PyTabWidget.</code><code class="descname">getCurrentView</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronGui.NatronGui.PyTabWidget.getCurrentView" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>viewIndex</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the currently  displayed view index. This is the index in the multi-view combobox
+visible when the number of views in the project settings has been set to a value greater than 1.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../introduction.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PyTabWidget.html" class="btn btn-neutral float-left" title="PyTabWidget" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

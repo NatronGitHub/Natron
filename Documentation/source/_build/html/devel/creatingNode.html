@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Creating and controlling nodes &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Controlling parameters" href="controllingParameters.html" />
+    <link rel="prev" title="Getting started" href="gettingstarted.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Creating and controlling nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-new-node">Creating a new node:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connecting-a-node-to-other-nodes">Connecting a node to other nodes:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Creating and controlling nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/creatingNode.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="creating-and-controlling-nodes">
+<span id="creatingnode"></span><h1>Creating and controlling nodes<a class="headerlink" href="#creating-and-controlling-nodes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="creating-a-new-node">
+<h2>Creating a new node:<a class="headerlink" href="#creating-a-new-node" title="Permalink to this headline">¶</a></h2>
+<p>To create a <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">node</span></a> in Natron, you would do so
+using the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">app instance</span></a> via the function
+<code class="xref py py-func docutils literal notranslate"><span class="pre">createNode(pluginId,majorVersion,group)</span></code> like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this line we specify that we want the first opened project to create a node instantiating
+the plug-in <em>ReadOIIO</em>.
+Note that if we were in background mode we could just write the following which would be equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since in command-line there is only a single project opened, Natron does the following assignment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">app1</span>
+</pre></div>
+</div>
+<p>If we were to create the node into a specific group, we would do so like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">group</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.built-in.Group&quot;</span><span class="p">)</span>
+
+<span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that when passed the number -1, it specifies that we want to load the highest version
+of the plug-in found. This version parameter can be useful to load for example a specific
+version of a plug-in.</p>
+<p>The <em>pluginID</em> passed to this function is a <strong>unique</strong> ID for each plug-in. If 2 plug-ins
+were to have the same ID, then Natron will create separate entries for each version.</p>
+<p>You can query all plug-ins available in Natron this way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">allPlugins</span> <span class="o">=</span> <span class="n">natron</span><span class="o">.</span><span class="n">getPluginIDs</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also filter out plug-ins that contain only a given <em>filter</em> name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Returns only plugin IDs containing &quot;.inria&quot; in it</span>
+
+<span class="n">filteredPlugins</span> <span class="o">=</span> <span class="n">natron</span><span class="o">.</span><span class="n">getPluginIDs</span><span class="p">(</span><span class="s2">&quot;.inria.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the user interface, the plug-in ID can be found when pressing the <strong>?</strong> button located in the
+top right-hand corner of the settings panel:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/helpButton.png"><img alt="../_images/helpButton.png" src="../_images/helpButton.png" style="width: 300px;" /></a>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/pluginID.png"><img alt="../_images/pluginID.png" src="../_images/pluginID.png" style="width: 400px;" /></a>
+</div>
+</div>
+<div class="section" id="connecting-a-node-to-other-nodes">
+<h2>Connecting a node to other nodes:<a class="headerlink" href="#connecting-a-node-to-other-nodes" title="Permalink to this headline">¶</a></h2>
+<p>To connect a node to the input of another node you can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">connectInput(inputNumber,input)</span></code> function.</p>
+<p>The <em>inputNumber</em> is a 0-based index specifying the input on which the function should connect the given <em>input</em> <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">Effect</span></a>.</p>
+<p>You can query the input name at a specific index with the following function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">getInputLabel</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Here is a small example where we would create 3 nodes and connect them together:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Create a write node</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.WriteOIIO&quot;</span><span class="p">)</span>
+
+<span class="c1">#Create a blur</span>
+<span class="n">blur</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;net.sf.cimg.CImgBlur&quot;</span><span class="p">)</span>
+
+<span class="c1">#Create a read node</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">)</span>
+
+<span class="c1">#Connect the write node to the blur</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">blur</span><span class="p">)</span>
+
+<span class="c1">#Connect the blur to the read node</span>
+<span class="n">blur</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">reader</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that the following script would do the same since nodes are <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared variables</span></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.WriteOIIO&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">())</span> <span class="c1"># prints WriteOIIO1</span>
+
+<span class="c1">#The write node is now available via its script name app.WriteOIIO1</span>
+
+<span class="n">node</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;net.sf.cimg.CImgBlur&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">())</span> <span class="c1"># prints CImgBlur1</span>
+
+<span class="c1">#The blur node is now available via its script name app.BlurCImg1</span>
+
+<span class="n">node</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">())</span> <span class="c1"># prints ReadOIIO1</span>
+
+<span class="c1">#The ReadOIIO node is now available via its script name app.ReadOIIO1</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">WriteOIIO1</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">app</span><span class="o">.</span><span class="n">ReadOIIO1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that not all connections are possible, and sometimes it may fail for some reasons explained
+in the documentation of the <code class="xref py py-func docutils literal notranslate"><span class="pre">connectInput(inputNumber,input)</span></code> function.</p>
+<p>You should then check for errors this way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">WriteOIIO1</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="p">):</span>
+    <span class="c1"># Handle errors</span>
+</pre></div>
+</div>
+<p>You can check beforehand whether a subsequent <em>connectInput</em> call would succeed or not
+by calling the <code class="xref py py-func docutils literal notranslate"><span class="pre">canConnectInput(inputNumber,input)</span></code> which basically
+checks whether is is okay to do the connection or not. You can then safely write the following instructions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">WriteOIIO1</span><span class="o">.</span><span class="n">canConnectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="p">):</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">WriteOIIO1</span><span class="o">.</span><span class="n">connectInput</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Handle errors</span>
+</pre></div>
+</div>
+<p>Note that internally <em>connectInput</em> calls <em>canConnectInput</em> to validate whether the connection is possible.</p>
+<p>To disconnect an existing connection, you can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">disconnectInput(inputNumber)</span></code> function.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="controllingParameters.html" class="btn btn-neutral float-right" title="Controlling parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="gettingstarted.html" class="btn btn-neutral float-left" title="Getting started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

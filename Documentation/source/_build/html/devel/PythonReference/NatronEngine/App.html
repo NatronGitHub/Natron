@@ -1,0 +1,872 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>App &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="AppSettings" href="AppSettings.html" />
+    <link rel="prev" title="AnimatedParam" href="AnimatedParam.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>App</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/App.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="app">
+<span id="id1"></span><h1>App<a class="headerlink" href="#app" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong> <a class="reference internal" href="Group.html"><span class="doc">Group</span></a></p>
+<p><strong>Inherited by:</strong> <a class="reference internal" href="../NatronGui/GuiApp.html"><span class="doc">GuiApp</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>The App object represents one instance of a project.
+See <a class="reference internal" href="#app-details"><span class="std std-ref">detailed</span></a> description…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.addProjectLayer" title="NatronEngine.NatronEngine.App.addProjectLayer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addProjectLayer</span></code></a> (layer)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.addFormat" title="NatronEngine.NatronEngine.App.addFormat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addFormat</span></code></a> (formatSpec)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.createNode" title="NatronEngine.NatronEngine.App.createNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createNode</span></code></a> (pluginID[, majorVersion=-1[, group=None] [, properties=None]])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.createReader" title="NatronEngine.NatronEngine.App.createReader"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createReader</span></code></a> (filename[, group=None] [, properties=None])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.createWriter" title="NatronEngine.NatronEngine.App.createWriter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">createWriter</span></code></a> (filename[, group=None] [, properties=None])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.getAppID" title="NatronEngine.NatronEngine.App.getAppID"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getAppID</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.getProjectParam" title="NatronEngine.NatronEngine.App.getProjectParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getProjectParam</span></code></a> (name)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.getViewNames" title="NatronEngine.NatronEngine.App.getViewNames"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getViewNames</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.render" title="NatronEngine.NatronEngine.App.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">render</span></code></a> (effect,firstFrame,lastFrame[,frameStep])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.render" title="NatronEngine.NatronEngine.App.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">render</span></code></a> (tasks)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.saveTempProject" title="NatronEngine.NatronEngine.App.saveTempProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveTempProject</span></code></a> (filename)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.saveProject" title="NatronEngine.NatronEngine.App.saveProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveProject</span></code></a> (filename)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.saveProjectAs" title="NatronEngine.NatronEngine.App.saveProjectAs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveProjectAs</span></code></a> (filename)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.loadProject" title="NatronEngine.NatronEngine.App.loadProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">loadProject</span></code></a> (filename)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.resetProject" title="NatronEngine.NatronEngine.App.resetProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resetProject</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.closeProject" title="NatronEngine.NatronEngine.App.closeProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">closeProject</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.newProject" title="NatronEngine.NatronEngine.App.newProject"><code class="xref py py-meth docutils literal notranslate"><span class="pre">newProject</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.timelineGetLeftBound" title="NatronEngine.NatronEngine.App.timelineGetLeftBound"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timelineGetLeftBound</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.timelineGetRightBound" title="NatronEngine.NatronEngine.App.timelineGetRightBound"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timelineGetRightBound</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.timelineGetTime" title="NatronEngine.NatronEngine.App.timelineGetTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timelineGetTime</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.App.writeToScriptEditor" title="NatronEngine.NatronEngine.App.writeToScriptEditor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">writeToScriptEditor</span></code></a> (message)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="app-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>An App object is created automatically every times a new project is opened. For each
+instance of Natron opened, there’s a new instance of App.
+You never create an App object by yourself, instead you can access them with variables
+that Natron pre-declared for you: The first instance will be named app1, the second app2,etc…
+See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this section</span></a> for an explanation of auto-declared variables.</p>
+<p>When in background mode, (interpreter or render mode) there will always ever be a single
+App instance, so Natron will make the following assignment before running any other script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">app1</span>
+</pre></div>
+</div>
+<p>So you don’t have to bother on which instance you’re in. For <a class="reference internal" href="Group.html"><span class="doc">Group</span></a> Python plug-ins exported
+from Natron, they have a function with the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">createInstance</span><span class="p">(</span><span class="n">app</span><span class="p">,</span><span class="n">group</span><span class="p">):</span>
+</pre></div>
+</div>
+<p>So you don’t have to bother again on which App instance your script is run.
+You should only ever need to refer to the <em>app1</em>, <em>app2</em>… variables when using the
+Script Editor.</p>
+<p>Finally, you can always access the App object of any instance by calling the following function
+when your script is for command line (background mode):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">getInstance</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or the following function when you want to use GUI functionalities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">getGuiInstance</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Note that in both cases, <em>index</em> is a 0-based number. So to retrieve <em>app1</em> you would
+need to call the function with <em>index = 0</em>.</p>
+</div>
+<div class="section" id="creating-nodes">
+<h3>Creating nodes<a class="headerlink" href="#creating-nodes" title="Permalink to this headline">¶</a></h3>
+<p>The App object is responsible for creating new nodes. To create a node, you need to specify
+which plug-in you want to instantiate and optionally specify which major version should your
+node instantiate if the plug-in has multiple versions.
+For instance we could create a new Reader node this way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also specify the group into which the node should be created, None being the project’s
+top level:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">group</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.built-in.Group&quot;</span><span class="p">)</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;fr.inria.openfx.ReadOIIO&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For convenience, small wrapper functions have been made to directly create a Reader or Writer
+given a filename:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reader</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createReader</span><span class="p">(</span><span class="s2">&quot;/Users/me/Pictures/mySequence###.exr&quot;</span><span class="p">)</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">createWriter</span><span class="p">(</span><span class="s2">&quot;/Users/me/Pictures/myVideo.mov&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In case 2 plug-ins can decode/encode the same format, e.g. ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the “best” OpenFX plug-in to decode/encode the image sequence/video
+according to the settings in the Preferences of Natron.
+If however you need a specific decoder/encoder to decode/encode the file format, you can use
+the <a class="reference internal" href="#NatronEngine.NatronEngine.App.createNode" title="NatronEngine.NatronEngine.App.createNode"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSettings()</span></code></a> function with the exact plug-in ID.</p>
+<p>In Natron you can call the  following function to get a sequence with all plug-in IDs currently available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">getPluginIDs</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also get a sub-set of those plug-ins with the <a class="reference internal" href="PyCoreApplication.html#NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs" title="NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs"><code class="xref py py-func docutils literal notranslate"><span class="pre">getPluginIDs(filter)</span></code></a>
+which returns only plug-in IDs containing the given filter (compared without case sensitivity).</p>
+</div>
+<div class="section" id="accessing-the-settings-of-natron">
+<h3>Accessing the settings of Natron<a class="headerlink" href="#accessing-the-settings-of-natron" title="Permalink to this headline">¶</a></h3>
+<p>To modify the parameters in the <em>Preferences</em> of Natron, you can call the
+<code class="xref py py-func docutils literal notranslate"><span class="pre">getSettings()</span></code> function to get an object
+containing all the <a class="reference internal" href="Param.html"><span class="doc">parameters</span></a> of the preferences.</p>
+</div>
+<div class="section" id="accessing-the-project-settings">
+<h3>Accessing the project settings<a class="headerlink" href="#accessing-the-project-settings" title="Permalink to this headline">¶</a></h3>
+<p>You can get a specific <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> of the project settings with the
+<a class="reference internal" href="#NatronEngine.NatronEngine.App.getProjectParam" title="NatronEngine.NatronEngine.App.getProjectParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getProjectParam(name)</span></code></a> function.</p>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.addProjectLayer">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">addProjectLayer</code><span class="sig-paren">(</span><em>layer</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.addProjectLayer" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>layer</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Appends a new project-wide layer. It will be available to all layer menus of all nodes.
+Each layer menu must be refreshed individually with either a right click on the menu or
+by changing nodes connections to get access to the new layer. Layer names are unique:
+even if you add duplicates to the layers list, only the first one in the list with that name
+will be available in the menus.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.addFormat">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">addFormat</code><span class="sig-paren">(</span><em>formatSpec</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.addFormat" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>formatSpec</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Attempts to add a new format to the project’s formats list. The <em>formatSpec</em> parameter
+must follow this spec: First the name of the format, without any spaces and without any
+non Python compliant characters; followed by a space and then the size of the format, in
+the form <em>width*x*height</em>; followed by a space and then the pixel aspect ratio of the
+format. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HD</span> <span class="mi">1920</span><span class="n">x1080</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Wrongly formatted format will be omitted and a warning will be printed in the <em>ScriptEditor</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.createNode">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">createNode</code><span class="sig-paren">(</span><em>pluginID[, majorVersion=-1[, group=None] [, properties=None]]</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.createNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pluginID</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>majorVersion</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>group</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></li>
+<li><strong>properties</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a new node instantiating the plug-in specified with the given <em>pluginID</em> at the given
+<em>majorVersion</em>. If <em>majorVersion</em> is -1, the highest version of the plug-in will be instantiated.
+The optional <em>group</em> parameter can be used to specify into which <a class="reference internal" href="Group.html"><span class="doc">group</span></a> the node
+should be created, <em>None</em> meaning the project’s top level.</p>
+<p>In Natron you can call the  following function to get a sequence with all plug-in IDs currently available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">natron</span><span class="o">.</span><span class="n">getPluginIDs</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The optional parameter <em>properties</em> is a dictionary containing properties that may modify
+the creation of the node, such as hiding the node GUI, disabling auto-connection in the
+NodeGraph, etc…</p>
+<p>The properties are values of type Bool, Int, Float or String and are mapped against a unique
+<em>key</em> identifying them.</p>
+<p>Most properties have a default value and don’t need to be specified, except the pluginID property.</p>
+<p>Below is a list of all the properties available that are recognized by Natron. If you specify
+an unknown property, Natron will print a warning in the Script Editor.</p>
+<p>All properties type have been wrapped to Natron types:</p>
+<ul class="simple">
+<li>A boolean property is represented by the <strong>BoolNodeCreationProperty</strong> class</li>
+<li>An int property is represented by the <strong>IntNodeCreationProperty</strong> class</li>
+<li>A float property is represented by the <strong>FloatNodeCreationProperty</strong> class</li>
+<li>A string property is represented by the <strong>StringNodeCreationProperty</strong> class</li>
+</ul>
+<p>Here is an example on how to pass properties to the createNode function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">createNode</span><span class="p">(</span><span class="s2">&quot;net.sf.cimg.CImgBlur&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="s2">&quot;CreateNodeArgsPropSettingsOpened&quot;</span><span class="p">,</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">BoolNodeCreationProperty</span><span class="p">(</span><span class="kc">True</span><span class="p">)),</span> <span class="p">(</span><span class="s2">&quot;CreateNodeArgsPropNodeInitialParamValues&quot;</span><span class="p">,</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">StringNodeCreationProperty</span><span class="p">(</span><span class="s2">&quot;size&quot;</span><span class="p">))</span> <span class="p">,(</span><span class="s2">&quot;CreateNodeArgsPropParamValue_size&quot;</span><span class="p">,</span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">FloatNodeCreationProperty</span><span class="p">([</span><span class="mf">2.3</span><span class="p">,</span><span class="mf">5.1</span><span class="p">]))</span> <span class="p">]))</span>
+</pre></div>
+</div>
+<ul>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropPluginID</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: string</p>
+<p><em>Default</em>: None</p>
+<p><em>Description</em>: Indicates the ID of the plug-in to create. This property is mandatory.
+It is set automatically by passing the pluginID to the createNode function</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropPluginVersion</strong></p>
+<p><em>Dimension</em>: 2</p>
+<p><em>Type</em>: int</p>
+<p><em>Default</em>: -1,-1</p>
+<p><em>Description</em>: Indicates the version of the plug-in to create.
+With the value (-1,-1) Natron will load the highest possible version available for that plug-in.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropNodeInitialPosition</strong></p>
+<p><em>Dimension</em>: 2</p>
+<p><em>Type</em>: float</p>
+<p><em>Default</em>: None</p>
+<p><em>Description</em>: Indicates the initial position of the node in the nodegraph.
+By default Natron will position the node according to the state of the interface (current selection, position of the viewport, etc…)</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropNodeInitialName</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: string</p>
+<p><em>Default</em>: None</p>
+<p><em>Description</em>: Indicates the initial <em>script-name</em> of the node
+By default Natron will name the node according to the plug-in label and will add a digit
+afterwards dependending on the current number of instances of that plug-in.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropNodeInitialParamValues</strong></p>
+<p><em>Dimension</em>: N</p>
+<p><em>Type</em>: string</p>
+<p><em>Default</em>: None</p>
+<p><em>Description</em>: Contains a sequence of parameter script-names for which a default value
+is specified by a property. Each default value must be specified by a property whose name is
+in the form <em>CreateNodeArgsPropParamValue_PARAMETERNAME</em>  where <em>PARAMETERNAME</em> must be replaced by the
+<em>script-name</em> of the parameter.  The property must have the same type as the data-type of
+the parameter (e.g. int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropOutOfProject</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: False</p>
+<p><em>Description</em>: When True the node will not be part of the project. The node can be used for internal used, e.g. in a Python script but will
+not appear to the user. It will also not be saved in the project.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropNoNodeGUI</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: False</p>
+<p><em>Description</em>:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropSettingsOpened</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: False</p>
+<p><em>Description</em>:  * If True, the node settings panel will not be opened by default when created.
+If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+is set to true, this property has no effet.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropAutoConnect</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: False</p>
+<p><em>Description</em>:  * If True, Natron will try to automatically connect the node to others depending on the user selection.
+If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+is set to true, this property has no effet.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropAddUndoRedoCommand</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: False</p>
+<p><em>Description</em>:  Natron will push a undo/redo command to the stack when creating this node.
+If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+is set to true, this property has no effect.</p>
+</li>
+<li><p class="first"><em>Name</em>: <strong>CreateNodeArgsPropSilent</strong></p>
+<p><em>Dimension</em>: 1</p>
+<p><em>Type</em>: bool</p>
+<p><em>Default</em>: True</p>
+<p><em>Description</em>:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.</p>
+</li>
+</ul>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.createReader">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">createReader</code><span class="sig-paren">(</span><em>filename[, group=None] [, properties=None]</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.createReader" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>group</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a reader to decode the given <em>filename</em>.
+The optional <em>group</em> parameter can be used to specify into which <a class="reference internal" href="Group.html"><span class="doc">group</span></a> the node
+should be created, <em>None</em> meaning the project’s top level.</p>
+<p>In case 2 plug-ins can decode the same format, e.g. ReadPSD and ReadOIIO can both
+read .psd files, internally Natron picks the “best” OpenFX plug-in to decode the image sequence/video
+according to the settings in the Preferences of Natron.
+If however you need a specific decoder to decode the file format, you can use
+the <a class="reference internal" href="#NatronEngine.NatronEngine.App.createNode" title="NatronEngine.NatronEngine.App.createNode"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSettings()</span></code></a> function with the exact plug-in ID.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.createWriter">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">createWriter</code><span class="sig-paren">(</span><em>filename[, group=None] [, properties=None]</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.createWriter" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>group</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Creates a reader to decode the given <em>filename</em>.
+The optional <em>group</em> parameter can be used to specify into which <a class="reference internal" href="Group.html"><span class="doc">group</span></a> the node
+should be created, <em>None</em> meaning the project’s top level.</p>
+<p>In case 2 plug-ins can encode the same format, e.g. WritePFM and WriteOIIO can both
+write .pfm files, internally Natron picks the “best” OpenFX plug-in to encode the image sequence/video
+according to the settings in the Preferences of Natron.
+If however you need a specific decoder to encode the file format, you can use
+the <a class="reference internal" href="#NatronEngine.NatronEngine.App.createNode" title="NatronEngine.NatronEngine.App.createNode"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSettings()</span></code></a> function with the exact plug-in ID.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.getAppID">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">getAppID</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.getAppID" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <strong>zero-based</strong> ID of the App instance.
+<em>app1</em> would have the AppID 0, <em>app2</em> would have the AppID 1, and so on…</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.getProjectParam">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">getProjectParam</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.getProjectParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a project <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> given its <em>name</em> (script-name). See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this section</span></a> for
+an explanation of <em>script-name</em> vs. <em>label</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.getViewNames">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">getViewNames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.getViewNames" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a sequence with the name of all the views in the project as setup by the user
+in the “Views” tab of the Project Settings.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.render">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">render</code><span class="sig-paren">(</span><em>effect</em>, <em>firstFrame</em>, <em>lastFrame</em><span class="optional">[</span>, <em>frameStep</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.render" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>effect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></li>
+<li><strong>firstFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>lastFrame</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>frameStep</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Starts rendering the given <em>effect</em> on the frame-range defined by [<em>firstFrame</em>,*lastFrame*].
+The <em>frameStep</em> parameter indicates how many frames the timeline should step after rendering
+each frame. The value must be greater or equal to 1.
+The <em>frameStep</em> parameter is optional and if not given will default to the value of the
+<strong>Frame Increment</strong> parameter in the Write node.</p>
+<p>For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">render</span><span class="p">(</span><span class="n">effect</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Would render the frames 1,3,5,7,9</p>
+<p>This is a blocking function only in background mode.
+A blocking render means that this function returns only when the render finishes (from failure or success).</p>
+<p>This function should only be used to render with a Write node or DiskCache node.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.App.</code><code class="descname">render</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tasks</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>This function takes a sequence of tuples of the form <em>(effect,firstFrame,lastFrame[,frameStep])</em>
+The <em>frameStep</em> is optional in the tuple and if not set will default to the value of the
+<strong>Frame Increment</strong> parameter in the Write node.</p>
+<p>This is an overloaded function. Same as <a class="reference internal" href="#NatronEngine.NatronEngine.App.render" title="NatronEngine.NatronEngine.App.render"><code class="xref py py-func docutils literal notranslate"><span class="pre">render(effect,firstFrame,lastFrame,frameStep)</span></code></a>
+but all <em>tasks</em> will be rendered concurrently.</p>
+<p>This function is called when rendering a script in background mode with
+multiple writers.</p>
+<p>This is a blocking call only in background mode.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.timelineGetLeftBound">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">timelineGetLeftBound</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.timelineGetLeftBound" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>left bound</em> of the timeline, that is, the first member of the project’s frame-range parameter</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.timelineGetRightBound">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">timelineGetRightBound</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.timelineGetRightBound" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>right bound</em> of the timeline, that is, the second member of the project’s frame-range parameter</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.timelineGetTime">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">timelineGetTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.timelineGetTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Get the timeline’s current time.
+In Natron there’s only a single internal timeline and all Viewers are synchronised on that
+timeline. If the user seeks a specific frames, then all Viewers will render that frame.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.writeToScriptEditor">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">writeToScriptEditor</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.writeToScriptEditor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Writes the given <em>message</em> to the Script Editor panel of Natron. This can be useful to
+inform the user of various information, warnings or errors.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.saveProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">saveProject</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.saveProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Saves the current project under the current project name. If the project has
+never been saved so far, this function e saves the project to the file indicated by the <em>filename</em>
+parameter. In GUI mode, if <em>filename</em> is empty, it asks the user where to save the project in GUI
+mode.</p>
+<p>This function returns <em>True</em> if it saved successfully, <em>False</em> otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.saveProjectAs">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">saveProjectAs</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.saveProjectAs" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Save the project under the given <em>filename</em>.
+In GUI mode, if <em>filename</em> is empty, it prompts the user where to save the project.</p>
+<p>This function returns <em>True</em> if it saved successfully, <em>False</em> otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.saveTempProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">saveTempProject</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.saveTempProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Saves a copy of the project to the given <em>filename</em> without updating project properties
+such as the project path, last save time etc…
+This function returns <em>True</em> if it saved successfully, <em>False</em> otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.loadProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">loadProject</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.loadProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Loads the project indicated by <em>filename</em>.
+In GUI mode, this will open a new window only if the current window has modifications.
+In background mode this will close the current project of this <code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code>
+and open the project indicated by <em>filename</em> in it.
+This function returns the <code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code> object upon success, <em>None</em> otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.resetProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">resetProject</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.resetProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Attempts to close the current project, without wiping the window.
+In GUI mode, the user is first prompted to saved his/her changes and can abort the
+reset, in which case this function will return <em>False</em>.
+In background mode this function always succeeds, hence always returns <em>True</em>.
+this always succeed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.closeProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">closeProject</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.closeProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.App.resetProject" title="NatronEngine.NatronEngine.App.resetProject"><code class="xref py py-func docutils literal notranslate"><span class="pre">resetProject()</span></code></a> except that the
+window will close in GUI mode.
+Also, if this is the last <code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code> alive, Natron will close.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.App.newProject">
+<code class="descclassname">NatronEngine.App.</code><code class="descname">newProject</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.App.newProject" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Creates a new <code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code>. In GUI mode, this will open a new window.
+Upon success, the <code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code> object is returned, otherwise <em>None</em>
+is returned.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="AppSettings.html" class="btn btn-neutral float-right" title="AppSettings" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="AnimatedParam.html" class="btn btn-neutral float-left" title="AnimatedParam" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

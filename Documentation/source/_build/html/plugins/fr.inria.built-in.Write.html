@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Write node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WriteFFmpeg node" href="fr.inria.openfx.WriteFFmpeg.html" />
+    <link rel="prev" title="Solid node" href="net.sf.openfx.Solid.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupImage.html">Image nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CheckerBoardPlugin.html">CheckerBoard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorBars.html">ColorBars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ColorWheel.html">ColorWheel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ConstantPlugin.html">Constant node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.OpenRaster.html">OpenRaster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Read.html">Read node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadCDR.html">ReadCDR node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadFFmpeg.html">ReadFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadKrita.html">ReadKrita node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadMisc.html">ReadMisc node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadOIIO.html">ReadOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPDF.html">ReadPDF node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPFM.html">ReadPFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.ReadPNG.html">ReadPNG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadPSD.html">ReadPSD node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.ReadSVG.html">ReadSVG node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.RunScript.html">RunScript node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Solid.html">Solid node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Write node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteFFmpeg.html">WriteFFmpeg node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WriteOIIO.html">WriteOIIO node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePFM.html">WritePFM node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.WritePNG.html">WritePNG node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupImage.html">Image nodes</a> &raquo;</li>
+        
+      <li>Write node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/fr.inria.built-in.Write.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="write-node">
+<span id="fr-inria-built-in-write"></span><h1>Write node<a class="headerlink" href="#write-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of Write (fr.inria.built-in.Write).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Node used to write images or videos on disk. The image/video is identified by its filename and its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="6%" />
+<col width="1%" />
+<col width="3%" />
+<col width="90%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Frame Increment / <code class="docutils literal notranslate"><span class="pre">frameIncr</span></code></td>
+<td>Integer</td>
+<td>1</td>
+<td>The number of frames the timeline should step before rendering the new frame. If 1, all frames will be rendered, if 2 only 1 frame out of 2, etc. This number cannot be less than 1.</td>
+</tr>
+<tr class="row-odd"><td>Read back file / <code class="docutils literal notranslate"><span class="pre">readBack</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the output of this node comes from reading the written file instead of the input node</td>
+</tr>
+<tr class="row-even"><td>Encoder / <code class="docutils literal notranslate"><span class="pre">encodingPluginChoice</span></code></td>
+<td>Choice</td>
+<td>Default</td>
+<td><div class="first last line-block">
+<div class="line">Select the internal encoder plug-in used for this file format. By default this uses the plug-in selected for this file extension in the Preferences.</div>
+<div class="line"><strong>Default</strong>: Use the default plug-in chosen from the Preferences to write this file format</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>File / <code class="docutils literal notranslate"><span class="pre">filename</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>The output image sequence/video stream file(s). The string must match the following format: path/sequenceName###.ext where the number of # (hashes) will define the number of digits to append to each file. For example path/mySequence###.jpg will be translated to path/mySequence000.jpg, path/mySequence001.jpg, etc. %d printf-like notation can also be used instead of the hashes, for example path/sequenceName%03d.ext will achieve the same than the example aforementioned. there will be at least 2 digits). The file name may not contain any # (hash) in which case it will be overridden everytimes. Views can be specified using the “long” view notation %V or the “short” notation using %v.</td>
+</tr>
+<tr class="row-even"><td>Format Type / <code class="docutils literal notranslate"><span class="pre">formatType</span></code></td>
+<td>Choice</td>
+<td>Project Format</td>
+<td><div class="first last line-block">
+<div class="line">Determines which rectangle of pixels will be written in output.</div>
+<div class="line"><strong>Input Format (input)</strong>: Renders the pixels included in the input format</div>
+<div class="line"><strong>Project Format (project)</strong>: Renders the pixels included in the project format</div>
+<div class="line"><strong>Fixed Format (fixed)</strong>: Renders the pixels included in the format indicated by the Format parameter.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Format / <code class="docutils literal notranslate"><span class="pre">NatronParamFormatChoice</span></code></td>
+<td>Choice</td>
+<td>HD 1920x1080</td>
+<td><div class="first last line-block">
+<div class="line">The output format to render</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super_35(full-ap) 1024x778 (1K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2.00 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super_35(full-ap) 2048x1556 (2K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2.00 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super_35(full-ap) 4096x3112 (4K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2.00 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>OCIO Config File / <code class="docutils literal notranslate"><span class="pre">ocioConfigFile</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>OpenColorIO configuration file</td>
+</tr>
+<tr class="row-odd"><td>Input Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioInputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Input data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-even"><td>File Colorspace / <code class="docutils literal notranslate"><span class="pre">ocioOutputSpaceIndex</span></code></td>
+<td>Choice</td>
+<td>&#160;</td>
+<td>Output data is taken to be in this colorspace.</td>
+</tr>
+<tr class="row-odd"><td>OCIO config help… / <code class="docutils literal notranslate"><span class="pre">ocioHelp</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Help about the OpenColorIO configuration.</td>
+</tr>
+<tr class="row-even"><td>Input Premult / <code class="docutils literal notranslate"><span class="pre">inputPremult</span></code></td>
+<td>Choice</td>
+<td>PreMultiplied</td>
+<td><div class="first last line-block">
+<div class="line">Input is considered to have this premultiplication state.</div>
+<div class="line">If it is Premultiplied, red, green and blue channels are divided by the alpha channel before applying the colorspace conversion.</div>
+<div class="line">This is set automatically from the input stream information, but can be adjusted if this information is wrong.</div>
+<div class="line"><strong>Opaque (opaque)</strong>: The image is opaque and so has no premultiplication state, as if the alpha component in all pixels were set to the white point.</div>
+<div class="line"><strong>PreMultiplied (premult)</strong>: The image is premultiplied by its alpha (also called “associated alpha”).</div>
+<div class="line"><strong>UnPreMultiplied (unpremult)</strong>: The image is unpremultiplied (also called “unassociated alpha”).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Clip Info… / <code class="docutils literal notranslate"><span class="pre">clipInfo</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Display information about the inputs</td>
+</tr>
+<tr class="row-even"><td>Frame Range / <code class="docutils literal notranslate"><span class="pre">frameRange</span></code></td>
+<td>Choice</td>
+<td>Project frame range</td>
+<td><div class="first last line-block">
+<div class="line">What frame range should be rendered.</div>
+<div class="line"><strong>Union of input ranges (union)</strong>: The union of all inputs frame ranges will be rendered.</div>
+<div class="line"><strong>Project frame range (project)</strong>: The frame range delimited by the frame range of the project will be rendered.</div>
+<div class="line"><strong>Manual (manual)</strong>: The frame range will be the one defined by the first frame and last frame parameters.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>First Frame / <code class="docutils literal notranslate"><span class="pre">firstFrame</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Last Frame / <code class="docutils literal notranslate"><span class="pre">lastFrame</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.openfx.WriteFFmpeg.html" class="btn btn-neutral float-right" title="WriteFFmpeg node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.openfx.Solid.html" class="btn btn-neutral float-left" title="Solid node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

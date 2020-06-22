@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Switch node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="TimeDissolve node" href="net.sf.openfx.TimeDissolvePlugin.html" />
+    <link rel="prev" title="SeExprSimple node" href="fr.inria.openfx.SeExprSimple.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeDifference.html">Absminus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.ContactSheetOFX.html">ContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.CopyRectanglePlugin.html">CopyRectangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DissolvePlugin.html">Dissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeIn.html">In node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.KeyMix.html">KeyMix node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.LayerContactSheetOFX.html">LayerContactSheet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMatte.html">Matte node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMax.html">Max node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergePlugin.html">Merge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMin.html">Min node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeMultiply.html">Multiply node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeOut.html">Out node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergePlus.html">Plus node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Premult.html">Premult node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeRoto.html">RotoMerge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.MergeScreen.html">Screen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.SeExpr.html">SeExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.openfx.SeExprSimple.html">SeExprSimple node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Switch node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.TimeDissolvePlugin.html">TimeDissolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Unpremult.html">Unpremult node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupMerge.html">Merge nodes</a> &raquo;</li>
+        
+      <li>Switch node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.switchPlugin.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="switch-node">
+<span id="net-sf-openfx-switchplugin"></span><h1>Switch node<a class="headerlink" href="#switch-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.switchPlugin.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.switchPlugin.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of Switch (net.sf.openfx.switchPlugin).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Lets you switch between any number of inputs.</p>
+<p>The selected input number may be manually selected using the “which” parameter, or selected automatically if “automatic” is checked.</p>
+<p>Automatic selection works by selecting, at any given time, the first input which is connected and has a non-empty region of definition.</p>
+<p>A typical use case is a graph where an edited movie is used as input, then split into shots using one FrameRange plugin per shot (with “before” and “after” set to “Black”), followed by a different processing for each shot (e.g. stabilization, color correction, cropping), and all outputs are gathered into an edited movie using a single “Switch” plug-in in automatic mode. In this graph, no plug-in shifts time, and thus there is no risk of desynchronization, whereas using “AppendClip” instead of “Switch” may shift time if there is an error in one of the FrameRange ranges (a typical error is to use the same frame number as the last frame of shot n and the first frame of shot n+1).</p>
+<p>This plugin concatenates transforms.</p>
+<p>See also: <a class="reference external" href="http://opticalenquiry.com/nuke/index.php?title=Switch">http://opticalenquiry.com/nuke/index.php?title=Switch</a></p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="43%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>3</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="11%" />
+<col width="4%" />
+<col width="4%" />
+<col width="81%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Which / <code class="docutils literal notranslate"><span class="pre">which</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>The input to display. Each input is displayed at the value corresponding to the number of the input. For example, setting which to 4 displays the image from input 4.</td>
+</tr>
+<tr class="row-odd"><td>Automatic / <code class="docutils literal notranslate"><span class="pre">automatic</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, automatically switch to the first connected input with a non-empty region of definition. This can be used to recompose a single clip from effects applied to different frame ranges.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.openfx.TimeDissolvePlugin.html" class="btn btn-neutral float-right" title="TimeDissolve node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.openfx.SeExprSimple.html" class="btn btn-neutral float-left" title="SeExprSimple node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

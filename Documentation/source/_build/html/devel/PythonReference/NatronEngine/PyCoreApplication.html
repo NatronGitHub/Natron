@@ -1,0 +1,743 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyCoreApplication &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="RectD" href="RectD.html" />
+    <link rel="prev" title="PathParam" href="PathParam.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>PyCoreApplication</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/PyCoreApplication.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="pycoreapplication">
+<span id="id1"></span><h1>PyCoreApplication<a class="headerlink" href="#pycoreapplication" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherited by:</strong> <a class="reference internal" href="../NatronGui/PyGuiApplication.html"><span class="doc">PyGuiApplication</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This object represents a background instance of Natron.
+See <a class="reference internal" href="#coreapp-details"><span class="std std-ref">detailed description</span></a>…</p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.appendToNatronPath" title="NatronEngine.NatronEngine.PyCoreApplication.appendToNatronPath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">appendToNatronPath</span></code></a> (path)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getSettings" title="NatronEngine.NatronEngine.PyCoreApplication.getSettings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getSettings</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getBuildNumber" title="NatronEngine.NatronEngine.PyCoreApplication.getBuildNumber"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getBuildNumber</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getInstance" title="NatronEngine.NatronEngine.PyCoreApplication.getInstance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getInstance</span></code></a> (idx)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getActiveInstance" title="NatronEngine.NatronEngine.PyCoreApplication.getActiveInstance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getActiveInstance</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronDevelopmentStatus" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronDevelopmentStatus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronDevelopmentStatus</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronPath" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronPath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronPath</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionEncoded" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionEncoded"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronVersionEncoded</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMajor" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMajor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronVersionMajor</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMinor" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMinor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronVersionMinor</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionRevision" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionRevision"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronVersionRevision</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionString" title="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionString"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNatronVersionString</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNumCpus" title="NatronEngine.NatronEngine.PyCoreApplication.getNumCpus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumCpus</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getNumInstances" title="NatronEngine.NatronEngine.PyCoreApplication.getNumInstances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getNumInstances</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs" title="NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPluginIDs</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs" title="NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPluginIDs</span></code></a> (filter)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.isBackground" title="NatronEngine.NatronEngine.PyCoreApplication.isBackground"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isBackground</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.is64Bit" title="NatronEngine.NatronEngine.PyCoreApplication.is64Bit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is64Bit</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.isLinux" title="NatronEngine.NatronEngine.PyCoreApplication.isLinux"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isLinux</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.isMacOSX" title="NatronEngine.NatronEngine.PyCoreApplication.isMacOSX"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isMacOSX</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.isUnix" title="NatronEngine.NatronEngine.PyCoreApplication.isUnix"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isUnix</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.isWindows" title="NatronEngine.NatronEngine.PyCoreApplication.isWindows"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isWindows</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.setOnProjectCreatedCallback" title="NatronEngine.NatronEngine.PyCoreApplication.setOnProjectCreatedCallback"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setOnProjectCreatedCallback</span></code></a> (pythonFunctionName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.setOnProjectLoadedCallback" title="NatronEngine.NatronEngine.PyCoreApplication.setOnProjectLoadedCallback"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setOnProjectLoadedCallback</span></code></a> (pythonFunctionName)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="coreapp-details"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>When running Natron there’s a <strong>unique</strong> instance of the <a class="reference internal" href="#"><span class="doc">PyCoreApplication</span></a> object.
+It holds general information about the process.</p>
+<p>Generally, throughout your scripts, you can access this object with the variable <em>natron</em>
+that Natron pre-declared for you, e.g.:</p>
+<blockquote>
+<div>natron.getPluginIDs()</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>The variable <strong>natron</strong> belongs to the module <strong>NatronEngine</strong>, hence make sure to make the following import:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">NatronEngine</span> <span class="kn">import</span><span class="o">*</span>
+</pre></div>
+</div>
+<p>Otherwise with a regular <em>import</em> you can still access <strong>natron</strong> by prepending the module:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>The variable stored in the module <strong>NatronEngine</strong> contains a reference to a <a class="reference internal" href="#"><span class="doc">PyCoreApplication</span></a>.
+If you need to have the GUI functionalities provided by <a class="reference internal" href="../NatronGui/PyGuiApplication.html"><span class="doc">PyGuiApplication</span></a>, you must then use
+the variable <strong>natron</strong> belonging to the module <strong>NatronGui</strong>.
+Hence make sure to make the following import to have access to <strong>natron</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">NatronGui</span> <span class="kn">import</span><span class="o">*</span>
+</pre></div>
+</div>
+<p class="last">With a regular import you can access it using <strong>NatronGui.natron</strong>.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Make sure to <strong>not</strong> make the 2 following imports, otherwise the <strong>natron</strong> variable will
+not point to something expected:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#This you should not do!</span>
+<span class="kn">from</span> <span class="nn">NatronEngine</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">NatronGui</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1">#This is OK</span>
+<span class="kn">import</span> <span class="nn">NatronEngine</span>
+<span class="kn">import</span> <span class="nn">NatronGui</span>
+
+<span class="c1">#This can also be done for convenience</span>
+<span class="kn">from</span> <span class="nn">NatronEngine</span> <span class="kn">import</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span> <span class="k">as</span> <span class="n">NE</span>
+<span class="kn">from</span> <span class="nn">NatronGui</span> <span class="kn">import</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">natron</span> <span class="k">as</span> <span class="n">NG</span>
+</pre></div>
+</div>
+</div>
+<p>This class is used only for background (command-line) runs of Natron, that is when you
+launch Natron in the following ways:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Natron</span> <span class="o">-</span><span class="n">b</span> <span class="o">...</span>
+<span class="n">Natron</span> <span class="o">-</span><span class="n">t</span>
+<span class="n">NatronRenderer</span>
+</pre></div>
+</div>
+<p>For interactive runs of Natron (with the user interface displayed), the derived class <a class="reference internal" href="../NatronGui/PyGuiApplication.html"><span class="doc">PyGuiApplication</span></a> is
+used instead, which gives access to more GUI specific functionalities.</p>
+<p>You should never need to make a new instance of this object yourself. Note that even if you
+did, internally the same object will be used and they will all refer to the same Natron
+application.</p>
+<p>In GUI mode, a :doc`PyGuiApplication` can have several projects opened. For each project
+you can refer to them with pre-declared variables <em>app1</em> , <em>app2</em>, etc…</p>
+<p>In background mode, there would be only 1 project opened, so Natron does the following
+assignment for you before calling any scripts:</p>
+<blockquote>
+<div>app = app1</div></blockquote>
+<p>See <a class="reference internal" href="App.html"><span class="doc">App</span></a> to access different opened projects.</p>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="NatronEngine.PyCoreApplication">
+<em class="property">class </em><code class="descclassname">NatronEngine.</code><code class="descname">PyCoreApplication</code><a class="headerlink" href="#NatronEngine.PyCoreApplication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Defines a new variable pointing to the same underlying application that the <em>natron</em> variable
+points to. This is equivalent to calling:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myVar</span> <span class="o">=</span> <span class="n">natron</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.appendToNatronPath">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">appendToNatronPath</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.appendToNatronPath" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Adds a new path to the Natron search paths. See <a class="reference internal" href="../../natronpath.html#natronpath"><span class="std std-ref">this section</span></a> for a detailed explanation
+of Natron search paths.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getSettings">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getSettings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getSettings" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">AppSettings</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns an object containing all Natron settings. The settings are what can be found in
+the preferences of Natron.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getBuildNumber">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getBuildNumber</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getBuildNumber" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the build-number of the current version of Natron. Generally this is used for
+release candidates, e.g.:</p>
+<blockquote>
+<div>Natron v1.0.0-RC1  : build number = 1
+Natron v1.0.0-RC2  : build number = 2
+Natron v1.0.0-RC3  : build number = 3</div></blockquote>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getInstance">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getInstance</code><span class="sig-paren">(</span><em>idx</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getInstance" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>idx</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="App.html"><span class="doc">App</span></a> instance at the given <em>idx</em>. Note that <em>idx</em> is 0-based, e.g.:
+0 would return what’s pointed to by <em>app1</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getActiveInstance">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getActiveInstance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getActiveInstance" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">App</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <a class="reference internal" href="App.html"><span class="doc">App</span></a> instance corresponding to the last project the user interacted with.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronDevelopmentStatus">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronDevelopmentStatus</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronDevelopmentStatus" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a string describing the development status of Natron. This can be one of the following values:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Alpha : Meaning the software has unimplemented functionalities and probably many bugs left</li>
+<li>Beta : Meaning the software has all features that were planned are implemented but there may be bugs</li>
+<li>RC : Meaning the software seems in a good shape and should be ready for release unless some last minute show-stoppers are found</li>
+<li>Release : Meaning the software is ready for production</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronPath">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronPath</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronPath" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a sequence of string with all natron <a class="reference internal" href="../../natronpath.html#natronpath"><span class="std std-ref">search paths</span></a>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionEncoded">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronVersionEncoded</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionEncoded" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns an <em>int</em> with the version of Natron encoded so that you can compare versions
+of Natron like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">getNatronVersionEncoded</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">20101</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>In that example, Natron’s version would be 2.1.1</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMajor">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronVersionMajor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMajor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the major version of Natron. If the version is 1.0.0, that would return 1.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMinor">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronVersionMinor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionMinor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Get the minor version of Natron. If the version is 1.2.0, that would return 2.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionRevision">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronVersionRevision</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionRevision" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the revision number of the version. If the version is 1.2.3, that would return 3.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionString">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNatronVersionString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNatronVersionString" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the version of Natron as a string, e.g.: <em>“1.1.0”</em></p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNumCpus">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNumCpus</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNumCpus" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the maximum hardware concurrency of the computer. If the computer has 8
+hyper-threaded cores, that would return 16.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getNumInstances">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getNumInstances</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getNumInstances" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of :doc`App` instances currently active.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getPluginIDs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a sequence of strings with all plugin-IDs currently loaded.</p>
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">getPluginIDs</code><span class="sig-paren">(</span><em>filter</em><span class="sig-paren">)</span></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filter</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Same as <a class="reference internal" href="#NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs" title="NatronEngine.NatronEngine.PyCoreApplication.getPluginIDs"><code class="xref py py-func docutils literal notranslate"><span class="pre">getPluginIDs()</span></code></a> but returns
+only plug-ins <em>containing</em> the given <em>filter</em>. Comparison is done <strong>without</strong> case-sensitivity.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.isBackground">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">isBackground</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.isBackground" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed in background mode, i.e: from the command-line, without
+any graphical user interface displayed.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.is64Bit">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">is64Bit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.is64Bit" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed on a 64 bit computer.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.isLinux">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">isLinux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.isLinux" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed on a Linux or FreeBSD distribution.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.isMacOSX">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">isMacOSX</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.isMacOSX" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed on MacOSX.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.isUnix">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">isUnix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.isUnix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed on Unix. Basically this is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">isLinux</span><span class="p">()</span> <span class="ow">or</span> <span class="n">natron</span><span class="o">.</span><span class="n">isMacOSX</span><span class="p">():</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.isWindows">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">isWindows</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.isWindows" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns True if Natron is executed on Windows.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.setOnProjectCreatedCallback">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">setOnProjectCreatedCallback</code><span class="sig-paren">(</span><em>pythonFunctionName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.setOnProjectCreatedCallback" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Convenience function to set the After Project Created callback. Note that this will override
+any callback set in the Preferences–&gt;Python–&gt;After Project created.
+This is exactly the same as calling:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">afterProjectCreated</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pythonFunctionName</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Clever use of this function can be made in the <strong>init.py</strong> script to do generic stuff
+for all projects (whether they are new projects or loaded projects). For instance
+one might want to add a list of Formats to the project. See the example <a class="reference internal" href="../../startupscripts.html#startupscripts"><span class="std std-ref">here</span></a></p>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.PyCoreApplication.setOnProjectLoadedCallback">
+<code class="descclassname">NatronEngine.PyCoreApplication.</code><code class="descname">setOnProjectLoadedCallback</code><span class="sig-paren">(</span><em>pythonFunctionName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.PyCoreApplication.setOnProjectLoadedCallback" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Convenience function to set the Default After Project Loaded callback. Note that this will override
+any callback set in the Preferences–&gt;Python–&gt;Default After Project Loaded.
+This is exactly the same as calling:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NatronEngine</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">defOnProjectLoaded</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pythonFunctionName</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="RectD.html" class="btn btn-neutral float-right" title="RectD" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PathParam.html" class="btn btn-neutral float-left" title="PathParam" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

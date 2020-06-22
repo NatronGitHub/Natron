@@ -1,0 +1,369 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Python Auto-declared variables &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Start-up scripts" href="startupscripts.html" />
+    <link rel="prev" title="Natron plug-in paths" href="natronpath.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="introduction.html">Introduction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="natronpath.html">Natron plug-in paths</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Python Auto-declared variables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-node">Knowing the script-name of a node:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-parameter">Knowing the script-name of a parameter:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-an-item-of-a-roto-node">Knowing the script-name of an item of a Roto node:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-track-in-a-tracker-node">Knowing the script-name of a track in a Tracker node:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-tab-widget">Knowing the script-name of a tab-widget:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-viewer">Knowing the script-name of a viewer:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#knowing-the-script-name-of-a-pypanel">Knowing the script-name of a PyPanel:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="startupscripts.html">Start-up scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="startupscripts.html#examples">Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="natronexecution.html">Natron in command-line</a></li>
+<li class="toctree-l3"><a class="reference internal" href="natronexecution.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="natronobjects.html">Objects hierarchy Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="introduction.html">Introduction</a> &raquo;</li>
+        
+      <li>Python Auto-declared variables</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/scriptvslabel.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="python-auto-declared-variables">
+<span id="autovar"></span><h1>Python Auto-declared variables<a class="headerlink" href="#python-auto-declared-variables" title="Permalink to this headline">¶</a></h1>
+<p>A lot of Python variables are pre-declared by Natron upon the creation of specific objects.
+This applies currently to the following objects:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">Effect</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">Param</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Layer.html"><span class="doc">Layer</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/BezierCurve.html"><span class="doc">BezierCurve</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/App.html"><span class="doc">App</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Track.html"><span class="doc">Track</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/PyCoreApplication.html"><span class="doc">PyCoreApplication</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronGui/PyTabWidget.html"><span class="doc">PyTabWidget</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronGui/PyViewer.html"><span class="doc">PyViewer</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronGui/PyPanel.html"><span class="doc">PyPanel</span></a></li>
+</ul>
+</div></blockquote>
+<p>The idea is that it is simpler to access a simple variable like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span> <span class="o">=</span> <span class="n">app1</span><span class="o">.</span><span class="n">Blur1</span>
+</pre></div>
+</div>
+<p>rather than call a bunch of functions such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span> <span class="o">=</span> <span class="n">app1</span><span class="o">.</span><span class="n">getNode</span><span class="p">(</span><span class="s2">&quot;app1.Blur1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To achieve this, auto-declared objects must be named with a correct syntax in
+a python script.
+For instance, the following variable would not work in Python:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my</span> <span class="n">variable</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="go">File &quot;&lt;stdin&gt;&quot;, line 1</span>
+<span class="go">my variable = 2</span>
+<span class="go">          ^</span>
+<span class="go">SyntaxError: invalid syntax</span>
+</pre></div>
+</div>
+<p>But the following would work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">myVariable</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>To overcome this issue, all auto-declared variables in Natron have 2 names:</p>
+<blockquote>
+<div><p>1. A script-name: The name that will be used to auto-declare the variable to Python.
+This name cannot be changed and is set once by Natron the first time the object is
+created. This name contains only alpha-numeric characters and does not start
+with a digit.</p>
+<p>2. A label: The label is what is displayed on the graphical user interface. For example
+the node label is visible in the node graph. This label can contain any character
+without any restriction.</p>
+</div></blockquote>
+<p>Basically there can only ever be one instance of an object with a <em>script-name</em> (so it is
+identified uniquely) but several instances of this object could have the same <em>label</em>.</p>
+<p>Generally when calling a function which takes an object name in parameter, you pass it always
+the script-name of the object.
+See for example <code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(name)</span></code>.</p>
+<div class="section" id="knowing-the-script-name-of-a-node">
+<span id="nodescriptname"></span><h2>Knowing the script-name of a node:<a class="headerlink" href="#knowing-the-script-name-of-a-node" title="Permalink to this headline">¶</a></h2>
+<p>The script-name of a node is visible in the graphical-user interface in the tool-tip of
+the widget to edit the <em>label</em> of the node:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/nodeScriptName.png"><img alt="../_images/nodeScriptName.png" src="../_images/nodeScriptName.png" style="width: 200px;" /></a>
+</div>
+<p>For children nodes (like tracks) you can access their script-name from the table of the Tracker
+node:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/trackScriptName.png"><img alt="../_images/trackScriptName.png" src="../_images/trackScriptName.png" style="width: 300px;" /></a>
+</div>
+<p>In command-line mode or via the <em>Script Editor</em>, you can also get the script-name of the node
+with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getScriptName()</span></code> function of the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html"><span class="doc">Effect</span></a> class.</p>
+</div>
+<div class="section" id="knowing-the-script-name-of-a-parameter">
+<span id="paramscriptname"></span><h2>Knowing the script-name of a parameter:<a class="headerlink" href="#knowing-the-script-name-of-a-parameter" title="Permalink to this headline">¶</a></h2>
+<p>In the settings panel of a node, the script-name of a parameter is visible in <em>bold</em> in the
+tooltip displayed when hovering a parameter with the mouse:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/paramScriptName.png"><img alt="../_images/paramScriptName.png" src="../_images/paramScriptName.png" style="width: 200px;" /></a>
+</div>
+<p>In command-line mode or via the <em>Script Editor</em> you can also get the script-name of the parameter
+with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getScriptName()</span></code> function of the <a class="reference internal" href="PythonReference/NatronEngine/Param.html"><span class="doc">Param</span></a> class.</p>
+</div>
+<div class="section" id="knowing-the-script-name-of-an-item-of-a-roto-node">
+<span id="rotoscriptname"></span><h2>Knowing the script-name of an item of a Roto node:<a class="headerlink" href="#knowing-the-script-name-of-an-item-of-a-roto-node" title="Permalink to this headline">¶</a></h2>
+<p>In the settings panel of a roto node, the script-name of an item is visible
+in the tooltip when hovering the mouse on the label of the item</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/rotoScriptName.png"><img alt="../_images/rotoScriptName.png" src="../_images/rotoScriptName.png" style="width: 300px;" /></a>
+</div>
+<p>In command-line mode or via the <em>Script Editor</em> you can also get the script-name of an item
+with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getScriptName()</span></code> function of the <a class="reference internal" href="PythonReference/NatronEngine/ItemBase.html"><span class="doc">ItemBase</span></a> class.</p>
+</div>
+<div class="section" id="knowing-the-script-name-of-a-track-in-a-tracker-node">
+<span id="trackerscriptname"></span><h2>Knowing the script-name of a track in a Tracker node:<a class="headerlink" href="#knowing-the-script-name-of-a-track-in-a-tracker-node" title="Permalink to this headline">¶</a></h2>
+<p>In the settings panel of a tracker node, the script-name of an item is visible
+in the tooltip when hovering the mouse on the label column.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/trackerScriptName.png"><img alt="../_images/trackerScriptName.png" src="../_images/trackerScriptName.png" style="width: 300px;" /></a>
+</div>
+<p>In command-line mode or via the <em>Script Editor</em> you can also get the script-name of an item
+with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getScriptName()</span></code> function of the <a class="reference internal" href="PythonReference/NatronEngine/Track.html"><span class="doc">Track</span></a> class.</p>
+</div>
+<div class="section" id="knowing-the-script-name-of-a-tab-widget">
+<h2>Knowing the script-name of a tab-widget:<a class="headerlink" href="#knowing-the-script-name-of-a-tab-widget" title="Permalink to this headline">¶</a></h2>
+<p>The script-name of a pane can be seen on the graphical user interface by hovering
+the mouse over the “Manage layout” button (in the top left hand corner of a pane).</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/paneScriptName1.png"><img alt="../_images/paneScriptName1.png" src="../_images/paneScriptName1.png" style="width: 300px;" /></a>
+</div>
+</div>
+<div class="section" id="knowing-the-script-name-of-a-viewer">
+<h2>Knowing the script-name of a viewer:<a class="headerlink" href="#knowing-the-script-name-of-a-viewer" title="Permalink to this headline">¶</a></h2>
+<p>The script-name of a viewer is the <a class="reference internal" href="#nodescriptname"><span class="std std-ref">script-name</span></a> of the node associated to it, e.g.:</p>
+<blockquote>
+<div>app1.pane1.Viewer1</div></blockquote>
+</div>
+<div class="section" id="knowing-the-script-name-of-a-pypanel">
+<h2>Knowing the script-name of a PyPanel:<a class="headerlink" href="#knowing-the-script-name-of-a-pypanel" title="Permalink to this headline">¶</a></h2>
+<p>The script-name of a <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> can be retrieved with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getPanelScriptName()</span></code>
+function of the class.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="startupscripts.html" class="btn btn-neutral float-right" title="Start-up scripts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="natronpath.html" class="btn btn-neutral float-left" title="Natron plug-in paths" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using the menus &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using the toolbar" href="getstarted-environment-toolbar.html" />
+    <link rel="prev" title="Environment" href="getstarted-environment.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">What is compositing?</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="getstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="getstarted-about.html">About</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted-installation.html">Installation</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="getstarted-environment.html">Environment</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#generic-description">Generic Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-toolbar">The Toolbar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-menu-bar">The Menu bar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-viewer-panel">The Viewer panel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-properties-editor">The Properties editor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-node-graph">The Node graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted-environment.html#the-curve-editor">The Curve editor</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="getstarted-environment.html#the-dopesheet">The Dopesheet</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted-troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="compositing.html">Compositing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+          <li><a href="getstarted.html">Getting started</a> &raquo;</li>
+        
+          <li><a href="getstarted-environment.html">Environment</a> &raquo;</li>
+        
+      <li>Using the menus</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/getstarted-environment-menus.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-the-menus">
+<h1>Using the menus<a class="headerlink" href="#using-the-menus" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>Modifications of your project are done using items located in menus located in different places of the interface.</p>
+<div class="section" id="the-menu-bar">
+<h2>The menu bar<a class="headerlink" href="#the-menu-bar" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="../_images/menubar_01.jpg"><img alt="../_images/menubar_01.jpg" src="../_images/menubar_01.jpg" style="width: 600px;" /></a>
+<div class="section" id="file-menu">
+<h3>File menu<a class="headerlink" href="#file-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_file_01.png" src="../_images/menu_file_01.png" />
+<dl class="docutils">
+<dt>New Project</dt>
+<dd>Clear the node graph to start from scratch a new process.</dd>
+<dt>Open Project…</dt>
+<dd>Load a <code class="docutils literal notranslate"><span class="pre">.ntp</span></code> file that is the description of a node graph. The <code class="docutils literal notranslate"><span class="pre">.ntp</span></code> contains no image data but only the instructions on how to process the images.</dd>
+<dt>Open Recent…</dt>
+<dd>Shortcut access to the most recently loaded <code class="docutils literal notranslate"><span class="pre">.ntp</span></code> files.</dd>
+</dl>
+<p>If a saved project is currently opened, the open functions will open in a new window.</p>
+<dl class="docutils">
+<dt>Reload Project</dt>
+<dd>Reload the current <code class="docutils literal notranslate"><span class="pre">.ntp</span></code> from disk. This can be used if you break something in your graph and don’t know exactly what.</dd>
+<dt>Close Project</dt>
+<dd>Close the current project but keep other projects opened.</dd>
+<dt>Save Project</dt>
+<dd>Save the current node graph.</dd>
+<dt>Save Project As…</dt>
+<dd>Save the current node graph with a new name</dd>
+<dt>New Project Version</dt>
+<dd>Increment the version number in the project file.</dd>
+</dl>
+<p>Project files are very small files. It is thus recommended to save different files for the different steps of your work. Would you want to recover a previous state or in case your <code class="docutils literal notranslate"><span class="pre">.ntp</span></code> gets corrupted.</p>
+<p>Natron expects the version number to be in the form <code class="docutils literal notranslate"><span class="pre">name_001.ntp</span></code>, <code class="docutils literal notranslate"><span class="pre">name_002.ntp</span></code> and so on.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can number your files with different patterns like <code class="docutils literal notranslate"><span class="pre">name_v01</span></code> but you will have to increment manually with “Save Project As…”</p>
+</div>
+<dl class="docutils">
+<dt>Export Project As Group</dt>
+<dd>With this item you can export a group of nodes to be reused later. This way you can create custom tools for Natron named plugins or Pyplugs.
+The group of nodes will appear as a single node when reused. This is why you must add one “output” node and “input” node(s) if relevant. So that Natron can determine how to connect your group when you will reuse it as part of another node graph</dd>
+</dl>
+</div>
+<div class="section" id="edit-menu">
+<h3>Edit menu<a class="headerlink" href="#edit-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_edit_01.png" src="../_images/menu_edit_01.png" />
+<dl class="docutils">
+<dt>Preferences…</dt>
+<dd>Many preferences let you change the display of informations inside Natron. Many optimisation settings are also located in this menu.</dd>
+<dt>Undo/Redo</dt>
+<dd>The Undo item is modified dynamically to hint you about the last operation that can be undone.</dd>
+</dl>
+</div>
+<div class="section" id="layout-menu">
+<h3>Layout menu<a class="headerlink" href="#layout-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_layout_01.png" src="../_images/menu_layout_01.png" />
+<p>The Layout is the position of the different user interface elements of Natron. This menu let’s you manage different layout configuration.</p>
+<p>Useful for:</p>
+<ul class="simple">
+<li>Use different configs according to your present task (animating with a bigger curve editor, rotoscoping with a bigger viewer,…)</li>
+<li>Export a layout to use on a different computer</li>
+<li>create separate viewer and tools windows when using a dual monitor setup.</li>
+</ul>
+<dl class="docutils">
+<dt>Import Layout…</dt>
+<dd>Load a file containing the position of UI elements. The file extension is usually <code class="docutils literal notranslate"><span class="pre">.nl</span></code></dd>
+<dt>Export Layout…</dt>
+<dd>Save a <code class="docutils literal notranslate"><span class="pre">.nl</span></code> file.</dd>
+</dl>
+<p>Restore default layout</p>
+<p>Some UI elements are stacked in the same screen position to acees these you can click on their tab names.</p>
+<p>In default Layout: Node Graph, Curve Editor, Dope Sheet are in the same lower left pane accessible through Tab navigation</p>
+<p>Here are 3 commands better used through their keyboard shortcuts:</p>
+<dl class="docutils">
+<dt>Previous Tab</dt>
+<dd>Shortcut: CTrl+Shift+T</dd>
+<dt>Next Tab</dt>
+<dd>Shortcut: Ctrl+T</dd>
+<dt>Close Tab</dt>
+<dd>Shortcut: Shift+Esc</dd>
+</dl>
+</div>
+<div class="section" id="display-menu">
+<h3>Display menu<a class="headerlink" href="#display-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_display_01.png" src="../_images/menu_display_01.png" />
+<p>In Natron you can view different parts of your work in different windows. For each window a viewer node is present in the node graph.
+To better compare different images each viewer can be split in side A/side B. This menu helps you manage these settings.</p>
+<a class="reference internal image-reference" href="../_images/viewer_02.png"><img alt="../_images/viewer_02.png" src="../_images/viewer_02.png" style="width: 600px;" /></a>
+<p>Above: a viewer can have multiple inputs, up to 10.
+By default only one input is displayed. Once you choose a mixing mode (see red box above) A and B sides become active. “W_under” is the usual mode.</p>
+<dl class="docutils">
+<dt>New Viewer</dt>
+<dd>Add a new viewer node in the node graph. The new viewer will be displayed in a new tab.
+This command also comes in handy if you inadvertently delete the first viewer node.</dd>
+<dt>Viewer(s)&gt;Connect to A/B side&gt;Connect Viewer to input 1/…/10</dt>
+<dd><p class="first">Show the image connected to input 1..10 in the A (or B) side of the viewer.
+If a node is selected it is also connected to the input 1..10 of the viewer.</p>
+<p class="last">It is very convenient to use shortcuts:
+:kbd:’0’
+to
+:kbd:’9’
+to quickly show the output of the selected node.</p>
+</dd>
+</dl>
+<p>Show project Settings…</p>
+<dl class="docutils">
+<dt>Show project errors log…</dt>
+<dd>This console shows error issued while rendering.(e.g. GPU specific errors can be inspected here as this is a sensitive area depending on your computer configuration).</dd>
+<dt>Show/Hide application console</dt>
+<dd>This console shows error that may occur when Natron’s configuration change (e.g. new plugins installed). Also handy to get the result of your python scripts.</dd>
+<dt>Enter Full Screen</dt>
+<dd>Save some screen space removing the title bar of Natron.</dd>
+</dl>
+</div>
+<div class="section" id="render-menu">
+<h3>Render menu<a class="headerlink" href="#render-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_render_01.png" src="../_images/menu_render_01.png" />
+<p>The final result of Natron image processing is only written to disk as a new image. When a Write node has been setup and the render process has been launched.</p>
+<dl class="docutils">
+<dt>Render All Writers</dt>
+<dd>Launch the rendering for all write nodes. The frame range to render is defined by the project settings and the Write node settings</dd>
+<dt>Render Selected Writers</dt>
+<dd>Launch the rendering for one or more  write nodes.</dd>
+<dt>Enable Render Statistics</dt>
+<dd>Display a window showing how long it takes to render each node. This can help find bottlenecks when a project takes a very long time to render.</dd>
+</dl>
+</div>
+<div class="section" id="cache-menu">
+<h3>Cache menu<a class="headerlink" href="#cache-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_cache_01.png" src="../_images/menu_cache_01.png" />
+<p>To improve Natron speed, some intermediate images of the node graph are kept in memory/on disk. This caching mechanism sometimes need to be cleared to free up memory/disk space. Use this if Natron seems to slow down or warn you about memory usage.</p>
+<dl class="docutils">
+<dt>Clear Disk Cache</dt>
+<dd>Clears the internal disk cache (which is persistent between Natron runs), and data generated by “DiskCache” nodes.</dd>
+<dt>Clear Playback Cache</dt>
+<dd>Clears final images sent to the viewer. Useful for previewing long sequences</dd>
+<dt>Clear Per-Node Cache</dt>
+<dd>Clears in-memory intermediate results. Useful when you make change high up in the node tree or have nodes with “Force caching” enabled.</dd>
+<dt>Clear All caches</dt>
+<dd>Best way to free up space in Natron.</dd>
+<dt>Clear Plug-Ins Load Cache</dt>
+<dd>Will trigger a full plugins scan on next Natron run.</dd>
+</dl>
+</div>
+<div class="section" id="help-menu">
+<h3>Help menu<a class="headerlink" href="#help-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_help_01.png" src="../_images/menu_help_01.png" />
+<dl class="docutils">
+<dt>Documentation</dt>
+<dd><ul class="first last simple">
+<li></li>
+</ul>
+</dd>
+<dt>Website</dt>
+<dd><ul class="first last simple">
+<li></li>
+</ul>
+</dd>
+<dt>Forum</dt>
+<dd><ul class="first last simple">
+<li></li>
+</ul>
+</dd>
+<dt>Issues</dt>
+<dd><ul class="first last simple">
+<li></li>
+</ul>
+</dd>
+</dl>
+<p>Links to various resources to help you with Natron.</p>
+<dl class="docutils">
+<dt>About Natron</dt>
+<dd>Information about your version of Natron.</dd>
+</dl>
+</div>
+<div class="section" id="tools-menu">
+<h3>Tools menu<a class="headerlink" href="#tools-menu" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/menu_tools_01.png" src="../_images/menu_tools_01.png" />
+<p>In this menu additional functions are added through python scripting. Natron interface can be vastly modified through scripting.</p>
+</div>
+<div class="section" id="context-menus">
+<h3>Context menus<a class="headerlink" href="#context-menus" title="Permalink to this headline">¶</a></h3>
+<p>You can right-click in many places of Natron to get quick access to a contextual menu. Here are the main ones:</p>
+<div class="figure" id="id1">
+<img alt="../_images/menu_context_curve_01.png" src="../_images/menu_context_curve_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the Curve Editor window</span></p>
+</div>
+<ul class="simple">
+<li></li>
+</ul>
+<div class="figure" id="id2">
+<img alt="../_images/menu_context_dope_01.png" src="../_images/menu_context_dope_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the Dope Sheet window</span></p>
+</div>
+<div class="figure" id="id3">
+<img alt="../_images/menu_context_nodegraph_01.png" src="../_images/menu_context_nodegraph_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the node graph window</span></p>
+</div>
+<ul class="simple">
+<li></li>
+</ul>
+<div class="figure" id="id4">
+<img alt="../_images/menu_context_parameter_01.png" src="../_images/menu_context_parameter_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the Node Graph window</span></p>
+</div>
+<ul class="simple">
+<li></li>
+</ul>
+<div class="figure" id="id5">
+<img alt="../_images/menu_context_properties_01.png" src="../_images/menu_context_properties_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the Properties window</span></p>
+</div>
+<ul class="simple">
+<li></li>
+</ul>
+<div class="figure" id="id6">
+<img alt="../_images/menu_context_parameter_01.png" src="../_images/menu_context_parameter_01.png" />
+<p class="caption"><span class="caption-text">Context menu for a parameter box in the Properties window</span></p>
+</div>
+<ul class="simple">
+<li></li>
+</ul>
+<div class="figure" id="id7">
+<img alt="../_images/menu_context_viewer_01.png" src="../_images/menu_context_viewer_01.png" />
+<p class="caption"><span class="caption-text">Context menu for the Viewer window</span></p>
+</div>
+</div>
+<div class="section" id="menus-usage">
+<h3>Menus Usage<a class="headerlink" href="#menus-usage" title="Permalink to this headline">¶</a></h3>
+<p>When a menu item has a keyboard shortcut associated, it is visible inside the menus.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="getstarted-environment-toolbar.html" class="btn btn-neutral float-right" title="Using the toolbar" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="getstarted-environment.html" class="btn btn-neutral float-left" title="Environment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

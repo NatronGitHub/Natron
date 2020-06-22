@@ -1,0 +1,630 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DenoiseSharpen node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Dilate node" href="net.sf.cimg.CImgDilate.html" />
+    <link rel="prev" title="ChromaBlur node" href="net.sf.cimg.CImgChromaBlur.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">DenoiseSharpen node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description-1">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgExpression.html">GMICExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GodRays.html">GodRays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Shadertoy.html">Shadertoy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSoften.html">Soften node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupFilter.html">Filter nodes</a> &raquo;</li>
+        
+      <li>DenoiseSharpen node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.DenoiseSharpen.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="denoisesharpen-node">
+<span id="net-sf-openfx-denoisesharpen"></span><h1>DenoiseSharpen node<a class="headerlink" href="#denoisesharpen-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of DenoiseSharpen (net.sf.openfx.DenoiseSharpen).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Denoise and/or sharpen images using wavelet-based algorithms.</p>
+</div>
+<div class="section" id="description-1">
+<span id="id1"></span><h2>Description<a class="headerlink" href="#description-1" title="Permalink to this headline">¶</a></h2>
+<p>This plugin allows the separate denoising of image channels in multiple color spaces using wavelets, using the BayesShrink algorithm, and can also sharpen the image details.</p>
+<p>Noise levels for each channel may be either set manually, or analyzed from the image data in each wavelet subband using the MAD (median absolute deviation) estimator. Noise analysis is based on the assumption that the noise is Gaussian and additive (it is not intensity-dependent). If there is speckle or salt-and-pepper noise in the images, the Median or SmoothPatchBased filters may be more appropriate. The color model specifies the channels and the transforms used. Noise levels have to be re-adjusted or re-analyzed when changing the color model.</p>
+</div>
+<div class="section" id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h2>
+<p>The input image should be in linear RGB.</p>
+<p>For most footage, the effect works best by keeping the default Y’CbCr color model. The color models are made to work with Rec.709 data, but DenoiseSharpen will still work if the input is in another colorspace, as long as the input is linear RGB:</p>
+<ul class="simple">
+<li>The Y’CbCr color model uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’ and the the Rec.709 primaries to convert from R’G’B’ to Y’CbCr.</li>
+<li>The L * a * b color model uses the Rec.709 RGB primaries to convert from RGB to L * a * b.</li>
+<li>The R’G’B’ color model uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’.</li>
+<li>The RGB color model (linear) makes no assumption about the RGB color space, and works directly on the RGB components, assuming additive noise. This is the only option if the noisy source contains negative values. If, say, the noise is known to be multiplicative, one can convert the images to Log before denoising, use this option, and convert back to linear after denoising.</li>
+<li>The Alpha channel, if processed, is always considered to be linear.</li>
+</ul>
+<p>The simplest way to use this plugin is to leave the noise analysis area to the whole image, and click “Analyze Noise Levels”. Once the analysis is done, “Lock Noise Analysis” is checked in order to avoid modifying the essential parameters by mistake.</p>
+<p>If the image has many textured areas, it may be preferable to select an analysis area with flat colors, free from any details, shadows or highlights, to avoid considering texture as noise. The AnalysisMask input can be used to mask the analysis, if the rectangular area is not appropriate. Any non-zero pixels in the mask are taken into account. A good option for the AnalysisMask would be to take the inverse of the output of an edge detector and clamp it correctly so that all pixels near the edges have a value of zero..</p>
+<p>If the sequence to be denoised does not have enough flat areas, you can also connect a reference footage with the same kind of noise to the AnalysisSource input: that source will be used for the analysis only. If no source with flat areas is available, and noise analysis can only be performed on areas which also contain details, it is often preferable to disable very low, low, and sometimes medium frequencies in the “Frequency Tuning” parameters group, or at least to lower their gain, since they may be misestimated by the noise analysis process. If the noise is IID (independent and identically distributed), such as digital sensor noise, only “Denoise High Frequencies” should be checked. If the noise has some grain (i.e.&nbsp;it commes from lossy compression of noisy images by a camera, or it is scanned film), then you may want to enable medium frequencies as well. If low and very low frequencies are enabled, but the analysis area is not a flat zone, the signal itself (i.e.&nbsp;the noise-free image) could be considered as noise, and the result may exhibit low contrast and blur.</p>
+<p>To check what details have been kept after denoising, you can raise the Sharpen Amount to something like 10, and then adjust the Noise Level Gain to get the desired denoising amount, until no noise is left and only image details remain in the sharpened image. You can then reset the Sharpen Amount to zero, unless you actually want to enhance the contrast of your denoised footage.</p>
+<p>You can also check what was actually removed from the original image by selecting the “Noise” Output mode (instead of “Result”). If too many image details are visible in the noise, noise parameters may need to be tuned.</p>
+<p>This plugin was compiled with OpenMP support.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="6%" />
+<col width="91%" />
+<col width="4%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>The footage to be denoised. If nothing is connected to the AnalysisSource input, this is also used for noise analysis.</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>An optional image to use as a mask. By default, the effect is limited to the non-black areas of the mask.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>AnalysisSource</td>
+<td>An optional noise source. If connected, this is used instead of the Source input for the noise analysis. This is used to analyse noise from some footage by apply it on another footage, in case the footage to be denoised does not have enough flat areas.</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>AnalysisMask</td>
+<td>An optional mask for the analysis area. This mask is intersected with the Analysis Rectangle. Non-zero pixels are taken into account in the noise analysis phase.</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="8%" />
+<col width="1%" />
+<col width="2%" />
+<col width="88%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Output / <code class="docutils literal notranslate"><span class="pre">outputMode</span></code></td>
+<td>Choice</td>
+<td>Result</td>
+<td><div class="first last line-block">
+<div class="line">Select which image is output when analysis is locked. When analysis is not locked, the effect does nothing (the output is the source image).</div>
+<div class="line"><strong>Result (result)</strong>: The result of denoising and sharpening the Source image.</div>
+<div class="line"><strong>Noise (noise)</strong>: An image containing what would be added to the image to denoise it. If ‘Denoise Amount’ is zero, this image should be black. Only noise should be visible in this image. If you can see a lot of picture detail in the noise output, it means the current settings are denoising too hard and remove too much of the image, which leads to a smoothed result. Try to lower the noise levels or the noise level gain.</div>
+<div class="line"><strong>Sharpen (sharpen)</strong>: An image containing what would be added to the image to sharpen it. If ‘Sharpen Amount’ is zero, this image should be black. Only image details should be visible in this image. If you can see a lot of noise in the sharpen output, it means the current settings are denoising not enough, which leads to a noisy result. Try to raise the noise levels or the noise level gain.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Color Model / <code class="docutils literal notranslate"><span class="pre">colorModel</span></code></td>
+<td>Choice</td>
+<td>Y’CbCr(A)</td>
+<td><div class="first last line-block">
+<div class="line">The colorspace where denoising is performed. These colorspaces assume that input and output use the Rec.709/sRGB chromaticities and the D65 illuminant, but should tolerate other input colorspaces (the output colorspace will always be the same as the input colorspace). Noise levels are reset when the color model is changed.</div>
+<div class="line"><strong>Y’CbCr(A) (ycbcr)</strong>: The YCbCr color model has one luminance channel (Y) which contains most of the detail information of an image (such as brightness and contrast) and two chroma channels (Cb = blueness, Cr = reddness) that hold the color information. Note that this choice drastically affects the result. Uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’ and the the Rec.709 primaries to convert from R’G’B’ to Y’CbCr.</div>
+<div class="line"><strong>CIE L*a*b(A) (cielab)</strong>: CIE L*a*b* is a color model in which chrominance is separated from lightness and color distances are perceptually uniform. Note that this choice drastically affects the result. Uses the Rec.709 primaries to convert from RGB to L*a*b.</div>
+<div class="line"><strong>R’G’B’(A) (gammargb)</strong>: The R’G’B’ color model (gamma-corrected RGB) separates an image into channels of red, green, and blue. Note that this choice drastically affects the result. Uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’.</div>
+<div class="line"><strong>RGB(A) (linearrgb)</strong>: The Linear RGB color model processes the raw linear components. Usually a bad choice, except when denoising non-color data (e.g. depth or motion vectors). No assumption is made about the RGB color space.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Lock Analysis and Apply / <code class="docutils literal notranslate"><span class="pre">analysisLock</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Lock all noise analysis parameters and apply denoising. When the analysis is not locked, the source image is output.</td>
+</tr>
+<tr class="row-odd"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0.1 y: 0.1</td>
+<td>Coordinates of the bottom left corner of the analysis rectangle. This rectangle is intersected with the AnalysisMask input, if connected.</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 0.8 h: 0.8</td>
+<td>Width and height of the analysis rectangle. This rectangle is intersected with the AnalysisMask input, if connected.</td>
+</tr>
+<tr class="row-odd"><td>B3 Spline Interpolation / <code class="docutils literal notranslate"><span class="pre">useB3Spline</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>For wavelet decomposition, use a 5x5 filter based on B3 spline interpolation rather than a 3x3 Lagrange linear filter. Noise levels are reset when this setting is changed. The influence of this parameter is minimal, and it should not be changed.</td>
+</tr>
+<tr class="row-even"><td>Analysis Frame / <code class="docutils literal notranslate"><span class="pre">analysisFrame</span></code></td>
+<td>Integer</td>
+<td>-1</td>
+<td>The frame number where the noise levels were analyzed.</td>
+</tr>
+<tr class="row-odd"><td>Analyze Noise Levels / <code class="docutils literal notranslate"><span class="pre">analyzeNoiseLevels</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Computes the noise levels from the current frame and current color model. To use the same settings for the whole sequence, analyze a frame that is representative of the sequence. If a mask is set, it is used to compute the noise levels from areas where the mask is non-zero. If there are keyframes on the noise level parameters, this sets a keyframe at the current frame. The noise levels can then be fine-tuned.</td>
+</tr>
+<tr class="row-even"><td>Y Level (High) / <code class="docutils literal notranslate"><span class="pre">ylrNoiseLevelHigh</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Cb Level (High) / <code class="docutils literal notranslate"><span class="pre">cbagNoiseLevelHigh</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Cr Level (High) / <code class="docutils literal notranslate"><span class="pre">crbbNoiseLevelHigh</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Level (High) / <code class="docutils literal notranslate"><span class="pre">alphaNoiseLevelHigh</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Y Level (Medium) / <code class="docutils literal notranslate"><span class="pre">ylrNoiseLevelMedium</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Cb Level (Medium) / <code class="docutils literal notranslate"><span class="pre">cbagNoiseLevelMedium</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Cr Level (Medium) / <code class="docutils literal notranslate"><span class="pre">crbbNoiseLevelMedium</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Level (Medium) / <code class="docutils literal notranslate"><span class="pre">alphaNoiseLevelMedium</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Y Level (Low) / <code class="docutils literal notranslate"><span class="pre">ylrNoiseLevelLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Cb Level (Low) / <code class="docutils literal notranslate"><span class="pre">cbagNoiseLevelLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Cr Level (Low) / <code class="docutils literal notranslate"><span class="pre">crbbNoiseLevelLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Level (Low) / <code class="docutils literal notranslate"><span class="pre">alphaNoiseLevelLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Y Level (Very Low) / <code class="docutils literal notranslate"><span class="pre">ylrNoiseLevelVeryLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Cb Level (Very Low) / <code class="docutils literal notranslate"><span class="pre">cbagNoiseLevelVeryLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Cr Level (Very Low) / <code class="docutils literal notranslate"><span class="pre">crbbNoiseLevelVeryLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Level (Very Low) / <code class="docutils literal notranslate"><span class="pre">alphaNoiseLevelVeryLow</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the noise variance of the selected channel for the given noise frequency. May be estimated from image data by pressing the “Analyze Noise” button.</td>
+</tr>
+<tr class="row-even"><td>Noise Level Gain / <code class="docutils literal notranslate"><span class="pre">noiseLevelGain</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Global gain to apply to the noise level thresholds. 0 means no denoising, 1 means use the estimated thresholds multiplied by the per-frequency gain and the channel gain. The default value (1.0) is rather conservative (it does not destroy any kind of signal). Values around 1.1 or 1.2 usually give more pleasing results.</td>
+</tr>
+<tr class="row-odd"><td>Denoise Amount / <code class="docutils literal notranslate"><span class="pre">denoiseAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>The amount of denoising to apply. 0 means no denoising (which may be useful to sharpen without denoising), between 0 and 1 does a soft thresholding of below the thresholds, thus keeping some noise, and 1 applies the threshold strictly and removes everything below the thresholds. This should be used only if you want to keep some noise, for example for noise matching. This value is multiplied by the per-channel amount se in the ‘Channel Tuning’ group. Remember that the thresholds are multiplied by the per-frequency gain, the channel gain, and the Noise Level Gain first.</td>
+</tr>
+<tr class="row-even"><td>Denoise High Frequencies / <code class="docutils literal notranslate"><span class="pre">enableFreqHigh</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Check to enable the high frequency noise level thresholds. It is recommended to always leave this checked.</td>
+</tr>
+<tr class="row-odd"><td>High Gain / <code class="docutils literal notranslate"><span class="pre">gainFreqHigh</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the high frequency noise level thresholds. 0 means no denoising, 1 means use the estimated thresholds multiplied by the channel Gain and the Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Denoise Medium Frequencies / <code class="docutils literal notranslate"><span class="pre">enableFreqMedium</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Check to enable the medium frequency noise level thresholds. Can be disabled if the analysis area contains high frequency texture, or if the the noise is known to be IID (independent and identically distributed), for example if this is only sensor noise and lossless compression is used, and not grain or compression noise.</td>
+</tr>
+<tr class="row-odd"><td>Medium Gain / <code class="docutils literal notranslate"><span class="pre">gainFreqMedium</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the medium frequency noise level thresholds. 0 means no denoising, 1 means use the estimated thresholds multiplied by the channel Gain and the Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Denoise Low Frequencies / <code class="docutils literal notranslate"><span class="pre">enableFreqLow</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Check to enable the low frequency noise level thresholds. Must be disabled if the analysis area contains texture, or if the noise is known to be IID (independent and identically distributed), for example if this is only sensor noise and lossless compression is used, and not grain or compression noise.</td>
+</tr>
+<tr class="row-odd"><td>Low Gain / <code class="docutils literal notranslate"><span class="pre">gainFreqLow</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the low frequency noise level thresholds. 0 means no denoising, 1 means use the estimated thresholds multiplied by the channel Gain and the Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Denoise Very Low Frequencies / <code class="docutils literal notranslate"><span class="pre">enableFreqVeryLow</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Check to enable the very low frequency noise level thresholds. Can be disabled in most cases. Must be disabled if the analysis area contains texture, or if the noise is known to be IID (independent and identically distributed), for example if this is only sensor noise and lossless compression is used, and not grain or compression noise.</td>
+</tr>
+<tr class="row-odd"><td>Very Low Gain / <code class="docutils literal notranslate"><span class="pre">gainFreqVeryLow</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the very low frequency noise level thresholds. 0 means no denoising, 1 means use the estimated thresholds multiplied by the channel Gain and the global Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Adaptive Radius / <code class="docutils literal notranslate"><span class="pre">adaptiveRadius</span></code></td>
+<td>Integer</td>
+<td>4</td>
+<td>Radius of the window where the signal level is analyzed at each scale. If zero, the signal level is computed from the whole image, which may excessively blur the edges if the image has many flat color areas. A reasonable value should to be in the range 2-4.</td>
+</tr>
+<tr class="row-odd"><td>Y Gain / <code class="docutils literal notranslate"><span class="pre">ylrGain</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the thresholds for this channel. 0 means no denoising, 1 means use the estimated thresholds multiplied by the per-frequency gain and the global Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Y Amount / <code class="docutils literal notranslate"><span class="pre">ylrAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>The amount of denoising to apply to the specified channel. 0 means no denoising, between 0 and 1 does a soft thresholding of below the thresholds, thus keeping some noise, and 1 applies the threshold strictly and removes everything below the thresholds. This should be used only if you want to keep some noise, for example for noise matching. This value is multiplied by the global Denoise Amount. Remember that the thresholds are multiplied by the per-frequency gain, the channel gain, and the Noise Level Gain first.</td>
+</tr>
+<tr class="row-odd"><td>Cb Gain / <code class="docutils literal notranslate"><span class="pre">cbagGain</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the thresholds for this channel. 0 means no denoising, 1 means use the estimated thresholds multiplied by the per-frequency gain and the global Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Cb Amount / <code class="docutils literal notranslate"><span class="pre">cbagAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>The amount of denoising to apply to the specified channel. 0 means no denoising, between 0 and 1 does a soft thresholding of below the thresholds, thus keeping some noise, and 1 applies the threshold strictly and removes everything below the thresholds. This should be used only if you want to keep some noise, for example for noise matching. This value is multiplied by the global Denoise Amount. Remember that the thresholds are multiplied by the per-frequency gain, the channel gain, and the Noise Level Gain first.</td>
+</tr>
+<tr class="row-odd"><td>Cr Gain / <code class="docutils literal notranslate"><span class="pre">crbbGain</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the thresholds for this channel. 0 means no denoising, 1 means use the estimated thresholds multiplied by the per-frequency gain and the global Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Cr Amount / <code class="docutils literal notranslate"><span class="pre">crbbAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>The amount of denoising to apply to the specified channel. 0 means no denoising, between 0 and 1 does a soft thresholding of below the thresholds, thus keeping some noise, and 1 applies the threshold strictly and removes everything below the thresholds. This should be used only if you want to keep some noise, for example for noise matching. This value is multiplied by the global Denoise Amount. Remember that the thresholds are multiplied by the per-frequency gain, the channel gain, and the Noise Level Gain first.</td>
+</tr>
+<tr class="row-odd"><td>Alpha Gain / <code class="docutils literal notranslate"><span class="pre">alphaGain</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Gain to apply to the thresholds for this channel. 0 means no denoising, 1 means use the estimated thresholds multiplied by the per-frequency gain and the global Noise Level Gain.</td>
+</tr>
+<tr class="row-even"><td>Alpha Amount / <code class="docutils literal notranslate"><span class="pre">alphaAmount</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>The amount of denoising to apply to the specified channel. 0 means no denoising, between 0 and 1 does a soft thresholding of below the thresholds, thus keeping some noise, and 1 applies the threshold strictly and removes everything below the thresholds. This should be used only if you want to keep some noise, for example for noise matching. This value is multiplied by the global Denoise Amount. Remember that the thresholds are multiplied by the per-frequency gain, the channel gain, and the Noise Level Gain first.</td>
+</tr>
+<tr class="row-odd"><td>Sharpen Amount / <code class="docutils literal notranslate"><span class="pre">sharpenAmount</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Adjusts the amount of sharpening applied. Be careful that only components that are above the noise levels are enhanced, so the noise level gain parameters are very important for proper sharpening. For example, if ‘Noise Level Gain’ is set to zero (0), then noise is sharpened as well as signal. If the ‘Noise Level Gain’ is set to one (1), only signal is sharpened. In order to sharpen without denoising, set the ‘Denoise Amount’ parameter to zero (0).</td>
+</tr>
+<tr class="row-even"><td>Sharpen Size / <code class="docutils literal notranslate"><span class="pre">sharpenSize</span></code></td>
+<td>Double</td>
+<td>10</td>
+<td>Adjusts the size of the sharpening. For very unsharp images it is recommended to use higher values. Default is 10.</td>
+</tr>
+<tr class="row-odd"><td>Sharpen Y Only / <code class="docutils literal notranslate"><span class="pre">sharpenLuminance</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Sharpens luminance only (if colormodel is R’G’B’, sharpen only RGB). This avoids color artifacts to appear. Colour sharpness in natural images is not critical for the human eye.</td>
+</tr>
+<tr class="row-even"><td>(Un)premult / <code class="docutils literal notranslate"><span class="pre">premult</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.</td>
+</tr>
+<tr class="row-odd"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-even"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.cimg.CImgDilate.html" class="btn btn-neutral float-right" title="Dilate node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.cimg.CImgChromaBlur.html" class="btn btn-neutral float-left" title="ChromaBlur node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

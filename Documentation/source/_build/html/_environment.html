@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Environment Variables &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Image nodes" href="_groupImage.html" />
+    <link rel="prev" title="Preferences" href="_prefs.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="_prefs.html">Preferences</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#what-are-environment-variables">What are Environment Variables?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-set-an-environment-variable">How do I set an environment variable?</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#linux">Linux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#windows">Windows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#macos">macOS</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#natron-environment-variables">Natron Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="_group.html">Reference Guide</a> &raquo;</li>
+        
+      <li>Environment Variables</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/_environment.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="environment-variables">
+<h1>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-are-environment-variables">
+<h2>What are Environment Variables?<a class="headerlink" href="#what-are-environment-variables" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Environment_variable">Environment variables</a> are global system variables accessible by all the processes running under the Operating System (OS). Environment variables are useful to store system-wide values such as the directories to search for the executable programs (<code class="docutils literal notranslate"><span class="pre">PATH</span></code>) and the OS version.</p>
+</div>
+<div class="section" id="how-do-i-set-an-environment-variable">
+<h2>How do I set an environment variable?<a class="headerlink" href="#how-do-i-set-an-environment-variable" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<p>To set an environment variable on Linux, enter the following command at a shell prompt, according to which shell you are using:</p>
+<ul class="simple">
+<li>bash/ksh/zsh: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">variable=value</span></code></li>
+<li>csh/tcsh: <code class="docutils literal notranslate"><span class="pre">setenv</span> <span class="pre">variable</span> <span class="pre">value</span></code></li>
+</ul>
+<p>where variable is the name of the environment variable (such as <code class="docutils literal notranslate"><span class="pre">OFX_PLUGIN_PATH</span></code>) and value is the value you want to assign to the variable, (such as <code class="docutils literal notranslate"><span class="pre">/opt/OFX/Plugins</span></code>). To find out what environment variables are set, use the <code class="docutils literal notranslate"><span class="pre">env</span></code> command. To remove a variable from the environment, use the following commands:</p>
+<ul class="simple">
+<li>bash/ksh/zsh: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">-n</span> <span class="pre">variable</span></code></li>
+<li>csh/tcsh: <code class="docutils literal notranslate"><span class="pre">unsetenv</span> <span class="pre">variable</span></code></li>
+</ul>
+<p>To set permanently an environment variable, add the command to your shell’s startup script in your home directory. For Bash, this is usually <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>. Changes in these startup scripts don’t affect shell instances already started; try opening a new terminal window to get the new settings, or refresh the curent settings using <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">~/.bashrc</span></code>.</p>
+</div>
+<div class="section" id="windows">
+<h3>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
+<p>You can create or change environment variables in the Environment Variables dialog box. If you are adding to the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> environment variable or any environment variable that takes multiple values, you should separate each value with a semicolon (;).</p>
+<div class="section" id="windows-8-and-windows-10">
+<h4>Windows 8 and Windows 10<a class="headerlink" href="#windows-8-and-windows-10" title="Permalink to this headline">¶</a></h4>
+<p>To open the Environment Variables dialog box:</p>
+<ol class="arabic simple">
+<li>In Search, search for and then select: Edit environment variables for your account</li>
+</ol>
+<p>To create a new environment variable:</p>
+<ol class="arabic simple">
+<li>In the User variables section, click New to open the New User Variable dialog box.</li>
+<li>Enter the name of the variable and its value, and click OK. The variable is added to the User variables section of the Environment Variables dialog box.</li>
+<li>Click OK in the Environment Variables dialog box.</li>
+</ol>
+<p>To modify an existing environment variable:</p>
+<ol class="arabic simple">
+<li>In the User variables section, select the environment variable you want to modify.</li>
+<li>Click Edit to open the Edit User Variable dialog box.</li>
+<li>Change the value of the variable and click OK. The variable is updated in the User variables section of the Environment Variables dialog box.</li>
+</ol>
+<p>When you have finished creating or editing environment variables, click OK in the Environment Variables dialog box to save the values.</p>
+</div>
+<div class="section" id="windows-7">
+<h4>Windows 7<a class="headerlink" href="#windows-7" title="Permalink to this headline">¶</a></h4>
+<p>To open the Environment Variables dialog box:</p>
+<ol class="arabic simple">
+<li>Click Start, then click Control Panel</li>
+<li>Click User Accounts.</li>
+<li>Click User Accounts again.</li>
+<li>In the Task side pane on the left, click Change my environment variables to open the Environment Variables dialog box opens.</li>
+</ol>
+<p>To create a new environment variable:</p>
+<ol class="arabic simple">
+<li>In the User variables section, click New to open the New User Variable dialog box.</li>
+<li>Enter the name of the variable and its value, and click OK. The variable is added to the User variables section of the Environment Variables dialog box.</li>
+<li>Click OK in the Environment Variables dialog box.</li>
+</ol>
+<p>To modify an existing environment variable:</p>
+<ol class="arabic simple">
+<li>In the User variables section, select the environment variable you want to modify.</li>
+<li>Click Edit to open the Edit User Variable dialog box opens.</li>
+<li>Change the value of the variable and click OK. The variable is updated in the User variables section of the Environment Variables dialog box.</li>
+</ol>
+<p>When you have finished creating or editing environment variables, click OK in the Environment Variables dialog box to save the values. You can then close the Control Panel.</p>
+</div>
+</div>
+<div class="section" id="macos">
+<h3>macOS<a class="headerlink" href="#macos" title="Permalink to this headline">¶</a></h3>
+<p>To set an environment variable on macOS, open a terminal window. If you are setting the environment variable to run jobs from the command line, use the following command:</p>
+<p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">variable=value</span></code></p>
+<p>where variable is the name of the environment variable (such as <code class="docutils literal notranslate"><span class="pre">OFX_PLUGIN_PATH</span></code>) and value is the value you want to assign to the variable, (such as <code class="docutils literal notranslate"><span class="pre">/opt/OFX/Plugins</span></code>). You can find out which environment variables have been set with the <code class="docutils literal notranslate"><span class="pre">env</span></code> command.</p>
+<p>If you are setting the environment variable globally to use with applications, use the commands given below. The environment variables set by these commands are inherited by any shell or application.</p>
+<div class="section" id="macos-newer-than-10-10">
+<h4>macOS newer than 10.10<a class="headerlink" href="#macos-newer-than-10-10" title="Permalink to this headline">¶</a></h4>
+<p>See <a class="reference external" href="https://apple.stackexchange.com/questions/106355/setting-the-system-wide-path-environment-variable-in-mavericks">this article</a> for instructions on how to create a “plist” file to store system-wide environment variables in newer versions of macOS.</p>
+</div>
+<div class="section" id="macos-x-10-10">
+<h4>MacOS X 10.10<a class="headerlink" href="#macos-x-10-10" title="Permalink to this headline">¶</a></h4>
+<p>To set an environment variable, enter the following command:</p>
+<p><code class="docutils literal notranslate"><span class="pre">launchctl</span> <span class="pre">setenv</span> <span class="pre">variable</span> <span class="pre">&quot;value&quot;</span></code></p>
+<p>To find out if an environment variable is set, use the following command:</p>
+<p><code class="docutils literal notranslate"><span class="pre">launchctl</span> <span class="pre">getenv</span> <span class="pre">variable</span></code></p>
+<p>To clear an environment variable, use the following command:</p>
+<p><code class="docutils literal notranslate"><span class="pre">launchctl</span> <span class="pre">unsetenv</span> <span class="pre">variable</span></code></p>
+</div>
+</div>
+</div>
+<div class="section" id="natron-environment-variables">
+<h2>Natron Environment Variables<a class="headerlink" href="#natron-environment-variables" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">NATRON_PLUGIN_PATH</span></code>: A semicolon-separated list of directories where to look for PyPlugs and Toolsets. Subdirectories are also searched, and symbolic links are followed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">OFX_PLUGIN_PATH</span></code>: A semicolon-separated list of <a class="reference external" href="http://openfx.sourceforge.net/Documentation/1.4/Reference/ch02s02.html#ArchitectureInstallingLocation">directories</a> where to look for OpenFX plugin bundles. Subdirectories are also searched, and symbolic links are followed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>: semicolon-separated list of directories where to look for extra python modules. The Python modules should be compatible with Natron’s embedded Python, and can be tested using the Python executable <code class="docutils literal notranslate"><span class="pre">natron-python</span></code>, which is installed next to the Natron binary. Python modules can also be installed with <a class="reference external" href="https://pypi.org/project/pip/">pip</a>. For example, <code class="docutils literal notranslate"><span class="pre">natron-python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numpy</span></code> would install numpy for Natron.</p>
+<p><code class="docutils literal notranslate"><span class="pre">OCIO</span></code>: This variable can be used to point to the global <a class="reference external" href="https://opencolorio.org/">OpenColorIO</a> config file, e.g <code class="docutils literal notranslate"><span class="pre">config.ocio</span></code>, and it supersedes the OpenColorIO setting in Natron’s preferences.</p>
+<p><code class="docutils literal notranslate"><span class="pre">FONTCONFIG_PATH</span></code>: This variable may be used to override the default <a class="reference external" href="https://www.freedesktop.org/software/fontconfig/fontconfig-user.html">fontconfig</a> configuration directory, which configures fonts used by <a class="reference internal" href="plugins/net.fxarena.openfx.Text.html"><span class="doc">Text</span></a> plug-ins.</p>
+<p><code class="docutils literal notranslate"><span class="pre">NATRON_DISK_CACHE_PATH</span></code>: The location where the Natron tile/image cache is stored. This overrides the “Disk cache path” preference. On Linux, the default location is <code class="docutils literal notranslate"><span class="pre">$XDG_CACHE_HOME/INRIA/Natron</span></code> if the environment variable <code class="docutils literal notranslate"><span class="pre">XDG_CACHE_HOME</span></code> is set, else <code class="docutils literal notranslate"><span class="pre">$HOME/.cache/INRIA/Natron</span></code>. On macOS, the default location is <code class="docutils literal notranslate"><span class="pre">$HOME/Library/Caches/INRIA/Natron</span></code>. On Windows, the default location is <code class="docutils literal notranslate"><span class="pre">C:\Documents</span> <span class="pre">and</span> <span class="pre">Settings\%USERNAME%\Local</span> <span class="pre">Settings\Application</span> <span class="pre">Data\cache\INRIA\Natron</span></code>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="_groupImage.html" class="btn btn-neutral float-right" title="Image nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="_prefs.html" class="btn btn-neutral float-left" title="Preferences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

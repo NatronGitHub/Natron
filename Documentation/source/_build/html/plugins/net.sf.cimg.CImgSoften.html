@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Soften node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ZMask node" href="fr.inria.ZMask.html" />
+    <link rel="prev" title="SmoothRollingGuidance node" href="net.sf.cimg.CImgRollingGuidance.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DenoiseSharpen.html">DenoiseSharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgExpression.html">GMICExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GodRays.html">GodRays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.Shadertoy.html">Shadertoy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Soften node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupFilter.html">Filter nodes</a> &raquo;</li>
+        
+      <li>Soften node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.cimg.CImgSoften.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="soften-node">
+<span id="net-sf-cimg-cimgsoften"></span><h1>Soften node<a class="headerlink" href="#soften-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 4.0 of Soften (net.sf.cimg.CImgSoften).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Soften the input stream by reducing its Laplacian.</p>
+<p>The effects subtracts the Laplacian (as computed by the Laplacian plugin) times the ‘Amount’ parameter from the input stream.</p>
+<p>Uses the ‘vanvliet’ and ‘deriche’ functions from the CImg library.</p>
+<p>CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see <a class="reference external" href="http://cimg.eu">http://cimg.eu</a>).</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+<tr class="row-odd"><td>Mask</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="13%" />
+<col width="4%" />
+<col width="5%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Amount / <code class="docutils literal notranslate"><span class="pre">amount</span></code></td>
+<td>Double</td>
+<td>0.5</td>
+<td>Amount of softening to apply.</td>
+</tr>
+<tr class="row-odd"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>x: 3 y: 3</td>
+<td>Size (diameter) of the filter kernel, in pixel units (&gt;=0). The standard deviation of the corresponding Gaussian is size/2.4. No filter is applied if size &lt; 1.2.</td>
+</tr>
+<tr class="row-even"><td>Uniform / <code class="docutils literal notranslate"><span class="pre">uniform</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Apply the same amount of blur on X and Y.</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">filter</span></code></td>
+<td>Choice</td>
+<td>Gaussian</td>
+<td><div class="first last line-block">
+<div class="line">Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.</div>
+<div class="line"><strong>Quasi-Gaussian (quasigaussian)</strong>: Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).</div>
+<div class="line"><strong>Gaussian (gaussian)</strong>: Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).</div>
+<div class="line"><strong>Box (box)</strong>: Box filter - FIR (finite support / impulsional response).</div>
+<div class="line"><strong>Triangle (triangle)</strong>: Triangle/tent filter - FIR (finite support / impulsional response).</div>
+<div class="line"><strong>Quadratic (quadratic)</strong>: Quadratic filter - FIR (finite support / impulsional response).</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>(Un)premult / <code class="docutils literal notranslate"><span class="pre">premult</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.</td>
+</tr>
+<tr class="row-odd"><td>Invert Mask / <code class="docutils literal notranslate"><span class="pre">maskInvert</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the effect is fully applied where the mask is 0.</td>
+</tr>
+<tr class="row-even"><td>Mix / <code class="docutils literal notranslate"><span class="pre">mix</span></code></td>
+<td>Double</td>
+<td>1</td>
+<td>Mix factor between the original and the transformed image.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.ZMask.html" class="btn btn-neutral float-right" title="ZMask node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.cimg.CImgRollingGuidance.html" class="btn btn-neutral float-left" title="SmoothRollingGuidance node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

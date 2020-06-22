@@ -1,0 +1,524 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ImageStatistics node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Input node" href="fr.inria.built-in.Input.html" />
+    <link rel="prev" title="Group node" href="fr.inria.built-in.Group.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupOther.html">Other nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="net.fxarena.openfx.AudioCurve.html">AudioCurve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.BackDrop.html">Backdrop node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.DiskCache.html">DiskCache node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Dot.html">Dot node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Group.html">Group node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ImageStatistics node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Input.html">Input node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.NoOpPlugin.html">NoOp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Output.html">Output node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.built-in.Precomp.html">Precomp node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupOther.html">Other nodes</a> &raquo;</li>
+        
+      <li>ImageStatistics node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.ImageStatistics.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="imagestatistics-node">
+<span id="net-sf-openfx-imagestatistics"></span><h1>ImageStatistics node<a class="headerlink" href="#imagestatistics-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.ImageStatistics.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.ImageStatistics.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of ImageStatistics (net.sf.openfx.ImageStatistics).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Compute image statistics over the whole image or over a rectangle. The statistics can be computed either on RGBA components, in the HSVL colorspace (which is the HSV colorspace with an additional L component from HSL), or the position and value of the pixels with the maximum and minimum luminance values can be computed.</p>
+<p>The color values of the minimum and maximum luma pixels for an image sequence can be used as black and white point in a Grade node to remove flicker from the same sequence.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="18%" />
+<col width="3%" />
+<col width="8%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Restrict to Rectangle / <code class="docutils literal notranslate"><span class="pre">restrictToRectangle</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Restrict statistics computation to a rectangle.</td>
+</tr>
+<tr class="row-odd"><td>Bottom Left / <code class="docutils literal notranslate"><span class="pre">bottomLeft</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Coordinates of the bottom left corner of the rectangle</td>
+</tr>
+<tr class="row-even"><td>Size / <code class="docutils literal notranslate"><span class="pre">size</span></code></td>
+<td>Double</td>
+<td>w: 1 h: 1</td>
+<td>Width and height of the rectangle</td>
+</tr>
+<tr class="row-odd"><td>Auto Update / <code class="docutils literal notranslate"><span class="pre">autoUpdate</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Automatically update values when input or rectangle changes if an analysis was performed at current frame. If not checked, values are only updated if the plugin parameters change.</td>
+</tr>
+<tr class="row-even"><td>Interactive Update / <code class="docutils literal notranslate"><span class="pre">interactive</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.</td>
+</tr>
+<tr class="row-odd"><td>Min. / <code class="docutils literal notranslate"><span class="pre">statMin</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Minimum value.</td>
+</tr>
+<tr class="row-even"><td>Max. / <code class="docutils literal notranslate"><span class="pre">statMax</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Maximum value.</td>
+</tr>
+<tr class="row-odd"><td>Mean / <code class="docutils literal notranslate"><span class="pre">statMean</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>The mean is the average. Add up the values, and divide by the number of values.</td>
+</tr>
+<tr class="row-even"><td>S.Dev. / <code class="docutils literal notranslate"><span class="pre">statSDev</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>The standard deviation (S.Dev.) quantifies variability or scatter, and it is expressed in the same units as your data.</td>
+</tr>
+<tr class="row-odd"><td>Skewness / <code class="docutils literal notranslate"><span class="pre">statSkewness</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td><div class="first last line-block">
+<div class="line">Skewness quantifies how symmetrical the distribution is.</div>
+<div class="line">• A symmetrical distribution has a skewness of zero.</div>
+<div class="line">• An asymmetrical distribution with a long tail to the right (higher values) has a positive skew.</div>
+<div class="line">• An asymmetrical distribution with a long tail to the left (lower values) has a negative skew.</div>
+<div class="line">• The skewness is unitless.</div>
+<div class="line">• Any threshold or rule of thumb is arbitrary, but here is one: If the skewness is greater than 1.0 (or less than -1.0), the skewness is substantial and the distribution is far from symmetrical.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Kurtosis / <code class="docutils literal notranslate"><span class="pre">statKurtosis</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td><div class="first last line-block">
+<div class="line">Kurtosis quantifies whether the shape of the data distribution matches the Gaussian distribution.</div>
+<div class="line">•A Gaussian distribution has a kurtosis of 0.</div>
+<div class="line">•A flatter distribution has a negative kurtosis,</div>
+<div class="line">•A distribution more peaked than a Gaussian distribution has a positive kurtosis.</div>
+<div class="line">•Kurtosis has no units.</div>
+<div class="line">•The value that this plugin reports is sometimes called the excess kurtosis since the expected kurtosis for a Gaussian distribution is 0.0.</div>
+<div class="line">•An alternative definition of kurtosis is computed by adding 3 to the value reported by this plugin. With this definition, a Gaussian distribution is expected to have a kurtosis of 3.0.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Analyze Frame / <code class="docutils literal notranslate"><span class="pre">analyzeFrame</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze current frame and set values.</td>
+</tr>
+<tr class="row-even"><td>Analyze Sequence / <code class="docutils literal notranslate"><span class="pre">analyzeSequence</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze all frames from the sequence and set values.</td>
+</tr>
+<tr class="row-odd"><td>Clear Frame / <code class="docutils literal notranslate"><span class="pre">clearFrame</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear analysis for current frame.</td>
+</tr>
+<tr class="row-even"><td>Clear Sequence / <code class="docutils literal notranslate"><span class="pre">clearSequence</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear analysis for all frames from the sequence.</td>
+</tr>
+<tr class="row-odd"><td>HSVL Min. / <code class="docutils literal notranslate"><span class="pre">statHSVLMin</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td>Minimum value.</td>
+</tr>
+<tr class="row-even"><td>HSVL Max. / <code class="docutils literal notranslate"><span class="pre">statHSVLMax</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td>Maximum value.</td>
+</tr>
+<tr class="row-odd"><td>HSVL Mean / <code class="docutils literal notranslate"><span class="pre">statHSVLMean</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td>The mean is the average. Add up the values, and divide by the number of values.</td>
+</tr>
+<tr class="row-even"><td>HSVL S.Dev. / <code class="docutils literal notranslate"><span class="pre">statHSVLSDev</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td>The standard deviation (S.Dev.) quantifies variability or scatter, and it is expressed in the same units as your data.</td>
+</tr>
+<tr class="row-odd"><td>HSVL Skewness / <code class="docutils literal notranslate"><span class="pre">statHSVLSkewness</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td><div class="first last line-block">
+<div class="line">Skewness quantifies how symmetrical the distribution is.</div>
+<div class="line">• A symmetrical distribution has a skewness of zero.</div>
+<div class="line">• An asymmetrical distribution with a long tail to the right (higher values) has a positive skew.</div>
+<div class="line">• An asymmetrical distribution with a long tail to the left (lower values) has a negative skew.</div>
+<div class="line">• The skewness is unitless.</div>
+<div class="line">• Any threshold or rule of thumb is arbitrary, but here is one: If the skewness is greater than 1.0 (or less than -1.0), the skewness is substantial and the distribution is far from symmetrical.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>HSVL Kurtosis / <code class="docutils literal notranslate"><span class="pre">statHSVLKurtosis</span></code></td>
+<td>Color</td>
+<td>h: 0 s: 0 v: 0 l: 0</td>
+<td><div class="first last line-block">
+<div class="line">Kurtosis quantifies whether the shape of the data distribution matches the Gaussian distribution.</div>
+<div class="line">•A Gaussian distribution has a kurtosis of 0.</div>
+<div class="line">•A flatter distribution has a negative kurtosis,</div>
+<div class="line">•A distribution more peaked than a Gaussian distribution has a positive kurtosis.</div>
+<div class="line">•Kurtosis has no units.</div>
+<div class="line">•The value that this plugin reports is sometimes called the excess kurtosis since the expected kurtosis for a Gaussian distribution is 0.0.</div>
+<div class="line">•An alternative definition of kurtosis is computed by adding 3 to the value reported by this plugin. With this definition, a Gaussian distribution is expected to have a kurtosis of 3.0.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Analyze Frame / <code class="docutils literal notranslate"><span class="pre">analyzeFrameHSVL</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze current frame as HSVL and set values.</td>
+</tr>
+<tr class="row-even"><td>Analyze Sequence / <code class="docutils literal notranslate"><span class="pre">analyzeSequenceHSVL</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze all frames from the sequence as HSVL and set values.</td>
+</tr>
+<tr class="row-odd"><td>Clear Frame / <code class="docutils literal notranslate"><span class="pre">clearFrameHSVL</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear HSVL analysis for current frame.</td>
+</tr>
+<tr class="row-even"><td>Clear Sequence / <code class="docutils literal notranslate"><span class="pre">clearSequenceHSVL</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear HSVL analysis for all frames from the sequence.</td>
+</tr>
+<tr class="row-odd"><td>Luminance Math / <code class="docutils literal notranslate"><span class="pre">luminanceMath</span></code></td>
+<td>Choice</td>
+<td>Rec. 709</td>
+<td><div class="first last line-block">
+<div class="line">Formula used to compute luminance from RGB values.</div>
+<div class="line"><strong>Rec. 709 (rec709)</strong>: Use Rec. 709 (0.2126r + 0.7152g + 0.0722b).</div>
+<div class="line"><strong>Rec. 2020 (rec2020)</strong>: Use Rec. 2020 (0.2627r + 0.6780g + 0.0593b).</div>
+<div class="line"><strong>ACES AP0 (acesap0)</strong>: Use ACES AP0 (0.3439664498r + 0.7281660966g + -0.0721325464b).</div>
+<div class="line"><strong>ACES AP1 (acesap1)</strong>: Use ACES AP1 (0.2722287168r + 0.6740817658g + 0.0536895174b).</div>
+<div class="line"><strong>CCIR 601 (ccir601)</strong>: Use CCIR 601 (0.2989r + 0.5866g + 0.1145b).</div>
+<div class="line"><strong>Average (average)</strong>: Use average of r, g, b.</div>
+<div class="line"><strong>Max (max)</strong>: Use max or r, g, b.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Max Luma Pixel / <code class="docutils literal notranslate"><span class="pre">maxLumaPix</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Position of the pixel with the maximum luma value.</td>
+</tr>
+<tr class="row-odd"><td>Max Luma Pixel Value / <code class="docutils literal notranslate"><span class="pre">maxLumaPixVal</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>RGB value for the pixel with the maximum luma value.</td>
+</tr>
+<tr class="row-even"><td>Min Luma Pixel / <code class="docutils literal notranslate"><span class="pre">minLumaPix</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Position of the pixel with the minimum luma value.</td>
+</tr>
+<tr class="row-odd"><td>Min Luma Pixel Value / <code class="docutils literal notranslate"><span class="pre">minLumaPixVal</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>RGB value for the pixel with the minimum luma value.</td>
+</tr>
+<tr class="row-even"><td>Analyze Frame / <code class="docutils literal notranslate"><span class="pre">analyzeFrameLuma</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze current frame and set min/max luma values.</td>
+</tr>
+<tr class="row-odd"><td>Analyze Sequence / <code class="docutils literal notranslate"><span class="pre">analyzeSequenceLuma</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Analyze all frames from the sequence aand set min/max luma values.</td>
+</tr>
+<tr class="row-even"><td>Clear Frame / <code class="docutils literal notranslate"><span class="pre">clearFrameLuma</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear luma analysis for current frame.</td>
+</tr>
+<tr class="row-odd"><td>Clear Sequence / <code class="docutils literal notranslate"><span class="pre">clearSequenceLuma</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Clear luma analysis for all frames from the sequence.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fr.inria.built-in.Input.html" class="btn btn-neutral float-right" title="Input node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fr.inria.built-in.Group.html" class="btn btn-neutral float-left" title="Group node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

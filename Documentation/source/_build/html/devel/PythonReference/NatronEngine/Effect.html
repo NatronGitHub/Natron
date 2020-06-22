@@ -1,0 +1,1051 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Effect &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="ExprUtils" href="ExprUtils.html" />
+    <link rel="prev" title="DoubleParam" href="DoubleParam.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../APIReference.html">Python API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">NatronEngine</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="index.html#detailed-description">Detailed Description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../NatronGui/index.html">NatronGui</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../gettingstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="../../APIReference.html">Python API</a> &raquo;</li>
+        
+          <li><a href="index.html">NatronEngine</a> &raquo;</li>
+        
+      <li>Effect</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/devel/PythonReference/NatronEngine/Effect.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-NatronEngine"></span><div class="section" id="effect">
+<span id="id1"></span><h1>Effect<a class="headerlink" href="#effect" title="Permalink to this headline">¶</a></h1>
+<p><strong>Inherits</strong>: <a class="reference internal" href="Group.html"><span class="doc">Group</span></a> , <a class="reference internal" href="UserParamHolder.html"><span class="doc">UserParamHolder</span></a></p>
+<div class="section" id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<p>This object represents a single node in Natron, that is: an instance of a plug-in.
+See <a class="reference internal" href="#effectdetails"><span class="std std-ref">Detailed Description</span></a></p>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.addUserPlane" title="NatronEngine.NatronEngine.Effect.addUserPlane"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addUserPlane</span></code></a> (planeName,channels)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.endChanges" title="NatronEngine.NatronEngine.Effect.endChanges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">endChanges</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.beginChanges" title="NatronEngine.NatronEngine.Effect.beginChanges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">beginChanges</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.canConnectInput" title="NatronEngine.NatronEngine.Effect.canConnectInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">canConnectInput</span></code></a> (inputNumber, node)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.connectInput" title="NatronEngine.NatronEngine.Effect.connectInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">connectInput</span></code></a> (inputNumber, input)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.destroy" title="NatronEngine.NatronEngine.Effect.destroy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">destroy</span></code></a> ([autoReconnect=true])</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.disconnectInput" title="NatronEngine.NatronEngine.Effect.disconnectInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">disconnectInput</span></code></a> (inputNumber)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getAvailableLayers" title="NatronEngine.NatronEngine.Effect.getAvailableLayers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getAvailableLayers</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getBitDepth" title="NatronEngine.NatronEngine.Effect.getBitDepth"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getBitDepth</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getColor" title="NatronEngine.NatronEngine.Effect.getColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getColor</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getCurrentTime" title="NatronEngine.NatronEngine.Effect.getCurrentTime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getCurrentTime</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getOutputFormat" title="NatronEngine.NatronEngine.Effect.getOutputFormat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getOutputFormat</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getFrameRate" title="NatronEngine.NatronEngine.Effect.getFrameRate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getFrameRate</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getInput" title="NatronEngine.NatronEngine.Effect.getInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getInput</span></code></a> (inputNumber)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getInput" title="NatronEngine.NatronEngine.Effect.getInput"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getInput</span></code></a> (inputName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getLabel" title="NatronEngine.NatronEngine.Effect.getLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getLabel</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getInputLabel" title="NatronEngine.NatronEngine.Effect.getInputLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getInputLabel</span></code></a> (inputNumber)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getMaxInputCount" title="NatronEngine.NatronEngine.Effect.getMaxInputCount"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getMaxInputCount</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getParam" title="NatronEngine.NatronEngine.Effect.getParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParam</span></code></a> (name)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getParams" title="NatronEngine.NatronEngine.Effect.getParams"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getParams</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getPluginID" title="NatronEngine.NatronEngine.Effect.getPluginID"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPluginID</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getPosition" title="NatronEngine.NatronEngine.Effect.getPosition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPosition</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getPremult" title="NatronEngine.NatronEngine.Effect.getPremult"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPremult</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getPixelAspectRatio" title="NatronEngine.NatronEngine.Effect.getPixelAspectRatio"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getPixelAspectRatio</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getRegionOfDefinition" title="NatronEngine.NatronEngine.Effect.getRegionOfDefinition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getRegionOfDefinition</span></code></a> (time,view)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getRotoContext" title="NatronEngine.NatronEngine.Effect.getRotoContext"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getRotoContext</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getTrackerContext" title="NatronEngine.NatronEngine.Effect.getTrackerContext"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getTrackerContext</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getScriptName" title="NatronEngine.NatronEngine.Effect.getScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getScriptName</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getSize" title="NatronEngine.NatronEngine.Effect.getSize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getSize</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getUserPageParam" title="NatronEngine.NatronEngine.Effect.getUserPageParam"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getUserPageParam</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.isUserSelected" title="NatronEngine.NatronEngine.Effect.isUserSelected"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isUserSelected</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.isReaderNode" title="NatronEngine.NatronEngine.Effect.isReaderNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isReaderNode</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.isWriterNode" title="NatronEngine.NatronEngine.Effect.isWriterNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isWriterNode</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.isOutputNode" title="NatronEngine.NatronEngine.Effect.isOutputNode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isOutputNode</span></code></a> ()</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setColor" title="NatronEngine.NatronEngine.Effect.setColor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setColor</span></code></a> (r, g, b)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setLabel" title="NatronEngine.NatronEngine.Effect.setLabel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setLabel</span></code></a> (name)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setPosition" title="NatronEngine.NatronEngine.Effect.setPosition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPosition</span></code></a> (x, y)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setScriptName" title="NatronEngine.NatronEngine.Effect.setScriptName"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setScriptName</span></code></a> (scriptName)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setSize" title="NatronEngine.NatronEngine.Effect.setSize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setSize</span></code></a> (w, h)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setSubGraphEditable" title="NatronEngine.NatronEngine.Effect.setSubGraphEditable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setSubGraphEditable</span></code></a> (editable)</li>
+<li>def <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setPagesOrder" title="NatronEngine.NatronEngine.Effect.setPagesOrder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setPagesOrder</span></code></a> (pages)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="detailed-description">
+<span id="effectdetails"></span><h2>Detailed Description<a class="headerlink" href="#detailed-description" title="Permalink to this headline">¶</a></h2>
+<p>The Effect object can be used to operate with a single node in Natron.
+To create a new Effect, use the <a class="reference internal" href="App.html#NatronEngine.NatronEngine.App.createNode" title="NatronEngine.NatronEngine.App.createNode"><code class="xref py py-func docutils literal notranslate"><span class="pre">app.createNode(pluginID)</span></code></a> function.</p>
+<p>Natron automatically declares a variable to Python when a new Effect is created.
+This variable will have a script-name determined by Natron as explained in the
+<a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">Python Auto-declared variables</span></a> section.</p>
+<p>Once an Effect is instantiated, it declares all its <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> and inputs.
+See how to <a class="reference internal" href="#userparams"><span class="std std-ref">manage</span></a> user parameters below</p>
+<p>To get a specific <a class="reference internal" href="Param.html"><span class="doc">Param</span></a> by script-name, call the
+<a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getParam" title="NatronEngine.NatronEngine.Effect.getParam"><code class="xref py py-func docutils literal notranslate"><span class="pre">getParam(name)</span></code></a> function</p>
+<p>Input effects are mapped against a zero-based index. To retrieve an input Effect
+given an index, you can use the <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getInput" title="NatronEngine.NatronEngine.Effect.getInput"><code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(inputNumber)</span></code></a>
+function.</p>
+<p>To manage inputs, you can connect them and disconnect them with respect to their input
+index with the <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.connectInput" title="NatronEngine.NatronEngine.Effect.connectInput"><code class="xref py py-func docutils literal notranslate"><span class="pre">connectInput(inputNumber,input)</span></code></a> and
+then <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.disconnectInput" title="NatronEngine.NatronEngine.Effect.disconnectInput"><code class="xref py py-func docutils literal notranslate"><span class="pre">disconnectInput(inputNumber)</span></code></a> functions.</p>
+<p>If you need to destroy permanently the Effect, just call <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.destroy" title="NatronEngine.NatronEngine.Effect.destroy"><code class="xref py py-func docutils literal notranslate"><span class="pre">destroy()</span></code></a>.</p>
+<p>For convenience some GUI functionalities have been made accessible via the Effect class
+to control the GUI of the node (on the node graph):</p>
+<blockquote>
+<div><ul class="simple">
+<li>Get/Set the node position with the <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setPosition" title="NatronEngine.NatronEngine.Effect.setPosition"><code class="xref py py-func docutils literal notranslate"><span class="pre">setPosition(x,y)</span></code></a> and <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getPosition" title="NatronEngine.NatronEngine.Effect.getPosition"><code class="xref py py-func docutils literal notranslate"><span class="pre">getPosition()</span></code></a> functions</li>
+<li>Get/Set the node size with the <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setSize" title="NatronEngine.NatronEngine.Effect.setSize"><code class="xref py py-func docutils literal notranslate"><span class="pre">setSize(width,height)</span></code></a> and <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getSize" title="NatronEngine.NatronEngine.Effect.getSize"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSize()</span></code></a> functions</li>
+<li>Get/Set the node color with the <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.setColor" title="NatronEngine.NatronEngine.Effect.setColor"><code class="xref py py-func docutils literal notranslate"><span class="pre">setColor(r,g,b)</span></code></a> and <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getColor" title="NatronEngine.NatronEngine.Effect.getColor"><code class="xref py py-func docutils literal notranslate"><span class="pre">getColor()</span></code></a> functions</li>
+</ul>
+</div></blockquote>
+<div class="section" id="creating-user-parameters">
+<span id="userparams"></span><h3>Creating user parameters<a class="headerlink" href="#creating-user-parameters" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference internal" href="UserParamHolder.html#userparams-details"><span class="std std-ref">this section</span></a></p>
+</div>
+<div class="section" id="member-functions-description">
+<h3>Member functions description<a class="headerlink" href="#member-functions-description" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.addUserPlane">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">addUserPlane</code><span class="sig-paren">(</span><em>planeName</em>, <em>channels</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.addUserPlane" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>planeName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></li>
+<li><strong>channels</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Adds a new plane to the Channels selector of the node in its settings panel. When selected,
+the end-user can choose to output the result of the node to this new custom plane.
+The <em>planeName</em> will identify the plane uniquely and must not contain spaces or non
+python compliant characters.
+The <em>channels</em> are a sequence of channel names, e.g.:</p>
+<blockquote>
+<div>addUserPlane(“MyLayer”,[“R”, “G”, “B”, “A”])</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A plane cannot contain more than 4 channels and must at least have 1 channel.</p>
+</div>
+<p>This function returns <em>True</em> if the layer was added successfully, <em>False</em> otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.beginChanges">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">beginChanges</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.beginChanges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts a begin/End bracket, blocking all evaluation (=renders and callback onParamChanged) that would be issued due to
+a call to <a class="reference internal" href="IntParam.html#NatronEngine.NatronEngine.IntParam.setValue" title="NatronEngine.NatronEngine.IntParam.setValue"><code class="xref py py-func docutils literal notranslate"><span class="pre">setValue</span></code></a> on any parameter of the Effect.</p>
+<p>Similarly all input changes will not be evaluated until endChanges() is called.</p>
+<p>Typically to change several values at once we bracket the changes like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span><span class="o">.</span><span class="n">beginChanges</span><span class="p">()</span>
+<span class="n">param1</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">param2</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">param3</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">param4</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">node</span><span class="o">.</span><span class="n">endChanges</span><span class="p">()</span>  <span class="c1"># This triggers a new render</span>
+</pre></div>
+</div>
+<p>A more complex call:</p>
+<blockquote>
+<div>node.beginChanges()
+node.connectInput(0,otherNode)
+node.connectInput(1,thirdNode)
+param1.setValue(…)
+node.endChanges() # This triggers a new render</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.endChanges">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">endChanges</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.endChanges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ends a begin/end bracket. If the begin/end bracket recursion reaches 0 and there were calls
+made to <a class="reference internal" href="IntParam.html#NatronEngine.NatronEngine.IntParam.setValue" title="NatronEngine.NatronEngine.IntParam.setValue"><code class="xref py py-func docutils literal notranslate"><span class="pre">setValue</span></code></a> this function will effectively compresss
+all evaluations into a single one.
+See <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.beginChanges" title="NatronEngine.NatronEngine.Effect.beginChanges"><code class="xref py py-func docutils literal notranslate"><span class="pre">beginChanges()</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.canConnectInput">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">canConnectInput</code><span class="sig-paren">(</span><em>inputNumber</em>, <em>node</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.canConnectInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inputNumber</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>node</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns whether the given <em>node</em> can be connected at the given <em>inputNumber</em> of this
+Effect. This function could return False for one of the following reasons:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The Effect already has an input at the given <em>inputNumber</em></li>
+<li>The <em>node</em> is None</li>
+<li>The given <em>inputNumber</em> is out of range</li>
+<li>The <em>node</em> cannot have any node connected to it (such as a BackDrop or an Output)</li>
+<li>This Effect or the given <em>node</em> is a child of another node (for trackers only)</li>
+<li>Connecting <em>node</em> would create a cycle in the graph implying that it would create infinite recursions</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.connectInput">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">connectInput</code><span class="sig-paren">(</span><em>inputNumber</em>, <em>input</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.connectInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inputNumber</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+<li><strong>input</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Connects <em>input</em> to the given <em>inputNumber</em> of this Effect.
+This function calls internally <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.canConnectInput" title="NatronEngine.NatronEngine.Effect.canConnectInput"><code class="xref py py-func docutils literal notranslate"><span class="pre">canConnectInput()</span></code></a>
+to determine if a connection is possible.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.destroy">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">destroy</code><span class="sig-paren">(</span><span class="optional">[</span><em>autoReconnect=true</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.destroy" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>autoReconnect</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes this Effect from the current project definitively.
+If <em>autoReconnect</em> is True then any nodes connected to this node will try to connect
+their input to the input of this node instead.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.disconnectInput">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">disconnectInput</code><span class="sig-paren">(</span><em>inputNumber</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.disconnectInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inputNumber</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Removes any input Effect connected to the given <em>inputNumber</em> of this node.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getAvailableLayers">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getAvailableLayers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getAvailableLayers" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the layer available on this node. This is a dict with a <code class="xref py py-class docutils literal notranslate"><span class="pre">ImageLayer</span></code>
+as key and <code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code> as value. The Effect is the closest node in
+the upstream tree (including this node) that produced that layer.</p>
+<p>For example, in a simple graph Read –&gt; Blur, if the Read node has a layer available
+named “RenderLayer.combined” but Blur is set to process only the color layer (RGBA), then
+calling this function on the Blur will return a dict containing for key “RenderLayer.combined”
+the Read node, whereas the dict will have for the key “RGBA” the Blur node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getBitDepth">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getBitDepth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getBitDepth" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.ImageBitDepthEnum" title="NatronEngine.NatronEngine.Natron.ImageBitDepthEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageBitDepthEnum</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the bit-depth of the image in output of this node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getColor">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getColor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the color of this node as it appears on the node graph as [R,G,B] 3-dimensional tuple.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getCurrentTime">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getCurrentTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getCurrentTime" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current time of timeline if this node is currently rendering, otherwise
+it returns the current time at which the node is currently rendering for the caller
+thread.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getOutputFormat">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getOutputFormat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getOutputFormat" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">RectI</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the output format of this node in pixel units.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getFrameRate">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getFrameRate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getFrameRate" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the frame-rate of the sequence in output of this node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getInput">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getInput</code><span class="sig-paren">(</span><em>inputNumber</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getInput" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inputNumber</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the node connected at the given <em>inputNumber</em>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getInput</code><span class="sig-paren">(</span><em>inputName</em><span class="sig-paren">)</span></dt>
+<dd></dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">param inputName:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><p class="first"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">rtype:</th><td class="field-body"><p class="first"><code class="xref py py-class docutils literal notranslate"><span class="pre">Effect</span></code></p>
+<p class="last">Same as <a class="reference internal" href="#NatronEngine.NatronEngine.Effect.getInput" title="NatronEngine.NatronEngine.Effect.getInput"><code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(inputNumber)</span></code></a> except that the parameter in input
+is the name of the input as displayed on the node-graph. This function is made available for convenience.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getLabel">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getLabel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the <em>label</em> of the node. See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this section</span></a> for a discussion
+of the <em>label</em> vs the <em>script-name</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getInputLabel">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getInputLabel</code><span class="sig-paren">(</span><em>inputNumber</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getInputLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inputNumber</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the label of the input at the given <em>inputNumber</em>.
+It corresponds to the label displayed on the arrow of the input in the node graph.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getMaxInputCount">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getMaxInputCount</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getMaxInputCount" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the number of inputs for the node. Graphically this corresponds to the number
+of arrows in input.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getParam">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getParam</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns a <a class="reference internal" href="Param.html"><span class="doc">parameter</span></a> by its script-name or None if
+no such parameter exists.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getParams">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getParams</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getParams" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns all the <code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code> of this Effect as a sequence.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getPluginID">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getPluginID</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getPluginID" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the ID of the plug-in that this node instantiate.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getPosition">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getPosition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getPosition" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the current position of the node on the node-graph. This is a 2
+dimensional [X,Y] tuple.
+Note that in background mode, if used, this function will always return [0,0] and
+should NOT be used.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getPremult">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getPremult</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getPremult" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="Natron.html#NatronEngine.NatronEngine.Natron.ImagePremultiplicationEnum" title="NatronEngine.NatronEngine.Natron.ImagePremultiplicationEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImagePremultiplicationEnum</span></code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the alpha premultiplication state of the image in output of this node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getPixelAspectRatio">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getPixelAspectRatio</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getPixelAspectRatio" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns the pixel aspect ratio of the image in output of this node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getRegionOfDefinition">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getRegionOfDefinition</code><span class="sig-paren">(</span><em>time</em>, <em>view</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getRegionOfDefinition" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>view</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">RectD</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the bounding box of the image produced by this effect in canonical coordinates.
+This is exactly the value displayed in the “Info” tab of the settings panel of the node
+for the “Output”.
+This can be useful for example to set the position of a point parameter to the center
+of the region of definition.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getRotoContext">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getRotoContext</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getRotoContext" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Roto</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the roto context for this node. Currently only the Roto node has a roto context.
+The roto context is in charge of maintaining all information relative to <a class="reference internal" href="BezierCurve.html"><span class="doc">Beziers</span></a>
+and <a class="reference internal" href="Layer.html"><span class="doc">Layers</span></a>.
+Most of the nodes don’t have a roto context though and this function will return None.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getTrackerContext">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getTrackerContext</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getTrackerContext" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tracker</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the tracker context for this node. Currently only the Tracker node has a tracker context.
+The tracker context is in charge of maintaining all information relative to <a class="reference internal" href="Track.html"><span class="doc">Tracks</span></a>.
+Most of the nodes don’t have a tracker context though and this function will return None.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getScriptName">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getScriptName</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the script-name of this Effect. See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this</span></a> section for more
+information about the script-name.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getSize">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getSize" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Returns the size of this node on the node-graph as a 2 dimensional [Width,Height] tuple.
+Note that calling this function will in background mode will always return [0,0] and
+should not be used.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.getUserPageParam">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">getUserPageParam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.getUserPageParam" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">PageParam</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Convenience function to return the user page parameter if this Effect has one.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.isUserSelected">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">isUserSelected</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.isUserSelected" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns true if this node is selected in its containing nodegraph.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.isReaderNode">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">isReaderNode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.isReaderNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns True if this node is a reader node</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.isWriterNode">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">isWriterNode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.isWriterNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns True if this node is a writer node</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.isOutputNode">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">isOutputNode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.isOutputNode" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns True if this node is an output node (which also means that it has no output)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setColor">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setColor</code><span class="sig-paren">(</span><em>r</em>, <em>g</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setColor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>r</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>g</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>b</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the color of the node as it appears on the node graph.
+Note that calling this function will in background mode will do nothing and
+should not be used.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setLabel">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setLabel</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setLabel" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the label of the node as it appears in the user interface.
+See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this</span></a> section for an explanation of the difference between the <em>label</em> and the
+<em>script-name</em>.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setPosition">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setPosition</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setPosition" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>y</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the position of the node as it appears on the node graph.
+Note that calling this function will in background mode will do nothing and
+should not be used.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setScriptName">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setScriptName</code><span class="sig-paren">(</span><em>scriptName</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setScriptName" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scriptName</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the script-name of the node as used internally by Natron.
+See <a class="reference internal" href="../../scriptvslabel.html#autovar"><span class="std std-ref">this</span></a> section for an explanation of the difference between the <em>label</em> and the
+<em>script-name</em>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Using this function will remove any previous variable declared using the
+old script-name and will create a new variable with the new script name if valid.</p>
+</div>
+<p>If your script was using for instance a node named:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="o">.</span><span class="n">Blur1</span>
+</pre></div>
+</div>
+<p>and you renamed it BlurOne, it should now be available to Python this way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="o">.</span><span class="n">BlurOne</span>
+</pre></div>
+</div>
+<p>but using app1.Blur1 would report the following error:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+<span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="ne">NameError</span><span class="p">:</span> <span class="n">name</span> <span class="s1">&#39;Blur1&#39;</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">defined</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setSize">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setSize</code><span class="sig-paren">(</span><em>w</em>, <em>h</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setSize" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>w</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+<li><strong>h</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Set the size of the node as it appears on the node graph.
+Note that calling this function will in background mode will do nothing and
+should not be used.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setSubGraphEditable">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setSubGraphEditable</code><span class="sig-paren">(</span><em>editable</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setSubGraphEditable" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>editable</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Can be called to disable editing of the group via Natron’s graphical user interface.
+This is handy to prevent users from accidentally breaking the sub-graph.
+This can always be reverted by editing the python script associated.
+The user will still be able to see the internal node graph but will not be able to
+unlock it.</p>
+<dl class="method">
+<dt id="NatronEngine.NatronEngine.Effect.setPagesOrder">
+<code class="descclassname">NatronEngine.Effect.</code><code class="descname">setPagesOrder</code><span class="sig-paren">(</span><em>pages</em><span class="sig-paren">)</span><a class="headerlink" href="#NatronEngine.NatronEngine.Effect.setPagesOrder" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pages</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Given the string list <em>pages</em> try to find the corresponding pages by their-script name
+and order them in the given order.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ExprUtils.html" class="btn btn-neutral float-right" title="ExprUtils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="DoubleParam.html" class="btn btn-neutral float-left" title="DoubleParam" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

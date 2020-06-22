@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using the rotoscoping functionalities &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using the tracker functionalities" href="tracker.html" />
+    <link rel="prev" title="Rendering" href="renderingWriteNode.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callbacks.html">Using Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using the rotoscoping functionalities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#moving-items-within-layers">Moving items within layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-layers">Creating layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-shapes">Creating shapes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Using the rotoscoping functionalities</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/roto.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-the-rotoscoping-functionalities">
+<span id="rotoscopy"></span><h1>Using the rotoscoping functionalities<a class="headerlink" href="#using-the-rotoscoping-functionalities" title="Permalink to this headline">¶</a></h1>
+<p>All rotoscoping functionalities are gathered in the <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> class.
+For now, only the roto node can have a <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> object.
+The <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> object is <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">auto-declared</span></a> by Natron and can be accessed
+as an attribute of the roto node:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Roto1</span><span class="o">.</span><span class="n">roto</span>
+</pre></div>
+</div>
+<p>All the objects hierarchy in the <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> object is broken up in 2 classes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="PythonReference/NatronEngine/BezierCurve.html#beziercurve"><span class="std std-ref">BezierCurve</span></a>: This class represents a single bezier, may it be an ellipse, rectangle or bezier.</li>
+<li><a class="reference internal" href="PythonReference/NatronEngine/Layer.html#layer"><span class="std std-ref">Layer</span></a> : This is a container for BezierCurves and Layers</li>
+</ul>
+</div></blockquote>
+<p><a class="reference internal" href="PythonReference/NatronEngine/BezierCurve.html#beziercurve"><span class="std std-ref">Beziers</span></a> and <a class="reference internal" href="PythonReference/NatronEngine/Layer.html#layer"><span class="std std-ref">layers</span></a> can be accessed via their script-name directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app</span><span class="o">.</span><span class="n">Roto1</span><span class="o">.</span><span class="n">roto</span><span class="o">.</span><span class="n">Layer1</span><span class="o">.</span><span class="n">Bezier1</span>
+</pre></div>
+</div>
+<p>The <em>script-name</em> of the roto items can be found in the <a class="reference internal" href="scriptvslabel.html#rotoscriptname"><span class="std std-ref">settings panel</span></a> of the Roto node.</p>
+<div class="section" id="moving-items-within-layers">
+<h2>Moving items within layers<a class="headerlink" href="#moving-items-within-layers" title="Permalink to this headline">¶</a></h2>
+<p>In Natron, all the items in a layer are rendered from top to bottom, meaning the bottom-most items will always
+appear on top of the others.</p>
+<p>You can re-organize the tree using the functions available in the <a class="reference internal" href="PythonReference/NatronEngine/Layer.html#layer"><span class="std std-ref">Layer</span></a> class.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Removing an item from a layer or inserting it in a layer will change the auto-declared variable, e.g.:</p>
+<blockquote class="last">
+<div><p>fromLayer = app.Roto1.roto.Layer1
+toLayer = app.Roto1.roto.Layer2
+item = app.Roto1.roto.Layer1.Bezier1
+toLayer.addItem(item)</p>
+<p>#Now item is referenced from app.Roto1.roto.Layer2.Bezier1</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="creating-layers">
+<h2>Creating layers<a class="headerlink" href="#creating-layers" title="Permalink to this headline">¶</a></h2>
+<p>To create a new <a class="reference internal" href="PythonReference/NatronEngine/BezierCurve.html#beziercurve"><span class="std std-ref">BezierCurve</span></a>, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">createLayer()</span></code> function made available by the <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> class.</p>
+</div>
+<div class="section" id="creating-shapes">
+<h2>Creating shapes<a class="headerlink" href="#creating-shapes" title="Permalink to this headline">¶</a></h2>
+<p>To create a new <a class="reference internal" href="PythonReference/NatronEngine/BezierCurve.html#beziercurve"><span class="std std-ref">BezierCurve</span></a>, use one of the following functions made available by the <a class="reference internal" href="PythonReference/NatronEngine/Roto.html#roto"><span class="std std-ref">Roto</span></a> class:</p>
+<ul class="simple">
+<li><code class="xref py py-func docutils literal notranslate"><span class="pre">createBezier(x,y,time)</span></code></li>
+<li><code class="xref py py-func docutils literal notranslate"><span class="pre">createEllipse(x,y,diameter,fromCenter,time)</span></code></li>
+<li><code class="xref py py-func docutils literal notranslate"><span class="pre">createRectangle(x,y,size,time)</span></code></li>
+</ul>
+<p>Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
+at the time specified in parameter.</p>
+<p>A Bezier initially is in an <em>opened</em> state, meaning it doesn’t produce a shape yet (unless it is a rectangle or ellipse).
+At this stage you can then add control points using the :func`addControlPoint(x,y)&lt;NatronEngine.BezierCurve.addControlPoint&gt;`
+function.
+Once you’re one adding control points, call the function <code class="xref py py-func docutils literal notranslate"><span class="pre">setCurveFinished(finished)</span></code>
+to close the shape by connecting the last control point with the first.</p>
+<p>Once finished, you can refine the Bezier curve by adding control points with the <code class="xref py py-func docutils literal notranslate"><span class="pre">addControlPointOnSegment(index,t)</span></code> function.
+You can then move and remove control points of the Bezier.</p>
+<p>You can also slave a control point to a track using the <code class="xref py py-func docutils literal notranslate"><span class="pre">slavePointToTrack(index,trackTime,trackCenter)</span></code> function.</p>
+<p>A Bezier curve has several properties that the API allows you to modify:</p>
+<blockquote>
+<div><ul class="simple">
+<li>opacity</li>
+<li>color</li>
+<li>feather distance</li>
+<li>feather fall-off</li>
+<li>enable state</li>
+<li>overlay color</li>
+<li>compositing operator</li>
+</ul>
+</div></blockquote>
+<p>Most of them are available via a <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameter</span></a>, e.g.:</p>
+<blockquote>
+<div>colorParam = bezier.getColorParam()
+bezierColor = colorParam.get(time)</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tracker.html" class="btn btn-neutral float-right" title="Using the tracker functionalities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="renderingWriteNode.html" class="btn btn-neutral float-left" title="Rendering" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

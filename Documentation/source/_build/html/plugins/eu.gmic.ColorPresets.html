@@ -1,0 +1,1609 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>G’MIC Color Presets node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="G’MIC Colorful Blobs node" href="eu.gmic.ColorfulBlobs.html" />
+    <link rel="prev" title="G’MIC Color Blindness node" href="eu.gmic.ColorBlindness.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.AboutGMIC.html">About G’MIC node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DBlocks.html">G’MIC 3D Blocks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DColoredObject.html">G’MIC 3D Colored Object node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DElevation.html">G’MIC 3D Elevation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DExtrusion.html">G’MIC 3D Extrusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DImageObject.html">G’MIC 3D Image Object node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DLathing.html">G’MIC 3D Lathing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.3DRandomObjects.html">G’MIC 3D Random Objects node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Abstraction.html">G’MIC Abstraction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.AddGrain.html">G’MIC Add Grain node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.AlignLayers.html">G’MIC Align Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ApplyExternalCLUT.html">G’MIC Apply External CLUT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ArrayFaded.html">G’MIC Array Faded node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ArrayMirrored.html">G’MIC Array Mirrored node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ArrayRandom.html">G’MIC Array Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ArrayRandomColors.html">G’MIC Array Random Colors node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ArrayRegular.html">G’MIC Array Regular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.AsciiArt.html">G’MIC Ascii Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BWStencil.html">G’MIC B&amp;W Stencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Ball.html">G’MIC Ball node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Bandpass.html">G’MIC Bandpass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BarnsleyFern.html">G’MIC Barnsley Fern node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BasicAdjustments.html">G’MIC Basic Adjustments node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BayerFilter.html">G’MIC Bayer Filter node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BayerReconstruction.html">G’MIC Bayer Reconstruction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlackWhite.html">G’MIC Black &amp; White node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendAverageAll.html">G’MIC Blend Average All node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendEdges.html">G’MIC Blend Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendFade.html">G’MIC Blend Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendMedian.html">G’MIC Blend Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendSeamless.html">G’MIC Blend Seamless node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlendStandard.html">G’MIC Blend Standard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurAngular.html">G’MIC Blur Angular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurBloom.html">G’MIC Blur Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurDepthofField.html">G’MIC Blur Depth-of-Field node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurGaussian.html">G’MIC Blur Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurGlow.html">G’MIC Blur Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurLinear.html">G’MIC Blur Linear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BlurRadial.html">G’MIC Blur Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Bokeh.html">G’MIC Bokeh node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BoostChromaticity.html">G’MIC Boost Chromaticity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BoostFade.html">G’MIC Boost-Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.BoxFitting.html">G’MIC Box Fitting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Brushify.html">G’MIC Brushify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Burn.html">G’MIC Burn node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CLUTfromAfterBeforeLayers.html">G’MIC CLUT from After Before Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Camouflage.html">G’MIC Camouflage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Canvas.html">G’MIC Canvas node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CanvasTexture.html">G’MIC Canvas Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CartesianTransform.html">G’MIC Cartesian Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Cartoon.html">G’MIC Cartoon node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ChannelProcessing.html">G’MIC Channel Processing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ChannelstoLayers.html">G’MIC Channels to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Charcoal.html">G’MIC Charcoal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Chessboard.html">G’MIC Chessboard node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ChromaticAberrations.html">G’MIC Chromatic Aberrations node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CircleAbstraction.html">G’MIC Circle Abstraction node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CircleArt.html">G’MIC Circle Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CircleTransform.html">G’MIC Circle Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorBalance.html">G’MIC Color Balance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorBlindness.html">G’MIC Color Blindness node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">G’MIC Color Presets node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorfulBlobs.html">G’MIC Colorful Blobs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorizeLineartAutoFill.html">G’MIC Colorize Lineart Auto-Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorizeLineartPropagation.html">G’MIC Colorize Lineart Propagation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorizeLineartSmartColoring.html">G’MIC Colorize Lineart Smart Coloring node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorizePhotographs.html">G’MIC Colorize Photographs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorizewithColormap.html">G’MIC Colorize with Colormap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Colormap.html">G’MIC Colormap node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ColorstoLayers.html">G’MIC Colors to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ConformalMaps.html">G’MIC Conformal Maps node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ContrastSwissMask.html">G’MIC Contrast Swiss Mask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Convolve.html">G’MIC Convolve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Cracks.html">G’MIC Cracks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Crease.html">G’MIC Crease node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Crystal.html">G’MIC Crystal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CrystalBackground.html">G’MIC Crystal Background node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Cubism.html">G’MIC Cubism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Cupid.html">G’MIC Cupid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Curvature.html">G’MIC Curvature node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CustomCodeGlobal.html">G’MIC Custom Code Global node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CustomCodeLocal.html">G’MIC Custom Code Local node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.CustomizeCLUT.html">G’MIC Customize CLUT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Cutout.html">G’MIC Cutout node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DecomposeChannels.html">G’MIC Decompose Channels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Deinterlace.html">G’MIC Deinterlace node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DetailsEqualizer.html">G’MIC Details Equalizer node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DetectSkin.html">G’MIC Detect Skin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Dices.html">G’MIC Dices node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DifferenceofGaussians.html">G’MIC Difference of Gaussians node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DiffusionTensors.html">G’MIC Diffusion Tensors node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Dirty.html">G’MIC Dirty node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DistanceTransform.html">G’MIC Distance Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DistortLens.html">G’MIC Distort Lens node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Dithering.html">G’MIC Dithering node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DragonCurve.html">G’MIC Dragon Curve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DrawnMontage.html">G’MIC Drawn Montage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DropShadow.html">G’MIC Drop Shadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DropShadow3D.html">G’MIC Drop Shadow 3D node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.DropWater.html">G’MIC Drop Water node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Droste.html">G’MIC Droste node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Edges.html">G’MIC Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EdgesOffsets.html">G’MIC Edges Offsets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Ellipsionism.html">G’MIC Ellipsionism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Engrave.html">G’MIC Engrave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EqualizeHSIHSLHSV.html">G’MIC Equalize HSI-HSL-HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EqualizeHSV.html">G’MIC Equalize HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EqualizeLocalHistograms.html">G’MIC Equalize Local Histograms node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EqualizeShadow.html">G’MIC Equalize Shadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EquationPlotParametric.html">G’MIC Equation Plot Parametric node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EquationPlotYfX.html">G’MIC Equation Plot Y=f(X) node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EquirectangulartoNadirZenith.html">G’MIC Equirectangular to Nadir-Zenith node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.EuclideanPolar.html">G’MIC Euclidean Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ExtractObjects.html">G’MIC Extract Objects node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FadeLayers.html">G’MIC Fade Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FeltPen.html">G’MIC Felt Pen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FishEye.html">G’MIC Fish-Eye node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FlipRotateBlocs.html">G’MIC Flip &amp; Rotate Blocs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Flower.html">G’MIC Flower node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FourierAnalysis.html">G’MIC Fourier Analysis node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FourierTransform.html">G’MIC Fourier Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FourierWatermark.html">G’MIC Fourier Watermark node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Fractalize.html">G’MIC Fractalize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameBlur.html">G’MIC Frame Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameCube.html">G’MIC Frame Cube node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameFuzzy.html">G’MIC Frame Fuzzy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameMirror.html">G’MIC Frame Mirror node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FramePainting.html">G’MIC Frame Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FramePattern.html">G’MIC Frame Pattern node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameRegular.html">G’MIC Frame Regular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameRound.html">G’MIC Frame Round node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FrameSmooth.html">G’MIC Frame Smooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FreakyBW.html">G’MIC Freaky B&amp;W node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.FreakyDetails.html">G’MIC Freaky Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GamesDemos.html">G’MIC Games &amp; Demos node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Gear.html">G’MIC Gear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientCorners.html">G’MIC Gradient Corners node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientCustomShape.html">G’MIC Gradient Custom Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientLinear.html">G’MIC Gradient Linear node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientNorm.html">G’MIC Gradient Norm node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientRGB.html">G’MIC Gradient RGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientRadial.html">G’MIC Gradient Radial node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientRandom.html">G’MIC Gradient Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GradientfromLine.html">G’MIC Gradient from Line node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GridCartesian.html">G’MIC Grid Cartesian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GridHexagonal.html">G’MIC Grid Hexagonal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.GridTriangular.html">G’MIC Grid Triangular node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Halftone.html">G’MIC Halftone node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.HardSketch.html">G’MIC Hard Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Heart.html">G’MIC Heart node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Hearts.html">G’MIC Hearts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.HighlightBloom.html">G’MIC Highlight Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.HistogramAnalysis.html">G’MIC Histogram Analysis node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.HopePoster.html">G’MIC Hope Poster node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.HoughSketch.html">G’MIC Hough Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Illuminate2DShape.html">G’MIC Illuminate 2D Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ImportData.html">G’MIC Import Data node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InkWash.html">G’MIC Ink Wash node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InpaintHoles.html">G’MIC Inpaint Holes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InpaintMorphological.html">G’MIC Inpaint Morphological node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InpaintMultiScale.html">G’MIC Inpaint Multi-Scale node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InpaintPatchBased.html">G’MIC Inpaint Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.InpaintTransportDiffusion.html">G’MIC Inpaint Transport-Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Intarsia.html">G’MIC Intarsia node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Isophotes.html">G’MIC Isophotes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.JPEGArtefacts.html">G’MIC JPEG Artefacts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.KaleidoscopeBlended.html">G’MIC Kaleidoscope Blended node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.KaleidoscopePolar.html">G’MIC Kaleidoscope Polar node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.KaleidoscopeSymmetry.html">G’MIC Kaleidoscope Symmetry node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Kuwahara.html">G’MIC Kuwahara node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Laplacian.html">G’MIC Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Lava.html">G’MIC Lava node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LayerstoTiles.html">G’MIC Layers to Tiles node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LightGlow.html">G’MIC Light Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LightLeaks.html">G’MIC Light Leaks node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LightPatch.html">G’MIC Light Patch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LightRays.html">G’MIC Light Rays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Lightning.html">G’MIC Lightning node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Linify.html">G’MIC Linify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Lissajous.html">G’MIC Lissajous node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LocalNormalization.html">G’MIC Local Normalization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LocalOrientation.html">G’MIC Local Orientation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LocalProcessing.html">G’MIC Local Processing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Lomo.html">G’MIC Lomo node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.LylejksPainting.html">G’MIC Lylejk’s Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MagicDetails.html">G’MIC Magic Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MakeSeamlessDiffusion.html">G’MIC Make Seamless Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MakeSeamlessPatchBased.html">G’MIC Make Seamless Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MandelbrotJuliaSets.html">G’MIC Mandelbrot Julia Sets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Marble.html">G’MIC Marble node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Maze.html">G’MIC Maze node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MesswithBits.html">G’MIC Mess with Bits node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MightyDetails.html">G’MIC Mighty Details node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MineralMosaic.html">G’MIC Mineral Mosaic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Ministeck.html">G’MIC Ministeck node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerCMYK.html">G’MIC Mixer CMYK node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerHSV.html">G’MIC Mixer HSV node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerLab.html">G’MIC Mixer Lab node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerPCA.html">G’MIC Mixer PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerRGB.html">G’MIC Mixer RGB node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MixerYCbCr.html">G’MIC Mixer YCbCr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Montage.html">G’MIC Montage node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MorphLayers.html">G’MIC Morph Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MorphologicalFilter.html">G’MIC Morphological Filter node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Mosaic.html">G’MIC Mosaic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.MultiscaleOperator.html">G’MIC Multiscale Operator node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.NeonLightning.html">G’MIC Neon Lightning node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.NewtonFractal.html">G’MIC Newton Fractal node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.NoiseAdditive.html">G’MIC Noise Additive node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.NoisePerlin.html">G’MIC Noise Perlin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.NoiseSpread.html">G’MIC Noise Spread node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.OldPhotograph.html">G’MIC Old Photograph node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.OldMovieStripes.html">G’MIC Old-Movie Stripes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Oldschool8bits.html">G’MIC Oldschool 8bits node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.OpArt.html">G’MIC Op Art node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Pack.html">G’MIC Pack node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PackSprites.html">G’MIC Pack Sprites node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Painting.html">G’MIC Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PaperTexture.html">G’MIC Paper Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PenDrawing.html">G’MIC Pen Drawing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Pencil.html">G’MIC Pencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PencilPortrait.html">G’MIC Pencil Portrait node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Perspective.html">G’MIC Perspective node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PixelSort.html">G’MIC Pixel Sort node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Plaid.html">G’MIC Plaid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Plasma.html">G’MIC Plasma node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PolarTransform.html">G’MIC Polar Transform node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Polaroid.html">G’MIC Polaroid node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PolkaDots.html">G’MIC Polka Dots node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PolygonizeDelaunay.html">G’MIC Polygonize Delaunay node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PolygonizeEnergy.html">G’MIC Polygonize Energy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PopShadows.html">G’MIC Pop Shadows node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.PosterEdges.html">G’MIC Poster Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Posterize.html">G’MIC Posterize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Puzzle.html">G’MIC Puzzle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Quadrangle.html">G’MIC Quadrangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.QuadtreeVariations.html">G’MIC Quadtree Variations node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.QuickCopyright.html">G’MIC Quick Copyright node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RainSnow.html">G’MIC Rain &amp; Snow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Rainbow.html">G’MIC Rainbow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Raindrops.html">G’MIC Raindrops node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Random.html">G’MIC Random node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RandomColorEllipses.html">G’MIC Random Color Ellipses node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RandomShadeStripes.html">G’MIC Random Shade Stripes node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RedEyeAttenuation.html">G’MIC Red-Eye Attenuation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Reflection.html">G’MIC Reflection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ReliefLight.html">G’MIC Relief Light node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RemoveHotPixels.html">G’MIC Remove Hot Pixels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ResynthetizeTextureFFT.html">G’MIC Resynthetize Texture FFT node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ResynthetizeTexturePatchBased.html">G’MIC Resynthetize Texture Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Retinex.html">G’MIC Retinex node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.RetroFade.html">G’MIC Retro Fade node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Ripple.html">G’MIC Ripple node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Rodilius.html">G’MIC Rodilius node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Rorschach.html">G’MIC Rorschach node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SampleImage.html">G’MIC Sample Image node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Satin.html">G’MIC Satin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Scanlines.html">G’MIC Scanlines node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Seamcarve.html">G’MIC Seamcarve node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SeamlessTurbulence.html">G’MIC Seamless Turbulence node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Segmentation.html">G’MIC Segmentation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SelectReplaceColor.html">G’MIC Select-Replace Color node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SelectiveDesaturation.html">G’MIC Selective Desaturation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SelfGlitching.html">G’MIC Self Glitching node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Sepia.html">G’MIC Sepia node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ShadeBobs.html">G’MIC Shade Bobs node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ShadowPatch.html">G’MIC Shadow Patch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Shapeism.html">G’MIC Shapeism node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpAbstract.html">G’MIC Sharp Abstract node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenDeblur.html">G’MIC Sharpen Deblur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenGoldMeinel.html">G’MIC Sharpen Gold-Meinel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenInverseDiffusion.html">G’MIC Sharpen Inverse Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenMultiscale.html">G’MIC Sharpen Multiscale node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenOctaveSharpening.html">G’MIC Sharpen Octave Sharpening node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenRichardsonLucy.html">G’MIC Sharpen Richardson-Lucy node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenShockFilters.html">G’MIC Sharpen Shock Filters node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenTexture.html">G’MIC Sharpen Texture node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SharpenUnsharpMask.html">G’MIC Sharpen Unsharp Mask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ShockWaves.html">G’MIC Shock Waves node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SierpinskiTriangle.html">G’MIC Sierpinski Triangle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SimulateFilm.html">G’MIC Simulate Film node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Skeleton.html">G’MIC Skeleton node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Sketch.html">G’MIC Sketch node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SliceLuminosity.html">G’MIC Slice Luminosity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothAbstract.html">G’MIC Smooth Abstract node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothAnisotropic.html">G’MIC Smooth Anisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothAntialias.html">G’MIC Smooth Antialias node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothBilateral.html">G’MIC Smooth Bilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothDiffusion.html">G’MIC Smooth Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothGuided.html">G’MIC Smooth Guided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothMeanCurvature.html">G’MIC Smooth Mean-Curvature node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothMedian.html">G’MIC Smooth Median node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothNLMeans.html">G’MIC Smooth NL-Means node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothPatchBased.html">G’MIC Smooth Patch-Based node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothPatchPCA.html">G’MIC Smooth Patch-PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothPeronaMalik.html">G’MIC Smooth Perona-Malik node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothSelectiveGaussian.html">G’MIC Smooth Selective Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothSkin.html">G’MIC Smooth Skin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothThinBrush.html">G’MIC Smooth Thin Brush node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothTotalVariation.html">G’MIC Smooth Total Variation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SmoothWavelets.html">G’MIC Smooth Wavelets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Snowflake.html">G’MIC Snowflake node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Solidify.html">G’MIC Solidify node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SolveMaze.html">G’MIC Solve Maze node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Sphere.html">G’MIC Sphere node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Spherize.html">G’MIC Spherize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SplitDetailsAlpha.html">G’MIC Split Details Alpha node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SplitDetailsGaussian.html">G’MIC Split Details Gaussian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SplitDetailsWavelets.html">G’MIC Split Details Wavelets node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Sponge.html">G’MIC Sponge node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SquaretoCircle.html">G’MIC Square to Circle node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.StainedGlass.html">G’MIC Stained Glass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Stamp.html">G’MIC Stamp node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Stars.html">G’MIC Stars node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Stencil.html">G’MIC Stencil node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.StereographicProjection.html">G’MIC Stereographic Projection node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Streak.html">G’MIC Streak node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Stroke.html">G’MIC Stroke node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Stylize.html">G’MIC Stylize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.SuperPixels.html">G’MIC Super-Pixels node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Superformula.html">G’MIC Superformula node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Symmetric2DShape.html">G’MIC Symmetric 2D Shape node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Symmetrize.html">G’MIC Symmetrize node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Taquin.html">G’MIC Taquin node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Tetris.html">G’MIC Tetris node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TexturedGlass.html">G’MIC Textured Glass node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ThinEdges.html">G’MIC Thin Edges node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TileableRotation.html">G’MIC Tileable Rotation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TiledIsolation.html">G’MIC Tiled Isolation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TiledNormalization.html">G’MIC Tiled Normalization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TiledParameterization.html">G’MIC Tiled Parameterization node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TiledRandomShifts.html">G’MIC Tiled Random Shifts node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TiledRotation.html">G’MIC Tiled Rotation node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TilestoLayers.html">G’MIC Tiles to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ToneMapping.html">G’MIC Tone Mapping node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.ToneMappingFast.html">G’MIC Tone Mapping Fast node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TonestoLayers.html">G’MIC Tones to Layers node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TransferColorsHistogram.html">G’MIC Transfer Colors Histogram node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TransferColorsPCA.html">G’MIC Transfer Colors PCA node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.TransferColorsVariational.html">G’MIC Transfer Colors Variational node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Truchet.html">G’MIC Truchet node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Tunnel.html">G’MIC Tunnel node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Turbulence.html">G’MIC Turbulence node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Twirl.html">G’MIC Twirl node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.UpscaleDCCI2x.html">G’MIC Upscale DCCI2x node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.UpscaleDiffusion.html">G’MIC Upscale Diffusion node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.UpscaleScale2x.html">G’MIC Upscale Scale2x node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.UserDefined.html">G’MIC User-Defined node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.VectorPainting.html">G’MIC Vector Painting node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Vignette.html">G’MIC Vignette node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.VisibleWatermark.html">G’MIC Visible Watermark node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Warhol.html">G’MIC Warhol node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.WarpbyIntensity.html">G’MIC Warp by Intensity node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Water.html">G’MIC Water node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Wave.html">G’MIC Wave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Weave.html">G’MIC Weave node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.WhirlDrawing.html">G’MIC Whirl Drawing node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Whirls.html">G’MIC Whirls node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Wind.html">G’MIC Wind node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.gmic.Zoom.html">G’MIC Zoom node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupGMIC.html">GMIC nodes</a> &raquo;</li>
+        
+      <li>G’MIC Color Presets node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/eu.gmic.ColorPresets.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="gmic-color-presets-node">
+<span id="eu-gmic-colorpresets"></span><h1>G’MIC Color Presets node<a class="headerlink" href="#gmic-color-presets-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><em>This documentation is for version 1.0 of G’MIC Color Presets (eu.gmic.ColorPresets).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Note: The color LUTs proposed in this category comes from:</p>
+<p>Abigail Gonzalez - FreshLUTs</p>
+<p>Alex Jordan - FreshLUTs</p>
+<p>Free Cinematic LUTs</p>
+<p>30 Cinematic Travel Color</p>
+<p>RawTherapee Film Simulation</p>
+<p>Eric Ellerbrock - FreshLUTs</p>
+<p>FilterGrade Free Cinematic LUTs Pack</p>
+<p>J.T. Semple - FreshLUTs</p>
+<p>Kyler Holland 10 Free CLUTs</p>
+<p>Lutify.Me Free LUTs</p>
+<p>Moviz LUTs</p>
+<p>Ohad Peretz - FreshLUTs</p>
+<p>ON1 Free Photography LUTs</p>
+<p>PictureFX - A Free HaldCLUT Set</p>
+<p>PIXLS.US Contributors</p>
+<p>Purple11 - Free LUTs</p>
+<p>RocketStock 35 Free LUTs for Color Grading</p>
+<p>Shamoon Abbasi - FreshLUTs</p>
+<p>SmallHD Free Movie Look Pack</p>
+<p>Author: David Tschumperle. Latest Update: 2019/10/11.</p>
+<p>Wrapper for the G’MIC framework (<a class="reference external" href="http://gmic.eu">http://gmic.eu</a>) written by Tobias Fleischer (<a class="reference external" href="http://www.reduxfx.com">http://www.reduxfx.com</a>) and Frederic Devernay.</p>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="42%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Source</td>
+<td>&#160;</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="41%" />
+<col width="8%" />
+<col width="13%" />
+<col width="38%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>LUTs Pack / <code class="docutils literal notranslate"><span class="pre">LUTs_Pack</span></code></td>
+<td>Choice</td>
+<td>PIXLS.US (31)</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Abigail Gonzalez (21)</strong></div>
+<div class="line"><strong>Alex Jordan (81)</strong></div>
+<div class="line"><strong>Cinematic (8)</strong></div>
+<div class="line"><strong>Cinematic Travel (29)</strong></div>
+<div class="line"><strong>Creative Pack (33)</strong></div>
+<div class="line"><strong>Eric Ellerbrock (14)</strong></div>
+<div class="line"><strong>FilterGrade Cinematic (8)</strong></div>
+<div class="line"><strong>J.T. Semple (14)</strong></div>
+<div class="line"><strong>Kyler Holland (10)</strong></div>
+<div class="line"><strong>Lutify.Me (7)</strong></div>
+<div class="line"><strong>Moviz (48)</strong></div>
+<div class="line"><strong>Ohad Peretz (7)</strong></div>
+<div class="line"><strong>ON1 Photography (90)</strong></div>
+<div class="line"><strong>PictureFX (19)</strong></div>
+<div class="line"><strong>PIXLS.US (31)</strong></div>
+<div class="line"><strong>Purple11 (12)</strong></div>
+<div class="line"><strong>RocketStock (35)</strong></div>
+<div class="line"><strong>Shamoon Abbasi (25)</strong></div>
+<div class="line"><strong>SmallHD Movie Look (7)</strong></div>
+<div class="line"><strong>Others (69)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset / <code class="docutils literal notranslate"><span class="pre">Preset</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Blade Runner</strong></div>
+<div class="line"><strong>Blue House</strong></div>
+<div class="line"><strong>Blue Ice</strong></div>
+<div class="line"><strong>Caribe</strong></div>
+<div class="line"><strong>Cinema</strong></div>
+<div class="line"><strong>Cinema 2</strong></div>
+<div class="line"><strong>Cinema 3</strong></div>
+<div class="line"><strong>Cinema 4</strong></div>
+<div class="line"><strong>Cinema 5</strong></div>
+<div class="line"><strong>Cinema Noir</strong></div>
+<div class="line"><strong>Cinematic for Flog</strong></div>
+<div class="line"><strong>Day4Nite</strong></div>
+<div class="line"><strong>Eterna for Flog</strong></div>
+<div class="line"><strong>Filmic</strong></div>
+<div class="line"><strong>Fuji HDR</strong></div>
+<div class="line"><strong>Golden Gate</strong></div>
+<div class="line"><strong>Matrix</strong></div>
+<div class="line"><strong>Monochrome 1</strong></div>
+<div class="line"><strong>Monochrome 2</strong></div>
+<div class="line"><strong>Old West</strong></div>
+<div class="line"><strong>Science Fiction</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_2 / <code class="docutils literal notranslate"><span class="pre">Preset_2</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Action Magenta 01</strong></div>
+<div class="line"><strong>Action Red 01</strong></div>
+<div class="line"><strong>Adventure 1453</strong></div>
+<div class="line"><strong>Aggressive Highlights Recovery 5</strong></div>
+<div class="line"><strong>Bleech Bypass Green</strong></div>
+<div class="line"><strong>Bleech Bypass Yellow 01</strong></div>
+<div class="line"><strong>Blue Dark</strong></div>
+<div class="line"><strong>Blue Shadows 01</strong></div>
+<div class="line"><strong>Bright Green 01</strong></div>
+<div class="line"><strong>Brownish</strong></div>
+<div class="line"><strong>Colorful 0209</strong></div>
+<div class="line"><strong>Conflict 01</strong></div>
+<div class="line"><strong>Contrast with Highlights Protection</strong></div>
+<div class="line"><strong>Contrasty Afternoon</strong></div>
+<div class="line"><strong>Contrasty Green</strong></div>
+<div class="line"><strong>Cross Process CP 130</strong></div>
+<div class="line"><strong>Cross Process CP 14</strong></div>
+<div class="line"><strong>Cross Process CP 15</strong></div>
+<div class="line"><strong>Cross Process CP 16</strong></div>
+<div class="line"><strong>Cross Process CP 18</strong></div>
+<div class="line"><strong>Cross Process CP 3</strong></div>
+<div class="line"><strong>Cross Process CP 4</strong></div>
+<div class="line"><strong>Cross Process CP 6</strong></div>
+<div class="line"><strong>Dark Green 02</strong></div>
+<div class="line"><strong>Dark Green 1</strong></div>
+<div class="line"><strong>Dark Place 01</strong></div>
+<div class="line"><strong>Dream 1</strong></div>
+<div class="line"><strong>Dream 85</strong></div>
+<div class="line"><strong>Faded Retro 01</strong></div>
+<div class="line"><strong>Faded Retro 02</strong></div>
+<div class="line"><strong>Film 0987</strong></div>
+<div class="line"><strong>Film 9879</strong></div>
+<div class="line"><strong>Film Highlight Contrast</strong></div>
+<div class="line"><strong>Flat 30</strong></div>
+<div class="line"><strong>Green 2025</strong></div>
+<div class="line"><strong>Green Action</strong></div>
+<div class="line"><strong>Green Afternoon</strong></div>
+<div class="line"><strong>Green Conflict</strong></div>
+<div class="line"><strong>Green Day 01</strong></div>
+<div class="line"><strong>Green Day 02</strong></div>
+<div class="line"><strong>Green G09</strong></div>
+<div class="line"><strong>Green Indoor</strong></div>
+<div class="line"><strong>Green Light</strong></div>
+<div class="line"><strong>Harsh Day</strong></div>
+<div class="line"><strong>Harsh Sunset</strong></div>
+<div class="line"><strong>Highlights Protection</strong></div>
+<div class="line"><strong>Indoor Blue</strong></div>
+<div class="line"><strong>Low Contrast Blue</strong></div>
+<div class="line"><strong>Low Key 01</strong></div>
+<div class="line"><strong>Magenta Day</strong></div>
+<div class="line"><strong>Magenta Day 01</strong></div>
+<div class="line"><strong>Magenta Dream</strong></div>
+<div class="line"><strong>Memories</strong></div>
+<div class="line"><strong>Moonlight 01</strong></div>
+<div class="line"><strong>Mostly Blue</strong></div>
+<div class="line"><strong>Muted 01</strong></div>
+<div class="line"><strong>Night 01</strong></div>
+<div class="line"><strong>Only Red</strong></div>
+<div class="line"><strong>Only Red and Blue</strong></div>
+<div class="line"><strong>Operation Yellow</strong></div>
+<div class="line"><strong>Orange Dark 4</strong></div>
+<div class="line"><strong>Orange Dark 7</strong></div>
+<div class="line"><strong>Orange Dark Look</strong></div>
+<div class="line"><strong>Orange Underexposed</strong></div>
+<div class="line"><strong>Protect Highlights 01</strong></div>
+<div class="line"><strong>Red Afternoon 01</strong></div>
+<div class="line"><strong>Red Day 01</strong></div>
+<div class="line"><strong>Red Dream 01</strong></div>
+<div class="line"><strong>Retro Brown 01</strong></div>
+<div class="line"><strong>Retro Magenta 01</strong></div>
+<div class="line"><strong>Retro Yellow 01</strong></div>
+<div class="line"><strong>Saturated Blue</strong></div>
+<div class="line"><strong>Smart Contrast</strong></div>
+<div class="line"><strong>Subtle Blue</strong></div>
+<div class="line"><strong>Subtle Green</strong></div>
+<div class="line"><strong>Yellow 55B</strong></div>
+<div class="line"><strong>Yellow Film 01</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_3 / <code class="docutils literal notranslate"><span class="pre">Preset_3</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Deep</strong></div>
+<div class="line"><strong>Dimension</strong></div>
+<div class="line"><strong>Enchanted</strong></div>
+<div class="line"><strong>Flavin</strong></div>
+<div class="line"><strong>Frosted</strong></div>
+<div class="line"><strong>Shine</strong></div>
+<div class="line"><strong>Ultra Water</strong></div>
+<div class="line"><strong>Wipe</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_4 / <code class="docutils literal notranslate"><span class="pre">Preset_4</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Blue Cold Fade</strong></div>
+<div class="line"><strong>Bright Teal Orange</strong></div>
+<div class="line"><strong>Bright Warm</strong></div>
+<div class="line"><strong>Clear Teal Fade</strong></div>
+<div class="line"><strong>Cold Clear Blue</strong></div>
+<div class="line"><strong>Cold Clear Blue 1</strong></div>
+<div class="line"><strong>Deep Blue</strong></div>
+<div class="line"><strong>Deep Dark Warm</strong></div>
+<div class="line"><strong>Deep High Contrast</strong></div>
+<div class="line"><strong>Deep Teal Fade</strong></div>
+<div class="line"><strong>Deep Warm Fade</strong></div>
+<div class="line"><strong>Faded Green</strong></div>
+<div class="line"><strong>Greenish Contrasty</strong></div>
+<div class="line"><strong>Greenish Fade</strong></div>
+<div class="line"><strong>Greenish Fade 1</strong></div>
+<div class="line"><strong>Hard Teal Orange</strong></div>
+<div class="line"><strong>Neutral Teal Orange</strong></div>
+<div class="line"><strong>Neutral Warm Fade</strong></div>
+<div class="line"><strong>Smooth Clear</strong></div>
+<div class="line"><strong>Smooth Green Orange</strong></div>
+<div class="line"><strong>Smooth Teal Orange</strong></div>
+<div class="line"><strong>Teal Fade</strong></div>
+<div class="line"><strong>Very Warm Greenish</strong></div>
+<div class="line"><strong>Warm Dark Contrasty</strong></div>
+<div class="line"><strong>Warm Fade</strong></div>
+<div class="line"><strong>Warm Fade 1</strong></div>
+<div class="line"><strong>Warm Neutral</strong></div>
+<div class="line"><strong>Warm Sunset Red</strong></div>
+<div class="line"><strong>Warm Teal</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_5 / <code class="docutils literal notranslate"><span class="pre">Preset_5</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Anime</strong></div>
+<div class="line"><strong>Bleach Bypass 1</strong></div>
+<div class="line"><strong>Bleach Bypass 2</strong></div>
+<div class="line"><strong>Bleach Bypass 3</strong></div>
+<div class="line"><strong>Bleach Bypass 4</strong></div>
+<div class="line"><strong>Candle Light</strong></div>
+<div class="line"><strong>Color Negative</strong></div>
+<div class="line"><strong>Crisp Warm</strong></div>
+<div class="line"><strong>Crip Winter</strong></div>
+<div class="line"><strong>Drop Blues</strong></div>
+<div class="line"><strong>Edgy Ember</strong></div>
+<div class="line"><strong>Fall Colors</strong></div>
+<div class="line"><strong>Foggy Night</strong></div>
+<div class="line"><strong>Futuristic Bleak 1</strong></div>
+<div class="line"><strong>Futuristic Bleak 2</strong></div>
+<div class="line"><strong>Futuristic Bleak 3</strong></div>
+<div class="line"><strong>Futuristic Bleak 4</strong></div>
+<div class="line"><strong>Horror Blue</strong></div>
+<div class="line"><strong>Late Sunset</strong></div>
+<div class="line"><strong>Moonlight</strong></div>
+<div class="line"><strong>Night From Day</strong></div>
+<div class="line"><strong>Red Blue Yellow</strong></div>
+<div class="line"><strong>Smokey</strong></div>
+<div class="line"><strong>Soft Warming</strong></div>
+<div class="line"><strong>Teal Magenta Gold</strong></div>
+<div class="line"><strong>Teal Orange</strong></div>
+<div class="line"><strong>Teal Orange 1</strong></div>
+<div class="line"><strong>Teal Orange 2</strong></div>
+<div class="line"><strong>Teal Orange 3</strong></div>
+<div class="line"><strong>Tension Green 1</strong></div>
+<div class="line"><strong>Tension Green 2</strong></div>
+<div class="line"><strong>Tension Green 3</strong></div>
+<div class="line"><strong>Tension Green 4</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_6 / <code class="docutils literal notranslate"><span class="pre">Preset_6</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Avalanche</strong></div>
+<div class="line"><strong>Black Star</strong></div>
+<div class="line"><strong>Helios</strong></div>
+<div class="line"><strong>Hydracore</strong></div>
+<div class="line"><strong>Hypnosis</strong></div>
+<div class="line"><strong>Killstreak</strong></div>
+<div class="line"><strong>Nemesis</strong></div>
+<div class="line"><strong>Night Blade 4</strong></div>
+<div class="line"><strong>Paladin</strong></div>
+<div class="line"><strong>Seringe 4</strong></div>
+<div class="line"><strong>Serpent</strong></div>
+<div class="line"><strong>Terra 4</strong></div>
+<div class="line"><strong>Victory</strong></div>
+<div class="line"><strong>Yellowstone</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_7 / <code class="docutils literal notranslate"><span class="pre">Preset_7</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Cine Basic</strong></div>
+<div class="line"><strong>Cine Bright</strong></div>
+<div class="line"><strong>Cine Cold</strong></div>
+<div class="line"><strong>Cine Drama</strong></div>
+<div class="line"><strong>Cine Teal Orange 1</strong></div>
+<div class="line"><strong>Cine Teal Orange 2</strong></div>
+<div class="line"><strong>Cine Vibrant</strong></div>
+<div class="line"><strong>Cine Warm</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_8 / <code class="docutils literal notranslate"><span class="pre">Preset_8</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Bright Green</strong></div>
+<div class="line"><strong>Crisp Romance</strong></div>
+<div class="line"><strong>Crushin</strong></div>
+<div class="line"><strong>Frosted Beach Picnic</strong></div>
+<div class="line"><strong>Just Peachy</strong></div>
+<div class="line"><strong>Late Afternoon Wanderlust</strong></div>
+<div class="line"><strong>Lush Green Summer</strong></div>
+<div class="line"><strong>Magenta Coffee</strong></div>
+<div class="line"><strong>Minimalist Caffeination</strong></div>
+<div class="line"><strong>Mystic Purple Sunset</strong></div>
+<div class="line"><strong>Nostalgia Honey</strong></div>
+<div class="line"><strong>Spring Morning</strong></div>
+<div class="line"><strong>Toasted Garden</strong></div>
+<div class="line"><strong>Winter Lighthouse</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_9 / <code class="docutils literal notranslate"><span class="pre">Preset_9</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>KH 1</strong></div>
+<div class="line"><strong>KH 2</strong></div>
+<div class="line"><strong>KH 3</strong></div>
+<div class="line"><strong>KH 4</strong></div>
+<div class="line"><strong>KH 5</strong></div>
+<div class="line"><strong>KH 6</strong></div>
+<div class="line"><strong>KH 7</strong></div>
+<div class="line"><strong>KH 8</strong></div>
+<div class="line"><strong>KH 9</strong></div>
+<div class="line"><strong>KH 10</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_10 / <code class="docutils literal notranslate"><span class="pre">Preset_10</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Hackmanite</strong></div>
+<div class="line"><strong>Herderite</strong></div>
+<div class="line"><strong>Heulandite</strong></div>
+<div class="line"><strong>Hiddenite</strong></div>
+<div class="line"><strong>Hilutite</strong></div>
+<div class="line"><strong>Howlite</strong></div>
+<div class="line"><strong>Hypersthene</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_11 / <code class="docutils literal notranslate"><span class="pre">Preset_11</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Moviz 1</strong></div>
+<div class="line"><strong>Moviz 2</strong></div>
+<div class="line"><strong>Moviz 3</strong></div>
+<div class="line"><strong>Moviz 4</strong></div>
+<div class="line"><strong>Moviz 5</strong></div>
+<div class="line"><strong>Moviz 6</strong></div>
+<div class="line"><strong>Moviz 7</strong></div>
+<div class="line"><strong>Moviz 8</strong></div>
+<div class="line"><strong>Moviz 9</strong></div>
+<div class="line"><strong>Moviz 10</strong></div>
+<div class="line"><strong>Moviz 11</strong></div>
+<div class="line"><strong>Moviz 12</strong></div>
+<div class="line"><strong>Moviz 13</strong></div>
+<div class="line"><strong>Moviz 14</strong></div>
+<div class="line"><strong>Moviz 15</strong></div>
+<div class="line"><strong>Moviz 16</strong></div>
+<div class="line"><strong>Moviz 17</strong></div>
+<div class="line"><strong>Moviz 18</strong></div>
+<div class="line"><strong>Moviz 19</strong></div>
+<div class="line"><strong>Moviz 20</strong></div>
+<div class="line"><strong>Moviz 21</strong></div>
+<div class="line"><strong>Moviz 22</strong></div>
+<div class="line"><strong>Moviz 23</strong></div>
+<div class="line"><strong>Moviz 24</strong></div>
+<div class="line"><strong>Moviz 25</strong></div>
+<div class="line"><strong>Moviz 26</strong></div>
+<div class="line"><strong>Moviz 27</strong></div>
+<div class="line"><strong>Moviz 28</strong></div>
+<div class="line"><strong>Moviz 29</strong></div>
+<div class="line"><strong>Moviz 30</strong></div>
+<div class="line"><strong>Moviz 31</strong></div>
+<div class="line"><strong>Moviz 32</strong></div>
+<div class="line"><strong>Moviz 33</strong></div>
+<div class="line"><strong>Moviz 34</strong></div>
+<div class="line"><strong>Moviz 35</strong></div>
+<div class="line"><strong>Moviz 36</strong></div>
+<div class="line"><strong>Moviz 37</strong></div>
+<div class="line"><strong>Moviz 38</strong></div>
+<div class="line"><strong>Moviz 39</strong></div>
+<div class="line"><strong>Moviz 40</strong></div>
+<div class="line"><strong>Moviz 41</strong></div>
+<div class="line"><strong>Moviz 42</strong></div>
+<div class="line"><strong>Moviz 43</strong></div>
+<div class="line"><strong>Moviz 44</strong></div>
+<div class="line"><strong>Moviz 45</strong></div>
+<div class="line"><strong>Moviz 46</strong></div>
+<div class="line"><strong>Moviz 47</strong></div>
+<div class="line"><strong>Moviz 48</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_12 / <code class="docutils literal notranslate"><span class="pre">Preset_12</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Cold Simplicity 2</strong></div>
+<div class="line"><strong>D and O 1</strong></div>
+<div class="line"><strong>Retro Summer 3</strong></div>
+<div class="line"><strong>Subtle Yellow</strong></div>
+<div class="line"><strong>Teal Moonlight</strong></div>
+<div class="line"><strong>True Colors 8</strong></div>
+<div class="line"><strong>Vintage Warmth 1</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_13 / <code class="docutils literal notranslate"><span class="pre">Preset_13</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>2-Strip Process</strong></div>
+<div class="line"><strong>Aqua</strong></div>
+<div class="line"><strong>Aqua and Orange Dark</strong></div>
+<div class="line"><strong>Berlin Sky</strong></div>
+<div class="line"><strong>Blues</strong></div>
+<div class="line"><strong>Black &amp; White-1</strong></div>
+<div class="line"><strong>Black &amp; White-2</strong></div>
+<div class="line"><strong>Black &amp; White-3</strong></div>
+<div class="line"><strong>Black &amp; White-4</strong></div>
+<div class="line"><strong>Black &amp; White-5</strong></div>
+<div class="line"><strong>Black &amp; White-6</strong></div>
+<div class="line"><strong>Black &amp; White-7</strong></div>
+<div class="line"><strong>Black &amp; White-8</strong></div>
+<div class="line"><strong>Black &amp; White-9</strong></div>
+<div class="line"><strong>Black &amp; White-10</strong></div>
+<div class="line"><strong>Chrome 01</strong></div>
+<div class="line"><strong>Cinematic-1</strong></div>
+<div class="line"><strong>Cinematic-2</strong></div>
+<div class="line"><strong>Cinematic-3</strong></div>
+<div class="line"><strong>Cinematic-4</strong></div>
+<div class="line"><strong>Cinematic-5</strong></div>
+<div class="line"><strong>Cinematic-6</strong></div>
+<div class="line"><strong>Cinematic-7</strong></div>
+<div class="line"><strong>Cinematic-8</strong></div>
+<div class="line"><strong>Cinematic-9</strong></div>
+<div class="line"><strong>Cinematic-10</strong></div>
+<div class="line"><strong>Classic Teal and Orange</strong></div>
+<div class="line"><strong>Earth Tone Boost</strong></div>
+<div class="line"><strong>Fade to Green</strong></div>
+<div class="line"><strong>Film Print 01</strong></div>
+<div class="line"><strong>Film Print 02</strong></div>
+<div class="line"><strong>French Comedy</strong></div>
+<div class="line"><strong>Green Blues</strong></div>
+<div class="line"><strong>Green Yellow</strong></div>
+<div class="line"><strong>Landscape-1</strong></div>
+<div class="line"><strong>Landscape-2</strong></div>
+<div class="line"><strong>Landscape-3</strong></div>
+<div class="line"><strong>Landscape-4</strong></div>
+<div class="line"><strong>Landscape-5</strong></div>
+<div class="line"><strong>Landscape-6</strong></div>
+<div class="line"><strong>Landscape-7</strong></div>
+<div class="line"><strong>Landscape-8</strong></div>
+<div class="line"><strong>Landscape-9</strong></div>
+<div class="line"><strong>Landscape-10</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-1</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-2</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-3</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-4</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-5</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-6</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-7</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-8</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-9</strong></div>
+<div class="line"><strong>Lifestyle &amp; Commercial-10</strong></div>
+<div class="line"><strong>Moody-1</strong></div>
+<div class="line"><strong>Moody-2</strong></div>
+<div class="line"><strong>Moody-3</strong></div>
+<div class="line"><strong>Moody-4</strong></div>
+<div class="line"><strong>Moody-5</strong></div>
+<div class="line"><strong>Moody-6</strong></div>
+<div class="line"><strong>Moody-7</strong></div>
+<div class="line"><strong>Moody-8</strong></div>
+<div class="line"><strong>Moody-9</strong></div>
+<div class="line"><strong>Moody-10</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-1</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-2</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-3</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-4</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-5</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-6</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-7</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-8</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-9</strong></div>
+<div class="line"><strong>Nature &amp; Wildlife-10</strong></div>
+<div class="line"><strong>Oranges</strong></div>
+<div class="line"><strong>Portrait-1</strong></div>
+<div class="line"><strong>Portrait-2</strong></div>
+<div class="line"><strong>Portrait-3</strong></div>
+<div class="line"><strong>Portrait-4</strong></div>
+<div class="line"><strong>Portrait-5</strong></div>
+<div class="line"><strong>Portrait-6</strong></div>
+<div class="line"><strong>Portrait-7</strong></div>
+<div class="line"><strong>Portrait-8</strong></div>
+<div class="line"><strong>Portrait-9</strong></div>
+<div class="line"><strong>Portrait10</strong></div>
+<div class="line"><strong>Purple</strong></div>
+<div class="line"><strong>Reds</strong></div>
+<div class="line"><strong>Reds Oranges Yellows</strong></div>
+<div class="line"><strong>Studio Skin Tone Shaper</strong></div>
+<div class="line"><strong>Vintage Chrome</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_14 / <code class="docutils literal notranslate"><span class="pre">Preset_14</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>AnalogFX - Anno 1870 Color</strong></div>
+<div class="line"><strong>AnalogFX - Old Style I</strong></div>
+<div class="line"><strong>AnalogFX - Old Style II</strong></div>
+<div class="line"><strong>AnalogFX - Old Style III</strong></div>
+<div class="line"><strong>AnalogFX - Sepia Color</strong></div>
+<div class="line"><strong>AnalogFX - Soft Sepia I</strong></div>
+<div class="line"><strong>AnalogFX - Soft Sepia II</strong></div>
+<div class="line"><strong>GoldFX - Bright Spring Breeze</strong></div>
+<div class="line"><strong>GoldFX - Bright Summer Heat</strong></div>
+<div class="line"><strong>GoldFX - Hot Summer Heat</strong></div>
+<div class="line"><strong>GoldFX - Perfect Sunset 01min</strong></div>
+<div class="line"><strong>GoldFX - Perfect Sunset 05min</strong></div>
+<div class="line"><strong>GoldFX - Perfect Sunset 10min</strong></div>
+<div class="line"><strong>GoldFX - Spring Breeze</strong></div>
+<div class="line"><strong>GoldFX - Summer Heat</strong></div>
+<div class="line"><strong>TechnicalFX - Backlight Filter</strong></div>
+<div class="line"><strong>ZilverFX - B&amp;W Solarization</strong></div>
+<div class="line"><strong>ZilverFX - InfraRed</strong></div>
+<div class="line"><strong>ZilverFX - Vintage B&amp;W</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_15 / <code class="docutils literal notranslate"><span class="pre">Preset_15</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Amstragram</strong></div>
+<div class="line"><strong>Amstragram+</strong></div>
+<div class="line"><strong>Autumn</strong></div>
+<div class="line"><strong>Cinematic Lady Bird</strong></div>
+<div class="line"><strong>Cinematic Mexico</strong></div>
+<div class="line"><strong>Dark Blues in Sunlight</strong></div>
+<div class="line"><strong>Delicatessen</strong></div>
+<div class="line"><strong>Expired 69</strong></div>
+<div class="line"><strong>Faded Look</strong></div>
+<div class="line"><strong>Faded Print</strong></div>
+<div class="line"><strong>Hypressen</strong></div>
+<div class="line"><strong>Magenta Yellow</strong></div>
+<div class="line"><strong>Metropolis</strong></div>
+<div class="line"><strong>Modern Film</strong></div>
+<div class="line"><strong>Newspaper</strong></div>
+<div class="line"><strong>Night Spy</strong></div>
+<div class="line"><strong>Progressen</strong></div>
+<div class="line"><strong>Prussian Blue</strong></div>
+<div class="line"><strong>Seventies Magazine</strong></div>
+<div class="line"><strong>Street</strong></div>
+<div class="line"><strong>Sweet Bubblegum</strong></div>
+<div class="line"><strong>Sweet Gelatto</strong></div>
+<div class="line"><strong>Taiga</strong></div>
+<div class="line"><strong>Tarraco</strong></div>
+<div class="line"><strong>Unknown</strong></div>
+<div class="line"><strong>Uzbek Bukhara</strong></div>
+<div class="line"><strong>Uzbek Marriage</strong></div>
+<div class="line"><strong>Uzbek Samarcande</strong></div>
+<div class="line"><strong>Velvetia</strong></div>
+<div class="line"><strong>Warm Vintage</strong></div>
+<div class="line"><strong>Whiter Whites</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_16 / <code class="docutils literal notranslate"><span class="pre">Preset_16</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Going for a Walk</strong></div>
+<div class="line"><strong>Good Morning</strong></div>
+<div class="line"><strong>Nah</strong></div>
+<div class="line"><strong>Once Upon a Time</strong></div>
+<div class="line"><strong>Passing By</strong></div>
+<div class="line"><strong>Serenity</strong></div>
+<div class="line"><strong>Smooth Sailing</strong></div>
+<div class="line"><strong>Undeniable</strong></div>
+<div class="line"><strong>Undeniable 2</strong></div>
+<div class="line"><strong>Urban Cowboy</strong></div>
+<div class="line"><strong>We’ll See</strong></div>
+<div class="line"><strong>You Can Do It</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_17 / <code class="docutils literal notranslate"><span class="pre">Preset_17</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Arabica 12</strong></div>
+<div class="line"><strong>Ava 614</strong></div>
+<div class="line"><strong>Azrael 93</strong></div>
+<div class="line"><strong>Bourbon 64</strong></div>
+<div class="line"><strong>Byers 11</strong></div>
+<div class="line"><strong>Chemical 168</strong></div>
+<div class="line"><strong>Clayton 33</strong></div>
+<div class="line"><strong>Clouseau 54</strong></div>
+<div class="line"><strong>Cobi 3</strong></div>
+<div class="line"><strong>Contrail 35</strong></div>
+<div class="line"><strong>Cubicle 99</strong></div>
+<div class="line"><strong>Django 25</strong></div>
+<div class="line"><strong>Domingo 145</strong></div>
+<div class="line"><strong>Faded 47</strong></div>
+<div class="line"><strong>Folger 50</strong></div>
+<div class="line"><strong>Fusion 88</strong></div>
+<div class="line"><strong>Hyla 68</strong></div>
+<div class="line"><strong>Korben 214</strong></div>
+<div class="line"><strong>Lenox 340</strong></div>
+<div class="line"><strong>Lucky 64</strong></div>
+<div class="line"><strong>McKinnon 75</strong></div>
+<div class="line"><strong>Milo 5</strong></div>
+<div class="line"><strong>Neon 770</strong></div>
+<div class="line"><strong>Paladin 1875</strong></div>
+<div class="line"><strong>Pasadena 21</strong></div>
+<div class="line"><strong>Pitaya 15</strong></div>
+<div class="line"><strong>Reeve 38</strong></div>
+<div class="line"><strong>Remy 24</strong></div>
+<div class="line"><strong>Sprocket 231</strong></div>
+<div class="line"><strong>Teigen 28</strong></div>
+<div class="line"><strong>Trent 18</strong></div>
+<div class="line"><strong>Tweed 71</strong></div>
+<div class="line"><strong>Vireo 37</strong></div>
+<div class="line"><strong>Zed 32</strong></div>
+<div class="line"><strong>Zeke 39</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_18 / <code class="docutils literal notranslate"><span class="pre">Preset_18</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>City 7</strong></div>
+<div class="line"><strong>Coffee 44</strong></div>
+<div class="line"><strong>Date 39</strong></div>
+<div class="line"><strong>Day for Night</strong></div>
+<div class="line"><strong>Denoise Simple 40</strong></div>
+<div class="line"><strong>Desert Gold 37</strong></div>
+<div class="line"><strong>Directions 23</strong></div>
+<div class="line"><strong>Drop Green Tint 14</strong></div>
+<div class="line"><strong>Elegance 38</strong></div>
+<div class="line"><strong>Golden Night Softner 43</strong></div>
+<div class="line"><strong>Golden Sony 37</strong></div>
+<div class="line"><strong>Green 15</strong></div>
+<div class="line"><strong>Happyness 133</strong></div>
+<div class="line"><strong>HLG 1</strong></div>
+<div class="line"><strong>Industrial 33</strong></div>
+<div class="line"><strong>Morning 6</strong></div>
+<div class="line"><strong>Morroco 16</strong></div>
+<div class="line"><strong>Night King 141</strong></div>
+<div class="line"><strong>Rest 33</strong></div>
+<div class="line"><strong>Shadow King 39</strong></div>
+<div class="line"><strong>Spy 29</strong></div>
+<div class="line"><strong>Thriller 2</strong></div>
+<div class="line"><strong>Turkiest 42</strong></div>
+<div class="line"><strong>Vintage 163</strong></div>
+<div class="line"><strong>Wooden Gold 20</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preset_19 / <code class="docutils literal notranslate"><span class="pre">Preset_19</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Apocalypse This Very Moment</strong></div>
+<div class="line"><strong>B-Boyz 2</strong></div>
+<div class="line"><strong>Bob Ford</strong></div>
+<div class="line"><strong>Life Giving Tree</strong></div>
+<div class="line"><strong>Moonrise</strong></div>
+<div class="line"><strong>Saving Private Damon</strong></div>
+<div class="line"><strong>The Matrices</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preset_20 / <code class="docutils literal notranslate"><span class="pre">Preset_20</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>All [Collage]</strong></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>60’s</strong></div>
+<div class="line"><strong>60’s (faded)</strong></div>
+<div class="line"><strong>60’s (faded alt)</strong></div>
+<div class="line"><strong>Alien green</strong></div>
+<div class="line"><strong>Black &amp; White</strong></div>
+<div class="line"><strong>Bleach bypass</strong></div>
+<div class="line"><strong>Blue mono</strong></div>
+<div class="line"><strong>Cinematic-01</strong></div>
+<div class="line"><strong>Cinematic-02</strong></div>
+<div class="line"><strong>Cinematic-03</strong></div>
+<div class="line"><strong>Color (rich)</strong></div>
+<div class="line"><strong>Faded</strong></div>
+<div class="line"><strong>Faded (alt)</strong></div>
+<div class="line"><strong>Faded (analog)</strong></div>
+<div class="line"><strong>Faded (extreme)</strong></div>
+<div class="line"><strong>Faded (vivid)</strong></div>
+<div class="line"><strong>Expired (fade)</strong></div>
+<div class="line"><strong>Expired (polaroid)</strong></div>
+<div class="line"><strong>Extreme</strong></div>
+<div class="line"><strong>Fade</strong></div>
+<div class="line"><strong>Faux infrared</strong></div>
+<div class="line"><strong>Golden</strong></div>
+<div class="line"><strong>Golden (bright)</strong></div>
+<div class="line"><strong>Golden (fade)</strong></div>
+<div class="line"><strong>Golden (mono)</strong></div>
+<div class="line"><strong>Golden (vibrant)</strong></div>
+<div class="line"><strong>Green mono</strong></div>
+<div class="line"><strong>Hong Kong</strong></div>
+<div class="line"><strong>Instant-C</strong></div>
+<div class="line"><strong>K-Tone Vintage Kodachrome</strong></div>
+<div class="line"><strong>Light (blown)</strong></div>
+<div class="line"><strong>Lomo</strong></div>
+<div class="line"><strong>Mono tinted</strong></div>
+<div class="line"><strong>Muted fade</strong></div>
+<div class="line"><strong>Mute shift</strong></div>
+<div class="line"><strong>Natural (vivid)</strong></div>
+<div class="line"><strong>Nostalgic</strong></div>
+<div class="line"><strong>Orange tone</strong></div>
+<div class="line"><strong>Pink fade</strong></div>
+<div class="line"><strong>Purple</strong></div>
+<div class="line"><strong>Retro</strong></div>
+<div class="line"><strong>Rotate (muted)</strong></div>
+<div class="line"><strong>Rotate (vibrant)</strong></div>
+<div class="line"><strong>Rotated</strong></div>
+<div class="line"><strong>Rotated (crush)</strong></div>
+<div class="line"><strong>Smooth crome-ish</strong></div>
+<div class="line"><strong>Smooth fade</strong></div>
+<div class="line"><strong>Soft fade</strong></div>
+<div class="line"><strong>Solarize color</strong></div>
+<div class="line"><strong>Solarized color2</strong></div>
+<div class="line"><strong>Summer</strong></div>
+<div class="line"><strong>Summer (alt)</strong></div>
+<div class="line"><strong>Sunny</strong></div>
+<div class="line"><strong>Sunny (alt)</strong></div>
+<div class="line"><strong>Sunny (warm)</strong></div>
+<div class="line"><strong>Sunny (rich)</strong></div>
+<div class="line"><strong>Super warm</strong></div>
+<div class="line"><strong>Super warm (rich)</strong></div>
+<div class="line"><strong>Sutro FX</strong></div>
+<div class="line"><strong>Vibrant</strong></div>
+<div class="line"><strong>Vibrant (alien)</strong></div>
+<div class="line"><strong>Vibrant (contrast)</strong></div>
+<div class="line"><strong>Vibrant (crome-ish)</strong></div>
+<div class="line"><strong>Vintage</strong></div>
+<div class="line"><strong>Vintage (alt)</strong></div>
+<div class="line"><strong>Vintage (brighter)</strong></div>
+<div class="line"><strong>Warm</strong></div>
+<div class="line"><strong>Warm (highlight)</strong></div>
+<div class="line"><strong>Warm (yellow)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Thumbnail Size / <code class="docutils literal notranslate"><span class="pre">Thumbnail_Size</span></code></td>
+<td>Integer</td>
+<td>512</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Strength (%) / <code class="docutils literal notranslate"><span class="pre">Strength_</span></code></td>
+<td>Double</td>
+<td>100</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Brightness (%) / <code class="docutils literal notranslate"><span class="pre">Brightness_</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Contrast (%) / <code class="docutils literal notranslate"><span class="pre">Contrast_</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Gamma (%) / <code class="docutils literal notranslate"><span class="pre">Gamma_</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Hue (%) / <code class="docutils literal notranslate"><span class="pre">Hue_</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Saturation (%) / <code class="docutils literal notranslate"><span class="pre">Saturation_</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Normalize Colors / <code class="docutils literal notranslate"><span class="pre">Normalize_Colors</span></code></td>
+<td>Choice</td>
+<td>None</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>None</strong></div>
+<div class="line"><strong>Pre-Normalize</strong></div>
+<div class="line"><strong>Post-Normalize</strong></div>
+<div class="line"><strong>Both</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Preview Type / <code class="docutils literal notranslate"><span class="pre">Preview_Type</span></code></td>
+<td>Choice</td>
+<td>Full</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Full</strong></div>
+<div class="line"><strong>Forward Horizontal</strong></div>
+<div class="line"><strong>Forward Vertical</strong></div>
+<div class="line"><strong>Backward Horizontal</strong></div>
+<div class="line"><strong>Backward Vertical</strong></div>
+<div class="line"><strong>Duplicate Top</strong></div>
+<div class="line"><strong>Duplicate Left</strong></div>
+<div class="line"><strong>Duplicate Bottom</strong></div>
+<div class="line"><strong>Duplicate Right</strong></div>
+<div class="line"><strong>Duplicate Horizontal</strong></div>
+<div class="line"><strong>Duplicate Vertical</strong></div>
+<div class="line"><strong>Checkered</strong></div>
+<div class="line"><strong>Checkered Inverse</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Preview Split / <code class="docutils literal notranslate"><span class="pre">Preview_Split</span></code></td>
+<td>Double</td>
+<td>x: 0.5 y: 0.5</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Output Layer / <code class="docutils literal notranslate"><span class="pre">Output_Layer</span></code></td>
+<td>Choice</td>
+<td>Layer 0</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Merged</strong></div>
+<div class="line"><strong>Layer 0</strong></div>
+<div class="line"><strong>Layer -1</strong></div>
+<div class="line"><strong>Layer -2</strong></div>
+<div class="line"><strong>Layer -3</strong></div>
+<div class="line"><strong>Layer -4</strong></div>
+<div class="line"><strong>Layer -5</strong></div>
+<div class="line"><strong>Layer -6</strong></div>
+<div class="line"><strong>Layer -7</strong></div>
+<div class="line"><strong>Layer -8</strong></div>
+<div class="line"><strong>Layer -9</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Resize Mode / <code class="docutils literal notranslate"><span class="pre">Resize_Mode</span></code></td>
+<td>Choice</td>
+<td>Dynamic</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Fixed (Inplace)</strong></div>
+<div class="line"><strong>Dynamic</strong></div>
+<div class="line"><strong>Downsample 1/2</strong></div>
+<div class="line"><strong>Downsample 1/4</strong></div>
+<div class="line"><strong>Downsample 1/8</strong></div>
+<div class="line"><strong>Downsample 1/16</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Ignore Alpha / <code class="docutils literal notranslate"><span class="pre">Ignore_Alpha</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Preview/Draft Mode / <code class="docutils literal notranslate"><span class="pre">PreviewDraft_Mode</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Global Random Seed / <code class="docutils literal notranslate"><span class="pre">Global_Random_Seed</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Animate Random Seed / <code class="docutils literal notranslate"><span class="pre">Animate_Random_Seed</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Log Verbosity / <code class="docutils literal notranslate"><span class="pre">Log_Verbosity</span></code></td>
+<td>Choice</td>
+<td>Off</td>
+<td><div class="first last line-block">
+<div class="line"><br /></div>
+<div class="line"><strong>Off</strong></div>
+<div class="line"><strong>Level 1</strong></div>
+<div class="line"><strong>Level 2</strong></div>
+<div class="line"><strong>Level 3</strong></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="eu.gmic.ColorfulBlobs.html" class="btn btn-neutral float-right" title="G’MIC Colorful Blobs node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="eu.gmic.ColorBlindness.html" class="btn btn-neutral float-left" title="G’MIC Color Blindness node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

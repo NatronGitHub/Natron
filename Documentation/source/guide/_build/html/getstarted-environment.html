@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using the menus" href="getstarted-environment-menus.html" />
+    <link rel="prev" title="Linux" href="getstarted-installation-linux.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="environment">
+<h1>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h1>
+<p>The interface of Natron is composed of different elements</p>
+<a class="reference internal image-reference" href="_images/interface_full_03.jpg"><img alt="_images/interface_full_03.jpg" src="_images/interface_full_03.jpg" style="width: 600px;" /></a>
+<p>Standard layout of Natron</p>
+<div class="section" id="generic-description">
+<h2>Generic Description<a class="headerlink" href="#generic-description" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of Natron is to process video images using elementary “effect” bricks called nodes.</p>
+<p>for more details see:
+<a class="reference internal" href="getstarted-about-mainconcepts.html"><span class="doc">Main concepts</span></a></p>
+<p>The image is processed in order passing through each node. The nodes are connected with links that define the order of the processing.
+These connected nodes are called the node graph.</p>
+<p>Each node has parameters allowing to customize the effect produced on the incoming image.</p>
+</div>
+<div class="section" id="the-toolbar">
+<h2>The Toolbar<a class="headerlink" href="#the-toolbar" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/toolbar_02.jpg"><img alt="_images/toolbar_02.jpg" src="_images/toolbar_02.jpg" style="width: 600px;" /></a>
+<p>It is the list of icons on the left-hand side of Natron.</p>
+<p>Each icon is a menu giving access to different categories of nodes (ie. image processing tools) that Natron offers to process or create images.</p>
+</div>
+<div class="section" id="the-menu-bar">
+<h2>The Menu bar<a class="headerlink" href="#the-menu-bar" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/menubar_01.jpg"><img alt="_images/menubar_01.jpg" src="_images/menubar_01.jpg" style="width: 600px;" /></a>
+<p>Located on top of Natron window, it gives acces to various actions other than adding nodes to the node graph.
+Most actions are done on the whole project like saving, rendering…</p>
+</div>
+<div class="section" id="the-viewer-panel">
+<h2>The Viewer panel<a class="headerlink" href="#the-viewer-panel" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/viewer_01.png"><img alt="_images/viewer_01.png" src="_images/viewer_01.png" style="width: 600px;" /></a>
+<p>Here is displayed the result of the image processing. To choose what is displayed, each viewer is related to a viewer node in the graph that can be connected to any intermediate point in the graph.</p>
+</div>
+<div class="section" id="the-properties-editor">
+<h2>The Properties editor<a class="headerlink" href="#the-properties-editor" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/properties_01.png"><img alt="_images/properties_01.png" src="_images/properties_01.png" style="width: 300px;" /></a>
+<p>This panel shows the parameters of one or several nodes from the graph.</p>
+</div>
+<div class="section" id="the-node-graph">
+<h2>The Node graph<a class="headerlink" href="#the-node-graph" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/nodegraph_01.png"><img alt="_images/nodegraph_01.png" src="_images/nodegraph_01.png" style="width: 600px;" /></a>
+<p>This panel is were connections are made between the nodes to define the processing order of the image.</p>
+</div>
+<div class="section" id="the-curve-editor">
+<h2>The Curve editor<a class="headerlink" href="#the-curve-editor" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/curve_editor_01.png"><img alt="_images/curve_editor_01.png" src="_images/curve_editor_01.png" style="width: 600px;" /></a>
+<p>This panel allows to edit graphically the changes intime of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).</p>
+</div>
+<div class="section" id="the-dopesheet">
+<h2>The Dopesheet<a class="headerlink" href="#the-dopesheet" title="Permalink to this headline">¶</a></h2>
+<a class="reference internal image-reference" href="_images/dopesheet_01.png"><img alt="_images/dopesheet_01.png" src="_images/dopesheet_01.png" style="width: 600px;" /></a>
+<p>This panel allows to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-menus.html">Using the menus</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getstarted-environment-menus.html#the-menu-bar">The menu bar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-toolbar.html">Using the toolbar</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-nodes.html">Working with nodes</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-nodegraph.html">Navigating inside the node graph</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-proppanels.html">Properties panels</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-color.html">Using the color controls</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-presets.html">Using node presets</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-anim.html">Animating parameters</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-viewer.html">Compositing viewers</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-fileselect.html">Using the file browser</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-undoredo.html">Undoing and redoing</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted-environment-progressbar.html">Progress bars</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

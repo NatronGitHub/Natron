@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Writing documentation &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How To Convert Videos To Image Sequences" href="tutorials-imagesequence.html" />
+    <link rel="prev" title="Tutorials" href="tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">What is compositing?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compositing.html">Compositing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Writing documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#natron-manual">Natron Manual</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plugins-manual">Plugins Manual</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html">How To Convert Videos To Image Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#how-to-convert-image-sequences-to-video-files">How To Convert Image Sequences To Video Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#using-nle">Using NLE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-imagesequence.html#creating-digital-intermediate-for-editing-servers">Creating Digital Intermediate For Editing Servers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-hsvtool.html">HSVTool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-ffmpeg.html">FFmpeg (empty)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-hugin.html">Using PanoTools projects within Natron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-svgworkflow.html">Vector graphics workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials-AlternativeMatteExtraction.html">Alternative Matte Extraction Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+          <li><a href="tutorials.html">Tutorials</a> &raquo;</li>
+        
+      <li>Writing documentation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/tutorials-writedoc.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="writing-documentation">
+<h1>Writing documentation<a class="headerlink" href="#writing-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This quick tutorial will guide you through the creation/modification of documentation for Natron and the plugins.</p>
+<div class="section" id="natron-manual">
+<span id="writing-natron-manual"></span><h2>Natron Manual<a class="headerlink" href="#natron-manual" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="writing-contributions">
+<h3>Writing contributions<a class="headerlink" href="#writing-contributions" title="Permalink to this headline">¶</a></h3>
+<p>Contributing to the Natron documentation is rather easy. The source for the documentation is located in the <em>Documentation/source</em> folder.</p>
+<p>The documentation is generated using <a class="reference external" href="http://sphinx-doc.org">Sphinx</a>, and the source files are in <a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickref.html">reStructuredText</a> format.</p>
+<p>Most likely you will want to contribute to the <a class="reference internal" href="index.html#user-guide"><span class="std std-ref">User Guide</span></a>. The source files for the guide are located in the directory named <code class="docutils literal notranslate"><span class="pre">Documentation/source/guide</span></code>. If you want to contribute to an already existing document just open the file in your favorite (plain) text-editor and do your modifications.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The following files are generated automatically and can thus not be edited:</p>
+<ul class="last simple">
+<li>The <cite>_group.rst</cite> file, and any file with a name starting with <cite>_group</cite>.</li>
+<li>The <cite>_prefs.rst</cite>.</li>
+<li>The documentation for each individual plugin, which can be found in the <cite>Documentation/source/plugins</cite> directory (see <a class="reference internal" href="#writing-plugins-manual"><span class="std std-ref">Plugins Manual</span></a>).</li>
+</ul>
+</div>
+<p>If you prefer editing with <a class="reference external" href="https://libreoffice.org">LibreOffice</a> (or even <a class="reference external" href="https://fr.wikipedia.org/wiki/Microsoft_Word">MSWord</a>), just keep the document simple (use styles for section headers, don’t try to format too much, etc.), and use <a class="reference external" href="https://pandoc.org/">pandoc</a> to get a first working version in <a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickref.html">reStructuredText</a> format: <code class="docutils literal notranslate"><span class="pre">pandoc</span> <span class="pre">your_document.docx</span> <span class="pre">-t</span> <span class="pre">rst</span> <span class="pre">-o</span> <span class="pre">output_doc.rst</span></code></p>
+<p>This <a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickref.html">reStructuredText</a> file will probably require a few touch-ups afterwards, but it is usually a good starting point.</p>
+</div>
+<div class="section" id="submitting-contributions">
+<h3>Submitting contributions<a class="headerlink" href="#submitting-contributions" title="Permalink to this headline">¶</a></h3>
+<p>To send your contributions, the best way is to follow the procedure below. However, if you wrote a nice piece of documentation, in any standard format, and have difficulties following that procedure, do not hesitate to ask for assistance on the <a class="reference external" href="https://discuss.pixls.us/c/software/natron">Natron forum</a>, or to <a class="reference external" href="https://github.com/NatronGitHub/Natron/issues/new">file a GitHub issue</a>, with your document attached to your message.</p>
+<p>The standard procedure is the following:</p>
+<ul class="simple">
+<li>Fork <a class="reference external" href="https://github.com/NatronGitHub/Natron">https://github.com/NatronGitHub/Natron</a> using your github account.</li>
+<li>On your fork, <a class="reference external" href="https://help.github.com/en/articles/creating-and-deleting-branches-within-your-repository">create a branch</a> from the RB-2.3 branch (do not use the master branch), and give it a name like “documentation-keying” if you are going to write the keying doc (which we really need).</li>
+<li>To add your doc, you can either:<ul>
+<li>Clone the repository to your computer, edit and add files, commit your changes locally (the github desktop application is easy to use), and then push your changes,</li>
+<li>Or edit the files directly on github. See <a class="reference external" href="https://github.com/NatronGitHub/Natron/blob/RB-2.3/Documentation/source/guide/tutorials-hsvtool.rst">tutorials-hsvtool.rst</a> for en example (you will probably need to fork the repository first, see below, and browse to that file on your fork). Click on the pencil icon on the top right. You get an editable the text view and can get a preview by clicking on the preview tab on top.</li>
+</ul>
+</li>
+<li>Then, submit a <a class="reference external" href="https://help.github.com/articles/about-pull-requests/">pull request</a> to the RB-2.3 branch on the main repository from your branch (there is a button to submit a pull request when you view your fork on github). Give an accurate description of the pull request, and remember to follow the <a class="reference external" href="https://www.contributor-covenant.org/version/1/4/code-of-conduct">Contributor Covenant Code of Conduct</a>, as with all contributions to Natron or the plugins. The Natron maintainers can either accept it as it is, or ask for a few modifications.</li>
+</ul>
+<p>You can view the formatted documentation on your github repository, as explained above, but you can also preview your modifications by using <a class="reference external" href="https://pandoc.org/">pandoc</a> to convert it to another format, or install <a class="reference external" href="http://sphinx-doc.org">Sphinx</a> and recompile the whole documentation. On Linux and Mac you can install Sphinx through your package manager (using MacPorts type <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">port</span> <span class="pre">install</span> <span class="pre">py27-sphinx</span> <span class="pre">py27-sphinx_rtd_theme</span></code>, on HomeBrew type <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">sphinx-doc;</span> <span class="pre">/usr/local/opt/sphinx-doc/libexec/bin/pip3</span> <span class="pre">install</span> <span class="pre">sphinx_rtd_theme`</span></code>, on Linux type <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sphinx</span> <span class="pre">sphinx_rtd_theme</span></code>), on Windows refer to the <a class="reference external" href="http://www.sphinx-doc.org/en/stable/install.html#windows-install-python-and-sphinx">Sphinx documentation</a>.</p>
+<p>When you have Sphinx installed go to the Documentation folder and launch the following command:</p>
+<blockquote>
+<div>sphinx-build -b html source html</div></blockquote>
+<p>The Natron documentation has now been generated in the <em>Documentation/html</em> folder. Open <em>Documentation/html/index.html</em> in your web browser to review your changes.</p>
+<p>When your are satisfied with your modifications do a pull request against the master repository on GitHub.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want to preview your files interactively you can use dedicated file editors. <a class="reference external" href="https://github.com/ShiraNai7/rstpad/releases">RstPad</a> for example is available on Mac and Windows</p>
+</div>
+</div>
+</div>
+<div class="section" id="plugins-manual">
+<span id="writing-plugins-manual"></span><h2>Plugins Manual<a class="headerlink" href="#plugins-manual" title="Permalink to this headline">¶</a></h2>
+<p>The documentation for each plugin contains two parts:</p>
+<ul class="simple">
+<li>The main documentation, including the short description, and the documentation for individual parameters. This part of the documentation is available in the C++ source file of each plugin.</li>
+<li>An extra documentation, in the form of a Markdown file in the plugin bundle, named <code class="docutils literal notranslate"><span class="pre">Contents/Resources/pluginId.md</span></code> (in the same directory as the plugin icon files), where <em>pluginId</em> is the full plugin identifier (e.g. <code class="docutils literal notranslate"><span class="pre">net.sf.openfx.MergePlugin</span></code>). The extra documentation is inserted after the <em>Description</em> section and before the <em>Inputs</em> section of the generated documentation.</li>
+</ul>
+<div class="section" id="main-plugin-documentation">
+<h3>Main Plugin Documentation<a class="headerlink" href="#main-plugin-documentation" title="Permalink to this headline">¶</a></h3>
+<p>Editing or adding the main documentation for the Natron plugins requires you to edit the C++ source file for each plugin. Usually the plugin(s) has a <strong>kPluginDescription</strong> define where you can edit the description found when hovering or clicking the <strong>?</strong> button of the plugin properties panel in Natron.</p>
+<p>Let us say you want to edit the description in the Checkerboard plugin.</p>
+<ol class="arabic simple">
+<li>Fork the <a class="reference external" href="https://github.com/NatronGitHub/openfx-misc">https://github.com/NatronGitHub/openfx-misc</a> repository on GitHub.</li>
+<li>Open the file <em>Checkerboard/Checkerboard.cpp</em> in your favorite (plain) text-editor</li>
+</ol>
+<p>Navigate to the line <strong>#define  kPluginDescription</strong>, where you can edit the description. Line breaks are added with <em>\n</em>.</p>
+<p>You will also notice that each parameter has a hint define, for example the Checkerboard has <strong>#define kParamBoxSizeHint</strong>, <strong>#define kParamColor0Hint</strong> etc. These describe each parameter in the plugin and shows up when you hover the parameter in Natron, or access the HTML documentation online or through Natron.</p>
+<p>To test your modifications, you must build the plugin(s) and load them in Natron, refer to each plugin bundle on GitHub on how to build the plugin(s). Click the <strong>?</strong> button of the plugin properties panel in Natron to check your modifications.</p>
+</div>
+<div class="section" id="markdown">
+<h3>Markdown<a class="headerlink" href="#markdown" title="Permalink to this headline">¶</a></h3>
+<p>The plugin description and parameters optionally supports <a class="reference external" href="https://daringfireball.net/projects/markdown/syntax">Markdown</a> format. This enables you to have more control over how the information is displayed.</p>
+<p>Enabling Markdown on a plugin requires some modifications, as the plugin must tell the host (Natron) that it supports Markdown on the description and/or parameters. See the <a class="reference external" href="https://github.com/NatronGitHub/openfx-misc/blob/master/Shadertoy/Shadertoy.cpp">Shadertoy</a> plugin for an example of how this works.</p>
+<p>Basically you need to add <strong>desc.setPluginDescription(kPluginDescriptionMarkdown, true);</strong> in the <strong>describe</strong> function for each plugin. If you are not comfortable with this, contact the repository maintainer(s) and ask them to enable Markdown for you.</p>
+</div>
+<div class="section" id="id6">
+<h3>Submitting contributions<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>As with the <a class="reference internal" href="#writing-natron-manual"><span class="std std-ref">Natron Manual</span></a>, the standard way of submitting your contributions is by forking the relevant plugins repo on GitHub (<a class="reference external" href="https://github.com/NatronGitHub/openfx-misc">openfx-misc</a>, <a class="reference external" href="https://github.com/NatronGitHub/openfx-io">openfx-io</a>, <a class="reference external" href="https://github.com/NatronGitHub/openfx-arena">openfx-arena</a> or <a class="reference external" href="https://github.com/NatronGitHub/openfx-gmic">openfx-gmic</a>) and submitting a <a class="reference external" href="https://help.github.com/articles/about-pull-requests/">pull request</a> to the <em>master</em> branch of that repo.</p>
+<p>However, if you wrote a nice piece of documentation, in any standard format, and have difficulties following that procedure, do not hesitate to ask for assistance on the <a class="reference external" href="https://discuss.pixls.us/c/software/natron">Natron forum</a>, or to <a class="reference external" href="https://github.com/NatronGitHub/Natron/issues/new">file a GitHub issue</a>, with your document attached to your message.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorials-imagesequence.html" class="btn btn-neutral float-right" title="How To Convert Videos To Image Sequences" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorials.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

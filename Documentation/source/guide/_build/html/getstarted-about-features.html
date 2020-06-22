@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features &#8212; Natron 2.3.16 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/dropdown.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="FAQ" href="getstarted-about-faq.html" />
+    <link rel="prev" title="About" href="getstarted-about.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="features">
+<h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<ul class="simple">
+<li><p>32 bits floating point linear color processing pipeline.</p></li>
+<li><p>Colorspace management handled by the famous open-source OpenColorIO library.</p></li>
+<li><p>Dozens of file formats supported: EXR, DPX,TIFF, PSD, SVG, Raw, JPG, PNG …</p></li>
+<li><p><strong>Support for many free and open-source OpenFX plugins:</strong>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-io">OpenFX-IO</a>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-misc">OpenFX-Misc</a>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-arena">OpenFX-Arena</a>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-gmic">OpenFX-G’MIC</a>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-opencv">OpenFX-OpenCV</a>
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-yadif">OpenFX-Yadif</a> deinterlacer
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx-vegas">OpenFX-Vegas</a>  SDK samples
+* <a class="reference external" href="https://github.com/NatronGitHub/openfx">OpenFX</a> samples
+* <a class="reference external" href="https://github.com/tuttleofx/TuttleOFX">TuttleOFX</a></p></li>
+<li><p><strong>Support for commercial OpenFX plugins:</strong>
+* <a class="reference external" href="http://www.revisionfx.com/">RevisionFX</a> products
+* <a class="reference external" href="https://www.neatvideo.com/">NeatVideo</a> denoiser
+* <a class="reference external" href="http://www.thefoundry.co.uk/products/furnace/">Furnace</a> by The Foundry
+* <a class="reference external" href="http://www.thefoundry.co.uk/products/plugins/keylight/">KeyLight</a> by The Foundry
+* GenArts <a class="reference external" href="http://www.genarts.com/software/sapphire/overview">Sapphire</a>
+* Other <a class="reference external" href="http://www.genarts.com">GenArts</a> products
+* And many more….
+* OpenFX v1.4 supported</p></li>
+<li><p><strong>Intuitive user interface:</strong> Natron aims not to break habits by providing an intuitive and familiar user interface.  It is possible to separate on any number of screens the graphical user interface. It supports Retina screens on MacOSX.</p></li>
+<li><p><strong>Performances:</strong>  Never wait for anything to be rendered, in Natron anything you do produces real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e: the render pipeline can be computed at lower res to speed-up rendering).</p></li>
+<li><p><strong>Multi-task:</strong> Natron can render multiple graphs at the same time and make use of 100% of the compute power of your CPU.</p></li>
+<li><p><strong>Network rendering:</strong> Natron can be used as a command-line tool and can be integrated on a render farm manager such as <a class="reference external" href="http://cgru.info/home">Afanasy</a>.</p></li>
+<li><p><strong>NatronRenderer:</strong> A command line tool for execution of project files and python scripts. The command line version is executable from ssh on a computer without any display.</p></li>
+<li><p><strong>Fast &amp; interactive Viewer</strong> – Smooth &amp; accurate  zooming/panning even for very large image sizes (tested on 27k x 30k images).</p></li>
+<li><p><strong>Real-time playback:</strong> Natron offers  a real-time playback with thanks to its RAM/Disk cache technology. Once a frame is rendered, it can be reproduced instantly afterwards, even for large image sizes.</p></li>
+<li><p><strong>Low hardware requirements:</strong> All you need is an x86 64 bits or 32 bits processor, at least 3 GB of RAM and a graphic card that supports OpenGL 2.0 or OpenGL 1.5 with some extensions.</p></li>
+<li><p><strong>Motion editing:</strong> Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive curve editor. You can set expressions on animation curves to create easy and believable motion for objects. Natron also incorporates a fully featured dope-sheet to quickly edit clips and keyframes in time-space.</p></li>
+<li><p><strong>Multi-view workflow:</strong> Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.</p></li>
+<li><p><strong>Rotoscoping/Rotopainting:</strong> Edit your masks and animate them to work with complex shots</p></li>
+<li><p><strong>Tracker node:</strong> A point tracker is  embedded in Natron to track multiple points. Version 2.1 of Natron will incorporate the Tracker from Blender.</p></li>
+</ul>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>

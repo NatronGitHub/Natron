@@ -1,0 +1,734 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using Callbacks &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Rendering" href="renderingWriteNode.html" />
+    <link rel="prev" title="Working with groups" href="groups.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_group.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developers Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="APIReference.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gettingstarted.html">Getting started</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="creatingNode.html">Creating and controlling nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="controllingParameters.html">Controlling parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="paramExpressions.html">Parameters expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="groups.html">Working with groups</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using Callbacks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#callback-persistence">Callback persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-param-changed-callback">The param changed callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#registering-the-param-changed-callback">Registering the param changed callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-param-changed-callback-for-pymodaldialog-and-pypanel">Using the param changed callback for  <code class="docutils literal notranslate"><span class="pre">PyModalDialog</span></code> and  <code class="docutils literal notranslate"><span class="pre">PyPanel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-input-changed-callback">The After input changed callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#registering-the-input-changed-callback">Registering the input changed callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-project-created-callback">The After project created callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-project-loaded-callback">The After project loaded callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-before-project-save-callback">The Before project save callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-before-project-close-callback">The Before project close callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-node-created-callback">The After node created callback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-before-node-removal-callback">The Before node removal callback:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-before-frame-render-callback">The Before frame render callback:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-frame-rendered-callback">The After frame rendered callback:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-before-render-callback">The Before render callback:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-after-render-callback">The After render callback:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="renderingWriteNode.html">Rendering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roto.html">Using the rotoscoping functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracker.html">Using the tracker functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modalDialogs.html">Modal dialogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="userCommands.html">User menu commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pysidePanelExample.html">PySide panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="viewersInteraction.html">Controlling the viewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="devel-faq.html">Natron Python FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Developers Guide</a> &raquo;</li>
+        
+          <li><a href="gettingstarted.html">Getting started</a> &raquo;</li>
+        
+      <li>Using Callbacks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/devel/callbacks.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-callbacks">
+<span id="callbacks"></span><h1>Using Callbacks<a class="headerlink" href="#using-callbacks" title="Permalink to this headline">¶</a></h1>
+<p><em>Callbacks</em> are functions that are executed after or before a certain event in Natron.
+They are Python-defined methods that you declare yourself and then register to Natron
+in a different manner for each callback.</p>
+<p>This document describes the signature that your different callbacks must have in order
+to work for each event. The parameters of your declaration must match exactly the same
+signature otherwise the function call will not work.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Note that callbacks will be called in background and GUI modes, hence you should
+wrap all GUI code by the following condition:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">NatronEngine</span><span class="o">.</span><span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+    <span class="c1">#...do gui stuff</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="callback-persistence">
+<h2>Callback persistence<a class="headerlink" href="#callback-persistence" title="Permalink to this headline">¶</a></h2>
+<p>If you want your callback to persist 2 runs of Natron; it is necessary that you define it
+in a script that is loaded by Natron, that is, either the <strong>init.py</strong> script (or <strong>initGui.py</strong> if you want it only available in GUI mode)
+or the script of a Python group plug-in (or its extension script, see <a class="reference internal" href="groups.html#pyplughandwritten"><span class="std std-ref">here</span></a>).
+See <a class="reference internal" href="startupscripts.html#startupscripts"><span class="std std-ref">this section</span></a> for more infos.</p>
+<p>Here is the list of the different callbacks:</p>
+</div>
+<div class="section" id="the-param-changed-callback">
+<h2>The param changed callback<a class="headerlink" href="#the-param-changed-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called every times the value of a <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameter</span></a> changes.
+This callback is available for all objects that can hold parameters,namely:</p>
+<ul class="simple">
+<li><a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a></li>
+<li><a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a></li>
+</ul>
+<p>The signature of the callback used on the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">thisParam</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>thisParam</strong> : This is a <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">Param</span></a> pointing to the parameter which just had its value changed.</li>
+<li><strong>thisNode</strong> : This is a <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> pointing to the effect holding <strong>thisParam</strong></li>
+<li><strong>thisGroup</strong> : This is a <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> pointing to the group  holding <strong>thisNode</strong> or <strong>app</strong> otherwise if the node is in the main node-graph.</li>
+<li><strong>app</strong> : This variable will be set so it points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>userEdited</strong> : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
+the value by theirself) or due to another parameter changing the value of the parameter
+via a derivative of the <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> function.</li>
+</ul>
+<p>For the <em>parameter changed callback</em> of <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> and <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a>, the signature of the callback function is:</p>
+<blockquote>
+<div>callback(paramName, app, userEdited)</div></blockquote>
+<ul class="simple">
+<li><strong>paramName</strong> indicating the <a class="reference internal" href="scriptvslabel.html#autovar"><span class="std std-ref">script-name</span></a> of the parameter which just had its value changed.</li>
+<li><strong>app</strong> : This variable will be set so it points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>userEdited</strong> : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed the value by theirself) or due to another parameter changing the value of the parameter via a derivative of the <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> function.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The difference between the callbacks on  <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> and <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> and
+<a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> is due to technical reasons: mainly because the parameters of the
+<a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a> class and <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> are not declared
+as attributes of the object.</p>
+</div>
+</div>
+<div class="section" id="registering-the-param-changed-callback">
+<h2>Registering the param changed callback<a class="headerlink" href="#registering-the-param-changed-callback" title="Permalink to this headline">¶</a></h2>
+<p>To register the param changed callback of an <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a>, you can do so in
+the settings panel of the node, in the “Node” tab, by entering the name of your Python function:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/settingsPanelParamChangedCB.png"><img alt="../_images/settingsPanelParamChangedCB.png" src="../_images/settingsPanelParamChangedCB.png" style="width: 400px;" /></a>
+</div>
+<p>You can also set the callback directly from the script: The callback is just another <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameter</span></a>
+of the node, on which you can call <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> to set the name of the callback</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">myBlurCallback</span><span class="p">(</span><span class="n">thisParam</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="o">.</span><span class="n">onParamChanged</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;myBlurCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If the callback is defined in a separate python file, such as the python script of a
+python group plug-in, then do not forget the module prefix, e.g.:</p>
+<blockquote class="last">
+<div>app.MyPlugin1.BlurCImg1.onParamChanged.set(“MyPlugin.myBlurCallback”)</div></blockquote>
+</div>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This simple callback just prints a string when the &quot;size&quot; parameter of the BlurCImg</span>
+<span class="c1"># node changes</span>
+<span class="k">def</span> <span class="nf">myBlurCallback</span><span class="p">(</span><span class="n">thisParam</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">thisParam</span> <span class="o">==</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The size of the blur just changed!&quot;</span><span class="p">)</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">BlurCImg1</span><span class="o">.</span><span class="n">onParamChanged</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;myBlurCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="using-the-param-changed-callback-for-pymodaldialog-and-pypanel">
+<h2>Using the param changed callback for  <a class="reference internal" href="PythonReference/NatronGui/PyModalDialog.html#pymodaldialog"><span class="std std-ref">PyModalDialog</span></a> and  <a class="reference internal" href="PythonReference/NatronGui/PyPanel.html#pypanel"><span class="std std-ref">PyPanel</span></a><a class="headerlink" href="#using-the-param-changed-callback-for-pymodaldialog-and-pypanel" title="Permalink to this headline">¶</a></h2>
+<p>To register the callback to the object, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">setParamChangedCallback(pythonFunctionName)</span></code> function.</p>
+<p>The following example is taken from the initGui.py script provided as example in <a class="reference internal" href="pysidePanelExample.html#sourcecodeex"><span class="std std-ref">this section</span></a>.</p>
+<div class="section" id="id1">
+<h3>Example<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Callback called when a parameter of the player changes</span>
+<span class="c1">#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed</span>
+<span class="k">def</span> <span class="nf">myPlayerParamChangedCallback</span><span class="p">(</span><span class="n">paramName</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+
+    <span class="n">viewer</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">getViewer</span><span class="p">(</span><span class="s2">&quot;Viewer1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">viewer</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;previous&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">viewer</span><span class="o">.</span><span class="n">getCurrentFrame</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;backward&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">startBackward</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;forward&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">startForward</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;next&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">viewer</span><span class="o">.</span><span class="n">getCurrentFrame</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">paramName</span> <span class="o">==</span> <span class="s2">&quot;stop&quot;</span><span class="p">:</span>
+        <span class="n">viewer</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">createMyPlayer</span><span class="p">():</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span> <span class="o">=</span> <span class="n">NatronGui</span><span class="o">.</span><span class="n">PyPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.myplayer&quot;</span><span class="p">,</span><span class="s2">&quot;My Player&quot;</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="n">app</span><span class="p">)</span>
+    <span class="c1">#...</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">setParamChangedCallback</span><span class="p">(</span><span class="s2">&quot;myPlayerParamChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-after-input-changed-callback">
+<h2>The After input changed callback<a class="headerlink" href="#the-after-input-changed-callback" title="Permalink to this headline">¶</a></h2>
+<p>Similarly to the param changed callback, this function is called whenever an input connection of
+the node is changed.  The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">inputIndex</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This function will be called even when loading a project</p>
+</div>
+<ul class="simple">
+<li><strong>inputIndex</strong> : This is the input which just got connected/disconnected.
+You can fetch the input at the given index with the <code class="xref py py-func docutils literal notranslate"><span class="pre">getInput(index)</span></code> function of the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> class.</li>
+<li><strong>thisNode</strong> : This is a <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> holding the input which just changed</li>
+<li><strong>thisGroup</strong> : This is a <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a> pointing to the group  holding <strong>thisNode</strong>. Note that it will be declared only if <strong>thisNode</strong> is part of a group.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+</ul>
+</div>
+<div class="section" id="registering-the-input-changed-callback">
+<h2>Registering the input changed callback<a class="headerlink" href="#registering-the-input-changed-callback" title="Permalink to this headline">¶</a></h2>
+<p>To register the input changed callback of an <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">Effect</span></a>, you can do so in
+the settings panel of the node, in the “Node” tab, by entering the name of your Python function:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/inputChangedPanel.png"><img alt="../_images/inputChangedPanel.png" src="../_images/inputChangedPanel.png" style="width: 400px;" /></a>
+</div>
+<p>You can also set the callback directly from the script: The callback is just another <a class="reference internal" href="PythonReference/NatronEngine/Param.html#param"><span class="std std-ref">parameter</span></a>
+of the node, on which you can call <code class="xref py py-func docutils literal notranslate"><span class="pre">setValue(value)</span></code> to set the name of the callback</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">inputChangedCallback</span><span class="p">(</span><span class="n">inputIndex</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">Merge1</span><span class="o">.</span><span class="n">onInputChanged</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;inputChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="id2">
+<h3>Example<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This simple callback just prints the input node name if connected or &quot;None&quot; otherwise</span>
+<span class="c1"># node changes</span>
+<span class="k">def</span> <span class="nf">inputChangedCallback</span><span class="p">(</span><span class="n">inputIndex</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">thisGroup</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="n">thisNode</span><span class="o">.</span><span class="n">getInput</span><span class="p">(</span><span class="n">inputIndex</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Input &quot;</span><span class="p">,</span><span class="n">inputIndex</span><span class="p">,</span><span class="s2">&quot; is &quot;</span><span class="p">,</span><span class="n">inp</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Input &quot;</span><span class="p">,</span><span class="n">inputIndex</span><span class="p">,</span><span class="s2">&quot; is None&quot;</span><span class="p">)</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">Merge1</span><span class="o">.</span><span class="n">onInputChanged</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;inputChangedCallback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-after-project-created-callback">
+<h2>The After project created callback<a class="headerlink" href="#the-after-project-created-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called whenever a new project is created, that is either when launching Natron
+without loading a project, or when clicking “Create a new project” or “Close project”.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that this function is never called when a project is loaded either via an auto-save
+or from user interaction.</p>
+</div>
+<p>The <strong>app</strong> variable will be set so it points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>
+being created.</p>
+<p>You can set the callback via the <em>afterProjectCreated</em> parameter of the settings of Natron.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/preferencesCallback.png"><img alt="../_images/preferencesCallback.png" src="../_images/preferencesCallback.png" style="width: 400px;" /></a>
+</div>
+<p>This is a good place to create custom panels and/or setup the node-graph with node presets.</p>
+<p>Example, taken from the initGui.py script provided as example in <a class="reference internal" href="pysidePanelExample.html#sourcecodeex"><span class="std std-ref">this section</span></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">onProjectCreated</span><span class="p">():</span>
+
+    <span class="c1">#Always create our icon viewer on project creation</span>
+    <span class="n">createIconViewer</span><span class="p">()</span>
+
+
+<span class="n">natron</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">afterProjectCreated</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;onProjectCreated&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-after-project-loaded-callback">
+<h2>The After project loaded callback<a class="headerlink" href="#the-after-project-loaded-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is very similar to the After project created callback but is a per-project callback,
+called only when a project is loaded from an auto-save or from user interaction.
+The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a> being loaded.</li>
+</ul>
+<p>You can set this callback in the project settings:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/projectCallbacks.png"><img alt="../_images/projectCallbacks.png" src="../_images/projectCallbacks.png" style="width: 400px;" /></a>
+</div>
+<p>This is a good place to do some checks to opened projects or to setup something:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">onProjectLoaded</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">getUserPanel</span><span class="p">(</span><span class="s2">&quot;fr.inria.iconviewer&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">createIconViewer</span><span class="p">()</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">afterProjectLoad</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;onProjectLoaded&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can set a default After project loaded callback for all new projects in the <em>Preferences–&gt;Python</em> tab.</p>
+</div>
+</div>
+<div class="section" id="the-before-project-save-callback">
+<h2>The Before project save callback<a class="headerlink" href="#the-before-project-save-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function will be called prior to saving a project either via an auto-save or from
+user interaction. The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">autoSave</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>filename</strong> : This is the file-path where the project is initially going to be saved.</li>
+<li><strong>app</strong> :  points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a> being created.</li>
+<li><strong>autoSave</strong> : This indicates whether the save was originated from an auto-save or from user interaction.</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function should return the filename under which the project should really be saved.</p>
+</div>
+<p>You can set the callback from the project settings:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/projectCallbacks.png"><img alt="../_images/projectCallbacks.png" src="../_images/projectCallbacks.png" style="width: 400px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">beforeProjectSave</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">autoSave</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving project under: &quot;</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filename</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">beforeProjectSave</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;beforeProjectSave&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can set a default Before project save callback for all new projects in the <em>Preferences–&gt;Python</em> tab.</p>
+</div>
+</div>
+<div class="section" id="the-before-project-close-callback">
+<h2>The Before project close callback<a class="headerlink" href="#the-before-project-close-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called prior to closing a project either because the application is about
+to quit or because the user closed the project. The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a> being closed.</li>
+</ul>
+<p>This function can be used to synchronize any other device or piece of software communicating
+with Natron.</p>
+<p>You can set the callback from the project settings:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/projectCallbacks.png"><img alt="../_images/projectCallbacks.png" src="../_images/projectCallbacks.png" style="width: 400px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">beforeProjectClose</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Closing project)</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">beforeProjectClose</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;beforeProjectClose&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can set a default Before project close callback for all new projects in the <em>Preferences–&gt;Python</em> tab.</p>
+</div>
+</div>
+<div class="section" id="the-after-node-created-callback">
+<h2>The After node created callback<a class="headerlink" href="#the-after-node-created-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called after creating a node in Natron. The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>thisNode</strong> points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">node</span></a> that has been created.</li>
+<li><strong>app</strong> points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>userEdited</strong> will be <em>True</em> if the node was created
+by the user (or by a script using the <code class="xref py py-func docutils literal notranslate"><span class="pre">createNode(pluginID,version,group)</span></code> function)
+or <em>False</em> if the node was created by actions such as pasting a node or when the project is
+loaded.</li>
+</ul>
+<p>This is a good place to change default parameters values.</p>
+<p>You can set the callback from the project settings:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/projectCallbacks.png"><img alt="../_images/projectCallbacks.png" src="../_images/projectCallbacks.png" style="width: 400px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">onNodeCreated</span><span class="p">(</span><span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">userEdited</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">(),</span><span class="s2">&quot; was just created&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">userEdited</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; due to user interaction&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; due to project load or node pasting&quot;</span><span class="p">)</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">afterNodeCreated</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;onNodeCreated&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can set a default After node created callback for all new projects in the <em>Preferences–&gt;Python</em> tab.</p>
+</div>
+<p>This callback can also be set in the <em>Node</em> tab of any <strong>Group</strong> node (or <em>PyPlug</em>).
+If set on the Group, the callback will be invoked for the <em>Group</em> node and all its direct children (not recursively).</p>
+</div>
+<div class="section" id="the-before-node-removal-callback">
+<h2>The Before node removal callback:<a class="headerlink" href="#the-before-node-removal-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called prior to deleting a node in Natron. The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>thisNode</strong> : points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">node</span></a> about to be deleted.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function will <strong>NOT</strong> be called when the project is closing</p>
+</div>
+<p>You can set the callback from the project settings:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/projectCallbacks.png"><img alt="../_images/projectCallbacks.png" src="../_images/projectCallbacks.png" style="width: 400px;" /></a>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">beforeNodeDeleted</span><span class="p">(</span><span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">thisNode</span><span class="o">.</span><span class="n">getScriptName</span><span class="p">(),</span><span class="s2">&quot; is going to be destroyed&quot;</span><span class="p">)</span>
+
+
+<span class="n">app</span><span class="o">.</span><span class="n">beforeNodeRemoval</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;beforeNodeDeleted&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can set a default Before node removal callback for all new projects in the <em>Preferences–&gt;Python</em> tab.</p>
+</div>
+<p>This callback can also be set in the <em>Node</em> tab of any <strong>Group</strong> node (or <em>PyPlug</em>).
+If set on the Group, the callback will be invoked for the <em>Group</em> node and all its direct children (not recursively).</p>
+</div>
+<div class="section" id="the-before-frame-render-callback">
+<h2>The Before frame render callback:<a class="headerlink" href="#the-before-frame-render-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called prior to rendering any frame with a Write node. The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>thisNode</strong> : points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">write node</span></a>.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>frame</strong>: The frame that is about to be rendered</li>
+</ul>
+<p>To execute code specific when in background render mode or in GUI mode, use the following condition</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+    <span class="c1">#We are in background mode</span>
+</pre></div>
+</div>
+<p>You can set the callback from the Write node settings panel in the “Python” tab.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/writePython.png"><img alt="../_images/writePython.png" src="../_images/writePython.png" style="width: 400px;" /></a>
+</div>
+<p>This function can be used to communicate with external programs for example.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Any exception thrown in this callback will abort the render</p>
+</div>
+</div>
+<div class="section" id="the-after-frame-rendered-callback">
+<h2>The After frame rendered callback:<a class="headerlink" href="#the-after-frame-rendered-callback" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>This function is called after each frame is finished rendering with a Write node.</dt>
+<dd><p class="first">The signature is:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<ul class="simple">
+<li><strong>thisNode</strong> : points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">write node</span></a>.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+<li><strong>frame</strong>: The frame that is about to be rendered</li>
+</ul>
+<p>To execute code specific when in background render mode or in GUI mode, use the following condition</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+    <span class="c1">#We are in background mode</span>
+</pre></div>
+</div>
+<p>You can set the callback from the Write node settings panel in the “Python” tab.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/writePython.png"><img alt="../_images/writePython.png" src="../_images/writePython.png" style="width: 400px;" /></a>
+</div>
+<p>This function can be used to communicate with external programs for example.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Any exception thrown in this callback will abort the render</p>
+</div>
+</div>
+<div class="section" id="the-before-render-callback">
+<h2>The Before render callback:<a class="headerlink" href="#the-before-render-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called once before starting rendering the first frame of a sequence with
+the Write node.  The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>thisNode</strong> : points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">write node</span></a>.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+</ul>
+<p>To execute code specific when in background render mode or in GUI mode, use the following condition</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+    <span class="c1">#We are in background mode</span>
+</pre></div>
+</div>
+<p>You can set the callback from the Write node settings panel in the “Python” tab.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/writePython.png"><img alt="../_images/writePython.png" src="../_images/writePython.png" style="width: 400px;" /></a>
+</div>
+<p>This function can be used to communicate with external programs for example.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Any exception thrown in this callback will abort the render</p>
+</div>
+</div>
+<div class="section" id="the-after-render-callback">
+<span id="afterrendercallback"></span><h2>The After render callback:<a class="headerlink" href="#the-after-render-callback" title="Permalink to this headline">¶</a></h2>
+<p>This function is called once after the rendering of the last frame is finished with
+the Write node or if the render was aborted.  The signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">aborted</span><span class="p">,</span> <span class="n">thisNode</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><strong>aborted</strong> :  <em>True</em> if the rendering was aborted or <em>False</em> otherwise.</li>
+<li><strong>thisNode</strong> : points to the <a class="reference internal" href="PythonReference/NatronEngine/Effect.html#effect"><span class="std std-ref">write node</span></a>.</li>
+<li><strong>app</strong> : points to the correct <a class="reference internal" href="PythonReference/NatronEngine/App.html#app"><span class="std std-ref">application instance</span></a>.</li>
+</ul>
+<p>To execute code specific when in background render mode or in GUI mode, use the following condition</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">natron</span><span class="o">.</span><span class="n">isBackground</span><span class="p">():</span>
+    <span class="c1">#We are in background mode</span>
+</pre></div>
+</div>
+<p>You can set the callback from the Write node settings panel in the “Python” tab.</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/writePython.png"><img alt="../_images/writePython.png" src="../_images/writePython.png" style="width: 400px;" /></a>
+</div>
+<p>This function can be used to communicate with external programs for example.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="renderingWriteNode.html" class="btn btn-neutral float-right" title="Rendering" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="groups.html" class="btn btn-neutral float-left" title="Working with groups" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

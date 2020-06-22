@@ -1,0 +1,3536 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Shadertoy node &mdash; Natron 2.3.16 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sharpen node" href="net.sf.cimg.CImgSharpen.html" />
+    <link rel="prev" title="Median node" href="net.sf.cimg.CImgMedian.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> Natron
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../_group.html">Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../_prefs.html">Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_environment.html">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupImage.html">Image nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupDraw.html">Draw nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTime.html">Time nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupChannel.html">Channel nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupColor.html">Color nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../_groupFilter.html">Filter nodes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.AngleBlur.html">AngleBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBloom.html">Bloom node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBlur.html">Blur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgChromaBlur.html">ChromaBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DenoiseSharpen.html">DenoiseSharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDilate.html">Dilate node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.DirBlur.html">DirBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Distance.html">Distance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.DropShadow.html">DropShadow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.EdgeBlur.html">EdgeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeDetect.html">EdgeDetect node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.EdgeExtend.html">EdgeExtend node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErode.html">Erode node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.ErodeBlur.html">ErodeBlur node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgErodeSmooth.html">ErodeSmooth node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Fill.html">Fill node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgExpression.html">GMICExpr node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.Glow.html">Glow node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.openfx.GodRays.html">GodRays node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.Inpaint.html">Inpaint node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgLaplacian.html">Laplacian node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix3x3.html">Matrix3x3 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eu.cimg.CImgMatrix5x5.html">Matrix5x5 node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgMedian.html">Median node</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Shadertoy node</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controls">Controls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpen.html">Sharpen node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenInvDiff.html">SharpenInvDiff node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSharpenShock.html">SharpenShock node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSmooth.html">SmoothAnisotropic node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateral.html">SmoothBilateral node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgBilateralGuided.html">SmoothBilateralGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgGuided.html">SmoothGuided node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgDenoise.html">SmoothPatchBased node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgRollingGuidance.html">SmoothRollingGuidance node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="net.sf.cimg.CImgSoften.html">Soften node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZMask.html">ZMask node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fr.inria.ZRemap.html">ZRemap node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupKeyer.html">Keyer nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupMerge.html">Merge nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupTransform.html">Transform nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupViews.html">Views nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupOther.html">Other nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupGMIC.html">GMIC nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_groupExtra.html">Extra nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devel/index.html">Developers Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Natron</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../_group.html">Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../_groupFilter.html">Filter nodes</a> &raquo;</li>
+        
+      <li>Shadertoy node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/plugins/net.sf.openfx.Shadertoy.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="shadertoy-node">
+<span id="net-sf-openfx-shadertoy"></span><h1>Shadertoy node<a class="headerlink" href="#shadertoy-node" title="Permalink to this headline">¶</a></h1>
+<!-- Do not edit this file! It is generated automatically by Natron itself. --><p><a class="reference internal" href="../_images/net.sf.openfx.Shadertoy.png"><img alt="pluginIcon" src="../_images/net.sf.openfx.Shadertoy.png" style="width: 10.0%;" /></a></p>
+<p><em>This documentation is for version 1.0 of Shadertoy (net.sf.openfx.Shadertoy).</em></p>
+<div class="section" id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Apply a <a class="reference external" href="http://www.shadertoy.com">Shadertoy</a> fragment shader.</p>
+<p>This plugin implements <a class="reference external" href="https://www.shadertoy.com/about">Shadertoy 0.8.8</a>, but multipass shaders and sound are not supported. Some multipass shaders can still be implemented by chaining several Shadertoy nodes, one for each pass.</p>
+<p><a class="reference external" href="https://www.shadertoy.com/about">Shadertoy 0.8.8</a> uses WebGL 1.0 (a.k.a. <a class="reference external" href="https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf">GLSL ES 1.0</a> from GLES 2.0), based on <a class="reference external" href="https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf">GLSL 1.20</a></p>
+<p>Note that the more recent <a class="reference external" href="https://www.shadertoy.com/about">Shadertoy 0.9.1</a> uses WebGL 2.0 (a.k.a. <a class="reference external" href="https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf">GLSL ES 3.0</a> from GLES 3.0), based on <a class="reference external" href="https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.3.30.pdf">GLSL 3.3</a></p>
+<p>This help only covers the parts of GLSL ES that are relevant for Shadertoy. For the complete specification please have a look at <a class="reference external" href="https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf">GLSL ES 1.0 specification</a> or pages 3 and 4 of the <a class="reference external" href="https://www.khronos.org/opengles/sdk/docs/reference_cards/OpenGL-ES-2_0-Reference-card.pdf">OpenGL ES 2.0 quick reference card</a>. See also the <a class="reference external" href="https://www.shadertoy.com/view/Md23DV">Shadertoy/GLSL tutorial</a>.</p>
+<div class="section" id="image-shaders">
+<h3>Image shaders<a class="headerlink" href="#image-shaders" title="Permalink to this headline">¶</a></h3>
+<p>Image shaders implement the <code class="docutils literal notranslate"><span class="pre">mainImage()</span></code> function in order to generate the procedural images by computing a color for each pixel. This function is expected to be called once per pixel, and it is responsibility of the host application to provide the right inputs to it and get the output color from it and assign it to the screen pixel. The prototype is:</p>
+<p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">mainImage(</span> <span class="pre">out</span> <span class="pre">vec4</span> <span class="pre">fragColor,</span> <span class="pre">in</span> <span class="pre">vec2</span> <span class="pre">fragCoord</span> <span class="pre">);</span></code></p>
+<p>where <code class="docutils literal notranslate"><span class="pre">fragCoord</span></code> contains the pixel coordinates for which the shader needs to compute a color. The coordinates are in pixel units, ranging from 0.5 to resolution-0.5, over the rendering surface, where the resolution is passed to the shader through the <code class="docutils literal notranslate"><span class="pre">iResolution</span></code> uniform (see below).</p>
+<p>The resulting color is gathered in <code class="docutils literal notranslate"><span class="pre">fragColor</span></code> as a four component vector.</p>
+</div>
+<div class="section" id="language">
+<h3>Language:<a class="headerlink" href="#language" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Preprocessor:</strong> <code class="docutils literal notranslate"><span class="pre">#</span></code> <code class="docutils literal notranslate"><span class="pre">#define</span></code> <code class="docutils literal notranslate"><span class="pre">#undef</span></code> <code class="docutils literal notranslate"><span class="pre">#if</span></code> <code class="docutils literal notranslate"><span class="pre">#ifdef</span></code> <code class="docutils literal notranslate"><span class="pre">#ifndef</span></code> <code class="docutils literal notranslate"><span class="pre">#else</span></code> <code class="docutils literal notranslate"><span class="pre">#elif</span></code> <code class="docutils literal notranslate"><span class="pre">#endif</span></code> <code class="docutils literal notranslate"><span class="pre">#error</span></code> <code class="docutils literal notranslate"><span class="pre">#pragma</span></code> <code class="docutils literal notranslate"><span class="pre">#extension</span></code> <code class="docutils literal notranslate"><span class="pre">#version</span></code> <code class="docutils literal notranslate"><span class="pre">#line</span></code></li>
+<li><strong>Operators:</strong> <code class="docutils literal notranslate"><span class="pre">()</span></code> <code class="docutils literal notranslate"><span class="pre">+</span></code> <code class="docutils literal notranslate"><span class="pre">-</span></code> <code class="docutils literal notranslate"><span class="pre">!</span></code> <code class="docutils literal notranslate"><span class="pre">*</span></code> <code class="docutils literal notranslate"><span class="pre">/</span></code> <code class="docutils literal notranslate"><span class="pre">%</span></code> <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> <code class="docutils literal notranslate"><span class="pre">==</span></code> <code class="docutils literal notranslate"><span class="pre">!=</span></code> <code class="docutils literal notranslate"><span class="pre">&amp;&amp;</span></code> <code class="docutils literal notranslate"><span class="pre">||</span></code></li>
+<li><strong>Comments:</strong> <code class="docutils literal notranslate"><span class="pre">//</span></code> <code class="docutils literal notranslate"><span class="pre">/*</span></code> <code class="docutils literal notranslate"><span class="pre">*/</span></code></li>
+<li><strong>Types:</strong> void bool int float vec2 vec3 vec4 bvec2 bvec3 bvec4 ivec2 ivec3 ivec4 mat2 mat3 mat4 sampler2D</li>
+<li><strong>Function Parameter Qualifiers:</strong> [STRIKEOUT:none], in, out, inout</li>
+<li><strong>Global Variable Qualifiers:</strong> const</li>
+<li><strong>Vector Components:</strong> .xyzw .rgba .stpq</li>
+<li><strong>Flow Control:</strong> if else for return break continue</li>
+<li><strong>Output:</strong> vec4 fragColor</li>
+<li><strong>Input:</strong> vec2 fragCoord</li>
+</ul>
+</div>
+<div class="section" id="built-in-functions-details">
+<h3>Built-in Functions <a class="reference external" href="http://www.shaderific.com/glsl-functions/">(details)</a><a class="headerlink" href="#built-in-functions-details" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="angle-and-trigonometry-functions">
+<h4>Angle and Trigonometry Functions<a class="headerlink" href="#angle-and-trigonometry-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><em>type</em> radians (<em>type</em> degrees)</li>
+<li><em>type</em> degrees (<em>type</em> radians)</li>
+<li><em>type</em> sin (<em>type</em> angle)</li>
+<li><em>type</em> cos (<em>type</em> angle)</li>
+<li><em>type</em> tan (<em>type</em> angle)</li>
+<li><em>type</em> asin (<em>type</em> x)</li>
+<li><em>type</em> acos (<em>type</em> x)</li>
+<li><em>type</em> atan (<em>type</em> y, <em>type</em> x)</li>
+<li><em>type</em> atan (<em>type</em> y_over_x)</li>
+</ul>
+</div>
+<div class="section" id="exponential-functions">
+<h4>Exponential Functions<a class="headerlink" href="#exponential-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><em>type</em> pow (<em>type</em> x, <em>type</em> y)</li>
+<li><em>type</em> exp (<em>type</em> x)</li>
+<li><em>type</em> log (<em>type</em> x)</li>
+<li><em>type</em> exp2 (<em>type</em> x)</li>
+<li><em>type</em> log2 (<em>type</em> x)</li>
+<li><em>type</em> sqrt (<em>type</em> x)</li>
+<li><em>type</em> inversesqrt (<em>type</em> x)</li>
+</ul>
+</div>
+<div class="section" id="common-functions">
+<h4>Common Functions<a class="headerlink" href="#common-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><em>type</em> abs (<em>type</em> x)</li>
+<li><em>type</em> sign (<em>type</em> x)</li>
+<li><em>type</em> floor (<em>type</em> x)</li>
+<li><em>type</em> ceil (<em>type</em> x)</li>
+<li><em>type</em> fract (<em>type</em> x)</li>
+<li><em>type</em> mod (<em>type</em> x, float y)</li>
+<li><em>type</em> mod (<em>type</em> x, <em>type</em> y)</li>
+<li><em>type</em> min (<em>type</em> x, <em>type</em> y)</li>
+<li><em>type</em> min (<em>type</em> x, float y)</li>
+<li><em>type</em> max (<em>type</em> x, <em>type</em> y)</li>
+<li><em>type</em> max (<em>type</em> x, float y)</li>
+<li><em>type</em> clamp (<em>type</em> x, <em>type</em> minV, <em>type</em> maxV)</li>
+<li><em>type</em> clamp (<em>type</em> x, float minV, float maxV)</li>
+<li><em>type</em> mix (<em>type</em> x, <em>type</em> y, <em>type</em> a)</li>
+<li><em>type</em> mix (<em>type</em> x, <em>type</em> y, float a)</li>
+<li><em>type</em> step (<em>type</em> edge, <em>type</em> x)</li>
+<li><em>type</em> step (float edge, <em>type</em> x)</li>
+<li><em>type</em> smoothstep (<em>type</em> a, <em>type</em> b, <em>type</em> x)</li>
+<li><em>type</em> smoothstep (float a, float b, <em>type</em> x)</li>
+</ul>
+</div>
+<div class="section" id="geometric-functions">
+<h4>Geometric Functions<a class="headerlink" href="#geometric-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>float length (<em>type</em> x)</li>
+<li>float distance (<em>type</em> p0, <em>type</em> p1)</li>
+<li>float dot (<em>type</em> x, <em>type</em> y)</li>
+<li>vec3 cross (vec3 x, vec3 y)</li>
+<li><em>type</em> normalize (<em>type</em> x)</li>
+<li><em>type</em> faceforward (<em>type</em> N, <em>type</em> I, <em>type</em> Nref)</li>
+<li><em>type</em> reflect (<em>type</em> I, <em>type</em> N)</li>
+<li><em>type</em> refract (<em>type</em> I, <em>type</em> N,float eta)</li>
+</ul>
+</div>
+<div class="section" id="matrix-functions">
+<h4>Matrix Functions<a class="headerlink" href="#matrix-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>mat matrixCompMult (mat x, mat y)</li>
+</ul>
+</div>
+<div class="section" id="vector-relational-functions">
+<h4>Vector Relational Functions<a class="headerlink" href="#vector-relational-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>bvec lessThan(vec x, vec y)</li>
+<li>bvec lessThan(ivec x, ivec y)</li>
+<li>bvec lessThanEqual(vec x, vec y)</li>
+<li>bvec lessThanEqual(ivec x, ivec y)</li>
+<li>bvec greaterThan(vec x, vec y)</li>
+<li>bvec greaterThan(ivec x, ivec y)</li>
+<li>bvec greaterThanEqual(vec x, vec y)</li>
+<li>bvec greaterThanEqual(ivec x, ivec y)</li>
+<li>bvec equal(vec x, vec y)</li>
+<li>bvec equal(ivec x, ivec y)</li>
+<li>bvec equal(bvec x, bvec y)</li>
+<li>bvec notEqual(vec x, vec y)</li>
+<li>bvec notEqual(ivec x, ivec y)</li>
+<li>bvec notEqual(bvec x, bvec y)</li>
+<li>bool any(bvec x)</li>
+<li>bool all(bvec x)</li>
+<li>bvec not(bvec x)</li>
+</ul>
+</div>
+<div class="section" id="texture-lookup-functions">
+<h4>Texture Lookup Functions<a class="headerlink" href="#texture-lookup-functions" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>vec4 texture2D(sampler2D sampler, vec2 coord )</li>
+<li>vec4 texture2D(sampler2D sampler, vec2 coord, float bias)</li>
+<li>vec4 textureCube(samplerCube sampler, vec3 coord)</li>
+<li>vec4 texture2DProj(sampler2D sampler, vec3 coord )</li>
+<li>vec4 texture2DProj(sampler2D sampler, vec3 coord, float bias)</li>
+<li>vec4 texture2DProj(sampler2D sampler, vec4 coord)</li>
+<li>vec4 texture2DProj(sampler2D sampler, vec4 coord, float bias)</li>
+<li>vec4 texture2DLodEXT(sampler2D sampler, vec2 coord, float lod)</li>
+<li>vec4 texture2DProjLodEXT(sampler2D sampler, vec3 coord, float lod)</li>
+<li>vec4 texture2DProjLodEXT(sampler2D sampler, vec4 coord, float lod)</li>
+<li>vec4 textureCubeLodEXT(samplerCube sampler, vec3 coord, float lod)</li>
+<li>vec4 texture2DGradEXT(sampler2D sampler, vec2 P, vec2 dPdx, vec2 dPdy)</li>
+<li>vec4 texture2DProjGradEXT(sampler2D sampler, vec3 P, vec2 dPdx, vec2 dPdy)</li>
+<li>vec4 texture2DProjGradEXT(sampler2D sampler, vec4 P, vec2 dPdx, vec2 dPdy)</li>
+<li>vec4 textureCubeGradEXT(samplerCube sampler, vec3 P, vec3 dPdx, vec3 dPdy)</li>
+</ul>
+</div>
+<div class="section" id="function-derivatives">
+<h4>Function Derivatives<a class="headerlink" href="#function-derivatives" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><em>type</em> dFdx( <em>type</em> x ), dFdy( <em>type</em> x )</li>
+<li><em>type</em> fwidth( <em>type</em> p )</li>
+</ul>
+</div>
+</div>
+<div class="section" id="how-to">
+<h3>How-to<a class="headerlink" href="#how-to" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Use structs:</strong> <code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">myDataType</span> <span class="pre">{</span> <span class="pre">float</span> <span class="pre">occlusion;</span> <span class="pre">vec3</span> <span class="pre">color;</span> <span class="pre">};</span> <span class="pre">myDataType</span> <span class="pre">myData</span> <span class="pre">=</span> <span class="pre">myDataType(0.7,</span> <span class="pre">vec3(1.0,</span> <span class="pre">2.0,</span> <span class="pre">3.0));</span></code></li>
+<li><strong>Initialize arrays:</strong> arrays cannot be initialized in WebGL.</li>
+<li><strong>Do conversions:</strong> <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">a</span> <span class="pre">=</span> <span class="pre">3;</span> <span class="pre">float</span> <span class="pre">b</span> <span class="pre">=</span> <span class="pre">float(a);</span></code></li>
+<li><strong>Do component swizzling:</strong> <code class="docutils literal notranslate"><span class="pre">vec4</span> <span class="pre">a</span> <span class="pre">=</span> <span class="pre">vec4(1.0,2.0,3.0,4.0);</span> <span class="pre">vec4</span> <span class="pre">b</span> <span class="pre">=</span> <span class="pre">a.zyyw;</span></code></li>
+<li><strong>Access matrix components:</strong> <code class="docutils literal notranslate"><span class="pre">mat4</span> <span class="pre">m;</span> <span class="pre">m[1]</span> <span class="pre">=</span> <span class="pre">vec4(2.0);</span> <span class="pre">m[0][0]</span> <span class="pre">=</span> <span class="pre">1.0;</span> <span class="pre">m[2][3]</span> <span class="pre">=</span> <span class="pre">2.0;</span></code></li>
+</ul>
+</div>
+<div class="section" id="be-careful">
+<h3>Be careful!<a class="headerlink" href="#be-careful" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>the f suffix for floating point numbers:</strong> 1.0f is illegal in GLSL. You must use 1.0</li>
+<li><strong>saturate():</strong> saturate(x) doesn’t exist in GLSL. Use clamp(x,0.0,1.0) instead</li>
+<li><strong>pow/sqrt:</strong> please don’t feed sqrt() and pow() with negative numbers. Add an abs() or max(0.0,) to the argument</li>
+<li><strong>mod:</strong> please don’t do mod(x,0.0). This is undefined in some platforms</li>
+<li><strong>variables:</strong> initialize your variables! Don’t assume they’ll be set to zero by default</li>
+<li><strong>functions:</strong> don’t call your functions the same as some of your variables</li>
+</ul>
+</div>
+<div class="section" id="shadertoy-inputs">
+<h3>Shadertoy Inputs<a class="headerlink" href="#shadertoy-inputs" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="18%" />
+<col width="10%" />
+<col width="64%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Type</th>
+<th class="head">Name</th>
+<th class="head">Function</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>vec3</td>
+<td>iResolution</td>
+<td>image</td>
+<td>The viewport resolution (z is pixel aspect ratio, usually 1.0)</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>iTime</td>
+<td>image/sound</td>
+<td>Current time in seconds</td>
+</tr>
+<tr class="row-even"><td>float</td>
+<td>iTimeDelta</td>
+<td>image</td>
+<td>Time it takes to render a frame, in seconds</td>
+</tr>
+<tr class="row-odd"><td>int</td>
+<td>iFrame</td>
+<td>image</td>
+<td>Current frame</td>
+</tr>
+<tr class="row-even"><td>float</td>
+<td>iFrameRate</td>
+<td>image</td>
+<td>Number of frames rendered per second</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>iChannelTime[4]</td>
+<td>image</td>
+<td>Time for channel (if video or sound), in seconds</td>
+</tr>
+<tr class="row-even"><td>vec3</td>
+<td>iChannelResolution[4]</td>
+<td>image/sound</td>
+<td>Input texture resolution for each channel</td>
+</tr>
+<tr class="row-odd"><td>vec2</td>
+<td>iChannelOffset[4]</td>
+<td>image</td>
+<td>Input texture offset in pixel coords for each channel</td>
+</tr>
+<tr class="row-even"><td>vec4</td>
+<td>iMouse</td>
+<td>image</td>
+<td>xy = current pixel coords (if LMB is down). zw = click pixel</td>
+</tr>
+<tr class="row-odd"><td>sampler2D</td>
+<td>iChannel{i}</td>
+<td>image/sound</td>
+<td>Sampler for input textures i</td>
+</tr>
+<tr class="row-even"><td>vec4</td>
+<td>iDate</td>
+<td>image/sound</td>
+<td>Year, month, day, time in seconds in .xyzw</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>iSampleRate</td>
+<td>image/sound</td>
+<td>The sound sample rate (typically 44100)</td>
+</tr>
+<tr class="row-even"><td>vec2</td>
+<td>iRenderScale</td>
+<td>image</td>
+<td>The OpenFX render scale (e.g.&nbsp;0.5,0.5 when rendering half-size) [OFX plugin only]</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="shadertoy-outputs">
+<h3>Shadertoy Outputs<a class="headerlink" href="#shadertoy-outputs" title="Permalink to this headline">¶</a></h3>
+<p>For image shaders, fragColor is used as output channel. It is not, for now, mandatory but recommended to leave the alpha channel to 1.0.</p>
+<p>For sound shaders, the mainSound() function returns a vec2 containing the left and right (stereo) sound channel wave data.</p>
+</div>
+<div class="section" id="openfx-extensions-to-shadertoy">
+<h3>OpenFX extensions to Shadertoy<a class="headerlink" href="#openfx-extensions-to-shadertoy" title="Permalink to this headline">¶</a></h3>
+<p>Shadertoy was extended to:</p>
+<ul class="simple">
+<li>Expose shader parameters as uniforms, which are presented as OpenFX parameters.</li>
+<li>Provide the description and help for these parameters directly in the GLSL code.</li>
+<li>Add a default uniform containing the render scale. In OpenFX, a render scale of 1 means that the image is rendered at full resolution, 0.5 at half resolution, etc. This can be used to scale parameter values so that the final aspect does not depend on the render scale. For example, a blur size parameter given in pixels at full resolution would have to be multiplied by the render scale.</li>
+<li>Add a default uniform containing the offset of the processed texture with respect to the position of the origin.</li>
+</ul>
+<p>The extensions are:</p>
+<ul class="simple">
+<li>The pre-defined <code class="docutils literal notranslate"><span class="pre">iRenderScale</span></code> uniform contains the current render scale. Basically all pixel sizes must be multiplied by the renderscale to get a scale-independent effect. For compatibility with Shadertoy, the first line that starts with <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">vec2</span> <span class="pre">iRenderScale</span></code> is ignored (the full line should be <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">vec2</span> <span class="pre">iRenderScale</span> <span class="pre">=</span> <span class="pre">vec2(1.,1.);</span></code>).</li>
+<li>The pre-defined <code class="docutils literal notranslate"><span class="pre">iChannelOffset</span></code> uniform contains the texture offset for each channel relative to channel 0. For compatibility with Shadertoy, the first line that starts with <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">vec2</span> <span class="pre">iChannelOffset</span></code> is ignored (the full line should be <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">vec2</span> <span class="pre">iChannelOffset[4]</span> <span class="pre">=</span> <span class="pre">vec2[4](</span> <span class="pre">vec2(0.,0.),</span> <span class="pre">vec2(0.,0.),</span> <span class="pre">vec2(0.,0.),</span> <span class="pre">vec2(0.,0.)</span> <span class="pre">);</span></code>).</li>
+<li>The shader may define additional uniforms, which should have a default value, as in <code class="docutils literal notranslate"><span class="pre">uniform</span> <span class="pre">vec2</span> <span class="pre">blurSize</span> <span class="pre">=</span> <span class="pre">vec2(5.,</span> <span class="pre">5.);</span></code>. These uniforms can be made available as OpenFX parameters using settings in the ‘Extra parameters’ group, which can be set automatically using the ‘Auto. Params’ button (automatic parameters are only updated if the node is connected to a Viewer). A parameter label and help string can be given in the comment on the same line. The help string must be in parenthesis. <code class="docutils literal notranslate"><span class="pre">uniform</span> <span class="pre">vec2</span> <span class="pre">blurSize</span> <span class="pre">=</span> <span class="pre">vec2(5.,</span> <span class="pre">5.);</span> <span class="pre">//</span> <span class="pre">Blur</span> <span class="pre">Size</span> <span class="pre">(The</span> <span class="pre">blur</span> <span class="pre">size</span> <span class="pre">in</span> <span class="pre">pixels.)</span></code> min/max values can also be given after a comma. The strings must be exactly <code class="docutils literal notranslate"><span class="pre">min=</span></code> and <code class="docutils literal notranslate"><span class="pre">max=</span></code>, without additional spaces, separated by a comma, and the values must have the same dimension as the uniform: <code class="docutils literal notranslate"><span class="pre">uniform</span> <span class="pre">vec2</span> <span class="pre">blurSize</span> <span class="pre">=</span> <span class="pre">vec2(5.,</span> <span class="pre">5.);</span> <span class="pre">//</span> <span class="pre">Blur</span> <span class="pre">Size</span> <span class="pre">(The</span> <span class="pre">blur</span> <span class="pre">size</span> <span class="pre">in</span> <span class="pre">pixels.),</span> <span class="pre">min=(0.,0.),</span> <span class="pre">max=(1000.,1000.)</span></code></li>
+<li>The following comment line placed in the shader gives a label and help string to input 1 (the comment must be the only thing on the line): <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">iChannel1:</span> <span class="pre">Noise</span> <span class="pre">(A</span> <span class="pre">noise</span> <span class="pre">texture</span> <span class="pre">to</span> <span class="pre">be</span> <span class="pre">used</span> <span class="pre">for</span> <span class="pre">random</span> <span class="pre">number</span> <span class="pre">calculations.</span> <span class="pre">The</span> <span class="pre">texture</span> <span class="pre">should</span> <span class="pre">not</span> <span class="pre">be</span> <span class="pre">frame-varying.)</span></code></li>
+<li>This one also sets the filter and wrap parameters: <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">iChannel0:</span> <span class="pre">Source</span> <span class="pre">(Source</span> <span class="pre">image.),</span> <span class="pre">filter=linear,</span> <span class="pre">wrap=clamp</span></code></li>
+<li>And this one sets the output bounding box (possible values are Default, Union, Intersection, and iChannel0 to iChannel3): <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">BBox:</span> <span class="pre">iChannel0</span></code></li>
+</ul>
+</div>
+<div class="section" id="converting-a-shadertoy-for-use-in-openfx">
+<h3>Converting a Shadertoy for use in OpenFX<a class="headerlink" href="#converting-a-shadertoy-for-use-in-openfx" title="Permalink to this headline">¶</a></h3>
+<p>To better understand how to modify a Shadertoy for OpenFX, let use take the simple <a class="reference external" href="https://www.shadertoy.com/view/XdfGDH">Gaussian blur</a> example, which is also available as a preset in the Shadertoy node.</p>
+<p>In Natron, create a new project, create a Shadertoy node, connect the input 1 of the Viewer to the output of the Shadertoy node. This should give you a blurry color image that corresponds to the default Shadertoy source code. The Shadertoy node should have four inputs, named “iChannel0” to “iChannel3”.</p>
+<p>In the Shadertoy node parameters, open the “Image Shader” group. You should see the GLSL source code. Now in the “Load from Preset” choice, select “Blur/Gaussian Blur”. The viewer should display a black image, but you should also notice that the Shadertoy node now has two visible inputs: “Source” and “Modulate” (in Nuke, these inputs are still called iChannel0 and iChannel1). Create a Read node that reads a still image or a video, and connect it to the “Source” input. A blurred version of the image should now appear in the viewer. You should also notice that two parameters appeared at the top of the parameters for the Shadertoy node: “Size” and “Modulate”. Play with the “Size” parameter and see how it affects the blur size (you may have to zoom on the image to see precisely the effect).</p>
+<p>Now let us examine the modifications that were brought to the <a class="reference external" href="https://www.shadertoy.com/view/XdfGDH">original GLSL code</a>:</p>
+<p>These three comment lines describe the label, filter, and wrap parameters for each input, as well as the size of the output bounding box (also called “region of definition”):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">iChannel0</span><span class="p">:</span> <span class="n">Source</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">linear</span><span class="p">,</span> <span class="n">wrap</span><span class="o">=</span><span class="n">clamp</span>
+<span class="o">//</span> <span class="n">iChannel1</span><span class="p">:</span> <span class="n">Modulate</span> <span class="p">(</span><span class="n">Image</span> <span class="n">containing</span> <span class="n">a</span> <span class="n">factor</span> <span class="n">to</span> <span class="n">be</span> <span class="n">applied</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Blur</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">first</span> <span class="n">channel</span><span class="p">),</span> <span class="nb">filter</span><span class="o">=</span><span class="n">linear</span><span class="p">,</span> <span class="n">wrap</span><span class="o">=</span><span class="n">clamp</span>
+<span class="o">//</span> <span class="n">BBox</span><span class="p">:</span> <span class="n">iChannel0</span>
+</pre></div>
+</div>
+<p>Two constant global variables were added, which are ignored by the Shadertoy plugin, so that you can still copy-and-paste the source code in Shadertoy 0.8.8 and it still works (unfortunately, it does not work anymore with later versions of Shadertoy). You can safely ignore these:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">const</span> <span class="n">vec2</span> <span class="n">iRenderScale</span> <span class="o">=</span> <span class="n">vec2</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">);</span>
+<span class="n">const</span> <span class="n">vec2</span> <span class="n">iChannelOffset</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec2</span><span class="p">[</span><span class="mi">4</span><span class="p">](</span> <span class="n">vec2</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">vec2</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">vec2</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">vec2</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span> <span class="p">);</span>
+</pre></div>
+</div>
+<p>Then the uniform section gives the list of what will appear as OpenFX parameters, together with their default value, label, help string, and default range. Note that in the original Shadertoy code, the blur size was a constant hidden inside the code. Finding out the parameters of a Shadertoy requires precise code inspection. If you modify this part of the code, pressing the “Auto. Params” button will apply these changes to the OpenFX parameters:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uniform</span> <span class="nb">float</span> <span class="n">size</span> <span class="o">=</span> <span class="mf">10.</span><span class="p">;</span> <span class="o">//</span> <span class="n">Size</span> <span class="p">(</span><span class="n">Size</span> <span class="n">of</span> <span class="n">the</span> <span class="nb">filter</span> <span class="n">kernel</span> <span class="ow">in</span> <span class="n">pixel</span> <span class="n">units</span><span class="o">.</span> <span class="n">The</span> <span class="n">standard</span> <span class="n">deviation</span> <span class="n">of</span> <span class="n">the</span> <span class="n">corresponding</span> <span class="n">Gaussian</span> <span class="ow">is</span> <span class="n">size</span><span class="o">/</span><span class="mf">2.4</span><span class="o">.</span><span class="p">),</span> <span class="nb">min</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">21.</span>
+<span class="n">uniform</span> <span class="nb">bool</span> <span class="n">perpixel_size</span> <span class="o">=</span> <span class="n">false</span><span class="p">;</span> <span class="o">//</span> <span class="n">Modulate</span> <span class="p">(</span><span class="n">Modulate</span> <span class="n">the</span> <span class="n">blur</span> <span class="n">size</span> <span class="n">by</span> <span class="n">multiplying</span> <span class="n">it</span> <span class="n">by</span> <span class="n">the</span> <span class="n">first</span> <span class="n">channel</span> <span class="n">of</span> <span class="n">the</span> <span class="n">Modulate</span> <span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the <code class="docutils literal notranslate"><span class="pre">mainImage</span></code> function, which does the processing, we compute the <code class="docutils literal notranslate"><span class="pre">mSize</span></code> and <code class="docutils literal notranslate"><span class="pre">kSize</span></code> variables, which are the kernel size and mask size for that particular algorithm, from the “Size” parameter, multiplied by the render scale to get a scale-invariant effect. If the “Modulate” check box is on, we also multiply the size by the value found in the first channel (which is red, not alpha) of the “Modulate” input, which is in the iChannel1 texture according to the comments at the beginning of the source code. This can be use to modulate the blur size depending on the position in the image. The “Modulate” input may be for example connected to the output of a Roto node (with the “R” checkbox checked in the Roto node). Since the Roto output may not have the same size and origin as the Source image, we take care of these by using the iChannelOffset and iChannelResolution values for input 1.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">float</span> <span class="n">fSize</span> <span class="o">=</span> <span class="n">size</span> <span class="o">*</span> <span class="n">iRenderScale</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">perpixel_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">fSize</span> <span class="o">*=</span> <span class="n">texture2D</span><span class="p">(</span><span class="n">iChannel1</span><span class="p">,</span> <span class="p">(</span><span class="n">fragCoord</span><span class="o">.</span><span class="n">xy</span><span class="o">-</span><span class="n">iChannelOffset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xy</span><span class="p">)</span><span class="o">/</span><span class="n">iChannelResolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">xy</span><span class="p">)</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nb">int</span> <span class="n">kSize</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="n">fSize</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">KSIZE_MAX</span><span class="p">));</span>
+<span class="nb">int</span> <span class="n">mSize</span> <span class="o">=</span> <span class="n">kSize</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In the rest of the code, the only difference is that the blur size is not constant and equal to 7, but comes from the fSize variable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">float</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">fSize</span> <span class="o">/</span> <span class="mf">2.4</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="issues-with-gamma-correction">
+<h3>Issues with Gamma correction<a class="headerlink" href="#issues-with-gamma-correction" title="Permalink to this headline">¶</a></h3>
+<p>OpenGL processing supposes all textures are linear, i.e.&nbsp;not gamma-compressed. This for example about bilinear interpolation on textures: this only works if the intensities are represented linearly. So a proper OpenGL rendering pipe should in principle:</p>
+<ol class="arabic simple">
+<li>Convert all textures to a linear representation (many 8-bit textures are gamma-compressed)</li>
+<li>Render with OpenGL</li>
+<li>Gamma-compress the linear framebuffer for display</li>
+</ol>
+<p>When processing floating-point buffers in OpenFX, the color representation is usually linear, which means that the OpenFX host usually performs steps 1 and 3 anyway (that includes Natron and Nuke): the images given to an OpenFX plugins are in linear color space, and their output is also supposed to be linear.</p>
+<p>However, many OpenGL applications, including Shadertoy and most games, skip steps 1 and 3 (mainly for performance issue): they process gamma-compressed textures as if they were linear, and sometimes have to boost their output by gamma compression so that it looks nice on a standard display (which usually accepts a sRGB-compressed framebuffer).</p>
+<p>This is why many shaders from Shadertoy convert their output from linear to sRGB or gamma=2.2, see for example the <code class="docutils literal notranslate"><span class="pre">srgb2lin</span></code> and <code class="docutils literal notranslate"><span class="pre">lin2srgb</span></code> functions in <a class="reference external" href="https://www.shadertoy.com/view/XsfXzf">https://www.shadertoy.com/view/XsfXzf</a> . These conversions <em>must</em> be removed when using the shader in OpenFX.</p>
+<p>An alternative solution would be to convert all Shadertoy inputs from linear to sRGB, and convert back all outputs to linear, either inside the Shadertoy node, or using external conversion nodes (such as OCIOColorSpace). But this is a bad option, because this adds useless processing. Removing the srgb2lin and lin2srgb conversions from the shader source is a much better option (these functions may have different names, or there may simply be operations line <code class="docutils literal notranslate"><span class="pre">pow(c,vec3(2.2))</span></code> and/or <code class="docutils literal notranslate"><span class="pre">pow(c,vec3(1./2.2))</span></code> in the GLSL code).</p>
+<p>As an example, take a look at the changes made to the <a class="reference external" href="https://www.shadertoy.com/view/XssGz8">Barrel Blur Chroma</a> Shadertoy: the OpenFX version is available as a preset in the Shadertoy node as “Effects/Barrel Blur Chroma”. When it was converted to OpenFX, all gamma compression and decompression operations were identified and removed.</p>
+</div>
+<div class="section" id="multipass-shaders">
+<h3>Multipass shaders<a class="headerlink" href="#multipass-shaders" title="Permalink to this headline">¶</a></h3>
+<p>Most multipass shaders (those using BufA, BufB, BufC, or BufD) can be implemented using the Shadertoy plugin.</p>
+<p>The shader sources for two sample multipass shadertoys are available as Natron PyPlugs (but the shader sources are also available separately next to the PyPlugs if you want to use these in another OpenFX host:</p>
+<ul class="simple">
+<li>a <a class="reference external" href="https://www.shadertoy.com/view/Xd33Dl">3-pass circular bokeh blur</a> (available as <a class="reference external" href="https://github.com/NatronGitHub/natron-plugins/tree/master/GLSL/Blur/BokehCircular_GL">Community/GLSL/BokehCircular_GL</a> in natron-plugins)</li>
+<li>a <a class="reference external" href="https://www.shadertoy.com/view/lst3Df">4-pass octagonal bokeh blur</a> (available as <a class="reference external" href="https://github.com/NatronGitHub/natron-plugins/tree/master/GLSL/Blur/BokehOctagon_GL">Community/GLSL/BokehOctagon_GL</a> in natron-plugins)</li>
+</ul>
+<p>The principle is very simple: since multipass cannot be done using a single Shadertoy, use several Shadertoy nodes, route the textures between them, and link the parameters. You can learn from these two examples. To figure out the route between textures, click on the tab for each shader in shadertoy.com, and check which shader output is connected to the input textures (iChannel0, etc.) for this shader. The connections between nodes should follow these rules.</p>
+<p>The only multipass effects that can not be implemented are the shaders that read back the content of a buffer to compute that same buffer, because compositing graphs cannot have loops (the execution of such a graph would cause an infinite recursion). One example is <a class="reference external" href="https://www.shadertoy.com/view/MttSWS">this progressive lightmap render</a>, where BufB from the previous render is read back as iChannel1 in the BufB shader.</p>
+</div>
+<div class="section" id="default-textures-and-videos">
+<h3>Default textures and videos<a class="headerlink" href="#default-textures-and-videos" title="Permalink to this headline">¶</a></h3>
+<p>The default shadertoy textures and videos are available from the <a class="reference external" href="http://www.shadertoy.com">Shadertoy</a> web site. In order to mimic the behavior of each shader, download the corresponding textures or videos and connect them to the proper input.</p>
+<ul class="simple">
+<li>Textures: <a class="reference external" href="https://www.shadertoy.com/presets/tex00.jpg">tex00</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex01.jpg">tex01</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex02.jpg">tex02</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex03.jpg">tex03</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex04.jpg">tex04</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex05.jpg">tex05</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex06.jpg">tex06</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex07.jpg">tex07</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex08.jpg">tex08</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex09.jpg">tex09</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex10.png">tex10</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex11.png">tex11</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex12.png">tex12</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex14.png">tex14</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex15.png">tex15</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex16.png">tex16</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex17.jpg">tex17</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex18.jpg">tex18</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex19.png">tex19</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex20.jpg">tex20</a>, <a class="reference external" href="https://www.shadertoy.com/presets/tex21.png">tex21</a>.</li>
+<li>Videos: <a class="reference external" href="https://www.shadertoy.com/presets/vid00.ogv">vid00</a>, <a class="reference external" href="https://www.shadertoy.com/presets/vid01.webm">vid01</a>, <a class="reference external" href="https://www.shadertoy.com/presets/vid02.ogv">vid02</a>, <a class="reference external" href="https://www.shadertoy.com/presets/vid03.webm">vid03</a>.</li>
+<li>Cubemaps: <a class="reference external" href="https://www.shadertoy.com/presets/cube00_0.jpg">cube00_0</a>, <a class="reference external" href="https://www.shadertoy.com/presets/cube01_0.png">cube01_0</a>, <a class="reference external" href="https://www.shadertoy.com/presets/cube02_0.jpg">cube02_0</a>, <a class="reference external" href="https://www.shadertoy.com/presets/cube03_0.png">cube03_0</a>, <a class="reference external" href="https://www.shadertoy.com/presets/cube04_0.png">cube04_0</a>, <a class="reference external" href="https://www.shadertoy.com/presets/cube05_0.png">cube05</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="32%" />
+<col width="38%" />
+<col width="29%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Input</th>
+<th class="head">Description</th>
+<th class="head">Optional</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>iChannel0</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>iChannel1</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-even"><td>iChannel2</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+<tr class="row-odd"><td>iChannel3</td>
+<td>&#160;</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="controls">
+<h2>Controls<a class="headerlink" href="#controls" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="2%" />
+<col width="21%" />
+<col width="67%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter / script name</th>
+<th class="head">Type</th>
+<th class="head">Default</th>
+<th class="head">Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Mouse Pos. / <code class="docutils literal notranslate"><span class="pre">mousePosition</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Mouse position, in pixels. Gets mapped to the xy components of the iMouse input. Note that in the web version of Shadertoy, the y coordinate goes from 1 to height.</td>
+</tr>
+<tr class="row-odd"><td>Click Pos. / <code class="docutils literal notranslate"><span class="pre">mouseClick</span></code></td>
+<td>Double</td>
+<td>x: 1 y: 1</td>
+<td>Mouse click position, in pixels. The zw components of the iMouse input contain mouseClick if mousePressed is checked, else -mouseClick. The default is (1.,1.)</td>
+</tr>
+<tr class="row-even"><td>Mouse Pressed / <code class="docutils literal notranslate"><span class="pre">mousePressed</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>When checked, the zw components of the iMouse input contain mouseClick, else they contain -mouseClick. If the host does not support animating this parameter, use negative values for mouseClick to emulate a released mouse button.</td>
+</tr>
+<tr class="row-odd"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueBool0</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueInt0</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat0</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueVec20</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueVec30</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value0 / <code class="docutils literal notranslate"><span class="pre">paramValueVec40</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueBool1</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueInt1</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat1</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueVec21</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueVec31</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value1 / <code class="docutils literal notranslate"><span class="pre">paramValueVec41</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueBool2</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueInt2</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueVec22</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueVec32</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value2 / <code class="docutils literal notranslate"><span class="pre">paramValueVec42</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueBool3</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueInt3</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat3</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueVec23</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueVec33</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value3 / <code class="docutils literal notranslate"><span class="pre">paramValueVec43</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueBool4</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueInt4</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueVec24</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueVec34</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value4 / <code class="docutils literal notranslate"><span class="pre">paramValueVec44</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueBool5</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueInt5</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat5</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueVec25</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueVec35</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value5 / <code class="docutils literal notranslate"><span class="pre">paramValueVec45</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueBool6</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueInt6</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueVec26</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueVec36</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value6 / <code class="docutils literal notranslate"><span class="pre">paramValueVec46</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueBool7</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueInt7</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat7</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueVec27</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueVec37</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value7 / <code class="docutils literal notranslate"><span class="pre">paramValueVec47</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueBool8</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueInt8</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat8</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueVec28</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueVec38</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value8 / <code class="docutils literal notranslate"><span class="pre">paramValueVec48</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueBool9</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueInt9</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat9</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueVec29</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueVec39</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value9 / <code class="docutils literal notranslate"><span class="pre">paramValueVec49</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueBool10</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueInt10</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat10</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueVec210</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueVec310</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value10 / <code class="docutils literal notranslate"><span class="pre">paramValueVec410</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueBool11</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueInt11</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat11</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueVec211</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueVec311</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value11 / <code class="docutils literal notranslate"><span class="pre">paramValueVec411</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueBool12</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueInt12</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat12</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueVec212</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueVec312</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value12 / <code class="docutils literal notranslate"><span class="pre">paramValueVec412</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueBool13</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueInt13</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat13</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueVec213</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueVec313</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value13 / <code class="docutils literal notranslate"><span class="pre">paramValueVec413</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueBool14</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueInt14</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat14</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueVec214</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueVec314</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value14 / <code class="docutils literal notranslate"><span class="pre">paramValueVec414</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueBool15</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueInt15</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat15</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueVec215</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueVec315</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value15 / <code class="docutils literal notranslate"><span class="pre">paramValueVec415</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueBool16</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueInt16</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat16</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueVec216</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueVec316</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value16 / <code class="docutils literal notranslate"><span class="pre">paramValueVec416</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueBool17</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueInt17</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat17</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueVec217</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueVec317</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value17 / <code class="docutils literal notranslate"><span class="pre">paramValueVec417</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueBool18</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueInt18</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat18</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueVec218</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueVec318</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value18 / <code class="docutils literal notranslate"><span class="pre">paramValueVec418</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueBool19</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueInt19</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueFloat19</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueVec219</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueVec319</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Value19 / <code class="docutils literal notranslate"><span class="pre">paramValueVec419</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Load from File / <code class="docutils literal notranslate"><span class="pre">imageShaderFileName</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>Load the source from the given file. The file contents is only loaded once. Press the “Reload” button to load again the same file.</td>
+</tr>
+<tr class="row-even"><td>Reload / <code class="docutils literal notranslate"><span class="pre">imageShaderReload</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Reload the source from the given file.</td>
+</tr>
+<tr class="row-odd"><td>Presets Directory / <code class="docutils literal notranslate"><span class="pre">imageShaderPresetDir</span></code></td>
+<td>N/A</td>
+<td>&#160;</td>
+<td>The directory where presets are located. There must be a “Shadertoy.txt” file in this directory to give the list of presets (see the default presets directory for an example). The default textures are located in “/Applications/Natron.app/Contents/Plugins/OFX/Natron/Shadertoy.ofx.bundle/Contents/Resources/presets”.</td>
+</tr>
+<tr class="row-even"><td>Load from Preset / <code class="docutils literal notranslate"><span class="pre">imageShaderPreset</span></code></td>
+<td>Choice</td>
+<td>No preset</td>
+<td><div class="first last line-block">
+<div class="line">Load the source from the preset. The default textures are located in “/Applications/Natron.app/Contents/Plugins/OFX/Natron/Shadertoy.ofx.bundle/Contents/Resources/presets”, and more presets can be added by editing “Shadertoy.txt” in the Presets Directory.</div>
+<div class="line"><strong>No preset</strong></div>
+<div class="line"><strong>Blur/Bilateral</strong></div>
+<div class="line"><strong>Blur/Bloom</strong></div>
+<div class="line"><strong>Blur/Bokeh Disc</strong></div>
+<div class="line"><strong>Blur/Circular Blur</strong></div>
+<div class="line"><strong>Blur/Fast Blur</strong></div>
+<div class="line"><strong>Blur/Gaussian Blur</strong></div>
+<div class="line"><strong>Blur/HDR Bloom</strong></div>
+<div class="line"><strong>Blur/Mipmap Blur</strong></div>
+<div class="line"><strong>Blur/Monte-Carlo Blur</strong></div>
+<div class="line"><strong>Blur/Poisson Disc</strong></div>
+<div class="line"><strong>Blur/Simple Radial Blur</strong></div>
+<div class="line"><strong>Effect/Anaglyphic</strong></div>
+<div class="line"><strong>Effect/Ball</strong></div>
+<div class="line"><strong>Effect/Barrel Blur Chroma</strong></div>
+<div class="line"><strong>Effect/Bloom Paint</strong></div>
+<div class="line"><strong>Effect/C64</strong></div>
+<div class="line"><strong>Effect/Chromatic Aberration</strong></div>
+<div class="line"><strong>Effect/CMYK Halftone</strong></div>
+<div class="line"><strong>Effect/CRT</strong></div>
+<div class="line"><strong>Effect/DawnBringer 4bit</strong></div>
+<div class="line"><strong>Effect/Film Grain</strong></div>
+<div class="line"><strong>Effect/Fisheye</strong></div>
+<div class="line"><strong>Effect/Glitch 01</strong></div>
+<div class="line"><strong>Effect/Glitch 02</strong></div>
+<div class="line"><strong>Effect/Glitch A</strong></div>
+<div class="line"><strong>Effect/Glitch B</strong></div>
+<div class="line"><strong>Effect/Image Cel Shade</strong></div>
+<div class="line"><strong>Effect/Kaleidoscope</strong></div>
+<div class="line"><strong>Effect/Median Filter</strong></div>
+<div class="line"><strong>Effect/Money Filter</strong></div>
+<div class="line"><strong>Effect/Noisy Distortion</strong></div>
+<div class="line"><strong>Effect/Old Video</strong></div>
+<div class="line"><strong>Effect/Quad Mirror</strong></div>
+<div class="line"><strong>Effect/Postprocessing</strong></div>
+<div class="line"><strong>Effect/Q*Bert-ify</strong></div>
+<div class="line"><strong>Effect/Sharpen</strong></div>
+<div class="line"><strong>Effect/Stripes</strong></div>
+<div class="line"><strong>Effect/TV Snow</strong></div>
+<div class="line"><strong>Effect/Van Gogh</strong></div>
+<div class="line"><strong>Effect/Vignette</strong></div>
+<div class="line"><strong>Merge/MergeOver</strong></div>
+<div class="line"><strong>Merge/MergePlus</strong></div>
+<div class="line"><strong>Merge/MergeMatte</strong></div>
+<div class="line"><strong>Merge/MergeMultiply</strong></div>
+<div class="line"><strong>Merge/MergeIn</strong></div>
+<div class="line"><strong>Merge/MergeOut</strong></div>
+<div class="line"><strong>Merge/MergeMax</strong></div>
+<div class="line"><strong>Merge/MergeMin</strong></div>
+<div class="line"><strong>Merge/MergeAbsminus</strong></div>
+<div class="line"><strong>Merge/MergeScreen</strong></div>
+<div class="line"><strong>Noise Blur</strong></div>
+<div class="line"><strong>Notebook Drawings</strong></div>
+<div class="line"><strong>Plasma2</strong></div>
+<div class="line"><strong>Source/Bleepy Blocks</strong></div>
+<div class="line"><strong>Source/Bubbles</strong></div>
+<div class="line"><strong>Source/Cellular</strong></div>
+<div class="line"><strong>Source/Cloud</strong></div>
+<div class="line"><strong>Source/Cloudy Sky</strong></div>
+<div class="line"><strong>Source/Color Grid</strong></div>
+<div class="line"><strong>Source/Coloured Circles</strong></div>
+<div class="line"><strong>Source/Deform Flower</strong></div>
+<div class="line"><strong>Source/Disks</strong></div>
+<div class="line"><strong>Source/Dot Dot Dot</strong></div>
+<div class="line"><strong>Source/Fireball</strong></div>
+<div class="line"><strong>Source/Fireball2</strong></div>
+<div class="line"><strong>Source/Flaring</strong></div>
+<div class="line"><strong>Source/Flash</strong></div>
+<div class="line"><strong>Source/Fractal/Basic Fractal</strong></div>
+<div class="line"><strong>Source/Fractal/Fractal Tiling</strong></div>
+<div class="line"><strong>Source/Fractal/Juliasm</strong></div>
+<div class="line"><strong>Source/Fractal/Julia Bulb</strong></div>
+<div class="line"><strong>Source/Fractal/Julia Trap</strong></div>
+<div class="line"><strong>Source/Fractal/Mandelbrot Distance</strong></div>
+<div class="line"><strong>Source/Fractal/Mandelbrot Orbit Trap</strong></div>
+<div class="line"><strong>Source/Glowing Thing</strong></div>
+<div class="line"><strong>Source/Infinite Fall</strong></div>
+<div class="line"><strong>Source/Input Time</strong></div>
+<div class="line"><strong>Source/Interstellar</strong></div>
+<div class="line"><strong>Source/Interweaving Sine bands</strong></div>
+<div class="line"><strong>Source/Iterations/Guts</strong></div>
+<div class="line"><strong>Source/Iterations/Inversion</strong></div>
+<div class="line"><strong>Source/Iterations/Shiny</strong></div>
+<div class="line"><strong>Source/Iterations/Trigonometric</strong></div>
+<div class="line"><strong>Source/Iterations/Worms</strong></div>
+<div class="line"><strong>Source/Lens Flare</strong></div>
+<div class="line"><strong>Source/Noise</strong></div>
+<div class="line"><strong>Source/Noise Animation Electric</strong></div>
+<div class="line"><strong>Source/Noise Animation Lava</strong></div>
+<div class="line"><strong>Source/Noise Animation Watery</strong></div>
+<div class="line"><strong>Source/Plasma Triangle</strong></div>
+<div class="line"><strong>Source/Seascape</strong></div>
+<div class="line"><strong>Source/Silexars Creation</strong></div>
+<div class="line"><strong>Source/Simple Fire</strong></div>
+<div class="line"><strong>Source/Sky at Night</strong></div>
+<div class="line"><strong>Source/Spiral</strong></div>
+<div class="line"><strong>Source/Star Nest</strong></div>
+<div class="line"><strong>Source/Venus</strong></div>
+<div class="line"><strong>Source/Voronoi</strong></div>
+<div class="line"><strong>Source/Warping/Procedural 1</strong></div>
+<div class="line"><strong>Source/Warping/Procedural 2</strong></div>
+<div class="line"><strong>Source/Warping/Procedural 3</strong></div>
+<div class="line"><strong>Source/Warping/Procedural 4</strong></div>
+<div class="line"><strong>Source/Water Caustic</strong></div>
+<div class="line"><strong>Source/Worley Noise Waters</strong></div>
+<div class="line"><strong>Star Tunnel</strong></div>
+<div class="line"><strong>Warping/Warp</strong></div>
+<div class="line"><strong>Warping/Texture</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Source / <code class="docutils literal notranslate"><span class="pre">imageShaderSource</span></code></td>
+<td>String</td>
+<td><div class="first last line-block">
+<div class="line">// iChannel0: Source (Source image.), filter=linear, wrap=clamp</div>
+<div class="line">// BBox: iChannel0</div>
+<div class="line"><br /></div>
+<div class="line">const vec2 iRenderScale = vec2(1.,1.); // Render Scale (The size of a full-resolution pixel).</div>
+<div class="line">uniform float amplitude = 0.5; // Amplitude (The amplitude of the xy sine wave), min=0., max=1.</div>
+<div class="line">uniform float size = 50.; // Size (The period of the xy sine wave), min = 0., max = 200.</div>
+<div class="line"><br /></div>
+<div class="line">void mainImage( out vec4 fragColor, in vec2 fragCoord )</div>
+<div class="line">{</div>
+<div class="line">vec2 uv = fragCoord.xy / iResolution.xy;</div>
+<div class="line">vec3 sinetex = vec3(0.5+0.5*amplitude*sin(fragCoord.x/(size*iRenderScale.x)),</div>
+<div class="line">0.5+0.5*amplitude*sin(fragCoord.y/(size*iRenderScale.y)),</div>
+<div class="line">0.5+0.5*sin(iTime));</div>
+<div class="line">fragColor = vec4(amplitude*sinetex + (1 - amplitude)*texture2D( iChannel0, uv ).xyz,1.0);</div>
+<div class="line">}</div>
+</div>
+</td>
+<td><div class="first last line-block">
+<div class="line">Image shader.</div>
+<div class="line"><br /></div>
+<div class="line">Shader Inputs:</div>
+<div class="line">uniform vec3 iResolution; // viewport resolution (in pixels)</div>
+<div class="line">uniform float iTime; // shader playback time (in seconds)</div>
+<div class="line">uniform float iTimeDelta; // render time (in seconds)</div>
+<div class="line">uniform int iFrame; // shader playback frame</div>
+<div class="line">uniform float iChannelTime[4]; // channel playback time (in seconds)</div>
+<div class="line">uniform vec3 iChannelResolution[4]; // channel resolution (in pixels)</div>
+<div class="line">uniform vec2 iChannelOffset[4]; // channel texture offset relative to iChannel0 (in pixels)</div>
+<div class="line">uniform vec4 iMouse; // mouse pixel coords. xy: current (if MLB down), zw: click</div>
+<div class="line">uniform samplerXX iChannel0..3; // input channel. XX = 2D/Cube</div>
+<div class="line">uniform vec4 iDate; // (year, month, day, time in seconds)</div>
+<div class="line">uniform float iSampleRate; // sound sample rate (i.e., 44100)</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Compile / <code class="docutils literal notranslate"><span class="pre">imageShaderCompile</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Compile the image shader.</td>
+</tr>
+<tr class="row-odd"><td>Auto. Params / <code class="docutils literal notranslate"><span class="pre">autoParams</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Automatically set the parameters from the shader source next time image is rendered. May require clicking twice, depending on the OpenFX host. Also reset these parameters to their default value.</td>
+</tr>
+<tr class="row-even"><td>Reset Params Values / <code class="docutils literal notranslate"><span class="pre">resetParams</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Set all the extra parameters to their default values, as set automatically by the “Auto. Params”, or in the “Extra Parameters” group.</td>
+</tr>
+<tr class="row-odd"><td>Enable / <code class="docutils literal notranslate"><span class="pre">inputEnable0</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enable this input.</td>
+</tr>
+<tr class="row-even"><td>Filter / <code class="docutils literal notranslate"><span class="pre">mipmap0</span></code></td>
+<td>Choice</td>
+<td>Mipmap</td>
+<td><div class="first last line-block">
+<div class="line">Texture filter for this input.</div>
+<div class="line"><strong>Nearest (nearest)</strong>: MIN/MAG = GL_NEAREST/GL_NEAREST</div>
+<div class="line"><strong>Linear (linear)</strong>: MIN/MAG = GL_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Mipmap (mipmap)</strong>: MIN/MAG = GL_LINEAR_MIPMAP_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Anisotropic (anisotropic)</strong>: Mipmap with anisotropic filtering. Available with GPU if supported (check for the presence of the GL_EXT_texture_filter_anisotropic extension in the Renderer Info) and with “softpipe” CPU driver.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Wrap / <code class="docutils literal notranslate"><span class="pre">wrap0</span></code></td>
+<td>Choice</td>
+<td>Repeat</td>
+<td><div class="first last line-block">
+<div class="line">Texture wrap parameter for this input.</div>
+<div class="line"><strong>Repeat (repeat)</strong>: WRAP_S/T = GL_REPEAT</div>
+<div class="line"><strong>Clamp (clamp)</strong>: WRAP_S/T = GL_CLAMP_TO_EDGE</div>
+<div class="line"><strong>Mirror (mirror)</strong>: WRAP_S/T = GL_MIRRORED_REPEAT</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">inputLabel0</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label for this input in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">inputHint0</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Enable / <code class="docutils literal notranslate"><span class="pre">inputEnable1</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enable this input.</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">mipmap1</span></code></td>
+<td>Choice</td>
+<td>Mipmap</td>
+<td><div class="first last line-block">
+<div class="line">Texture filter for this input.</div>
+<div class="line"><strong>Nearest (nearest)</strong>: MIN/MAG = GL_NEAREST/GL_NEAREST</div>
+<div class="line"><strong>Linear (linear)</strong>: MIN/MAG = GL_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Mipmap (mipmap)</strong>: MIN/MAG = GL_LINEAR_MIPMAP_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Anisotropic (anisotropic)</strong>: Mipmap with anisotropic filtering. Available with GPU if supported (check for the presence of the GL_EXT_texture_filter_anisotropic extension in the Renderer Info) and with “softpipe” CPU driver.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Wrap / <code class="docutils literal notranslate"><span class="pre">wrap1</span></code></td>
+<td>Choice</td>
+<td>Repeat</td>
+<td><div class="first last line-block">
+<div class="line">Texture wrap parameter for this input.</div>
+<div class="line"><strong>Repeat (repeat)</strong>: WRAP_S/T = GL_REPEAT</div>
+<div class="line"><strong>Clamp (clamp)</strong>: WRAP_S/T = GL_CLAMP_TO_EDGE</div>
+<div class="line"><strong>Mirror (mirror)</strong>: WRAP_S/T = GL_MIRRORED_REPEAT</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Label / <code class="docutils literal notranslate"><span class="pre">inputLabel1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label for this input in the user interface.</td>
+</tr>
+<tr class="row-even"><td>Hint / <code class="docutils literal notranslate"><span class="pre">inputHint1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Enable / <code class="docutils literal notranslate"><span class="pre">inputEnable2</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enable this input.</td>
+</tr>
+<tr class="row-even"><td>Filter / <code class="docutils literal notranslate"><span class="pre">mipmap2</span></code></td>
+<td>Choice</td>
+<td>Mipmap</td>
+<td><div class="first last line-block">
+<div class="line">Texture filter for this input.</div>
+<div class="line"><strong>Nearest (nearest)</strong>: MIN/MAG = GL_NEAREST/GL_NEAREST</div>
+<div class="line"><strong>Linear (linear)</strong>: MIN/MAG = GL_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Mipmap (mipmap)</strong>: MIN/MAG = GL_LINEAR_MIPMAP_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Anisotropic (anisotropic)</strong>: Mipmap with anisotropic filtering. Available with GPU if supported (check for the presence of the GL_EXT_texture_filter_anisotropic extension in the Renderer Info) and with “softpipe” CPU driver.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Wrap / <code class="docutils literal notranslate"><span class="pre">wrap2</span></code></td>
+<td>Choice</td>
+<td>Repeat</td>
+<td><div class="first last line-block">
+<div class="line">Texture wrap parameter for this input.</div>
+<div class="line"><strong>Repeat (repeat)</strong>: WRAP_S/T = GL_REPEAT</div>
+<div class="line"><strong>Clamp (clamp)</strong>: WRAP_S/T = GL_CLAMP_TO_EDGE</div>
+<div class="line"><strong>Mirror (mirror)</strong>: WRAP_S/T = GL_MIRRORED_REPEAT</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">inputLabel2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label for this input in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">inputHint2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>Enable / <code class="docutils literal notranslate"><span class="pre">inputEnable3</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enable this input.</td>
+</tr>
+<tr class="row-odd"><td>Filter / <code class="docutils literal notranslate"><span class="pre">mipmap3</span></code></td>
+<td>Choice</td>
+<td>Mipmap</td>
+<td><div class="first last line-block">
+<div class="line">Texture filter for this input.</div>
+<div class="line"><strong>Nearest (nearest)</strong>: MIN/MAG = GL_NEAREST/GL_NEAREST</div>
+<div class="line"><strong>Linear (linear)</strong>: MIN/MAG = GL_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Mipmap (mipmap)</strong>: MIN/MAG = GL_LINEAR_MIPMAP_LINEAR/GL_LINEAR</div>
+<div class="line"><strong>Anisotropic (anisotropic)</strong>: Mipmap with anisotropic filtering. Available with GPU if supported (check for the presence of the GL_EXT_texture_filter_anisotropic extension in the Renderer Info) and with “softpipe” CPU driver.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Wrap / <code class="docutils literal notranslate"><span class="pre">wrap3</span></code></td>
+<td>Choice</td>
+<td>Repeat</td>
+<td><div class="first last line-block">
+<div class="line">Texture wrap parameter for this input.</div>
+<div class="line"><strong>Repeat (repeat)</strong>: WRAP_S/T = GL_REPEAT</div>
+<div class="line"><strong>Clamp (clamp)</strong>: WRAP_S/T = GL_CLAMP_TO_EDGE</div>
+<div class="line"><strong>Mirror (mirror)</strong>: WRAP_S/T = GL_MIRRORED_REPEAT</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Label / <code class="docutils literal notranslate"><span class="pre">inputLabel3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label for this input in the user interface.</td>
+</tr>
+<tr class="row-even"><td>Hint / <code class="docutils literal notranslate"><span class="pre">inputHint3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Output Bounding Box / <code class="docutils literal notranslate"><span class="pre">bbox</span></code></td>
+<td>Choice</td>
+<td>Default</td>
+<td><div class="first last line-block">
+<div class="line">What to use to produce the output image’s bounding box. If no selected input is connected, use the project size.</div>
+<div class="line"><strong>Default (default)</strong>: Default bounding box (project size).</div>
+<div class="line"><strong>Format (format)</strong>: Use a pre-defined image format.</div>
+<div class="line"><strong>Union (union)</strong>: Union of all connected inputs.</div>
+<div class="line"><strong>Intersect (intersection)</strong>: Intersection of all connected inputs.</div>
+<div class="line"><strong>iChannel0</strong>: Bounding box of iChannel0.</div>
+<div class="line"><strong>iChannel1</strong>: Bounding box of iChannel1.</div>
+<div class="line"><strong>iChannel2</strong>: Bounding box of iChannel2.</div>
+<div class="line"><strong>iChannel3</strong>: Bounding box of iChannel3.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Format / <code class="docutils literal notranslate"><span class="pre">NatronParamFormatChoice</span></code></td>
+<td>Choice</td>
+<td>HD 1920x1080</td>
+<td><div class="first last line-block">
+<div class="line">The output format.</div>
+<div class="line"><strong>PC_Video 640x480 (PC_Video)</strong></div>
+<div class="line"><strong>NTSC 720x486 0.91 (NTSC)</strong></div>
+<div class="line"><strong>PAL 720x576 1.09 (PAL)</strong></div>
+<div class="line"><strong>NTSC_16:9 720x486 1.21 (NTSC_16:9)</strong></div>
+<div class="line"><strong>PAL_16:9 720x576 1.46 (PAL_16:9)</strong></div>
+<div class="line"><strong>HD_720 1280x720 (HD_720)</strong></div>
+<div class="line"><strong>HD 1920x1080 (HD)</strong></div>
+<div class="line"><strong>UHD_4K 3840x2160 (UHD_4K)</strong></div>
+<div class="line"><strong>1K_Super_35(full-ap) 1024x778 (1K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>1K_Cinemascope 914x778 2.00 (1K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_Super_35(full-ap) 2048x1556 (2K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>2K_Cinemascope 1828x1556 2.00 (2K_Cinemascope)</strong></div>
+<div class="line"><strong>2K_DCP 2048x1080 (2K_DCP)</strong></div>
+<div class="line"><strong>4K_Super_35(full-ap) 4096x3112 (4K_Super_35(full-ap))</strong></div>
+<div class="line"><strong>4K_Cinemascope 3656x3112 2.00 (4K_Cinemascope)</strong></div>
+<div class="line"><strong>4K_DCP 4096x2160 (4K_DCP)</strong></div>
+<div class="line"><strong>square_256 256x256 (square_256)</strong></div>
+<div class="line"><strong>square_512 512x512 (square_512)</strong></div>
+<div class="line"><strong>square_1K 1024x1024 (square_1K)</strong></div>
+<div class="line"><strong>square_2K 2048x2048 (square_2K)</strong></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Mouse Params. / <code class="docutils literal notranslate"><span class="pre">mouseParams</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td>Enable mouse parameters.</td>
+</tr>
+<tr class="row-even"><td>Start Date / <code class="docutils literal notranslate"><span class="pre">startDate</span></code></td>
+<td>Color</td>
+<td>y: 1970 m: 0 d: 1 s: 0</td>
+<td>The date (yyyy,mm,dd,s) corresponding to frame 0. The month starts at 0 for january, the day starts at 1, and the seconds start from 0 at midnight and should be at most 24*60*60=86400. December 28, 1895 at 10:30 would thus the be (1895,11,28,37800).</td>
+</tr>
+<tr class="row-odd"><td>No. of Params / <code class="docutils literal notranslate"><span class="pre">paramCount</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Number of extra parameters.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType0</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName0</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel0</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint0</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool0</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt0</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min0 / <code class="docutils literal notranslate"><span class="pre">paramMinInt0</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max0 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt0</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat0</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min0 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat0</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max0 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat0</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec20</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min0 / <code class="docutils literal notranslate"><span class="pre">paramMinVec20</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max0 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec20</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec30</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default0 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec40</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType1</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint1</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool1</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt1</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min1 / <code class="docutils literal notranslate"><span class="pre">paramMinInt1</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max1 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt1</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat1</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min1 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat1</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max1 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat1</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec21</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min1 / <code class="docutils literal notranslate"><span class="pre">paramMinVec21</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max1 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec21</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec31</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default1 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec41</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType2</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint2</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool2</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt2</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min2 / <code class="docutils literal notranslate"><span class="pre">paramMinInt2</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max2 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt2</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat2</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min2 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat2</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max2 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat2</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec22</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min2 / <code class="docutils literal notranslate"><span class="pre">paramMinVec22</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max2 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec22</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec32</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default2 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec42</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType3</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint3</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool3</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt3</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min3 / <code class="docutils literal notranslate"><span class="pre">paramMinInt3</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max3 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt3</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat3</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min3 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat3</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max3 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat3</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec23</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min3 / <code class="docutils literal notranslate"><span class="pre">paramMinVec23</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max3 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec23</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec33</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default3 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec43</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType4</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint4</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool4</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt4</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min4 / <code class="docutils literal notranslate"><span class="pre">paramMinInt4</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max4 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt4</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat4</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min4 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat4</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max4 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat4</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec24</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min4 / <code class="docutils literal notranslate"><span class="pre">paramMinVec24</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max4 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec24</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec34</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default4 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec44</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType5</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName5</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel5</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint5</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool5</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt5</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min5 / <code class="docutils literal notranslate"><span class="pre">paramMinInt5</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max5 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt5</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat5</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min5 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat5</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max5 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat5</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec25</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min5 / <code class="docutils literal notranslate"><span class="pre">paramMinVec25</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max5 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec25</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec35</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default5 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec45</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType6</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName6</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel6</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint6</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool6</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt6</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min6 / <code class="docutils literal notranslate"><span class="pre">paramMinInt6</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max6 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt6</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat6</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min6 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat6</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max6 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat6</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec26</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min6 / <code class="docutils literal notranslate"><span class="pre">paramMinVec26</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max6 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec26</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec36</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default6 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec46</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType7</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName7</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel7</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint7</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool7</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt7</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min7 / <code class="docutils literal notranslate"><span class="pre">paramMinInt7</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max7 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt7</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat7</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min7 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat7</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max7 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat7</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec27</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min7 / <code class="docutils literal notranslate"><span class="pre">paramMinVec27</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max7 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec27</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec37</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default7 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec47</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType8</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName8</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel8</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint8</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool8</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt8</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min8 / <code class="docutils literal notranslate"><span class="pre">paramMinInt8</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max8 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt8</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat8</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min8 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat8</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max8 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat8</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec28</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min8 / <code class="docutils literal notranslate"><span class="pre">paramMinVec28</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max8 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec28</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec38</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default8 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec48</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType9</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName9</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel9</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint9</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool9</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt9</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min9 / <code class="docutils literal notranslate"><span class="pre">paramMinInt9</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max9 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt9</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat9</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min9 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat9</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max9 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat9</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec29</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min9 / <code class="docutils literal notranslate"><span class="pre">paramMinVec29</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max9 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec29</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec39</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default9 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec49</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType10</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName10</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel10</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint10</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool10</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt10</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min10 / <code class="docutils literal notranslate"><span class="pre">paramMinInt10</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max10 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt10</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat10</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min10 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat10</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max10 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat10</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec210</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min10 / <code class="docutils literal notranslate"><span class="pre">paramMinVec210</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max10 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec210</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec310</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default10 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec410</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType11</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName11</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel11</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint11</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool11</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt11</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min11 / <code class="docutils literal notranslate"><span class="pre">paramMinInt11</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max11 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt11</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat11</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min11 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat11</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max11 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat11</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec211</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min11 / <code class="docutils literal notranslate"><span class="pre">paramMinVec211</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max11 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec211</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec311</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default11 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec411</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType12</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName12</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel12</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint12</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool12</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt12</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min12 / <code class="docutils literal notranslate"><span class="pre">paramMinInt12</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max12 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt12</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat12</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min12 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat12</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max12 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat12</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec212</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min12 / <code class="docutils literal notranslate"><span class="pre">paramMinVec212</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max12 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec212</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec312</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default12 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec412</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType13</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName13</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel13</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint13</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool13</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt13</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min13 / <code class="docutils literal notranslate"><span class="pre">paramMinInt13</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max13 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt13</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat13</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min13 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat13</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max13 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat13</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec213</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min13 / <code class="docutils literal notranslate"><span class="pre">paramMinVec213</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max13 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec213</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec313</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default13 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec413</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType14</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName14</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel14</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint14</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool14</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt14</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min14 / <code class="docutils literal notranslate"><span class="pre">paramMinInt14</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max14 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt14</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat14</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min14 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat14</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max14 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat14</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec214</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min14 / <code class="docutils literal notranslate"><span class="pre">paramMinVec214</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max14 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec214</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec314</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default14 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec414</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType15</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName15</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel15</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint15</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool15</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt15</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min15 / <code class="docutils literal notranslate"><span class="pre">paramMinInt15</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max15 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt15</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat15</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min15 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat15</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max15 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat15</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec215</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min15 / <code class="docutils literal notranslate"><span class="pre">paramMinVec215</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max15 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec215</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec315</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default15 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec415</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType16</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName16</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel16</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint16</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool16</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt16</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min16 / <code class="docutils literal notranslate"><span class="pre">paramMinInt16</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max16 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt16</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat16</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min16 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat16</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max16 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat16</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec216</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min16 / <code class="docutils literal notranslate"><span class="pre">paramMinVec216</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max16 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec216</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec316</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default16 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec416</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType17</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName17</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel17</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint17</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool17</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt17</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min17 / <code class="docutils literal notranslate"><span class="pre">paramMinInt17</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max17 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt17</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat17</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min17 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat17</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max17 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat17</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec217</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min17 / <code class="docutils literal notranslate"><span class="pre">paramMinVec217</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max17 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec217</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec317</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default17 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec417</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType18</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName18</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel18</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint18</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool18</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt18</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min18 / <code class="docutils literal notranslate"><span class="pre">paramMinInt18</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max18 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt18</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat18</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min18 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat18</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max18 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat18</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec218</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min18 / <code class="docutils literal notranslate"><span class="pre">paramMinVec218</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max18 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec218</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec318</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default18 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec418</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Type / <code class="docutils literal notranslate"><span class="pre">paramType19</span></code></td>
+<td>Choice</td>
+<td>none</td>
+<td><div class="first last line-block">
+<div class="line">Type of the parameter.</div>
+<div class="line"><strong>none</strong>: No parameter.</div>
+<div class="line"><strong>bool</strong>: Boolean parameter (checkbox).</div>
+<div class="line"><strong>int</strong>: Integer parameter.</div>
+<div class="line"><strong>float</strong>: Floating-point parameter.</div>
+<div class="line"><strong>vec2</strong>: 2D floating-point parameter (e.g. position).</div>
+<div class="line"><strong>vec3</strong>: 3D floating-point parameter (e.g. 3D position or RGB color).</div>
+<div class="line"><strong>vec4</strong>: 4D floating-point parameter (e.g. RGBA color).</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Name / <code class="docutils literal notranslate"><span class="pre">paramName19</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Name of the parameter, as used in the shader.</td>
+</tr>
+<tr class="row-even"><td>Label / <code class="docutils literal notranslate"><span class="pre">paramLabel19</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Label of the parameter, as displayed in the user interface.</td>
+</tr>
+<tr class="row-odd"><td>Hint / <code class="docutils literal notranslate"><span class="pre">paramHint19</span></code></td>
+<td>String</td>
+<td>&#160;</td>
+<td>Help for the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultBool19</span></code></td>
+<td>Boolean</td>
+<td>Off</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultInt19</span></code></td>
+<td>Integer</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min19 / <code class="docutils literal notranslate"><span class="pre">paramMinInt19</span></code></td>
+<td>Integer</td>
+<td>-2147483648</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max19 / <code class="docutils literal notranslate"><span class="pre">paramMaxInt19</span></code></td>
+<td>Integer</td>
+<td>2147483647</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultFloat19</span></code></td>
+<td>Double</td>
+<td>0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Min19 / <code class="docutils literal notranslate"><span class="pre">paramMinFloat19</span></code></td>
+<td>Double</td>
+<td>-1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Max19 / <code class="docutils literal notranslate"><span class="pre">paramMaxFloat19</span></code></td>
+<td>Double</td>
+<td>1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec219</span></code></td>
+<td>Double</td>
+<td>x: 0 y: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Min19 / <code class="docutils literal notranslate"><span class="pre">paramMinVec219</span></code></td>
+<td>Double</td>
+<td>x: -1.79769e+308 y: -1.79769e+308</td>
+<td>Min value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Max19 / <code class="docutils literal notranslate"><span class="pre">paramMaxVec219</span></code></td>
+<td>Double</td>
+<td>x: 1.79769e+308 y: 1.79769e+308</td>
+<td>Max value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec319</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-odd"><td>Default19 / <code class="docutils literal notranslate"><span class="pre">paramDefaultVec419</span></code></td>
+<td>Color</td>
+<td>r: 0 g: 0 b: 0 a: 0</td>
+<td>Default value of the parameter.</td>
+</tr>
+<tr class="row-even"><td>Enable GPU Render / <code class="docutils literal notranslate"><span class="pre">enableGPU</span></code></td>
+<td>Boolean</td>
+<td>On</td>
+<td><div class="first last line-block">
+<div class="line">Enable GPU-based OpenGL render.</div>
+<div class="line">If the checkbox is checked but is not enabled (i.e. it cannot be unchecked), GPU render can not be enabled or disabled from the plugin and is probably part of the host options.</div>
+<div class="line">If the checkbox is not checked and is not enabled (i.e. it cannot be checked), GPU render is not available on this host.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>CPU Driver / <code class="docutils literal notranslate"><span class="pre">cpuDriver</span></code></td>
+<td>Choice</td>
+<td>llvmpipe</td>
+<td><div class="first last line-block">
+<div class="line">Driver for CPU rendering. May be “softpipe” , “llvmpipe” or “swr” (OpenSWR, not always available).</div>
+<div class="line"><strong>softpipe</strong>: Gallium softpipe driver from Mesa. A reference signle-threaded driver (slower, has GL_EXT_texture_filter_anisotropic GL_ARB_texture_query_lod GL_ARB_pipeline_statistics_query).</div>
+<div class="line"><strong>llvmpipe</strong>: Gallium llvmpipe driver from Mesa, if available. Uses LLVM for x86 JIT code generation and is multi-threaded (faster, has GL_ARB_buffer_storage GL_EXT_polygon_offset_clamp).</div>
+<div class="line"><strong>swr</strong>: OpenSWR driver from Mesa, if available. Fully utilizes modern instruction sets like AVX and AVX2 to achieve high rendering performance.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Renderer Info… / <code class="docutils literal notranslate"><span class="pre">rendererInfo</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Retrieve information about the current OpenGL renderer.</td>
+</tr>
+<tr class="row-odd"><td>Help… / <code class="docutils literal notranslate"><span class="pre">helpButton</span></code></td>
+<td>Button</td>
+<td>&#160;</td>
+<td>Display help about using Shadertoy.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="net.sf.cimg.CImgSharpen.html" class="btn btn-neutral float-right" title="Sharpen node" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="net.sf.cimg.CImgMedian.html" class="btn btn-neutral float-left" title="Median node" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

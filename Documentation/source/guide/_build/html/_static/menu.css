@@ -1,0 +1,22 @@
+body {
+  background-color:#dddddd;
+  padding-top:8px;
+}
+
+a,
+a:link,
+a:visited,
+li a,
+li a:link,
+li a:visited {
+  color:#6f6f6f;
+}
+a:hover {}
+a:active {}
+
+li.toctree-l1 {
+  border-bottom:1px solid #c3c3c3;
+}
+ul {
+  list-style-image:url('/_static/folder.png');
+}
