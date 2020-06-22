@@ -110,7 +110,7 @@ https://www.blender.org/
 Full instructions on how to use the Blender VSE can be found here https://docs.blender.org/manual/en/latest/video_editing/index.html
 
 
-Adobe Media Encoder (non-free)
+Adobe Media Encoder
 ~~~~~~~~~~~~~~~~~~~
 - Open Media Encoder.
 - Add source video to the queue.
@@ -151,7 +151,7 @@ Import the image "as sequence" in the timeline (or drag'n'drop the folder) and r
 Using Media Management tools
 ============================
 
-Adobe Prelude (non-free)
+Adobe Prelude
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Locate/Import the image sequence then Transcode it to the preferred format.
 
