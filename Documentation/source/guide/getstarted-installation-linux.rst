@@ -112,8 +112,3 @@ Natron includes a maintenance tool called 'NatronSetup', with this application y
    :width: 30%
 
 The application also include a basic settings category, where you can configure proxy and other advanced options.
-
-Advanced installation
----------------------
-
-Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at https://natrongithub.github.io/ .
