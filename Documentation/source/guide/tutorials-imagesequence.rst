@@ -110,7 +110,7 @@ https://www.blender.org/
 Full instructions on how to use the Blender VSE can be found here https://docs.blender.org/manual/en/latest/video_editing/index.html
 
 
-Adobe Media Encoder
+Adobe Media Encoder (non-free)
 ~~~~~~~~~~~~~~~~~~~
 - Open Media Encoder.
 - Add source video to the queue.
@@ -118,17 +118,6 @@ Adobe Media Encoder
 - Set compression to "Zip".
 - If the source has an alpha channel be sure to scroll down to the bottom of the Video section of the Export Settings and check "Include Alpha Channel".
 - Close the Export Settings by clicking Ok and press the Start Queue button.
-
-
-DaVinci Resolve
-~~~~~~~~~~~~~~~~
-- In Resolve, select your videoclip.
-- Go to File => Media Management.
-- Select Clips.
-- Select Media Destination.
-- Select Video format => TIFF or EXR.
-- Click Start.
-
 
 
 
@@ -157,7 +146,25 @@ Using NLE
 
 Kdenlive, Shotcut, Da Vinci Resolve, Adobe Premiere
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in your preferred video format. 
+Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in the preferred video format. 
+
+Using Media Management tools
+============================
+
+Adobe Prelude (non-free)
+~~~~~~~~~~~~~~~~~~~~~~~~
+Locate/Import the image sequence then Transcode it to the preferred format.
+
+DaVinci Resolve
+~~~~~~~~~~~~~~~
+- In Resolve, select the videoclip.
+- Go to File => Media Management.
+- Select Clips.
+- Select "Transcode" mode.
+- Select Media Destination.
+- Select Video format => TIFF or EXR.
+- Select your codec and resolution.
+- Click Start.
 
 
 
