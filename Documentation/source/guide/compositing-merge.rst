@@ -37,7 +37,7 @@ Layering Images Together with the Merge Node
 7. The **Mix** slider is used to fade/mix in the image from input **A**.
 
 
-.. note:: **A** is always the forgroud layer. **B** is always the background layer. 
+.. note:: **A** is always the foregroud layer. **B** is always the background layer. 
 
 
 
