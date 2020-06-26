@@ -4,30 +4,30 @@
 Project setup
 =============
 
-Although Natron will automatically adjust the project settings when user first imports a media using a Read node, one should first define the settings for it.
+Natron will automatically adjust the project settings when importing media using a Read Node or by drag'n'dropping content into the Node Graph.
 
-1. The Project Settings panel can be accessed manually from Display > Show Project Settings or by pressing "S" on the keyboard. From here one can adjust the values to the needs.
-2. The writer never used Project Paths. Feel free to contribute.
+
+- To access the Project Settings, go to  "Display > Show Project Settings" or  press "S" on the keyboard. 
+
 
 .. image:: _images/project_setup_Settings.png
  :width: 600px
 
 Output Format
 ~~~~~~~~~~~~~
-1. On the Settings tab, select the resolution for the canvas on the viewer from the Output Format dropdown menu. If the desired format is not in the menu, select New Format.
-2. User can copy format from any viewer by selecting the viewer and choose Copy From.
-3. Define the width and height of the format in the w and h fields.
-4. User can also define pixel aspect ratio.
-5. In the name field, enter a name for the new format.
-6. Click OK to save the format. It now appears in the dropdown menu where user can select it.
+While clicking on Output Format, a dropdown appears with various standard formats to choose from.
+If the desired format is not in the menu:
 
-In the Node Graph, some nodes have preview images appear on them. The images can be automatically refreshed if user leaves the the Auto Previews checked.
-.. image:: _images/compositing-Merging_images_00
+1. Select New Format.
+2. Copy a format from any viewer by selecting the viewer and choose Copy From or define a custom width and height in the w and h fields. 
+3. Enter a new for your new format.
+4. Click OK to save the new format, it now appears in the Output Format dropdown menu.
+
 
 Frame Range and Frame Rate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-1. Type the numbers of the first and last frames in the Frame Range fields to define length of time for your project.
-2. In the Frame Rate field, enter the rate in frames per second (fps) at which you want your viewers to play back footage.
+- Define the lenght of the project with Frame Range first and last frames value. 
+- Enter the desired FPS in the Frame Rate field. 
 
 GPU Rendering
 ~~~~~~~~~~~~~
