@@ -77,6 +77,15 @@ for 16 bit
 .. note:: "-pix_fmt rgb24 or rgba" is a must to include convert the color space. YUV/YCRB is not ideal for many en/decoders for TIFF.
 
 
+Although if YUV colorspace is necesary to intact it is possible to do the closest RGB conversion using ``-sws_flags``. It will intact the chroma in full.
+
+Example:
+
+``ffmpeg -i "input.MXF" -compression_level 10 -pred mixed -pix_fmt rgb24 -sws_flags +accurate_rnd+full_chroma_int output_test%03d.png``
+
+``ffmpeg -i "input.MXF" -compression_algo lzw -pix_fmt rgb24 -sws_flags +accurate_rnd+full_chroma_int output_test%03d.tiff``
+
+
 For more information on support pix format and compression for TIFF in ffmpeg in the terminal type: ``ffmpeg -v error -h encoder=tiff``
 
 
