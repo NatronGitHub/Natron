@@ -166,7 +166,19 @@ The last command above will take a while, since it builds from sources, and shou
 
  To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
 
-    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
+    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+    # openfx-io still requires SeExpr 2.11, but homebrew was updated to 3.0.1 on July 6, 2020
+    cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
+    git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
+    brew unlink seexpr
+    brew install seexpr
+    brew link seexpr
+    brew switch seexpr 2.11
+    git checkout master Formula/seexpr.rb
+
+If you ever need to get back to using the latest version of seexpr:
+
+    brew switch seexpr 3.0.1
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
