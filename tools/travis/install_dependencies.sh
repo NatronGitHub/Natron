@@ -373,13 +373,14 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw libheif openimageio openvdb
-        cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
-        git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
-        brew unlink seexpr || true
-        brew install seexpr
-        brew link seexpr
-        brew switch seexpr 2.11
+        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw libheif openimageio openvdb;
+        pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
+        git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb;
+        brew unlink seexpr || true;
+        brew install seexpr;
+        brew link seexpr;
+        brew switch seexpr 2.11;
+        popd;
 
         # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
         hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
