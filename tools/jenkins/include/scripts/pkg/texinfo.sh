@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install Texinfo (for gdb)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/texinfo.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/texinfo.html
 TEXINFO_VERSION=6.7
 TEXINFO_TAR="texinfo-${TEXINFO_VERSION}.tar.gz"
 TEXINFO_SITE="https://ftp.gnu.org/gnu/texinfo"

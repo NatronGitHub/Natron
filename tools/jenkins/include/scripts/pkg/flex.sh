@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install flex (for SeExpr)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/flex.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/flex.html
 FLEX_VERSION=2.6.4
 FLEX_TAR="flex-${FLEX_VERSION}.tar.gz"
 FLEX_SITE="https://github.com/westes/flex/releases/download/v${FLEX_VERSION}"

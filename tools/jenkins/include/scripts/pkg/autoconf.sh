@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install autoconf
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/autoconf.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/autoconf.html
 AUTOCONF_VERSION=2.69
 AUTOCONF_TAR="autoconf-${AUTOCONF_VERSION}.tar.xz"
 AUTOCONF_SITE="https://ftp.gnu.org/gnu/autoconf"

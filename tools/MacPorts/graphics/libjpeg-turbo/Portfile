@@ -4,18 +4,13 @@ PortGroup           cmake 1.1
 PortGroup           github 1.0
 PortGroup           muniversal 1.0
 
-github.setup        libjpeg-turbo libjpeg-turbo 2.0.3
-checksums           rmd160  38a5e2c32fa6d80cb262a3f5b88be28bc62ccbd2 \
-                    sha256  29775dbacf51bcdd53227697c10b69b626f393536e0ea72604db9ae491ca8b32 \
-                    size    2161385
-revision            1
-
-conflicts           jpeg mozjpeg
-
+github.setup        libjpeg-turbo libjpeg-turbo 2.0.4
 categories          graphics
 platforms           darwin
 license             BSD
 maintainers         {larryv @larryv}
+
+conflicts           jpeg mozjpeg
 
 description         SIMD-accelerated libjpeg-compatible JPEG codec \
                     library
@@ -30,10 +25,14 @@ long_description    libjpeg-turbo is a JPEG image codec that uses SIMD \
                     highly-optimized Huffman coding routines. In many \
                     cases, the performance of libjpeg-turbo rivals \
                     that of proprietary high-speed JPEG codecs.
-homepage            http://www.${name}.org
+homepage            https://www.${name}.org
 
-depends_build-append \
-    port:nasm
+checksums           rmd160  83f073615a13198f6fedf0a1cdfb4b1713c858d1 \
+                    sha256  63366c34a89e0739a87d4aa36a473b5a5d98f8c8ab77cc027e5f1181f4997a7e \
+                    size    2161945
+revision            1
+
+depends_build-append port:nasm
 
 configure.env       ASM_NASM=${prefix}/bin/nasm
 configure.args      -DWITH_JPEG8=1

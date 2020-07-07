@@ -2,7 +2,7 @@
 
 # Install libjpeg-turbo
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libjpeg.html
-LIBJPEGTURBO_VERSION=2.0.4
+LIBJPEGTURBO_VERSION=2.0.5
 LIBJPEGTURBO_VERSION_MAJOR=${LIBJPEGTURBO_VERSION%.*.*}
 
 LIBJPEGTURBO_TAR="libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz"

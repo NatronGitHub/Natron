@@ -5,6 +5,7 @@
 PATCHELF_VERSION=0.10
 PATCHELF_TAR="patchelf-${PATCHELF_VERSION}.tar.bz2"
 PATCHELF_SITE="https://nixos.org/releases/patchelf/patchelf-${PATCHELF_VERSION}/"
+#PATCHELF_SITE="https://releases.nixos.org/releases.nixos.org/patchelf/patchelf-${PATCHELF_VERSION}/"
 if download_step; then
     download "$PATCHELF_SITE" "$PATCHELF_TAR"
 fi

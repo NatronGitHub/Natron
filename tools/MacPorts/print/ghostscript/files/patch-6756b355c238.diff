@@ -1,0 +1,88 @@
+From: Chris Liddell <chris.liddell@artifex.com>
+Date: Wed, 25 Mar 2020 14:00:55 +0000 (+0000)
+Subject: Fix shared libtiff and libjpeg build
+X-Git-Tag: ghostpdl-9.52-test-base-3~34
+X-Git-Url: http://git.ghostscript.com/?p=ghostpdl.git;a=commitdiff_plain;h=6756b355c238
+
+Fix shared libtiff and libjpeg build
+
+When building with shared libs, we should not try to include our custom libjpeg
+memory management context into the TIFF reader implementation context.
+---
+
+diff --git a/gpdl/gpdl.mak b/gpdl/gpdl.mak
+index e29c53a7b..b5a47aa22 100644
+--- gpdl/gpdl.mak
++++ gpdl/gpdl.mak
+@@ -110,15 +110,17 @@ $(GPDL_PWG_TOP_OBJ): $(GPDLSRC)pwgtop.c $(AK)\
+  $(spwgx_h) $(pltop_h) $(gsicc_manage_h) $(gspaint_h) $(plmain_h)
+ 	$(GPDLCC) $(GPDLSRC)pwgtop.c $(GPDLO_)$(GPDL_PWG_TOP_OBJ_FILE)
+ 
++# TIFF reading can only work with both libtiff and libjpeg using share libs
++# *or* both using local - we can't mix.
+ $(GPDLOBJ)tifftop_0.$(OBJ): $(GPDLSRC)tifftop.c $(AK)\
+  $(gxdevice_h) $(gserrors_h) $(gsstate_h) $(strimpl_h) $(gscoord_h)\
+  $(pltop_h) $(gsicc_manage_h) $(gspaint_h) $(plmain_h) $(jmemcust_h)
+-	$(GPDLCC) $(D_)SHARE_LIBTIFF=0 $(II)$(TI_)$(_I) $(II)$(JI_)$(_I) $(GPDLSRC)tifftop.c $(GPDLO_)tifftop_0.$(OBJ)
++	$(GPDLCC) $(D_)SHARE_LIBTIFF=0$(_D) $(D_)SHARE_JPEG=0$(_D) $(II)$(TI_)$(_I) $(II)$(JI_)$(_I) $(GPDLSRC)tifftop.c $(GPDLO_)tifftop_0.$(OBJ)
+ 
+ $(GPDLOBJ)tifftop_1.$(OBJ): $(GPDLSRC)tifftop.c $(AK)\
+  $(gxdevice_h) $(gserrors_h) $(gsstate_h) $(strimpl_h) $(gscoord_h)\
+- $(pltop_h) $(gsicc_manage_h) $(gspaint_h) $(plmain_h) $(jmemcust_h)
+-	$(GPDLCC) $(D_)SHARE_LIBTIFF=1 $(II)$(TI_)$(_I) $(II)$(JI_)$(_I) $(GPDLSRC)tifftop.c $(GPDLO_)tifftop_1.$(OBJ)
++ $(pltop_h) $(gsicc_manage_h) $(gspaint_h) $(plmain_h)
++	$(GPDLCC) $(D_)SHARE_LIBTIFF=1$(_D) $(D_)SHARE_JPEG=1$(_D) $(II)$(TI_)$(_I) $(II)$(JI_)$(_I) $(GPDLSRC)tifftop.c $(GPDLO_)tifftop_1.$(OBJ)
+ 
+ $(GPDL_TIFF_TOP_OBJ): $(GPDLOBJ)tifftop_$(SHARE_LIBTIFF).$(OBJ)
+ 	$(CP_) $(GPDLOBJ)tifftop_$(SHARE_LIBTIFF).$(OBJ) $(GPDL_TIFF_TOP_OBJ)
+diff --git a/gpdl/tifftop.c b/gpdl/tifftop.c
+index 16939dbb5..6abf42916 100644
+--- gpdl/tifftop.c
++++ gpdl/tifftop.c
+@@ -26,7 +26,9 @@
+ #include "gspaint.h"
+ #include "plmain.h"
+ #include "tiffio.h"
++#if defined(SHARE_JPEG) && SHARE_JPEG==0
+ #include "jmemcust.h"
++#endif
+ #include "gsmchunk.h"
+ 
+ /* Forward decls */
+@@ -90,7 +92,9 @@ typedef struct tiff_interp_instance_s {
+ 
+     byte              *samples;
+     byte              *proc_samples;
++#if defined(SHARE_JPEG) && SHARE_JPEG==0
+     jpeg_cust_mem_data jmem;
++#endif
+ } tiff_interp_instance_t;
+ 
+ static int
+@@ -421,7 +425,7 @@ static toff_t tifsSizeProc(thandle_t tiff_)
+     return tiff->buffer_full;
+ }
+ 
+-#if defined(SHARE_LIBTIFF) && SHARE_LIBTIFF==0
++#if defined(SHARE_JPEG) && SHARE_JPEG==0
+ static void *gs_j_mem_alloc(j_common_ptr cinfo, size_t size)
+ {
+     gs_memory_t *mem = (gs_memory_t *)(GET_CUST_MEM_DATA(cinfo)->priv);
+@@ -472,7 +476,7 @@ tiff_jpeg_mem_callback(thandle_t tiff_)
+ 
+     return &tiff->jmem;
+ }
+-#endif /* SHARE_LIBTIFF == 0 */
++#endif /* SHARE_JPEG == 0 */
+ 
+ static int
+ guess_pal_depth(int n, uint16_t *rmap, uint16_t *gmap, uint16_t *bmap)
+@@ -619,7 +623,7 @@ do_impl_process(pl_interp_implementation_t * impl, stream_cursor_read * pr, int
+                 tiff->photometric == PHOTOMETRIC_LOGLUV) {
+                 TIFFSetField(tiff->handle, TIFFTAG_SGILOGDATAFMT, SGILOGDATAFMT_8BIT);
+             }
+-#if defined(SHARE_LIBTIFF) && SHARE_LIBTIFF==0
++#if defined(SHARE_JPEG) && SHARE_JPEG==0
+             TIFFSetJpegMemFunction(tiff->handle,
+                                    &tiff_jpeg_mem_callback);
+ #endif

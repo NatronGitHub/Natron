@@ -4,8 +4,8 @@ PortSystem              1.0
 PortGroup               muniversal 1.0
 
 name                    lcms2
-version                 2.9
-revision                1
+version                 2.11
+revision                0
 worksrcdir              lcms2-${version}
 categories              graphics
 platforms               darwin
@@ -26,14 +26,19 @@ homepage                http://www.littlecms.com/
 master_sites            sourceforge:project/lcms/lcms/${version}/ \
                         ${homepage}
 
-checksums               rmd160  0003ffd3561e6ed787be81b5ed7b7af52211fe19 \
-                        sha256  48c6fdf98396fa245ed86e622028caf49b96fa22f3e5734f853f806fbc8e7d20
-
-patchfiles              patch-CVE-2018-16435.diff
+checksums               rmd160  a47d5e2d11ad79c2ea9b42bf3a521705eb75a3a9 \
+                        sha256  dc49b9c8e4d7cdff376040571a722902b682a795bf92985a85b48854c270772e \
+                        size    6574121
 
 depends_lib             port:jpeg \
                         port:tiff \
                         port:zlib
+
+# the i386 warning causes the universal build to fail
+# https://trac.macports.org/ticket/60656
+if {[vercmp ${xcodeversion} 10.0] >= 0 && [variant_isset universal]} {
+    configure.ldflags-append -w
+}
 
 test.run                yes
 test.target             check

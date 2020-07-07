@@ -3,7 +3,7 @@
 # Install openexr
 # see https://github.com/openexr/openexr/releases/
 if [ -z ${EXR_VERSION+x} ]; then
-EXR_VERSION=2.5.1
+EXR_VERSION=2.5.2
 fi
 
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"

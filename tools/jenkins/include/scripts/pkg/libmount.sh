@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install libmount (required by glib)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/util-linux.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/util-linux.html
 
 #if [ "${RHEL_MAJOR:-7}" -le 6 ]; then
 #    # 2.31.1 fails to compile on centos 6

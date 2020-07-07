@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install openssl for installer
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/openssl.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/openssl.html
 OPENSSL_VERSION=1.1.1g
 # see https://web.archive.org/web/20181008083143/http://www.linuxfromscratch.org/blfs/view/svn/postlfs/openssl10.html
 #OPENSSL_VERSION=1.0.2t

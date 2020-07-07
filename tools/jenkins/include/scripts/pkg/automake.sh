@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install automake
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/automake.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/automake.html
 AUTOMAKE_VERSION=1.16.2
 AUTOMAKE_TAR="automake-${AUTOMAKE_VERSION}.tar.xz"
 AUTOMAKE_SITE="https://ftp.gnu.org/gnu/automake"

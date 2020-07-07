@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install pkg-config
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/pkg-config.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/pkg-config.html
 PKGCONFIG_VERSION=0.29.2
 PKGCONFIG_TAR="pkg-config-${PKGCONFIG_VERSION}.tar.gz"
 PKGCONFIG_SITE="https://pkg-config.freedesktop.org/releases"

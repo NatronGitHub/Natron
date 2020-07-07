@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install intltool
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/intltool.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/intltool.html
 INTLTOOL_VERSION=0.51.0
 INTLTOOL_TAR="intltool-${INTLTOOL_VERSION}.tar.gz"
 INTLTOOL_SITE="https://launchpad.net/intltool/trunk/${INTLTOOL_VERSION}/+download"

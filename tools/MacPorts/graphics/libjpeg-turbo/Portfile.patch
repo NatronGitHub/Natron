@@ -1,17 +1,18 @@
---- Portfile.orig	2019-12-21 12:36:49.000000000 -0800
-+++ Portfile	2019-12-21 12:43:02.000000000 -0800
-@@ -2,12 +2,13 @@
+--- Portfile.orig	2020-07-05 12:43:14.000000000 -0700
++++ Portfile	2020-07-05 12:44:49.000000000 -0700
+@@ -2,6 +2,7 @@
  PortSystem          1.0
  PortGroup           cmake 1.1
  PortGroup           github 1.0
 +PortGroup           muniversal 1.0
  
- github.setup        libjpeg-turbo libjpeg-turbo 2.0.3
- checksums           rmd160  38a5e2c32fa6d80cb262a3f5b88be28bc62ccbd2 \
-                     sha256  29775dbacf51bcdd53227697c10b69b626f393536e0ea72604db9ae491ca8b32 \
-                     size    2161385
--revision            0
+ github.setup        libjpeg-turbo libjpeg-turbo 2.0.4
+ categories          graphics
+@@ -29,6 +30,7 @@
+ checksums           rmd160  83f073615a13198f6fedf0a1cdfb4b1713c858d1 \
+                     sha256  63366c34a89e0739a87d4aa36a473b5a5d98f8c8ab77cc027e5f1181f4997a7e \
+                     size    2161945
 +revision            1
  
- conflicts           jpeg mozjpeg
+ depends_build-append port:nasm
  

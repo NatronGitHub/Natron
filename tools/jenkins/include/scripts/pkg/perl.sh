@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install perl (required to install XML:Parser perl module used by intltool)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/perl.html
-PERL_VERSION=5.30.2
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/perl.html
+PERL_VERSION=5.32.0
 PERL_TAR="perl-${PERL_VERSION}.tar.gz"
 PERL_SITE="http://www.cpan.org/src/5.0"
 if download_step; then
