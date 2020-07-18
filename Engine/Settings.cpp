@@ -618,6 +618,13 @@ Settings::initializeKnobsUserInterface()
     _loadProjectsWorkspace->setHintToolTip( tr("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                                "will use your current layout.") );
     _uiPage->addKnob(_loadProjectsWorkspace);
+
+#ifdef Q_OS_WIN
+    _enableConsoleWindow = AppManager::createKnob<KnobBool>( this, tr("Enable console window") );
+    _enableConsoleWindow->setName("enableConsoleWindow");
+    _enableConsoleWindow->setHintToolTip( tr("When checked show console window on Windows.") );
+    _uiPage->addKnob(_enableConsoleWindow);
+#endif
 } // Settings::initializeKnobsUserInterface
 
 void
@@ -1491,6 +1498,9 @@ Settings::setDefaultValues()
     _useCursorPositionIncrements->setDefaultValue(true);
     //_defaultLayoutFile
     _loadProjectsWorkspace->setDefaultValue(false);
+#ifdef Q_OS_WIN
+    _enableConsoleWindow->setDefaultValue(false);
+#endif
 
     // Color-Management
     //_ocioConfigKnob
@@ -3117,6 +3127,14 @@ Settings::getLoadProjectWorkspce() const
 {
     return _loadProjectsWorkspace->getValue();
 }
+
+#ifdef Q_OS_WIN
+bool
+Settings::getEnableConsoleWindow() const
+{
+    return _enableConsoleWindow->getValue();
+}
+#endif
 
 bool
 Settings::useCursorPositionIncrements() const
