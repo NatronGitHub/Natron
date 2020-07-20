@@ -588,6 +588,8 @@ FC_DEFAULT_FONTS += "<dir>/System/Library/Assets/com_apple_MobileAsset_Font5</di
 # Windows
 win32 {
 FC_DEFAULT_FONTS += "<dir>WINDOWSFONTDIR</dir>"
+# Windows 10 introduced user fonts, and is the preferred (and default) place to install fonts
+FC_DEFAULT_FONTS += "<dir>~/AppData/Local/Microsoft/Windows/Fonts</dir>"
 FC_CACHEDIR += "<cachedir>LOCAL_APPDATA_FONTCONFIG_CACHE</cachedir>"
 }
 
