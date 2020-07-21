@@ -51,6 +51,8 @@
 NATRON_NAMESPACE_USING
 
 #ifdef Q_OS_WIN
+#include <QSettings> // for console settings
+
 // g++ knows nothing about wmain
 // https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
 // If it fails to compile it means either UNICODE or _UNICODE is not defined (it should be in global.pri) and
@@ -67,6 +69,23 @@ int main(int argc, char *argv[])
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
     assert(boost_adaptbx::floating_point::is_invalid_trapped());
 #endif
+
+#ifdef Q_OS_WIN
+    // Setup Windows console output
+    bool hasConsole = false;
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    bool enableConsoleWindow = settings.value( QString::fromUtf8("enableConsoleWindow"), false ).toBool();
+    if (enableConsoleWindow) { // output to console window
+        hasConsole = ( AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole() );
+    } else { // output to parent console
+        hasConsole = AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+    if (hasConsole) {
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+    }
+#endif
+
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
      Avoid 'Too many open files' on Unix.

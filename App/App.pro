@@ -30,11 +30,10 @@ VERSION = $$VERSION_23
 
 TEMPLATE = app
 win32 {
-	CONFIG += console
-	RC_FILE += ../Natron.rc
-} else {
-	CONFIG += app
+    RC_FILE += ../Natron.rc
 }
+CONFIG += app
+
 CONFIG += moc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
