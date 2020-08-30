@@ -17,7 +17,7 @@ Transforming Images
 
 
 Corner Pin Images
-################
+#################
 
 1.  	Select Transform > Corner Pin to map the position of the four corners of an image.
 2.    Now you are able to move the corners directly with the mouse or entering values in the Controls Panel.
