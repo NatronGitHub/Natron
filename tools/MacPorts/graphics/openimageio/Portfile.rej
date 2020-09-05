@@ -1,177 +1,29 @@
 ***************
-*** 2,13 ****
+*** 2,14 ****
   
   PortSystem              1.0
   PortGroup               github 1.0
 - PortGroup               qt5 1.0
   PortGroup               cmake 1.1
   PortGroup               active_variants 1.1
+  PortGroup               compiler_blacklist_versions 1.0
   
-  github.setup            OpenImageIO oiio 2.1.14.0
+  github.setup            OpenImageIO oiio 2.1.15.0
 - revision                0
   name                    openimageio
   categories              graphics
   license                 BSD
---- 2,13 ----
+--- 2,14 ----
   
   PortSystem              1.0
   PortGroup               github 1.0
 + #PortGroup               qt5 1.0
   PortGroup               cmake 1.1
   PortGroup               active_variants 1.1
+  PortGroup               compiler_blacklist_versions 1.0
   
-  github.setup            OpenImageIO oiio 2.1.14.0
-+ revision                1000
+  github.setup            OpenImageIO oiio 2.1.15.0
++ revision                100
   name                    openimageio
   categories              graphics
   license                 BSD
-***************
-*** 56,67 ****
-  
-  # optional components
-  
-- #configure.args-append   -DUSE_OPENGL=OFF \
-- #                        -DUSE_QT=OFF
-- qt5.depends_component   qtbase
-- qt5.min_version         5.6
-  
-- configure.args-append   -DUSE_PYTHON=OFF
-  
-  set pythons_suffixes    {27 36 37 38}
-  
---- 61,195 ----
-  
-  # optional components
-  
-+ # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
-+ # tested with openimageio 1.4.6rc1:
-+ # macports-clang-3.3 and later work
-+ # gcc-4.2 doesn't work
-+ # llvm-gcc-4.2 doesn't work
-+ # macports-clang < 3.3 untested
-+ # clang < 300 doesn't work
-+ # see also https://github.com/OpenImageIO/oiio/issues/1363
-+ compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4.[2-7]} {apple-gcc-4.[2-7]} cc {clang < 300}
-+ 
-+ # for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
-+ if {${configure.cxx_stdlib} eq "libstdc++"} {
-+     if {[vercmp $xcodeversion 3.0] >= 0} {
-+         compiler.fallback-append macports-clang-3.4
-+     } else {
-+         compiler.fallback-append macports-clang-3.3
-+     }
-+ }
-+ 
-+ # GCC < 4.9 does not have proper GCC intrinsics support
-+ compiler.blacklist-append {*gcc-4.8}
-+ #compiler.whitelist-append macports-clang-9.0 macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
-+ 
-+ # The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
-+ # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
-+ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
-+     # there is no known working clang compiler for ppc
-+     compiler.blacklist-append {macports-clang*}
-+ #    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
-+ #    pre-configure {
-+ #        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
-+ #    }
-+ #    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
-+ #    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
-+     # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DNOTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
-+     configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
-+     ## uncomment the following to compile with buggy thread support
-+     # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DCMAKE_C_COMPILER=gcc-mp-4.9 -DCMAKE_CXX_COMPILER=g++-mp-4.9 -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
-+     ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
-+     #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
-+ }
-+ 
-+ configure.args-append \
-+     -DOIIO_BUILD_TESTS:BOOL=FALSE \
-+     -DBOOST_ROOT=${prefix} \
-+     -DUSE_QT:BOOL=FALSE \
-+     -DUSE_PYTHON:BOOL=FALSE \
-+     -DUSE_PYTHON3:BOOL=FALSE \
-+     -DUSE_FIELD3D:BOOL=FALSE \
-+     -DUSE_FFMPEG:BOOL=FALSE \
-+     -DUSE_OPENJPEG:BOOL=FALSE \
-+     -DUSE_OCIO:BOOL=FALSE \
-+     -DUSE_OPENCV:BOOL=FALSE \
-+     -DUSE_OPENSSL:BOOL=FALSE \
-+     -DUSE_FREETYPE:BOOL=FALSE \
-+     -DUSE_GIF:BOOL=TRUE \
-+     -DUSE_HEIF:BOOL=TRUE \
-+     -DUSE_PTEX:BOOL=FALSE \
-+     -DUSE_LIBRAW:BOOL=TRUE \
-+     -DUSE_OPENGL:BOOL=FALSE \
-+     -DUSE_WEBP:BOOL=TRUE \
-+     -DSTOP_ON_WARNING:BOOL=FALSE
-+ 
-+ # optional components
-+ 
-+ default_variants    +opencolorio +openjpeg +freetype
-+ 
-+ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
-+     if {${configure.cxx_stdlib} eq "libstdc++"} {
-+     }
-+ }
-+ 
-+ variant opencolorio description {Add OpenColorIO support.} {
-+     depends_lib-append  port:opencolorio
-+     configure.args-delete       -DUSE_OCIO:BOOL=FALSE
-+     configure.args-append       -DUSE_OCIO:BOOL=TRUE
-+ }
-  
-+ variant ffmpeg description {Add FFmpeg support.} {
-+     depends_lib-append  port:ffmpeg
-+     configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
-+     configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
-+ }
-+ 
-+ variant openjpeg description {Add OpenJPEG support.} {
-+     depends_lib-append  port:openjpeg
-+     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
-+     configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
-+ }
-+ 
-+ variant field3d description {Use Field3D.} {
-+     configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
-+     configure.args-append -DUSE_FIELD3D:BOOL=TRUE
-+     depends_lib-append port:field3d
-+ }
-+ 
-+ variant freetype description {Use FreeType.} {
-+     configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
-+     configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
-+     depends_lib-append port:freetype
-+ }
-+ 
-+ 
-+ variant opencv description {Use OpenCV.} {
-+     configure.args-delete -DUSE_OPENCV:BOOL=FALSE
-+     configure.args-append -DUSE_OPENCV:BOOL=TRUE
-+     depends_lib-append port:opencv
-+ }
-+ 
-+ variant ptex description {Use PTex.} {
-+     configure.args-delete -DUSE_PTEX:BOOL=FALSE
-+     configure.args-append -DUSE_PTEX:BOOL=TRUE
-+     depends_lib-append port:ptex
-+ }
-+ 
-+ variant openvdb description {Use OpenVDB.} {
-+     configure.args-delete -DUSE_TBB:BOOL=FALSE
-+     configure.args-append -DUSE_TBB:BOOL=TRUE
-+     configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
-+     configure.args-append -DUSE_OPENVDB:BOOL=TRUE
-+     depends_lib-append port:tbb \
-+                        port:openvdb
-+ }
-+ 
-+ variant dicom description {Use DICOM from dcmtk.} {
-+     configure.args-delete -DUSE_DICOM:BOOL=FALSE
-+     configure.args-append -DUSE_DICOM:BOOL=TRUE
-+     depends_lib-append port:dcmtk
-+ }
-  
-  set pythons_suffixes    {27 36 37 38}
-  

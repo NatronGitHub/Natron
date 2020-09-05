@@ -133,7 +133,3 @@ patchfiles-append       patch-ltmain.sh.diff
 
 test.run                yes
 test.target             check
-
-livecheck.type          regex
-livecheck.url           ${homepage}/downloads.html
-livecheck.regex         ${name}-(\\d+(?:\\.\\d+)*)

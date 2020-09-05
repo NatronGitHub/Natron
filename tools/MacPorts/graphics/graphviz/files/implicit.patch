@@ -1,0 +1,25 @@
+Fix "error: implicit declaration of function 'makeTetrix'" and another
+problem fixed by the same upstream commit.
+https://gitlab.com/graphviz/graphviz/-/commit/b4947d67a4ebd48ca0105d44f92e47f044e51600
+--- cmd/lefty/dot2l/dotlex.c.orig	2016-08-09 16:02:09.000000000 -0500
++++ cmd/lefty/dot2l/dotlex.c	2020-08-27 14:45:45.000000000 -0500
+@@ -252,7 +252,7 @@
+     char *q;
+ 
+     q = lexbuf;
+-    if (p == '\0')
++    if (!p || *p == '\0')
+         return NULL;
+     while (isalnum (*p) || (*p == '_') || (!isascii (*p)))
+         *q++ = *p++;
+--- cmd/tools/gvgen.c.orig	2016-11-22 23:43:56.000000000 -0600
++++ cmd/tools/gvgen.c	2020-08-27 14:45:45.000000000 -0500
+@@ -458,6 +458,8 @@
+ 	fprintf(opts.outfile, "}\ngraph {\n");
+ }
+ 
++extern void makeTetrix(int depth, edgefn ef);
++
+ int main(int argc, char *argv[])
+ {
+     GraphType graphType;

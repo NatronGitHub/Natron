@@ -44,5 +44,5 @@ test.run                yes
 test.target             check
 
 livecheck.type          regex
-livecheck.url           http://www.littlecms.com/download.html
-livecheck.regex         "Current version is (\[A-Za-z0-9.\]+)"
+livecheck.url           http://www.littlecms.com/tags/
+livecheck.regex         "${name}-(\\d+(?:\\.\\d+)+)"

@@ -7,7 +7,7 @@ PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 
-github.setup            OpenImageIO oiio 2.1.15.0
+github.setup            OpenImageIO oiio 2.1.17.0
 revision                100
 name                    openimageio
 categories              graphics
@@ -18,17 +18,17 @@ long_description        OpenImageIO is a library for reading and writing images,
                         related classes, utilities, and applications.
 platforms               darwin
 
-checksums               rmd160  753c686d7e6aeb8cf51d807d5acb1d680b895d64 \
-                        sha256  95b90ba22b73765cbcbd9e11891769c2e78696ad24d4af77ef3f3c8674422401 \
-                        size    29051047
+checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
+                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
+                        size    29052379
 
 compiler.cxx_standard   2011
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
-# error: thread-local storage is not supported for the current target
-compiler.blacklist-append {clang < 800}
+
+compiler.thread_local_storage yes
 
 github.master_sites     ${github.homepage}/archive
 distname                Release-${version}

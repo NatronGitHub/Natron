@@ -1179,12 +1179,7 @@ variant openvg description {Build with support for OpenVG} {
 
 variant cxx11 description {Add library support for C++11 (EXPERIMENTAL; does not work with libc++)} {
 
-    # Block compilers that do not support C++11. This variant seems to
-    # work with MacPorts' clang 3.0 or newer and Apple clang newer
-    # than 318.0.58 (but, not that version, which is already blocked).
-
-    compiler.blacklist-append \
-        apple-gcc-4.2 gcc-4.2 llvm-gcc-4.2
+    compiler.cxx_standard 2011
 
     pre-fetch {
 

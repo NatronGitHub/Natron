@@ -5,7 +5,7 @@ PortGroup           compiler_blacklist_versions 1.0
 PortGroup           muniversal 1.0
 
 name                libvpx
-version             1.8.2
+version             1.9.0
 categories          multimedia
 maintainers         {devans @dbevans} openmaintainer
 platforms           darwin

@@ -1,5 +1,5 @@
---- Portfile.orig	2020-05-25 18:28:17.000000000 -0700
-+++ Portfile	2020-05-25 18:32:17.000000000 -0700
+--- Portfile.orig	2020-09-03 15:22:38.000000000 -0700
++++ Portfile	2020-09-03 15:23:45.000000000 -0700
 @@ -2,13 +2,13 @@
  
  PortSystem              1.0
@@ -10,7 +10,7 @@
  PortGroup               active_variants 1.1
  PortGroup               compiler_blacklist_versions 1.0
  
- github.setup            OpenImageIO oiio 2.1.15.0
+ github.setup            OpenImageIO oiio 2.1.17.0
 -revision                0
 +revision                100
  name                    openimageio

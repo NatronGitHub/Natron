@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.71.0
+version                         7.72.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -19,17 +19,16 @@ long_description                curl is a client to get documents/files from ser
 
 homepage                        https://curl.haxx.se
 master_sites                    ${homepage}/download/:curl \
-                                http://curl.mirror.anstey.ca/:curl \
-                                http://curl.askapache.com/download/:curl
+                                https://curl.askapache.com/:curl
 
 use_xz                          yes
 set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  5d8e8f6e6c51b60a6e1ee1e7d61891f9ff3f1cca \
-                                sha256  cdf18794393d8bead915312708a9e5d819c6e9919de14b20d5c8e7987abd9772 \
-                                size    2379056
+                                rmd160  f9bce9f71e9a0a591cda110e634421d9926a6eb3 \
+                                sha256  0ded0808c4d85f2ee0db86980ae610cc9d165e9ca9da466196cc73c346513713 \
+                                size    2390040
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0

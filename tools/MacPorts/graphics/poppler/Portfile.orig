@@ -9,7 +9,7 @@ PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.89.0
+version             20.08.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -24,9 +24,9 @@ master_sites        ${homepage} \
 
 use_xz              yes
 
-checksums           rmd160  ed31e81e3a316795a4e3dd6c5dea45d82752528d \
-                    sha256  fba230364537782cc5d43b08d693ef69c36586286349683c7b127156a8ef9b5c \
-                    size    1612156
+checksums           rmd160  11c2d4380a08edfd54ede1a9d3fc2f1f40649224 \
+                    sha256  ae65fef04bbf63259a6352e7b620719115d4fb97f5079b0b8b00a8eb0c86eca5 \
+                    size    1635372
 
 depends_build-append \
                     port:pkgconfig
@@ -70,13 +70,17 @@ patchfiles-append   patch-trac-57167.diff
 configure.args-append \
                     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
                     -DENABLE_QT5=OFF \
+                    -DENABLE_QT6=OFF \
                     -DBUILD_GTK_TESTS=OFF \
                     -DBUILD_QT5_TESTS=OFF \
+                    -DBUILD_QT6_TESTS=OFF \
                     -DBUILD_CPP_TESTS=OFF \
                     -DWITH_NSS3=ON
 
 subport poppler-qt5 {
     PortGroup qt5 1.0
+
+    qt5.min_version         5.5.0
 
     patchfiles-append       patch-qt5-106118.diff
 
@@ -98,7 +102,7 @@ if {${subport} ne ${name}} {
     depends_lib-append      port:poppler
 
     post-extract {
-        system -W ${workpath} "${prefix}/bin/git clone --depth=1 http://anongit.freedesktop.org/git/poppler/test"
+        system -W ${workpath} "${prefix}/bin/git clone --depth=1 https://anongit.freedesktop.org/git/poppler/test"
     }
 
 
