@@ -578,6 +578,9 @@ build pcre # (required by glib)
 checkpoint
 
 build git # (requires curl and pcre)
+
+checkpoint
+
 build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
 build postgresql # (for the Qt postgresql plugin and the python postgresql adapter)
 

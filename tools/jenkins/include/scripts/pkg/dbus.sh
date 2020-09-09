@@ -2,7 +2,7 @@
 
 # Install dbus (for QtDBus)
 # see http://www.linuxfromscratch.org/lfs/view/systemd/chapter08/dbus.html
-DBUS_VERSION=1.12.18
+DBUS_VERSION=1.12.20
 DBUS_TAR="dbus-${DBUS_VERSION}.tar.gz"
 DBUS_SITE="https://dbus.freedesktop.org/releases/dbus"
 if download_step; then

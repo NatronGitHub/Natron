@@ -2,8 +2,8 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.1.17.0
-OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
+OIIO_VERSION=2.2.6.1
+OIIO_VERSION_SHORT=2.2 # ${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if download_step; then
     download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"

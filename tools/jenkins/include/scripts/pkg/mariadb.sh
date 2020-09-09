@@ -6,6 +6,7 @@
 MARIADB_VERSION=10.2.24 # last known working version (see below)
 #MARIADB_VERSION=10.4.7 # fails with "plugin/handler_socket/libhsclient/hstcpcli.cpp:9:10: fatal error: my_global.h: No such file or directory"
 #MARIADB_VERSION=10.3.15 # fails with "plugin/handler_socket/libhsclient/hstcpcli.cpp:9:10: fatal error: my_global.h: No such file or directory"
+# MARIADB_VERSION=10.5.5 # fails too
 
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
 MARIADB_SITE="http://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"

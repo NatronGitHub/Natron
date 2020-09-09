@@ -2,7 +2,7 @@
 
 # install bison (for SeExpr)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/bison.html
-BISON_VERSION=3.6.4
+BISON_VERSION=3.6.4 # bison >= 3.7 breaks qt4webkit build, see qt4webkit.sh
 BISON_TAR="bison-${BISON_VERSION}.tar.gz"
 BISON_SITE="http://ftp.gnu.org/pub/gnu/bison"
 if download_step; then

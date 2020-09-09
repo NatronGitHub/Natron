@@ -2,7 +2,7 @@
 
 # Install libheif
 # see https://github.com/strukturag/libheif/releases
-LIBHEIF_VERSION=1.7.0
+LIBHEIF_VERSION=1.8.0
 LIBHEIF_TAR="libheif-${LIBHEIF_VERSION}.tar.gz"
 LIBHEIF_SITE="https://github.com/strukturag/libheif/releases/download/v${LIBHEIF_VERSION}"
 if download_step; then

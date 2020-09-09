@@ -2,7 +2,7 @@
 
 # Install nasm (for x264, lame, and others)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/nasm.html
-NASM_VERSION=2.15.02
+NASM_VERSION=2.15.03
 NASM_TAR="nasm-${NASM_VERSION}.tar.gz"
 NASM_SITE="http://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}"
 if download_step; then

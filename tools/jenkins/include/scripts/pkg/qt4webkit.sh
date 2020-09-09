@@ -14,7 +14,7 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
     untar "$SRC_PATH/$QT4WEBKIT_TAR"
 
     #############################################
-    # patches from fedora's qtwebkit-2.3.4-25.fc30.src.rpm
+    # patches from fedora's qtwebkit-2.3.4-29.fc32.src.rpm
     
     # search /usr/lib{,64}/mozilla/plugins-wrapped for browser plugins too
     Patch1=webkit-qtwebkit-2.2-tp1-pluginpath.patch
@@ -61,6 +61,17 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
 
     #######################################
     
+    # bison 3.7 breaks webkit build:
+    # https://bugs.gentoo.org/736499
+    # https://github.com/qtwebkit/qtwebkit/commit/d92b11fea65364fefa700249bd3340e0cd4c5b31
+    patch -Np1 -i "$INC_PATH/patches/Qt/webkit-qtwebkit-bison37.patch"
+    # Unfortunately, even with this patch it still doesn build, and fails with:
+    # generated/XPathGrammar.tab.c:124:10: fatal error: XPathGrammar.tab.h: No such file or directory
+    if version_gt "$BISON_VERSION" 3.7; then
+        echo "qt4webkit doesn't build with bison >= 3.7"
+        echo "fix this, then remove this message from qt4webkit.sh"
+    fi
+
     # disable xslt if libxml2 is compiled with ICU support, or qtwebkit will not compile, see https://aur.archlinux.org/packages/qtwebkit
     if [ "$LIBXML2_ICU" -eq 1 ]; then
         xslt_flag="--no-xslt"
