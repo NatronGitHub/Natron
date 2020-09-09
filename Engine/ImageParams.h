@@ -31,6 +31,7 @@
 #include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/version.hpp>
 #endif
 
