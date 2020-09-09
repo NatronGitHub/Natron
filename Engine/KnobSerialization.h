@@ -33,6 +33,7 @@
 #include <string>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+#include <boost/version.hpp>
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

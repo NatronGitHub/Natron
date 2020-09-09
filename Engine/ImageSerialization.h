@@ -31,6 +31,7 @@
 #include "Engine/Image.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/version.hpp>
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
