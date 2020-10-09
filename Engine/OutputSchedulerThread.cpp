@@ -976,7 +976,7 @@ OutputSchedulerThread::startTasks(int startingFrame)
                 break;
             }
         }
-        if (newDirection != newDirection) {
+        if (newDirection != direction) {
             QMutexLocker l(&_imp->runArgsMutex);
             _imp->livingRunArgs.timelineDirection = newDirection;
         }
