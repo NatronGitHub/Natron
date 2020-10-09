@@ -1321,11 +1321,9 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
 
     if ( (dt != 0) || (dv != 0) ) {
-        if ( (dt != 0) || (dv != 0) ) {
-            bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            _widget->pushUndoCommand( new MoveKeysCommand(_widget, keysToMove, dt, dv, !updateOnPenUpOnly) );
-            _evaluateOnPenUp = true;
-        }
+        bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        _widget->pushUndoCommand( new MoveKeysCommand(_widget, keysToMove, dt, dv, !updateOnPenUpOnly) );
+        _evaluateOnPenUp = true;
     }
     //update last drag movement
     if ( (_mouseDragOrientation.x() != 0) || !useOneDirectionOnly ) {
