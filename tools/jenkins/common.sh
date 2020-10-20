@@ -23,6 +23,11 @@ if [ -z "${CWD:-}" ]; then
 fi
 
 # Set common paths used across scripts
+if [ -z "${WORKSPACE:-}" ]; then
+    defaultWorkspace="/tmp/natron_build"
+    echo "Info: Setting WORKSPACE=${defaultWorkspace}"
+    WORKSPACE=${defaultWorkspace}
+fi
 TMP_PATH="${WORKSPACE:-}/tmp"
 SRC_PATH="${WORKSPACE:-}/src"
 INC_PATH="$CWD/include"
