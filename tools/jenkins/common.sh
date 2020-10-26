@@ -24,9 +24,8 @@ fi
 
 # Set common paths used across scripts
 if [ -z "${WORKSPACE:-}" ]; then
-    defaultWorkspace="/tmp/natron_build"
-    echo "Info: Setting WORKSPACE=${defaultWorkspace}"
-    WORKSPACE=${defaultWorkspace}
+    echo "Error: 'WORKSPACE' env is not defined -- required for build"
+    exit 1
 fi
 TMP_PATH="${WORKSPACE:-}/tmp"
 SRC_PATH="${WORKSPACE:-}/src"
