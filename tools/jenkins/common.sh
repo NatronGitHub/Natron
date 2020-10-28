@@ -23,6 +23,10 @@ if [ -z "${CWD:-}" ]; then
 fi
 
 # Set common paths used across scripts
+if [ -z "${WORKSPACE:-}" ]; then
+    echo "Error: 'WORKSPACE' env is not defined -- required for build"
+    exit 1
+fi
 TMP_PATH="${WORKSPACE:-}/tmp"
 SRC_PATH="${WORKSPACE:-}/src"
 INC_PATH="$CWD/include"
