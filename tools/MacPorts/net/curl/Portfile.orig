@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.72.0
+version                         7.73.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  f9bce9f71e9a0a591cda110e634421d9926a6eb3 \
-                                sha256  0ded0808c4d85f2ee0db86980ae610cc9d165e9ca9da466196cc73c346513713 \
-                                size    2390040
+                                rmd160  abe1391ffc35a7f24771326761bca2f7e46aae41 \
+                                sha256  7c4c7ca4ea88abe00fea4740dcf81075c031b1d0bb23aff2d5efde20a3c2408a \
+                                size    2394228
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -70,6 +70,12 @@ if {${name} eq ${subport}} {
 
     configure.env               PKG_CONFIG_PATH=${prefix}
 
+    if {${os.platform} eq "darwin" && ${os.major} < 10} {
+        depends_build-append    port:cctools
+        configure.env-append    NM=${prefix}/bin/nm
+        configure.args-append   lt_cv_path_NM=${prefix}/bin/nm
+    }
+
     post-configure {
         if {[variant_isset universal]} {
             set dirs {}
@@ -106,7 +112,7 @@ if {${name} eq ${subport}} {
             ${destroot}${docdir}
         xinstall -m 0644 -W ${worksrcpath}/docs \
             BINDINGS.md \
-            BUGS \
+            BUGS.md \
             CODE_OF_CONDUCT.md \
             CODE_STYLE.md \
             CONTRIBUTE.md \
@@ -119,16 +125,14 @@ if {${name} eq ${subport}} {
             HTTP2.md \
             INTERNALS.md \
             KNOWN_BUGS \
-            LICENSE-MIXING.md \
             MAIL-ETIQUETTE \
-            RESOURCES \
             ROADMAP.md \
             SECURITY-PROCESS.md \
             SSL-PROBLEMS.md \
             SSLCERTS.md \
             THANKS \
             TODO \
-            TheArtOfHttpScripting \
+            TheArtOfHttpScripting.md \
             VERSIONS.md \
             ${destroot}${docdir}
         xinstall -m 0644 ${worksrcpath}/docs/libcurl/libcurl.m4 \
@@ -224,11 +228,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1593178573
+    set certdata_updated        1602879623
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         712412cb974c0392afe31fd9ce974b26ae3993c3
+    set certdata_commit         cd3c94fcde3f2eb9ad7c25d3c3fca720d1216dc5
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20200617
+    set certdata_date           20200914
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -249,9 +253,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  e909f19642fa671540fe4265d8e109ccaf48145e \
-                                sha256  7a53b305f31901cf94d4cc92ad3ac33634406d6866f1bb97a9c2b4edf08dcc8c \
-                                size    253686
+                                rmd160  f129ecc0f80ecb6fde98818bcdfded4add1c60a1 \
+                                sha256  da44076f46126acd9a847d6434e76c6d84d74178262256415c36b4e9d86f88f9 \
+                                size    253669
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

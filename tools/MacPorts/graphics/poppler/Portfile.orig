@@ -1,15 +1,16 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
-PortGroup           compiler_blacklist_versions 1.0
 PortGroup           conflicts_build 1.0
 PortGroup           gobject_introspection 1.0
 PortGroup           cmake 1.1
 PortGroup           legacysupport 1.0
 
 name                poppler
+version             20.10.0
+revision            1
+
 conflicts           xpdf-tools
-version             20.08.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -17,16 +18,16 @@ platforms           darwin
 homepage            https://poppler.freedesktop.org/
 
 description         Poppler is a PDF rendering library based on the xpdf-3.0 code base.
-long_description    ${description}
+long_description    {*}${description}
 
 master_sites        ${homepage} \
                     gentoo
 
 use_xz              yes
 
-checksums           rmd160  11c2d4380a08edfd54ede1a9d3fc2f1f40649224 \
-                    sha256  ae65fef04bbf63259a6352e7b620719115d4fb97f5079b0b8b00a8eb0c86eca5 \
-                    size    1635372
+checksums           rmd160  b4d8fa452a61648f3531d96e2ffc136d224d5bdd \
+                    sha256  434ecbbb539c1a75955030a1c9b24c7b58200b7f68d2e4269e29acf2f8f13336 \
+                    size    1644528
 
 depends_build-append \
                     port:pkgconfig
@@ -56,10 +57,11 @@ configure.cppflags-delete -I${prefix}/include
 configure.ldflags-append -liconv
 gobject_introspection yes
 
-# C++14, thread_local
 compiler.cxx_standard 2014
 configure.cxxflags-append -std=c++14
-compiler.blacklist-append {clang < 800.0.38}
+compiler.thread_local_storage yes
+
+patchfiles-append   patch-check-boost.diff
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=106417
 patchfiles-append   patch-bug106417.diff
@@ -75,7 +77,15 @@ configure.args-append \
                     -DBUILD_QT5_TESTS=OFF \
                     -DBUILD_QT6_TESTS=OFF \
                     -DBUILD_CPP_TESTS=OFF \
-                    -DWITH_NSS3=ON
+                    -DWITH_NSS3=ON \
+                    -DUSE_BOOST_HEADERS=OFF
+
+variant boost description "Use Boost when building the Splash graphics backend" {
+    depends_build-append    port:boost
+
+    configure.args-replace  -DUSE_BOOST_HEADERS=OFF \
+                            -DUSE_BOOST_HEADERS=ON
+}
 
 subport poppler-qt5 {
     PortGroup qt5 1.0

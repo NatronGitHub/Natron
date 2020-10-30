@@ -1,0 +1,11 @@
+--- CMakeLists.txt.orig	2020-10-01 21:44:58.000000000 +0200
++++ CMakeLists.txt	2020-10-08 14:15:20.000000000 +0200
+@@ -291,7 +291,7 @@
+   include_directories(SYSTEM ${LCMS2_INCLUDE_DIR})
+ endif()
+ 
+-if(ENABLE_SPLASH)
++if(ENABLE_SPLASH AND USE_BOOST_HEADERS)
+   find_package(Boost 1.58.0)
+   if(Boost_FOUND)
+     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
