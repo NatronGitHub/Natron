@@ -1,0 +1,40 @@
+--- glib/CMakeLists.txt.orig
++++ glib/CMakeLists.txt
+@@ -122,6 +122,7 @@
+   # General gir: Reset object-list for introspection & load tool args
+   set(INTROSPECTION_GIRS)
+   set(INTROSPECTION_SCANNER_ARGS "--add-include-path=${CMAKE_CURRENT_SOURCE_DIR}" "--warn-all")
++  list(APPEND INTROSPECTION_SCANNER_ARGS "--library-path=${CMAKE_CURRENT_BINARY_DIR}")
+   set(INTROSPECTION_COMPILER_ARGS "--includedir=${CMAKE_CURRENT_SOURCE_DIR}")
+ 
+   # Poppler: Assign package to gir & export keys
+@@ -133,9 +134,27 @@
+ 
+   # Format list of include directories as compiler flags
+   get_directory_property(_tmp_includes INCLUDE_DIRECTORIES)
+-  _gir_list_prefix(_includes _tmp_includes "-I")
++  _gir_list_prefix(_tmp2_includes _tmp_includes "-I")
++  # reorder includes to be interal to build or source first, then
++  # external, as best we can determine which is which
++  set(_includes "")
++  set(_includes_last "")
++  foreach(_item IN LISTS _tmp2_includes)
++    string(FIND "${_item}" "${CMAKE_BINARY_DIR}" _is_in_build)
++    if(NOT ${_is_in_build} EQUAL -1)
++      list(APPEND _includes "${_item}")
++    else()
++      string(FIND "${_item}" "${CMAKE_SOURCE_DIR}" _is_in_source)
++      if(NOT ${_is_in_source} EQUAL -1)
++        list(APPEND _includes "${_item}")
++      else()
++        list(APPEND _includes_last "${_item}")
++      endif()
++    endif()
++  endforeach()
++  list(APPEND _includes ${_includes_last})
+   # And set flags for gir compiler and scanner
+-  set(Poppler_0_18_gir_CFLAGS ${_includes} -L${CMAKE_BINARY_DIR} -L${CMAKE_CURRENT_BINARY_DIR})
++  set(Poppler_0_18_gir_CFLAGS -v ${_includes} -L${CMAKE_BINARY_DIR} -L${CMAKE_CURRENT_BINARY_DIR})
+   set(Poppler_0_18_gir_SCANNERFLAGS "--c-include=poppler.h")
+ 
+   # Load temporary source-file lists, including a few generated at build

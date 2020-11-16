@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.52
+version             9.53.3
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -33,11 +33,6 @@ distfiles           ${distname}.tar.gz:source \
 patchfiles          patch-base_unix-dll.mak.diff \
                     patch-base_unixinst.mak.diff
 
-# backport upstream fix to fix ghostpdl build; see:
-#  https://trac.macports.org/ticket/60540#comment:2
-#  https://bugs.ghostscript.com/show_bug.cgi?id=702474
-patchfiles-append    patch-6756b355c238.diff
-
 # Provide FT_CALLBACK_DEF macro removed from
 # <freetype/config/ftconfig.h> in freetype 2.10.3
 # https://trac.macports.org/ticket/61306
@@ -46,10 +41,10 @@ patchfiles-append    patch-base_fapi_ft.c.diff
 # Missing stdlib.h for abs()
 patchfiles-append    patch-jpegxr_r_strip.c.diff
 
-checksums           ghostpdl-9.52.tar.gz \
-                    rmd160  1e719f907c8dc6dd0000bf2c547eee54fd583b9f \
-                    sha256  8f6e48325c106ae033bbae3e55e6c0b9ee5c6b57e54f7cd24fb80a716a93b06a \
-                    size    58554799 \
+checksums           ghostpdl-9.53.3.tar.gz \
+                    rmd160  3f4a51e75d6378dd754b40081a9de76d904dc1ae \
+                    sha256  96d04e4e464bddb062c1774ea895c4f1c1c94e6c4b62f5d32218ebd44dd65ba1 \
+                    size    61264209 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \

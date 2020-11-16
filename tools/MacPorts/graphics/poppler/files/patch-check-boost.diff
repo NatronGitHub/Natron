@@ -1,6 +1,6 @@
 --- CMakeLists.txt.orig	2020-10-01 21:44:58.000000000 +0200
 +++ CMakeLists.txt	2020-10-08 14:15:20.000000000 +0200
-@@ -291,7 +291,7 @@
+@@ -311,7 +311,7 @@
    include_directories(SYSTEM ${LCMS2_INCLUDE_DIR})
  endif()
  

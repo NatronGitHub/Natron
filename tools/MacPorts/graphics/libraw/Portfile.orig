@@ -3,7 +3,7 @@
 PortSystem          1.0
 
 name                libraw
-version             0.20.0
+version             0.20.2
 revision            0
 
 description         Library for RAW image manipulation
@@ -19,15 +19,17 @@ homepage            https://www.libraw.org
 master_sites        ${homepage}/data/
 distname            LibRaw-${version}
 
-checksums           rmd160  ef4c7ee87f133efd87ec9e0c770841588cc19e7a \
-                    sha256  1f0a383da2ce9f409087facd28261decbf6be72cc90c78cd003b0766e4d694a3 \
-                    size    1431412
+checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
+                    sha256  dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6 \
+                    size    1432141
 
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
                     port:jpeg \
                     port:lcms2
+
+use_autoreconf      yes
 
 # src/metadata/tiff.cpp:244: error: integer constant is too large for 'long' type
 # https://trac.macports.org/ticket/60906

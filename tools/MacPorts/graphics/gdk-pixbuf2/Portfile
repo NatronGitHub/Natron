@@ -64,6 +64,12 @@ if {[variant_isset universal]} {
     destroot.env-append    "CC=${configure.cc} ${configure.cc_archflags}"
 }
 
+platform darwin 8 {
+    # meson on Tiger cannot use rpaths, so we workaround with this to find dylib
+    build.env-append       "DYLD_LIBRARY_PATH=${build_dir}/gdk-pixbuf"
+    destroot.env-append    "DYLD_LIBRARY_PATH=${build_dir}/gdk-pixbuf"
+}
+
 variant bundle description {Enable application bundle relocation support} {
     configure.args-append   -Drelocatable=true
 }
