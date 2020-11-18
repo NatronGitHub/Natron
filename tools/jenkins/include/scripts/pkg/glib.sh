@@ -7,7 +7,7 @@
 # https://github.com/GNOME/glib/commit/0beb62f564072f3585762c9c55fe894485993b62#diff-6b790fb09bbee6ca6c8ee1a76c0f49be
 #GLIB_VERSION=2.54.3 # last version before 2.56
 GLIB_VERSION=2.58.3 # last version before meson
-#GLIB_VERSION=2.64.4 # requires meson, but also a recent version of binutils
+#GLIB_VERSION=2.66.2 # requires meson, but also a recent version of binutils
 #if grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
 #    GLIB_VERSION=2.56.1
 #fi

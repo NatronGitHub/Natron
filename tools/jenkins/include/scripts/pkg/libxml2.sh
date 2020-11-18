@@ -22,6 +22,17 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     else
         icu_flag=--without-icu
     fi
+    #  First fix a problem generating the Python3 module with Python-3.9.0 and later: 
+    $GSED -i '/if Py/{s/Py/(Py/;s/)/))/}' python/{types.c,libxml.c}
+    #  To ensure that the Python module can be built by Python-3.9.0, run: 
+    $GSED -i '/_PyVerify_fd/,+1d' python/types.c
+    #  If you are going to run the tests, disable one test that prevents the tests from completing: 
+    $GSED -i 's/test.test/#&/' python/tests/tstLastError.py
+    # If, and only if, you are using ICU-68.1, fix a build breakage caused by that version by running the following command: 
+    # see https://www.mail-archive.com/blfs-dev@lists.linuxfromscratch.org/msg10387.html
+    if [ "${ICU_VERSION:-}" = 68.1 ]; then
+        $GSED -i 's/ TRUE/ true/' encoding.c
+    fi
     # note: python module is necessary for itstool
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --with-python="$SDK_HOME/bin/python3" --with-lzma --with-threads
     make -j${MKJOBS}

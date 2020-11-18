@@ -46,11 +46,11 @@ PKGOS=Linux
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
-        echo "Error: set WORKSPACE. Source distributions will be downloaded to WORKSPACE/src"
+        (>&2 echo "Error: set WORKSPACE. Source distributions will be downloaded to WORKSPACE/src")
         exit 1
     fi
     if [ ! -d "${WORKSPACE}" ]; then
-        echo "Error: directory WORKSPACE/src=$WORKSPACE/src does not exist"
+        (>&2 echo "Error: directory WORKSPACE/src=$WORKSPACE/src does not exist")
         exit 1
     fi
 fi
@@ -86,6 +86,35 @@ if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
 # ./build.sh
 # SDK is installed in $SDK_HOME
 EOF
+    DOCKER_ENV="ENV QTDIR=\"\$QTDIR\" \\
+    LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib\" \\
+    LD_LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    CPATH=\"\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
+    PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
+    PYTHONPATH=\"\$QTDIR/lib/python2.7/site-packages/\" \\
+    PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
+    WORKSPACE=/home \\
+    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
+    GIT_BRANCH=RB-2.3 \\
+    GIT_COMMIT= \\
+    RELEASE_TAG=  \\
+    SNAPSHOT_BRANCH= \\
+    SNAPSHOT_COMMIT= \\
+    UNIT_TESTS=true \\
+    NATRON_LICENSE=GPL \\
+    DISABLE_BREAKPAD=1 \\
+    COMPILE_TYPE=release \\
+    NATRON_DEV_STATUS=RC \\
+    NATRON_CUSTOM_BUILD_USER_NAME= \\
+    NATRON_EXTRA_QMAKE_FLAGS= \\
+    BUILD_NAME=natron_github_RB2 \\
+    DISABLE_RPM_DEB_PKGS=1 \\
+    DISABLE_PORTABLE_ARCHIVE= \\
+    BITS= \\
+    DEBUG_SCRIPTS= \\
+    EXTRA_PYTHON_MODULES_SCRIPT= \\
+    BUILD_NUMBER=0"
     if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
         # - base on i386/centos:${CENTOS}
         # - set the yum archs
@@ -113,6 +142,7 @@ EOF
         fi
         DTSYUM+="yum -y install devtoolset-${DTS} && "
     fi
+    # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
     cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
@@ -121,10 +151,11 @@ ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
 RUN ${PREYUM}${DTSYUM}\\
-    yum -y install gcc gcc-c++ make util-linux git tar wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
+    yum -y install gcc gcc-c++ make util-linux git tar bzip2 wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel perl-version && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
+ENV WORKSPACE=/home
 EOF
     # using Developer Toolset 8:
     #BUILD_LINUX_SDK="/usr/bin/scl enable devtoolset-8 ./build-Linux-sdk.sh"
@@ -543,7 +574,9 @@ build bison # (for SeExpr)
 build flex # (for SeExpr)
 build pkg-config
 build libtool
+build expat # (for perl)
 build gperf # (used by fontconfig) as well as assemblers (yasm and nasm)
+build perl # (required to install XML:Parser perl module used by intltool)
 build autoconf
 build automake
 build yasm
@@ -552,8 +585,6 @@ build gmp # (used by ruby)
 build openssl
 build patchelf
 build gettext
-build expat
-build perl # (required to install XML:Parser perl module used by intltool)
 build intltool
 build zlib
 
@@ -810,35 +841,7 @@ ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
 RUN ${PREYUM}${DTSYUM}yum -y install glibc-devel patch zip unzip mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
-ENV QTDIR="\$QTDIR" \\
-    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
-    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
-    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
-    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \\
-    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \\
-    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \\
-    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH" \\
-    WORKSPACE=/home \\
-    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
-    GIT_BRANCH=RB-2.3 \\
-    GIT_COMMIT= \\
-    RELEASE_TAG=  \\
-    SNAPSHOT_BRANCH= \\
-    SNAPSHOT_COMMIT= \\
-    UNIT_TESTS=true \\
-    NATRON_LICENSE=GPL \\
-    DISABLE_BREAKPAD=1 \\
-    COMPILE_TYPE=release \\
-    NATRON_DEV_STATUS=RC \\
-    NATRON_CUSTOM_BUILD_USER_NAME= \\
-    NATRON_EXTRA_QMAKE_FLAGS= \\
-    BUILD_NAME=natron_github_RB2 \\
-    DISABLE_RPM_DEB_PKGS=1 \\
-    DISABLE_PORTABLE_ARCHIVE= \\
-    BITS= \\
-    DEBUG_SCRIPTS= \\
-    EXTRA_PYTHON_MODULES_SCRIPT= \\
-    BUILD_NUMBER=0
+$DOCKER_ENV
 
 COPY \\
     common.sh \\

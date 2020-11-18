@@ -12,6 +12,9 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.p
     start_build
     untar "$SRC_PATH/$LIBCDR_TAR"
     pushd "libcdr-${LIBCDR_VERSION}"
+    if [ "${ICU_VERSION:-}" = 68.1 ]; then
+        $GSED -i 's/ TRUE/ true/' src/lib/libcdr_utils.cpp
+    fi
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --disable-werror --prefix="$SDK_HOME" --disable-docs --enable-shared
     make -j${MKJOBS}
     make install

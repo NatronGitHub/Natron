@@ -1,0 +1,128 @@
+From 666b787749b5986f7a30453741ca206b6b6ff164 Mon Sep 17 00:00:00 2001
+From: Mathieu Lirzin <mthl@gnu.org>
+Date: Sat, 3 Mar 2018 23:50:10 +0100
+Subject: [PATCH] automake: Don't rely on List::Util to provide 'none'
+
+This change fixes automake bug#30631.
+
+This removes the use of List::Util which is not supported by Perl 5.6,
+by reimplementing the 'none' subroutine.
+
+* lib/Automake/General.pm (none): New subroutine.
+* bin/automake.in (handle_single_transform): Use it.
+* t/pm/General.pl: New test.
+* t/list-of-tests.mk (perl_TESTS): Add it.
+---
+ bin/automake.in         |  3 +--
+ lib/Automake/General.pm | 20 +++++++++++++++++++-
+ t/list-of-tests.mk      |  1 +
+ t/pm/General.pl         | 27 +++++++++++++++++++++++++++
+ 4 files changed, 48 insertions(+), 3 deletions(-)
+ create mode 100644 t/pm/General.pl
+
+diff --git a/bin/automake.in b/bin/automake.in
+index 16fb45182..a52a48951 100644
+--- a/bin/automake.in
++++ b/bin/automake.in
+@@ -73,7 +73,6 @@ use Automake::Wrap 'makefile_wrap';
+ use Automake::Language;
+ use File::Basename;
+ use File::Spec;
+-use List::Util 'none';
+ use Carp;
+ 
+ ## ----------------------- ##
+@@ -1793,7 +1792,7 @@ sub handle_single_transform
+                 my $dname = $derived;
+                 if ($directory ne ''
+                     && option 'subdir-objects'
+-                    && none { $dname =~ /$_$/ } @dup_shortnames)
++                    && none { $dname =~ /$_[0]$/ } @dup_shortnames)
+                   {
+                     # At this point, we don't clear information about what
+                     # parts of $derived are truly file name components.  We can
+diff --git a/lib/Automake/General.pm b/lib/Automake/General.pm
+index 32f5c8db7..aa2de38b8 100644
+--- a/lib/Automake/General.pm
++++ b/lib/Automake/General.pm
+@@ -23,7 +23,7 @@ use File::Basename;
+ use vars qw (@ISA @EXPORT);
+ 
+ @ISA = qw (Exporter);
+-@EXPORT = qw (&uniq $me);
++@EXPORT = qw (&uniq &none $me);
+ 
+ # Variable we share with the main package.  Be sure to have a single
+ # copy of them: using 'my' together with multiple inclusion of this
+@@ -66,5 +66,23 @@ sub uniq (@)
+    return wantarray ? @res : "@res";
+ }
+ 
++# $RES
++# none (&PRED, @LIST)
++# ------------
++# Return 1 when no element in LIST satisfies predicate PRED otherwise 0.
++sub none (&@)
++{
++  my ($pred, @list) = @_;
++  my $res = 1;
++  foreach my $item (@list)
++    {
++      if ($pred->($item))
++        {
++          $res = 0;
++          last;
++        }
++    }
++  return $res;
++}
+ 
+ 1; # for require
+diff --git a/t/list-of-tests.mk b/t/list-of-tests.mk
+index 271bfb573..84dd29af0 100644
+--- a/t/list-of-tests.mk
++++ b/t/list-of-tests.mk
+@@ -54,6 +54,7 @@ t/pm/DisjCon2.pl \
+ t/pm/DisjCon3.pl \
+ t/pm/DisjConditions.pl \
+ t/pm/DisjConditions-t.pl \
++t/pm/General.pl \
+ t/pm/Version.pl \
+ t/pm/Version2.pl \
+ t/pm/Version3.pl \
+diff --git a/t/pm/General.pl b/t/pm/General.pl
+new file mode 100644
+index 000000000..0caefe7cf
+--- /dev/null
++++ b/t/pm/General.pl
+@@ -0,0 +1,27 @@
++# Copyright (C) 2018 Free Software Foundation, Inc.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2, or (at your option)
++# any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <https://www.gnu.org/licenses/>.
++
++use Automake::General;
++
++my $failed = 0;
++
++# Check 'none'.
++my $none_positive = none { $_[0] < 0 } (1, 7, 3, 8, 9);
++$failed = 1 if ($none_positive == 0);
++
++my $none_gt_8 = none { $_[0] >= 8 } (1, 7, 3, 8, 9);
++$failed = 1 if ($none_gt_8 == 1);
++
++exit $failed;
+-- 
+2.16.2
+

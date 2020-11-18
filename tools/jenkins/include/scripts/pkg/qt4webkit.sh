@@ -8,6 +8,18 @@ if download_step; then
 fi
 if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
     start_build
+    if [ -s /etc/redhat-release ] && [ -x /usr/bin/yum ]; then
+        # Most scripts in webkit point to /usr/bin/perl, which is outdated in centos,
+        # and doesn't include some of the default packages.
+        # We could fix all the scripts to use "/usr/bin/env perl" and "/usr/bin/env swig"
+        # instead of "/usr/bin/perl" and "/usr/bin/swig", but for now let's just install
+        # the required packages.
+        LD_LIBRARY_PATH= PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin yum install perl-Digest-MD5 perl-version -y || true
+    fi
+    # Check that the system perl has the required modules installed
+    /usr/bin/perl -Mversion -e 1
+    /usr/bin/perl -MDigest::MD5 -e 1
+
     # install a more recent qtwebkit, see http://www.linuxfromscratch.org/blfs/view/7.9/x/qt4.html
     mkdir "qtwebkit-${QT4WEBKIT_VERSION}"
     pushd "qtwebkit-${QT4WEBKIT_VERSION}"

@@ -23,8 +23,8 @@ if [ -z "${CWD:-}" ]; then
 fi
 
 # Set common paths used across scripts
-if [ -z "${WORKSPACE:-}" ]; then
-    echo "Error: 'WORKSPACE' env is not defined -- required for build"
+if [ -z "${WORKSPACE+x}" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
+    (>&2 echo "Error: 'WORKSPACE' env is not defined -- required for build")
     exit 1
 fi
 TMP_PATH="${WORKSPACE:-}/tmp"
