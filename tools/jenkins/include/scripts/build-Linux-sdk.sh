@@ -77,7 +77,7 @@ if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     GEN_DOCKERFILE=1
 fi
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
-    CENTOS=${CENTOS:-6}
+    CENTOS=${CENTOS:-7}
     cat <<EOF
 # Natron-SDK dockerfile.
 #
@@ -135,9 +135,17 @@ EOF
     # We still need those to build Qt for the installer: gcc gcc-c++ make
     DTSYUM=
     DTSSDK=
+    if [ "${CENTOS:-7}"  -ge 8 ]; then
+        # Enable powertools on CentOS >= 8
+        # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
+        DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && "
+        YUM_DEVEL_EXTRA=""
+    else
+        YUM_DEVEL_EXTR="libXevie-devel libdmx-devel" # only available on CentOS <= 7
+    fi
     if [ -n "${DTS:-}" ]; then
         DTSYUM+="yum -y install centos-release-scl && "
-        if [ "${CENTOS:-}" -ge 7 ]; then
+        if [ "${CENTOS:-7}" -ge 7 ]; then
             DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
         fi
         DTSYUM+="yum -y install devtoolset-${DTS} && "
@@ -151,7 +159,7 @@ ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
 RUN ${PREYUM}${DTSYUM}\\
-    yum -y install gcc gcc-c++ make util-linux git tar bzip2 wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel perl-Digest-MD5 perl-version && \\
+    yum -y install gcc gcc-c++ make util-linux git tar bzip2 wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version ${YUM_DEVEL_EXTRA} && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
