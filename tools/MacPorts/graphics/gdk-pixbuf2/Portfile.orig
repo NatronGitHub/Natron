@@ -6,8 +6,8 @@ PortGroup           meson 1.0
 name                gdk-pixbuf2
 set gname           gdk-pixbuf
 epoch               2
-version             2.40.0
-revision            1
+version             2.42.0
+revision            0
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -23,9 +23,9 @@ long_description    ${description}
 
 master_sites        gnome:sources/${gname}/${branch}/
 
-checksums           rmd160  409fc37578fbf1dea2abaefa715f74280b3ea0ab \
-                    sha256  1582595099537ca8ff3b99c6804350b4c058bb8ad67411bbaae024ee7cead4e6 \
-                    size    5512160
+checksums           rmd160  2d6c1f7da0aa329c8d609c934d186b6f273bf52d \
+                    sha256  73441338d1a901dc7a3940113cb0aac22776b2832f7eab8f8ec7ec5755adaec7 \
+                    size    6510964
 
 depends_build-append \
                     port:pkgconfig \

@@ -50,17 +50,28 @@ depends_lib-append  port:zlib \
 # value will be X.  The type is this variable is integer, so we can
 # use "==" and so forth for comparison.
 
-global MINOR
+global MINOR, MAJOR
+set MAJOR ""
 set MINOR ""
 
 # hopefully the MACOSX_DEPLOYMENT_TARGET exists and is set by now.  if
 # not, last resort (which is not desirable) is to use the os.version.
 
 if {${macosx_deployment_target} ne ""} {
+    set MAJOR [lindex [split ${macosx_deployment_target} "."] 0]
     set MINOR [lindex [split ${macosx_deployment_target} "."] 1]
 } else {
-    set MINOR [expr [lindex [split ${os.version} "."] 0] - 4]
+    # Do we really need this branch still ??
+    if { ${os.major} < 20 } {
+        set MAJOR 10
+        set MINOR [expr [lindex [split ${os.version} "."] 0] - 4]
+    } else {
+        # Bit of a guess, and will not work once we have macOS 12
+        set MAJOR 11
+        set MINOR [expr [lindex [split ${os.version} "."] 0] - 20]
+    }
 }
+ui_debug "Deduced OS MAJOR.MINOR = ${MAJOR}.${MINOR}"
 
 ###############################################
 # Patches are used to both fix compiling on various OS versions, and
@@ -223,7 +234,7 @@ patchfiles-append   \
 # (20) Under 10.8 and 10.9: Patch to fix corelib linking
 
 platform darwin {
-    if {${MINOR} >= 8} {
+    if {${MAJOR} > 10 || ${MINOR} >= 8} {
         patchfiles-append patch-src_corelib_corelib.pro.diff
     }
 }
@@ -270,7 +281,7 @@ patchfiles-append   \
 # https://trac.macports.org/ticket/52332
 
 platform darwin {
-    if {${MINOR} >= 12} {
+    if {${MAJOR} > 10 || ${MINOR} >= 12} {
         patchfiles-append patch-src_gui_kernel_qmime_mac.cpp.diff
     }
 }
@@ -376,35 +387,16 @@ post-extract {
         ${worksrcpath}/src/3rdparty/javascriptcore/VERSION.txt
 }
 
-# fix building with clang > 5.0
-# see https://trac.macports.org/ticket/57751
-patchfiles-append \
-patch-qt4-mac-cpp11-attempts.diff \
-patch-src_3rdparty_javascriptcore_JavaScriptCore_wtf_HashTable_h \
-patch-src_3rdparty_javascriptcore_JavaScriptCore_wtf_MathExtras_h \
-patch-src_3rdparty_javascriptcore_JavaScriptCore_wtf_TypeTraits_h \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_bytecompiler_BytecodeGenerator.cpp \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_runtime_Identifier_cpp \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_runtime_JSONObject_cpp \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_runtime_StringPrototype_cpp \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_wtf_HashSet_h \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_wtf_MathExtras_h \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_wtf_TypeTraits_h \
-patch-src_3rdparty_webkit_Source_JavaScriptCore_wtf_text_AtomicString_cpp \
-patch-src_3rdparty_webkit_Source_WebCore_dom_DocumentMarkerController_cpp \
-patch-src_3rdparty_webkit_Source_WebCore_dom_Element_cpp \
-patch-src_plugins_accessible_widgets_itemviews_cpp \
-patch-src_xmlpatterns_api_qcoloroutput_p_h
-
-# error out if trying to build on a new OSX version (> 10.15).
+# error out if trying to build on a new OSX version (> 11.0).
 
 platform darwin {
-    if {${MINOR} > 15} {
+    if { ( ${MAJOR} == 10 && ${MINOR} > 15 ) ||
+         ( ${MAJOR} == 11 && ${MINOR} > 0 ) } {
         # This project needs to be updated to build with clang++ against libc++
         depends_lib
         depends_run
         pre-fetch {
-            ui_error "$name does not currently build on Mac OS X later than 10.15 'Catalina'."
+            ui_error "$name does not currently build on Mac OS X later than 11.0 'Big Sur'."
             error "unsupported platform"
         }
     }
@@ -425,11 +417,11 @@ set SDK ${configure.sdkroot}
 if {${SDK} eq ""} {
     # set SDK version depending on OS version
     set sdk_version ""
-    if {${MINOR} == 4} {
+    if { ${MAJOR} == 10 && ${MINOR} == 4 } {
         # OSX 10.4 requires an additional 'u'
-        set sdk_version "10.4u"
+        set sdk_version "${MAJOR}.4u"
     } else {
-        set sdk_version "10.${MINOR}"
+        set sdk_version "${MAJOR}.${MINOR}"
     }
     if {[vercmp ${xcodeversion} 4.3] < 0} {
         set SDK ${developer_dir}/SDKs/MacOSX${sdk_version}.sdk
@@ -457,7 +449,7 @@ post-patch {
     # were all patched in (2) above, and can be easily changed or
     # overridden by the user in a project-local qmake .pro script.
 
-    set TARGET "10.${MINOR}"
+    set TARGET "${MAJOR}.${MINOR}"
     foreach fixfile {configure mkspecs/common/g++-macx.conf \
                      mkspecs/common/mac.conf qmake/qmake.pri \
                      src/tools/bootstrap/bootstrap.pro } {
@@ -687,11 +679,11 @@ pre-configure {
 
     # for 10.4 or 10.5 32-bit PPC, build as Carbon only, not Cocoa
 
-    if {${MINOR} == 4} {
+    if {${MAJOR} == 10 && ${MINOR} == 4} {
 
         configure.args-append -carbon
 
-    } elseif {${MINOR} == 5 &&
+    } elseif {${MAJOR} == 10 && ${MINOR} == 5 &&
               [llength ${qt_arch_types}] == 1 &&
               [lsearch -exact ${qt_arch_types} ppc] == 0} {
 
@@ -712,7 +704,7 @@ pre-configure {
         # not building for native arch: disable optimizing qmake
         configure.args-delete -optimized-qmake
 
-    } elseif {${MINOR} == 6 &&
+    } elseif {${MAJOR} == 10 && ${MINOR} == 6 &&
               [llength ${qt_arch_types}] == 1 &&
               [lsearch -exact ${qt_arch_types} x86] == 0} {
 

@@ -196,7 +196,7 @@ EOF
         fi
         WITH_MARIADB=false # may want to test later if it works
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev wget git && rm -rf /var/lib/apt/lists/*"
+RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind && rm -rf /var/lib/apt/lists/*"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
