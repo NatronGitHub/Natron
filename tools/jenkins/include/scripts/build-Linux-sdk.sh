@@ -196,7 +196,7 @@ EOF
         fi
         WITH_MARIADB=false # may want to test later if it works
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind && rm -rf /var/lib/apt/lists/*"
+RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
@@ -398,14 +398,29 @@ function download() {
             fi
             echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
             fail=false
-            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            SET_SSL_CERT_DIR=""
+            if [ -d /etc/ssl/certs ]; then
+                # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
+                SET_SSL_CERT_DIR="export SSL_CERT_DIR=/etc/ssl/certs"
+            fi
+            $SET_SSL_CERT_DIR wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
             if $fail; then
                 echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                 echo "*** downloading $package from $master_site"
                 fail=false
-                wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                $SET_SSL_CERT_DIR wget -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                 if $fail; then
-                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                    echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                    echo "*** downloading $package from $master_site without checking certificate"
+                    fail=false
+                    wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                    if $fail; then
+                        echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                        rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                    else
+                        newdists+=("$package")
+                        newdistsurls+=("$master_site/$package")
+                    fi
                 else
                     newdists+=("$package")
                     newdistsurls+=("$master_site/$package")
