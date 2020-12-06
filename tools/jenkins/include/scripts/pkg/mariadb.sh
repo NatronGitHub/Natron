@@ -1,4 +1,5 @@
 #!/bin/bash
+if $WITH_MARIADB; then
 
 # Install MariaDB (for the Qt mariadb plugin and the python mariadb adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/mariadb.html
@@ -28,4 +29,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [
     popd
     rm -rf "mariadb-${MARIADB_VERSION}"
     end_build
+fi
+
 fi

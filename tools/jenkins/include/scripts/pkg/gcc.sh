@@ -23,7 +23,7 @@ MPFR_SITE="http://www.mpfr.org/mpfr-${MPFR_VERSION}"
 
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gmp.html
 GMP_VERSION=6.2.0 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
-if [ "${DTS:-0}" -le 3 ] && [ "${CENTOS:-7}" -le 8 ]; then
+if [ "${DTS:-0}" -le 3 ] && [ "${CENTOS:-7}" -le 7 ]; then
     GMP_VERSION=6.1.2 # 6.2.0 fails when buiding gcc: requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 fi
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
