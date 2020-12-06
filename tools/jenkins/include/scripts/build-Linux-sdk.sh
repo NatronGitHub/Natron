@@ -187,7 +187,7 @@ ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
 RUN ${PREYUM}${DTSYUM}\\
-    yum -y install gcc gcc-c++ make util-linux git tar bzip2 wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version ${YUM_DEVEL_EXTRA} && \\
+    yum -y install gcc gcc-c++ make util-linux git tar bzip2 wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode and perl-Data-Dumper ${YUM_DEVEL_EXTRA} && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
