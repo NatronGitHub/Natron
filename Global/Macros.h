@@ -367,6 +367,9 @@ CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 #  endif
 #  define GCC_ONLY_DIAG_OFF(x) GCC_DIAG_OFF(x)
 #  define GCC_ONLY_DIAG_ON(x) GCC_DIAG_ON(x)
+// We disable -Wpragmas because GCC doesn't provide an has_warning equivalent
+// and some forks/patches may not following the warning/version association.
+GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagnostic' kind
 #endif
 
 
