@@ -151,6 +151,11 @@ EOF
         # We still need those to build Qt for the installer: gcc gcc-c++ make
         DTSYUM=
         DTSSDK=
+        CENTOS_DEPRECATED=6 # as of 12/2020, all CentOS versions up to 6 are deprecated
+        if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+            # It's not OK to use deprecated CentOS releases for running stuff, it's OK to use it to build stuff
+            PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
+        fi
         if [ "${CENTOS:-7}"  -ge 8 ]; then
             # Enable powertools on CentOS >= 8
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
@@ -164,6 +169,10 @@ EOF
             DTSYUM+="yum -y install centos-release-scl && "
             if [ "${CENTOS:-7}" -ge 7 ]; then
                 DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
+            fi
+            if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+                # It's not OK to use deprecated CentOS releases for running stuff, 
+                DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
             fi
             DTSYUM+="yum -y install devtoolset-${DTS} && "
         fi
