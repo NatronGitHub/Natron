@@ -401,7 +401,7 @@ function download() {
             SET_SSL_CERT_DIR=""
             if [ -d /etc/ssl/certs ]; then
                 # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
-                SET_SSL_CERT_DIR="export SSL_CERT_DIR=/etc/ssl/certs"
+                SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
             fi
             $SET_SSL_CERT_DIR wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
             if $fail; then
