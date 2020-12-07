@@ -43,8 +43,18 @@ set -u # Treat unset variables as an error when substituting.
 
 PKGOS=Linux
 
-# package-specific switches
-WITH_MARIADB=${WITH_MARIADB+true} # doesn't build on CentOS 8 or Ubuntu 18.04 yet
+#############################
+# Package-specific switches #
+#############################
+# WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt and Python components
+if [ -z "${WITH_MARIADB+x}" ]; then
+    # doesn't build on CentOS 8 or Ubuntu 18.04 yet, but default to true for all other cases
+    if [ -n "${UBUNTU+x}" ] || [ "${CENTOS:-7}"  -ge 8 ]; then
+        WITH_MARIADB=false # may want to test later if it works
+    else
+        WITH_MARIADB=true
+    fi
+fi
 
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
@@ -161,7 +171,6 @@ EOF
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
             DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && "
             YUM_DEVEL_EXTRA=""
-            WITH_MARIADB=false
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
         fi
@@ -205,7 +214,6 @@ EOF
             LINUX32=
             ARCH=x86_64
         fi
-        WITH_MARIADB=false # may want to test later if it works
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
         cat <<EOF
