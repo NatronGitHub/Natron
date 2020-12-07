@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ -z "${UBUNTU:-}" ] && [ "${CENTOS:-8}" -le 7 ]; then # breakpad does not compile yet on CentOS 8 or Ubuntu >= 18.04
 
 # Install breakpad tools
 BREAKPAD_GIT=https://github.com/NatronGitHub/breakpad.git # breakpad for server-side or linux dump_syms, not for Natron!
@@ -20,4 +21,6 @@ if build_step && { force_build || { [ ! -s "${SDK_HOME}/bin/dump_syms" ]; }; }; 
     popd
     rm -rf breakpad
     end_build
+fi
+
 fi
