@@ -19,7 +19,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/vpx.pc" ] ||
     pushd "libvpx-$LIBVPX_VERSION"
     # This command corrects ownership and permissions of installed files. 
     sed -i 's/cp -p/cp/' build/make/Makefile
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static --enable-vp8 --enable-vp9 --enable-vp9-highbitdepth --enable-multithread --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static --as=yasm --enable-vp8 --enable-vp9 --enable-vp9-highbitdepth --enable-multithread --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples
     make -j${MKJOBS}
     make install
     popd
