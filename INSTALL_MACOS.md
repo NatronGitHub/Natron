@@ -418,7 +418,7 @@ then type
 make
 ```
 
-This will create all binaries in all the subprojects folders.
+This will create all binaries in all the sub-projects folders.
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
