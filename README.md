@@ -28,9 +28,9 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 ## Features
 
-- 32-bit floating point linear colour processing pipeline.
+- 32-bit floating point linear color processing pipeline.
 
-- Colour management handled by [OpenColorIO](https://opencolorio.org/).
+- Color management handled by [OpenColorIO](https://opencolorio.org/).
 
 - Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
 
