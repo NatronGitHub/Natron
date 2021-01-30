@@ -3,7 +3,7 @@
 
 ---
 
-Natron is a free, open-source (GPLv2 license) video compositing software, similar in functionality to Adobe After Effects, The Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, Microsoft Windows).
+Natron is a free, open-source (GPLv2 license) video compositor, similar in functionality to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, Microsoft Windows).
 
 - Website: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
@@ -13,7 +13,7 @@ Natron is a free, open-source (GPLv2 license) video compositing software, simila
 
 ## Help wanted
 
-Natron is looking for developers and maintainers. You can help developing and maintaining Natron if you have the following skills:
+Natron is looking for developers and maintainers! You can help developing and maintaining Natron if you have the following skills:
 
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
 - [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
@@ -30,7 +30,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - 32-bit floating point linear colour processing pipeline.
 
-- Color management handled by [OpenColorIO](https://opencolorio.org/).
+- Colour management handled by [OpenColorIO](https://opencolorio.org/).
 
 - Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
 
@@ -76,7 +76,7 @@ If you are willing to help, please contact the development team on the [pixls.us
   - User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
   - Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
 
-- Multi-channel compositing: Natron is able to manipulate multi-layered EXR files thanks to OpenImageIO. This is deeply integrated into the workflow and users can choose to work with any layer or channel on any node. New custom layers can also be created.
+- Multi-channel compositing: Natron is able to manipulate multi-layered EXR files thanks to OpenImageIO. Users can choose to work with any layer or channel on any node, new custom layers can also be created.
 
 ## Requirements
 
