@@ -194,10 +194,24 @@ echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >>
 sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
 ```
 
- To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
+To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins, you also need the following:
 
 ```shell
-brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
+brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+# openfx-io still requires SeExpr 2.11, but Homebrew was updated to 3.0.1 on July 6, 2020
+cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
+git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
+brew unlink seexpr
+brew install seexpr
+brew link seexpr
+brew switch seexpr 2.11
+git checkout master Formula/seexpr.rb
+```
+
+If you ever need to get back to using the latest version of seexpr:
+
+```shell
+brew switch seexpr 3.0.1
 ```
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
@@ -217,7 +231,7 @@ brew install fftw
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
-```bash
+```shell
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
 ```
 
