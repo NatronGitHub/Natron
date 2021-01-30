@@ -2,13 +2,13 @@
 
 These are step-by-step instructions to compile Natron on macOS.
 
-macOS 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest version of macOS.
+OS X 10.6 (Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest version of macOS.
 
 ## Official Natron binaries
 
 The official Natron and plugins binaries are built using the section about MacPorts in these instructions to prepare the system, and the `launchBuildMain.sh` build script found in the `tools/jenkins` directory. The script takes care of everything, from checking out sources, to compiling and packaging.
 
-These binaries are built on an macOS 10.9 (Mavericks) virtual machine with [Xcode 6.2](https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.2/Xcode_6.2.dmg). Note that [Mavericks can not be downloaded anymore from the 10.14 (High Sierra) App Store](https://www.macworld.co.uk/how-to/mac-software/download-old-os-x-3629363/), so you will need to use a Mac with an older system (up to 10.13), or look for [alternatives](https://applehint.com/t/download-all-macos-x-10-4-10-14-original/376).
+These binaries are built on an OS X 10.9 (Mavericks) virtual machine with [Xcode 6.2](https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.2/Xcode_6.2.dmg). Note that [Mavericks can not be downloaded anymore from the 10.14 (High Sierra) App Store](https://www.macworld.co.uk/how-to/mac-software/download-old-os-x-3629363/), so you will need to use a Mac with an older system (up to 10.13), or look for [alternatives](https://applehint.com/t/download-all-macos-x-10-4-10-14-original/376).
 
 The build system is based on [MacPorts](https://www.macports.org) with the custom ports found in the `tools/MacPorts` directory in the sources. We are not using [Homebrew](https://brew.sh), because MacPorts is easier to customize.
 
@@ -57,9 +57,9 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 -x11 +no_x11 +bash_completion +no_gnome +quartz +natron
 ```
 
-#### Notes for macOS 10.6 Snow Leopard
+#### Notes for OS X 10.6 (Snow Leopard)
 
-The libtool that comes with macOS 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to substitute it with the libtool provided by MacPort's `cctools` package, using `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+The libtool that comes with OS X 10.6 (Snow Leopard) does not work well with clang-generated binaries, so on this system you may have to substitute it with the libtool provided by MacPort's `cctools` package, using `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 #### Install Ports
 
@@ -174,7 +174,7 @@ brew install cmake keychain sphinx-doc
 brew install --build-from-source qt --with-mysql
 ```
 
-On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
+On macOS 10.12 (Sierra), install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
 
 ```shell
 brew install --build-from-source cartr/qt4/qt --with-mysql
@@ -257,7 +257,7 @@ Then, configure using:
 ./configure -prefix /opt/qt4 -pch -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
 ```
 
-* On macOS >= 10.9 add `-platform unsupported/macx-clang-libc++`
+* On OS X >= 10.9 add `-platform unsupported/macx-clang-libc++`
 * On macOS < 10.9, to compile with clang add `-platform unsupported/macx-clang`
 * If compiling with gcc/g++, make sure that `g++ --version`refers to Apple's gcc >= 4.2 or clang >= 318.0.61
 * To use another openssl than the system (mainly for security reasons), add `-openssl-linked -I /usr/local/Cellar/openssl/1.0.2d_1/include -L /usr/local/Cellar/openssl/1.0.2d_1/lib` (where the path is changed to your openssl installation).
@@ -405,7 +405,7 @@ directory to the top-level source directory, and typing
 qmake -r
 ```
 
-If you get the error `python2-config: command not found` macOS doesn't have python-config linked correctly.  On macOS 10.15 this can be fixed by entering the following to add a symlink for the python2.7.config included with macOS.
+If you get the error `python2-config: command not found` macOS doesn't have python-config linked correctly.  On macOS 10.15 (Catalina) this can be fixed by entering the following to add a symlink for the python2.7.config included with macOS.
 
 ```shell
 sudo ln -s /System/Library/Frameworks/Python.framework/Versions/2.7/bin/python2.7-config /usr/local/bin
