@@ -470,7 +470,7 @@ QTabBar::tab {
 }
 
 QTabBar::tab#DockablePanelTabWidget {
-    min-width: 5ex;
+    min-width: 3em;
 }
 
 QTabBar::tab:hover {
