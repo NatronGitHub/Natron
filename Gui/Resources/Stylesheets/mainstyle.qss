@@ -389,7 +389,7 @@ QComboBox {
 QComboBox QAbstractItemView  {
     border-radius:0px;
     border:0px;
-    /*background: %3; ??? */ 
+    /*background: %3; ??? */
     color: %5;
     background-color: %3;
     selection-color: %1;
@@ -460,8 +460,11 @@ QTabBar::tab {
     background-color: %4; /* the background of non-selected tabs */
     border: 1px solid ;
     border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
-    min-width: 8ex;
-    padding: 2px;
+    min-width: 6em;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 4px;
+    padding-bottom: 2px;
     border-top-right-radius: 5px;
     border-top-left-radius: 5px;
 }
@@ -501,12 +504,12 @@ QTabBar::tab:only-one {
     margin: 0; /* if there is only one tab, we don't want overlapping margins */
 }
 QTabBar::close-button {
-    image: url(:/Resources/Images/closeTab.png);
+    image: url(:/Resources/Images/closeTab.svg);
     subcontrol-position:right;
 }
 
 QTabBar::close-button:hover {
-    image: url(:/Resources/Images/closeTab_hovered.png);
+    image: url(:/Resources/Images/closeTab_hovered.svg);
     subcontrol-position:right;
 }
 
