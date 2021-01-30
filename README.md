@@ -3,7 +3,7 @@
 
 ---
 
-Natron is a free, open-source (GPLv2 license) video compositor, similar in functionality to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, Microsoft Windows).
+Natron is a free, open-source (GPLv2 license) video compositor, similar in functionality to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, and Microsoft Windows).
 
 - Website: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
@@ -52,7 +52,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - Multi-task: Natron can render multiple graphs at the same time. It can also be used as a background process in headless mode.
 
-- Recover easily from bugs: Fear not, Natron's auto-save system detects inactivity and saves your work for yourself. Natron is also able to render frames in a separate process, meaning that any crash in the main application would not crash the ongoing render (and the other way around).
+- Recover easily from bugs: Natron's auto-save system detects inactivity and saves your work for yourself. Natron is also able to render frames in a separate process, meaning that any crash in the main application would not crash the ongoing render (and the other way around).
 
 - Project files saved in XML and easily editable by humans.
 
@@ -107,10 +107,10 @@ On Windows and Linux you can enable software rendering. On Linux, enable the env
 
 Standalone binary distributions of Natron are available for [GNU/Linux](https://sourceforge.net/projects/natron/files/Linux/),
 [Windows](https://sourceforge.net/projects/natron/files/Windows/) and [macOS](https://sourceforge.net/projects/natron/files/OSX/) from [SourceForge](https://sourceforge.net/projects/natron/files) (releases and examples only) or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and three basic sets of OpenFX plugins:
-- [openfx-io](https://github.com/NatronGitHub/openfx-io/),
-- [openfx-misc](https://github.com/NatronGitHub/openfx-misc),
-- [openfx-arena](https://github.com/NatronGitHub/openfx-arena).
-- [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic).
+- [openfx-io](https://github.com/NatronGitHub/openfx-io/)
+- [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
+- [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
+- [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)
 
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 
