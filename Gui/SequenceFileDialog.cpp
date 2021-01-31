@@ -473,7 +473,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _selectionLayout->addWidget(_fileExtensionCombo);
         QObject::connect( _fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)) );
         if (isSequenceDialog) {
-            int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("jpg") );
+            int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("exr") );
             if (idx >= 0) {
                 _fileExtensionCombo->setCurrentIndex(idx);
             }
