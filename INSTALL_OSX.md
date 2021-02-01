@@ -188,7 +188,7 @@ The last command above will take a while, since it builds from sources, and shou
 
 If you ever need to get back to using the latest version of seexpr:
 
-	rm -rf /usr/local/Cellar/seexpr/2.11
+    rm -rf /usr/local/Cellar/seexpr/2.11
     brew links seexpr
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
