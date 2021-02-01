@@ -139,18 +139,18 @@ sudo port -v -N install fftw-3
 
 ### Homebrew
 
-Install homebrew from <http://brew.sh/>
+Install Homebrew from <http://brew.sh/>
 
-Qt 4 is not supported in homebrew. Please enable the community-maintained recipe using:
+Qt 4 is not supported in Homebrew. Please enable the community-maintained recipe using:
 
 ```Shell
 brew tap cartr/qt4
 brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2
 ```
 
-Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
+Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 
-Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
+Patching a Homebrew recipe is explained in the [Homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
 ```Shell
 brew edit cartr/qt4/qt@4
@@ -181,7 +181,7 @@ On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra
 brew install --build-from-source cartr/qt4/qt --with-mysql
 ```
 
-Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
+Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the Homebrew core):
 
 ```Shell
 brew install pyside@1.2 pyside-tools@1.2
@@ -203,12 +203,12 @@ brew unlink openimageio || true;
 brew unlink opencolorio || true;
 brew unlink seexpr || true;
 cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
-# fetch OCIO 1.1.1 (and correspinding OIIO version, which builds against it)
+# fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
 # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
 git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
 # f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
 git checkout f772cb9a399726fd5f3ba859c8f315988afb3d60 Formula/openimageio.rb;
-# openfx-io still requires SeExpr 2.11, but homebrew was updated to 3.0.1 on July 6, 2020
+# openfx-io still requires SeExpr 2.11, but Homebrew updated it to 3.0.1 on July 6, 2020
 git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
 brew install opencolorio;
 brew link opencolorio;
@@ -247,11 +247,11 @@ this in your .bash_profile):
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
 ```
 
-### Installing manually (outside of MacPorts or homebrew) a patched Qt to avoid stack overflows
+### Installing manually (outside of MacPorts or Homebrew) a patched Qt to avoid stack overflows
 
-The following is not necessary if a patched Qt was already installed by the standard MacPorts or homebrew procedures above.
+The following is not necessary if a patched Qt was already installed by the standard MacPorts or Homebrew procedures above.
 
-See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
+See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
 
 ```Shell
 wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
@@ -440,7 +440,7 @@ qmake -r CONFIG+=debug
 
 It is possible to build Natron using clang (version 3.8 is required,
 version 9.0 is recommended) with OpenMP support on
-MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
+MacPorts (or Homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
 First, install clang 9.0. On OS X 10.9 and later with MacPorts, simply execute:
@@ -449,7 +449,7 @@ First, install clang 9.0. On OS X 10.9 and later with MacPorts, simply execute:
 sudo port -v install clang-9.0
 ```
 
-Or with homebrew:
+Or with Homebrew:
 
 ```Shell
 brew install llvm
@@ -465,7 +465,7 @@ Then, configure using the following qmake command on MacPorts:
 /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
 ```
 
-Or on homebrew:
+Or on Homebrew:
 
 ```Shell
 env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
@@ -613,10 +613,10 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
 
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/NatronGitHub/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/NatronGitHub/openfx-io/blob/master/.travis.yml).
+Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using Homebrew ([openfx-misc/.travis.yml](https://github.com/NatronGitHub/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/NatronGitHub/openfx-io/blob/master/.travis.yml).
 
 
-You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:
+You can install [TuttleOFX](http://www.tuttleofx.org/) using Homebrew:
 
 ```Shell
 brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video

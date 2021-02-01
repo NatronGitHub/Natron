@@ -378,7 +378,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
         brew unlink opencolorio || true;
         brew unlink seexpr || true;
         pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
-        # fetch OCIO 1.1.1 (and correspinding OIIO version, which builds against it)
+        # fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
         # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
         git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
         # f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
