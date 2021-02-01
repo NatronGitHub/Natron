@@ -1,9 +1,9 @@
-Instructions for installing Natron from sources on OS X
+Instructions for installing Natron from sources on macOS
 =======================================================
 
-These are step-by-step instructions to compile Natron on OS X.
+These are step-by-step instructions to compile Natron on macOS.
 
-OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest OS X.
+OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest macOS (although a few Homebrew casks have to be downgraded).
 
 ## Official Natron binaries
 
