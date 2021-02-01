@@ -35,20 +35,28 @@ Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 You need an up to date MacPorts version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
-    sudo port selfupdate
-    sudo port upgrade outdated
+```Shell
+sudo port selfupdate
+sudo port upgrade outdated
+```
 
 Then, you should add the "ports" provided by Natron. Edit as root the file `/opt/local/etc/macports/sources.conf` (as in `sudo nano /opt/local/etc/macports/sources.conf`) and add the following line at the beginning, with the path to the Natron sources (yes, there are three slashes after `file:`):
 
-    file:///Users/your_username/path_to_sources/Natron/tools/MacPorts
+```
+file:///Users/your_username/path_to_sources/Natron/tools/MacPorts
+```
 
 Then, create the index file:
 
-    (cd /Users/your_username/path_to_sources/Natron/tools/MacPorts; portindex)
+```Shell
+(cd /Users/your_username/path_to_sources/Natron/tools/MacPorts; portindex)
+```
 
 It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
 
-    -x11 +no_x11 +bash_completion +no_gnome +quartz +natron
+```
+-x11 +no_x11 +bash_completion +no_gnome +quartz +natron
+```
 
 #### Notes for OS X 10.6 Snow Leopard
 
@@ -58,20 +66,24 @@ The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang
 
 Now, use libjpeg-turbo instead of jpeg:
 
-    sudo port -f uninstall jpeg
-    sudo port -v -N install libjpeg-turbo
+```Shell
+sudo port -f uninstall jpeg
+sudo port -v -N install libjpeg-turbo
+```
     
 And finally install the required packages:
 
-    sudo port -v -N install opencolorio -quartz -python27
-    sudo port -v -N install qt4-mac boost cairo expat
-    sudo port -v -N install gsed gawk coreutils findutils
-    sudo port -v -N install cmake keychain
-    sudo port -v -N install py27-pyside py37-sphinx py37-sphinx_rtd_theme
-    sudo port select --set python python27
-    sudo port select --set python2 python27
-    sudo port select --set python3 python37
-    sudo port select --set sphinx py37-sphinx
+```Shell
+sudo port -v -N install opencolorio -quartz -python27
+sudo port -v -N install qt4-mac boost cairo expat
+sudo port -v -N install gsed gawk coreutils findutils
+sudo port -v -N install cmake keychain
+sudo port -v -N install py27-pyside py37-sphinx py37-sphinx_rtd_theme
+sudo port select --set python python27
+sudo port select --set python2 python27
+sudo port select --set python3 python37
+sudo port select --set sphinx py37-sphinx
+```
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -96,28 +108,34 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v -N install x264
-    sudo port -v -N install libvpx +highbitdepth
-    sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
-    sudo port -v -N install libraw +gpl2
-    sudo port -v -N install openexr
-    sudo port -v -N install opencolorio -quartz -python27
-    sudo port -v -N install openimageio +natron
-    sudo port -v -N install seexpr
+```Shell
+sudo port -v -N install x264
+sudo port -v -N install libvpx +highbitdepth
+sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+sudo port -v -N install libraw +gpl2
+sudo port -v -N install openexr
+sudo port -v -N install opencolorio -quartz -python27
+sudo port -v -N install openimageio +natron
+sudo port -v -N install seexpr
+```
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    sudo port -v -N install librsvg
-    sudo port -v -N install ImageMagick +natron
-    sudo port -v -N install poppler
-    sudo port -v -N install librevenge
-    sudo port -v -N install libcdr-0.1
-    sudo port -v -N install libzip
-    sudo port -v -N install sox
+```Shell
+sudo port -v -N install librsvg
+sudo port -v -N install ImageMagick +natron
+sudo port -v -N install poppler
+sudo port -v -N install librevenge
+sudo port -v -N install libcdr-0.1
+sudo port -v -N install libzip
+sudo port -v -N install sox
+```
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
-    sudo port -v -N install fftw-3
+```Shell
+sudo port -v -N install fftw-3
+```
 
 ### Homebrew
 
@@ -125,86 +143,109 @@ Install homebrew from <http://brew.sh/>
 
 Qt 4 is not supported in homebrew. Please enable the community-maintained recipe using:
 
-    brew tap cartr/qt4
-    brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2
+```Shell
+brew tap cartr/qt4
+brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2
+```
 
 Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit cartr/qt4/qt@4
+```Shell
+brew edit cartr/qt4/qt@4
+```
 
 and before the line that starts with `head`, add the following code:
 
-      patch :p0 do
-        url "https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff"
-        sha256 "477630235eb5ee34ed04e33f156625d1724da290e7a66b745611fb49d17f1347"
-      end
-
+```
+  patch :p0 do
+    url "https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff"
+    sha256 "477630235eb5ee34ed04e33f156625d1724da290e7a66b745611fb49d17f1347"
+  end
+```
 
 Install libraries:
 
-    brew install cairo expat
-    brew install gnu-sed gawk coreutils findutils
-    brew install cmake keychain sphinx-doc
-    /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
-    brew install --build-from-source qt --with-mysql
+```Shell
+brew install cairo expat
+brew install gnu-sed gawk coreutils findutils
+brew install cmake keychain sphinx-doc
+/usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
+brew install --build-from-source qt --with-mysql
+```
 
 On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
 
-    brew install --build-from-source cartr/qt4/qt --with-mysql
+```Shell
+brew install --build-from-source cartr/qt4/qt --with-mysql
+```
 
 Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
 
-    brew install pyside@1.2 pyside-tools@1.2
+```Shell
+brew install pyside@1.2 pyside-tools@1.2
+```
 
 The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
-    mkdir -p ~/Library/Python/2.7/lib/python/site-packages
-    echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
-    sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
+```Shell
+mkdir -p ~/Library/Python/2.7/lib/python/site-packages
+echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
+sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
+```
 
  To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
 
-    brew install ilmbase openexr freetype fontconfig ffmpeg
-    brew unlink openimageio || true;
-    brew unlink opencolorio || true;
-    brew unlink seexpr || true;
-    cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
-    # fetch OCIO 1.1.1 (and correspinding OIIO version, which builds against it)
-    # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
-    git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
-    # f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
-    git checkout f772cb9a399726fd5f3ba859c8f315988afb3d60 Formula/openimageio.rb;
-    # openfx-io still requires SeExpr 2.11, but homebrew was updated to 3.0.1 on July 6, 2020
-    git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
-    brew install opencolorio;
-    brew link opencolorio;
-    brew install openimageio;
-    brew link openimageio;
-    brew install seexpr
-    brew link seexpr
-    git checkout master Formula/seexpr.rb
+```Shell
+brew install ilmbase openexr freetype fontconfig ffmpeg
+brew unlink openimageio || true;
+brew unlink opencolorio || true;
+brew unlink seexpr || true;
+cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
+# fetch OCIO 1.1.1 (and correspinding OIIO version, which builds against it)
+# 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
+git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
+# f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
+git checkout f772cb9a399726fd5f3ba859c8f315988afb3d60 Formula/openimageio.rb;
+# openfx-io still requires SeExpr 2.11, but homebrew was updated to 3.0.1 on July 6, 2020
+git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
+brew install opencolorio;
+brew link opencolorio;
+brew install openimageio;
+brew link openimageio;
+brew install seexpr
+brew link seexpr
+git checkout master Formula/seexpr.rb
+```
 
 If you ever need to get back to using the latest version of seexpr:
 
-    rm -rf /usr/local/Cellar/seexpr/2.11
-    brew links seexpr
+```Shell
+rm -rf /usr/local/Cellar/seexpr/2.11
+brew link seexpr
+```
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
-    brew install librsvg poppler librevenge libcdr libzip sox
-    brew uninstall imagemagick
-    brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
+```Shell
+brew install librsvg poppler librevenge libcdr libzip sox
+brew uninstall imagemagick
+brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
+```
 
 To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of plugin, you also need the following:
 
-    brew install fftw
+```Shell
+brew install fftw
+```
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
+```Shell
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
+```
 
 ### Installing manually (outside of MacPorts or homebrew) a patched Qt to avoid stack overflows
 
@@ -212,17 +253,21 @@ The following is not necessary if a patched Qt was already installed by the stan
 
 See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
 
-    wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
-    tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
-    cd qt-everywhere-opensource-src-4.8.7
-    wget https://raw.githubusercontent.com/Homebrew/patches/480b7142c4e2ae07de6028f672695eb927a34875/qt/el-capitan.patch
-    patch -p1 < el-capitan.patch
-    wget https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff
-    patch -p0 < patch-qthread-stacksize.diff
+```Shell
+wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
+tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
+cd qt-everywhere-opensource-src-4.8.7
+wget https://raw.githubusercontent.com/Homebrew/patches/480b7142c4e2ae07de6028f672695eb927a34875/qt/el-capitan.patch
+patch -p1 < el-capitan.patch
+wget https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff
+patch -p0 < patch-qthread-stacksize.diff
+```
 
 Then, configure using:
 
-    ./configure -prefix /opt/qt4 -pch -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
+```Shell
+./configure -prefix /opt/qt4 -pch -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
+```
 
 * On OS X >= 10.9 add `-platform unsupported/macx-clang-libc++`
 * On OS X < 10.9, to compile with clang add `-platform unsupported/macx-clang`
@@ -231,26 +276,36 @@ Then, configure using:
 
 Then, compile using:
 
-    make
+```Shell
+make
+```
 
 And install (after making sure `/opt/qt4` is user-writable) using:
 
-    make install
+```Shell
+make install
+```
 
 
 ## Checkout sources
 
-    git clone https://github.com/NatronGitHub/Natron.git
-    cd Natron
+```Shell
+git clone https://github.com/NatronGitHub/Natron.git
+cd Natron
+```
 
 If you want to compile the bleeding edge version, use the master
 branch:
 
-    git checkout master
+```Shell
+git checkout master
+```
 
 Update the submodules:
 
-    git submodule update -i --recursive
+```Shell
+git submodule update -i --recursive
+```
 
 ### Download OpenColorIO-Configs
 
@@ -258,8 +313,10 @@ In the past, OCIO configs were a submodule, though due to the size of the reposi
 to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
-    mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
+```Shell
+curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
+mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
+```
 
 
 ## Add the config.pri file
@@ -357,17 +414,23 @@ EOF
 You can generate a makefile by opening a Terminal, setting the current
 directory to the toplevel source directory, and typing
 
-    qmake -r
+```Shell
+qmake -r
+```
 
 then type
 
-    make
+```Shell
+make
+```
 
 This will create all binaries in all the subprojects folders.
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-    qmake -r CONFIG+=debug
+```Shell
+qmake -r CONFIG+=debug
+```
 
 * You can also enable logging by adding CONFIG+=log
 
@@ -382,11 +445,15 @@ tracker and in CImg-based plugins.
 
 First, install clang 9.0. On OS X 10.9 and later with MacPorts, simply execute:
 
-    sudo port -v install clang-9.0
+```Shell
+sudo port -v install clang-9.0
+```
 
 Or with homebrew:
 
-    brew install llvm
+```Shell
+brew install llvm
+```
 
 On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-9.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
 
@@ -394,28 +461,38 @@ The libtool that comes with OS X 10.6 does not work well with clang-generated bi
 
 Then, configure using the following qmake command on MacPorts:
 
-    /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
+```Shell
+/opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
+```
 
 Or on homebrew:
 
-	env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
+```Shell
+env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
+```
 
 To build the plugins, use the following command-line:
 
-    make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1
+```Shell
+make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1
+```
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
-    OSMESA_PATH=/opt/osmesa
-    LLVM_PATH=/opt/llvm
-    make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+```Shell
+OSMESA_PATH=/opt/osmesa
+LLVM_PATH=/opt/llvm
+make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+```
 
 ## Build on Xcode
 
 Follow the instruction of build but
 add -spec macx-xcode to the qmake call command:
 
-    qmake -r -spec macx-xcode
+```Shell
+qmake -r -spec macx-xcode
+```
 
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
@@ -494,11 +571,15 @@ PATH (see <http://www.emacswiki.org/emacs/EmacsApp> for instructions).
 
 On MacPorts, this would look like:
 
-    launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+```Shell
+launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+```
 
 ## Testing
 
-    (cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+```Shell
+(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
+```
 
 ## Generating Python bindings
 
@@ -537,8 +618,10 @@ Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io)
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:
 
-    brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
-    brew install tuttleofx
+```Shell
+brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
+brew install tuttleofx
+```
 
 
 Or have a look at the [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX).
