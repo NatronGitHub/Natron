@@ -378,11 +378,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
         git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb;
         brew unlink seexpr || true;
         brew install seexpr;
-<<<<<<< Updated upstream
-        brew link seexpr@2.11;
-=======
         brew link seexpr;
->>>>>>> Stashed changes
         popd;
 
         # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
