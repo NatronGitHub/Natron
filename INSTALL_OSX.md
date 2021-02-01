@@ -172,12 +172,13 @@ The last command above will take a while, since it builds from sources, and shou
     git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
     brew unlink seexpr
     brew install seexpr
-    brew link seexpr@2.11
+    brew link seexpr
     git checkout master Formula/seexpr.rb
 
 If you ever need to get back to using the latest version of seexpr:
 
-    brew link seexpr@3.0.1
+	rm -rf /usr/local/Cellar/seexpr/2.11
+    brew links seexpr
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
