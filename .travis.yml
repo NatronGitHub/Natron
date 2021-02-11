@@ -151,7 +151,7 @@ matrix:
       # we use macOS 10.14 (Mojave) or 10.13 (High Sierra) to get the precompiled
       # pyside bottles from https://github.com/cartr/homebrew-qt4
       # see https://docs.travis-ci.com/user/reference/osx/#macos-version
-      osx_image: xcode10.1 # 10.1 for High Sierra, 11.3 for Mojave
+      osx_image: xcode11.3 # 10.1 for High Sierra, 11.3 for Mojave
       compiler: clang
   exclude:
     - os: osx
