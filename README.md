@@ -105,8 +105,7 @@ On Windows and Linux you can enable software rendering. On Linux, enable the env
 
 ### Binary distribution
 
-Standalone binary distributions of Natron are available for [GNU/Linux](https://sourceforge.net/projects/natron/files/Linux/),
-[Windows](https://sourceforge.net/projects/natron/files/Windows/) and [macOS](https://sourceforge.net/projects/natron/files/OSX/) from [SourceForge](https://sourceforge.net/projects/natron/files) (releases and examples only) or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and three basic sets of OpenFX plugins:
+Standalone binary distributions of Natron are available for GNU/Linux, Windows, and macOS on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
 - [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
@@ -124,13 +123,11 @@ There are instructions for building Natron and the basic plugins from source is 
 
 This documentation may be slightly outdated, so do not hesitate to submit updated build instructions, especially for the various GNU/Linux distributions.
 
-### Automatic build scripts
+### Automatic build scripts & other development tools
 
-There are automatic build scripts for [GNU/Linux](tools/linux), [macOS](tools/MacOSX), and [Windows](tools/Windows), which are used to build the binary distributions and the snapshots.
+These can be found in [tools/README.md](tools/README.MD)
 
-These scripts are run on virtual machines running a specific version of each operating system, and setting these up is more complicated than for the basic builds described above.
-
-There is some documentation, which is probably outdated, for [GNU/Linux](tools/linux/README.md), [macOS](tools/MacOSX/README.md), and [Windows](tools/WindowsREADME.md).
+These scripts run on virtual machines running a specific operating system, setting these up is more complicated than the basic build process linked above.
 
 ## Contributing
 
