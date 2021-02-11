@@ -373,10 +373,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw libheif openimageio openvdb;
-        brew unlink openimageio || true;
-        brew unlink opencolorio || true;
-        brew unlink seexpr || true;
+        brew install ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb;
         pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
         # fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
         # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000

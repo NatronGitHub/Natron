@@ -106,6 +106,35 @@ addons:
     build_command: "tools/travis/build.sh"
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
+  homebrew:
+    packages:
+    - xctool
+    - python@2
+    - boost
+    - giflib
+    - jpeg
+    - libpng
+    - libtiff
+    - libxml2
+    - openssl
+    - pcre
+    - readline
+    - sqlite
+    - expat
+    - cairo
+    - gnu-sed
+    - glew
+    - openssl
+    - ilmbase
+    - openexr
+    - freetype
+    - fontconfig
+    - ffmpeg
+    - openjpeg
+    - libraw
+    - libheif
+    - openvdb
+    update: false
 
 matrix:
   include:
