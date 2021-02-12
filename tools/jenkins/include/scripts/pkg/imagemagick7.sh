@@ -2,7 +2,7 @@
 
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.10-28
+MAGICK7_VERSION=7.0.10-38
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 fi
@@ -27,7 +27,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magi
         # 6.9.10-80 and later fail on CentOS 6 with "undefined reference to `aligned_alloc'"
         MAGICK_CFLAGS="$MAGICK_CFLAGS -UMAGICKCORE_HAVE_STDC_ALIGNED_ALLOC"
     fi
-    env CFLAGS="$BF $MAGICK_CFLAGS" CXXFLAGS="$BF $MAGICK_CFLAGS" ./configure --prefix=$SDK_HOME/magick7 --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --without-pango --with-png --without-rsvg --without-tiff --without-webp --without-xml --with-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules --with-libheif ${MAGICK_CL_OPT:-}
+    env CFLAGS="$BF $MAGICK_CFLAGS" CXXFLAGS="$BF $MAGICK_CFLAGS" ./configure --prefix=$SDK_HOME/magick7 --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --without-pango --with-png --without-rsvg --without-tiff --without-webp --without-xml --with-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules --with-libheif --enable-zero-configuration ${MAGICK_CL_OPT:-}
     make -j${MKJOBS}
     make install
     popd

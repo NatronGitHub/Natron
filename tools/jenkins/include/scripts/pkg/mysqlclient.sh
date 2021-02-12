@@ -1,4 +1,5 @@
 #!/bin/bash
+if $WITH_MARIADB; then
 
 # Install mysqlclient (MySQL/MariaDB connector)
 # mysqlclient is a fork of MySQL-python. It adds Python 3 support and fixed many bugs.
@@ -15,4 +16,6 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/lib/python${PY3_VERSION_SH
     start_build
     ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --no-binary mysqlclient mysqlclient=="${MYSQLCLIENT_VERSION}"
     end_build
+fi
+
 fi

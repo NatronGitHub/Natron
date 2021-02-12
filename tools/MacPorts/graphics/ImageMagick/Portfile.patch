@@ -1,5 +1,5 @@
---- Portfile.orig	2020-01-15 16:17:56.000000000 -0800
-+++ Portfile	2020-02-08 09:09:35.000000000 -0800
+--- Portfile.orig	2020-10-27 16:13:30.000000000 -0700
++++ Portfile	2020-10-28 17:24:50.000000000 -0700
 @@ -48,7 +48,7 @@
                              port:djvulibre \
                              port:xz \
@@ -9,18 +9,17 @@
                              port:lcms2 \
                              port:libpng \
                              port:libraw \
-@@ -67,6 +67,10 @@
+@@ -67,6 +67,9 @@
                              port:libxml2 \
                              port:libheif
  
 +patchfiles \
-+    noclparser.patch \
 +    ImageMagick-6.9.10-gimp210.diff
 +
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -86,11 +90,13 @@
+@@ -83,11 +86,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -34,7 +33,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -123,6 +129,77 @@
+@@ -120,6 +125,77 @@
      }
  }
  
@@ -112,7 +111,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -130,6 +207,23 @@
+@@ -127,6 +203,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -136,7 +135,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -164,6 +258,11 @@
+@@ -161,6 +254,11 @@
  
  default_variants            +x11
  

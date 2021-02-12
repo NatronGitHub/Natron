@@ -1,17 +1,17 @@
---- Portfile.orig	2020-09-03 15:18:15.000000000 -0700
-+++ Portfile	2020-09-03 15:21:13.000000000 -0700
+--- Portfile.orig	2020-11-16 10:27:28.000000000 -0800
++++ Portfile	2020-11-16 10:28:03.000000000 -0800
 @@ -3,8 +3,8 @@
  PortSystem          1.0
  
  name                libraw
--version             0.20.0
+-version             0.20.2
 -revision            0
 +version             0.18.13
 +set demosaicversion 0.18.8
  
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
-@@ -12,37 +12,58 @@
+@@ -12,39 +12,58 @@
  
  categories          graphics
  platforms           darwin
@@ -23,9 +23,9 @@
  master_sites        ${homepage}/data/
  distname            LibRaw-${version}
  
--checksums           rmd160  ef4c7ee87f133efd87ec9e0c770841588cc19e7a \
--                    sha256  1f0a383da2ce9f409087facd28261decbf6be72cc90c78cd003b0766e4d694a3 \
--                    size    1431412
+-checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
+-                    sha256  dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6 \
+-                    size    1432141
 +checksums \
 +    LibRaw-${version}${extract.suffix} \
 +        rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
@@ -49,6 +49,8 @@
 +                    path:lib/libjpeg.dylib:jpeg \
                      port:lcms2
  
+-use_autoreconf      yes
+-
 -# src/metadata/tiff.cpp:244: error: integer constant is too large for 'long' type
 -# https://trac.macports.org/ticket/60906
 -compiler.blacklist-append *gcc-4.0 *gcc-4.2

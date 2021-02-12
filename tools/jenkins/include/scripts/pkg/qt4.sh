@@ -17,8 +17,10 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     # also install the sqlite plugin.
     # link with the SDK's openssl
     QT_CONF+=( "-no-webkit" "-plugin-sql-sqlite" "-system-sqlite" "-openssl-linked" )
-    # Add MariaDB/MySQL plugin
-    QT_CONF+=( "-plugin-sql-mysql" )
+    if $WITH_MARIADB; then # mariadb doesn't build yet on CentOS8
+        # Add MariaDB/MySQL plugin
+        QT_CONF+=( "-plugin-sql-mysql" )
+    fi
     # Add PostgresSQL plugin
     QT_CONF+=( "-plugin-sql-psql" )
     # icu must be enabled in Qt, since it is enabled in libxml2
@@ -339,6 +341,17 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     #if version_gt "$SYSTEM_GCC_VERSION" 8.99; then
 	#    QT_CONF+=("-no-javascript-jit")
     #fi
+
+    # Build without precompiled headers, see https://github.com/mxe/mxe/issues/1103
+    # Error message is:
+    # cc1: error: one or more PCH files were found, but they were invalid
+    # cc1: error: use -Winvalid-pch for more information
+    # cc1: fatal error: .pch/release-static/QtCore: No such file or directory
+    # Needed at least on CentOS8
+    if [ "${CENTOS:-0}" = 8 ]; then # may we should have a switch on GCC_VERSION instead?
+        patch -Np1 -i "$INC_PATH"/patches/Qt/qt-no-pch.patch
+        QT_CONF+=("-no-pch")
+    fi
 
     #QT_SRC="$(pwd)/src"
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT4PREFIX" "${QT_CONF[@]}" -shared

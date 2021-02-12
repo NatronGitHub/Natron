@@ -578,7 +578,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure https://bootstrap.pypa.io/2.7/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi

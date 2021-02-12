@@ -33,6 +33,10 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
+#include <boost/version.hpp>
+#if BOOST_VERSION == 107400
+#include <boost/serialization/library_version_type.hpp> // fix issue with boost 1.74.0
+#endif
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>

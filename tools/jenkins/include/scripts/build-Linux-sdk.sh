@@ -43,14 +43,27 @@ set -u # Treat unset variables as an error when substituting.
 
 PKGOS=Linux
 
+#############################
+# Package-specific switches #
+#############################
+# WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt and Python components
+if [ -z "${WITH_MARIADB+x}" ]; then
+    # doesn't build on CentOS 8 or Ubuntu 18.04 yet, but default to true for all other cases
+    if [ -n "${UBUNTU+x}" ] || [ "${CENTOS:-7}"  -ge 8 ]; then
+        WITH_MARIADB=false # may want to test later if it works
+    else
+        WITH_MARIADB=true
+    fi
+fi
+
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
-        echo "Error: set WORKSPACE. Source distributions will be downloaded to WORKSPACE/src"
+        (>&2 echo "Error: set WORKSPACE. Source distributions will be downloaded to WORKSPACE/src")
         exit 1
     fi
     if [ ! -d "${WORKSPACE}" ]; then
-        echo "Error: directory WORKSPACE/src=$WORKSPACE/src does not exist"
+        (>&2 echo "Error: directory WORKSPACE/src=$WORKSPACE/src does not exist")
         exit 1
     fi
 fi
@@ -77,7 +90,6 @@ if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     GEN_DOCKERFILE=1
 fi
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
-    CENTOS=${CENTOS:-6}
     cat <<EOF
 # Natron-SDK dockerfile.
 #
@@ -86,49 +98,36 @@ if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
 # ./build.sh
 # SDK is installed in $SDK_HOME
 EOF
-    if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
-        # - base on i386/centos:${CENTOS}
-        # - set the yum archs
-        # - install util-linux to get the "setarch" executable
-        DOCKER_BASE="i386/centos:${CENTOS}"
-        LINUX32="setarch i686"
-        PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
-        ARCH=i686
-    else
-        DOCKER_BASE="centos:${CENTOS}"
-        LINUX32=
-        PREYUM=
-        ARCH=x86_64
-    fi
-    # Also install a recent Developer Toolset to get C++11 support while building GCC
-    # yum -y install centos-release-scl && \\
-    # yum -y install devtoolset-8-gcc devtoolset-8-binutils devtoolset-8-gcc-c++ devtoolset-8-make && \\
-    # We still need those to build Qt for the installer: gcc gcc-c++ make
-    DTSYUM=
-    DTSSDK=
-    if [ -n "${DTS:-}" ]; then
-        DTSYUM+="yum -y install centos-release-scl && "
-        if [ "${CENTOS:-}" -ge 7 ]; then
-            DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
-        fi
-        DTSYUM+="yum -y install devtoolset-${DTS} && "
-    fi
-    cat <<EOF
-FROM $DOCKER_BASE as intermediate
-MAINTAINER https://github.com/NatronGitHub/Natron
-WORKDIR /home
-ARG SDK=$SDK_HOME
-ARG ARCH=$ARCH
-ARG SETARCH="$LINUX32"
-RUN ${PREYUM}${DTSYUM}\\
-    yum -y install gcc gcc-c++ make util-linux git tar wget patch zip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
-    yum clean all
-COPY include/patches/ include/patches/
-COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
-EOF
-    # using Developer Toolset 8:
-    #BUILD_LINUX_SDK="/usr/bin/scl enable devtoolset-8 ./build-Linux-sdk.sh"
-    # Using the default toolset (i.e. gcc 4.4.7 on CentOS6, which does not support C++11)
+    DOCKER_ENV="ENV QTDIR=\"\$QTDIR\" \\
+    LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib\" \\
+    LD_LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    CPATH=\"\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
+    PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
+    PYTHONPATH=\"\$QTDIR/lib/python2.7/site-packages/\" \\
+    PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
+    WORKSPACE=/home \\
+    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
+    GIT_BRANCH=RB-2.3 \\
+    GIT_COMMIT= \\
+    RELEASE_TAG=  \\
+    SNAPSHOT_BRANCH= \\
+    SNAPSHOT_COMMIT= \\
+    UNIT_TESTS=true \\
+    NATRON_LICENSE=GPL \\
+    DISABLE_BREAKPAD=1 \\
+    COMPILE_TYPE=release \\
+    NATRON_DEV_STATUS=RC \\
+    NATRON_CUSTOM_BUILD_USER_NAME= \\
+    NATRON_EXTRA_QMAKE_FLAGS= \\
+    BUILD_NAME=natron_github_RB2 \\
+    DISABLE_RPM_DEB_PKGS=1 \\
+    DISABLE_PORTABLE_ARCHIVE= \\
+    BITS= \\
+    DEBUG_SCRIPTS= \\
+    EXTRA_PYTHON_MODULES_SCRIPT= \\
+    BUILD_NUMBER=0"
+
     BUILD_LINUX_SDK="./build-Linux-sdk.sh"
     if [ -n "${DTS:-}" ]; then
         BUILD_LINUX_SDK="DTS=${DTS} $BUILD_LINUX_SDK"
@@ -136,10 +135,101 @@ EOF
     if [ -n "${CENTOS:-}" ]; then
         BUILD_LINUX_SDK="CENTOS=${CENTOS} $BUILD_LINUX_SDK"
     fi
-    ## older version:
-    #RUN git clone https://github.com/NatronGitHub/Natron.git
-    #WORKDIR /home/Natron/tools/jenkins
-    #BUILD_LINUX_SDK=./include/scripts/build-Linux-sdk.sh
+    if [ -n "${UBUNTU:-}" ]; then
+        BUILD_LINUX_SDK="UBUNTU=${UBUNTU} $BUILD_LINUX_SDK"
+    fi
+    LINUX32=
+
+    # yum for CentOS (see below apt for Ubuntu)
+    if [ -n "${CENTOS+x}" ]; then
+        if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+            # - base on i386/centos:${CENTOS}
+            # - set the yum archs
+            # - install util-linux to get the "setarch" executable
+            DOCKER_BASE="i386/centos:${CENTOS}"
+            LINUX32="setarch i686"
+            PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
+            ARCH=i686
+        else
+            DOCKER_BASE="centos:${CENTOS}"
+            PREYUM=
+            ARCH=x86_64
+        fi
+        # Also install a recent Developer Toolset to get C++11 support while building GCC
+        # yum -y install centos-release-scl && \\
+        # yum -y install devtoolset-8-gcc devtoolset-8-binutils devtoolset-8-gcc-c++ devtoolset-8-make && \\
+        # We still need those to build Qt for the installer: gcc gcc-c++ make
+        DTSYUM=
+        DTSSDK=
+        CENTOS_DEPRECATED=6 # as of 12/2020, all CentOS versions up to 6 are deprecated
+        if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+            # It's not OK to use deprecated CentOS releases for running stuff, it's OK to use it to build stuff
+            PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
+        fi
+        if [ "${CENTOS:-7}"  -ge 8 ]; then
+            # Enable powertools on CentOS >= 8
+            # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && dnf -y groupinstall 'Development Tools' && "
+            YUM_DEVEL_EXTRA=""
+        else
+            YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
+        fi
+        if [ -n "${DTS:-}" ]; then
+            DTSYUM+="yum -y install centos-release-scl && "
+            if [ "${CENTOS:-7}" -ge 7 ]; then
+                DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
+            fi
+            if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+                # It's not OK to use deprecated CentOS releases for running stuff, 
+                DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
+            fi
+            DTSYUM+="yum -y install devtoolset-${DTS} && "
+        fi
+        # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
+        # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
+        YUM_PKGS="make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
+        cat <<EOF
+FROM $DOCKER_BASE as intermediate
+MAINTAINER https://github.com/NatronGitHub/Natron
+WORKDIR /home
+ARG SDK=$SDK_HOME
+ARG ARCH=$ARCH
+ARG SETARCH="$LINUX32"
+RUN ${PREYUM}${DTSYUM}\\
+    yum -y install gcc gcc-c++ ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && \\
+    yum clean all
+COPY include/patches/ include/patches/
+COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
+ENV WORKSPACE=/home
+EOF
+    fi # end of CentOS section
+    
+    # apt for Ubuntu (see above yum for CentOS)
+    if [ -n "${UBUNTU+x}" ]; then
+        if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+            echo "Error: 32-bit SDK not supported on Ubuntu"
+        else
+            DOCKER_BASE="ubuntu:${UBUNTU}"
+            LINUX32=
+            ARCH=x86_64
+        fi
+        SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
+        cat <<EOF
+FROM $DOCKER_BASE as intermediate
+MAINTAINER https://github.com/NatronGitHub/Natron
+WORKDIR /home
+ARG SDK=$SDK_HOME
+ARG ARCH=$ARCH
+ARG SETARCH="$LINUX32"
+$SDKPREP
+COPY include/patches/ include/patches/
+COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
+ENV WORKSPACE=/home
+EOF
+    fi
+
 fi
 
 function dobuild ()
@@ -178,7 +268,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN ${DTSSDK}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -271,7 +361,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel')")
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
         error=true
     fi
 
@@ -287,10 +377,11 @@ if dobuild; then
             (>&2 echo "Warning: Build system has been designed for CentOS/RHEL, use at OWN risk!")
             sleep 5
         else
-            RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
-            RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
-            if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "10" ]; then
-                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.10 is officially supported.")
+            RHEL_MAJOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f1)
+            RHEL_MINOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f2)
+            RHEL_VERSION="${RHEL_MAJOR}.${RHEL_MINOR}"
+            if [ "${RHEL_VERSION}" != "6.10" ] && [ "${RHEL_VERSION}" != "7.9" ]; then
+                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.10 and 7.9 are officially supported.")
             fi
         fi
     fi
@@ -326,14 +417,29 @@ function download() {
             fi
             echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
             fail=false
-            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            SET_SSL_CERT_DIR=""
+            if [ -d /etc/ssl/certs ]; then
+                # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
+                SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
+            fi
+            $SET_SSL_CERT_DIR wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
             if $fail; then
                 echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                 echo "*** downloading $package from $master_site"
                 fail=false
-                wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                $SET_SSL_CERT_DIR wget -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                 if $fail; then
-                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                    echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                    echo "*** downloading $package from $master_site without checking certificate"
+                    fail=false
+                    wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                    if $fail; then
+                        echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
+                        rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
+                    else
+                        newdists+=("$package")
+                        newdistsurls+=("$master_site/$package")
+                    fi
                 else
                     newdists+=("$package")
                     newdistsurls+=("$master_site/$package")
@@ -486,7 +592,7 @@ if dobuild; then
 
     export PATH="$SDK_HOME/bin:$PATH"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    if [ -z "${DTS:-}" ]; then
+    if [ -n "${CENTOS:-}" ] && [ -z "${DTS:-}" ] && [ "${CENTOS:-7}" -le 7 ]; then
         export PATH="$SDK_HOME/gcc/bin:$PATH"
         if [ "$ARCH" = "x86_64" ]; then
             LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -505,7 +611,16 @@ if dobuild; then
     export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 fi
 
-if [ -n "${DTS:-}" ]; then
+if [ "${UBUNTU:-0}" = 20.04 ]; then
+    GCC_VERSION=9.3.0
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ "${UBUNTU:-0}" = 18.04 ]; then
+    GCC_VERSION=7.5.0
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ "${CENTOS:-7}" = 8 ]; then
+    GCC_VERSION=8.3.1
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
     DTSSDK="source scl_source enable devtoolset-${DTS} && "
     case "${DTS}" in
     8)
@@ -524,8 +639,14 @@ if [ -n "${DTS:-}" ]; then
         GCC_VERSION=9.1.1
         ;;
     esac
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 else
-    build gcc
+    # CentoS <=7 without DTS or any other OS.
+    BOOTSTRAP_GCC_VERSION=4.8.5
+    if [ "${CENTOS:-7}" = 6 ]; then
+        BOOTSTRAP_GCC_VERSION=4.4.7
+    fi
+    build gcc # sets GCC_VERSION
 
     checkpoint
 
@@ -539,11 +660,14 @@ build bzip2
 build xz # (required to uncompress source tarballs)
 build m4
 build ncurses # (required for gdb and readline)
+build texinfo # (required for bison and gdb)
 build bison # (for SeExpr)
 build flex # (for SeExpr)
 build pkg-config
 build libtool
+build expat # (for perl)
 build gperf # (used by fontconfig) as well as assemblers (yasm and nasm)
+build perl # (required to install XML:Parser perl module used by intltool)
 build autoconf
 build automake
 build yasm
@@ -552,8 +676,6 @@ build gmp # (used by ruby)
 build openssl
 build patchelf
 build gettext
-build expat
-build perl # (required to install XML:Parser perl module used by intltool)
 build intltool
 build zlib
 
@@ -581,7 +703,10 @@ build git # (requires curl and pcre)
 
 checkpoint
 
-build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
+if $WITH_MARIADB; then
+    # mariadb doesn't build yet on CentOS8
+    build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
+fi
 build postgresql # (for the Qt postgresql plugin and the python postgresql adapter)
 
 checkpoint
@@ -599,7 +724,10 @@ build meson # (requires python3, required for building glib > 2.59.0)
 
 checkpoint
 
-build mysqlclient # (MySQL/MariaDB connector for python 2/3)
+if $WITH_MARIADB; then
+    # mariadb doesn't build yet on CentOS8
+    build mysqlclient # (MySQL/MariaDB connector for python 2/3)
+fi
 build psycopg2 # (PostgreSQL connector for python 2/3)
 build sphinx # (Python documentation generator)
 build sphinx-rtd-theme # (Read the Docs theme for Sphinx)
@@ -618,7 +746,6 @@ build libpng
 build freetype
 build libmount # (required by glib)
 build fontconfig
-build texinfo # (for gdb)
 
 checkpoint
 
@@ -709,7 +836,7 @@ build snappy # (for ffmpeg)
 build ffmpeg
 build ruby # (necessary for qtwebkit)
 build breakpad
-if [ -z "${DTS:-}" ]; then
+if [ -n "${CENTOS:-}" ] && [ -z "${DTS:-}" ] && [ "${CENTOS:-7}" -le 7 ]; then
     build valgrind
     build gdb # (requires xz, zlib ncurses, python2, texinfo)
 fi
@@ -809,36 +936,8 @@ ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
-RUN ${PREYUM}${DTSYUM}yum -y install glibc-devel patch zip unzip mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
-ENV QTDIR="\$QTDIR" \\
-    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
-    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
-    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
-    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \\
-    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \\
-    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \\
-    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH" \\
-    WORKSPACE=/home \\
-    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
-    GIT_BRANCH=RB-2.3 \\
-    GIT_COMMIT= \\
-    RELEASE_TAG=  \\
-    SNAPSHOT_BRANCH= \\
-    SNAPSHOT_COMMIT= \\
-    UNIT_TESTS=true \\
-    NATRON_LICENSE=GPL \\
-    DISABLE_BREAKPAD=1 \\
-    COMPILE_TYPE=release \\
-    NATRON_DEV_STATUS=RC \\
-    NATRON_CUSTOM_BUILD_USER_NAME= \\
-    NATRON_EXTRA_QMAKE_FLAGS= \\
-    BUILD_NAME=natron_github_RB2 \\
-    DISABLE_RPM_DEB_PKGS=1 \\
-    DISABLE_PORTABLE_ARCHIVE= \\
-    BITS= \\
-    DEBUG_SCRIPTS= \\
-    EXTRA_PYTHON_MODULES_SCRIPT= \\
-    BUILD_NUMBER=0
+$SDKPREP
+$DOCKER_ENV
 
 COPY \\
     common.sh \\

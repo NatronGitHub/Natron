@@ -2,9 +2,9 @@
 cd `dirname "$0"`
 export CENTOS=6
 #export DTS=8
-LABEL="natrongithub/natron-sdk${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}-i386"
-if [ "${CENTOS:-6}" -gt 7 ]; then
-    echo "i386 is not supported on CentOS 8 and later"
+LABEL="natrongithub/natron-sdk${UBUNTU+-ubuntu}${UBUNTU:-}${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}-i386"
+if [ -n "${UBUNTU:-}" ] || [ "${CENTOS:-6}" -gt 7 ]; then
+    echo "i386 is not supported on CentOS 8 and later or Ubuntu"
     exit 1
 fi
 env GEN_DOCKERFILE32=1 ../../jenkins/include/scripts/build-Linux-sdk.sh> Dockerfile

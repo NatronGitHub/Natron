@@ -2,7 +2,7 @@
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.14
+GNUTLS_VERSION=3.6.15
 GNUTLS_VERSION_MICRO= #.1
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     GNUTLS_VERSION=3.6.8
