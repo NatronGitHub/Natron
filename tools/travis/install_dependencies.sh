@@ -356,8 +356,17 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
-    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
-    brew install boost
+    #brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
+    #brew install boost
+    brew bundle --file=- <<-EOS
+brew "cartr/qt4/qt@4"
+brew "expat"
+brew "cairo"
+brew "gnu-sed"
+brew "glew"
+brew "openssl"
+brew "boost"
+EOS
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
     #while true; do
@@ -370,10 +379,28 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #    fi
     #done
     # Python 2 pyside comes precompiled!
-    brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
+    #brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
+    brew bundle --file=- <<-EOS
+brew "cartr/qt4/pyside@1.2"
+brew "cartr/qt4/shiboken@1.2"
+EOS
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb;
+        #brew install ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb;
+        brew bundle --file=- <<-EOS
+brew "ilmbase"
+brew "openexr"
+brew "freetype"
+brew "fontconfig"
+brew "ffmpeg"
+brew "openjpeg"
+brew "libraw"
+brew "libheif"
+brew "openvdb"
+EOS
+        brew uninstall opencolorio 2>/dev/null || true
+        brew uninstall openimageio 2>/dev/null || true
+        brew uninstall seexpr 2>/dev/null || true
         pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
         # fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
         # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
