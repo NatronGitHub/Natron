@@ -8,7 +8,7 @@ PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 
 github.setup            OpenImageIO oiio 2.1.17.0
-revision                0
+revision                1
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -46,7 +46,7 @@ depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
                         port:boost \
-                        port:jpeg \
+                        path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
                         port:tiff \
                         port:ilmbase \

@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.73.0
+version                         7.74.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,14 +26,14 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  abe1391ffc35a7f24771326761bca2f7e46aae41 \
-                                sha256  7c4c7ca4ea88abe00fea4740dcf81075c031b1d0bb23aff2d5efde20a3c2408a \
-                                size    2394228
+                                rmd160  0bf14d163c5e526886a9a957c743a9c5a738d561 \
+                                sha256  999d5f2c403cf6e25d58319fdd596611e455dd195208746bc6e6d197a77e878b \
+                                size    2400972
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    0
 
     depends_build               port:pkgconfig
 
@@ -78,7 +78,7 @@ if {${name} eq ${subport}} {
     }
 
     post-configure {
-        if {[variant_isset universal]} {
+        if {[variant_exists universal] && [variant_isset universal]} {
             set dirs {}
             foreach arch ${universal_archs_to_use} {
                 lappend dirs ${worksrcpath}-${arch}
@@ -122,7 +122,7 @@ if {${name} eq ${subport}} {
             CODE_STYLE.md \
             CONTRIBUTE.md \
             FAQ \
-            FEATURES \
+            FEATURES.md \
             GOVERNANCE.md \
             HELP-US.md \
             HISTORY.md \
@@ -233,11 +233,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1602879623
+    set certdata_updated        1608271043
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         cd3c94fcde3f2eb9ad7c25d3c3fca720d1216dc5
+    set certdata_commit         bc61343b5d6809a99d3ca2daf25708f069b042c2
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20200914
+    set certdata_date           20201204
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -258,9 +258,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  f129ecc0f80ecb6fde98818bcdfded4add1c60a1 \
-                                sha256  da44076f46126acd9a847d6434e76c6d84d74178262256415c36b4e9d86f88f9 \
-                                size    253669
+                                rmd160  1ba9db91d55bbe003f05807fa1c898a0df505736 \
+                                sha256  0fbccbcef01e66a38511725f74f49d6c9e1fe83ba8d5e74c47b59feb055d8b30 \
+                                size    240576
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

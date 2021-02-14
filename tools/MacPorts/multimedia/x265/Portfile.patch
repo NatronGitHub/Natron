@@ -1,39 +1,90 @@
---- Portfile.orig	2019-12-20 23:19:18.000000000 -0800
-+++ Portfile	2019-12-22 19:53:18.000000000 -0800
-@@ -8,7 +8,7 @@
+--- Portfile.orig	2021-02-13 18:49:29.000000000 -0800
++++ Portfile	2021-02-13 19:38:27.000000000 -0800
+@@ -13,7 +13,7 @@
+ legacysupport.newest_darwin_requires_legacy 9
  
- name                x265
- version             3.2.1
+ github.setup        videolan x265 3.4
 -revision            0
 +revision            1
  
- checksums           rmd160  7386c00a49a2fc143cd3c8cea657872235a8ba77 \
-                     sha256  fb9badcf92364fd3567f8b5aa0e5e952aeea7a39a2b864387cec31e3b58cbbcc \
-@@ -38,15 +38,27 @@
- # https://trac.macports.org/ticket/59246
- xcode_workaround.fixed_xcode_version 11.2
+ checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
+                     sha256  544d147bf146f8994a7bf8521ed878c93067ea1c7c6e93ab602389be3117eaaf \
+@@ -62,6 +62,12 @@
+         set merger_configure_args(${uarch}) -DOVERRIDE_SYSTEM_PROCESSOR=${uarch}
+     }
  
-+configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
-+build.env-append     BUILD=${build.cmd}
-+destroot.env-append  BUILD=${build.cmd} ARCH=none
-+configure.cmd        ${portpath}/${filesdir}/configure.sh
-+build.cmd            ${portpath}/${filesdir}/build.sh
-+
- #    error: illegal text-relocation to '_x265_pw_1'
- #   report: https://mailman.videolan.org/pipermail/x265-devel/2014-May/004476.html
- # solution: http://lists.apple.com/archives/unix-porting/2008/Jan/msg00027.html
- if {[variant_exists universal] && [variant_isset universal]} {
-     lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
++    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
++    build.env-append     BUILD=${build.cmd}
 +    foreach arch ${configure.universal_archs} {
 +        lappend merger_configure_env(${arch}) ARCH=${arch}
 +        lappend merger_build_env(${arch}) ARCH=${arch}
 +    }
  } else {
-     if {${build_arch} eq "i386"} {
-         configure.ldflags-append -Wl,-read_only_relocs,suppress
-     }
-+    configure.env-append ARCH='${build_arch}'
-+    build.env-append ARCH='${build_arch}'
+ 
+ 	if {${configure.build_arch} in {i386 x86_64}} {
+@@ -73,60 +79,10 @@
+         # error: illegal text-relocation to '_x265_pw_1'
+ 		configure.ldflags-append -Wl,-read_only_relocs,suppress
+ 	}
+-
+-    # at present, this variant will not build universal
+-    # TODO: explore how this variant is supported on other archs
+-    if {${configure.build_arch} eq "x86_64"} {
+-        default_variants +highdepth
+-    }
++    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
++    build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
  }
  
- livecheck.regex     "${name}_(\\d+(?:\\.\\d+)*)${extract.suffix}"
+-variant highdepth conflicts universal description {Enable 10-bit and 12-bit encoding} {
+-
+-    # this builds the recommended multi-library interface
+-    # https://x265.readthedocs.io/en/master/api.html#multi-library-interface
+-    # with the default ABI being the standard 8bit ABI as always
+-
+-    # we need to explore how to use the method below with the muniversal PG.
+-    universal_variant no
+-
+-    pre-configure {
+-        system "mkdir ${workpath}/10bit"
+-        system "mkdir ${workpath}/12bit"
+-    }
+-
+-    configure {
+-
+-        set configure.dir ${workpath}/10bit
+-        configure.args -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF -DENABLE_CLI=OFF
+-        portconfigure::configure_main
+-
+-        set configure.dir ${workpath}/12bit
+-        configure.args -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+-        portconfigure::configure_main
+-
+-        set configure.dir ${workpath}/build
+-        configure.args -DEXTRA_LIB="x265_main10.a\;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+-        portconfigure::configure_main
+-
+-    }
+-
+-    build {
+-
+-        set build.dir ${workpath}/10bit
+-        portbuild::build_main
+-
+-        set build.dir ${workpath}/12bit
+-        portbuild::build_main
+-
+-        ln ${workpath}/10bit/libx265.a ${workpath}/build/libx265_main10.a
+-        ln ${workpath}/12bit/libx265.a ${workpath}/build/libx265_main12.a
+-
+-        set build.dir ${workpath}/build
+-        portbuild::build_main
+-
+-        system -W ${workpath}/build "mv libx265.a libx265_main.a"
+-        system -W ${workpath}/build "libtool -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a"
+-
+-    }
+-}
++destroot.env-append  BUILD=${build.cmd} ARCH=none
++configure.cmd        ${portpath}/${filesdir}/configure.sh
++build.cmd            ${portpath}/${filesdir}/build.sh

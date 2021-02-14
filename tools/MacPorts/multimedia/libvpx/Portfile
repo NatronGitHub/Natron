@@ -31,30 +31,21 @@ fetch.type          git
 git.url             https://chromium.googlesource.com/webm/${name}
 git.branch          v${version}
 
+# on BigSur or newer, use a recent 20210203 commit with the arm64 fixes in it
+# because we also need to support +universal, do this for all builds for now
+
+if {${os.platform} eq "darwin" && ${os.major} >= 20} {
+    git.branch      5a4cfa95630ee3ebb5d74cd6c21336492e8707a4
+    version         1.9.0-20210203
+}
+
 # support for non-intel archs removed in version 1.5.0
-supported_archs     x86_64 i386
+supported_archs     x86_64 i386 arm64
 
-depends_build-append port:yasm
+patchfiles          patch-Makefile.diff
 
-patchfiles          patch-build-make-configure.sh.diff \
-                    patch-Makefile.diff
-
-# clang 425.0.28 with libvpx-1.4.0:
-# vp9/common/x86/vp9_subpixel_8t_intrin_avx2.c:77:16: error: assigning to '__m256i' from incompatible type 'int'
-#  filtersReg32 = MM256_BROADCASTSI128_SI256(filtersReg);
-#               ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# apple gcc-4.2 with libvpx-1.6.0:
-# vp9/encoder/x86/vp9_frame_scale_ssse3.c: In function ‘eight_tap_row_ssse3’:
-# vp9/encoder/x86/vp9_frame_scale_ssse3.c:93: internal compiler error: Segmentation fault
-# {standard input}:unknown:Undefined local symbol LC2
-
-compiler.blacklist  *gcc-3.* *gcc-4.* {clang < 800} macports-clang-3.3 macports-clang-3.4 macports-clang-3.7
-# Make sure that mp-clang-5.0 is picked if all compilers were blacklisted.
-# Especially important for 10.6 on libc++, since the fallback list contains macports-clang-3.7
-# as the first, and thus selected, fallback option (even though it has been blacklisted earlier).
-compiler.fallback-append macports-clang-5.0 macports-clang-6.0 macports-clang-7.0 macports-clang-8.0
-
-license_noconflict  clang-5.0 clang-6.0 clang-7.0
+# uses newer assembly features on Intel
+compiler.blacklist-append  {*gcc-[3-4].*} {clang < 800} {macports-clang-3.*}
 
 # As of 1.7.0: builds both static and shared libraries
 # doesn't install docs or examples correctly, so disable them.
@@ -64,7 +55,6 @@ configure.args      --enable-vp8 \
                     --enable-pic \
                     --enable-postproc \
                     --enable-multithread \
-                    --enable-runtime-cpu-detect \
                     --enable-experimental \
                     --enable-shared \
                     --disable-install-docs \
@@ -72,57 +62,70 @@ configure.args      --enable-vp8 \
                     --disable-examples \
                     --disable-unit-tests
 
-configure.env       LD=${configure.cc}
-
-# add in when docs are installed correctly
-#variant docs description {Build documentation} {
-#    depends_build-append path:bin/php:php5 port:doxygen
-#    configure.args-delete --disable-install-docs
-#    configure.args-append --enable-install-docs
-#}
-
 variant highbitdepth description {Enable VP9 10/12bit profiles} {
     configure.args-append --enable-vp9-highbitdepth
 }
 
 build.target
 build.args          verbose=1
-
 destroot.args       verbose=1
 
-# Build fix for MacPorts clang-3.5 and later:
-#
-# This is an intentional change to Clang. It now parses the assembly output by default even when emitting assembly so that the diagnostics are consistent between "clang -c" and "clang -S".
-# The solution is either to pass -fno-integrated-as to the compiler, or change the assembly produced (& probably the script that processes it) so that it's valid. Note that commenting out the line won't work: comments get stripped by the same process.
-# Current Xcode versions of clang > 602 corresponding to Xcode 6.3 or greater also need this fix.
-
-if {[string match {macports-clang-3.[5-9]} ${configure.compiler}] ||
-    [string match {macports-clang-[4-9].*} ${configure.compiler}] ||
-    [string match {macports-clang-[1-9][0-9].*} ${configure.compiler}] ||
-    (${configure.compiler} eq "clang" && [compiler.command_line_tools_version ${configure.compiler}] > 602)} {
-        build.args-append CFLAGS_S=-fno-integrated-as
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
 }
 
-configure.universal_args-delete --disable-dependency-tracking
+if {${universal_possible} && [variant_isset universal]} {
 
-# As of 1.5.0 ppc build targets are no longer supported
+    # universal build using muniversal portgroup
 
-set my_targets(i386)    x86
-set my_targets(x86_64)  x86_64
+    foreach my_arch {i386 x86_64 arm64} {
 
-# We must specify the target, otherwise the configure script will guess,
-# and that may not match what the user requested in macports.conf.
-foreach my_arch {i386 x86_64} {
-    set merger_host(${my_arch}) ""
-    if {[info exists my_targets(${my_arch})]} {
-        set merger_configure_args(${my_arch}) --force-target=$my_targets(${my_arch})-${os.platform}-gcc
+        # strip the automatic setting of host
+        set merger_host(${my_arch}) ""
+
+        # force the target
+        set merger_configure_args(${my_arch})     --force-target=${my_arch}-${os.platform}${os.major}-gcc
+
+        # set LD
+        set merger_configure_env(${my_arch})      LD=${configure.cc}
     }
-}
-if {![variant_isset universal]} {
-    if {[info exists merger_configure_args(${build_arch})]} {
-        configure.args-append $merger_configure_args(${build_arch})
-    } else {
-        configure.args-append --force-target=${os.arch}-${os.platform}-gcc
+
+    if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
+        depends_build-append  port:yasm
+        depends_skip_archcheck-append yasm
+
+        # for Intel archs, allow runtime cpu detection
+        lappend merger_configure_args(i386)   --enable-runtime-cpu-detect
+        lappend merger_configure_args(x86_64) --enable-runtime-cpu-detect
+
+        # parses the assembly output by default even when emitting assembly
+        if {[string match {*clang*} ${configure.compiler}]} {
+            lappend merger_build_args(i386)   CFLAGS_S=-fno-integrated-as
+            lappend merger_build_args(x86_64) CFLAGS_S=-fno-integrated-as
+        }
+
+    }
+
+} else {
+
+    # normal build
+
+    # force the target
+    configure.args-append --force-target=${configure.build_arch}-${os.platform}${os.major}-gcc
+
+    # set LD
+    configure.env-append  LD=${configure.cc}
+
+    if {${configure.build_arch} in {i386 x86_64}} {
+        depends_build-append     port:yasm
+        depends_skip_archcheck-append yasm
+
+        configure.args-append    --enable-runtime-cpu-detect
+
+        # parses the assembly output by default even when emitting assembly
+        if {[string match {*clang*} ${configure.compiler}]} {
+            build.args-append CFLAGS_S=-fno-integrated-as
+        }
     }
 }
 

@@ -1,6 +1,6 @@
---- Portfile.orig	2018-06-04 11:26:52.000000000 +0200
-+++ Portfile	2018-06-08 14:59:22.000000000 +0200
-@@ -75,6 +75,8 @@
+--- Portfile.orig	2021-02-13 12:15:54.000000000 -0800
++++ Portfile	2021-02-13 12:16:53.000000000 -0800
+@@ -78,6 +78,8 @@
                      port:libbluray \
                      port:libvpx \
                      port:gnutls \
@@ -9,8 +9,8 @@
                      port:openjpeg \
                      port:fontconfig \
                      port:freetype \
-@@ -112,6 +114,11 @@
-     patchfiles-append   patch-libavcodec-videotoolboxenc.c-drop-Nullable.diff
+@@ -109,6 +111,11 @@
+     compiler.blacklist-append {clang < 422.1.7}
  }
  
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
@@ -21,7 +21,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -126,6 +133,8 @@
+@@ -123,6 +130,8 @@
                      --enable-librsvg \
                      --enable-libtheora \
                      --enable-libopenjpeg \
@@ -30,7 +30,7 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -143,6 +152,7 @@
+@@ -140,6 +149,7 @@
                      --disable-libxcb \
                      --disable-libxcb-shm \
                      --disable-libxcb-xfixes \
@@ -38,15 +38,15 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -151,6 +161,7 @@
-                     --disable-sdl2 \
+@@ -149,6 +159,7 @@
+                     --disable-securetransport \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
 +                    --cxx=${configure.cxx} \
                      --cc=${configure.cc}
  
  
-@@ -217,6 +228,24 @@
+@@ -227,6 +238,24 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -71,10 +71,10 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -241,6 +270,15 @@
- configure.universal_args-delete --disable-dependency-tracking
- 
- if {[variant_isset universal]} {
+@@ -254,6 +283,15 @@
+     set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+ }
+ if {${universal_possible} && [variant_isset universal]} {
 +    # the following is inspired by the icu Portfile
 +    # if we can't run executables for the target arch, mark it as a cross-compile
 +    foreach arch ${configure.universal_archs} {
@@ -87,7 +87,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -266,11 +304,53 @@
+@@ -279,11 +317,53 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -141,8 +141,8 @@
  }
  
  if {[variant_isset x11]} {
-@@ -321,6 +401,14 @@
-                             --disable-indev=jack
+@@ -332,6 +412,14 @@
+     depends_lib-delete      port:gnutls
  }
  
 +variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
@@ -156,7 +156,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -339,6 +427,12 @@
+@@ -350,6 +438,12 @@
      depends_lib-append      port:samba3
  
      license                 GPL-3+

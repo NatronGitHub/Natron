@@ -1,15 +1,14 @@
---- Portfile.orig	2020-10-27 16:13:30.000000000 -0700
-+++ Portfile	2020-10-28 17:24:50.000000000 -0700
-@@ -48,7 +48,7 @@
-                             port:djvulibre \
-                             port:xz \
-                             port:jbigkit \
--                            port:jpeg \
-+                            path:lib/libjpeg.dylib:jpeg \
-                             port:lcms2 \
-                             port:libpng \
-                             port:libraw \
-@@ -67,6 +67,9 @@
+--- Portfile.orig	2021-02-13 18:25:46.000000000 -0800
++++ Portfile	2021-02-14 09:09:09.000000000 -0800
+@@ -2,6 +2,7 @@
+ 
+ PortSystem                  1.0
+ PortGroup                   conflicts_build 1.0
++PortGroup                   compiler_blacklist_versions 1.0
+ 
+ # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
+ 
+@@ -69,6 +70,9 @@
                              port:libxml2 \
                              port:libheif
  
@@ -19,7 +18,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -83,11 +86,13 @@
+@@ -85,11 +89,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -33,24 +32,16 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -120,6 +125,77 @@
+@@ -122,6 +128,60 @@
      }
  }
  
 +variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
-+    if {${configure.cxx_stdlib} eq "libstdc++"} {
-+        # configure with GCC 4.9 for proper OpenMP support
-+        configure.compiler macports-gcc-4.9
-+    } else {
-+        # libc++-based build
-+        # configure with clang-4.0 for proper OpenMP support
-+        if {${os.major} < 11} {
-+           configure.compiler macports-clang-4.0
-+        } else {
-+           configure.compiler macports-clang-5.0
-+        }
-+    }
-+    configure.args-append --enable-openmp
++    # libc++-based build
++    # compiler with proper OpenMP support (GCC >= 4.8, clang >= 4.0)
++    compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-8]} {gcc-4.[2-8]} {apple-gcc-4.[2-8]} cc clang {macports-clang < 400}
++
++    configure.args-replace  --disable-openmp --enable-openmp
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
 +    configure.args-replace  --with-gslib --without-gslib
@@ -90,15 +81,6 @@
 +    #}
 +}
 +
-+# OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):
-+# http://sourceforge.net/tracker/index.php?func=detail&aid=1964341&group_id=170962&atid=856209
-+# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36242
-+# clang has proper OpenMP support
-+#   -- Frederic.Devernay@inria.fr
-+if {${configure.compiler} == "llvm-gcc-4.2" || ${configure.compiler} == "gcc-4.2" || ${configure.compiler} == "gcc-4.0"} {
-+    configure.args-append --disable-openmp
-+}
-+
 +post-configure {
 +    reinplace -E {s|-arch [a-z0-9_]+||g} \
 +        ${worksrcpath}/magick/Magick-config \
@@ -111,7 +93,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -127,6 +203,23 @@
+@@ -129,6 +189,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -135,7 +117,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -161,6 +254,11 @@
+@@ -163,6 +240,11 @@
  
  default_variants            +x11
  
