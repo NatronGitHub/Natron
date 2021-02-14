@@ -348,7 +348,7 @@ macx:openmp {
   QMAKE_CXX=/opt/local/bin/clang++-mp-9.0
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
-  
+
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
@@ -387,7 +387,7 @@ macx:openmp {
   QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
-  
+
   LIBS += -L/usr/local/opt/llvm/lib -lomp
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm/bin/clang
