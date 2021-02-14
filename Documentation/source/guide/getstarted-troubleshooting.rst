@@ -56,3 +56,8 @@ If the viewer displays some error message about OpenGL, then GPU rendering is pr
 #. In Natron Preferences / GPU Rendering, check that the displayed is consistent with what "Renderer Info..." above gave.
 #. Now uncheck "Enable GPU Render" in the Shadertoy node and click the refresh/recycle button on the top of the viewer. Click again "Renderer Info..." and it should say it now uses Mesa in the ``GL_VERSION``. Does it fix the issue? If yes, you may try the next step to globally disable OpenGL rendering in Natron.
 #. To temporarily fix this issue, in Natron Preferences / GPU Rendering, set "OpenGL Rendering" to "Disabled", click the "Save" button in the Preferences window, quit Natron, launch Natron, check that GPU rendering is still disabled in the Preferences, and test your project.
+
+
+| If you there is an error similar to ``Shadertoy3: Can not render: glGetString(GL_VERSION) failed.`` 
+| Go to File => Preferences => GPU Rendering and set No. of OpenGL Context to 5
+| Save and relaunch Natron.
