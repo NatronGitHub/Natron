@@ -123,7 +123,7 @@ This directory contains various tools to help building and maintaining Natron.
   
   - `generate_glad.sh` generates the glad source files for properly handling the OpenGL extensions.
   
-  - `runPostShiboken.sh` is used to fix source files after running [shiboken](https://github.com/pyside/Shiboken) to generate the Python bindings. See the section *Generating Python bindings* in `INSTALL_OSX.md` and `INSTALL_LINUX.md`.
+  - `runPostShiboken.sh` is used to fix source files after running [shiboken](https://github.com/pyside/Shiboken) to generate the Python bindings. See the section *Generating Python bindings* in `INSTALL_MACOS.md` and `INSTALL_LINUX.md`.
 valgrind
 
 - **valgrind**
