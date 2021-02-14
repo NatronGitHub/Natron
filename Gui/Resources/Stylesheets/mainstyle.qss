@@ -467,8 +467,8 @@ QTabBar#DockablePanelTabWidget {
 QTabBar::tab {
     background-color: %4; /* the background of non-selected tabs */
     border: 1px solid;
-    min-width: 6em;
-    padding-left: 6px;
+    min-width: 5em;
+    padding-left: 9px;
     padding-right: 6px;
     padding-top: 4px;
     padding-bottom: 2px;
