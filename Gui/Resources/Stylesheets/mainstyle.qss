@@ -262,7 +262,9 @@ ClickableLabel[readOnly="true"][dirty="true"] {
 
 
 
-TabWidget{background-color: %4;}
+TabWidget{
+    background-color: %4;
+}
 
 NodeSettingsPanel{
     background-color : %2;
@@ -405,8 +407,10 @@ QDockWidget {
     /* no background-color? */
 }
 
+/* Properties panel node options box */
 QTabWidget::pane {
     border:1px solid black;
+    margin-top: -1px;
 }
 
 
@@ -453,13 +457,16 @@ QSplitter::handle::vertical {
 /* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
 QTabBar {
     tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */
-    background-color: %4; /* color of the background over non-selected tabs, and to the sides of the tab when there is only one */
+    background-color: %4; /* color of the background over non-selected window tabs, and to the sides of the tab when there is only one*/
+}
+
+QTabBar#DockablePanelTabWidget {
+  background-color: %2; /* color of the background over non-selected properties panel tabs, and to the sides of the tab when there is only one*/
 }
 
 QTabBar::tab {
     background-color: %4; /* the background of non-selected tabs */
-    border: 1px solid ;
-    border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
+    border: 1px solid;
     min-width: 6em;
     padding-left: 6px;
     padding-right: 6px;
@@ -484,15 +491,14 @@ QTabBar::tab:selected {
 
 
 QTabBar::tab:!selected {
-    color: %5;  color of the text on deselected tabs
-    margin-top: 2px; /* make non-selected tabs look smaller */
+    color: %5;  /* color of the text on deselected tabs */
 }
 
 /* make use of negative margins for overlapping tabs */
 QTabBar::tab:selected {
     /* expand/overlap to the left and right by 4px */
-    margin-left: -2px;
-    margin-right: -2px;
+    /* margin-left: -2px;
+    margin-right: -2px; */
 }
 QTabBar::tab:first:selected {
     margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
