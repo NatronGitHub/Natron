@@ -2,7 +2,7 @@
 
 # Install poppler-data
 # see https://poppler.freedesktop.org/
-POPPLERDATA_VERSION=0.4.9
+POPPLERDATA_VERSION=0.4.10
 POPPLERDATA_TAR="poppler-data-${POPPLERDATA_VERSION}.tar.gz"
 if download_step; then
     download "$POPPLER_SITE" "$POPPLERDATA_TAR"

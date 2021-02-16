@@ -4,7 +4,7 @@
 # see https://github.com/openexr/openexr/releases/
 # Note: upgrading to 2.4.1-2.5.1 requires rewriting the download and build scripts
 # (openexr is now a single package).
-EXR_VERSION=2.5.3
+EXR_VERSION=2.5.5
 
 if version_gt "2.4.0" "${EXR_VERSION}"; then # ilmbase is not a separate build, starting from 2.4.0
 
