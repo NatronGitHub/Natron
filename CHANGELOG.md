@@ -7,6 +7,13 @@
 
 ## Version 2.3.16
 
+- Updated documentation
+- Handle console output on Windows
+- Detect user installed fonts on Windows 10
+- Fix issue with Boost 1.74
+- Improvements to SequenceFileDialog 
+- Snap timeline alpha cursor to nearest frame
+
 ### Plugins
 
 - Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
