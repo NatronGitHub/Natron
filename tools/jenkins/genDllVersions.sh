@@ -198,6 +198,7 @@ catDll libvorbisenc-
 catDll libvpx-
 catDll libwavpack-
 catDll libwebp-
+catDll libwebpdemux-
 catDll libwebpmux-
 catDll libwinpthread-
 catDll libxml2-

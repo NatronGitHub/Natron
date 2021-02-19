@@ -1,0 +1,20 @@
+--- src/cmake/externalpackages.cmake.orig	2020-01-13 01:50:20.333267700 +0100
++++ src/cmake/externalpackages.cmake	2020-01-13 01:53:24.363403800 +0100
+@@ -125,6 +125,8 @@
+ else ()
+     if (MSVC)
+         add_definitions (-DBOOST_ALL_DYN_LINK=1)
++    elseif (MINGW)
++        add_definitions("-DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB")
+     endif ()
+ endif ()
+ if (BOOST_CUSTOM)
+--- src/testtex/CMakeLists.txt.orig	2020-01-13 02:03:48.472756200 +0100
++++ src/testtex/CMakeLists.txt	2020-01-13 02:04:24.872623200 +0100
+@@ -5,5 +5,5 @@
+ set (testtex_srcs testtex.cpp)
+ add_executable (testtex ${testtex_srcs})
+ target_include_directories (testtex PRIVATE ${ROBINMAP_INCLUDES})
+-target_link_libraries (testtex PRIVATE OpenImageIO)
++target_link_libraries (testtex PRIVATE OpenImageIO ${Boost_SYSTEM_LIBRARY})
+ set_target_properties (testtex PROPERTIES FOLDER "Tools")
