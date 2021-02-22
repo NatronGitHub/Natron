@@ -134,6 +134,14 @@ sudo port -v -N install fftw-3
 
 Install Homebrew from <http://brew.sh/>
 
+Install Python 2.7 (yes, we know it's deprecated).
+```Shell
+brew uninstall python@2 || true
+cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
+git checkout 3a877e3525d93cfeb076fc57579bdd589defc585 Formula/python@2.rb;
+brew install python@2
+```
+
 Qt 4 is not supported in Homebrew. Please enable the community-maintained recipe using:
 
 ```Shell
@@ -245,7 +253,7 @@ also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
 ```Shell
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/curl/lib/pkgconfig
 ```
 
 ### Installing manually (outside of MacPorts or Homebrew) a patched Qt to avoid stack overflows

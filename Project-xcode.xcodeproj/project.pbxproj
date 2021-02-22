@@ -350,7 +350,7 @@
 		1E70D1541CF33A0C000D2932 /* global.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = global.pri; sourceTree = "<group>"; };
 		1E70D1551CF33A0C000D2932 /* INSTALL_FREEBSD.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_FREEBSD.md; sourceTree = "<group>"; };
 		1E70D1561CF33A0C000D2932 /* INSTALL_LINUX.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_LINUX.md; sourceTree = "<group>"; };
-		1E70D1571CF33A0C000D2932 /* INSTALL_MACOS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_OSX.md; sourceTree = "<group>"; };
+		1E70D1571CF33A0C000D2932 /* INSTALL_MACOS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_MACOS.md; sourceTree = "<group>"; };
 		1E70D1581CF33A0C000D2932 /* INSTALL_WINDOWS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_WINDOWS.md; sourceTree = "<group>"; };
 		1E70D15A1CF33A0C000D2932 /* libs.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = libs.pri; sourceTree = "<group>"; };
 		1E70D15B1CF33A0C000D2932 /* LICENSE_SHORT.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE_SHORT.txt; sourceTree = "<group>"; };
