@@ -457,15 +457,11 @@ QSplitter::handle::vertical {
 /* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
 QTabBar {
     tabbar-prefer-no-arrows: false; /* allow arrows when there are many tabs */
-    background-color: %4; /* color of the background over non-selected window tabs, and to the sides of the tab when there is only one*/
-}
-
-QTabBar#DockablePanelTabWidget {
-  background-color: %2; /* color of the background over non-selected properties panel tabs, and to the sides of the tab when there is only one*/
+    background: none; /* color of the background over non-selected window tabs, and to the sides of the tab when there is only one*/
 }
 
 QTabBar::tab {
-    background-color: %4; /* the background of non-selected tabs */
+    background: %4; /* the background of non-selected tabs */
     border: 1px solid;
     min-width: 5em;
     padding-left: 9px;
