@@ -30,11 +30,11 @@ Label[altered="false"] { color: %5; }
 
 NodeSettingsPanel[_selected="true"] {
     border:1px solid white;
-    border-radius : 2px;
+    border-radius: 2px;
 }
 NodeSettingsPanel[_selected="false"] {
     border:1px solid black;
-    border-radius : 2px;
+    border-radius: 2px;
 }
 
 QToolTip {
@@ -80,19 +80,19 @@ QScrollBar:vertical {
     border: 1px solid %1 ;
     background: %3;
     width: 15px;
-    margin : 23px 0px 23px 0px;
+    margin: 23px 0px 23px 0px;
 }
 QScrollBar::handle:vertical {
     image: url(:/Resources/Images/scrollbarHandle_vertical.png);
     min-height: 20px;
 }
 QScrollBar::up-arrow:vertical {
-    image : url(:/Resources/Images/scrollbarButton_up.png);
+    image: url(:/Resources/Images/scrollbarButton_up.png);
     width: 11px;
     height: 20px;
 }
 QScrollBar::down-arrow:vertical {
-    image : url(:/Resources/Images/scrollbarButton_down.png);
+    image: url(:/Resources/Images/scrollbarButton_down.png);
     width: 11px;
     height: 20px;
 }
@@ -119,19 +119,19 @@ QScrollBar:horizontal {
     border: 1px solid %1 ;
     background: %3;
     height: 15px;
-    margin : 0px 23px 0px 23px;
+    margin: 0px 23px 0px 23px;
 }
 QScrollBar::handle:horizontal {
     image: url(:/Resources/Images/scrollbarHandle_horizontal.png);
     min-width: 20px;
 }
 QScrollBar::left-arrow:horizontal {
-    image : url(:/Resources/Images/scrollbarButton_right.png);
+    image: url(:/Resources/Images/scrollbarButton_right.png);
     width: 20px;
     height: 11px;
 }
 QScrollBar::right-arrow:horizontal {
-    image : url(:/Resources/Images/scrollbarButton_left.png);
+    image: url(:/Resources/Images/scrollbarButton_left.png);
     width: 20px;
     height: 11px;
 }
@@ -193,11 +193,11 @@ QHeaderView:section {
     color: %5;
     background-color: %2;
     selection-color: %1;
-    selection-background-color : %1; /* same as selection-color??? */
+    selection-background-color: %1; /* same as selection-color??? */
 }
 
 ComboBox {
-    border-radius : 2px;
+    border-radius: 2px;
     border: 1px solid black;
 }
 
@@ -251,13 +251,13 @@ ClickableLabel[dirty="true"][animation="3"] {
 
 /*Disabled and no multiple selection: */
 ClickableLabel[readOnly="true"][dirty="false"] {
-    color : %8;
+    color: %8;
 }
 
 /*Disabled and multiple selection: */
 ClickableLabel[readOnly="true"][dirty="true"] {
     background-color: black;
-    color : %8;
+    color: %8;
 }
 
 
@@ -267,18 +267,18 @@ TabWidget{
 }
 
 NodeSettingsPanel{
-    background-color : %2;
+    background-color: %2;
     color: %5;
 }
 QPushButton{
     background-color: %3;
     color: %5;
     border: 0.5px solid black;
-    border-radius : 3px;
-    padding : 3px;
+    border-radius: 3px;
+    padding: 3px;
 }
 QPushButton:pressed{
-    background-color : %4;
+    background-color: %4;
 }
 QPushButton:hover {
     border: 1px solid gray;
@@ -294,7 +294,7 @@ QHeaderView:section {
     color: %5;
     background-color: %2;
     selection-color: %1;
-    selection-background-color : %1; /* same as selection-color ??? */
+    selection-background-color: %1; /* same as selection-color ??? */
 }
 
 QDialog {
@@ -370,7 +370,7 @@ QCheckBox::indicator:unchecked:focus {
     image: url(:/Resources/Images/checkbox_hovered.png);
 }
 QCheckBox {
-    color : %5
+    color: %5
 }
 
 QGraphicsView {
@@ -419,7 +419,7 @@ QLineEdit {
     border-radius: 1px;
     padding: 1px;
     color: %5;
-    background-color : %3;
+    background-color: %3;
     selection-color: %8;
     selection-background-color: %1;
 }
@@ -431,7 +431,7 @@ QLineEdit:focus {
 }
 QLineEdit:!enabled {
     color: %8;
-    background-color : %3;
+    background-color: %3;
 }
 QLineEdit:read-only {
     color: %8;
@@ -536,14 +536,14 @@ QMenu {
     border: 0px;
     padding: 1px 0px 0px 1px; /* [top+bottom] [ignored] [ignored] [left+right] (QMenu box model is buggy) top must be > 1px or the first item is selected when clicking */
     margin: 0px;
-    color : %5;
+    color: %5;
     menu-scrollable: 1;
 }
 QMenu::item:selected { /* when user selects item using mouse or keyboard */
     background-color: %1;
 }
 QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
-    color : rgb(120,120,120);
+    color: rgb(120,120,120);
 }
 
 QToolButton {
