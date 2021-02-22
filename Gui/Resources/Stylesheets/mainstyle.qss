@@ -66,12 +66,12 @@ QGroupBox::title {
 
 }
 QGroupBox::indicator:unchecked {
-    width :10px;
+    width: 10px;
     height: 10px;
     image: url(:/Resources/Images/groupbox_folded.png);
 }
 QGroupBox::indicator:checked {
-    width :10px;
+    width: 10px;
     height: 10px;
     image: url(:/Resources/Images/groupbox_unfolded.png);
 }
@@ -507,12 +507,12 @@ QTabBar::tab:only-one {
 }
 QTabBar::close-button {
     image: url(:/Resources/Images/closeTab.svg);
-    subcontrol-position:right;
+    subcontrol-position: right;
 }
 
 QTabBar::close-button:hover {
     image: url(:/Resources/Images/closeTab_hovered.svg);
-    subcontrol-position:right;
+    subcontrol-position: right;
 }
 
 TabBar[mouseOverFocus="true"][clickFocus="false"] {
@@ -547,7 +547,7 @@ QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
 }
 
 QToolButton {
-    background-color:%2;
+    background-color: %2;
     color: %5;
 }
 
@@ -628,7 +628,7 @@ AnimatingTextEdit[animation="3"] {
     color: black;
 }
 AnimatingTextEdit[readOnlyNatron="true"]{
-    color:%8;
+    color: %8;
 }
 
 AnimatingTextEdit[dirty="true"] {
