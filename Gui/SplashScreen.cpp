@@ -76,7 +76,12 @@ SplashScreen::SplashScreen(const QString & filePath)
     _pixmap.load(filePath);
 
     resize( _pixmap.width(), _pixmap.height() );
-    show();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        show();
+    }
 
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry();
