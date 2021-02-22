@@ -3,8 +3,8 @@
 _realname=libcdr
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.1.5
-pkgrel=2
+pkgver=0.1.6
+pkgrel=1
 pkgdesc="libcdr is a library and a set of tools for reading and converting binary files produced by Corel DRAW (mingw-w64)"
 arch=('any')
 license=('MPL2')
@@ -19,14 +19,11 @@ depends=("${MINGW_PACKAGE_PREFIX}-icu"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-librevenge"
          "${MINGW_PACKAGE_PREFIX}-zlib")
-source=("https://dev-www.libreoffice.org/src/${_realname}/${_realname}-${pkgver}.tar.xz"
-        "libcdr-0.1.5-remove-have-visibility-check.patch")
-sha256sums=('6ace5c499a8be34ad871e825442ce388614ae2d8675c4381756a7319429e3a48'
-            'e5fe1f74b0a4d5774ea5ee51e754e7553292231dc72dbe983e207c3cdabe5254')
+source=("https://dev-www.libreoffice.org/src/${_realname}/${_realname}-${pkgver}.tar.xz")
+sha256sums=('01cd00b04a030977e544433c2d127c997205332cd9b8e35ec0ee17110da7f861')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
-  patch -Np1 -i "${srcdir}/libcdr-0.1.5-remove-have-visibility-check.patch"
   ./autogen.sh
 }
 

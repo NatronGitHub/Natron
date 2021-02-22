@@ -4,7 +4,8 @@ _realname=libheif
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.6.1
-pkgrel=1
+# v1.11 breaks linking in OIIO & IM
+pkgrel=2
 pkgdesc="HEIF image decoder/encoder library and tools (mingw-w64)"
 arch=('any')
 url="https://github.com/strukturag/libheif"
