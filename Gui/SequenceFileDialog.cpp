@@ -1943,6 +1943,10 @@ SequenceFileDialog::handleFilterSlot()
 void
 SequenceFileDialog::setDefaultFilter()
 {
+    if (!_filterLineEdit) { // some instances don't use this widget (add dir dialogs)
+        return;
+    }
+
     QString filter = QString::fromUtf8("*.*");
     if (_filters.size() == 1) { // only set if we got a single filter (ntp/nl/nps etc)
         filter = QString::fromUtf8("*.%1").arg( _filters.at(0) );
