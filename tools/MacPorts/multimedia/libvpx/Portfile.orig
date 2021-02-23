@@ -37,6 +37,7 @@ git.branch          v${version}
 if {${os.platform} eq "darwin" && ${os.major} >= 20} {
     git.branch      5a4cfa95630ee3ebb5d74cd6c21336492e8707a4
     version         1.9.0-20210203
+    livecheck.version 1.9.0
 }
 
 # support for non-intel archs removed in version 1.5.0
