@@ -2192,7 +2192,7 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
     return eViewerColorSpaceLinear;
 }
 
-// Functions to escape / unescape characters from XML strings
+// Functions to escape / unescape characters from UTF-8 XML strings.
 // Note that the unescape function matches the escape function,
 // and cannot decode any HTML entity (such as Unicode chars).
 // A far more complete decoding function can be found at:
@@ -2243,7 +2243,14 @@ Project::escapeXML(const std::string &istr)
                 ns += ';';
                 str.replace(i, 1, ns);
                 i += ns.size() + 1;
+            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
+                i += 1;
+            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
+                i += 2;
+            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
+                i += 3;
             }
+
             break;
         }
         }
@@ -2255,45 +2262,50 @@ Project::escapeXML(const std::string &istr)
 std::string
 Project::unescapeXML(const std::string &istr)
 {
-    size_t i;
     std::string str = istr;
 
-    i = str.find_first_of("&");
-    while (i != std::string::npos) {
-        assert(str[i] == '&');
-        if ( !str.compare(i + 1, 3, "lt;") ) {
-            str.replace(i, 4, 1, '<');
-        } else if ( !str.compare(i + 1, 3, "gt;") ) {
-            str.replace(i, 4, 1, '>');
-        } else if ( !str.compare(i + 1, 4, "amp;") ) {
-            str.replace(i, 5, 1, '&');
-        } else if ( !str.compare(i + 1, 5, "apos;") ) {
-            str.replace(i, 6, 1, '\'');
-        } else if ( !str.compare(i + 1, 5, "quot;") ) {
-            str.replace(i, 6, 1, '"');
-        } else if ( !str.compare(i + 1, 1, "#") ) {
-            size_t end = str.find_first_of(";", i + 2);
-            if (end == std::string::npos) {
-                // malformed XML
-                return str;
-            }
-            char *tail = NULL;
-            int errno_save = errno;
-            bool hex = str[i + 2] == 'x' || str[i + 2] == 'X';
-            int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
-            char *head = &str[i + prefix];
+    for (size_t i = 0; i < str.size(); ++i) {
+        unsigned char c = (unsigned char)(str[i]);
+        if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
+            i += 1;
+        } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
+            i += 2;
+        } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
+            i += 3;
+        } else if (str[i] == '&') {
+            if ( !str.compare(i + 1, 3, "lt;") ) {
+                str.replace(i, 4, 1, '<');
+            } else if ( !str.compare(i + 1, 3, "gt;") ) {
+                str.replace(i, 4, 1, '>');
+            } else if ( !str.compare(i + 1, 4, "amp;") ) {
+                str.replace(i, 5, 1, '&');
+            } else if ( !str.compare(i + 1, 5, "apos;") ) {
+                str.replace(i, 6, 1, '\'');
+            } else if ( !str.compare(i + 1, 5, "quot;") ) {
+                str.replace(i, 6, 1, '"');
+            } else if ( !str.compare(i + 1, 1, "#") ) {
+                size_t end = str.find_first_of(";", i + 2);
+                if (end == std::string::npos) {
+                    // malformed XML
+                    return str;
+                }
+                char *tail = NULL;
+                int errno_save = errno;
+                bool hex = str[i + 2] == 'x' || str[i + 2] == 'X';
+                int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
+                char *head = &str[i + prefix];
 
-            errno = 0;
-            unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-            bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
-            errno = errno_save;
-            if (fail) {
-                return str;
+                errno = 0;
+                unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                errno = errno_save;
+                if (fail) {
+                    return str;
+                }
+                // replace from '&' to ';' (thus the +1)
+                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
             }
-            // replace from '&' to ';' (thus the +1)
-            str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
         }
-        i = str.find_first_of("&", i + 1);
     }
 
     return str;
