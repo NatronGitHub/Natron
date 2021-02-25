@@ -2494,7 +2494,8 @@ KnobTable::encodeToKnobTableFormat(const std::list<std::vector<std::string> >& t
         for (std::size_t c = 0; c < it->size(); ++c) {
             std::string label = getColumnLabel(c);
             ss << "<" << label << ">";
-            ss << Project::escapeXML( (*it)[c] );
+            std::string value = Project::escapeXML( (*it)[c] );
+            ss << value;
             ss << "</" << label << ">";
         }
     }
