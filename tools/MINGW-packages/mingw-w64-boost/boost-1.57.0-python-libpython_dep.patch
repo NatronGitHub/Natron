@@ -1,0 +1,13 @@
+Index: boost_1_57_0/tools/build/src/tools/python.jam
+===================================================================
+--- boost_1_57_0/tools/build/src/tools/python.jam	(revision 50406)
++++ boost_1_57_0/tools/build/src/tools/python.jam	(working copy)
+@@ -994,7 +994,7 @@
+     else
+     {
+         alias python_for_extensions
+-            :
++            : python
+             : $(target-requirements)
+             :
+             : $(usage-requirements)

@@ -1,0 +1,98 @@
+diff -up boost_1_55_0/libs/python/test/exec.cpp\~ boost_1_55_0/libs/python/test/exec.cpp
+--- boost_1_55_0/libs/python/test/exec.cpp~	2010-07-05 00:38:38.000000000 +0200
++++ boost_1_55_0/libs/python/test/exec.cpp	2015-01-09 21:31:12.903218280 +0100
+@@ -56,6 +56,20 @@ void eval_test()
+   BOOST_TEST(value == "ABCDEFG");
+ }
+ 
++struct PyCtx
++{
++  PyCtx() {
++    Py_Initialize();
++  }
++
++  ~PyCtx() {
++    // N.B. certain problems may arise when Py_Finalize is called when
++    // using Boost.Python.  However in this test suite it all seems to
++    // work fine.
++    Py_Finalize();
++  }
++};
++
+ void exec_test()
+ {
+   // Register the module with the interpreter
+@@ -68,6 +82,8 @@ void exec_test()
+                              ) == -1) 
+     throw std::runtime_error("Failed to add embedded_hello to the interpreter's "
+                  "builtin modules");
++
++  PyCtx ctx;
+   // Retrieve the main module
+   python::object main = python::import("__main__");
+   
+@@ -148,41 +164,43 @@ void check_pyerr(bool pyerr_expected=fal
+   }
+ }
+ 
++template <class Cb>
++bool
++run_and_handle_exception(Cb cb, bool pyerr_expected = false)
++{
++  PyCtx ctx;
++  if (python::handle_exception(cb)) {
++    check_pyerr(pyerr_expected);
++    return true;
++  } else {
++    return false;
++  }
++}
++
+ int main(int argc, char **argv)
+ {
+   BOOST_TEST(argc == 2 || argc == 3);
+   std::string script = argv[1];
+-  // Initialize the interpreter
+-  Py_Initialize();
+ 
+-  if (python::handle_exception(eval_test)) {
+-    check_pyerr();
+-  }
+-  else if(python::handle_exception(exec_test)) {
+-    check_pyerr();
+-  }
+-  else if (python::handle_exception(boost::bind(exec_file_test, script))) {
++  // N.B. exec_test mustn't be called through run_and_handle_exception
++  // as it needs to handles the python context by itself.
++  if (run_and_handle_exception(eval_test)
++      || python::handle_exception(exec_test))
+     check_pyerr();
+-  }
+-  
+-  if (python::handle_exception(exec_test_error))
+-  {
+-    check_pyerr(/*pyerr_expected*/ true);
+-  }
+   else
+-  {
++    run_and_handle_exception(boost::bind(exec_file_test, script));
++
++  if (!run_and_handle_exception(exec_test_error, true))
+     BOOST_ERROR("Python exception expected, but not seen.");
+-  }
+ 
+   if (argc > 2) {
++    PyCtx ctx;
+     // The main purpose is to test compilation. Since this test generates
+     // a file and I (rwgk) am uncertain about the side-effects, run it only
+     // if explicitly requested.
+     exercise_embedding_html();
+   }
+ 
+-  // Boost.Python doesn't support Py_Finalize yet.
+-  // Py_Finalize();
+   return boost::report_errors();
+ }
+ 
+
+Diff finished.  Fri Jan  9 21:31:13 2015

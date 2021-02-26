@@ -7,7 +7,7 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-ilmbase"
          #"${MINGW_PACKAGE_PREFIX}-pyilmbase"
 	 )
 pkgver=2.5.4
-pkgrel=4
+pkgrel=5
 pkgdesc="Openexr library for EXR images (mingw-w64)"
 arch=('any')
 url="https://www.openexr.com/"
