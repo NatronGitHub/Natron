@@ -12,7 +12,7 @@
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.36.1 # 2.36 fails on CentOS6 with:
+UTILLINUX_VERSION=2.36.2 # 2.36 fails on CentOS6 with:
 if [ "${CENTOS:-0}" = 6 ]; then
     UTILLINUX_VERSION=2.35.2 # 2.36 fails on CentOS6 with:
     # sys-utils/unshare.c:552:21: error: 'CLOCK_BOOTTIME' undeclared (first use in this function); did you mean 'OPT_BOOTTIME'?

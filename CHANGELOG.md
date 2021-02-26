@@ -13,6 +13,7 @@
 - Fix issue with Boost 1.74
 - Improvements to SequenceFileDialog 
 - Snap timeline alpha cursor to nearest frame
+- Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode) #578
 
 ### Plugins
 
