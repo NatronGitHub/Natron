@@ -3166,7 +3166,10 @@ renderPreview(const Image & srcImg,
               bool convertToSrgb,
               unsigned int* dstPixels)
 {
-    boost_adaptbx::floating_point::exception_trapping trap(0);
+#ifdef DEBUG
+    // Uncomment if using plugins that generate FP exceptions
+    // boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     ///recompute it after the rescaling
     const RectI & srcBounds = srcImg.getBounds();
     double yZoomFactor = *dstHeight / (double)srcBounds.height();

@@ -1232,7 +1232,10 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
 
     OfxStatus ret = kOfxStatOK;
     try {
-        boost_adaptbx::floating_point::exception_trapping trap(0);
+#ifdef DEBUG
+        // Uncomment if using plugins that generate FP exceptions
+        // boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
         func(threadIndex, threadMax, customArg);
     } catch (const std::bad_alloc & ba) {
         ret =  kOfxStatErrMemory;
