@@ -5,6 +5,7 @@ PortGroup                       clang_dependency 1.0
 
 name                            curl
 version                         7.74.0
+revision                        1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -33,7 +34,7 @@ checksums                       ${curl_distfile} \
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               port:pkgconfig
 
