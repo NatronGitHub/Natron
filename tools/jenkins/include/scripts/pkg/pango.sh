@@ -18,9 +18,19 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] 
     start_build
     untar "$SRC_PATH/$PANGO_TAR"
     pushd "pango-${PANGO_VERSION}"
-    env FONTCONFIG_LIBS="-lfontconfig" CFLAGS="$BF -g" CXXFLAGS="$BF -g" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-included-modules=basic-fc
-    make -j${MKJOBS}
-    make install
+    if version_gt "$PANGO_VERSION" 1.42.4; then
+        mkdir build
+        pushd build
+
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" ninja
+        env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
+        popd
+    else
+        env FONTCONFIG_LIBS="-lfontconfig" CFLAGS="$BF -g" CXXFLAGS="$BF -g" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-included-modules=basic-fc
+        make -j${MKJOBS}
+        make install
+    fi
     popd
     rm -rf "pango-${PANGO_VERSION}"
     end_build
