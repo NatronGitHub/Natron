@@ -16,7 +16,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" 
     if version_gt "$ORC_VERSION" 0.4.29; then
         mkdir build
         pushd build
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME"
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib"
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
         popd

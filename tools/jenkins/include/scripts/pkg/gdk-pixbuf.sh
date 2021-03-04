@@ -18,7 +18,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/gdk-pixbuf-2
         mkdir build
         pushd build
 
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" \
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" \
           -Dtiff=false -Dman=false -Ddocs=false -Dgtk_doc=false \
           ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja

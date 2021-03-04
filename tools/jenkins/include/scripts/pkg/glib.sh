@@ -28,8 +28,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc"
 		patch -Np1 -i "$INC_PATH/patches/glib/glib-2.60.2-skip_warnings-1.patch"
 		mkdir build
 		pushd build
-		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME"      \
-			-Dman=false -Dgtk_doc=false        \
+		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" \
+			-Dman=false -Dgtk_doc=false \
 			-Dselinux=disabled \
 			..
 		env CFLAGS="$BF" CXXFLAGS="$BF" ninja

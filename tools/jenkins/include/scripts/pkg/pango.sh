@@ -22,7 +22,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] 
         mkdir build
         pushd build
 
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
         popd

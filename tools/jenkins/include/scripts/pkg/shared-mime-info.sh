@@ -19,7 +19,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mim
         make
         make install
     else
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" -Dupdate-mimedb=true ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" -Dupdate-mimedb=true ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
     fi

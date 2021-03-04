@@ -14,7 +14,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/dav1d.pc" ] 
     pushd "dav1d-$DAV1D_VERSION"
     mkdir build
     pushd build
-    env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME"
+    env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib"
     env CFLAGS="$BF" CXXFLAGS="$BF" ninja
     env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
     popd
