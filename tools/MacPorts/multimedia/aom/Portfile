@@ -1,0 +1,49 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem              1.0
+PortGroup               github 1.0
+PortGroup               cmake 1.1
+PortGroup               muniversal 1.0
+
+name                aom
+version             2.0.2
+categories          multimedia
+maintainers         openmaintainer
+platforms           darwin
+license             Permissive
+
+description         Alliance for Open Media AV1 Codec SDK
+long_description    ${description}
+
+fetch.type          git
+git.url             https://aomedia.googlesource.com/${name}
+git.branch          v${version}
+
+# Caveats:
+# Will not build if the MacPorts prefix contains characters that
+# can be interpreted as a regular expression (eg "/opt/local-libc++")
+# Reason: the CMakeList.txt uses if(<variable|string> MATCHES regex)
+# where regex is actually a file path, as in:
+# https://aomedia.googlesource.com/aom/+/refs/tags/v2.0.0/CMakeLists.txt#704
+
+depends_build  port:yasm
+
+configure.pre_args-append \
+    -DENABLE_DOCS=off \
+    -DENABLE_EXAMPLES=on \
+    -DENABLE_TESTDATA=off \
+    -DENABLE_TESTS=off \
+    -DENABLE_TOOLS=off \
+    -DBUILD_SHARED_LIBS=on
+
+set merger_configure_args(i386)      -DAOM_TARGET_CPU=x86
+set merger_configure_args(x86_64)    -DAOM_TARGET_CPU=x86_64
+# Runtime CPU detection is not currently enabled for ARM on macOS.
+set merger_configure_args(arm64)     "-DAOM_TARGET_CPU=arm64 -DCONFIG_RUNTIME_CPU_DETECT=0"
+
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
+if {(!${universal_possible} || ![variant_isset universal]) && [info exists merger_configure_args(${build_arch})]} {
+    configure.args-append $merger_configure_args(${build_arch})
+}

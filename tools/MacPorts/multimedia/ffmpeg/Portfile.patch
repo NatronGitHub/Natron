@@ -1,5 +1,5 @@
---- Portfile.orig	2021-02-13 12:15:54.000000000 -0800
-+++ Portfile	2021-02-13 12:16:53.000000000 -0800
+--- Portfile.orig	2021-02-13 18:25:46.000000000 -0800
++++ Portfile	2021-03-03 16:03:16.000000000 -0800
 @@ -78,6 +78,8 @@
                      port:libbluray \
                      port:libvpx \
@@ -30,7 +30,14 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -140,6 +149,7 @@
+@@ -134,12 +143,14 @@
+                     --enable-fontconfig \
+                     --enable-libfreetype \
+                     --enable-libfribidi \
++                    --disable-libaom \
+                     --disable-libjack \
+                     --disable-libopencore-amrnb \
+                     --disable-libopencore-amrwb \
                      --disable-libxcb \
                      --disable-libxcb-shm \
                      --disable-libxcb-xfixes \
@@ -38,7 +45,7 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -149,6 +159,7 @@
+@@ -149,6 +160,7 @@
                      --disable-securetransport \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
@@ -46,7 +53,7 @@
                      --cc=${configure.cc}
  
  
-@@ -227,6 +238,24 @@
+@@ -227,6 +239,24 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -71,7 +78,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -254,6 +283,15 @@
+@@ -254,6 +284,15 @@
      set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
  }
  if {${universal_possible} && [variant_isset universal]} {
@@ -87,7 +94,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -279,11 +317,53 @@
+@@ -279,11 +318,53 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -102,7 +109,7 @@
 +    configure.args-append   --enable-xlib
 +}
 +
-+variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 +
 +    depends_lib-delete \
 +                    port:libiconv \
@@ -141,10 +148,16 @@
  }
  
  if {[variant_isset x11]} {
-@@ -332,6 +412,14 @@
+@@ -332,6 +413,20 @@
      depends_lib-delete      port:gnutls
  }
  
++variant aom description {Enable Alliance for Open Media AV1 Codec} {
++    depends_lib-append      port:aom
++    configure.args-delete   --disable-libaom
++    configure.args-append   --enable-libaom
++}
++
 +variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
 +
 +if {[variant_isset highbitdepth]} {
@@ -156,7 +169,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -350,6 +438,12 @@
+@@ -350,6 +445,12 @@
      depends_lib-append      port:samba3
  
      license                 GPL-3+

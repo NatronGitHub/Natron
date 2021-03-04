@@ -143,6 +143,7 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --disable-libaom \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
@@ -328,7 +329,7 @@ variant x11 {
     configure.args-append   --enable-xlib
 }
 
-variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -410,6 +411,12 @@ variant darwinssl description {Enable https support using Apple built-in TLS lib
     configure.args-delete   --disable-securetransport
     configure.args-delete   --enable-gnutls
     depends_lib-delete      port:gnutls
+}
+
+variant aom description {Enable Alliance for Open Media AV1 Codec} {
+    depends_lib-append      port:aom
+    configure.args-delete   --disable-libaom
+    configure.args-append   --enable-libaom
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
