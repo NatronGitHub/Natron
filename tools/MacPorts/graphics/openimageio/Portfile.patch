@@ -1,5 +1,5 @@
---- Portfile.orig	2020-09-03 15:22:38.000000000 -0700
-+++ Portfile	2020-09-03 15:23:45.000000000 -0700
+--- Portfile.orig	2021-02-13 12:02:32.000000000 -0800
++++ Portfile	2021-02-13 12:03:21.000000000 -0800
 @@ -2,13 +2,13 @@
  
  PortSystem              1.0
@@ -11,8 +11,8 @@
  PortGroup               compiler_blacklist_versions 1.0
  
  github.setup            OpenImageIO oiio 2.1.17.0
--revision                0
-+revision                100
+-revision                1
++revision                101
  name                    openimageio
  categories              graphics
  license                 BSD
@@ -28,15 +28,6 @@
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
  configure.args-append   -DUSE_CCACHE=OFF
-@@ -46,7 +51,7 @@
-                         port:zlib \
-                         port:bzip2 \
-                         port:boost \
--                        port:jpeg \
-+                        path:lib/libjpeg.dylib:jpeg \
-                         port:libpng \
-                         port:tiff \
-                         port:ilmbase \
 @@ -56,9 +61,135 @@
  
  # optional components

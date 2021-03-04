@@ -1,0 +1,62 @@
+--- boost_1_57_0/tools/build/src/tools/python.jam	2013-05-21 06:14:18.000000000 +0200
++++ boost_1_55_0/tools/build/src/tools/python.jam	2014-05-29 19:09:12.115413877 +0200
+@@ -94,7 +94,7 @@ feature.feature pythonpath : : free opti
+ #   using python : 2.3 : /usr/local/bin/python ;
+ #
+ rule init ( version ? : cmd-or-prefix ? : includes * : libraries ?
+-    : condition * : extension-suffix ? )
++    : condition * : extension-suffix ? : abi-letters ? )
+ {
+     project.push-current $(.project) ;
+ 
+@@ -107,7 +107,7 @@ rule init ( version ? : cmd-or-prefix ? 
+         }
+     }
+ 
+-    configure $(version) : $(cmd-or-prefix) : $(includes) : $(libraries) : $(condition) : $(extension-suffix) ;
++    configure $(version) : $(cmd-or-prefix) : $(includes) : $(libraries) : $(condition) : $(extension-suffix) : $(abi-letters) ;
+ 
+     project.pop-current ;
+ }
+@@ -653,7 +653,7 @@ local rule system-library-dependencies (
+ 
+ # Declare a target to represent Python's library.
+ #
+-local rule declare-libpython-target ( version ? : requirements * )
++local rule declare-libpython-target ( version ? : requirements * : abi-letters ? )
+ {
+     # Compute the representation of Python version in the name of Python's
+     # library file.
+@@ -677,13 +677,13 @@ local rule declare-libpython-target ( ve
+     }
+ 
+     # Declare it.
+-    lib python.lib : : <name>python$(lib-version) $(requirements) ;
++    lib python.lib : : <name>python$(lib-version)$(abi-letters) $(requirements) ;
+ }
+ 
+ 
+ # Implementation of init.
+ local rule configure ( version ? : cmd-or-prefix ? : includes * : libraries ? :
+-    condition * : extension-suffix ? )
++    condition * : extension-suffix ? : abi-letters ? )
+ {
+     local prefix ;
+     local exec-prefix ;
+@@ -699,6 +699,7 @@ local rule configure ( version ? : cmd-o
+         extension-suffix ?= _d ;
+     }
+     extension-suffix ?= "" ;
++    abi-letters ?= "" ;
+ 
+     # Normalize and dissect any version number.
+     local major-minor ;
+@@ -922,7 +923,7 @@ local rule configure ( version ? : cmd-o
+     }
+     else
+     {
+-        declare-libpython-target $(version) : $(target-requirements) ;
++        declare-libpython-target $(version) : $(target-requirements) : $(abi-letters) ;
+ 
+         # This is an evil hack.  On, Windows, when Python is embedded, nothing
+         # seems to set up sys.path to include Python's standard library

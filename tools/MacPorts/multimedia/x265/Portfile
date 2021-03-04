@@ -5,19 +5,19 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
 PortGroup           xcode_workaround 1.0
+PortGroup           github 1.0
 
 # https://trac.macports.org/ticket/59875
 PortGroup           legacysupport 1.0
 
 legacysupport.newest_darwin_requires_legacy 9
 
-name                x265
-version             3.2.1
+github.setup        videolan x265 3.4
 revision            1
 
-checksums           rmd160  7386c00a49a2fc143cd3c8cea657872235a8ba77 \
-                    sha256  fb9badcf92364fd3567f8b5aa0e5e952aeea7a39a2b864387cec31e3b58cbbcc \
-                    size    1426255
+checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
+                    sha256  544d147bf146f8994a7bf8521ed878c93067ea1c7c6e93ab602389be3117eaaf \
+                    size    1530200
 
 categories          multimedia
 platforms           darwin
@@ -30,40 +30,59 @@ long_description    x265 is a free software library and application for \
                     compression format, and is released under the terms of the \
                     GNU GPL.
 homepage            https://www.videolan.org/developers/x265.html
-master_sites        https://download.videolan.org/pub/videolan/x265/
-distname            ${name}_${version}
-worksrcdir          ${distname}/source
+github.tarball_from archive
+worksrcdir          ${name}-${version}/source
 
-depends_build-append \
-                    port:gmake \
-                    port:nasm
+# allow overriding system processor detection
+patchfiles          patch-cmakelists-override-processor.diff
+
+depends_build-append port:gmake
 
 compiler.blacklist-append *llvm-gcc-4.2
 
 # https://trac.macports.org/ticket/59246
 xcode_workaround.fixed_xcode_version 11.2
 
-configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
-build.env-append     BUILD=${build.cmd}
-destroot.env-append  BUILD=${build.cmd} ARCH=none
-configure.cmd        ${portpath}/${filesdir}/configure.sh
-build.cmd            ${portpath}/${filesdir}/build.sh
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
 
-#    error: illegal text-relocation to '_x265_pw_1'
-#   report: https://mailman.videolan.org/pipermail/x265-devel/2014-May/004476.html
-# solution: http://lists.apple.com/archives/unix-porting/2008/Jan/msg00027.html
-if {[variant_exists universal] && [variant_isset universal]} {
+if {${universal_possible} && [variant_isset universal]} {
+
+    if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
+        depends_build-append port:nasm
+        set merger_configure_env(i386)      NASM_EXECUTABLE=${prefix}/bin/nasm
+        set merger_configure_env(x86_64)    NASM_EXECUTABLE=${prefix}/bin/nasm
+    }
+
+    # error: illegal text-relocation to '_x265_pw_1'
     lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
+
+    foreach uarch {arm64 i386 ppc ppc64 x86_64} {
+        set merger_configure_args(${uarch}) -DOVERRIDE_SYSTEM_PROCESSOR=${uarch}
+    }
+
+    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd}
+    build.env-append     BUILD=${build.cmd}
     foreach arch ${configure.universal_archs} {
         lappend merger_configure_env(${arch}) ARCH=${arch}
         lappend merger_build_env(${arch}) ARCH=${arch}
     }
 } else {
-    if {${build_arch} eq "i386"} {
-        configure.ldflags-append -Wl,-read_only_relocs,suppress
-    }
-    configure.env-append ARCH='${build_arch}'
-    build.env-append ARCH='${build_arch}'
+
+	if {${configure.build_arch} in {i386 x86_64}} {
+		depends_build-append port:nasm
+		configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
+	}
+
+	if {${configure.build_arch} eq "i386"} {
+        # error: illegal text-relocation to '_x265_pw_1'
+		configure.ldflags-append -Wl,-read_only_relocs,suppress
+	}
+    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
+    build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
 }
 
-livecheck.regex     "${name}_(\\d+(?:\\.\\d+)*)${extract.suffix}"
+destroot.env-append  BUILD=${build.cmd} ARCH=none
+configure.cmd        ${portpath}/${filesdir}/configure.sh
+build.cmd            ${portpath}/${filesdir}/build.sh

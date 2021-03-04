@@ -4,7 +4,7 @@
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/boost.html
 # TestImagePNG and TestImagePNGOIIO used to fail with boost 1.66.0, and succeed with boost 1.65.1,
 # but this should be fixed by https://github.com/NatronGitHub/Natron/commit/e360b4dd31a07147f2ad9073a773ff28714c2a69
-BOOST_VERSION=1.74.0
+BOOST_VERSION=1.75.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
 BOOST_SITE="https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source"

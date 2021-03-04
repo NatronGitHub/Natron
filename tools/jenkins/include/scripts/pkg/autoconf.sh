@@ -2,7 +2,7 @@
 
 # Install autoconf
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/autoconf.html
-AUTOCONF_VERSION=2.69
+AUTOCONF_VERSION=2.71
 AUTOCONF_TAR="autoconf-${AUTOCONF_VERSION}.tar.xz"
 AUTOCONF_SITE="https://ftp.gnu.org/gnu/autoconf"
 if download_step; then

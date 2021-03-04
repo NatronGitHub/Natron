@@ -3,8 +3,8 @@
 _realname=lcms2
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.9
-pkgrel=2
+pkgver=2.12
+pkgrel=1
 pkgdesc="Small-footprint color management engine, version 2 (mingw-w64)"
 arch=('any')
 url="http://www.littlecms.com"
@@ -12,20 +12,11 @@ license=("MIT")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-libtiff")
 options=('staticlibs' 'strip')
-source=("https://downloads.sourceforge.net/sourceforge/lcms/lcms2-${pkgver}.tar.gz"
-        0001-fix-testcmd2.mingw.patch
-        0002-need-jconfig-before-jmoreconfig.mingw.patch
-        0003-install-mans.all.patch)
-sha256sums=('48c6fdf98396fa245ed86e622028caf49b96fa22f3e5734f853f806fbc8e7d20'
-            'c9b52864f0a62514537be9882f81ebd73f59acb4486bd0acb5ff21936ae7f569'
-            '3e85375a6b38de36e19fa7b4415b8c86aff492c0ef625932bec073d45e944339'
-            '1a441261bc6f2adc4eebfd3b816b2e9cbc98014e419a53845d0e6a6243471825')
+source=("https://downloads.sourceforge.net/sourceforge/lcms/lcms2-${pkgver}.tar.gz")
+sha256sums=('18663985e864100455ac3e507625c438c3710354d85e5cbb7cd4043e11fe10f5')
 
 prepare() {
   cd ${_realname}-$pkgver
-  patch -p1 -i ${srcdir}/0001-fix-testcmd2.mingw.patch
-  patch -p1 -i ${srcdir}/0002-need-jconfig-before-jmoreconfig.mingw.patch
-  patch -p1 -i ${srcdir}/0003-install-mans.all.patch
 
   autoreconf -fiv
 }

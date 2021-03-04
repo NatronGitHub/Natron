@@ -19,8 +19,9 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mim
         make
         make install
     else
-        meson --prefix="$SDK_HOME" -Dupdate-mimedb=true .. && ninja
-        ninja install
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" -Dupdate-mimedb=true ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" ninja
+        env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
     fi
     popd
     rm -rf "shared-mime-info-${SHAREDMIMEINFO_VERSION}"

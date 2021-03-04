@@ -54,6 +54,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxNatron.h>
 
 #include "Global/FStreamsSupport.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
@@ -3163,6 +3166,10 @@ renderPreview(const Image & srcImg,
               bool convertToSrgb,
               unsigned int* dstPixels)
 {
+#ifdef DEBUG
+    // Uncomment if using plugins that generate FP exceptions
+    // boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     ///recompute it after the rescaling
     const RectI & srcBounds = srcImg.getBounds();
     double yZoomFactor = *dstHeight / (double)srcBounds.height();

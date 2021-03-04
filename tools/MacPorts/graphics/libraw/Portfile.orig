@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                libraw
 version             0.20.2
-revision            0
+revision            1
 
 description         Library for RAW image manipulation
 long_description    A library for reading RAW files obtained from digital photo \
@@ -26,7 +26,7 @@ checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
-                    port:jpeg \
+                    path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
 
 use_autoreconf      yes

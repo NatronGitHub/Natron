@@ -1,0 +1,11 @@
+--- openexr-2.4.0/PyIlmBase/CMakeLists.txt.orig	2019-09-18 03:02:06.000000000 +0200
++++ openexr-2.4.0/PyIlmBase/CMakeLists.txt	2019-12-08 14:03:14.054387900 +0100
+@@ -38,7 +38,7 @@
+ endif()
+ 
+ # now determine which (or both), and compile for both
+-find_package(Python2 COMPONENTS Interpreter Development)
++#find_package(Python2 COMPONENTS Interpreter Development)
+ find_package(Python3 COMPONENTS Interpreter Development)
+ if(TARGET Python2::Python AND TARGET Python3::Python)
+   message(NOTICE ": Found Python ${Python2_VERSION} and ${Python3_VERSION}")

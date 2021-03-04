@@ -1896,8 +1896,13 @@ SequenceFileDialog::showFilterMenu()
     QFontMetrics fm( font() );
 
     QStringList filters = _filters;
-    filters << QString::fromUtf8("*.*") << QString::fromUtf8("*/");
-    filters << QString::fromUtf8("*") << QString::fromUtf8(".*");
+    if (filters.size() > 1) {
+        // make sure *.* is first if we got multiple filters (for easy access)
+        filters.prepend( QString::fromUtf8("*.*") );
+    } else {
+        filters << QString::fromUtf8("*.*");
+    }
+    filters << QString::fromUtf8("*/") << QString::fromUtf8("*") << QString::fromUtf8(".*");
 
     for (int i = 0; i < filters.size(); ++i) {
         QString filter = filters[i];
@@ -1938,8 +1943,12 @@ SequenceFileDialog::handleFilterSlot()
 void
 SequenceFileDialog::setDefaultFilter()
 {
+    if (!_filterLineEdit) { // some instances don't use this widget (add dir dialogs)
+        return;
+    }
+
     QString filter = QString::fromUtf8("*.*");
-    if (_filters.size() > 0) {
+    if (_filters.size() == 1) { // only set if we got a single filter (ntp/nl/nps etc)
         filter = QString::fromUtf8("*.%1").arg( _filters.at(0) );
     }
     _filterLineEdit->setText(filter);

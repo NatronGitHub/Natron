@@ -169,7 +169,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;
         # - opencolorio
         if [ ! -d "$HOME/ocio/lib" ]; then
-            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.1.tar.gz -O /tmp/ocio.tgz;
+            wget https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/v1.1.1.tar.gz -O /tmp/ocio.tgz;
             tar -xvzf /tmp/ocio.tgz -C $HOME;
             pushd $HOME/OpenColorIO-1.1.1;
             find . -name CMakeLists.txt -exec sed -e s/-Werror// -i {} \; ;
@@ -355,9 +355,26 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
+
+    # Python 2.7
+    brew uninstall python@2  2>/dev/null || true
+    pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
+    git checkout 3a877e3525d93cfeb076fc57579bdd589defc585 Formula/python@2.rb;
+    brew install python@2;
+    popd;
+
     # install qt-webkit@2.3 if needed
-    brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
-    brew install boost
+    #brew install cartr/qt4/qt@4 expat cairo gnu-sed glew openssl
+    #brew install boost
+    brew bundle --file=- <<-EOS
+brew "cartr/qt4/qt@4"
+brew "expat"
+brew "cairo"
+brew "gnu-sed"
+brew "glew"
+brew "openssl"
+brew "boost"
+EOS
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
     #while true; do
@@ -370,16 +387,42 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #    fi
     #done
     # Python 2 pyside comes precompiled!
-    brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
+    #brew install cartr/qt4/pyside@1.2 cartr/qt4/shiboken@1.2
+    brew bundle --file=- <<-EOS
+brew "cartr/qt4/pyside@1.2"
+brew "cartr/qt4/shiboken@1.2"
+EOS
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw libheif openimageio openvdb;
+        #brew install ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb;
+        brew bundle --file=- <<-EOS
+brew "ilmbase"
+brew "openexr"
+brew "freetype"
+brew "fontconfig"
+brew "ffmpeg"
+brew "openjpeg"
+brew "libraw"
+brew "libheif"
+brew "openvdb"
+EOS
+        brew uninstall opencolorio 2>/dev/null || true
+        brew uninstall openimageio 2>/dev/null || true
+        brew uninstall seexpr 2>/dev/null || true
         pushd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core;
+        # fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
+        # 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
+        git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
+        # f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
+        git checkout f772cb9a399726fd5f3ba859c8f315988afb3d60 Formula/openimageio.rb;
+        # 4abcbc52a544c293f548b0373867d90d4587fd73 Mon Jan 6 20:19:51 2020 +0000
         git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb;
-        brew unlink seexpr || true;
+        brew install opencolorio;
+        brew link opencolorio;
+        brew install openimageio;
+        brew link openimageio;
         brew install seexpr;
         brew link seexpr;
-        brew switch seexpr 2.11;
         popd;
 
         # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)

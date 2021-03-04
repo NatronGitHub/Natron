@@ -5,6 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.53.3
+revision            1
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -15,7 +16,8 @@ long_description    Ghostscript is the well-known PostScript interpreter which \
 platforms           darwin
 homepage            https://www.ghostscript.com/
 master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
-                    sourceforge:gs-fonts:fonts \
+                    sourceforge:project/gs-fonts/gs-fonts/6.0%20%28misc%2C%20AFPL%29/:otherfonts \
+                    sourceforge:project/gs-fonts/gs-fonts/8.11%20%28base%2035%2C%20GPL%29/:stdfonts \
                     https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
 
 # Note: please update ghostscript-fonts-hiragino Portfile to keep version in sync
@@ -26,8 +28,8 @@ set mappingresources_commit \
 
 distname            ghostpdl-${version}
 distfiles           ${distname}.tar.gz:source \
-                    ghostscript-fonts-other-6.0.tar.gz:fonts \
-                    ghostscript-fonts-std-8.11.tar.gz:fonts \
+                    ghostscript-fonts-other-6.0.tar.gz:otherfonts \
+                    ghostscript-fonts-std-8.11.tar.gz:stdfonts \
                     ${mappingresources_commit}.zip:misc
 
 patchfiles          patch-base_unix-dll.mak.diff \
@@ -61,7 +63,7 @@ checksums           ghostpdl-9.53.3.tar.gz \
 depends_lib         port:fontconfig \
                     port:freetype \
                     port:jbig2dec \
-                    path:lib/libjpeg.dylib:jpeg \
+                    path:include/turbojpeg.h:libjpeg-turbo \
                     port:libiconv \
                     port:libidn \
                     port:libpaper \
@@ -97,7 +99,7 @@ post-patch {
 
     # Ensure that MacPorts perl is used everywhere
     fs-traverse f ${worksrcpath} {
-        if [string match *.pl ${f}] {
+        if {[string match *.pl ${f}]} {
             reinplace s|/usr/bin/perl|${prefix}/bin/perl| ${f}
         }
     }

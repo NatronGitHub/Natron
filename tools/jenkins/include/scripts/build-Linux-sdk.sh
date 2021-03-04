@@ -833,6 +833,9 @@ build libass # (for ffmpeg)
 build libbluray # (for ffmpeg)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
+checkpoint
+build dav1d # (for ffmpeg)
+build aom # (for ffmpeg)
 build ffmpeg
 build ruby # (necessary for qtwebkit)
 build breakpad

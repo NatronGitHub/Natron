@@ -1,0 +1,23 @@
+From fdbdb94db64e888fce90fe519be23c2a4396a82e Mon Sep 17 00:00:00 2001
+From: pradeep <pradeep@arrayfire.com>
+Date: Tue, 8 May 2018 14:53:38 +0530
+Subject: [PATCH 1/2] Fix return var qualifier in svm_ptr::get_context
+
+Lack of `const` qualifier is throwing errors with GCC 8.1
+---
+ include/boost/compute/memory/svm_ptr.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/boost/compute/memory/svm_ptr.hpp b/include/boost/compute/memory/svm_ptr.hpp
+index c8753f5b..56cf1268 100644
+--- a/boost/compute/memory/svm_ptr.hpp
++++ b/boost/compute/memory/svm_ptr.hpp
+@@ -126,7 +126,7 @@ class svm_ptr
+         return m_ptr - other.m_ptr;
+     }
+ 
+-    context& get_context() const
++    const context& get_context() const
+     {
+         return m_context;
+     }

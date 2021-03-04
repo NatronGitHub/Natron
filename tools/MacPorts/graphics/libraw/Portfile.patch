@@ -1,17 +1,17 @@
---- Portfile.orig	2020-11-16 10:27:28.000000000 -0800
-+++ Portfile	2020-11-16 10:28:03.000000000 -0800
+--- Portfile.orig	2021-02-13 12:00:15.000000000 -0800
++++ Portfile	2021-02-13 12:01:10.000000000 -0800
 @@ -3,8 +3,8 @@
  PortSystem          1.0
  
  name                libraw
 -version             0.20.2
--revision            0
+-revision            1
 +version             0.18.13
 +set demosaicversion 0.18.8
  
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
-@@ -12,39 +12,58 @@
+@@ -12,16 +12,28 @@
  
  categories          graphics
  platforms           darwin
@@ -44,9 +44,8 @@
  
  depends_build       port:pkgconfig
  
- depends_lib         port:jasper \
--                    port:jpeg \
-+                    path:lib/libjpeg.dylib:jpeg \
+@@ -29,22 +41,29 @@
+                     path:include/turbojpeg.h:libjpeg-turbo \
                      port:lcms2
  
 -use_autoreconf      yes

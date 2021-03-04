@@ -86,6 +86,22 @@ configure.args  --disable-guile \
                 --with-default-trust-store-pkcs11=pkcs11: \
                 ac_cv_prog_AWK=/usr/bin/awk
 
+compiler.thread_local_storage yes
+
+# Undefined symbols for architecture x86_64: "___get_cpuid_count"
+compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
+
+if {${os.platform} eq "darwin" && ${os.major} < 10 && [string match *clang* ${configure.compiler}] } {
+	depends_build-append  port:cctools
+	configure.env-append  NM=${prefix}/bin/nm
+	configure.args-append lt_cv_path_NM=${prefix}/bin/nm
+}
+
+platform darwin 8 {
+    depends_build-append   port:texinfo
+    configure.cppflags-append -D__WORDSIZE=32
+}
+
 variant dane description {Build libdane using unbound libraries} {
     depends_lib-append      port:unbound
     configure.args-append   --with-unbound-root-key-file="${prefix}/var/run/unbound/root.key"
@@ -126,7 +142,10 @@ variant guile description {Build guile bindings} {
     configure.args-replace  --disable-guile --enable-guile
 }
 
-if {[variant_isset universal]} {
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
+if {${universal_possible} && [variant_isset universal]} {
     set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
     set merger_host(i386) i686-apple-${os.platform}${os.major}
     set merger_host(ppc) ppc-apple-${os.platform}${os.major}
@@ -152,50 +171,6 @@ test.target     check
 
 post-destroot {
     move ${destroot}${prefix}/bin/certtool ${destroot}${prefix}/bin/gnutls-certtool
-}
-
-platform darwin 8 {
-    depends_build-append   port:texinfo
-    configure.cppflags-append -D__WORDSIZE=32
-}
-
-if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
-    compiler.blacklist-append *gcc-4.0
-    compiler.blacklist-append *gcc-4.2
-    # Undefined symbols for architecture x86_64:
-    # "___get_cpuid_count", referenced from:
-    #     _register_x86_crypto in libaccelerated.a(x86-common.o)
-    # ld: symbol(s) not found for architecture x86_64
-    compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
-    compiler.fallback-append  macports-clang-8.0 macports-clang-7.0
-}
-
-# needs a TLS supporting compiler on older systems
-# most of this code can disappear once the new compilers selection logic comes into base
-platform darwin powerpc {
-    compiler.whitelist macports-gcc-6
-    universal_variant no
-}
-platform darwin i386 {
-    if {${os.major} < 9} {
-        compiler.whitelist macports-gcc-6
-        universal_variant no
-    } elseif {${os.major} < 11} {
-        compiler.whitelist macports-clang-5.0
-        if {[file exists ${prefix}/bin/clang-mp-5.0]} {
-            if {[active_variants clang-5.0 emulated_tls]} {
-                # needs to use a newer NM version to handle clang-5.0's objects on leopard
-                if {${os.major} < 10} {
-                    depends_build-append port:cctools
-                    configure.env-append NM=${prefix}/bin/nm
-                    configure.args-append lt_cv_path_NM=${prefix}/bin/nm
-                }
-            } else {
-                ui_error "Please install clang-5.0 first, with the emulated_tls variant enabled."
-                error "unsupported configuration"
-            }
-        }
-    }
 }
 
 livecheck.type  regex

@@ -1,0 +1,38 @@
+From 78ffbe094400d277627b2c19ceb182d637b8baca Mon Sep 17 00:00:00 2001
+From: Rene Rivera <grafikrobot@gmail.com>
+Date: Sat, 16 Jul 2016 15:53:30 -0500
+Subject: [PATCH] Fix not having a default python interpreter version on
+ targets.
+
+This change adds a toolset requirement that sets the python version
+feature of the first configured python for a given target OS (usually
+the host OS). This allows to correctly configure different python
+interpreters for different target OSes.
+---
+ a/tools/build/src/tools/python.jam | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/tools/build/src/tools/python.jam b/tools/build/src/tools/python.jam
+index 6404d8ad37..6ee32167fc 100644
+--- a/tools/build/src/tools/python.jam
++++ b/tools/build/src/tools/python.jam
+@@ -900,6 +900,19 @@ local rule configure ( version ? : cmd-or-prefix ? : includes * : libraries ? :
+     toolset.add-requirements
+         $(target-requirements:J=,):<python.interpreter>$(interpreter-cmd) ;
+ 
++    # We also set a default requirement that assigns the first python configured
++    # for a particular target OS as the default. This makes it so that we can
++    # select a python interpreter with only knowledge of the target OS. And hence
++    # can configure different Pythons based on the target OS only.
++    local toolset-requirements = [ toolset.requirements ] ;
++    local toolset-target-os-requirements
++        = [ property.evaluate-conditionals-in-context
++            [ $(toolset-requirements).raw ] : <target-os>$(target-os) ] ;
++    if ! <python> in $(toolset-target-os-requirements:G)
++    {
++        toolset.add-requirements <target-os>$(target-os):<python>$(version:E=default) ;
++    }
++
+     # Register the right suffix for extensions.
+     register-extension-suffix $(extension-suffix) : $(target-requirements) ;
+ 

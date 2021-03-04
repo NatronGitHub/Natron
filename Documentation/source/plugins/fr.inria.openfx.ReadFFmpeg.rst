@@ -9,7 +9,7 @@ ReadFFmpeg node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ReadFFmpeg (fr.inria.openfx.ReadFFmpeg).*
+*This documentation is for version 1.1 of ReadFFmpeg (fr.inria.openfx.ReadFFmpeg).*
 
 Description
 -----------
@@ -18,7 +18,9 @@ Read video using FFmpeg.
 
 All formats supported by FFmpeg should be supported, but there may be issues with some non-conform files. In this case, it is recommended to transcode the video to a digital intermediate format, which is more suitable for grading, compositing and video editing.
 
-This can be done using the ffmpeg command-line tool, by following the instructions at https://trac.ffmpeg.org/wiki/Encode/VFX
+This can be done using the ffmpeg command-line tool, by following the instructions at <https://trac.ffmpeg.org/wiki/Encode/VFX>.
+
+Note that some format/codec combinations (eg AVI containing H264, MPEG-1 Video or MPEG-2 Video) do not support timestamps and must be moved to another container (e.g., MOV).
 
 Inputs
 ------
@@ -104,8 +106,6 @@ Controls
 | Frame rate / ``frameRate``                   | Double  | 24            | By default this value is guessed from the file. You can override it by checking the Custom fps parameter. The value of this parameter is what will be visible by the effects down-stream.                                                                                                                                                                                                                                                                                       |
 +----------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Custom FPS / ``customFps``                   | Boolean | Off           | If checked, you can freely force the value of the frame rate parameter. The frame-rate is just the meta-data that will be passed downstream to the graph, no retime will actually take place.                                                                                                                                                                                                                                                                                   |
-+----------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Max retries per frame / ``maxRetries``       | Integer | 10            | Some video files are sometimes tricky to read and needs several retries before successfully decoding a frame. This parameter controls how many times we should attempt to decode the same frame before failing.                                                                                                                                                                                                                                                                 |
 +----------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | First Track Only / ``firstTrackOnly``        | Boolean | Off           | Causes the reader to ignore all but the first video track it finds in the file. This should be selected in a multiview project if the file happens to contain multiple video tracks that don’t correspond to different views.                                                                                                                                                                                                                                                   |
 +----------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

@@ -30,7 +30,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     $GSED -i 's/test.test/#&/' python/tests/tstLastError.py
     # If, and only if, you are using ICU-68.1, fix a build breakage caused by that version by running the following command: 
     # see https://www.mail-archive.com/blfs-dev@lists.linuxfromscratch.org/msg10387.html
-    if [ "${ICU_VERSION:-}" = 68.1 ]; then
+    if [ "${ICU_VERSION:-}" = 68.1 ] || [ "${ICU_VERSION:-}" = 68.2 ]; then
         $GSED -i 's/ TRUE/ true/' encoding.c
     fi
     # note: python module is necessary for itstool

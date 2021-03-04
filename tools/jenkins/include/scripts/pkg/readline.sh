@@ -2,7 +2,7 @@
 
 # Install readline
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/readline.html
-READLINE_VERSION=8.0
+READLINE_VERSION=8.1
 READLINE_VERSION_MAJOR=${READLINE_VERSION%.*}
 READLINE_TAR="readline-${READLINE_VERSION}.tar.gz"
 READLINE_SITE="https://ftp.gnu.org/gnu/readline"

@@ -15,7 +15,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.3.1
-revision            0
+revision            2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -143,6 +143,7 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --disable-libaom \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
@@ -279,7 +280,10 @@ platform darwin 8 {
 
 configure.universal_args-delete --disable-dependency-tracking
 
-if {[variant_isset universal]} {
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
+if {${universal_possible} && [variant_isset universal]} {
     # the following is inspired by the icu Portfile
     # if we can't run executables for the target arch, mark it as a cross-compile
     foreach arch ${configure.universal_archs} {
@@ -325,7 +329,7 @@ variant x11 {
     configure.args-append   --enable-xlib
 }
 
-variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -407,6 +411,12 @@ variant darwinssl description {Enable https support using Apple built-in TLS lib
     configure.args-delete   --disable-securetransport
     configure.args-delete   --enable-gnutls
     depends_lib-delete      port:gnutls
+}
+
+variant aom description {Enable Alliance for Open Media AV1 Codec} {
+    depends_lib-append      port:aom
+    configure.args-delete   --disable-libaom
+    configure.args-append   --enable-libaom
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}

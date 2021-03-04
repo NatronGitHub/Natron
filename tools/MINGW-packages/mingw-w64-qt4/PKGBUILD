@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=7
+pkgrel=10
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
@@ -220,7 +220,7 @@ build() {
     -demosdir ${_buildpkgdir}/share/qt4/demos \
     -opensource \
     -confirm-license \
-    -release \
+    -debug-and-release \
     -platform win32-g++ \
     -xplatform win32-g++ \
     -plugin-sql-ibase \
@@ -255,7 +255,7 @@ build() {
     -native-gestures \
     -s60 \
     -largefile \
-    -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-neon \
+    -no-sse4.2 -no-avx -no-neon \
     -nomake tests \
     -nomake demos \
     -nomake examples \

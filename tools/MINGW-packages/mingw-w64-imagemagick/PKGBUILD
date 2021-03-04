@@ -14,7 +14,7 @@ pkgver=6.9.11.16
 _realname=imagemagick
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgrel=1
+pkgrel=3
 pkgdesc="An image viewing/manipulation program (mingw-w64)"
 arch=('any')
 url="https://www.imagemagick.org/"
@@ -62,21 +62,27 @@ sha256sums=(
 
 prepare() {
   cd ImageMagick-${pkgver%.*}-${pkgver##*.}
+
+  # don't depend on ltdl
+  sed -i 's#with_ltdl='\''yes'\''#with_ltdl='\''no'\''#g' configure.ac
+
+  MCORE="magick"
   if [ -d "MagickCore" ]; then # v7
-    # fix missing includes for mingw (add upstream!)
+    MCORE="MagickCore"
+    # mingw fixes
     patch -p0 -i ${srcdir}/ImageMagick-7.0.8-mingw.diff
-    # remove dep on ltdl, we don't use modules (should also be upstreamed with modifications)
-    patch -p0 -i ${srcdir}/ImageMagick-7.0.8-disable-ltdl.diff
   else # v6
-    # mingw fixes (upstream it?)
-    patch -p1 -i ${srcdir}/ImageMagick-6.8.8.1-mingw.patch
+    # mingw fixes
     patch -p1 -i ${srcdir}/ImageMagick-6-mingw.patch
-    # remove dep on ltdl, we don't use modules
-    patch -p0 -i ${srcdir}/ImageMagick-6.9.11-disable-ltdl.diff
     # support gimp 2.10 (until we move to v7)
     patch -p0 -i ${srcdir}/ImageMagick-6.9.10-gimp210.diff
   fi
-  autoreconf # we modify configure, so update
+
+  # fix linker
+  sed -i 's#$(MAGICK_DEP_LIBS)#$(MAGICK_DEP_LIBS) -lws2_32#g' ${MCORE}/MakeFile.am
+
+  # update configure
+  autoreconf
 }
 
 build() {

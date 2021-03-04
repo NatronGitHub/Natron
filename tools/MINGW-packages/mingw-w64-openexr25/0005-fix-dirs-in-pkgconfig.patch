@@ -1,0 +1,32 @@
+--- openexr-2.4.0/IlmBase/IlmBase.pc.in.orig	2019-10-30 09:49:33.334966000 +0300
++++ openexr-2.4.0/IlmBase/IlmBase.pc.in	2019-10-30 09:53:46.375320200 +0300
+@@ -4,9 +4,9 @@
+ ##
+ 
+ prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@
++exec_prefix=${prefix}/@exec_prefix@
++libdir=${prefix}/@libdir@
++includedir=${prefix}/@includedir@
+ libsuffix=@LIB_SUFFIX_DASH@
+ Name: IlmBase
+ Description: Base math and exception libraries
+--- openexr-2.4.0/OpenEXR/OpenEXR.pc.in.orig	2019-10-30 09:54:34.675387800 +0300
++++ openexr-2.4.0/OpenEXR/OpenEXR.pc.in	2019-10-30 09:54:58.695421500 +0300
+@@ -4,10 +4,10 @@
+ ##
+ 
+ prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@
+-OpenEXR_includedir=@includedir@/OpenEXR
++exec_prefix=${prefix}/@exec_prefix@
++libdir=${prefix}/@libdir@
++includedir=${prefix}/@includedir@
++OpenEXR_includedir=${prefix}/@includedir@/OpenEXR
+ libsuffix=@LIB_SUFFIX_DASH@
+ 
+ Name: OpenEXR

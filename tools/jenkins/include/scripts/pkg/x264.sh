@@ -2,7 +2,7 @@
 
 # x264
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x264.html
-X264_VERSION=20200819
+X264_VERSION=20210211
 X264_VERSION_PKG=0.161.x # fgrep X264_BUILD x264.h
 X264_TAR="x264-${X264_VERSION}.tar.xz"
 X264_SITE="http://anduin.linuxfromscratch.org/BLFS/x264"

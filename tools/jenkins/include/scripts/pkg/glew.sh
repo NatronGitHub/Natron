@@ -2,7 +2,7 @@
 
 # Install glew
 # see http://www.linuxfromscratch.org/blfs/view/systemd/x/glew.html
-GLEW_VERSION=2.1.0
+GLEW_VERSION=2.2.0
 GLEW_TAR="glew-${GLEW_VERSION}.tgz"
 GLEW_SITE="https://sourceforge.net/projects/glew/files/glew/${GLEW_VERSION}"
 if download_step; then

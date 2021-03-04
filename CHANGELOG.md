@@ -7,9 +7,22 @@
 
 ## Version 2.3.16
 
+- Updated documentation.
+- Handle console output on Windows.
+- Detect user installed fonts on Windows 10.
+- Fix issue with Boost 1.74.
+- Improvements to SequenceFileDialog.
+- Snap timeline alpha cursor to nearest frame.
+- Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
+
 ### Plugins
 
+- ReadFFmpeg, WriteFFmpeg: upgrade to work more nicely with the FFmpeg 4 API #148 #231 #241
+- ReadFFmpeg: add support for reading AV1 & Canopus HQ/HQX/Lossless.
+- WriteFFmpeg: add support for writing AV1.
 - Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
+- Fix Lin2Log to be consistent with Log2Lin. #570
+- Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
 
 
 ## Version 2.3.15
