@@ -23,6 +23,7 @@
 - Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
 - Fix Lin2Log to be consistent with Log2Lin. #570
 - Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
+- WriteOIIO: Do not add "Color." to the channel names of the color plane (affects mainly OpenEXR). #583
 
 
 ## Version 2.3.15
