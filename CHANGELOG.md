@@ -17,13 +17,14 @@
 
 ### Plugins
 
-- ReadFFmpeg, WriteFFmpeg: upgrade to work more nicely with the FFmpeg 4 API #148 #231 #241
+- ReadFFmpeg, WriteFFmpeg: upgrade to work more nicely with the FFmpeg 4 API. #148 #231 #241
 - ReadFFmpeg: add support for reading AV1 & Canopus HQ/HQX/Lossless.
 - WriteFFmpeg: add support for writing AV1.
 - Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
 - Fix Lin2Log to be consistent with Log2Lin. #570
 - Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
 - WriteOIIO: Do not add "Color." to the channel names of the color plane (affects mainly OpenEXR). #583
+- RGBtoHSL: Fix bug with white and superwhite values. #512
 
 
 ## Version 2.3.15
