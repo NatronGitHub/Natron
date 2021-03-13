@@ -10,7 +10,7 @@
 - Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
 - Handle console output on Windows. #524
 - Detect user installed fonts on Windows 10. #523 
-- Fix issue with Boost 1.74.
+- Fix issue with Boost 1.74. #574
 - Improvements to SequenceFileDialog. #565
 - Snap timeline alpha cursor to nearest frame.
 - Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
