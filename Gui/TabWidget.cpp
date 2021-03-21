@@ -2106,10 +2106,12 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,
         return;
     }
 
-    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
-        throw std::runtime_error(newName + " is a Python keyword");
-    }
     std::string paneName = objectName_mt_safe().toStdString();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        Dialogs::errorDialog(paneName, newName.toStdString() + " is a Python keyword");
+
+        return;
+    }
     std::string appID = _imp->gui->getApp()->getAppIDString();
     std::stringstream ss;
     ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
