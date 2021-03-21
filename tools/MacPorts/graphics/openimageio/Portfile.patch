@@ -1,5 +1,5 @@
---- Portfile.orig	2021-02-13 12:02:32.000000000 -0800
-+++ Portfile	2021-02-13 12:03:21.000000000 -0800
+--- Portfile.orig	2021-03-21 10:26:07.000000000 -0700
++++ Portfile	2021-03-21 10:26:43.000000000 -0700
 @@ -2,13 +2,13 @@
  
  PortSystem              1.0
@@ -11,8 +11,8 @@
  PortGroup               compiler_blacklist_versions 1.0
  
  github.setup            OpenImageIO oiio 2.1.17.0
--revision                1
-+revision                101
+-revision                2
++revision                102
  name                    openimageio
  categories              graphics
  license                 BSD

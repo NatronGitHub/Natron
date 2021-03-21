@@ -23,6 +23,9 @@ configure.env-append    GREP=/usr/bin/grep
 
 compiler.cxx_standard   2014
 
+# Only allow numbers, to avoid pre-release versions
+github.livecheck.regex  {([0-9.]+)}
+
 if {${subport} ne "ilmbase"} {
     depends_build-append \
                         port:pkgconfig

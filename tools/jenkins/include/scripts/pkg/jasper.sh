@@ -2,7 +2,7 @@
 
 # Install jasper
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/jasper.html
-JASPER_VERSION=2.0.25
+JASPER_VERSION=2.0.26
 JASPER_TAR="jasper-${JASPER_VERSION}.tar.gz"
 JASPER_SITE="https://github.com/jasper-software/jasper/archive/version-${JASPER_VERSION}"
 if download_step; then

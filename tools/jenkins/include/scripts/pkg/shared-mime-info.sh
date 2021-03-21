@@ -2,10 +2,11 @@
 
 # Install shared-mime-info (required by gdk-pixbuf)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/shared-mime-info.html
-SHAREDMIMEINFO_VERSION=1.15 # 2.0 builds with meson. Warning: SHAREDMIMEINFO_SITE changes with every release
+#SHAREDMIMEINFO_VERSION=1.15 # last version before meson
+SHAREDMIMEINFO_VERSION=2.1 # builds with meson. Warning: SHAREDMIMEINFO_SITE changes with every release
 SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.xz"
 #SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
-SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/b27eb88e4155d8fccb8bb3cd12025d5b"
+SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/0ee50652091363ab0d17e335e5e74fbe"
 if download_step; then
     download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
 fi

@@ -10,7 +10,7 @@
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.19.5
+CMAKE_VERSION=3.19.7
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"

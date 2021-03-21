@@ -8,7 +8,7 @@ PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 
 github.setup            OpenImageIO oiio 2.1.17.0
-revision                101
+revision                102
 name                    openimageio
 categories              graphics
 license                 BSD
