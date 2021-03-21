@@ -2108,7 +2108,7 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,
 
     std::string paneName = objectName_mt_safe().toStdString();
     if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
-        Dialogs::errorDialog(paneName, newName.toStdString() + " is a Python keyword");
+        Dialogs::errorDialog(paneName, newName + " is a Python keyword");
 
         return;
     }
