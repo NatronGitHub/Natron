@@ -1986,6 +1986,10 @@ TabWidget::activeIndex() const
 void
 TabWidget::setObjectName_mt_safe(const QString & str)
 {
+    std::string strs = str.toStdString();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(strs) ) {
+        throw std::runtime_error(strs + " is a Python keyword");
+    }
     std::string oldName = objectName_mt_safe().toStdString();
     {
         QMutexLocker l(&_imp->tabWidgetStateMutex);
@@ -2004,7 +2008,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
         ss << "if hasattr(" << appID << ", '"  << oldName << "'):\n";
         ss << "    del " << appID << "." << oldName << "\n";
     }
-    ss << appID << "." << str.toStdString() << " = " << appID << ".getTabWidget('" << str.toStdString() << "')\n";
+    ss << appID << "." << strs << " = " << appID << ".getTabWidget('" << strs << "')\n";
 
     std::string script = ss.str();
     std::string err;
@@ -2102,6 +2106,9 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,
         return;
     }
 
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        throw std::runtime_error(newName + " is a Python keyword");
+    }
     std::string paneName = objectName_mt_safe().toStdString();
     std::string appID = _imp->gui->getApp()->getAppIDString();
     std::stringstream ss;
@@ -2128,6 +2135,9 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,
 
     if (!isViewer && !isPanel) {
         return;
+    }
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(tabName) ) {
+        throw std::runtime_error(tabName + " is a Python keyword");
     }
 
     std::string paneName = _publicInterface->objectName_mt_safe().toStdString();

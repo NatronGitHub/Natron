@@ -859,8 +859,12 @@ DopeSheet::onNodeNameEditDialogFinished()
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
-            _imp->pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+                Dialogs::errorDialog(dialog->getNode()->getNode()->getLabel(), newName.toStdString() + " is a Python keyword");
+            } else {
+                QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
+                _imp->pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            }
         }
         dialog->deleteLater();
     }

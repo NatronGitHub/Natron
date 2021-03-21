@@ -4172,6 +4172,22 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
     return makeNameScriptFriendlyInternal(str, false);
 }
 
+bool
+NATRON_PYTHON_NAMESPACE::isKeyword(const std::string& str)
+{
+    const char* const kw[] = { "False", "None", "True", "and", "as", "assert",
+        "async", "await", "break", "class", "continue", "def", "del", "elif",
+        "else", "except", "finally", "for", "from", "global", "if", "import",
+        "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
+        "try", "while", "with", "yield", NULL };
+    for (const char* const *k = kw; *k != NULL; ++k) {
+        if (str == *k) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #if !defined(NDEBUG) && !defined(DEBUG_PYTHON_GIL)
 #pragma message WARN("define DEBUG_PYTHON_GIL in AppManager.h to debug Python GIL issues")
 #endif

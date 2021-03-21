@@ -6528,7 +6528,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     if (getScriptName_mt_safe().empty()) {
         return;
     }
-
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(nodeName) ) {
+        throw std::runtime_error(nodeName + " is a Python keyword");
+    }
 
     PythonGILLocker pgl;
     PyObject* mainModule = appPTR->getMainModule();

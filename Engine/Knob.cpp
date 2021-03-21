@@ -2304,6 +2304,9 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
         if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
             std::string scriptName = (*it)->getScriptName_mt_safe();
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
+                throw std::runtime_error(scriptName + " is a Python keyword");
+            }
             std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
             ss << tabStr << "if hasattr(";
             if (isParentGrp) {
