@@ -169,7 +169,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->idLabel = new Label(tr("Unique ID"), this);
-    QString idTt = NATRON_NAMESPACE::convertFromPlainText(tr("The unique ID is used by %1 to identify the plug-in in various "
+    QString idTt = NATRON_NAMESPACE::convertFromPlainText(tr("Used by %1 to identify the plug-in in various "
                                                      "places in the application.\n"
                                                      "Generally, this contains domain and sub-domains names "
                                                      "such as fr.inria.group.XXX.\n"
@@ -183,7 +183,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->labelLabel = new Label(tr("Label"), this);
-    QString labelTt = NATRON_NAMESPACE::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    QString labelTt = NATRON_NAMESPACE::convertFromPlainText(tr("Group label as seen in the user interface."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
     _imp->labelEdit->setPlaceholderText( QString::fromUtf8("MyPlugin") );
@@ -192,7 +192,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->groupingLabel = new Label(tr("Grouping"), this);
-    QString groupingTt = NATRON_NAMESPACE::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus, "
+    QString groupingTt = NATRON_NAMESPACE::convertFromPlainText(tr("Where the plug-in will be located in the menus, "
                                                            "e.g. \"Color/Transform\", or \"Draw\". Each sub-level must be separated by a '/'."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
 
@@ -202,7 +202,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->versionLabel = new Label(tr("Version"), this);
-    QString versionTt = NATRON_NAMESPACE::convertFromPlainText(tr("The version can be incremented when changing the behaviour of the plug-in. "
+    QString versionTt = NATRON_NAMESPACE::convertFromPlainText(tr("The version number can be incremented when changing the behaviour of the plug-in. "
                                                           "If a user is using and old version of this plug-in in a project, if a newer version "
                                                           "of this plug-in is available, upon opening the project a dialog will ask whether "
                                                           "the plug-in should update to the newer version in the project or not."), NATRON_NAMESPACE::WhiteSpaceNormal);
@@ -213,7 +213,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->versionSpinbox->setToolTip(versionTt);
 
     _imp->iconPathLabel = new Label(tr("Icon relative path"), this);
-    QString iconTt = NATRON_NAMESPACE::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
+    QString iconTt = NATRON_NAMESPACE::convertFromPlainText(tr("File path of an optional icon to identify the plug-in. "
                                                        "The path is relative to the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
@@ -221,14 +221,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->iconPath->setToolTip(iconTt);
 
     _imp->descriptionLabel = new Label(tr("Description"), this);
-    QString descTt =  NATRON_NAMESPACE::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
-                                                        "\"?\" button on the settings panel of the node."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    QString descTt =  NATRON_NAMESPACE::convertFromPlainText(tr("Plug-in description, as seen when clicking the "
+                                                        "\"?\" button on the settings panel of the node (optional)."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->descriptionEdit = new PlaceHolderTextEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceHolderText( tr("This plug-in can be used to produce XXX effect...") );
 
     _imp->fileLabel = new Label(tr("Directory"), this);
-    QString fileTt  = NATRON_NAMESPACE::convertFromPlainText(tr("Specify here the directory where to export the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
+    QString fileTt  = NATRON_NAMESPACE::convertFromPlainText(tr("Directory where to export the Python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
 
@@ -358,13 +358,13 @@ ExportGroupTemplateDialog::onOkClicked()
     QDir d(dirPath);
 
     if ( !d.exists() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString() );
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("Specify a directory where to save the script").toStdString() );
 
         return;
     }
     QString pluginLabel = _imp->labelEdit->text();
     if ( pluginLabel.isEmpty() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString() );
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("Specify a label to name the script").toStdString() );
 
         return;
     } else {
@@ -373,7 +373,7 @@ ExportGroupTemplateDialog::onOkClicked()
 
     QString pluginID = _imp->idEdit->text();
     if ( pluginID.isEmpty() ) {
-        Dialogs::errorDialog( tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString() );
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("Specify a unique ID to identify the script").toStdString() );
 
         return;
     }

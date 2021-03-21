@@ -311,9 +311,9 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_colorButton = new Button(QIcon(p), QString(), _imp->_headerWidget);
             _imp->_colorButton->setFixedSize(mediumBSize);
             _imp->_colorButton->setIconSize(mediumIconSize);
-            _imp->_colorButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
-                                                                              "By default the color of the node is the one set in the "
-                                                                              "preferences of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ),
+            _imp->_colorButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Node color in the nodegraph. "
+                                                                              "The default node color is set in the "
+                                                                              "%1 preferences.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ),
                                                                            NATRON_NAMESPACE::WhiteSpaceNormal) );
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
@@ -331,8 +331,8 @@ DockablePanel::DockablePanel(Gui* gui,
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(mediumBSize);
                 _imp->_overlayButton->setIconSize(mediumIconSize);
-                _imp->_overlayButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
-                                                                                    "Some plug-ins understand it and will use it to change the color of "
+                _imp->_overlayButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Overlay color in the viewer. "
+                                                                                    "Some plug-ins will use it to change the color of "
                                                                                     "the overlay."), NATRON_NAMESPACE::WhiteSpaceNormal) );
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
                 QObject::connect( _imp->_overlayButton, SIGNAL(clicked()), this, SLOT(onOverlayButtonClicked()) );
