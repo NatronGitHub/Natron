@@ -4,9 +4,9 @@ The following are instructions for installing the Natron SDK on Windows.
 
 ## Install MSYS2
 
-First you need to download a MSYS2 snapshot, only ``20180531`` is supported.
+First you need to download a MSYS2 snapshot, only **``20180531``** is supported.
 
-* Download and extract [msys2-base-x86_64-20180531.tar.xz](http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20180531.tar.xz)
+* Download and extract [msys2-base-x86_64-20180531.tar.xz](http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20180531.tar.xz) [[Mirror](https://sourceforge.net/projects/natron/files/MINGW-packages/msys2-base-x86_64-20180531.tar.xz/download)]
 * Move the ``msys64`` folder to ``C:\msys64-20180531``
 * Run ``C:\msys64-20180531\mingw64.exe`` (this will trigger a setup script, wait until done)
 * When prompted close the terminal window
@@ -14,14 +14,17 @@ First you need to download a MSYS2 snapshot, only ``20180531`` is supported.
 Start ``C:\msys64-20180531\mingw64.exe``, then run the following commands:
 
 	$ sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel = Never/' /etc/pacman.conf
-
-	$ echo "Server = https://downloads.sourceforge.net/project/openfx-arena/MINGW-packages/mingw64" > /etc/pacman.d/mirrorlist.mingw64
-
-	$ echo "Server = https://downloads.sourceforge.net/project/openfx-arena/MINGW-packages/msys" > /etc/pacman.d/mirrorlist.msys
-
+	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/mingw64" > /etc/pacman.d/mirrorlist.mingw64
+	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/msys" > /etc/pacman.d/mirrorlist.msys
 	$ pacman -Syu natron-sdk
 
-This will install everything required to build Natron and the plug-ins.
+This will install everything required to build/package Natron and the plug-ins. If some packages fail to download re-run the last command.
+
+The SDK can be updated with the following command:
+
+```
+pacman -Syu
+```
 
 ## Maintain (DRAFT)
 
@@ -29,7 +32,7 @@ Information for current and future maintainers.
 
 ### Setup from scratch
 
-Install MSYS2 snapshot and the following packages:
+Install a MSYS2 snapshot and the following packages:
 
 ```
 pacman -S \
@@ -253,6 +256,7 @@ mingw-w64-nghttp2
 mingw-w64-curl
 mingw-w64-snappy
 mingw-w64-xvidcore
+mingw-w64-dav1d
 mingw-w64-rtmpdump-git
 mingw-w64-libraw-gpl2
 mingw-w64-ffmpeg-gpl2
