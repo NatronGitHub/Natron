@@ -100,17 +100,21 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                     break;
                 }
             }
-            if (!knobs[i]->getIsPersistent() && !hasExpr) {
-                continue;
-            }
+            // Always serialize nodes that have an expression or a link.
+            // See https://github.com/NatronGitHub/Natron/issues/585
+            // Already fixed in RB-3.0 by https://github.com/NatronGitHub/Natron/commit/7ef38849fe
+            if (!hasExpr) {
+                if ( !knobs[i]->getIsPersistent() ) {
+                    continue;
+                }
 
-            if (!knobs[i]->hasModificationsForSerialization()) {
-                continue;
+                if ( !knobs[i]->hasModificationsForSerialization() ) {
+                    continue;
+                }
             }
 
             KnobSerializationPtr newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _knobsValues.push_back(newKnobSer);
-
         }
 
         _nbKnobs = (int)_knobsValues.size();
