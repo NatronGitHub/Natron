@@ -3132,6 +3132,9 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
     }
     appID = getApp()->getAppIDString();
     assert(_imp->effect);
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptname) ) {
+        throw std::runtime_error(scriptname + " is a Python keyword");
+    }
 
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);

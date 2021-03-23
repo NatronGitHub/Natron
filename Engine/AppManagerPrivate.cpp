@@ -307,8 +307,12 @@ AppManagerPrivate::declareSettingsToPython()
     ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
     const KnobsVec& knobs = _settings->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const std::string name = (*it)->getName();
+        if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
+            throw std::runtime_error(name + " is a Python keyword");
+        }
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
-        (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
+        name << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << name << "')\n";
     }
 }
 

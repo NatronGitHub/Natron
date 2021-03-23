@@ -762,6 +762,12 @@ DockablePanel::onLineEditNameEditingFinished()
     if (oldName == newName) {
         return;
     }
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+        _imp->_nameLineEdit->setText(oldName);
+        Dialogs::errorDialog(_imp->_pluginLabel.toStdString(), newName.toStdString() + " is a Python keyword");
+
+        return;
+    }
 
     assert(node);
 

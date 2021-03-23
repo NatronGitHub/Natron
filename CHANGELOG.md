@@ -14,6 +14,7 @@
 - Snap timeline alpha cursor to nearest frame. #574
 - Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
 - Tabs UI adjustments. #564
+- Do not allow Python keywords as node name or scriptname. #588
 
 ### Plugins
 

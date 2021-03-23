@@ -829,6 +829,11 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 {
     // always running in the main thread
     std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        Dialogs::errorDialog(_imp->viewerNode->getNode()->getLabel(), newName + " is a Python keyword");
+
+        return;
+    }
     std::string oldName = getScriptName();
 
     for (std::size_t i = 0; i < newName.size(); ++i) {

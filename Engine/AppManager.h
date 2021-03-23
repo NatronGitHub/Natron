@@ -781,6 +781,8 @@ std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 
+bool isKeyword(const std::string& str);
+
 bool getGroupInfos(const std::string& modulePath,
                    const std::string& pythonModule,
                    std::string* pluginID,

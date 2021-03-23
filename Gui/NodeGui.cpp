@@ -3419,8 +3419,8 @@ NodeGui::setName(const QString & newName)
     try {
         node->setScriptName(stdName);
     } catch (const std::exception& e) {
-        //Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
-        //return;
+        Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
+        return;
     }
 
     _settingNameFromGui = true;

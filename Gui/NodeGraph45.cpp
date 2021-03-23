@@ -544,8 +544,12 @@ NodeGraph::onNodeNameEditDialogFinished()
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
-            pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+                Dialogs::errorDialog(dialog->getNode()->getNode()->getLabel(), newName.toStdString() + " is a Python keyword");
+            } else {
+                QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
+                pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            }
         }
         dialog->deleteLater();
     }
@@ -616,6 +620,11 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
         return;
     }
     std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        Dialogs::errorDialog(isGrp->getNode()->getLabel(), newName + " is a Python keyword");
+
+        return;
+    }
     for (std::size_t i = 0; i < newName.size(); ++i) {
         if (newName[i] == '.') {
             newName[i] = '_';
