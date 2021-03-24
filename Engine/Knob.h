@@ -2839,6 +2839,8 @@ public:
     }
 
     virtual std::string getScriptName_mt_safe() const = 0;
+
+    virtual std::string getFullyQualifiedName() const = 0;
 };
 
 

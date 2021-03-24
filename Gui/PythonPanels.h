@@ -67,6 +67,8 @@ public:
 
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
 
+    virtual std::string getFullyQualifiedName() const OVERRIDE FINAL;
+
     void setParamChangedCallback(const QString& callback);
 
 private:

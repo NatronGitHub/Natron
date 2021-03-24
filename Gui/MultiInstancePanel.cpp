@@ -456,6 +456,12 @@ MultiInstancePanel::getScriptName_mt_safe() const
     return _imp->getMainInstance()->getScriptName_mt_safe();
 }
 
+std::string
+MultiInstancePanel::getFullyQualifiedName() const
+{
+    return _imp->getMainInstance()->getFullyQualifiedName();
+}
+
 void
 MultiInstancePanel::initializeKnobs()
 {

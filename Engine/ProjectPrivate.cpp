@@ -208,6 +208,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
 
+#warning "TODO: (issue #568) Here, we should restore the Knob links (not in KnobSerialization::restoreKnobLinks()) using findMaster from the arguments that were stored in the KnobI"
 
         _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
