@@ -277,15 +277,21 @@ KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
+#pragma message WARN("TODO: (issue #568) This doesnt work for links outside of the group (eg Group clones). Instead, we should store the arguments to findMaster in the knob, and do the actual links when the full graph is created (after step /// 3) Restore the nodes in ProjectPrivate.cpp)")
+            knob->storeLink(-1, aliasKnobName, aliasNodeName, masterTrackName);
+            /*
             KnobIPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
             if (alias) {
                 knob->setKnobAsAliasOfThis(alias, true);
             }
+             */
         }
     } else {
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
 #pragma message WARN("TODO: (issue #568) This doesnt work for links outside of the group (eg Group clones). Instead, we should store the arguments to findMaster in the knob, and do the actual links when the full graph is created (after step /// 3) Restore the nodes in ProjectPrivate.cpp)")
+                knob->storeLink(it->masterDimension, it->masterKnobName, it->masterNodeName, it->masterTrackName);
+                /*
                 KnobIPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
                 if (master) {
                     if (master == knob) {
@@ -294,6 +300,7 @@ KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
                         knob->slaveTo(i, master, it->masterDimension);
                     }
                 }
+                */
             }
             ++i;
         }
