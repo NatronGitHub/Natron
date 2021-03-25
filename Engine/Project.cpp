@@ -771,8 +771,8 @@ Project::initializeKnobs()
 
     page->addKnob(_imp->envVars);
 
-    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Output Format") );
-    _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
+    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Project Format") );
+    _imp->formatKnob->setHintToolTip( tr("The project format is what is used as canvas on the viewers, as the default format for generators, and as the default output format for writers.") );
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format> & appFormats = appPTR->getFormats();

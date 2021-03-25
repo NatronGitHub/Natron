@@ -26,6 +26,7 @@
 - Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
 - WriteOIIO: Do not add "Color." to the channel names of the color plane (affects mainly OpenEXR). #583
 - RGBtoHSL: Fix bug with white and superwhite values. #512
+- Reformat: Default to project size. #533
 
 
 ## Version 2.3.15
