@@ -208,7 +208,17 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
 
-#warning "TODO: (issue #568) Here, we should restore the Knob links (not in KnobSerialization::restoreKnobLinks()) using findMaster from the arguments that were stored in the KnobI"
+#pragme message WARN("TODO: (issue #568) Here, we should restore the Knob links (not in KnobSerialization::restoreKnobLinks()) using findMaster from the arguments that were stored in the KnobI")
+        NodesList allNodes;
+        /*
+        _publicInterface->getNodes_recursive(allNodes, false);
+        for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+#error
+            // find all KnobIs in the node, restore links
+            const std::vector<KnobIPtr> & nodeKnobs = it->getKnobs();
+
+        }
+         */
 
         _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
