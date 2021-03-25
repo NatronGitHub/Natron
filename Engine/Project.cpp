@@ -824,7 +824,7 @@ Project::initializeKnobs()
     _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by plug-ins. New viewers are created automatically "
                                          "with this frame-range. By default when the first Read node is created, this range "
                                          "will be set to the "
-                                         "sequence's legnth, unless the Lock Range parameter is checked.") );
+                                         "sequence legnth, unless the Lock Range parameter is checked.") );
     _imp->frameRange->setAnimationEnabled(false);
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
@@ -834,7 +834,7 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
     _imp->lockFrameRange->setHintToolTip( tr("By default when the first Read node is created, this range will be set to the "
-                                             "sequence's legnth, unless this parameter is checked.") );
+                                             "sequence legnth, unless this parameter is checked.") );
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
 
