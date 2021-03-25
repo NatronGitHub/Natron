@@ -834,7 +834,7 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
     _imp->lockFrameRange->setHintToolTip( tr("By default when the first Read node is created, this range will be set to the "
-                                             "sequence legnth, unless this parameter is checked.") );
+                                             "sequence length, unless this parameter is checked.") );
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
 
