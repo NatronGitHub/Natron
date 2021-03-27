@@ -772,7 +772,7 @@ Project::initializeKnobs()
     page->addKnob(_imp->envVars);
 
     _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Project Format") );
-    _imp->formatKnob->setHintToolTip( tr("The project format is what is used as canvas on the viewers, as the default format for generators, and as the default output format for writers.") );
+    _imp->formatKnob->setHintToolTip( tr("The project format is used as the default workspace size for viewers, the default format for generators, and the default output format for writers.  In most cases this should match your plate resolution.") );
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format> & appFormats = appPTR->getFormats();
@@ -805,8 +805,8 @@ Project::initializeKnobs()
 
     _imp->previewMode = AppManager::createKnob<KnobBool>( this, tr("Auto Previews") );
     _imp->previewMode->setName("autoPreviews");
-    _imp->previewMode->setHintToolTip( tr("When checked, preview images on the node graph will be "
-                                          "refreshed automatically. You can uncheck this option to improve performances.") );
+    _imp->previewMode->setHintToolTip( tr("When checked, preview images in the node graph will be "
+                                          "refreshed automatically. Disabling this will improve performance.") );
     _imp->previewMode->setAnimationEnabled(false);
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
@@ -821,10 +821,10 @@ Project::initializeKnobs()
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
-    _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
-                                         "with this frame-range. By default when a new Reader node is created, its frame range "
-                                         "is unioned to this "
-                                         "frame-range, unless the Lock frame range parameter is checked.") );
+    _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by plug-ins. New viewers are created automatically "
+                                         "with this frame-range. By default when the first Read node is created, this range "
+                                         "will be set to the "
+                                         "sequence legnth, unless the Lock Range parameter is checked.") );
     _imp->frameRange->setAnimationEnabled(false);
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
@@ -833,8 +833,8 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
-    _imp->lockFrameRange->setHintToolTip( tr("By default when a new Reader node is created, its frame range is unioned to the "
-                                             "project frame-range, unless this parameter is checked.") );
+    _imp->lockFrameRange->setHintToolTip( tr("By default when the first Read node is created, this range will be set to the "
+                                             "sequence length, unless this parameter is checked.") );
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
 
