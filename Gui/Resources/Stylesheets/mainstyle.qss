@@ -506,12 +506,12 @@ QTabBar::tab:only-one {
     margin: 0; /* if there is only one tab, we don't want overlapping margins */
 }
 QTabBar::close-button {
-    image: url(:/Resources/Images/closeTab.svg);
+    image: url(:/Resources/Images/closeTab.png);
     subcontrol-position: right;
 }
 
 QTabBar::close-button:hover {
-    image: url(:/Resources/Images/closeTab_hovered.svg);
+    image: url(:/Resources/Images/closeTab_hovered.png);
     subcontrol-position: right;
 }
 
