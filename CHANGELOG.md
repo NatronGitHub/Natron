@@ -7,6 +7,16 @@
 
 ## Version 2.3.16
 
+### Known issues
+
+- Rendering sometimes silently stalls after X frames #248
+- Remember Minimize state when reopening project #168
+- Natron does not support cloned group nodes or hard links between groups (crashes on loading project) #568 #579
+- PCX image format does not work properly
+- PSB image format does not work properly
+
+### Changes
+
 - Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
 - Handle console output on Windows. #524
 - Detect user installed fonts on Windows 10. #523 
@@ -15,6 +25,7 @@
 - Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
 - Tabs UI adjustments. #564
 - Do not allow Python keywords as node name or scriptname. #588
+- Always serialize nodes with an expression or a link, even if they have the default value. #585
 
 ### Plugins
 
@@ -25,6 +36,7 @@
 - Fix Lin2Log to be consistent with Log2Lin. #570
 - Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
 - WriteOIIO: Do not add "Color." to the channel names of the color plane (affects mainly OpenEXR). #583
+- Writers: when writing RGBA to format that does not support alpha, just drop alpha - don't premultiply. #582
 - RGBtoHSL: Fix bug with white and superwhite values. #512
 - Reformat: Default to project size. #533
 
