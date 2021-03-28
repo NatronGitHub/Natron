@@ -928,11 +928,9 @@ public:
     ~KnobSerialization() { delete _extraData; }
 
     /**
-     * @brief This function cannot be called until all knobs of the project have been created.
+     * @brief Store the links, which can be restored once all Nodes and Knobs have been created, using KnobI::restoreLinks()
      **/
-    void restoreKnobLinks(const KnobIPtr & knob,
-                          const NodesList & allNodes,
-                          const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+    void storeKnobLinks(const KnobIPtr & knob);
 
     /**
      * @brief This function cannot be called until all knobs of the project have been created.

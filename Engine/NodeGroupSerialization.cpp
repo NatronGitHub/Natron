@@ -395,12 +395,6 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
     } // for (std::list<NodeSerializationPtr>::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     ///Now that the graph is setup, restore expressions
-#pragma message WARN("TODO: (issue #568) restoreKnobsLinks does not work for links outside this group. Instead, it should store the links in the Knob, and they should be restored at the end of ProjectPrivate::restoreFromSerialization()")
-    NodesList nodes = group->getNodes();
-    if (isNodeGroup) {
-        nodes.push_back( isNodeGroup->getNode() );
-    }
-
     {
         std::map<std::string, std::string> oldNewScriptNamesMapping;
         for (std::map<NodePtr, NodeSerializationPtr>::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
@@ -408,7 +402,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 //ignore viewers on background mode
                 continue;
             }
-            it->first->restoreKnobsLinks(*it->second, nodes, oldNewScriptNamesMapping);
+            it->first->storeKnobsLinks(*it->second, oldNewScriptNamesMapping);
+            // restoreKnobsLinks() is called on all nodes at the end of ProjectPrivate::restoreFromSerialization()
         }
     }
 

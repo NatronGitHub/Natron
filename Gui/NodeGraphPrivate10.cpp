@@ -121,13 +121,12 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             NodesList allNodes;
             _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
 
-
             //Restore links once all children are created for alias knobs/expressions
             for (std::list<std::pair<NodeSerializationPtr, NodePtr> > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
-                it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
+                it->second->storeKnobsLinks(*(it->first), oldNewScriptNamesMap);
+                it->second->restoreKnobsLinks(allNodes, oldNewScriptNamesMap);
             }
         }
-
 
         if (newNodesList.size() > 1) {
             ///Only compute datas if we're pasting more than 1 node
@@ -211,15 +210,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     //All nodes that are reachable via expressions
     NodesList allNodes;
-    n->getGroup()->getActiveNodes(&allNodes);
-
-    ///Add the node group itself
-    {
-        NodeGroup* isContainerGroup = dynamic_cast<NodeGroup*>( n->getGroup().get() );
-        if (isContainerGroup) {
-            allNodes.push_back( isContainerGroup->getNode() );
-        }
-    }
+    _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
 
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
@@ -285,12 +276,10 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
         //Restore links once all children are created for alias knobs/expressions
         for (std::list<std::pair<NodeSerializationPtr, NodePtr> > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
-            it->second->restoreKnobsLinks(*(it->first), allNodes, *oldNewScriptNameMapping);
+            it->second->storeKnobsLinks(*(it->first), *oldNewScriptNameMapping);
+            it->second->restoreKnobsLinks(allNodes, *oldNewScriptNameMapping);
         }
-
-
     }
-
 
     return gui;
 } // NodeGraphPrivate::pasteNode

@@ -327,7 +327,8 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     //Restore links once all children are created for alias knobs/expressions
     std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
     for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
-        (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
+        (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNameMapping);
+        (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNameMapping);
     }
 
 

@@ -56,6 +56,8 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -147,6 +149,100 @@ KnobI::slaveTo(int dimension,
                bool ignoreMasterPersistence)
 {
     return slaveToInternal(dimension, other, otherDimension, eValueChangedReasonNatronInternalEdited, ignoreMasterPersistence);
+}
+
+static KnobIPtr
+findMaster(const KnobIPtr & knob,
+           const NodesList & allNodes,
+           const std::string& masterKnobName,
+           const std::string& masterNodeName,
+           const std::string& masterTrackName,
+           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+{
+    ///we need to cycle through all the nodes of the project to find the real master
+    NodePtr masterNode;
+    std::string masterNodeNameToFind = masterNodeName;
+
+    /*
+       When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
+       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
+     */
+    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
+
+    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+        masterNodeNameToFind = foundMapping->second;
+    }
+
+    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+        if ( (*it2)->getFullyQualifiedName() == masterNodeNameToFind ) {
+            masterNode = *it2;
+            break;
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str() << "trying without the group name (Natron project files before 2.3.16)...";
+
+        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+            qDebug() << "Trying" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
+            if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
+                masterNode = *it2;
+                break;
+            }
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str();
+
+        return KnobIPtr();
+    }
+
+    if ( !masterTrackName.empty() ) {
+        TrackerContextPtr context = masterNode->getTrackerContext();
+        if (context) {
+            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
+            if (marker) {
+                return marker->getKnobByName(masterKnobName);
+            }
+        }
+    } else {
+        ///now that we have the master node, find the corresponding knob
+        const std::vector<KnobIPtr> & otherKnobs = masterNode->getKnobs();
+        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
+            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
+                return otherKnobs[j];
+                break;
+            }
+        }
+    }
+
+    qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str();
+
+    return KnobIPtr();
+}
+
+void
+KnobI::restoreLinks(const NodesList & allNodes,
+                    const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+{
+    int i = 0;
+    KnobIPtr thisKnob = shared_from_this();
+    for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
+
+        KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->knobName, l->nodeName, l->trackName, oldNewScriptNamesMapping);
+        if (linkedKnob == thisKnob) {
+            qDebug() << "Link for" << getName().c_str()
+            << "failed to restore the following linkage:"
+            << "node=" << l->nodeName.c_str()
+            << "knob=" << l->knobName.c_str()
+            << "track=" << l->trackName.c_str()
+            << "because it returned the same Knob. Probably a pre-2.3.16 project with Group clones";
+        } else if (l->dimension == -1) {
+            setKnobAsAliasOfThis(linkedKnob, true);
+        } else {
+            slaveTo(i, linkedKnob, l->dimension);
+        }
+    }
+    _links.clear();
 }
 
 void

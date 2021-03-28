@@ -1217,13 +1217,11 @@ LoadNodePresetsCommand::redo()
     }
 
     NodesList allNodes;
-    internalNode->getGroup()->getActiveNodes(&allNodes);
-    NodeGroup* isGroup = internalNode->isEffectGroup();
-    if (isGroup) {
-        isGroup->getActiveNodes(&allNodes);
-    }
+    internalNode->getApp()->getProject()->getActiveNodes(&allNodes);
+
     std::map<std::string, std::string> oldNewScriptNames;
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes, oldNewScriptNames);
+    internalNode->storeKnobsLinks(*_newSerializations.front(), oldNewScriptNames);
+    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames);
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;

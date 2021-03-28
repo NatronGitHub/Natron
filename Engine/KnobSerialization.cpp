@@ -193,79 +193,9 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
-static KnobIPtr
-findMaster(const KnobIPtr & knob,
-           const NodesList & allNodes,
-           const std::string& masterKnobName,
-           const std::string& masterNodeName,
-           const std::string& masterTrackName,
-           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
-{
-    ///we need to cycle through all the nodes of the project to find the real master
-    NodePtr masterNode;
-    std::string masterNodeNameToFind = masterNodeName;
-
-    /*
-       When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
-       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
-     */
-    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
-
-    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
-        masterNodeNameToFind = foundMapping->second;
-    }
-
-    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-        if ( (*it2)->getFullyQualifiedName() == masterNodeNameToFind ) {
-            masterNode = *it2;
-            break;
-        }
-    }
-    if (!masterNode) {
-        qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str() << "trying without the group name (Natron project files before 2.3.16)...";
-
-        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-            qDebug() << "Trying" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
-            if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
-                masterNode = *it2;
-                break;
-            }
-        }
-    }
-    if (!masterNode) {
-        qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str();
-
-        return KnobIPtr();
-    }
-
-    if ( !masterTrackName.empty() ) {
-        TrackerContextPtr context = masterNode->getTrackerContext();
-        if (context) {
-            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
-            if (marker) {
-                return marker->getKnobByName(masterKnobName);
-            }
-        }
-    } else {
-        ///now that we have the master node, find the corresponding knob
-        const std::vector<KnobIPtr> & otherKnobs = masterNode->getKnobs();
-        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
-                return otherKnobs[j];
-                break;
-            }
-        }
-    }
-
-    qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << masterNodeNameToFind.c_str();
-
-    return KnobIPtr();
-}
 
 void
-KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
-                                    const NodesList & allNodes,
-                                    const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
 {
     int i = 0;
 
@@ -277,35 +207,19 @@ KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
-#pragma message WARN("TODO: (issue #568) This doesnt work for links outside of the group (eg Group clones). Instead, we should store the arguments to findMaster in the knob, and do the actual links when the full graph is created (after step /// 3) Restore the nodes in ProjectPrivate.cpp)")
             knob->storeLink(-1, aliasKnobName, aliasNodeName, masterTrackName);
-            /*
-            KnobIPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
-            if (alias) {
-                knob->setKnobAsAliasOfThis(alias, true);
-            }
-             */
         }
     } else {
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-#pragma message WARN("TODO: (issue #568) This doesnt work for links outside of the group (eg Group clones). Instead, we should store the arguments to findMaster in the knob, and do the actual links when the full graph is created (after step /// 3) Restore the nodes in ProjectPrivate.cpp)")
                 knob->storeLink(it->masterDimension, it->masterKnobName, it->masterNodeName, it->masterTrackName);
-                /*
-                KnobIPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
-                if (master) {
-                    if (master == knob) {
-                        qDebug() << "Link slave/master for" << knob->getName().c_str() <<   "failed to restore the following linkage:" << it->masterKnobName.c_str() << "because it returned the same Knob. Probably an pre-2.3.16 project with Group clones";
-                    } else {
-                        knob->slaveTo(i, master, it->masterDimension);
-                    }
-                }
-                */
             }
             ++i;
         }
     }
 }
+
+
 
 void
 KnobSerialization::restoreExpressions(const KnobIPtr & knob,
