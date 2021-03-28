@@ -51,7 +51,7 @@ run-without-python {
 # QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
 
     QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long -Wno-deprecated-copy
     *clang* | *xcode* {
     	# In file included from <built-in>:1:
     	# In file included from /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/Python.h:88:
