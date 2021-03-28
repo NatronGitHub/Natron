@@ -676,16 +676,12 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 
         //Restore links once all children are created for alias knobs/expressions
         NodesList allNodes;
-        group->getActiveNodes(&allNodes);
-        // If the group is a Group node, append to all nodes reachable through links
-        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
-        if (isGroupNode) {
-            allNodes.push_back(isGroupNode->getNode());
-        }
+        getGui()->getApp()->getProject()->getActiveNodesExpandGroups(&allNodes);
 
         std::list<NodeSerializationPtr>::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr> > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
-            it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
+            it->second->getNode()->storeKnobsLinks(**itSerialization, oldNewScriptNamesMapping);
+            it->second->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // may not fail
         }
 
     }

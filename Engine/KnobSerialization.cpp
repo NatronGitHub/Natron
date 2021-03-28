@@ -129,10 +129,10 @@ ValueSerialization::initForSave(const KnobIPtr & knob,
         TrackMarker* isMarker = dynamic_cast<TrackMarker*>(holder);
         if (isMarker) {
             _master.masterTrackName = isMarker->getScriptName_mt_safe();
-            _master.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
+            _master.masterNodeName = isMarker->getContext()->getNode()->getFullyQualifiedName();
         } else {
             // coverity[dead_error_line]
-            _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
+            _master.masterNodeName = holder ? holder->getFullyQualifiedName() : "";
         }
         _master.masterKnobName = m.second->getName();
     } else {
@@ -193,68 +193,9 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
-static KnobIPtr
-findMaster(const KnobIPtr & knob,
-           const NodesList & allNodes,
-           const std::string& masterKnobName,
-           const std::string& masterNodeName,
-           const std::string& masterTrackName,
-           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
-{
-    ///we need to cycle through all the nodes of the project to find the real master
-    NodePtr masterNode;
-    std::string masterNodeNameToFind = masterNodeName;
-
-    /*
-       When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
-       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
-     */
-    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
-
-    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
-        masterNodeNameToFind = foundMapping->second;
-    }
-
-    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-        if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
-            masterNode = *it2;
-            break;
-        }
-    }
-    if (!masterNode) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
-
-        return KnobIPtr();
-    }
-
-    if ( !masterTrackName.empty() ) {
-        TrackerContextPtr context = masterNode->getTrackerContext();
-        if (context) {
-            TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
-            if (marker) {
-                return marker->getKnobByName(masterKnobName);
-            }
-        }
-    } else {
-        ///now that we have the master node, find the corresponding knob
-        const std::vector<KnobIPtr> & otherKnobs = masterNode->getKnobs();
-        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistent() ) {
-                return otherKnobs[j];
-                break;
-            }
-        }
-    }
-
-    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
-
-    return KnobIPtr();
-}
 
 void
-KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
-                                    const NodesList & allNodes,
-                                    const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
 {
     int i = 0;
 
@@ -266,23 +207,19 @@ KnobSerialization::restoreKnobLinks(const KnobIPtr & knob,
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
-            KnobIPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, masterTrackName, oldNewScriptNamesMapping);
-            if (alias) {
-                knob->setKnobAsAliasOfThis(alias, true);
-            }
+            knob->storeLink(-1, aliasKnobName, aliasNodeName, masterTrackName);
         }
     } else {
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-                KnobIPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, it->masterTrackName, oldNewScriptNamesMapping);
-                if (master) {
-                    knob->slaveTo(i, master, it->masterDimension);
-                }
+                knob->storeLink(it->masterDimension, it->masterKnobName, it->masterNodeName, it->masterTrackName);
             }
             ++i;
         }
     }
 }
+
+
 
 void
 KnobSerialization::restoreExpressions(const KnobIPtr & knob,

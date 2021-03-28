@@ -37,6 +37,7 @@
 #include "Engine/Image.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerSerialization.h"
@@ -428,6 +429,47 @@ TrackMarker::getScriptName_mt_safe() const
     QMutexLocker l(&_imp->trackMutex);
 
     return _imp->trackScriptName;
+}
+
+// copy-pasted from NodeName.cpp
+static void
+prependGroupNameRecursive(const NodePtr& group,
+                          std::string& name)
+{
+    name.insert(0, ".");
+    name.insert( 0, group->getScriptName_mt_safe() );
+    NodeCollectionPtr hasParentGroup = group->getGroup();
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    if (isGrp) {
+        prependGroupNameRecursive(isGrp->getNode(), name);
+    }
+}
+
+// copied from NodeName.cpp:Node::getFullyQualifiedNameInternal()
+std::string
+TrackMarker::getFullyQualifiedName() const
+{
+    QMutexLocker l(&_imp->trackMutex);
+    TrackerContextPtr context = getContext();
+
+    NodePtr node = context->getNode();
+    std::string ret = _imp->trackScriptName;
+    NodePtr parent = node->getParentMultiInstance();
+
+    if (parent) {
+        prependGroupNameRecursive(parent, ret);
+    } else {
+        NodeCollectionPtr hasParentGroup = node->getGroup();
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( hasParentGroup.get() );
+        if (isGrp) {
+            NodePtr grpNode = isGrp->getNode();
+            if (grpNode) {
+                prependGroupNameRecursive(grpNode, ret);
+            }
+        }
+    }
+
+    return ret;
 }
 
 void

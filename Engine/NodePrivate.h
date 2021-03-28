@@ -277,9 +277,13 @@ public:
                                    const KnobGroupPtr& group,
                                    const KnobPagePtr& page);
 
-    void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                   const NodesList & allNodes,
-                                   const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+    void storeKnobLinksRecursive(const GroupKnobSerialization* group,
+                                 const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+
+    void restoreKnobLinksRecursive(const NodesList & allNodes,
+                                   const KnobGroupPtr& group,
+                                   const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                                   bool throwOnFailure);
 
     void ifGroupForceHashChangeOfInputs();
 

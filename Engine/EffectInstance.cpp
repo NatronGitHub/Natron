@@ -553,6 +553,12 @@ EffectInstance::getScriptName_mt_safe() const
     return getNode()->getScriptName_mt_safe();
 }
 
+std::string
+EffectInstance::getFullyQualifiedName() const
+{
+    return getNode()->getFullyQualifiedName();
+}
+
 int
 EffectInstance::getRenderViewsCount() const
 {

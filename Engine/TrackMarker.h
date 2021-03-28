@@ -131,6 +131,7 @@ public:
 
     bool setScriptName(const std::string& name);
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getFullyQualifiedName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setLabel(const std::string& label);
     std::string getLabel() const;

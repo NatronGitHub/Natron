@@ -105,6 +105,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 {
     /*1st OFF RESTORE THE PROJECT KNOBS*/
     bool ok;
+    std::vector<std::string> linksErrors;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTreeFlag( _publicInterface->getApp() );
 
@@ -208,6 +209,22 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
         }
 
+        // restore the Knob links stored in the Knobs during NodeCollectionSerialization::restoreFromSerialization()
+        NodesList allNodes;
+        const std::map<std::string, std::string> oldNewScriptNamesMapping;
+        _publicInterface->getNodes_recursive(allNodes, false);
+        for (NodesList::iterator n = allNodes.begin(); n != allNodes.end(); ++n) {
+            // find all KnobIs in the node, restore links
+            std::vector<KnobIPtr> knobs = (*n)->getKnobs(); // copy the knobs vector
+            for (std::vector<KnobIPtr>::iterator k = knobs.begin(); k != knobs.end(); ++k) {
+                // Even if there are links errors, do our best to restore the project, then display an error dialog.
+                try {
+                    (*k)->restoreLinks(allNodes, oldNewScriptNamesMapping, true); // error if links cannot be restored
+                } catch (const std::exception& e) {
+                    linksErrors.push_back( e.what() );
+                }
+            }
+        }
 
         _publicInterface->getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
     } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
@@ -227,6 +244,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         _publicInterface->recomputeFrameRangeFromReaders();
     }
 
+    // Even if there are links errors, do our best to restore the project, then display an error dialog.
+    if ( !linksErrors.empty() ) {
+        const char* const delim = "\n";
+
+        std::ostringstream imploded;
+        std::copy(linksErrors.begin(), linksErrors.end(),
+                  std::ostream_iterator<std::string>(imploded, delim));
+        throw std::runtime_error( imploded.str() );
+    }
     return ok;
 } // restoreFromSerialization
 
