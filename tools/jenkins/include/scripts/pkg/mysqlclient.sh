@@ -15,7 +15,7 @@ fi
 #dobuild && echo "python${PY3_VERSION_SHORT}"
 if build_step && { force_build || { [ ! -d "$SDK_HOME/lib/python${PY3_VERSION_SHORT}/site-packages/MySQLdb" ] || [ $("$SDK_HOME/bin/python${PY3_VERSION_SHORT}" -c "import MySQLdb; print(MySQLdb.__version__.split(' ', 1)[0])") != ${MYSQLCLIENT_VERSION_PY3} ]; }; }; then
     start_build
-    ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --no-binary mysqlclient mysqlclient=="${MYSQLCLIENT_VERSION_P3}"
+    ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --no-binary mysqlclient mysqlclient=="${MYSQLCLIENT_VERSION_PY3}"
     end_build
 fi
 
