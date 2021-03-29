@@ -2,8 +2,15 @@ Instructions for installing Natron from sources on GNU/Linux
 ============================================================
 
 This file is supposed to guide you step by step to have working (compiling) version of
-Natron on GNU/Linux.
+Natron on GNU/Linux. Here's the gist of what you need to know:
 
+* It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
+* If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
+* If you are on Centos, Fedora or RHEL, see [here](#centos7) for specific instructions 
+* If you are on a Debian-based Linux (such as Ubuntu, KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
+* If you are willing to try the complete installation process, the instructions are below
+
+0. [Using Docker](#using-docker)
 1. [Dependencies](#dependencies)
   - [Installing the full Natron SDK](#installing-the-full-natron-sdk)
     - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
@@ -26,6 +33,15 @@ Natron on GNU/Linux.
     - [CentOS7/Fedora](#centos7)
 5. [Generating Python bindings](#generating-python-bindings)
 
+# Using Docker
+
+If you have `docker` installed, the installation procedure is very simple. Simply create a directory called `builds`, and then run the following command:
+
+```bash
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+```
+
+Docker will automatically do the rest for you, and you should have a complete Natron binary in `./builds` (as a tgz archive).
 
 # Dependencies
 
