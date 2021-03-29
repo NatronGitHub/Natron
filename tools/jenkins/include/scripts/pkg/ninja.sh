@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Install ninja
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/ninja.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/ninja.html
 
-NINJA_VERSION=1.10.0
+NINJA_VERSION=1.10.2
 NINJA_TAR="ninja-${NINJA_VERSION}.tar.gz"
 NINJA_SITE="https://github.com/ninja-build/ninja/archive/v${NINJA_VERSION}"
 if download_step; then

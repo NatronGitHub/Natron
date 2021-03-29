@@ -2,9 +2,9 @@
 
 # Install opusfile
 # see https://github.com/xiph/opusfile/releases
-OPUSFILE_VERSION=0.11
+OPUSFILE_VERSION=0.12
 OPUSFILE_TAR="opusfile-${OPUSFILE_VERSION}.tar.gz"
-OPUSFILE_SITE="https://archive.mozilla.org/pub/opus"
+OPUSFILE_SITE="https://downloads.xiph.org/releases/opus"
 if download_step; then
     download "$OPUSFILE_SITE" "$OPUSFILE_TAR"
 fi

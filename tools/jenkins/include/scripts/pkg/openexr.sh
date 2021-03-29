@@ -3,7 +3,7 @@
 # Install openexr
 # see https://github.com/openexr/openexr/releases/
 if [ -z ${EXR_VERSION+x} ]; then
-EXR_VERSION=2.5.1
+EXR_VERSION=2.5.5
 fi
 
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"
@@ -31,7 +31,12 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" 
         mkdir build
         pushd build
         cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME"
-        make -j${MKJOBS}
+        # compiling openexr 2.5 requires lots of memory, let's limit to 2 jobs
+        j=${MKJOBS}
+        if [ $j -gt 2 ]; then
+            j=2
+        fi
+        make -j${j}
         make install
         popd
     fi

@@ -2,7 +2,7 @@
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FREETYPE_VERSION=2.10.2
+FREETYPE_VERSION=2.10.4
 FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.gz"
 FREETYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
 if download_step; then

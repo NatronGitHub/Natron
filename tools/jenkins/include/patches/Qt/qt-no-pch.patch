@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James McDonnell <jmcdonnell@qnx.com>
+Date: Thu, 14 Apr 2016 16:48:15 -0400
+Subject: [PATCH] Ensure -no-pch is effective
+
+Have configure add a "CONFIG -= precompile_header" to qmodule.pri when
+ -no-pch is specified.  Ensures that Qt is built without precompiled
+headers (as requested) even if allowing precompiled header use is the
+default for the toolchain.
+
+Parallels changes to Windows configure.
+
+Task-number: QTBUG-11545
+Change-Id: Iab4021e74c4e9978770e917dff97b976c449dd8b
+Reviewed-by: Oswald Buddenhagen <oswald.buddenhagen@theqtcompany.com>
+
+The patch was backported from Qt 5.7.0
+Commit in qtbase git: 7c1326a1c390bb15eaa164f748c947f1df9f542d
+
+diff --git a/configure b/configure
+index 1111111..2222222 100755
+--- a/configure
++++ b/configure
+@@ -64,6 +64,7 @@ fi
+ OPT_CMDLINE=`echo $@ | sed "s,-v ,,g; s,-v$,,g"`
+ 
+ # initialize global variables
++CONFIG_SEPARATORS=`printf ' \t'`
+ QMAKE_SWITCHES=
+ QMAKE_VARS=
+ QMAKE_CONFIG=
+@@ -201,6 +202,21 @@ getXQMakeConf()
+     getQMakeConf3 "$1" "$xspecvals"
+ }
+ 
++testXConfig()
++{
++    # Put a space on each end of the CONFIG value so that searching for the
++    # target with whitespace on either side will work even when it's the
++    # first/last/only item in the CONFIG value.
++    case \ `getXQMakeConf CONFIG`\  in
++    *[${CONFIG_SEPARATORS}]$1[${CONFIG_SEPARATORS}]*)
++        return 0
++        ;;
++    *)
++        return 1
++        ;;
++    esac
++}
++
+ compilerSupportsFlag()
+ {
+     cat >conftest.cpp <<EOF
+@@ -7410,7 +7426,11 @@ fi
+ [ "$CFG_REDUCE_EXPORTS" = "yes" ] && QT_CONFIG="$QT_CONFIG reduce_exports"
+ [ "$CFG_STACK_PROTECTOR_STRONG" = "yes" ] && QT_CONFIG="$QT_CONFIG stack-protector-strong"
+ [ "$CFG_REDUCE_RELOCATIONS" = "yes" ] && QT_CONFIG="$QT_CONFIG reduce_relocations"
+-[ "$CFG_PRECOMPILE" = "yes" ] && QMAKE_CONFIG="$QMAKE_CONFIG precompile_header"
++if testXConfig precompile_header; then
++    [ "$CFG_PRECOMPILE" = "no" ] && QMakeVar del CONFIG precompile_header
++else
++    [ "$CFG_PRECOMPILE" = "yes" ] && QMAKE_CONFIG="$QMAKE_CONFIG precompile_header"
++fi
+ if [ "$CFG_SEPARATE_DEBUG_INFO" = "yes" ]; then
+     QMakeVar add QMAKE_CFLAGS -g
+     QMakeVar add QMAKE_CXXFLAGS -g
+

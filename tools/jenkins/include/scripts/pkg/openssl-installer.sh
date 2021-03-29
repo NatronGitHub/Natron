@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Install openssl for installer
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/openssl.html
-OPENSSL_VERSION=1.1.1g
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/openssl.html
+OPENSSL_VERSION=1.1.1j
 # see https://web.archive.org/web/20181008083143/http://www.linuxfromscratch.org/blfs/view/svn/postlfs/openssl10.html
-#OPENSSL_VERSION=1.0.2t
+#OPENSSL_VERSION=1.0.2u
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz" # always a new version around the corner
 OPENSSL_SITE="https://www.openssl.org/source"
 # These are the default options from Fedora https://src.fedoraproject.org/rpms/openssl:

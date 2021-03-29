@@ -5,6 +5,7 @@ BREAKPAD_GIT=https://github.com/NatronGitHub/breakpad.git # breakpad for server-
 BREAKPAD_GIT_COMMIT=f264b48eb0ed8f0893b08f4f9c7ae9685090ccb8
 if build_step && { force_build || { [ ! -s "${SDK_HOME}/bin/dump_syms" ]; }; }; then
 
+  if [ -z "${UBUNTU:-}" ] && [ "${CENTOS:-8}" -le 7 ]; then # breakpad does not compile yet on CentOS 8 or Ubuntu >= 18.04
     start_build
     rm -f breakpad || true
     git_clone_commit "$BREAKPAD_GIT" "$BREAKPAD_GIT_COMMIT"
@@ -20,4 +21,6 @@ if build_step && { force_build || { [ ! -s "${SDK_HOME}/bin/dump_syms" ]; }; }; 
     popd
     rm -rf breakpad
     end_build
+  fi
+
 fi

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install gettext
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/gettext.html
-GETTEXT_VERSION=0.20.2
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gettext.html
+GETTEXT_VERSION=0.21
 GETTEXT_TAR="gettext-${GETTEXT_VERSION}.tar.gz"
 GETTEXT_SITE="http://ftp.gnu.org/pub/gnu/gettext"
 if download_step; then

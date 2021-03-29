@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install ncurses (required for gdb and readline)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/ncurses.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/ncurses.html
 NCURSES_VERSION=6.2
 NCURSES_VERSION_PKG=6.2.20200212
 NCURSES_TAR="ncurses-${NCURSES_VERSION}.tar.gz"
