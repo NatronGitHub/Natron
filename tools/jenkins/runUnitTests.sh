@@ -152,6 +152,7 @@ if [ "$FAIL" = "0" ]; then
         echo "-----------------------------------------------------------------------"
         cat result.txt
         echo "-----------------------------------------------------------------------"
+        mv results.txt "$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
     fi
 
     UNIT_TESTS_FAIL_DIR="$BUILD_ARCHIVE_DIRECTORY/unit_tests_failures"
