@@ -1,15 +1,10 @@
 #!/bin/sh
 cd `dirname "$0"`
-export CENTOS=6
-#export DTS=8
-LABEL="natrongithub/natron-sdk${UBUNTU+-ubuntu}${UBUNTU:-}${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}-i386"
-if [ -n "${UBUNTU:-}" ] || [ "${CENTOS:-6}" -gt 7 ]; then
-    echo "i386 is not supported on CentOS 8 and later or Ubuntu"
-    exit 1
-fi
-env GEN_DOCKERFILE32=1 ../../jenkins/include/scripts/build-Linux-sdk.sh> Dockerfile
 cp  ../../jenkins/*.sh .
 (cd ../../jenkins/; tar cf - include) | tar xf -
+export UBUNTU=20.04
+LABEL="natrongithub/natron-sdk${UBUNTU+-ubuntu}${UBUNTU:-}${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}"
+env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile
 docker build -t "${LABEL}:latest" .
 #docker build --no-cache -t "${LABEL}:latest" .
 echo "please execute:"
