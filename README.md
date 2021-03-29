@@ -5,6 +5,10 @@
 
 Natron is a free, open-source (GPLv2 license) video compositor, similar in functionality to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, and Microsoft Windows).
 
+![Hero Image of Natron](./MarkdownAssets/Natron-Hero-Image.png)
+
+**Natron around the web**
+
 - Website: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
@@ -29,11 +33,8 @@ If you are willing to help, please contact the development team on the [pixls.us
 ## Features
 
 - 32-bit floating-point linear color processing pipeline.
-
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
-
 - Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
-
 - Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported.
   - [TuttleOFX](https://sites.google.com/site/tuttleofx/)
   - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) to read anything else than standard 8-bits images
@@ -45,29 +46,17 @@ If you are willing to help, please contact the development team on the [pixls.us
   - [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
   - [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
   - ...And many more! Please tell us if you successfully tested other commercial plugins.
-
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
-
 - Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
-
 - Multi-task: Natron can render multiple graphs at the same time. It can also be used as a background process in headless mode.
-
 - Recover easily from bugs: Natron's auto-save system detects inactivity and saves your work for yourself. Natron is also able to render frames in a separate process, meaning that any crash in the main application would not crash the ongoing render (and the other way around).
-
 - Project files saved in XML and easily editable by humans.
-
 - Fast & interactive viewer - Smooth & accurate zooming/panning even for very large image sizes (tested on 27k x 30k images).
-
 - Real-time playback: Natron offers real-time playback with excellent performance thanks to its RAM/Disk cache. Once a frame is rendered it can be reproduced instantly afterward, even for large image sizes.
-
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
-
 - Command-line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
-
 - Rotoscoping, rotopainting, and tracking support
-
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.
-
 - Python 2 scripting integration:
   - Parameters expressions
   - User-defined parameters
@@ -75,7 +64,6 @@ If you are willing to help, please contact the development team on the [pixls.us
   - Script editor to control the application overall
   - User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
   - Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
-
 - Multi-channel compositing: Natron can manipulate multi-layered EXR files thanks to OpenImageIO. Users can choose to work with any layer or channel on any node, new custom layers can also be created.
 
 ## Requirements
@@ -98,7 +86,7 @@ The following graphics cards are supported for hardware-accelerated rendering:
 - ATI/AMD Radeon R300 and greater
 - ATI/AMD FireGL T2-64 and greater (FirePro)
 
-On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
+On Windows and Linux you can enable software rendering. On Linux, enable the environment variable `LIBGL_ALWAYS_SOFTWARE=1` before running Natron. On Windows, enable the legacy hardware package in the installer.
 
 
 ## Installing
