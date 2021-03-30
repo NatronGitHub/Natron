@@ -37,7 +37,7 @@
 #include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 CLANG_DIAG_OFF(deprecated)
@@ -74,6 +74,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 
+using namespace boost::placeholders;
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */

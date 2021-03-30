@@ -1398,8 +1398,6 @@ CurveWidget::wheelEvent(QWheelEvent* e)
         return;
     }
 
-    double zoomFactor;
-    double par;
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 

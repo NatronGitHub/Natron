@@ -58,8 +58,6 @@ GCC_DIAG_ON(maybe-uninitialized)
 #include <QFutureWatcher>
 #include <QtConcurrentMap>
 
-#include <boost/bind.hpp>
-
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/RectD.h"

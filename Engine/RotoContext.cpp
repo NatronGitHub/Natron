@@ -36,8 +36,6 @@
 
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
