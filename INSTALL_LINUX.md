@@ -1,8 +1,7 @@
 Instructions for installing Natron from sources on GNU/Linux
 ============================================================
 
-This file is supposed to guide you step by step to have working (compiling) version of
-Natron on GNU/Linux. Here's the gist of what you need to know:
+This file is supposed to guide you step by step to have working (compiling) version of Natron on GNU/Linux. Here's the gist of what you need to know:
 
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
