@@ -1,0 +1,40 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem                  1.0
+PortGroup                   github 1.0
+
+github.setup                strukturag libheif 1.11.0 v
+revision                    2
+
+checksums                   rmd160  e6c17b0c1016c10da0b1aec74fd9ae09c42dbdf7 \
+                            sha256  c550938f56ff6dac83702251a143f87cb3a6c71a50d8723955290832d9960913 \
+                            size    1680855
+
+categories                  multimedia
+license                     LGPL-3+
+maintainers                 {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+description                 a ISO/IEC 23008-12:2017 HEIF file format decoder and encoder
+long_description            ${name} is ${description}.
+platforms                   darwin
+
+github.tarball_from         releases
+
+depends_build-append        port:pkgconfig
+
+depends_lib-append          port:dav1d \
+                            port:gdk-pixbuf2 \
+                            port:aom \
+                            path:include/turbojpeg.h:libjpeg-turbo \
+                            port:libde265 \
+                            port:libpng \
+                            port:rav1e \
+                            port:x265
+
+compiler.cxx_standard       2011
+
+configure.args-append       --disable-go
+
+variant tests description {Enable tests} {
+    configure.args-append   --enable-tests
+    test.run                yes
+}

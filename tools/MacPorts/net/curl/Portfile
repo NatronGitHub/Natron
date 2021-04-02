@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.75.0
+version                         7.76.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  3b94b99c85e0cc61784f31d08b34f167d45e452c \
-                                sha256  fe0c49d8468249000bda75bcfdf9e30ff7e9a86d35f1a21f428d79c389d55675 \
-                                size    2418816
+                                rmd160  a24268c5c860c374c892fa6ae2e9426da922484e \
+                                sha256  6302e2d75c59cdc6b35ce3fbe716481dd4301841bbb5fd71854653652a014fc8 \
+                                size    2428552
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -233,11 +233,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1608271043
+    set certdata_updated        1617307855
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         bc61343b5d6809a99d3ca2daf25708f069b042c2
+    set certdata_commit         e5df44ac10fece63c6c0a0cbadd70ab1e1ce9898
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20201204
+    set certdata_date           20210308
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -258,9 +258,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  1ba9db91d55bbe003f05807fa1c898a0df505736 \
-                                sha256  0fbccbcef01e66a38511725f74f49d6c9e1fe83ba8d5e74c47b59feb055d8b30 \
-                                size    240576
+                                rmd160  01e3341e545702f7c822bba9f7f957e1c7bb737c \
+                                sha256  3dc3e624f29774dd559e69f838982ddc26cebebcdf62c248936d508c2f35d644 \
+                                size    244976
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

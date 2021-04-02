@@ -1,5 +1,5 @@
---- Portfile.orig	2021-03-21 10:26:07.000000000 -0700
-+++ Portfile	2021-03-21 10:26:43.000000000 -0700
+--- Portfile.orig	2021-03-27 21:49:13.000000000 -0700
++++ Portfile	2021-04-02 12:18:51.000000000 -0700
 @@ -2,13 +2,13 @@
  
  PortSystem              1.0
@@ -10,31 +10,49 @@
  PortGroup               active_variants 1.1
  PortGroup               compiler_blacklist_versions 1.0
  
- github.setup            OpenImageIO oiio 2.1.17.0
+-github.setup            OpenImageIO oiio 2.1.17.0
 -revision                2
-+revision                102
++github.setup            OpenImageIO oiio 2.2.13.0
++revision                100
  name                    openimageio
  categories              graphics
  license                 BSD
-@@ -34,6 +34,11 @@
+@@ -18,9 +18,9 @@
+                         related classes, utilities, and applications.
+ platforms               darwin
+ 
+-checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
+-                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
+-                        size    29052379
++checksums           rmd160  dc5b043a7b8913a7d257001b12299fcab6a416d6 \
++                    sha256  fcb938d7d0060816bad18f62ebed6e5a1d959555db2e9d282543b46519237755 \
++                    size    29265725
+ 
+ compiler.cxx_standard   2011
+ # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
+@@ -34,6 +34,12 @@
  distname                Release-${version}
  worksrcdir              oiio-Release-${version}
  
 +patch.pre_args  -p1
 +patchfiles \
 +    oiio-2.0.8-invalidatespec.patch \
-+    oiio-2.0.8-atomic-load.patch
++    oiio-2.0.8-atomic-load.patch \
++    oiio-2.2.13.0-c++11.patch
 +
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
  configure.args-append   -DUSE_CCACHE=OFF
-@@ -56,9 +61,135 @@
- 
- # optional components
- 
--#configure.args-append   -DUSE_OPENGL=OFF \
--#                        -DUSE_QT=OFF
--qt5.min_version         5.6
+@@ -51,14 +57,140 @@
+                         port:tiff \
+                         port:ilmbase \
+                         port:openexr \
+-                        port:squish \
+-                        port:libfmt
++                        port:squish
++
++# optional components
++
 +# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 +# tested with openimageio 1.4.6rc1:
 +# macports-clang-3.3 and later work
@@ -96,10 +114,14 @@
 +    -DUSE_LIBRAW:BOOL=TRUE \
 +    -DUSE_OPENGL:BOOL=FALSE \
 +    -DUSE_WEBP:BOOL=TRUE \
++    -DBUILD_FMT_FORCE:BOOL=TRUE \
 +    -DSTOP_ON_WARNING:BOOL=FALSE
-+
-+# optional components
-+
+ 
+ # optional components
+ 
+-#configure.args-append   -DUSE_OPENGL=OFF \
+-#                        -DUSE_QT=OFF
+-qt5.min_version         5.6
 +default_variants    +opencolorio +openjpeg +freetype
 +
 +variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
@@ -167,7 +189,7 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
-@@ -95,31 +226,31 @@
+@@ -95,31 +227,31 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -209,7 +231,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -128,21 +259,21 @@
+@@ -128,21 +260,21 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
