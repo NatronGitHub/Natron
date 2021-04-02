@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install xmlto
-# see hhttp://www.linuxfromscratch.org/blfs/view/svn/pst/xmlto.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/pst/xmlto.html
 XMLTO_VERSION=0.0.28
 XMLTO_TAR="xmlto-${XMLTO_VERSION}.tar.bz2"
 XMLTO_SITE="https://releases.pagure.org/xmlto"

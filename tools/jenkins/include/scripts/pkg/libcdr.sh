@@ -2,7 +2,7 @@
 
 # install libcdr
 # see https://dev-www.libreoffice.org/src/libcdr/
-LIBCDR_VERSION=0.1.6
+LIBCDR_VERSION=0.1.7
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
 LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"
 if download_step; then
