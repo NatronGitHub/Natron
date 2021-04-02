@@ -38,7 +38,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Components]
 Name: "natron"; Description: "Natron"; Types: full compact custom; Flags: fixed
-Name: "docs"; Description: "Natron Documentation"; Types: full
+;Name: "docs"; Description: "Natron Documentation"; Types: full
 Name: "pyplugs"; Description: "Natron PyPlugs"; Types: full
 Name: "ocio"; Description: "OpenColorIO Configs"; Types: full
 Name: "io"; Description: "OpenFX IO"; Types: full
@@ -62,7 +62,7 @@ Source: "{src}\Plugins\OFX\Natron\IO.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\
 Source: "{src}\Plugins\OFX\Natron\Misc.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\Misc.ofx.bundle\"; Components: misc; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Plugins\OFX\Natron\Shadertoy.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\Shadertoy.ofx.bundle\"; Components: stoy; Flags: ignoreversion recursesubdirs createallsubdirs external
 
-Source: "{src}\Resources\docs\*"; DestDir: "{app}\Resources\docs\"; Components: docs; Flags: ignoreversion recursesubdirs createallsubdirs external
+Source: "{src}\Resources\docs\*"; DestDir: "{app}\Resources\docs\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\etc\*"; DestDir: "{app}\Resources\etc\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\OpenColorIO-Configs\*"; DestDir: "{app}\Resources\OpenColorIO-Configs\"; Components: ocio; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\pixmaps\*"; DestDir: "{app}\Resources\pixmaps\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -77,7 +77,6 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; Value
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes"; ValueType: string; ValueName: "{#MyAppAssocExt}"; ValueData: ""
 
 [Icons]
-;Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{group}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"
 Name: "{group}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"; Tasks: desktopicon
