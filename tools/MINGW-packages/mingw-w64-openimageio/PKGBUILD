@@ -3,7 +3,7 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.2.13.0
+pkgver=2.2.12.0
 pkgrel=2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
@@ -32,7 +32,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.1.10-boost.diff
         oiio-2.0.8-invalidatespec.patch
   )
-sha256sums=('fcb938d7d0060816bad18f62ebed6e5a1d959555db2e9d282543b46519237755'
+sha256sums=('6010b0642b5bf9c045c397a0f0a7efec232fdaffb49984d449073d006e9004a6'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
