@@ -451,6 +451,9 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ]; then
         echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
         sleep 5
+        mv ./launchBuildMain.sh ./launchBuildMain.sh.orig
+        cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh
+        exec ./launchBuildMain.sh "$*"
     fi
     if [ -z "${NOUPDATE:+x}" ]; then
         (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
