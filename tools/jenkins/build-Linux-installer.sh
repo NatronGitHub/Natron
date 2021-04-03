@@ -54,7 +54,8 @@ else
 fi
 export LD_LIBRARY_PATH
 
-
+# Pretty architecture/platform identifier (used for breakpad symbol files)
+PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"

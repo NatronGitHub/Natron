@@ -47,6 +47,9 @@ source dllVersions.sh
 
 updateBuildOptions
 
+# Pretty architecture/platform identifier (used for breakpad symbol files)
+PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+
 if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     echo "NATRON_BUILD_CONFIG empty"
     exit 1
