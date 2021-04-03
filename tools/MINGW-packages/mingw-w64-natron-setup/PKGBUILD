@@ -1,14 +1,20 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
+#
+# Inno Setup must be installed prior to build
+# Binary: https://files.jrsoftware.org/is/6/innosetup-6.1.2.exe
+# Source: https://github.com/jrsoftware/issrc/archive/refs/tags/is-6_1_2.zip
+#
+
 _realname=natron-setup
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.0
-pkgrel=2
-pkgdesc="Natron Setup"
+pkgrel=3
+pkgdesc="Natron Inno Setup"
 arch=('any')
-url="https://github.com/NatronGitHub/Natron"
-license=('GPL2')
+url="https://github.com/jrsoftware/issrc"
+license=('custom:Modified BSD license')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 options=('!strip')

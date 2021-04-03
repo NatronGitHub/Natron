@@ -1,8 +1,10 @@
 ; NATRON WINDOWS INSTALLER
 
 #define MyAppName "Natron"
-#define MyAppPublisher "Natron"
+#define MyAppPublisher "The Natron developers"
 #define MyAppURL "https://natrongithub.github.io"
+#define MyAppURLSupport "https://github.com/NatronGitHub/Natron/issues"
+#define MyAppURLUpdates "https://github.com/NatronGitHub/Natron/releases"
 #define MyAppExeName "Natron.exe"
 #define MyAppAssocName MyAppName + " Project"
 #define MyAppAssocExt ".ntp"
@@ -14,8 +16,8 @@ AppName={#MyAppName}
 AppVerName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
+AppSupportURL={#MyAppURLSupport}
+AppUpdatesURL={#MyAppURLUpdates}
 DefaultDirName={autopf64}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 PrivilegesRequiredOverridesAllowed=dialog
@@ -29,6 +31,7 @@ SolidCompression=yes
 WizardStyle=modern
 WizardImageFile=WizardImageFile.bmp
 WizardSmallImageFile=WizardSmallImageFile.bmp
+WizardImageStretch=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -47,6 +50,7 @@ Name: "cimg"; Description: "OpenFX CImg"; Types: full
 Name: "stoy"; Description: "OpenFX Shadertoy"; Types: full
 Name: "arena"; Description: "OpenFX Arena"; Types: full
 Name: "gmic"; Description: "OpenFX G'MIC"; Types: full
+Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 
 [Files]
 Source: "{src}\bin\*"; DestDir: "{app}\bin\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -69,6 +73,8 @@ Source: "{src}\Resources\pixmaps\*"; DestDir: "{app}\Resources\pixmaps\"; Compon
 Source: "{src}\Resources\poppler\*"; DestDir: "{app}\Resources\poppler\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\stylesheets\*"; DestDir: "{app}\Resources\stylesheets\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 
+Source: "{src}\bin\mesa\opengl32.dll"; DestDir: "{app}\bin\"; Components: sgl; Flags: ignoreversion external
+
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
@@ -79,7 +85,7 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes
 [Icons]
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{group}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"
-Name: "{group}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\bin\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
