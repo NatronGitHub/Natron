@@ -1,6 +1,6 @@
 pkgname=natron-sdk
-pkgver=2020
-pkgrel=3
+pkgver=2021
+pkgrel=1
 pkgdesc='Meta package for the Natron Windows SDK'
 url='https://github.com/NatronGitHub'
 arch=('any')
@@ -242,6 +242,7 @@ ${MINGW_PACKAGE_PREFIX}-zlib
 ${MINGW_PACKAGE_PREFIX}-snappy
 ${MINGW_PACKAGE_PREFIX}-libmad
 ${MINGW_PACKAGE_PREFIX}-breakdown
+${MINGW_PACKAGE_PREFIX}-natron-setup
 )
 
 
