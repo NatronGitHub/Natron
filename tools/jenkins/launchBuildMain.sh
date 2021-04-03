@@ -515,6 +515,12 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-debug"
 fi
 PORTABLE_DIRNAME="${INSTALLER_BASENAME}-no-installer"
+
+if [ "$PKGOS" = "Windows" ] && [ -f "/Setup.exe" ]; then
+    # Windows portable has installer, don't append "no-installer"
+    PORTABLE_DIRNAME="$INSTALLER_BASENAME"
+fi
+
 setBuildOption "INSTALLER_BASENAME" "$INSTALLER_BASENAME"
 setBuildOption "PORTABLE_DIRNAME" "$PORTABLE_DIRNAME"
 setBuildOption "TMP_PORTABLE_DIR" "${TMP_BINARIES_PATH}/$PORTABLE_DIRNAME"
