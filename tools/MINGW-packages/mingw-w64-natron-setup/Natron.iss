@@ -44,8 +44,8 @@ Name: "natron"; Description: "Natron"; Types: full compact custom; Flags: fixed
 ;Name: "docs"; Description: "Natron Documentation"; Types: full
 Name: "pyplugs"; Description: "Natron PyPlugs"; Types: full
 Name: "ocio"; Description: "OpenColorIO Configs"; Types: full
-Name: "io"; Description: "OpenFX IO"; Types: full
-Name: "misc"; Description: "OpenFX Misc"; Types: full
+Name: "io"; Description: "OpenFX IO"; Types: full compact custom; Flags: fixed
+Name: "misc"; Description: "OpenFX Misc"; Types: full compact custom; Flags: fixed
 Name: "cimg"; Description: "OpenFX CImg"; Types: full
 Name: "stoy"; Description: "OpenFX Shadertoy"; Types: full
 Name: "arena"; Description: "OpenFX Arena"; Types: full
