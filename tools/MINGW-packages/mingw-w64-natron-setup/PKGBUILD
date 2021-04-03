@@ -1,0 +1,41 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+#
+# Inno Setup must be installed prior to build
+# Binary: https://files.jrsoftware.org/is/6/innosetup-6.1.2.exe
+# Source: https://github.com/jrsoftware/issrc/archive/refs/tags/is-6_1_2.zip
+#
+
+_realname=natron-setup
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.0
+pkgrel=3
+pkgdesc="Natron Inno Setup"
+arch=('any')
+url="https://github.com/jrsoftware/issrc"
+license=('custom:Modified BSD license')
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+options=('!strip')
+source=('LICENSE.txt'
+        'Natron.iss'
+        'natronIcon256_windows.ico'
+        'WizardImageFile.bmp'
+        'WizardSmallImageFile.bmp'
+)
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+)
+
+build() {
+  cd "${srcdir}"
+  /c/Program\ Files\ \(x86\)/Inno\ Setup\ 6/ISCC.exe Natron.iss
+}
+
+package() {
+  cp "${srcdir}/output/Setup.exe" "${pkgdir}/"
+}

@@ -279,6 +279,7 @@ mingw-w64-libheif
 mingw-w64-imagemagick
 mingw-w64-openimageio
 mingw-w64-breakdown
+mingw-w64-natron-setup
 mingw-w64-natron-sdk
 "
 for pkg in $PKGS; do
