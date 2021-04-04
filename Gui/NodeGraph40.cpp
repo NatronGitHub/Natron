@@ -299,25 +299,25 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
     std::list<NodeSerializationPtr> serializations;
     std::list<NodeGuiPtr> newNodesList;
-    std::map<std::string, std::string> oldNewScriptNameMapping;
+    std::map<std::string, std::string> oldNewScriptNamesMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerializationPtr guiSerialization = boost::make_shared<NodeGuiSerialization>();
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
-                                           _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
+                                           _imp->group.lock(), std::string(), true, &oldNewScriptNamesMapping);
 
         newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
         newNodesList.push_back(clone);
         serializations.push_back(internalSerialization);
 
-        oldNewScriptNameMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
+        oldNewScriptNamesMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
     }
 
 
     assert( serializations.size() == newNodes.size() );
     ///restore connections
-    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
+    _imp->restoreConnections(serializations, newNodes, oldNewScriptNamesMapping);
 
 
     NodesList allNodes;
@@ -326,8 +326,8 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     //Restore links once all children are created for alias knobs/expressions
     std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
     for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
-        (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNameMapping);
-        (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNameMapping, true); // clone should never fail
+        (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNamesMapping);
+        (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
     }
 
 

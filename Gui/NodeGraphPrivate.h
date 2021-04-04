@@ -238,7 +238,7 @@ public:
                          const NodeCollectionPtr& group,
                          const std::string& parentName,
                          bool clone,
-                         std::map<std::string, std::string>* oldNewScriptNameMapping);
+                         std::map<std::string, std::string>* oldNewScriptNamesMapping);
 
 
     /**
