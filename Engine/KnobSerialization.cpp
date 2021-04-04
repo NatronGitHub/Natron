@@ -129,10 +129,12 @@ ValueSerialization::initForSave(const KnobIPtr & knob,
         TrackMarker* isMarker = dynamic_cast<TrackMarker*>(holder);
         if (isMarker) {
             _master.masterTrackName = isMarker->getScriptName_mt_safe();
-            _master.masterNodeName = isMarker->getContext()->getNode()->getFullyQualifiedName();
+            _master.masterNodeNameFull = isMarker->getContext()->getNode()->getFullyQualifiedName();
+            _master.masterNodeName = isMarker->getContext()->getNode()->getScriptName_mt_safe();
         } else {
             // coverity[dead_error_line]
-            _master.masterNodeName = holder ? holder->getFullyQualifiedName() : "";
+            _master.masterNodeNameFull = holder ? holder->getFullyQualifiedName() : "";
+            _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
         }
         _master.masterKnobName = m.second->getName();
     } else {
@@ -204,15 +206,16 @@ KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
          * _masters can be empty for example if we expand a group: the slaved knobs are no longer slaves
          */
         if ( !_masters.empty() ) {
-            const std::string& aliasKnobName = _masters.front().masterKnobName;
+            const std::string& aliasNodeNameFull = _masters.front().masterNodeNameFull;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
-            knob->storeLink(-1, aliasKnobName, aliasNodeName, masterTrackName);
+            const std::string& aliasKnobName = _masters.front().masterKnobName;
+            knob->storeLink(aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
         }
     } else {
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-                knob->storeLink(it->masterDimension, it->masterKnobName, it->masterNodeName, it->masterTrackName);
+                knob->storeLink(it->masterNodeNameFull, it->masterNodeName, it->masterTrackName, it->masterKnobName, it->masterDimension);
             }
             ++i;
         }
