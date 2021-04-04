@@ -84,6 +84,12 @@ DialogParamHolder::getScriptName_mt_safe() const
     return _imp->uniqueID;
 }
 
+std::string
+DialogParamHolder::getFullyQualifiedName() const
+{
+    return _imp->uniqueID;
+}
+
 void
 DialogParamHolder::setParamChangedCallback(const QString& callback)
 {

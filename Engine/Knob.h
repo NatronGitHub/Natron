@@ -1187,6 +1187,32 @@ public:
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension, const KnobIPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
+
+
+    void storeLink(int dimension,
+                      const std::string& knobName,
+                      const std::string& nodeName,
+                      const std::string& trackName)
+    {
+        _links.push_back(Link({dimension, knobName, nodeName, trackName}));
+    }
+
+    void restoreLinks(const NodesList & allNodes,
+                      const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                      bool throwOnFailure);
+
+private:
+    struct Link {
+        int dimension; // -1 means alias
+        std::string knobName;
+        std::string nodeName;
+        std::string trackName;
+    };
+
+    std::vector<Link> _links;
+
+public:
+
     virtual bool isMastersPersistenceIgnored() const = 0;
     virtual KnobIPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                             const boost::shared_ptr<KnobPage>& page,
@@ -2839,6 +2865,8 @@ public:
     }
 
     virtual std::string getScriptName_mt_safe() const = 0;
+
+    virtual std::string getFullyQualifiedName() const = 0;
 };
 
 
