@@ -453,7 +453,7 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
         sleep 5
         mv ./launchBuildMain.sh ./launchBuildMain.sh.orig
         cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh
-        env LAUNCHBUILDMAIN_UPDATED=1 exec ./launchBuildMain.sh "$*"
+        exec env LAUNCHBUILDMAIN_UPDATED=1 ./launchBuildMain.sh "$*"
     fi
     if [ -z "${NOUPDATE:+x}" ]; then
         (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
