@@ -11,21 +11,21 @@
 
 - Rendering sometimes silently stalls after X frames #248
 - Remember Minimize state when reopening project #168
-- Natron does not support cloned group nodes or hard links between groups (crashes on loading project) #568 #579
-- PCX image format does not work properly
-- PSB image format does not work properly
+- Some image formats may have issues (PCX, PSB, CR2)
 
 ### Changes
 
 - Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
 - Handle console output on Windows. #524
 - Detect user installed fonts on Windows 10. #523 
+- New Windows installer #596
 - Improvements to SequenceFileDialog. #565
 - Snap timeline alpha cursor to nearest frame. #574
 - Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
 - Tabs UI adjustments. #564
 - Do not allow Python keywords as node name or scriptname. #588
 - Always serialize nodes with an expression or a link, even if they have the default value. #585
+- Support cloned group nodes or hard links between groups #568 #579 #594 #598
 
 ### Plugins
 
