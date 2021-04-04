@@ -1189,12 +1189,13 @@ public:
     bool slaveTo(int dimension, const KnobIPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
 
 
-    void storeLink(int dimension,
-                      const std::string& knobName,
-                      const std::string& nodeName,
-                      const std::string& trackName)
+    void storeLink(const std::string& nodeNameFull,
+                   const std::string& nodeName,
+                   const std::string& trackName,
+                   const std::string& knobName,
+                   int dimension)
     {
-        _links.push_back(Link({dimension, knobName, nodeName, trackName}));
+        _links.push_back(Link({nodeNameFull, nodeName, trackName, knobName, dimension}));
     }
 
     void restoreLinks(const NodesList & allNodes,
@@ -1203,10 +1204,11 @@ public:
 
 private:
     struct Link {
-        int dimension; // -1 means alias
-        std::string knobName;
+        std::string nodeNameFull;
         std::string nodeName;
         std::string trackName;
+        std::string knobName;
+        int dimension; // -1 means alias
     };
 
     std::vector<Link> _links;

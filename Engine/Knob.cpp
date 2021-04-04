@@ -154,36 +154,59 @@ KnobI::slaveTo(int dimension,
 static KnobIPtr
 findMaster(const KnobIPtr & knob,
            const NodesList & allNodes,
-           const std::string& masterKnobName,
+           const std::string& masterNodeNameFull,
            const std::string& masterNodeName,
            const std::string& masterTrackName,
+           const std::string& masterKnobName,
            const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     ///we need to cycle through all the nodes of the project to find the real master
     NodePtr masterNode;
-    std::string masterNodeNameToFind = masterNodeName;
 
-    qDebug() << "Link slave/master for" << knob->getName().c_str() << "restoring linkage" << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+    qDebug() << "Link slave/master for" << knob->getName().c_str() << "restoring linkage" << masterNodeNameFull.c_str() << '|' << masterNodeName.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
 
     /*
        When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
-       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping
+       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping.
+       oldNewScriptNamesMapping is set in NodeGraphPrivate::pasteNode()
      */
-    std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
-
-    if ( foundMapping != oldNewScriptNamesMapping.end() ) {
-        masterNodeNameToFind = foundMapping->second;
+    std::string masterNodeNameToFind = masterNodeName;
+    std::string masterNodeNameFullToFind = masterNodeNameFull;
+    {
+        std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
+        if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+            // found it!
+            // first, replace the last past of the full name
+            if (!masterNodeNameFull.empty()) {
+                std::size_t found = masterNodeNameFullToFind.find_last_of('.');
+                if (found != std::string::npos && masterNodeNameFullToFind.substr(found+1) == masterNodeName) {
+                    masterNodeNameFullToFind = masterNodeNameFullToFind.substr(0, found+1) + foundMapping->second;
+                }
+            }
+            // then update masterNodeNameToFind
+            masterNodeNameToFind = foundMapping->second;
+        }
     }
-
+    // The following is probably useless: NodeGraphPrivate::pasteNode() only uses the node name, not the fully qualified name.
+    // Let us still do that check.
+    {
+        std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeNameFull.empty() ? masterNodeName : masterNodeNameFull);
+        if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+            masterNodeNameFullToFind = foundMapping->second;
+        }
+    }
+    if (masterNodeNameFullToFind.empty()) {
+        masterNodeNameFullToFind = masterNodeNameToFind;
+    }
     for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
         qDebug() << "Trying node" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
-        if ( (*it2)->getFullyQualifiedName() == masterNodeNameToFind ) {
+        if ( (*it2)->getFullyQualifiedName() == masterNodeNameFullToFind ) {
             masterNode = *it2;
             break;
         }
     }
     if (!masterNode) {
-        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameToFind.c_str() << "trying without the group name (Natron project files before 2.3.16)...";
+        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameFullToFind.c_str() << "trying without the group name (Natron project files before 2.3.16)...";
 
         for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
             qDebug() << "Trying node" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
@@ -195,7 +218,7 @@ findMaster(const KnobIPtr & knob,
         }
     }
     if (!masterNode) {
-        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameToFind.c_str();
+        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameFullToFind.c_str() << '|' << masterNodeNameToFind.c_str();
 
         return KnobIPtr();
     }
@@ -227,7 +250,7 @@ findMaster(const KnobIPtr & knob,
         qDebug() << "Link slave/master for" << knob->getName().c_str() << "cound not find knob" << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
     }
 
-    qDebug() << "Link slave/master for" << knob->getName().c_str() << "failed to restore linkage" << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+    qDebug() << "Link slave/master for" << knob->getName().c_str() << "failed to restore linkage" << masterNodeNameFullToFind.c_str() << '|' << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
 
     return KnobIPtr();
 }
@@ -241,7 +264,7 @@ KnobI::restoreLinks(const NodesList & allNodes,
     KnobIPtr thisKnob = shared_from_this();
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
 
-        KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->knobName, l->nodeName, l->trackName, oldNewScriptNamesMapping);
+        KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
             if (throwOnFailure) {
                 throw std::runtime_error(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);

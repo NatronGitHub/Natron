@@ -86,7 +86,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
 
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
-#define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME
+#define MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL 3
+#define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL
 
 NATRON_NAMESPACE_ENTER
 
@@ -94,12 +95,14 @@ struct MasterSerialization
 {
     int masterDimension;
     std::string masterNodeName;
+    std::string masterNodeNameFull;
     std::string masterTrackName;
     std::string masterKnobName;
 
     MasterSerialization()
         : masterDimension(-1)
         , masterNodeName()
+        , masterNodeNameFull()
         , masterTrackName()
         , masterKnobName()
     {
@@ -111,6 +114,7 @@ struct MasterSerialization
     {
         ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
         ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
+        ar & ::boost::serialization::make_nvp("MasterNodeNameFull", masterNodeNameFull);
         ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
         ar & ::boost::serialization::make_nvp("MasterTrackName", masterTrackName);
     }
@@ -121,6 +125,9 @@ struct MasterSerialization
     {
         ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
         ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
+        if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL) {
+            ar & ::boost::serialization::make_nvp("MasterNodeNameFull", masterNodeNameFull);
+        }
         ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
         if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
