@@ -448,9 +448,10 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     cd "$CWD"
     # Update build scripts, except launchBuildMain.sh, which is being executed
     # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
-    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ] && [ -z "${LAUNCHBUILDMAIN_UPDATED+x}" ]; then
+    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ] && ! cmp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -"launchBuildMain.sh" >/dev/null 2>&1 && [ -z "${LAUNCHBUILDMAIN_UPDATED+x}" ]; then
         echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Restarting after a 5s pause."
         sleep 5
+        [ -f ./launchBuildMain.sh.orig ] && rm -f ./launchBuildMain.sh.orig
         mv ./launchBuildMain.sh ./launchBuildMain.sh.orig
         cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh
         exec env LAUNCHBUILDMAIN_UPDATED=1 ./launchBuildMain.sh "$*"
