@@ -1511,7 +1511,7 @@ Settings::setDefaultValues()
     // Caching
     _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50, 0);
-    _unreachableRAMPercent->setDefaultValue(5);
+    _unreachableRAMPercent->setDefaultValue(20); // see https://github.com/NatronGitHub/Natron/issues/486
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
     //_diskCachePath
