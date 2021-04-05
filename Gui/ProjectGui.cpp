@@ -499,10 +499,12 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
 
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
+    const std::list<std::string> & openedPanelsMinimized = obj.getOpenedPanelsMinimized();
     //reverse the iterator to fill the layout bottom up
     for (std::list<std::string>::const_reverse_iterator it = openedPanels.rbegin(); it != openedPanels.rend(); ++it) {
+        bool isMinimized = ( std::find(openedPanelsMinimized.begin(), openedPanelsMinimized.end(), *it) != openedPanelsMinimized.end() );
         if (*it == kNatronProjectSettingsPanelSerializationName) {
-            _gui->setVisibleProjectSettingsPanel();
+            _gui->setVisibleProjectSettingsPanel(isMinimized);
         } else {
             NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
             if (node) {
@@ -511,7 +513,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
                 NodeGui* nodeGui = dynamic_cast<NodeGui*>( nodeGui_i.get() );
                 assert(nodeGui);
                 if (nodeGui) {
-                    nodeGui->setVisibleSettingsPanel(true);
+                    nodeGui->setVisibleSettingsPanel(true, isMinimized);
                 }
             }
         }

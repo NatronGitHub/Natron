@@ -149,11 +149,19 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
             Project* isProject = dynamic_cast<Project*>(holder);
+            bool isMinimized = (*it)->isMinimized();
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
+                if (isMinimized) {
+                    _openedPanelsMinimizedOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
+                }
             } else if (isEffect) {
-                _openedPanelsOrdered.push_back( isEffect->getNode()->getFullyQualifiedName() );
+                std::string nodeName = isEffect->getNode()->getFullyQualifiedName();
+                _openedPanelsOrdered.push_back(nodeName);
+                if (isMinimized) {
+                    _openedPanelsMinimizedOrdered.push_back(nodeName);
+                }
             }
         }
     }

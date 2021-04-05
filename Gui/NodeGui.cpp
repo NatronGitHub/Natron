@@ -416,7 +416,7 @@ NodeGui::restoreStateAfterCreation()
 }
 
 void
-NodeGui::ensurePanelCreated()
+NodeGui::ensurePanelCreated(bool minimized)
 {
     if (_panelCreated) {
         return;
@@ -468,6 +468,10 @@ NodeGui::ensurePanelCreated()
             panel->onChildCreated(*it);
         }
         panel->setRedrawOnSelectionChanged(true);
+    }
+
+    if (minimized) {
+        _settingsPanel->minimizeOrMaximize(true);
     }
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
@@ -2087,10 +2091,10 @@ NodeGui::initializeKnobs()
 }
 
 void
-NodeGui::setVisibleSettingsPanel(bool b)
+NodeGui::setVisibleSettingsPanel(bool b, bool m)
 {
     if (!_panelCreated) {
-        ensurePanelCreated();
+        ensurePanelCreated(m);
     }
     if (_settingsPanel) {
         _settingsPanel->setClosed(!b);
