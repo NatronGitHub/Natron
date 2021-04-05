@@ -1,0 +1,13 @@
+--- boost_1_58_0/tools/build/src/tools/gcc.jam~	2015-07-17 15:14:57.381636224 +0100
++++ boost_1_58_0/tools/build/src/tools/gcc.jam	2015-07-27 17:35:29.122264048 +0100
+@@ -421,7 +421,9 @@
+ 
+ rule setup-address-model ( targets * : sources * : properties * )
+ {
+-    local model = [ feature.get-values address-model : $(properties) ] ;
++    # For RPM builds the address model flag is passed in %{optflags}.
++    # local model = [ feature.get-values address-model : $(properties) ] ;
++    local model ;
+     if $(model)
+     {
+         local option ;

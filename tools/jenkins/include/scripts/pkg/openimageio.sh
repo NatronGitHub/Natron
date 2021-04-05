@@ -2,8 +2,8 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.1.16.0
-OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
+OIIO_VERSION=2.2.13.0 # compiled for C++11 (see -DCMAKE_CXX_STANDARD=11 below, and openexr build)
+OIIO_VERSION_SHORT=2.2 # ${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if download_step; then
     download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
@@ -30,7 +30,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     fi
     OIIO_CMAKE_FLAGS=( "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DCMAKE_C_FLAGS=$BF" "-DCMAKE_CXX_FLAGS=$BF" "-DCMAKE_LIBRARY_PATH=${SDK_HOME}/lib" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_OPENCV:BOOL=FALSE" "-DUSE_OPENSSL:BOOL=FALSE" )
-    OIIO_CMAKE_FLAGS+=( "-DOPENEXR_HOME=$SDK_HOME" "-DILMBASE_HOME=$SDK_HOME" )
+    OIIO_CMAKE_FLAGS+=( "-DOpenEXR_ROOT=$SDK_HOME" "-DOPENEXR_HOME=$SDK_HOME" "-DIlmbase_ROOT=$SDK_HOME" "-DILMBASE_HOME=$SDK_HOME" )
     OIIO_CMAKE_FLAGS+=( "-DTHIRD_PARTY_TOOLS_HOME=$SDK_HOME" "-DUSE_QT:BOOL=FALSE" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_PYTHON:BOOL=FALSE" "-DUSE_FIELD3D:BOOL=FALSE" )
     OIIO_CMAKE_FLAGS+=( "-DOIIO_BUILD_TESTS=0" "-DOIIO_BUILD_TOOLS=1" )
@@ -51,7 +51,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP17:BOOL=FALSE" )
     fi
     OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
-
+    OIIO_CMAKE_FLAGS+=( "-DBUILD_FMT_FORCE:BOOL=TRUE" )
+    OIIO_CMAKE_FLAGS+=( "-DCMAKE_CXX_STANDARD=11" )
     mkdir build
     pushd build
 

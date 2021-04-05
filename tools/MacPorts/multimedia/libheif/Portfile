@@ -3,8 +3,13 @@
 PortSystem                  1.0
 PortGroup                   github 1.0
 
-github.setup                strukturag libheif 1.6.2 v
-revision                    0
+github.setup                strukturag libheif 1.11.0 v
+revision                    102
+
+checksums                   rmd160  e6c17b0c1016c10da0b1aec74fd9ae09c42dbdf7 \
+                            sha256  c550938f56ff6dac83702251a143f87cb3a6c71a50d8723955290832d9960913 \
+                            size    1680855
+
 categories                  multimedia
 license                     LGPL-3+
 maintainers                 {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -14,14 +19,12 @@ platforms                   darwin
 
 github.tarball_from         releases
 
-checksums                   rmd160  659bf1335b86bf95c58ef022fd654bd268809d96 \
-                            sha256  bb229e855621deb374f61bee95c4642f60c2a2496bded35df3d3c42cc6d8eefc \
-                            size    1515763
-
 depends_build-append        port:pkgconfig
 
-depends_lib-append          port:gdk-pixbuf2 \
-                            path:lib/libjpeg.dylib:jpeg \
+depends_lib-append          port:dav1d \
+                            port:gdk-pixbuf2 \
+                            port:aom \
+                            path:include/turbojpeg.h:libjpeg-turbo \
                             port:libde265 \
                             port:libpng \
                             port:x265

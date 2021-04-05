@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2020 The Natron developers
+# (C) 2018-2021 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ run-without-python {
 # QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
 
     QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long -Wno-deprecated-copy
     *clang* | *xcode* {
     	# In file included from <built-in>:1:
     	# In file included from /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/Python.h:88:
@@ -588,6 +588,8 @@ FC_DEFAULT_FONTS += "<dir>/System/Library/Assets/com_apple_MobileAsset_Font5</di
 # Windows
 win32 {
 FC_DEFAULT_FONTS += "<dir>WINDOWSFONTDIR</dir>"
+# Windows 10 introduced user fonts, and is the preferred (and default) place to install fonts
+FC_DEFAULT_FONTS += "<dir>~/AppData/Local/Microsoft/Windows/Fonts</dir>"
 FC_CACHEDIR += "<cachedir>LOCAL_APPDATA_FONTCONFIG_CACHE</cachedir>"
 }
 

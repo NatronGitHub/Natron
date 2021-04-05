@@ -5,14 +5,17 @@ PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 PortGroup           compiler_blacklist_versions 1.0
 PortGroup           active_variants 1.1
+
 # https://trac.macports.org/ticket/59246
+# https://trac.macports.org/ticket/59308
 PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.2.2
+version             4.3.2
+revision            0
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -54,9 +57,9 @@ master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  2f1ff99e3a2db7a17bb6b692dd394e6f3afd803d \
-                    sha256  cb754255ab0ee2ea5f66f8850e1bd6ad5cac1cd855d0a2f4990fb8c668b0d29c \
-                    size    9094140
+checksums           rmd160  f5d067267a90002c071fb263712021dc710e9aeb \
+                    sha256  46e4e64f1dd0233cbc0934b9f1c0da676008cad34725113fb7f802cfa84ccddb \
+                    size    9391100
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -87,24 +90,23 @@ depends_lib         port:lame \
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
 
+# work around vec_xl intrinsic does not exist on older PowerPC processors
+# https://trac.ffmpeg.org/ticket/8750
+patchfiles-append     patch-ffmpeg-powerpc-yuv2rgb-altivec-fix.diff
+
 #
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
 #
 minimum_xcodeversions {9 3.1}
 
+# requires a C11 compiler
+compiler.c_standard 2011
+
 if {[lsearch [get_canonical_archs] i386] != -1} {
     # clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
     # clang-139 hits https://trac.macports.org/ticket/38141
     compiler.blacklist-append {clang < 422.1.7}
-}
-
-platform darwin powerpc {
-    # https://trac.macports.org/ticket/55124
-    # requires newer compiler than gcc4.2 to build
-    compiler.blacklist
-    compiler.whitelist    macports-gcc-6
-    universal_variant     no
 }
 
 # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
@@ -177,11 +179,17 @@ platform darwin {
         configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
     }
 
-    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
-    # but builds on Snow Leopard
     if {${os.major} > 9} {
+        # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
+        # but builds on Snow Leopard
         configure.args-replace --disable-sdl2 --enable-sdl2
         depends_lib-append     port:libsdl2
+
+        # Dav1d: 10.6+ No PowerPC or Apple Silicon (for now)
+        if {![regexp -all (arm64|ppc*) [get_canonical_archs]]} {
+            configure.args-append   --enable-libdav1d
+            depends_lib-append      port:dav1d
+        }
     }
 
     # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
@@ -201,7 +209,9 @@ platform darwin {
     }
 
     # avfoundation is only available on 10.7+
-    if {${os.major} < 11} {
+    # as of ffmpeg 3.4.1 build fails on 10.7 as well
+    # libavdevice/avfoundation.m:207:14: error: expected method to read dictionary element not found on object of type 'NSDictionary *'
+    if {${os.major} < 12} {
         configure.args-append --disable-indev=avfoundation
     }
 }
@@ -240,7 +250,10 @@ platform darwin 8 {
 
 configure.universal_args-delete --disable-dependency-tracking
 
-if {[variant_isset universal]} {
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
+if {${universal_possible} && [variant_isset universal]} {
     foreach arch ${configure.universal_archs} {
         set merger_host($arch) ""
         lappend merger_configure_args($arch) --arch=${arch}

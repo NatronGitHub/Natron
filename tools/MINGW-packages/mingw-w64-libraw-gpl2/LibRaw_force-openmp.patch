@@ -1,0 +1,22 @@
+diff --git a/libraw/libraw_types.h b/libraw/libraw_types.h
+index 53d1ab96..1492f06c 100644
+--- a/libraw/libraw_types.h
++++ b/libraw/libraw_types.h
+@@ -47,6 +47,9 @@ typedef unsigned __int64 uint64_t;
+ 
+ #if defined(_OPENMP)
+ 
++#if defined(LIBRAW_FORCE_OPENMP)
++#define LIBRAW_USE_OPENMP
++#else
+ #if defined(_WIN32)
+ #if defined(_MSC_VER) &&                                                       \
+     (_MSC_VER >= 1600 || (_MSC_VER == 1500 && _MSC_FULL_VER >= 150030729))
+@@ -67,6 +70,7 @@ typedef unsigned __int64 uint64_t;
+ #define LIBRAW_USE_OPENMP
+ #endif
+ #endif
++#endif
+ 
+ #ifdef LIBRAW_USE_OPENMP
+ #include <omp.h>

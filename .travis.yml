@@ -106,6 +106,35 @@ addons:
     build_command: "tools/travis/build.sh"
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
+  homebrew:
+    packages:
+    - xctool
+    - python@2
+    - boost
+    - giflib
+    - jpeg
+    - libpng
+    - libtiff
+    - libxml2
+    - openssl
+    - pcre
+    - readline
+    - sqlite
+    - expat
+    - cairo
+    - gnu-sed
+    - glew
+    - openssl
+    - ilmbase
+    - openexr
+    - freetype
+    - fontconfig
+    - ffmpeg
+    - openjpeg
+    - libraw
+    - libheif
+    - openvdb
+    update: false
 
 matrix:
   include:
@@ -119,10 +148,10 @@ matrix:
       compiler: clang
     - os: osx
       # see https://docs.travis-ci.com/user/osx-ci-environment/
-      # we use macOS 10.14 (Mojave) to get the precompiled pyside bottles from
-      # https://github.com/cartr/homebrew-qt4
-      # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
-      osx_image: xcode11.2
+      # we use macOS 10.14 (Mojave) or 10.13 (High Sierra) to get the precompiled
+      # pyside bottles from https://github.com/cartr/homebrew-qt4
+      # see https://docs.travis-ci.com/user/reference/osx/#macos-version
+      osx_image: xcode11.3 # 10.1 for High Sierra, 11.3 for Mojave
       compiler: clang
   exclude:
     - os: osx

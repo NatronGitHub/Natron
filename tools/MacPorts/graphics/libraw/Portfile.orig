@@ -3,7 +3,7 @@
 PortSystem          1.0
 
 name                libraw
-version             0.19.5
+version             0.20.2
 revision            1
 
 description         Library for RAW image manipulation
@@ -19,15 +19,21 @@ homepage            https://www.libraw.org
 master_sites        ${homepage}/data/
 distname            LibRaw-${version}
 
-checksums           rmd160  051642cfdf713e1d981a1790f4d872d89ff6f02a \
-                    sha256  40a262d7cc71702711a0faec106118ee004f86c86cc228281d12d16da03e02f5 \
-                    size    1303806
+checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
+                    sha256  dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6 \
+                    size    1432141
 
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
-                    port:jpeg \
+                    path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
+
+use_autoreconf      yes
+
+# src/metadata/tiff.cpp:244: error: integer constant is too large for 'long' type
+# https://trac.macports.org/ticket/60906
+compiler.blacklist-append *gcc-4.0 *gcc-4.2
 
 # disable openmp as it is not consistently applicable in MacPorts at present
 configure.args-append --disable-openmp

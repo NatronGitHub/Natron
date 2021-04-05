@@ -9,4 +9,4 @@ About
    
    getstarted-about-features
    getstarted-about-faq
-
+   getstarted-about-mainconcepts

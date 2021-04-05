@@ -1,13 +1,15 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
-PortSystem 1.0
+PortSystem          1.0
 
 name                libraw
 version             0.18.13
 set demosaicversion 0.18.8
-description         library for RAW images manipulation
-long_description    a library for reading RAW files obtained from digital photo \
-                    cameras (CRW/CR2, NEF, RAF, DNG, and others)
+
+description         Library for RAW image manipulation
+long_description    A library for reading RAW files obtained from digital photo \
+                    cameras (CRW/CR2, NEF, RAF, DNG, and others).
+
 categories          graphics
 platforms           darwin
 license             LGPL-2.1 CDDL GPL-2+ GPL-3+
@@ -36,7 +38,7 @@ patchfiles          libraw_x3f.diff
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
-                    path:lib/libjpeg.dylib:jpeg \
+                    path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
 
 post-destroot {

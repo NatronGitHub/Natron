@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -2494,7 +2494,8 @@ KnobTable::encodeToKnobTableFormat(const std::list<std::vector<std::string> >& t
         for (std::size_t c = 0; c < it->size(); ++c) {
             std::string label = getColumnLabel(c);
             ss << "<" << label << ">";
-            ss << Project::escapeXML( (*it)[c] );
+            std::string value = Project::escapeXML( (*it)[c] );
+            ss << value;
             ss << "</" << label << ">";
         }
     }

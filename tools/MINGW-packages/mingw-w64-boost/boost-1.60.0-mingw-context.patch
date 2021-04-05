@@ -1,0 +1,50 @@
+From 788820f2c5be89882cc0b58bec815decc23af0d7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tomasz=20W=C5=82ostowski?= <tomasz.wlostowski@cern.ch>
+Date: Fri, 29 Jan 2016 00:37:30 +0100
+Subject: [PATCH] boost::context segfault fix on x86_64/Windows
+
+---
+ libs/context/build/Jamfile.v2                  | 18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/libs/context/build/Jamfile.v2 b/libs/context/build/Jamfile.v2
+index 63c6984..cba6dce 100644
+--- a/libs/context/build/Jamfile.v2
++++ b/libs/context/build/Jamfile.v2
+@@ -52,10 +52,11 @@ project boost/context
+ local rule default_binary_format ( )
+ {
+     local tmp = elf ;
+-    if [ os.name ] = "NT" { tmp = pe ; }
+-    else if [ os.name ] = "CYGWIN" { tmp = pe ; }
+-    else if [ os.name ] = "AIX" { tmp = xcoff ; }
+-    else if [ os.name ] = "MACOSX" { tmp = mach-o ; }
++#   if [ os.name ] = "NT" { tmp = pe ; }
++#   else if [ os.name ] = "CYGWIN" { tmp = pe ; }
++#   else if [ os.name ] = "AIX" { tmp = xcoff ; }
++#   else if [ os.name ] = "MACOSX" { tmp = mach-o ; }
++    tmp = pe ;
+     return $(tmp) ;
+ }
+ 
+@@ -72,11 +73,12 @@ feature.set-default binary-format : [ default_binary_format ] ;
+ local rule default_abi ( )
+ {
+     local tmp = sysv ;
+-    if [ os.name ] = "NT" { tmp = ms ; }
+-    else if [ os.name ] = "CYGWIN" { tmp = ms ; }
+-    else if [ os.platform ] = "ARM" { tmp = aapcs ; }
+-    else if [ os.platform ] = "MIPS32" { tmp = o32 ; }
+-    else if [ os.platform ] = "MIPS64" { tmp = n64 ; }
++#   if [ os.name ] = "NT" { tmp = ms ; }
++#   else if [ os.name ] = "CYGWIN" { tmp = ms ; }
++#   else if [ os.platform ] = "ARM" { tmp = aapcs ; }
++#   else if [ os.platform ] = "MIPS32" { tmp = o32 ; }
++#   else if [ os.platform ] = "MIPS64" { tmp = n64 ; }
++    tmp = ms ;
+     return $(tmp) ;
+ }
+ 
+-- 
+1.9.1
+

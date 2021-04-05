@@ -7,7 +7,7 @@ PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 
-github.setup            OpenImageIO oiio 2.1.15.0
+github.setup            OpenImageIO oiio 2.2.13.0
 revision                100
 name                    openimageio
 categories              graphics
@@ -18,17 +18,17 @@ long_description        OpenImageIO is a library for reading and writing images,
                         related classes, utilities, and applications.
 platforms               darwin
 
-checksums               rmd160  753c686d7e6aeb8cf51d807d5acb1d680b895d64 \
-                        sha256  95b90ba22b73765cbcbd9e11891769c2e78696ad24d4af77ef3f3c8674422401 \
-                        size    29051047
+checksums           rmd160  dc5b043a7b8913a7d257001b12299fcab6a416d6 \
+                    sha256  fcb938d7d0060816bad18f62ebed6e5a1d959555db2e9d282543b46519237755 \
+                    size    29265725
 
 compiler.cxx_standard   2011
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
-# error: thread-local storage is not supported for the current target
-compiler.blacklist-append {clang < 800}
+
+compiler.thread_local_storage yes
 
 github.master_sites     ${github.homepage}/archive
 distname                Release-${version}
@@ -37,7 +37,8 @@ worksrcdir              oiio-Release-${version}
 patch.pre_args  -p1
 patchfiles \
     oiio-2.0.8-invalidatespec.patch \
-    oiio-2.0.8-atomic-load.patch
+    oiio-2.0.8-atomic-load.patch \
+    oiio-2.2.13.0-c++11.patch
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
@@ -51,13 +52,12 @@ depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
                         port:boost \
-                        path:lib/libjpeg.dylib:jpeg \
+                        path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
                         port:tiff \
                         port:ilmbase \
                         port:openexr \
-                        port:squish \
-                        port:libfmt
+                        port:squish
 
 # optional components
 
@@ -122,6 +122,7 @@ configure.args-append \
     -DUSE_LIBRAW:BOOL=TRUE \
     -DUSE_OPENGL:BOOL=FALSE \
     -DUSE_WEBP:BOOL=TRUE \
+    -DBUILD_FMT_FORCE:BOOL=TRUE \
     -DSTOP_ON_WARNING:BOOL=FALSE
 
 # optional components

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -337,22 +337,22 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         rectClippedToRoI.y2 -= pixelCenterOffset;
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
-            (GLfloat)rod.left(),                                (GLfloat)rod.top(),    //0
-            (GLfloat)(rectClippedToRoI.x1 + pixelCenterOffset), (GLfloat)rod.top(),          //1
-            (GLfloat)(rectClippedToRoI.x2 - pixelCenterOffset), (GLfloat)rod.top(),    //2
-            (GLfloat)rod.right(),                               (GLfloat)rod.top(),   //3
-            (GLfloat)rod.left(),                                (GLfloat)(rectClippedToRoI.y2 - pixelCenterOffset), //4
-            (GLfloat)rectClippedToRoI.x1,                       (GLfloat)rectClippedToRoI.y2,       //5
-            (GLfloat)rectClippedToRoI.x2,                       (GLfloat)rectClippedToRoI.y2, //6
-            (GLfloat)rod.right(),                               (GLfloat)rectClippedToRoI.y2, //7
-            (GLfloat)rod.left(),                                (GLfloat)rectClippedToRoI.y1,        //8
-            (GLfloat)rectClippedToRoI.x1,                       (GLfloat)rectClippedToRoI.y1,             //9
-            (GLfloat)rectClippedToRoI.x2,                       (GLfloat)rectClippedToRoI.y1,       //10
-            (GLfloat)rod.right(),                               (GLfloat)rectClippedToRoI.y1,       //11
-            (GLfloat)rod.left(),                                (GLfloat)rod.bottom(), //12
-            (GLfloat)rectClippedToRoI.x1,                       (GLfloat)rod.bottom(),       //13
-            (GLfloat)rectClippedToRoI.x2,                       (GLfloat)rod.bottom(), //14
-            (GLfloat)rod.right(),                               (GLfloat)rod.bottom() //15
+            (GLfloat)rod.left(),          (GLfloat)rod.top(),    //0
+            (GLfloat)rectClippedToRoI.x1, (GLfloat)rod.top(),          //1
+            (GLfloat)rectClippedToRoI.x2, (GLfloat)rod.top(),    //2
+            (GLfloat)rod.right(),         (GLfloat)rod.top(),   //3
+            (GLfloat)rod.left(),          (GLfloat)rectClippedToRoI.y2, //4
+            (GLfloat)rectClippedToRoI.x1, (GLfloat)rectClippedToRoI.y2,       //5
+            (GLfloat)rectClippedToRoI.x2, (GLfloat)rectClippedToRoI.y2, //6
+            (GLfloat)rod.right(),         (GLfloat)rectClippedToRoI.y2, //7
+            (GLfloat)rod.left(),          (GLfloat)rectClippedToRoI.y1,        //8
+            (GLfloat)rectClippedToRoI.x1, (GLfloat)rectClippedToRoI.y1,             //9
+            (GLfloat)rectClippedToRoI.x2, (GLfloat)rectClippedToRoI.y1,       //10
+            (GLfloat)rod.right(),         (GLfloat)rectClippedToRoI.y1,       //11
+            (GLfloat)rod.left(),          (GLfloat)rod.bottom(), //12
+            (GLfloat)rectClippedToRoI.x1, (GLfloat)rod.bottom(),       //13
+            (GLfloat)rectClippedToRoI.x2, (GLfloat)rod.bottom(), //14
+            (GLfloat)rod.right(),         (GLfloat)rod.bottom() //15
         };
 
         //        GLfloat texBottom =  0;

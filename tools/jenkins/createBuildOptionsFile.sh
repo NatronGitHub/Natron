@@ -110,10 +110,6 @@ PKGOS=""
 # 32, 64 or universal
 BITS=""
 
-# Pretty architecture/platform identifier
-PKGOS_BITS="$PKGOS-x86_${BITS}bit"
-
-
 # Temporary directory where the binaries are built
 TMP_PATH=""
 

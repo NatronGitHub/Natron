@@ -5,7 +5,8 @@ _realname=libtiff
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=4.0.10
-pkgrel=2
+# latest fail tests
+pkgrel=3
 pkgdesc="Library for manipulation of TIFF images (mingw-w64)"
 arch=('any')
 url="http://www.simplesystems.org/libtiff/"

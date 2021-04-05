@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -465,19 +465,21 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLineEdit = new FileDialogLineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
 
-    if ( (mode == SequenceFileDialog::eFileDialogModeOpen) || (mode == SequenceFileDialog::eFileDialogModeDir) ) {
-        _openButton = new Button(tr("Open"), _selectionWidget);
-    } else {
-        _openButton = new Button(tr("Save"), _selectionWidget);
+    if (_dialogMode == eFileDialogModeSave) {
+        _fileExtensionCombo = new ComboBox(_selectionWidget);
+        for (int i = 0; i < _filters.size(); ++i) {
+            _fileExtensionCombo->addItem( _filters[i] );
+        }
+        _selectionLayout->addWidget(_fileExtensionCombo);
+        QObject::connect( _fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)) );
+        if (isSequenceDialog) {
+            int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("exr") );
+            if (idx >= 0) {
+                _fileExtensionCombo->setCurrentIndex(idx);
+            }
+        }
     }
-    _openButton->setFocusPolicy(Qt::TabFocus);
-    _selectionLayout->addWidget(_openButton);
 
-    if (_dialogMode != eFileDialogModeDir) {
-        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()) );
-    } else {
-        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(selectDirectory()) );
-    }
     _mainLayout->addWidget(_selectionWidget);
 
     /*creating filter zone*/
@@ -486,35 +488,14 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineLayout->setContentsMargins(0, 0, 0, 0);
     _filterLineWidget->setLayout(_filterLineLayout);
 
-    if (_dialogMode == eFileDialogModeOpen) {
-        _filterLabel = new Label(tr("Filter:"), _filterLineWidget);
-        _filterLineLayout->addWidget(_filterLabel);
-    } else if (_dialogMode == eFileDialogModeSave) {
-        _filterLabel = new Label(tr("File type:"), _filterLineWidget);
-        _filterLineLayout->addWidget(_filterLabel);
-    }
+    _filterLabel = new Label(tr("Filter:"), _filterLineWidget);
+    _filterLineLayout->addWidget(_filterLabel);
 
     _filterWidget = new QWidget(_filterLineWidget);
     _filterLayout = new QHBoxLayout(_filterWidget);
     _filterWidget->setLayout(_filterLayout);
     _filterLayout->setContentsMargins(0, 0, 0, 0);
     _filterLayout->setSpacing(0);
-
-
-    if (_dialogMode == eFileDialogModeSave) {
-        _fileExtensionCombo = new ComboBox(_filterWidget);
-        for (int i = 0; i < _filters.size(); ++i) {
-            _fileExtensionCombo->addItem( _filters[i] );
-        }
-        _filterLineLayout->addWidget(_fileExtensionCombo);
-        QObject::connect( _fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)) );
-        if (isSequenceDialog) {
-            int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("jpg") );
-            if (idx >= 0) {
-                _fileExtensionCombo->setCurrentIndex(idx);
-            }
-        }
-    }
 
     if (_dialogMode != eFileDialogModeDir) {
         _filterLineEdit = new FileDialogLineEdit(_filterWidget);
@@ -533,6 +514,21 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     _filterLineLayout->addWidget(_filterWidget);
+
+    if ( (mode == SequenceFileDialog::eFileDialogModeOpen) || (mode == SequenceFileDialog::eFileDialogModeDir) ) {
+        _openButton = new Button(tr("Open"), _filterLineWidget);
+    } else {
+        _openButton = new Button(tr("Save"), _filterLineWidget);
+    }
+    _openButton->setFocusPolicy(Qt::TabFocus);
+    _filterLineLayout->addWidget(_openButton);
+
+    if (_dialogMode != eFileDialogModeDir) {
+        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()) );
+    } else {
+        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(selectDirectory()) );
+    }
+
     _cancelButton = new Button(tr("Cancel"), _filterLineWidget);
     _filterLineLayout->addWidget(_cancelButton);
     QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(cancelSlot()) );
@@ -612,6 +608,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         enableSequenceMode(false);
     }
     _selectionLineEdit->setFocus();
+
+    setDefaultFilter();
 }
 
 SequenceFileDialog::~SequenceFileDialog()
@@ -1896,18 +1894,25 @@ SequenceFileDialog::showFilterMenu()
 
     //QFont font(appFont,appFontSize);
     QFontMetrics fm( font() );
-    QAction *startSlash = new QAction(QString::fromUtf8("*/"), this);
-    QObject::connect( startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()) );
-    actions.append(startSlash);
 
-    QAction *empty = new QAction(QString::fromUtf8("*"), this);
-    QObject::connect( empty, SIGNAL(triggered()), this, SLOT(emptyFilterSlot()) );
-    actions.append(empty);
+    QStringList filters = _filters;
+    if (filters.size() > 1) {
+        // make sure *.* is first if we got multiple filters (for easy access)
+        filters.prepend( QString::fromUtf8("*.*") );
+    } else {
+        filters << QString::fromUtf8("*.*");
+    }
+    filters << QString::fromUtf8("*/") << QString::fromUtf8("*") << QString::fromUtf8(".*");
 
-    QAction *dotStar = new QAction(QString::fromUtf8(".*"), this);
-    QObject::connect( dotStar, SIGNAL(triggered()), this, SLOT(dotStarFilterSlot()) );
-    actions.append(dotStar);
-
+    for (int i = 0; i < filters.size(); ++i) {
+        QString filter = filters[i];
+        if ( !filter.contains( QString::fromUtf8("*") ) ) {
+            filter.prepend( QString::fromUtf8("*.") );
+        }
+        QAction *filterAction = new QAction(filter, this);
+        QObject::connect( filterAction, SIGNAL(triggered()), this, SLOT(handleFilterSlot()) );
+        actions.append(filterAction);
+    }
 
     if (actions.count() > 0) {
         Menu menu(_filterLineEdit);
@@ -1919,28 +1924,33 @@ SequenceFileDialog::showFilterMenu()
 }
 
 void
-SequenceFileDialog::dotStarFilterSlot()
+SequenceFileDialog::handleFilterSlot()
 {
-    QString filter( QString::fromUtf8(".*") );
+    QAction *action = qobject_cast<QAction*>( sender() );
+    if (!action) {
+        return;
+    }
+
+    QString filter = action->text();
+    if ( filter.isEmpty() ) {
+        return;
+    }
 
     _filterLineEdit->setText(filter);
     applyFilter(filter);
 }
 
 void
-SequenceFileDialog::starSlashFilterSlot()
+SequenceFileDialog::setDefaultFilter()
 {
-    QString filter = QString::fromUtf8("*/");
+    if (!_filterLineEdit) { // some instances don't use this widget (add dir dialogs)
+        return;
+    }
 
-    _filterLineEdit->setText(filter);
-    applyFilter(filter);
-}
-
-void
-SequenceFileDialog::emptyFilterSlot()
-{
-    QString filter = QString::fromUtf8("*");
-
+    QString filter = QString::fromUtf8("*.*");
+    if (_filters.size() == 1) { // only set if we got a single filter (ntp/nl/nps etc)
+        filter = QString::fromUtf8("*.%1").arg( _filters.at(0) );
+    }
     _filterLineEdit->setText(filter);
     applyFilter(filter);
 }

@@ -65,7 +65,7 @@ extremely performant to Blender-only tools. I think people don't want to be tied
 to 1 software anymore. With OpenFX the possibility to have a back-up software where you
 can still get your work continued is a tremendous avantage.
 
-####For who?
+#### For who?
 
 The software is dedicated to everyone doing compositing, image processing ,
 and that wants a competitive, robust, cutting edge toolset to use. First of all Natron is

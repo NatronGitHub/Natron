@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -66,6 +66,8 @@ public:
     virtual ~DialogParamHolder();
 
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
+
+    virtual std::string getFullyQualifiedName() const OVERRIDE FINAL;
 
     void setParamChangedCallback(const QString& callback);
 

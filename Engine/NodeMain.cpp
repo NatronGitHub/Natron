@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -654,9 +654,8 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
 
 
 void
-Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                                const NodesList & allNodes,
-                                                const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+Node::Implementation::storeKnobLinksRecursive(const GroupKnobSerialization* group,
+                                              const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     const std::list<KnobSerializationBasePtr>&  children = group->getChildren();
 
@@ -665,7 +664,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>( it->get() );
         assert(isGrp || isRegular);
         if (isGrp) {
-            restoreKnobLinksRecursive(isGrp, allNodes, oldNewScriptNamesMapping);
+            storeKnobLinksRecursive(isGrp, oldNewScriptNamesMapping);
         } else if (isRegular) {
             KnobIPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
@@ -678,16 +677,16 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
                 appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
                 continue;
             }
-            isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
+            isRegular->storeKnobLinks(knob);
             isRegular->restoreExpressions(knob, oldNewScriptNamesMapping);
         }
     }
 }
 
+
 void
-Node::restoreKnobsLinks(const NodeSerialization & serialization,
-                        const NodesList & allNodes,
-                        const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+Node::storeKnobsLinks(const NodeSerialization & serialization,
+                      const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -706,13 +705,50 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
             appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), err, false, c);
             continue;
         }
-        (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
+        (*it)->storeKnobLinks(knob);
         (*it)->restoreExpressions(knob, oldNewScriptNamesMapping);
     }
 
     const std::list<GroupKnobSerializationPtr>& userKnobs = serialization.getUserPages();
     for (std::list<GroupKnobSerializationPtr>::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
-        _imp->restoreKnobLinksRecursive( (*it).get(), allNodes, oldNewScriptNamesMapping );
+        _imp->storeKnobLinksRecursive( (*it).get(), oldNewScriptNamesMapping );
+    }
+}
+
+
+void
+Node::Implementation::restoreKnobLinksRecursive(const NodesList & allNodes,
+                                                const KnobGroupPtr& group,
+                                                const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                                                bool throwOnFailure)
+{
+    const std::vector<KnobIPtr>& children = group->getChildren();
+
+    for (std::vector<KnobIPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+        (*it)->restoreLinks(allNodes, oldNewScriptNamesMapping, throwOnFailure);
+        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(*it);
+        if (isGroup) {
+            restoreKnobLinksRecursive(allNodes, isGroup, oldNewScriptNamesMapping, throwOnFailure);
+        }
+    }
+}
+
+
+void
+Node::restoreKnobsLinks(const NodesList & allNodes,
+                        const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                        bool throwOnFailure)
+{
+    ////Only called by the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+
+    std::vector<KnobIPtr> knobs = getKnobs();
+    for (std::vector<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        (*it)->restoreLinks(allNodes, oldNewScriptNamesMapping, throwOnFailure);
+        KnobGroupPtr group = boost::dynamic_pointer_cast<KnobGroup>(*it);
+        if (group) {
+            _imp->restoreKnobLinksRecursive(allNodes, group, oldNewScriptNamesMapping, throwOnFailure);
+        }
     }
 }
 

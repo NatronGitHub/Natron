@@ -2,42 +2,52 @@ _realname=libpng
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.6.37
-pkgrel=1.1
+_apngver=1.6.37
+pkgrel=3
 arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64')
 pkgdesc="A collection of routines used to create PNG format graphics (mingw-w64)"
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc")
 license=('custom')
 url="http://www.libpng.org/pub/png/libpng.html"
-options=('strip' '!libtool' '!staticlibs')
-source=("https://downloads.sourceforge.net/sourceforge/libpng/${_realname}-${pkgver}.tar.xz"
-        "msys.diff")
-sha256sums=('505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca'
-            '9364fe7eac18440c35fa5d8dc4bbec76525e5f22763baa5ddb00e7be48609d1a')
-
-
-prepare() {
-  cd "${srcdir}/${_realname}-${pkgver}"
-  patch -p0 -i ${srcdir}/msys.diff
-}
-
+options=('strip' '!libtool' 'staticlibs')
+source=("https://downloads.sourceforge.net/sourceforge/libpng/${_realname}-${pkgver}.tar.xz")
+sha256sums=('505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca')
 
 build() {
-  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
-  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  ../"${_realname}-${pkgver}"/configure \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --prefix=${MINGW_PREFIX} \
+    --enable-shared --disable-static \
+    as_ln_s="cp -pR"
 
-  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
-  ${MINGW_PREFIX}/bin/cmake \
-    -G"MSYS Makefiles" \
-    -DPNG_STATIC=OFF -DPNG_TESTS=OFF \
-    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    ../${_realname}-${pkgver}
-
+  # FIX BROKEN pnglibconf:
+  make pnglibconf.h
+  tr -d "\r" < pnglibconf.h > pnglibconf.h2
+  mv pnglibconf.h2 pnglibconf.h
+  tr -d "\r" < pnglibconf.out > pnglibconf.out2
+  mv pnglibconf.out2 pnglibconf.out
+  # build:
   make
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  make check
 }
 
 package () {
   cd "${srcdir}/build-${MINGW_CHOST}"
   make install DESTDIR="${pkgdir}"
+
+  install -D -m644 "${srcdir}/libpng-${pkgver}/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
 }
+

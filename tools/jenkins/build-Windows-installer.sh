@@ -47,6 +47,9 @@ source dllVersions.sh
 
 updateBuildOptions
 
+# Pretty architecture/platform identifier (used for breakpad symbol files)
+PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+
 if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     echo "NATRON_BUILD_CONFIG empty"
     exit 1
@@ -427,7 +430,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -502,8 +505,8 @@ ZIP_INSTALL_DIR="compressed_no_installer"
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 
-
-if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
+# Online installer (legacy)
+if [ "$WITH_ONLINE_INSTALLER" = "1" ] && [ ! -f "/Setup.exe" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR"
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
@@ -514,13 +517,18 @@ if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
     "$SDK_HOME/bin/binarycreator" -v -n -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online.exe"
 fi
 
-# Offline installer
-"$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "${PACKAGES}" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/${INSTALLER_BASENAME}.exe"
+# Offline installer (legacy)
+if [ ! -f "/Setup.exe" ]; then
+    "$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "${PACKAGES}" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/${INSTALLER_BASENAME}.exe"
+fi
 
+# Portable zip (+ setup if found)
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    # Portable zip
-    (cd "${TMP_BINARIES_PATH}" && zip -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
+    if [ -f "/Setup.exe" ]; then
+        cp -a /Setup.exe "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/"
+    fi
+    (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 
 echo "*** Artifacts:"

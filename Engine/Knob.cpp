@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -56,6 +56,8 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -147,6 +149,148 @@ KnobI::slaveTo(int dimension,
                bool ignoreMasterPersistence)
 {
     return slaveToInternal(dimension, other, otherDimension, eValueChangedReasonNatronInternalEdited, ignoreMasterPersistence);
+}
+
+static KnobIPtr
+findMaster(const KnobIPtr & knob,
+           const NodesList & allNodes,
+           const std::string& masterNodeNameFull,
+           const std::string& masterNodeName,
+           const std::string& masterTrackName,
+           const std::string& masterKnobName,
+           const std::map<std::string, std::string>& oldNewScriptNamesMapping)
+{
+    ///we need to cycle through all the nodes of the project to find the real master
+    NodePtr masterNode;
+
+    qDebug() << "Link slave/master for" << knob->getName().c_str() << "restoring linkage" << masterNodeNameFull.c_str() << '|' << masterNodeName.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+
+    /*
+       When copy pasting, the new node copied has a script-name different from what is inside the serialization because 2
+       nodes cannot co-exist with the same script-name. We keep in the map the script-names mapping.
+       oldNewScriptNamesMapping is set in NodeGraphPrivate::pasteNode()
+     */
+    std::string masterNodeNameToFind = masterNodeName;
+    std::string masterNodeNameFullToFind = masterNodeNameFull;
+    {
+        std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeName);
+        if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+            // found it!
+            // first, replace the last past of the full name
+            if (!masterNodeNameFull.empty()) {
+                std::size_t found = masterNodeNameFullToFind.find_last_of('.');
+                if (found != std::string::npos && masterNodeNameFullToFind.substr(found+1) == masterNodeName) {
+                    masterNodeNameFullToFind = masterNodeNameFullToFind.substr(0, found+1) + foundMapping->second;
+                }
+            }
+            // then update masterNodeNameToFind
+            masterNodeNameToFind = foundMapping->second;
+        }
+    }
+    // The following is probably useless: NodeGraphPrivate::pasteNode() only uses the node name, not the fully qualified name.
+    // Let us still do that check.
+    {
+        std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMapping.find(masterNodeNameFull.empty() ? masterNodeName : masterNodeNameFull);
+        if ( foundMapping != oldNewScriptNamesMapping.end() ) {
+            masterNodeNameFullToFind = foundMapping->second;
+        }
+    }
+    if (masterNodeNameFullToFind.empty()) {
+        masterNodeNameFullToFind = masterNodeNameToFind;
+    }
+    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+        qDebug() << "Trying node" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
+        if ( (*it2)->getFullyQualifiedName() == masterNodeNameFullToFind ) {
+            masterNode = *it2;
+            break;
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameFullToFind.c_str() << "trying without the group name (Natron project files before 2.3.16)...";
+
+        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+            qDebug() << "Trying node" << (*it2)->getScriptName().c_str() << '/' << (*it2)->getFullyQualifiedName().c_str();
+            if ( (*it2)->getScriptName() == masterNodeNameToFind ) {
+                masterNode = *it2;
+                qDebug() << "Got node" << (*it2)->getFullyQualifiedName().c_str();
+                break;
+            }
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find master node" << masterNodeNameFullToFind.c_str() << '|' << masterNodeNameToFind.c_str();
+
+        return KnobIPtr();
+    }
+
+    if ( !masterTrackName.empty() ) {
+        TrackerContextPtr context = masterNode->getTrackerContext();
+        if (context) {
+            TrackMarkerPtr masterTrack = context->getMarkerByName(masterTrackName);
+            if (!masterTrack) {
+                qDebug() << "Link slave/master for" << knob->getName().c_str() << "could not find track" << masterNodeNameToFind.c_str() << '/' << masterTrackName.c_str();
+            } else {
+                KnobIPtr masterKnob = masterTrack->getKnobByName(masterKnobName);
+                if (!masterKnob) {
+                    qDebug() << "Link slave/master for" << knob->getName().c_str() << "cound not find knob in track" << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+                }
+                return masterKnob;
+            }
+        }
+    } else {
+        ///now that we have the master node, find the corresponding knob
+        const std::vector<KnobIPtr> & otherKnobs = masterNode->getKnobs();
+        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
+            qDebug() << "Trying knob" << otherKnobs[j]->getName().c_str();
+            // The other knob doesn't need to be persistent (it may be a pushbutton)
+            if (otherKnobs[j]->getName() == masterKnobName) {
+                return otherKnobs[j];
+            }
+        }
+        qDebug() << "Link slave/master for" << knob->getName().c_str() << "cound not find knob" << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+    }
+
+    qDebug() << "Link slave/master for" << knob->getName().c_str() << "failed to restore linkage" << masterNodeNameFullToFind.c_str() << '|' << masterNodeNameToFind.c_str()  << '/' << masterTrackName.c_str() << '/' << masterKnobName.c_str();
+
+    return KnobIPtr();
+}
+
+void
+KnobI::restoreLinks(const NodesList & allNodes,
+                    const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                    bool throwOnFailure)
+{
+    int i = 0;
+    KnobIPtr thisKnob = shared_from_this();
+    for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
+
+        KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
+        if (!linkedKnob) {
+            if (throwOnFailure) {
+                throw std::runtime_error(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);
+            } else {
+                continue;
+            }
+        }
+        if (linkedKnob == thisKnob) {
+            qDebug() << "Link for" << getName().c_str()
+            << "failed to restore the following linkage:"
+            << "node=" << l->nodeName.c_str()
+            << "knob=" << l->knobName.c_str()
+            << "track=" << l->trackName.c_str()
+            << "because it returned the same Knob. Probably a pre-2.3.16 project with Group clones";
+            if (throwOnFailure) {
+                throw std::runtime_error(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
+            } else {
+                continue;
+            }
+       } else if (l->dimension == -1) {
+            setKnobAsAliasOfThis(linkedKnob, true);
+        } else {
+            slaveTo(i, linkedKnob, l->dimension);
+        }
+    }
+    _links.clear();
 }
 
 void
@@ -2304,6 +2448,9 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
         if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
             std::string scriptName = (*it)->getScriptName_mt_safe();
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
+                throw std::runtime_error(scriptName + " is a Python keyword");
+            }
             std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
             ss << tabStr << "if hasattr(";
             if (isParentGrp) {

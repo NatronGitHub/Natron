@@ -10,9 +10,38 @@
 
 ## Version 2.3.16
 
+### Known issues
+
+- Rendering sometimes silently stalls after X frames #248
+- Remember Minimize state when reopening project #168
+- Some image formats may have issues (PCX, PSB, CR2)
+
+### Changes
+
+- Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
+- Handle console output on Windows. #524
+- Detect user installed fonts on Windows 10. #523 
+- New Windows installer #596
+- Improvements to SequenceFileDialog. #565
+- Snap timeline alpha cursor to nearest frame. #574
+- Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
+- Tabs UI adjustments. #564
+- Do not allow Python keywords as node name or scriptname. #588
+- Always serialize nodes with an expression or a link, even if they have the default value. #585
+- Support cloned group nodes or hard links between groups #568 #579 #594 #598
+
 ### Plugins
 
+- ReadFFmpeg, WriteFFmpeg: upgrade to work more nicely with the FFmpeg 4 API. #148 #231 #241
+- ReadFFmpeg: add support for reading AV1 & Canopus HQ/HQX/Lossless.
+- WriteFFmpeg: add support for writing AV1.
 - Fix another bug in DenoiseSharpen that caused crash when stoping/aborting. #300
+- Fix Lin2Log to be consistent with Log2Lin. #570
+- Merge: never consider RGB as being transparent by default - this is OK for unpremultiplied compositing (After Effects) but is invalid in a premultiplied compositor such as Natron or Nuke. Users still have the option to ignore the alpha channel. #571
+- WriteOIIO: Do not add "Color." to the channel names of the color plane (affects mainly OpenEXR). #583
+- Writers: when writing RGBA to format that does not support alpha, just drop alpha - don't premultiply. #582
+- RGBtoHSL: Fix bug with white and superwhite values. #512
+- Reformat: Default to project size. #533
 
 
 ## Version 2.3.15

@@ -8,6 +8,7 @@ Tutorials
    :maxdepth: 2
 
    tutorials-writedoc
+   tutorials-imagesequence
    tutorials-hsvtool
    tutorials-ffmpeg
    tutorials-hugin

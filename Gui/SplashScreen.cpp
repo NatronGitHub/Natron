@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -76,7 +76,12 @@ SplashScreen::SplashScreen(const QString & filePath)
     _pixmap.load(filePath);
 
     resize( _pixmap.width(), _pixmap.height() );
-    show();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        show();
+    }
 
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry();

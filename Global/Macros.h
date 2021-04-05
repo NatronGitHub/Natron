@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_NAMESPACE_ANONYMOUS_EXIT }
 
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal video compositing software."
-#define NATRON_COPYRIGHT "(C) 2018-2020 The Natron developers. (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
+#define NATRON_COPYRIGHT "(C) 2018-2021 The Natron developers. (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
@@ -372,6 +372,9 @@ CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 #  endif
 #  define GCC_ONLY_DIAG_OFF(x) GCC_DIAG_OFF(x)
 #  define GCC_ONLY_DIAG_ON(x) GCC_DIAG_ON(x)
+// We disable -Wpragmas because GCC doesn't provide an has_warning equivalent
+// and some forks/patches may not following the warning/version association.
+GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagnostic' kind
 #endif
 
 

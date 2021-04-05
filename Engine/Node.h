@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -165,9 +165,13 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization & serialization,
-                           const NodesList & allNodes,
-                           const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+    void storeKnobsLinks(const NodeSerialization & serialization,
+                         const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+
+    // Once all nodes are created, we can restore the links that were previously saved by storeKnobsLinks()
+    void restoreKnobsLinks(const NodesList & allNodes,
+                           const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                           bool throwOnFailure);
 
     void restoreUserKnobs(const NodeSerialization& serialization);
 

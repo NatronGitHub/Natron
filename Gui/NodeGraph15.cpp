@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -110,12 +110,14 @@ handleConnectionError(const NodeGuiPtr& outputNode,
     }
 
     if ( (linkRetCode == Node::eCanConnectInput_ok) && outputNode->getNode()->getEffectInstance()->isReader() &&
-         ( inputNode->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) ) {
+         ( inputNode->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) &&
+         !inputNode->getNode()->getEffectInstance()->isWriter() ) {
         Dialogs::warningDialog( QCoreApplication::translate("NodeGraph", "Reader input").toStdString(),
                                 QCoreApplication::translate("NodeGraph", "Connecting an input to a Reader node "
-                                                            "is only useful when using the RunScript node "
+                                                            "is only useful when connecting to the output of a Writer "
+                                                            "or RunScript node "
                                                             "so that the Reader automatically reads an image "
-                                                            "when the render of the RunScript is done.").toStdString() );
+                                                            "when the render of the Writer or RunScript is done.").toStdString() );
     }
 
     return true;

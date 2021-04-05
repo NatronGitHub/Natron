@@ -9,11 +9,13 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.11-16
+# 6.9.11-61 changes the major version of libMagickCore which will
+# require increasing the revision of all ports that link with it.
+version                     6.9.11-60
 revision                    0
-checksums                   rmd160  2402446464a320ffefbaedc193dd55cd90f60af4 \
-                            sha256  6e9328e846dadf2b96832d02eddd3da9121f546ca86dbb7da15b8ae21f87ed22 \
-                            size    9075792
+checksums                   rmd160  1c293ba06fd43833be35efb4476e559bf137ccef \
+                            sha256  ba0fa683b0721d1f22b0ccb364e4092e9a7a34ffd3bd6348c82b50fd93b1d7ba \
+                            size    9167220
 
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
@@ -39,16 +41,16 @@ long_description            ImageMagick is a robust collection of tools and \
                             PhotoCD and TIFF.
 
 homepage                    https://legacy.imagemagick.org
-master_sites                https://imagemagick.org/download/ \
-                            http://mirror.checkdomain.de/imagemagick/ \
-                            ftp://ftp.u-aizu.ac.jp/pub/graphics/image/ImageMagick/imagemagick.org/ \
-                            ftp://sunsite.icm.edu.pl/packages/ImageMagick/
+master_sites                https://download.imagemagick.org/ImageMagick/download/releases/ \
+                            http://mirror.checkdomain.de/imagemagick/releases/ \
+                            ftp://ftp.u-aizu.ac.jp/pub/graphics/image/ImageMagick/imagemagick.org/releases/ \
+                            ftp://sunsite.icm.edu.pl/packages/ImageMagick/releases/
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
                             port:xz \
                             port:jbigkit \
-                            port:jpeg \
+                            path:include/turbojpeg.h:libjpeg-turbo \
                             port:lcms2 \
                             port:libpng \
                             port:libraw \
@@ -73,9 +75,6 @@ depends_lib-append          port:pkgconfig
 depends_run                 port:urw-fonts
 
 configure.ccache            no
-
-use_autoreconf              yes
-autoreconf.args             -fvi
 
 configure.args              --enable-shared \
                             --enable-static \

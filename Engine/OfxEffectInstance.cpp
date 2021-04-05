@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -3132,6 +3132,9 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
     }
     appID = getApp()->getAppIDString();
     assert(_imp->effect);
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptname) ) {
+        throw std::runtime_error(scriptname + " is a Python keyword");
+    }
 
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);

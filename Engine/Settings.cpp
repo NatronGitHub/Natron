@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -618,6 +618,13 @@ Settings::initializeKnobsUserInterface()
     _loadProjectsWorkspace->setHintToolTip( tr("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                                "will use your current layout.") );
     _uiPage->addKnob(_loadProjectsWorkspace);
+
+#ifdef Q_OS_WIN
+    _enableConsoleWindow = AppManager::createKnob<KnobBool>( this, tr("Enable console window") );
+    _enableConsoleWindow->setName("enableConsoleWindow");
+    _enableConsoleWindow->setHintToolTip( tr("When checked show console window on Windows.") );
+    _uiPage->addKnob(_enableConsoleWindow);
+#endif
 } // Settings::initializeKnobsUserInterface
 
 void
@@ -1491,6 +1498,9 @@ Settings::setDefaultValues()
     _useCursorPositionIncrements->setDefaultValue(true);
     //_defaultLayoutFile
     _loadProjectsWorkspace->setDefaultValue(false);
+#ifdef Q_OS_WIN
+    _enableConsoleWindow->setDefaultValue(false);
+#endif
 
     // Color-Management
     //_ocioConfigKnob
@@ -1501,7 +1511,7 @@ Settings::setDefaultValues()
     // Caching
     _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50, 0);
-    _unreachableRAMPercent->setDefaultValue(5);
+    _unreachableRAMPercent->setDefaultValue(20); // see https://github.com/NatronGitHub/Natron/issues/486
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
     //_diskCachePath
@@ -2728,7 +2738,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "<hr/>\n"
         "<div role=\"contentinfo\">\n"
         "<p>\n"
-        "&copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+        "&copy; Copyright 2013-2021 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
         "</p>\n"
         "</div>\n"
         "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"
@@ -3117,6 +3127,14 @@ Settings::getLoadProjectWorkspce() const
 {
     return _loadProjectsWorkspace->getValue();
 }
+
+#ifdef Q_OS_WIN
+bool
+Settings::getEnableConsoleWindow() const
+{
+    return _enableConsoleWindow->getValue();
+}
+#endif
 
 bool
 Settings::useCursorPositionIncrements() const

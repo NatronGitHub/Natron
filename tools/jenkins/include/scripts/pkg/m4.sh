@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install m4
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/m4.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/m4.html
 M4_VERSION=1.4.18
 M4_TAR="m4-${M4_VERSION}.tar.xz"
 M4_SITE="https://ftp.gnu.org/gnu/m4"

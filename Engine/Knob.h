@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -1187,6 +1187,34 @@ public:
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension, const KnobIPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
+
+
+    void storeLink(const std::string& nodeNameFull,
+                   const std::string& nodeName,
+                   const std::string& trackName,
+                   const std::string& knobName,
+                   int dimension)
+    {
+        _links.push_back(Link({nodeNameFull, nodeName, trackName, knobName, dimension}));
+    }
+
+    void restoreLinks(const NodesList & allNodes,
+                      const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                      bool throwOnFailure);
+
+private:
+    struct Link {
+        std::string nodeNameFull;
+        std::string nodeName;
+        std::string trackName;
+        std::string knobName;
+        int dimension; // -1 means alias
+    };
+
+    std::vector<Link> _links;
+
+public:
+
     virtual bool isMastersPersistenceIgnored() const = 0;
     virtual KnobIPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                             const boost::shared_ptr<KnobPage>& page,
@@ -2839,6 +2867,8 @@ public:
     }
 
     virtual std::string getScriptName_mt_safe() const = 0;
+
+    virtual std::string getFullyQualifiedName() const = 0;
 };
 
 

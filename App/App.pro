@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2020 The Natron developers
+# (C) 2018-2021 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -31,11 +31,10 @@ VERSION = $$VERSION_24
 
 TEMPLATE = app
 win32 {
-	CONFIG += console
-	RC_FILE += ../Natron.rc
-} else {
-	CONFIG += app
+    RC_FILE += ../Natron.rc
 }
+CONFIG += app
+
 CONFIG += moc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess

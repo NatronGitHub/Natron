@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -1321,11 +1321,9 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
 
     if ( (dt != 0) || (dv != 0) ) {
-        if ( (dt != 0) || (dv != 0) ) {
-            bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            _widget->pushUndoCommand( new MoveKeysCommand(_widget, keysToMove, dt, dv, !updateOnPenUpOnly) );
-            _evaluateOnPenUp = true;
-        }
+        bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+        _widget->pushUndoCommand( new MoveKeysCommand(_widget, keysToMove, dt, dv, !updateOnPenUpOnly) );
+        _evaluateOnPenUp = true;
     }
     //update last drag movement
     if ( (_mouseDragOrientation.x() != 0) || !useOneDirectionOnly ) {

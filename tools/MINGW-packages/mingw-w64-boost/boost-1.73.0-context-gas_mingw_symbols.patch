@@ -1,0 +1,30 @@
+Index: boost_1_73_0/libs/context/src/asm/jump_i386_ms_pe_gas.asm
+===================================================================
+--- boost_1_73_0/libs/context/src/asm/jump_i386_ms_pe_gas.asm	2020-04-22 18:34:56.000000000 +0500
++++ boost_1_73_0/libs/context/src/asm/jump_i386_ms_pe_gas.asm	2020-05-20 21:47:26.428470000 +0500
+@@ -120,4 +120,4 @@
+     jmp *%ecx
+ 
+ .section .drectve
+-.ascii " -export:\"_jump_fcontext\""
++.ascii " -export:\"jump_fcontext\""
+Index: boost_1_73_0/libs/context/src/asm/make_i386_ms_pe_gas.asm
+===================================================================
+--- boost_1_73_0/libs/context/src/asm/make_i386_ms_pe_gas.asm	2020-04-22 18:34:56.000000000 +0500
++++ boost_1_73_0/libs/context/src/asm/make_i386_ms_pe_gas.asm	2020-05-20 21:49:16.504695200 +0500
+@@ -150,4 +150,4 @@
+ .def	__exit;	.scl	2;	.type	32;	.endef  /* standard C library function */
+ 
+ .section .drectve
+-.ascii " -export:\"_make_fcontext\""
++.ascii " -export:\"make_fcontext\""
+Index: boost_1_73_0/libs/context/src/asm/ontop_i386_ms_pe_gas.asm
+===================================================================
+--- boost_1_73_0/libs/context/src/asm/ontop_i386_ms_pe_gas.asm	2020-04-22 18:34:56.000000000 +0500
++++ boost_1_73_0/libs/context/src/asm/ontop_i386_ms_pe_gas.asm	2020-05-20 21:50:32.339577100 +0500
+@@ -128,4 +128,4 @@
+     jmp  *%ecx
+ 
+ .section .drectve
+-.ascii " -export:\"_ontop_fcontext\""
++.ascii " -export:\"ontop_fcontext\""

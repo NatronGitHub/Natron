@@ -36,7 +36,7 @@ The dependencies necessary to build and install Natron can either be built speci
 The Natron SDK is used for building the official Natron binaries. The script that builds the whole SDK and installs it in the default location (`/opt/Natron-sdk`, which must be user-writable) can be exectuted like this:
 
     cd tools/jenkins
-	include/scripts/build-Linux-sdk.sh
+    include/scripts/build-Linux-sdk.sh
 	
 It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
 
@@ -54,22 +54,24 @@ Once the SDK is built, you should set your environment in the shell from which y
 
 This must be done in every shell/terminal where you intend to compile and/or run Natron.
 
-## Manually install dependencies
+## Installing dependencies from Ubuntu
 
-Alternatively, *if you don't want to use the Natron SDK*, you still need to install the required libraries.
-
-***note:*** *The scripts `tools/travis/install_dependencies.sh` and
+The scripts `tools/travis/install_dependencies.sh` and
 `tools/travis/build.sh` respectively install the correct dependencies
 and build Natron and the standard set of plugins on Ubuntu
-14.04. These scripts should always be up-to-date. You can use them as a reference*
+18.04 (Bionic Beaver).
+These scripts are used to make the [Travis CI builds](https://travis-ci.org/github/NatronGitHub/Natron).
+You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+
+## Installing dependencies manually
 
 ### Qt 4.8.7
 
-You'll need to install Qt4 libraries, usually you can get them from your package manager (depends on your distribution).
+You'll need to install Qt4 libraries, usually you can get them from your package manager (which depends on your Linux distribution). Many distributions have deprecated Qt 4 and you may thus need to build it from source.
 
 Alternatively you can download it directly from [Qt download](http://qt-project.org/downloads).
 
-Please download `Qt 4.*`, Natron is known to be buggy when running with Qt 5.
+Please download `Qt 4.*`, Natron was not fully tested with Qt 5.
 
 
 ### Boost

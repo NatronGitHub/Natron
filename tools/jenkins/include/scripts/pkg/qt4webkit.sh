@@ -8,13 +8,25 @@ if download_step; then
 fi
 if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
     start_build
+    if [ -s /etc/redhat-release ] && [ -x /usr/bin/yum ]; then
+        # Most scripts in webkit point to /usr/bin/perl, which is outdated in centos,
+        # and doesn't include some of the default packages.
+        # We could fix all the scripts to use "/usr/bin/env perl" and "/usr/bin/env swig"
+        # instead of "/usr/bin/perl" and "/usr/bin/swig", but for now let's just install
+        # the required packages.
+        LD_LIBRARY_PATH= PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin yum install perl-Digest-MD5 perl-version -y || true
+    fi
+    # Check that the system perl has the required modules installed
+    /usr/bin/perl -Mversion -e 1
+    /usr/bin/perl -MDigest::MD5 -e 1
+
     # install a more recent qtwebkit, see http://www.linuxfromscratch.org/blfs/view/7.9/x/qt4.html
     mkdir "qtwebkit-${QT4WEBKIT_VERSION}"
     pushd "qtwebkit-${QT4WEBKIT_VERSION}"
     untar "$SRC_PATH/$QT4WEBKIT_TAR"
 
     #############################################
-    # patches from fedora's qtwebkit-2.3.4-25.fc30.src.rpm
+    # patches from fedora's qtwebkit-2.3.4-29.fc32.src.rpm
     
     # search /usr/lib{,64}/mozilla/plugins-wrapped for browser plugins too
     Patch1=webkit-qtwebkit-2.2-tp1-pluginpath.patch
@@ -61,6 +73,17 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
 
     #######################################
     
+    # bison 3.7 breaks webkit build:
+    # https://bugs.gentoo.org/736499
+    # https://github.com/qtwebkit/qtwebkit/commit/d92b11fea65364fefa700249bd3340e0cd4c5b31
+    patch -Np1 -i "$INC_PATH/patches/Qt/webkit-qtwebkit-bison37.patch"
+    # Unfortunately, even with this patch it still doesn build, and fails with:
+    # generated/XPathGrammar.tab.c:124:10: fatal error: XPathGrammar.tab.h: No such file or directory
+    if version_gt "$BISON_VERSION" 3.7; then
+        echo "qt4webkit doesn't build with bison >= 3.7"
+        echo "fix this, then remove this message from qt4webkit.sh"
+    fi
+
     # disable xslt if libxml2 is compiled with ICU support, or qtwebkit will not compile, see https://aur.archlinux.org/packages/qtwebkit
     if [ "$LIBXML2_ICU" -eq 1 ]; then
         xslt_flag="--no-xslt"

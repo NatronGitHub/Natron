@@ -1,24 +1,18 @@
---- Portfile.orig	2019-12-20 23:17:22.000000000 -0800
-+++ Portfile	2019-12-20 23:17:56.000000000 -0800
-@@ -1,44 +1,67 @@
- # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
- 
--PortSystem          1.0
-+PortSystem 1.0
+--- Portfile.orig	2021-02-13 12:00:15.000000000 -0800
++++ Portfile	2021-02-13 12:01:10.000000000 -0800
+@@ -3,8 +3,8 @@
+ PortSystem          1.0
  
  name                libraw
--version             0.19.5
+-version             0.20.2
 -revision            1
--
--description         Library for RAW image manipulation
--long_description    A library for reading RAW files obtained from digital photo \
--                    cameras (CRW/CR2, NEF, RAF, DNG, and others).
--
 +version             0.18.13
 +set demosaicversion 0.18.8
-+description         library for RAW images manipulation
-+long_description    a library for reading RAW files obtained from digital photo \
-+                    cameras (CRW/CR2, NEF, RAF, DNG, and others)
+ 
+ description         Library for RAW image manipulation
+ long_description    A library for reading RAW files obtained from digital photo \
+@@ -12,16 +12,28 @@
+ 
  categories          graphics
  platforms           darwin
 -license             {LGPL-2.1 CDDL}
@@ -29,9 +23,9 @@
  master_sites        ${homepage}/data/
  distname            LibRaw-${version}
  
--checksums           rmd160  051642cfdf713e1d981a1790f4d872d89ff6f02a \
--                    sha256  40a262d7cc71702711a0faec106118ee004f86c86cc228281d12d16da03e02f5 \
--                    size    1303806
+-checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
+-                    sha256  dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6 \
+-                    size    1432141
 +checksums \
 +    LibRaw-${version}${extract.suffix} \
 +        rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
@@ -50,11 +44,16 @@
  
  depends_build       port:pkgconfig
  
- depends_lib         port:jasper \
--                    port:jpeg \
-+                    path:lib/libjpeg.dylib:jpeg \
+@@ -29,22 +41,29 @@
+                     path:include/turbojpeg.h:libjpeg-turbo \
                      port:lcms2
  
+-use_autoreconf      yes
+-
+-# src/metadata/tiff.cpp:244: error: integer constant is too large for 'long' type
+-# https://trac.macports.org/ticket/60906
+-compiler.blacklist-append *gcc-4.0 *gcc-4.2
+-
 -# disable openmp as it is not consistently applicable in MacPorts at present
 -configure.args-append --disable-openmp
 -

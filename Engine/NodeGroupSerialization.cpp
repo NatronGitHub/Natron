@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -395,11 +395,6 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
     } // for (std::list<NodeSerializationPtr>::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     ///Now that the graph is setup, restore expressions
-    NodesList nodes = group->getNodes();
-    if (isNodeGroup) {
-        nodes.push_back( isNodeGroup->getNode() );
-    }
-
     {
         std::map<std::string, std::string> oldNewScriptNamesMapping;
         for (std::map<NodePtr, NodeSerializationPtr>::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
@@ -407,7 +402,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 //ignore viewers on background mode
                 continue;
             }
-            it->first->restoreKnobsLinks(*it->second, nodes, oldNewScriptNamesMapping);
+            it->first->storeKnobsLinks(*it->second, oldNewScriptNamesMapping);
+            // restoreKnobsLinks() is called on all nodes at the end of ProjectPrivate::restoreFromSerialization()
         }
     }
 

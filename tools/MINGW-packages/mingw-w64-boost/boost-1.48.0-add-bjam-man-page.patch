@@ -1,0 +1,150 @@
+diff --git a/tools/build/v2/doc/bjam.1 b/tools/build/v2/doc/bjam.1
+new file mode 100644
+index 0000000..8a44af6
+--- /dev/null
++++ b/tools/build/v2/doc/bjam.1
+@@ -0,0 +1,144 @@
++.TH "bjam" 1 "Sat Nov 19 2011" "Doxygen" \" -*- nroff -*-
++.ad l
++.nh
++.SH NAME
++bjam \- Command-line utility to build Boost-related C++ projects with Boost\&.Build
++.SH "SYNOPSIS"
++.PP
++\fBbjam\fP \fC[-a] [-dx] [-fx] [-jx] [-lx] [-n] [-ox] [-px] [-q] [-sx=y] [-tx] [-v] [--x]\fP
++.PP
++\fIbjam\fP accepts the following options:
++.PP
++\fB-a\fP 
++.br
++ Build all targets, even if they are current
++.PP
++\fB-dx\fP 
++.br
++ Set the debug level to x (0-9)
++.PP
++\fB-fx\fP 
++.br
++ Read x instead of Jambase
++.PP
++\fB-jx\fP 
++.br
++ Run up to x shell commands concurrently
++.PP
++\fB-lx\fP 
++.br
++ Limit actions to x number of seconds after which they are stopped
++.PP
++\fB-n\fP 
++.br
++ Don't actually execute the updating actions
++.PP
++\fB-ox\fP 
++.br
++ Write the updating actions to file x
++.PP
++\fB-px\fP 
++.br
++ x=0, pipes action stdout and stderr merged into action output
++.PP
++\fB-q\fP 
++.br
++ Quit quickly as soon as a target fails
++.PP
++\fB-sx=y\fP 
++.br
++ Set variable x=y, overriding environment
++.PP
++\fB-tx\fP 
++.br
++ Rebuild x, even if it is up-to-date
++.PP
++\fB-v\fP 
++.br
++ Print the version of jam and exit
++.PP
++\fB--x\fP 
++.br
++ Option is ignored
++.SH "DESCRIPTION"
++.PP
++This section provides the information necessary to create your own projects using \fIBoost\&.Build\fP The information provided here is relatively high-level, and Chapter 6, Reference as well as the on-line help system must be used to obtain low-level documentation (see --help)
++.PP
++\fIBoost\&.Build\fP actually consists of two parts - \fIBoost\&.Jam\fP, a build engine with its own interpreted language, and \fIBoost\&.Build\fP itself, implemented in \fIBoost\&.Jam's\fP language\&. The chain of events when you type bjam on the command line is as follows:
++.IP "\(bu" 2
++\fIBoost\&.Jam\fP tries to find \fIBoost\&.Build\fP and loads the top-level module\&. The exact process is described in the section called “Initialization”
++.PP
++.PP
++.IP "\(bu" 2
++The top-level module loads user-defined configuration files, \fIuser-config\&.jam\fP and \fIsite-config\&.jam\fP, which define available toolsets
++.PP
++.PP
++.IP "\(bu" 2
++The \fIJamfile\fP in the current directory is read That in turn might cause reading of further Jamfiles\&. As a result, a tree of projects is created, with targets inside projects
++.PP
++.PP
++.IP "\(bu" 2
++Finally, using the build request specified on the command line, \fIBoost\&.Build\fP decides which targets should be built and how\&. That information is passed back to \fIBoost\&.Jam\fP, which takes care of actually running the scheduled build action commands
++.PP
++.PP
++So, to be able to successfully use \fIBoost\&.Build\fP, you need to know only four things:
++.IP "\(bu" 2
++How to configure \fIBoost\&.Build\fP (http://www.boost.org/boost-build2/doc/html/bbv2/overview/configuration.html)
++.IP "\(bu" 2
++How to declare targets in Jamfiles (http://www.boost.org/boost-build2/doc/html/bbv2/overview/targets.html)
++.IP "\(bu" 2
++How the build process works (http://www.boost.org/boost-build2/doc/html/bbv2/overview/build_process.html)
++.PP
++.PP
++Some Basics about the \fIBoost\&.Jam\fP language\&. See the section called “Boost\&.Jam Language” (http://www.boost.org/boost-build2/doc/html/bbv2/overview/jam_language.html)
++.SH "CONCEPTS"
++.PP
++\fIBoost\&.Build\fP has a few unique concepts that are introduced in this section\&. The best way to explain the concepts is by comparison with more classical build tools
++.PP
++When using any flavour of make, you directly specify targets and commands that are used to create them from other target\&. The below example creates a\&.o from a\&.c using a hardcoded compiler invocation command
++.PP
++a\&.o: a\&.c
++.br
++ g++ -o a\&.o -g a\&.c
++.PP
++This is rather low-level description mechanism and it is hard to adjust commands, options, and sets of created targets depending on the used compiler and operating system\&.
++.PP
++To improve portability, most modern build system provide a set of higher-level functions that can be used in build description files\&. Consider this example:
++.PP
++add_program ('a', 'a\&.c')
++.br
++.PP
++This is a function call that creates targets necessary to create executable file from source file a\&.c\&. Depending on configured properties, different commands line may be used\&. However, \fIadd_program\fP is higher-level, but rather thin level All targets are created immediately when build description is parsed, which makes it impossible to perform multi-variant builds\&. Often, change in any build property requires complete reconfiguration of the build tree
++.PP
++In order to support true multivariant builds, Boost\&.Build introduces the concept of metatarget—object that is created when build description is parsed and can be later called with specific build properties to generate actual targets
++.PP
++Consider an example:
++.PP
++exe a : a\&.cpp ;
++.br
++.PP
++When this declaration is parsed, \fIBoost\&.Build\fP creates a metatarget, but does not yet decides what files must be created, or what commands must be used\&. After all build files are parsed, Boost\&.Build considers properties requested on the command line\&. Supposed you have invoked \fIBoost\&.Build\fP with:
++.PP
++\fIbjam\fP toolset=gcc toolset=msvc
++.br
++.PP
++In that case, the metatarget will be called twice, once with toolset=gcc and once with toolset=msvc\&. Both invocations will produce concrete targets, that will have different extensions and use different command lines\&. Another key concept is build property\&. Build property is a variable that affects the build process\&. It can be specified on the command line, and is passed when calling a metatarget
++.PP
++While all build tools have a similar mechanism, \fIBoost\&.Build\fP differs by requiring that all build properties are declared in advance, and providing a large set of properties with portable semantics
++.PP
++The final concept is property propagation\&. Boost\&.Build does not require that every metatarget is called with the same properties\&. Instead, the 'top-level' metatargets are called with the properties specified on the command line Each metatarget can elect to augment or override some properties (in particular, using the requirements mechanism, see the section called “Requirements”: http://www.boost.org/boost-build2/doc/html/bbv2/overview/targets.html#bbv2.overview.targets.requirements) Then, the dependency metatargets are called with modified properties and produce concrete targets that are then used in build process Of course, dependency metatargets maybe in turn modify build properties and have dependencies of their own\&.
++.PP
++For more in-depth treatment of the requirements and concepts, you may refer to SYRCoSE 2009 Boost\&.Build article (http://syrcose.ispras.ru/2009/files/04_paper.pdf)\&.
++.SH "SEE ALSO"
++.PP
++\fBboost-libraries\fP(3)
++.SH "SUPPORT"
++.PP
++Please report any bugs to https://svn.boost.org/trac/boost/
++.SH "COPYRIGHT"
++.PP
++Boost Software License - Version 1\&.0 - August 17th, 2003
++.PP
++See the LICENSE_1_0\&.txt file for more information on that license, or directly on Internet:
++.br
++ http://www.boost.org/LICENSE_1_0.txt 

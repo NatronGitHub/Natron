@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -613,15 +613,15 @@ TimeLineGui::paintGL()
             int currentPosBtmWidgetCoordX = _imp->lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0, lineYpos).y();
             QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX, currentPosBtmWidgetCoordY);
-            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - cursorWidth / 2.,
-                                                              currentPosBtmWidgetCoordY - cursorHeight);
-            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + cursorWidth / 2.,
-                                                               currentPosBtmWidgetCoordY - cursorHeight);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
-            QString mouseNumber( _imp->isTimeFormatFrames ? QString::number(hoveredTime) : timecodeString(hoveredTime, fps) );
-            QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX,
-                                          currentPosBtmWidgetCoordY - cursorHeight);
-            QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(), mouseNumberWidgetCoord.y() );
+            QPointF currentBtm(hoveredTime, lineYpos);
+            QPointF currentBtmWidgetCoord = toWidgetCoordinates( currentBtm.x(), currentBtm.y() );
+            QPointF currentTopLeft = toTimeLineCoordinates(currentBtmWidgetCoord.x() - cursorWidth / 2.,
+                                                           currentBtmWidgetCoord.y() - cursorHeight);
+            QPointF currentTopRight = toTimeLineCoordinates(currentBtmWidgetCoord.x() + cursorWidth / 2.,
+                                                            currentBtmWidgetCoord.y() - cursorHeight);
+
+            QString currentNumber( _imp->isTimeFormatFrames ? QString::number(hoveredTime) : timecodeString(hoveredTime, fps) );
             TimeLineKeysSet::iterator foundHoveredAsKeyframe = keyframes.find( TimeLineKey(hoveredTime) );
             QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
@@ -646,13 +646,13 @@ TimeLineGui::paintGL()
 
 
             glBegin(GL_POLYGON);
-            glVertex2f( currentPosBtm.x(), currentPosBtm.y() );
-            glVertex2f( currentPosTopLeft.x(), currentPosTopLeft.y() );
-            glVertex2f( currentPosTopRight.x(), currentPosTopRight.y() );
+            glVertex2f( currentBtm.x(), currentBtm.y() );
+            glVertex2f( currentTopLeft.x(), currentTopLeft.y() );
+            glVertex2f( currentTopRight.x(), currentTopRight.y() );
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            renderText(mouseNumberPos.x(), mouseNumberPos.y(), mouseNumber, currentColor, _imp->font, Qt::AlignHCenter);
+            renderText(currentBtm.x(), currentTopRight.y(), currentNumber, currentColor, _imp->font, Qt::AlignHCenter);
         }
 
         //draw the bounds and the current time cursor

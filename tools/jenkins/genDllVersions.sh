@@ -198,6 +198,7 @@ catDll libvorbisenc-
 catDll libvpx-
 catDll libwavpack-
 catDll libwebp-
+catDll libwebpdemux-
 catDll libwebpmux-
 catDll libwinpthread-
 catDll libxml2-
@@ -216,6 +217,7 @@ catDll libpugixml
 catDll libheif-
 catDll libde265-
 catDll libx265
+catDll libdav1d
 
 if [ "$BITS" = "32" ]; then
     catDll libgcc_s_dw2-

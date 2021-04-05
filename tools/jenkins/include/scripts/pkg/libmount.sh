@@ -1,19 +1,27 @@
 #!/bin/bash
 
 # Install libmount (required by glib)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/util-linux.html
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter08/util-linux.html
 
 #if [ "${RHEL_MAJOR:-7}" -le 6 ]; then
 #    # 2.31.1 fails to compile on centos 6
+#    # this was fixed in 2.32
 #    # see https://www.spinics.net/lists/util-linux-ng/msg15044.html
 #    # and https://www.spinics.net/lists/util-linux-ng/msg13963.html
 #    UTILLINUX_VERSION=2.30.2
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.35.2 # this was fixed in 2.32
-UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0}
-UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}
+UTILLINUX_VERSION=2.36.2 # 2.36 fails on CentOS6 with:
+if [ "${CENTOS:-0}" = 6 ]; then
+    UTILLINUX_VERSION=2.35.2 # 2.36 fails on CentOS6 with:
+    # sys-utils/unshare.c:552:21: error: 'CLOCK_BOOTTIME' undeclared (first use in this function); did you mean 'OPT_BOOTTIME'?
+fi
+# if has minor version, uncomment the proper macros below
+#UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION} # eg 2.36
+#UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION}  # eg 2.36
+UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0} # eg 2.35.2
+UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}  # eg 2.35.2
 UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION_NOZERO}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
 if download_step; then

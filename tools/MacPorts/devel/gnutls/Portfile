@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.6.14
+version         3.6.15
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -30,9 +30,9 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 https://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  89c4f89e4453c2d08ad0918fbf099d9fbcfe9cba \
-                sha256  5630751adec7025b8ef955af4d141d00d252a985769f51b4059e5affa3d39d63 \
-                size    6069088
+checksums       rmd160  870c338ae8c2b6acd7000eb7daa287082ab04609 \
+                sha256  0ea8c3283de8d8335d7ae338ef27c53a916f15f382753b174c18b45ffd481558 \
+                size    6081656
 
 use_xz          yes
 
@@ -86,6 +86,22 @@ configure.args  --disable-guile \
                 --with-default-trust-store-pkcs11=pkcs11: \
                 ac_cv_prog_AWK=/usr/bin/awk
 
+compiler.thread_local_storage yes
+
+# Undefined symbols for architecture x86_64: "___get_cpuid_count"
+compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
+
+if {${os.platform} eq "darwin" && ${os.major} < 10 && [string match *clang* ${configure.compiler}] } {
+	depends_build-append  port:cctools
+	configure.env-append  NM=${prefix}/bin/nm
+	configure.args-append lt_cv_path_NM=${prefix}/bin/nm
+}
+
+platform darwin 8 {
+    depends_build-append   port:texinfo
+    configure.cppflags-append -D__WORDSIZE=32
+}
+
 variant dane description {Build libdane using unbound libraries} {
     depends_lib-append      port:unbound
     configure.args-append   --with-unbound-root-key-file="${prefix}/var/run/unbound/root.key"
@@ -126,7 +142,10 @@ variant guile description {Build guile bindings} {
     configure.args-replace  --disable-guile --enable-guile
 }
 
-if {[variant_isset universal]} {
+if {![info exists universal_possible]} {
+    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+}
+if {${universal_possible} && [variant_isset universal]} {
     set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
     set merger_host(i386) i686-apple-${os.platform}${os.major}
     set merger_host(ppc) ppc-apple-${os.platform}${os.major}
@@ -152,50 +171,6 @@ test.target     check
 
 post-destroot {
     move ${destroot}${prefix}/bin/certtool ${destroot}${prefix}/bin/gnutls-certtool
-}
-
-platform darwin 8 {
-    depends_build-append   port:texinfo
-    configure.cppflags-append -D__WORDSIZE=32
-}
-
-if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
-    compiler.blacklist-append *gcc-4.0
-    compiler.blacklist-append *gcc-4.2
-    # Undefined symbols for architecture x86_64:
-    # "___get_cpuid_count", referenced from:
-    #     _register_x86_crypto in libaccelerated.a(x86-common.o)
-    # ld: symbol(s) not found for architecture x86_64
-    compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
-    compiler.fallback-append  macports-clang-8.0 macports-clang-7.0
-}
-
-# needs a TLS supporting compiler on older systems
-# most of this code can disappear once the new compilers selection logic comes into base
-platform darwin powerpc {
-    compiler.whitelist macports-gcc-6
-    universal_variant no
-}
-platform darwin i386 {
-    if {${os.major} < 9} {
-        compiler.whitelist macports-gcc-6
-        universal_variant no
-    } elseif {${os.major} < 11} {
-        compiler.whitelist macports-clang-5.0
-        if {[file exists ${prefix}/bin/clang-mp-5.0]} {
-            if {[active_variants clang-5.0 emulated_tls]} {
-                # needs to use a newer NM version to handle clang-5.0's objects on leopard
-                if {${os.major} < 10} {
-                    depends_build-append port:cctools
-                    configure.env-append NM=${prefix}/bin/nm
-                    configure.args-append lt_cv_path_NM=${prefix}/bin/nm
-                }
-            } else {
-                ui_error "Please install clang-5.0 first, with the emulated_tls variant enabled."
-                error "unsupported configuration"
-            }
-        }
-    }
 }
 
 livecheck.type  regex

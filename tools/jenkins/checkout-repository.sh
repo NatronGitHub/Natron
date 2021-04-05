@@ -63,7 +63,7 @@ function checkoutRepository() {
         rm -rf "$SRC_DIR_NAME"
     fi
 
-    if [ -n "$REPO_COMMIT" ]; then
+    if [ -n "$REPO_COMMIT" ] && [ -n "$COMMIT_BUILD_OPTION_NAME" ]; then
         setBuildOption "$COMMIT_BUILD_OPTION_NAME" "$REPO_COMMIT"
     fi
 

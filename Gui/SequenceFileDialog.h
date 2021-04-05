@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -414,9 +414,8 @@ public Q_SLOTS:
 
     ///apply a filter
     ///and refreshes the current directory.
-    void dotStarFilterSlot();
-    void starSlashFilterSlot();
-    void emptyFilterSlot();
+    void handleFilterSlot();
+    void setDefaultFilter();
     void applyFilter(QString filter);
 
     ///show hidden files slot

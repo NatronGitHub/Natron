@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -100,17 +100,21 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                     break;
                 }
             }
-            if (!knobs[i]->getIsPersistent() && !hasExpr) {
-                continue;
-            }
+            // Always serialize nodes that have an expression or a link.
+            // See https://github.com/NatronGitHub/Natron/issues/585
+            // Already fixed in RB-3.0 by https://github.com/NatronGitHub/Natron/commit/7ef38849fe
+            if (!hasExpr) {
+                if ( !knobs[i]->getIsPersistent() ) {
+                    continue;
+                }
 
-            if (!knobs[i]->hasModificationsForSerialization()) {
-                continue;
+                if ( !knobs[i]->hasModificationsForSerialization() ) {
+                    continue;
+                }
             }
 
             KnobSerializationPtr newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _knobsValues.push_back(newKnobSer);
-
         }
 
         _nbKnobs = (int)_knobsValues.size();

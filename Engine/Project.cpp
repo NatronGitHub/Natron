@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -335,6 +335,15 @@ Project::loadProjectInternal(const QString & path,
         if (!bgProject) {
             getApp()->loadProjectGui(isAutoSave, iArchive);
         }
+    } catch (const std::exception &e) {
+        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+            QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+            throw std::runtime_error(message.toStdString());
+        }
+        throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -771,8 +780,8 @@ Project::initializeKnobs()
 
     page->addKnob(_imp->envVars);
 
-    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Output Format") );
-    _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
+    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Project Format") );
+    _imp->formatKnob->setHintToolTip( tr("The project format is used as the default workspace size for viewers, the default format for generators, and the default output format for writers.  In most cases this should match your plate resolution.") );
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format> & appFormats = appPTR->getFormats();
@@ -805,8 +814,8 @@ Project::initializeKnobs()
 
     _imp->previewMode = AppManager::createKnob<KnobBool>( this, tr("Auto Previews") );
     _imp->previewMode->setName("autoPreviews");
-    _imp->previewMode->setHintToolTip( tr("When checked, preview images on the node graph will be "
-                                          "refreshed automatically. You can uncheck this option to improve performances.") );
+    _imp->previewMode->setHintToolTip( tr("When checked, preview images in the node graph will be "
+                                          "refreshed automatically. Disabling this will improve performance.") );
     _imp->previewMode->setAnimationEnabled(false);
     _imp->previewMode->setEvaluateOnChange(false);
     page->addKnob(_imp->previewMode);
@@ -821,10 +830,10 @@ Project::initializeKnobs()
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
-    _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
-                                         "with this frame-range. By default when a new Reader node is created, its frame range "
-                                         "is unioned to this "
-                                         "frame-range, unless the Lock frame range parameter is checked.") );
+    _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by plug-ins. New viewers are created automatically "
+                                         "with this frame-range. By default when the first Read node is created, this range "
+                                         "will be set to the "
+                                         "sequence legnth, unless the Lock Range parameter is checked.") );
     _imp->frameRange->setAnimationEnabled(false);
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
@@ -833,8 +842,8 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
-    _imp->lockFrameRange->setHintToolTip( tr("By default when a new Reader node is created, its frame range is unioned to the "
-                                             "project frame-range, unless this parameter is checked.") );
+    _imp->lockFrameRange->setHintToolTip( tr("By default when the first Read node is created, this range will be set to the "
+                                             "sequence length, unless this parameter is checked.") );
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
 
@@ -2162,7 +2171,7 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
     return eViewerColorSpaceLinear;
 }
 
-// Functions to escape / unescape characters from XML strings
+// Functions to escape / unescape characters from UTF-8 XML strings.
 // Note that the unescape function matches the escape function,
 // and cannot decode any HTML entity (such as Unicode chars).
 // A far more complete decoding function can be found at:
@@ -2213,7 +2222,14 @@ Project::escapeXML(const std::string &istr)
                 ns += ';';
                 str.replace(i, 1, ns);
                 i += ns.size() + 1;
+            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
+                i += 1;
+            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
+                i += 2;
+            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
+                i += 3;
             }
+
             break;
         }
         }
@@ -2225,45 +2241,50 @@ Project::escapeXML(const std::string &istr)
 std::string
 Project::unescapeXML(const std::string &istr)
 {
-    size_t i;
     std::string str = istr;
 
-    i = str.find_first_of("&");
-    while (i != std::string::npos) {
-        assert(str[i] == '&');
-        if ( !str.compare(i + 1, 3, "lt;") ) {
-            str.replace(i, 4, 1, '<');
-        } else if ( !str.compare(i + 1, 3, "gt;") ) {
-            str.replace(i, 4, 1, '>');
-        } else if ( !str.compare(i + 1, 4, "amp;") ) {
-            str.replace(i, 5, 1, '&');
-        } else if ( !str.compare(i + 1, 5, "apos;") ) {
-            str.replace(i, 6, 1, '\'');
-        } else if ( !str.compare(i + 1, 5, "quot;") ) {
-            str.replace(i, 6, 1, '"');
-        } else if ( !str.compare(i + 1, 1, "#") ) {
-            size_t end = str.find_first_of(";", i + 2);
-            if (end == std::string::npos) {
-                // malformed XML
-                return str;
-            }
-            char *tail = NULL;
-            int errno_save = errno;
-            bool hex = str[i + 2] == 'x' || str[i + 2] == 'X';
-            int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
-            char *head = &str[i + prefix];
+    for (size_t i = 0; i < str.size(); ++i) {
+        unsigned char c = (unsigned char)(str[i]);
+        if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
+            i += 1;
+        } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
+            i += 2;
+        } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
+            i += 3;
+        } else if (str[i] == '&') {
+            if ( !str.compare(i + 1, 3, "lt;") ) {
+                str.replace(i, 4, 1, '<');
+            } else if ( !str.compare(i + 1, 3, "gt;") ) {
+                str.replace(i, 4, 1, '>');
+            } else if ( !str.compare(i + 1, 4, "amp;") ) {
+                str.replace(i, 5, 1, '&');
+            } else if ( !str.compare(i + 1, 5, "apos;") ) {
+                str.replace(i, 6, 1, '\'');
+            } else if ( !str.compare(i + 1, 5, "quot;") ) {
+                str.replace(i, 6, 1, '"');
+            } else if ( !str.compare(i + 1, 1, "#") ) {
+                size_t end = str.find_first_of(";", i + 2);
+                if (end == std::string::npos) {
+                    // malformed XML
+                    return str;
+                }
+                char *tail = NULL;
+                int errno_save = errno;
+                bool hex = str[i + 2] == 'x' || str[i + 2] == 'X';
+                int prefix = hex ? 3 : 2; // prefix length: "&#" or "&#x"
+                char *head = &str[i + prefix];
 
-            errno = 0;
-            unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-            bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
-            errno = errno_save;
-            if (fail) {
-                return str;
+                errno = 0;
+                unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                errno = errno_save;
+                if (fail) {
+                    return str;
+                }
+                // replace from '&' to ';' (thus the +1)
+                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
             }
-            // replace from '&' to ';' (thus the +1)
-            str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
         }
-        i = str.find_first_of("&", i + 1);
     }
 
     return str;
