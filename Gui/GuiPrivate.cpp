@@ -374,7 +374,7 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Sets the maximum number of panels that can be open at once"),
+    _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Sets the maximum number of panels that can be open at once."),
     NATRON_NAMESPACE::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
