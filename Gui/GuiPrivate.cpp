@@ -374,10 +374,8 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
-                                                                           "in the properties bin pane. The special value of 0 indicates "
-                                                                           "that an unlimited number of panels can be opened."),
-                                                                        NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Sets the maximum number of panels that can be open at once"),
+    NATRON_NAMESPACE::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
 
