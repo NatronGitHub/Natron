@@ -5,27 +5,28 @@
 # History
 
 
-## Version 2.3.16
+## Version 2.4.0
 
 ### Known issues
 
 - Rendering sometimes silently stalls after X frames #248
 - Remember Minimize state when reopening project #168
-- Natron does not support cloned group nodes or hard links between groups (crashes on loading project) #568 #579
-- PCX image format does not work properly
-- PSB image format does not work properly
+- Some image formats may have issues (PCX, PSB, CR2)
 
 ### Changes
 
 - Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
 - Handle console output on Windows. #524
 - Detect user installed fonts on Windows 10. #523 
+- New Windows installer #596
 - Improvements to SequenceFileDialog. #565
 - Snap timeline alpha cursor to nearest frame. #574
 - Handle UTF-8 values in KnobTable (fixes use of project path containing Unicode). #578
 - Tabs UI adjustments. #564
 - Do not allow Python keywords as node name or scriptname. #588
 - Always serialize nodes with an expression or a link, even if they have the default value. #585
+- Support cloned group nodes or hard links between groups. #568 #579 #594 #598
+- Default keyframe interpolation method for strokes and shapes is now "Smooth" (was "Linear"). #597
 
 ### Plugins
 
@@ -454,7 +455,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Reader: fix a bug where copy/pasting a node would display a "Bad Image Format" error
 - The whole user interface now uses the same font, and dialogs were cleaned up to use standard buttons
 - Roto: fix a bug where the selected tool in the viewer would not refresh properly
-- Fix a bug where Natron would not work properly when installed in a directory containing unicode characters 
+- Fix a bug where Natron would not work properly when installed in a directory containing unicode characters
 - OpenEXR: fix a bug where auto-crop files would not have their origin placed correctly
 
 ### Plugins
@@ -492,7 +493,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - the log window now becomes visible whenever a message is sent
 - Fix a bug where entering a Group node could crash Natron
 - Fix a bug where copy pasting a Group could loose expressions/links used nodes within the Group
-- Fix a bug when reading auto-crop EXR image sequences 
+- Fix a bug when reading auto-crop EXR image sequences
 - Fix a bug where a project could use all the RAM available plus hit the swap when reading scan-line based multi-layered EXR files
 
 ### Plugins
@@ -523,7 +524,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Fix a bug where enabling GPU rendering from the settings would not be taken into account correctly by the ShaderToy node
 - Fix a bug where panning the viewport during playback could show banding artifacts
 - Fix a bug where the Reformat node would not work properly when loading a project and then switching the Type parameter
-- Fix a crash when adding a control point to a roto shape with CTRL + ALT + LMB 
+- Fix a crash when adding a control point to a roto shape with CTRL + ALT + LMB
 - Fix a bug where the writing of the OpenFX plug-ins loading cache was not thread-safe. Multiple Natron processes on a same node of a render farm could corrupt the cache thus failing some renders because plug-ins could not load.
 - The Dilate/Erode nodes now have the Alpha checkbox checked by default and also have a parameter to expand the bounding box
 - The Auto-Turbo mode is now also enabled when writing out on disk
@@ -534,7 +535,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - The point tracker was completely reworked. It now uses libmv (from Blender). It now allows tracking different motion types (translation, rotation, scaling, perspective) and can be used for anything that needs match-moving or stabilizing.
 - Readers/Writers are now all under the same Read/Write node. If 2 readers/writers can decode/encode the same format, a drop-down allows to choose between them.
 - Python: it is now possible to pass extra properties to the createNode function to control how nodes are created, see (Python reference)[http://natron.readthedocs.io/en/master/devel/PythonReference/NatronEngine/App.html#NatronEngine.NatronEngine.App.createNode].
-- (beta feature) New documentation for Natron: Whenever pressing the "?" button in the properties panel of a node, Natron will open-up a page in your web-browser with documentation for this node. Natron also has a user-guide that is work in progress. 
+- (beta feature) New documentation for Natron: Whenever pressing the "?" button in the properties panel of a node, Natron will open-up a page in your web-browser with documentation for this node. Natron also has a user-guide that is work in progress.
 You may contribute to this user guide, follow (these)[http://natron.readthedocs.io/en/master/guide/writedoc.html] instructions to enrich the documentation.
 - (beta feature) Shadertoy is a new plugin that allows writing plugins using GLSL fragment shaders. It supports both GPU rendering using OpenGL and CPU rendering using Mesa.
 - (beta feature) OpenGL rendering is now supported (enable it in Preferences/GPU rendering). Tested with the Shadertoy plugin and the HitFilm Ignite plugins.
@@ -555,7 +556,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Fixed a bug where some image sequences would fail to read when a first frame would be missing
 - Fixed a bug where a PyPlug containing another PyPlug would fail to load in some cases
 - Fixed a bug where the play button would not be pressed on all viewers during playback
-- Python: add a function to File parameters to reload the file 
+- Python: add a function to File parameters to reload the file
 - Fixed a bug where the gui could stop giving feedback when rendering
 - CTRL + left mouse button click can now be used on sliders to reset to their default value
 - Fixed Python call to the onProjectSave callback which would not work
@@ -567,17 +568,17 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Layers/Channels are now persistent: when copy pasting small "graphlets" or even creating PyPlugs, they will be remembered for convenience. An error may occur next to the corresponding parameter if the channel/layer does not exist any longer. You may right click the drop-down parameter to synchronize the menu to the actual state of the node to see the layers available.
 - Fix a bug where expressions would not be evaluated at the correct time for nodes outside of the tree currently being rendered
 - Fix a bug where the Format parameter would be reseted automatically for the Reformat node
-- Fix a bug with QGroupBox stylesheet for PySide 
+- Fix a bug with QGroupBox stylesheet for PySide
 - Fix a bug with keyframes for Rotoshapes where some control points would not get keyframed
 - Fix a bug where a size parameter could get ignored from the project if with=1 and height=1
-- Fix a bug with PNG reading: if a sequence of PNG would contain grayscale/RGB images then it would be assumed that the format of the first image in the sequence would be the format of the whole sequence. 
+- Fix a bug with PNG reading: if a sequence of PNG would contain grayscale/RGB images then it would be assumed that the format of the first image in the sequence would be the format of the whole sequence.
 - It is now possible to turn off the file dialog prompt when creating a Write node from the Preferences->General tab
 - Write nodes now default their frame range to the project range
 - Fix a bug where the Write node channels checkboxes would not be taken into account correctly
 - Python API: add app.getActiveViewer() and app.getActiveTabWidget(), see Python reference for documentation
 - Viewer: Whenever the B input is not set, set it automatically to the A input for convenience
-- Drag and Drop: It is now possible to drag&drop images to anywhere in the Natron UI, not necessarily in the Node Graph. It is also possible to drop Natron projects or Python scripts. 
-- Copy/Paste: It is now possible to paste python code directly into Natron UI, which will be run in the Script Editor automatically if valid 
+- Drag and Drop: It is now possible to drag&drop images to anywhere in the Natron UI, not necessarily in the Node Graph. It is also possible to drop Natron projects or Python scripts.
+- Copy/Paste: It is now possible to paste python code directly into Natron UI, which will be run in the Script Editor automatically if valid
 - Node graph: improve performances
 - Script Editor font and font size can now be customized from the Preferences-->Appearance tab
 - Fix a bug where rendering in a separate process would always fail on Windows.
@@ -588,20 +589,20 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 
 - Major performance improvement for ReadFFMPEG and WriteFFMPEG
 - Fix crash received from crash reporter
-- Roto: fix interaction with feather 
+- Roto: fix interaction with feather
 - Roto: It is now possible to add points to a shape by pressing CTRL+ALT+click
 - Roto: fix a bug where animating any parameter would crash Natron
 - Python: add ability to query the *active project* (i.e: the top level window) with the NatronEngine.natron.getActiveInstance() function
-- Python: fix issue where the argument of *saveProject(filename)* would be ignored 
+- Python: fix issue where the argument of *saveProject(filename)* would be ignored
 
 
 ## Version 2.0
 
 - Python: PyPlugs can now be used to create toolsets, such as Split And Join in the views menu
-- New Glow PyPlug 
+- New Glow PyPlug
 - New bloom node
 - The HSVTool node now has an analysis button to set the src color
-- The file dialog performances have been greatly improved 
+- The file dialog performances have been greatly improved
 - It is now possible to list all available drives in the file dialog on Windows
 - New progress panel to manage renders to cancel, queue, pause or restart them
 - EXR format reading/writing speed has been greatly improved
@@ -626,7 +627,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - The command-line parameters and Python API have been updated in this regard (see Python documentation).
 - Fix multiple bugs when rendering a multi-layered exr
 - Linux: when crashing, Natron will now print a backtrace if launched from the Terminal. This is temporary and will be soon replaced by a cross-platform crash reports handler.
-- RotoPaint: enhancements in the rendering algorithm 
+- RotoPaint: enhancements in the rendering algorithm
 - Color, Double and Integer parameters can now have an expression entered directly in a SpinBox for convenience
 - NodeGraph: optimize for speed when the scene contains a lot of nodes and add auto-scrolling when reaching the border of the view
 
@@ -637,15 +638,15 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - The Write node can now write multi-view and multi-layered EXR files. Encoding speed of EXR has been greatly improved.
 - Viewer: The channel selected in the "Alpha channel" drop-down can now be overlayed on the image when using the "Matte" display channels
 - The RotoPaint/Roto Transform and Clone tabs now have a viewer handle overlay to help manipulating the parameters
-- DopeSheet and CureEditor: The scaling interactions with the bounding box of selected keyframes are now correct but may lead to keyframes being located at floating point times. 
+- DopeSheet and CureEditor: The scaling interactions with the bounding box of selected keyframes are now correct but may lead to keyframes being located at floating point times.
 - A "P" indicator at the bottom right of a node will indicate that a node is a pass-through. Hovering the mouse over the "P" will indicate from which input this node is a pass-through of.
-The pass-through input will also be indicated with a plain arrow whereas all other inputs will have their arrow dashed. 
+The pass-through input will also be indicated with a plain arrow whereas all other inputs will have their arrow dashed.
 - Python API: it is now possible to retrieve the layers available on a node with the getAvailableLayers() function, see [Python Reference](http://natron.rtfd.org)
 
 
 ## Version 2.0rc2
 
-- Python 2.7 API: 
+- Python 2.7 API:
   - Parameters expressions
   - User-defined parameters
   - Script editor to control the application overall
@@ -655,7 +656,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 - Nodes group to have cleaner graphs with hidden sub-nodegraphs
 - PyPlug: You can export a  group as a Python plug-in and it be re-used in any other project as a single node as you would use any other plug-in
 - SeExpr integration within a node: http://www.disneyanimation.com/technology/seexpr.html
-- New SeNoise and SeGrain nodes based on SeExpr 
+- New SeNoise and SeGrain nodes based on SeExpr
 - RotoPaint node with Wacom tablets support
 - DopeSheet editor: This is where you can control easily keyframes and clips in time for motion graphics purposes
 - Render statistics: Available in the Render menu, use this to debug complex compositions
@@ -675,7 +676,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 - Multiple viewers can now have their projection synchronised to enhance image comparison
 - Support for multi-layered workflows for cleaner graphs
 - Better support for multi-view workflows
-- Various performance and stability enhancements across the board 
+- Various performance and stability enhancements across the board
 
 
 ## Version 1.2.1
@@ -690,9 +691,9 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 
 ## Version 1.2.0
 
-- Overlays on the viewer are now transformed by all Transform effects such as CornerPin,Transform 
+- Overlays on the viewer are now transformed by all Transform effects such as CornerPin,Transform
 - The user interface colors can now be changed in the "Appearance" tab of the Preferences of Natron
-- Bezier curves motion now have a constant or linear interpolation 
+- Bezier curves motion now have a constant or linear interpolation
 - The dialog that pops up when trying to merge 2 clips that do not have a matching FPS is now a bit clearer regarding possible solutions
 - Wacom support is now more intuitive and supported on all widgets that can zoom or pan.
 - New "Image statistics" node to analyse various significant values from an image
@@ -747,32 +748,32 @@ with a scale of 10 then only the downstream node will be rendered with a scale o
     * The node has its preview image enabled (in interactive session only)
     * The node is using several images at different times to compute the result of the output (e.g. a retimer node)
     * The parameter "Force caching" in the "Node" tab of the settings panel is checked
-Aggressive caching can however make the interactivity of Natron slightly faster (when using it in GUI mode) but would not be any useful in background render mode, so make sure it is checked off when rendering on disk. 
-You can by-pass this behaviour and come-back to the original "Aggressive caching" solution by turning it on in the Preferences of Natron. At least 8GiB of RAM are required to use aggressive caching, 16GiB  are recommended. 
+Aggressive caching can however make the interactivity of Natron slightly faster (when using it in GUI mode) but would not be any useful in background render mode, so make sure it is checked off when rendering on disk.
+You can by-pass this behaviour and come-back to the original "Aggressive caching" solution by turning it on in the Preferences of Natron. At least 8GiB of RAM are required to use aggressive caching, 16GiB  are recommended.
 - New HSVTool node to adjust hue, saturation and brightnes, or perform color replacement.
 - New HSVToRGB & RGBToHSV nodes to convert between these 2 color-spaces
 - New Saturation node to modify the color saturation of an image.
-- New DiskCache node. This node allows to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab. 
+- New DiskCache node. This node allows to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab.
 - A new progress bar will display the progression while loading a project
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 - Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
 - Roto: It is now possible to move a Bezier just by dragging a part of the curve where there is no control point.
 - Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle
-- Improved parameters alignment and spacing in the settings panel 
-- A new tab in the preferences is now dedicated to plug-ins management. You can now choose to enable/disable a plug-in. This can be seen as a blacklist of the plug-ins you don't want to use. By default most TuttleOFX nodes that are redundant with the bundled nodes will be disabled. 
-- Also another per plug-in control has been added to regulate whether the a plug-in should be aware of zoom levels or not. Zoom level aware means that a plug-in will attempt to render images at lower resolution if the viewer is zoomed-out or if proxy mode is enabled. This setting is set by the plug-in internally, but some plug-ins are known to be bugged (they flag that do support zoom levels but in fact they don't). 
+- Improved parameters alignment and spacing in the settings panel
+- A new tab in the preferences is now dedicated to plug-ins management. You can now choose to enable/disable a plug-in. This can be seen as a blacklist of the plug-ins you don't want to use. By default most TuttleOFX nodes that are redundant with the bundled nodes will be disabled.
+- Also another per plug-in control has been added to regulate whether the a plug-in should be aware of zoom levels or not. Zoom level aware means that a plug-in will attempt to render images at lower resolution if the viewer is zoomed-out or if proxy mode is enabled. This setting is set by the plug-in internally, but some plug-ins are known to be bugged (they flag that do support zoom levels but in fact they don't).
 - A new changelog tab in the About window is now available
 - Roto: When restoring a project, the default tool will be "Select All" instead of "Bezier"
 to avoid creating new beziers by mistake
 - Timeline: when pressing the left and right arrows of the keyboard, the cursor will no longer cross the bounds of the timeline but loop over the range instead.
-- Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
+- Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options.
 - A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
 - Transform: When holding down the SHIFT modifier and controling the translate handle on the viewer, the direction will be constrained to either the X or  Y axis.
 - Fixed a crash on windows when connecting nodes
 - Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
 - Fixed a bug where the locale won't be taken into account and files with accents wouldn't be correctly displayed in the file dialog
-- Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically. 
+- Viewer: fixed a bug when the "Auto-wipe" preferences in the settings was disabled. The wipe would still show up automatically.
 - Fixed a bug where the extra OpenFX plug-ins search paths would be ignored
 - Backdrop: only move nodes which are initially within the backdrop, not the ones that are crossed when moving it.
 - Nodegraph: zooming is now done under the mouse cursor
@@ -848,7 +849,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
   - Equalize
   - New Clamp node
 - Re-written internal rendering engine. It now uses CPU at almost 100%. The default settings
-in the preferences are set to tune the render engine for basic usage and are optimal 
+in the preferences are set to tune the render engine for basic usage and are optimal
 for a station with 8 cores. Some tuning may be needed for stations with huge number of cores
 (24, 32...).
 - Here's a description of the new settings controlling the multi-threading in Natron, use it wisely:
@@ -872,7 +873,7 @@ for a station with 8 cores. Some tuning may be needed for stations with huge num
 - MacOSX retina displays are not supported yet (icons needs to be all reshaped) hence we disabled high DPI support when Natron is used on a mac.
 - Adjusted slightly the ReadFFMPEG node to be more tolerant with files that may have failed to be read in the past.
 - Fixed a few bugs with project paths
-- The user can now simplify a project path or make it relative or absolute by right clicking any 
+- The user can now simplify a project path or make it relative or absolute by right clicking any
 filepath parameter.
 - Fixed a few bugs with the render progression report
 - Copy/Paste of a node will use an index-based copy differentiation instead of an incremental number of "- copy" appended to the original node name. For example: "Blur" "Blur.1" "Blur.2", etc...
@@ -919,10 +920,10 @@ You can also have some project paths depending on other paths, e.g.:
 ```
 If you're using project paths, be sure to use them at the start of the file-path and no where else. For example
 `C:\Lalala[Images]Images.png` would not be interpreted correctly.
-Lastly, in the preferences of Natron there is an option in the General tab (disabled by default) to auto-fix file paths when you change the content of a project path or the variable name. 
+Lastly, in the preferences of Natron there is an option in the General tab (disabled by default) to auto-fix file paths when you change the content of a project path or the variable name.
 For example if you change
 `[Project] = /Users/Me/Project/`
-to 
+to
 `[Project] = /Users/Me/MySuperProject/`
 Then all file-paths that depended on this variable will be updated to point to the correct location of the file.
 - File-paths are now "watched" by Natron: When a file changes outside of Natron, for example because another software have overwritten it or modified it, Natron will be notified and will reload the images.

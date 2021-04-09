@@ -395,19 +395,16 @@ unix {
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
      expat:     PKGCONFIG += expat
+     # Linking cairo dynamically is OK even on Linux, where it links to X11,
+     # since we need X11 for OpenGL rendering anyway.
+     cairo:     PKGCONFIG += cairo
 
      # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-*|freebsd-* {
           LIBS += -lGL -lX11
-         # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
-         cairo {
-             PKGCONFIG += pixman-1 freetype2 fontconfig
-             LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-         }
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          LIBS += -framework OpenGL
-         cairo:     PKGCONFIG += cairo
      }
      linux-* {
          LIBS += -ldl

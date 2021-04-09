@@ -57,7 +57,7 @@ with enough detail that others can reproduce the problem.
 Contributions Under Repository License
 --------------------------------------
 
-Whenever you make a contribution to a repository containing notice of a [license](https://github.com/NatronGitHub/Natron/blob/RB-2.3/LICENSE.txt), you license your contribution under the same terms, and you agree that you have the right to license your contribution under those terms.
+Whenever you make a contribution to a repository containing notice of a [license](https://github.com/NatronGitHub/Natron/blob/RB-2.4/LICENSE.txt), you license your contribution under the same terms, and you agree that you have the right to license your contribution under those terms.
 
 Pull Requests and Code Review
 -----------------------------

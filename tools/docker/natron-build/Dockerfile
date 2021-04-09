@@ -36,7 +36,7 @@ ARG QTDIR=$SDK/qt4
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
 
 ENV GIT_URL=https://github.com/NatronGitHub/Natron.git
-ENV GIT_BRANCH=RB-2.3
+ENV GIT_BRANCH=RB-2.4
 ENV GIT_COMMIT=
 ENV RELEASE_TAG= 
 ENV SNAPSHOT_BRANCH=

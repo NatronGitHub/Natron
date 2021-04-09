@@ -49,12 +49,12 @@ docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type
 
 ### Launching a release build
 
-To launch a release, the Natron and plugins repositories must have the appropriate tags. for example, for release 2.3.15, the Natron repository must have tag `v2.3.15`, and the plugin repositories (openfx-misc, openfx-io, openfx-arena, openfx-gmic) must all have the tag `Natron-2.3.15`.
+To launch a release, the Natron and plugins repositories must have the appropriate tags. for example, for release 2.4.0, the Natron repository must have tag `v2.4.0`, and the plugin repositories (openfx-misc, openfx-io, openfx-arena, openfx-gmic) must all have the tag `Natron-2.4.0`.
 
-When launching the build, `RELEASE_TAG` must be set to the version number (eg "2.3.15") and `NATRON_BUILD_NUMBER` must be set to an integer value (typically 1 for the first build, and increment for each new build after fixing issues). See [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh#L340) for more details.
+When launching the build, `RELEASE_TAG` must be set to the version number (eg "2.4.0") and `NATRON_BUILD_NUMBER` must be set to an integer value (typically 1 for the first build, and increment for each new build after fixing issues). See [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh#L340) for more details.
 
 ```
-docker run -it --rm --env RELEASE_TAG=2.3.15 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+docker run -it --rm --env RELEASE_TAG=2.4.0 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
 
 
