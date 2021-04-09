@@ -7,9 +7,6 @@
 
 ## Version 2.4.0
 
-
-## Version 2.3.16
-
 ### Known issues
 
 - Rendering sometimes silently stalls after X frames #248
