@@ -28,7 +28,8 @@
 - Tabs UI adjustments. #564
 - Do not allow Python keywords as node name or scriptname. #588
 - Always serialize nodes with an expression or a link, even if they have the default value. #585
-- Support cloned group nodes or hard links between groups #568 #579 #594 #598
+- Support cloned group nodes or hard links between groups. #568 #579 #594 #598
+- Default keyframe interpolation method for strokes and shapes is now "Smooth" (was "Linear"). #597
 
 ### Plugins
 
