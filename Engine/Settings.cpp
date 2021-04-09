@@ -592,8 +592,8 @@ Settings::initializeKnobsUserInterface()
                                          "held by the properties dock at the same time."
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(1);
-    _maxPanelsOpened->setMaximum(100);
+    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMaximum(99);
     _uiPage->addKnob(_maxPanelsOpened);
 
     _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( this, tr("Value increments based on cursor position") );
