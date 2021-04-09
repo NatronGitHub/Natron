@@ -1805,6 +1805,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                                 double fry,
                                 bool isLeft,
                                 bool moveBoth,
+                                bool breakTangents,
                                 bool onlyFeather)
 {
     ///only called on the main-thread
@@ -1901,6 +1902,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                     right = Transform::matApply(invTrans, right);
                     (cp)->setRightBezierPointAtTime(useGuiCurve, time, right.x, right.y);
                 }
+                (cp)->setBroken(breakTangents);
             }
             if ( moveFeather && useFeatherPoints() ) {
                 if (isLeft || moveBoth) {
@@ -1915,6 +1917,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                     rightF = Transform::matApply(invTrans, rightF);
                     (fp)->setRightBezierPointAtTime(useGuiCurve, time, rightF.x, rightF.y);
                 }
+                (fp)->setBroken(breakTangents);
             }
             if (!isOnKeyframe) {
                 keySet = true;
@@ -1936,6 +1939,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                     right = Transform::matApply(invTrans, right);
                     (cp)->setRightBezierStaticPosition(useGuiCurve, right.x, right.y);
                 }
+                (cp)->setBroken(breakTangents);
             }
             if ( moveFeather && useFeatherPoints() ) {
                 if (isLeft || moveBoth) {
@@ -1950,6 +1954,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                     rightF = Transform::matApply(invTrans, rightF);
                     (fp)->setRightBezierStaticPosition(useGuiCurve, rightF.x, rightF.y);
                 }
+                (fp)->setBroken(breakTangents);
             }
         }
 
@@ -1968,6 +1973,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                         left.x += lx; left.y += ly;
                         left = Transform::matApply(invTrans, left);
                         (cp)->setLeftBezierPointAtTime(useGuiCurve, *it2, left.x, left.y);
+                        (cp)->setBroken(breakTangents);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
                         (fp)->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &leftF.x, &leftF.y);
@@ -1975,6 +1981,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                         leftF.x += flx; leftF.y += fly;
                         leftF = Transform::matApply(invTrans, leftF);
                         (fp)->setLeftBezierPointAtTime(useGuiCurve, *it2, leftF.x, leftF.y);
+                        (fp)->setBroken(breakTangents);
                     }
                 } else {
                     if (moveControlPoint) {
@@ -1983,13 +1990,15 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                         right.x += rx; right.y += ry;
                         right = Transform::matApply(invTrans, right);
                         (cp)->setRightBezierPointAtTime(useGuiCurve, *it2, right.x, right.y);
+                        (cp)->setBroken(breakTangents);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (cp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y);
+                        (fp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y);
                         rightF = Transform::matApply(trans, rightF);
                         rightF.x += frx; rightF.y += fry;
                         rightF = Transform::matApply(invTrans, rightF);
-                        (cp)->setRightBezierPointAtTime(useGuiCurve, *it2, rightF.x, rightF.y);
+                        (fp)->setRightBezierPointAtTime(useGuiCurve, *it2, rightF.x, rightF.y);
+                        (fp)->setBroken(breakTangents);
                     }
                 }
             }
@@ -2016,7 +2025,7 @@ Bezier::moveLeftBezierPoint(int index,
                             double dx,
                             double dy)
 {
-    moveBezierPointInternal(NULL, NULL, index, time, dx, dy, 0, 0, dx, dy, 0, 0, true, false, false);
+    moveBezierPointInternal(NULL, NULL, index, time, dx, dy, 0, 0, dx, dy, 0, 0, true, false, false, false);
 } // moveLeftBezierPoint
 
 void
@@ -2025,7 +2034,7 @@ Bezier::moveRightBezierPoint(int index,
                              double dx,
                              double dy)
 {
-    moveBezierPointInternal(NULL, NULL, index, time, 0, 0, dx, dy, 0, 0, dx, dy, false, false, false);
+    moveBezierPointInternal(NULL, NULL, index, time, 0, 0, dx, dy, 0, 0, dx, dy, false, false, false, false);
 } // moveRightBezierPoint
 
 void
@@ -2040,9 +2049,10 @@ Bezier::movePointLeftAndRightIndex(BezierCP & cp,
                                    double fly,
                                    double frx,
                                    double fry,
+                                   bool breakTangents,
                                    bool onlyFeather)
 {
-    moveBezierPointInternal(&cp, &fp, -1, time, lx, ly, rx, ry, flx, fly, frx, fry, false, true, onlyFeather);
+    moveBezierPointInternal(&cp, &fp, -1, time, lx, ly, rx, ry, flx, fly, frx, fry, false, true, breakTangents, onlyFeather);
 }
 
 void

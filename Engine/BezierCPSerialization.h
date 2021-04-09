@@ -50,7 +50,8 @@ GCC_DIAG_ON(unused-parameter)
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
 #define BEZIER_CP_REMOVE_OFFSET 4
-#define BEZIER_CP_VERSION BEZIER_CP_REMOVE_OFFSET
+#define BEZIER_CP_ADD_BROKEN 5
+#define BEZIER_CP_VERSION BEZIER_CP_ADD_BROKEN
 
 NATRON_NAMESPACE_ENTER
 
@@ -80,6 +81,7 @@ BezierCP::save(Archive & ar,
     ar & ::boost::serialization::make_nvp("Right_X_animation", *_imp->curveRightBezierX);
     ar & ::boost::serialization::make_nvp("Right_Y", _imp->rightY);
     ar & ::boost::serialization::make_nvp("Right_Y_animation", *_imp->curveRightBezierY);
+    ar & ::boost::serialization::make_nvp("Broken", _imp->broken);
 }
 
 template<class Archive>
@@ -120,6 +122,24 @@ BezierCP::load(Archive & ar,
         _imp->curveLeftBezierY->clone(leftCurveY);
         _imp->curveRightBezierX->clone(rightCurveX);
         _imp->curveRightBezierY->clone(rightCurveY);
+
+        if (version >= BEZIER_CP_ADD_BROKEN) {
+            ar & ::boost::serialization::make_nvp("Broken", _imp->broken);
+        } else {
+            // For older projects, infer if the tangents are broken.
+            // Fixes https://github.com/NatronGitHub/Natron/issues/202
+
+            // The vector between the two bezier points
+            double vx = _imp->rightX - _imp->leftX;
+            double vy = _imp->rightY - _imp->leftY;
+            double v = std::sqrt(vx * vx + vy *vy);
+            // The normal vector
+            double nx = vy / v;
+            double ny = -vx / v;
+            // The (signed) distance from the position to the segment
+            double d = nx * (_imp->x - _imp->leftX) + ny * (_imp->y - _imp->leftY);
+            _imp->broken = (std::abs(d) < 1e-4);
+        }
     } else {
         ar & ::boost::serialization::make_nvp("X", _imp->x);
         CurvePtr xCurve, yCurve, leftCurveX, leftCurveY, rightCurveX, rightCurveY;
