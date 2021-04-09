@@ -1,11 +1,11 @@
 Please ask questions ("how do I...?") on the [forum](https://discuss.pixls.us/c/software/natron), not by filing issues.
 
-Please read carefully the [Troubleshooting](http://natron.readthedocs.io/en/rb-2.3/guide/getstarted-troubleshooting.html) section of the [Natron documentation](http://natron.readthedocs.io) before submitting an issue: this issue may already be signaled, or may have a simple workaround.
+Please read carefully the [Troubleshooting](http://natron.readthedocs.io/en/rb-2.4/guide/getstarted-troubleshooting.html) section of the [Natron documentation](http://natron.readthedocs.io) before submitting an issue: this issue may already be signaled, or may have a simple workaround.
 
 Make concrete suggestions for fixing the code ("here is a patch") by filing
 a [pull request](https://github.com/MrKepzie/Natron/pull/new/master), not an issue.
 
-Finally, please follow the [Code of Conduct](https://github.com/NatronGitHub/Natron/blob/RB-2.3/CODE_OF_CONDUCT.md) when interacting with the Natron community (both users and developers).
+Finally, please follow the [Code of Conduct](https://github.com/NatronGitHub/Natron/blob/RB-2.4/CODE_OF_CONDUCT.md) when interacting with the Natron community (both users and developers).
 
 
 ### Problem
