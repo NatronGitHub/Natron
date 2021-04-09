@@ -226,17 +226,19 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
         double vx = qx - *x;
         double vy = qy - *y;
         double v = std::sqrt(vx * vx + vy *vy);
-        // The normal vector
-        double nx = vy / v;
-        double ny = -vx / v;
-        // The (signed) distance from the position to the segment
-        double d = nx * (px - *x) + ny * (py - *y);
-        // displace the key point in the normal direction.
-        *x += d * nx;
-        *y += d * ny;
-        // Verify that d is now zero
-        // d = nx * (px - *x) + ny * (py - *y);
-        // qDebug() << 'd' << d;
+        if (v > 0.) {
+            // The normal vector
+            double nx = vy / v;
+            double ny = -vx / v;
+            // The (signed) distance from the position to the segment
+            double d = nx * (px - *x) + ny * (py - *y);
+            // displace the key point in the normal direction.
+            *x += d * nx;
+            *y += d * ny;
+            // Verify that d is now zero
+            // d = nx * (px - *x) + ny * (py - *y);
+            // qDebug() << 'd' << d;
+        }
     }
 
     return ret;
@@ -292,17 +294,19 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
         double vx = qx - *x;
         double vy = qy - *y;
         double v = std::sqrt(vx * vx + vy *vy);
-        // The normal vector
-        double nx = vy / v;
-        double ny = -vx / v;
-        // The (signed) distance from the position to the segment
-        double d = nx * (px - *x) + ny * (py - *y);
-        // displace the key point in the normal direction.
-        *x += d * nx;
-        *y += d * ny;
-        // Verify that d is now zero
-        // d = nx * (px - *x) + ny * (py - *y);
-        // qDebug() << 'd' << d;
+        if (v > 0.) {
+            // The normal vector
+            double nx = vy / v;
+            double ny = -vx / v;
+            // The (signed) distance from the position to the segment
+            double d = nx * (px - *x) + ny * (py - *y);
+            // displace the key point in the normal direction.
+            *x += d * nx;
+            *y += d * ny;
+            // Verify that d is now zero
+            // d = nx * (px - *x) + ny * (py - *y);
+            // qDebug() << 'd' << d;
+        }
     }
 
     return ret;
