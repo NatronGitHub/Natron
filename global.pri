@@ -370,7 +370,7 @@ win32-g++ {
     CONFIG += link_pkgconfig
 
     expat:     PKGCONFIG += expat
-    cairo:     PKGCONFIG += cairo
+    cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
         shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
     	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
@@ -397,7 +397,7 @@ unix {
      expat:     PKGCONFIG += expat
      # Linking cairo dynamically is OK even on Linux, where it links to X11,
      # since we need X11 for OpenGL rendering anyway.
-     cairo:     PKGCONFIG += cairo
+     cairo:     PKGCONFIG += cairo fontconfig
 
      # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-*|freebsd-* {
