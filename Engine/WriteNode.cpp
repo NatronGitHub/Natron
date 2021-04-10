@@ -1258,6 +1258,22 @@ WriteNode::knobChanged(KnobI* k,
     return ret;
 } // WriteNode::knobChanged
 
+
+SequentialPreferenceEnum
+WriteNode::getSequentialPreference() const
+{
+    NodePtr writer = _imp->embeddedPlugin.lock();
+
+    if (writer) {
+        EffectInstancePtr effect = writer->getEffectInstance();
+        if (effect) {
+            return effect->getSequentialPreference();
+        }
+    }
+    return EffectInstance::getSequentialPreference();
+}
+
+
 bool
 WriteNode::isViewAware() const
 {

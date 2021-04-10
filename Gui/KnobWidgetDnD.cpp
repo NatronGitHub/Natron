@@ -147,7 +147,8 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     }
 
     dragDim = dragDim == -1 ? 0 : dragDim;
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim) ) ) {
+    // Note: prior to fixing https://github.com/NatronGitHub/Natron/issues/167 only enabled nodes could be linked.
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) ) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
 
@@ -342,10 +343,8 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
     KnobGuiPtr guiKnob = knob.lock();
     KnobIPtr thisKnob = guiKnob->getKnob();
 
-    bool isEnabled = dimension == -1 ? thisKnob->isEnabled(0) : thisKnob->isEnabled(dimension);
-    if (!isEnabled) {
-        return false;
-    }
+    // Note: prior to fixing https://github.com/NatronGitHub/Natron/issues/167 only enabled nodes could be linked.
+
     int srcDim;
     QDrag* drag;
     guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
@@ -478,9 +477,8 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
     if (!knob) {
         return;
     }
-    bool enabled = _imp->dimension == -1 ? knob->getKnob()->isEnabled(0) : knob->getKnob()->isEnabled(_imp->dimension);
-
-    if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled() && enabled) {
+    // Note: prior to fixing https://github.com/NatronGitHub/Natron/issues/167 only enabled nodes could be linked.
+    if (Gui::isFocusStealingPossible()) {
         _imp->widget->setFocus();
     }
 }

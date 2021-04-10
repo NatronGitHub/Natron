@@ -36,6 +36,7 @@
 
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 
 #include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
@@ -178,9 +179,10 @@ BezierCP::setRightBezierStaticPosition(bool useGuiCurves,
 bool
 BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
                                    double time,
-                                   ViewIdx /*view*/,
+                                   ViewIdx view,
                                    double* x,
-                                   double* y) const
+                                   double* y,
+                                   bool reAlign) const
 {
     KeyFrame k;
     bool ret = false;
@@ -214,6 +216,30 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
         ret = false;
     }
 
+    // If the CP does not have broken tangents, realign the Bezier points.
+    // Fixes https://github.com/NatronGitHub/Natron/issues/202
+    if (reAlign && !_imp->broken) {
+        double px, py, qx, qy;
+        getPositionAtTime(useGuiCurves, time, view, &px, &py);
+        getRightBezierPointAtTime(useGuiCurves, time, view, &qx, &qy, false);
+        // The vector between the two bezier points
+        double vx = qx - *x;
+        double vy = qy - *y;
+        double v = std::sqrt(vx * vx + vy *vy);
+        if (v > 0.) {
+            // The normal vector
+            double nx = vy / v;
+            double ny = -vx / v;
+            // The (signed) distance from the position to the segment
+            double d = nx * (px - *x) + ny * (py - *y);
+            // displace the key point in the normal direction.
+            *x += d * nx;
+            *y += d * ny;
+            // Verify that d is now zero
+            // d = nx * (px - *x) + ny * (py - *y);
+            // qDebug() << 'd' << d;
+        }
+    }
 
     return ret;
 } // BezierCP::getLeftBezierPointAtTime
@@ -221,9 +247,10 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
 bool
 BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
                                     double time,
-                                    ViewIdx /*view*/,
+                                    ViewIdx view,
                                     double *x,
-                                    double *y) const
+                                    double *y,
+                                    bool reAlign) const
 {
     KeyFrame k;
     bool ret = false;
@@ -257,6 +284,30 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
         ret =  false;
     }
 
+    // If the CP does not have broken tangents, realign the Bezier points.
+    // Fixes https://github.com/NatronGitHub/Natron/issues/202
+    if (reAlign && !_imp->broken) {
+        double px, py, qx, qy;
+        getPositionAtTime(useGuiCurves, time, view, &px, &py);
+        getLeftBezierPointAtTime(useGuiCurves, time, view, &qx, &qy, false);
+        // The vector between the two bezier points
+        double vx = qx - *x;
+        double vy = qy - *y;
+        double v = std::sqrt(vx * vx + vy *vy);
+        if (v > 0.) {
+            // The normal vector
+            double nx = vy / v;
+            double ny = -vx / v;
+            // The (signed) distance from the position to the segment
+            double d = nx * (px - *x) + ny * (py - *y);
+            // displace the key point in the normal direction.
+            *x += d * nx;
+            *y += d * ny;
+            // Verify that d is now zero
+            // d = nx * (px - *x) + ny * (py - *y);
+            // qDebug() << 'd' << d;
+        }
+    }
 
     return ret;
 } // BezierCP::getRightBezierPointAtTime
@@ -309,6 +360,18 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
         }
         _imp->guiCurveRightBezierY->addKeyFrame(k);
     }
+}
+
+void
+BezierCP::setBroken(bool broken)
+{
+    _imp->broken = broken;
+}
+
+bool
+BezierCP::getBroken() const
+{
+    return _imp->broken;
 }
 
 void

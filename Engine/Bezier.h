@@ -243,6 +243,7 @@ private:
                                  double flx, double fly, double frx, double fry,
                                  bool isLeft,
                                  bool moveBoth,
+                                 bool breakTangents,
                                  bool onlyFeather);
 
 public:
@@ -292,6 +293,7 @@ public:
                                     double time,
                                     double lx, double ly, double rx, double ry,
                                     double flx, double fly, double frx, double fry,
+                                    bool breakTangents,
                                     bool onlyFeather);
 
 

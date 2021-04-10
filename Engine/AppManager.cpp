@@ -2119,7 +2119,7 @@ AppManager::loadPythonGroups()
 
 
         if (gotInfos) {
-            qDebug() << "Loading " << moduleName;
+            qDebug() << "Loading" << moduleName;
             QStringList grouping = QString::fromUtf8( pluginGrouping.c_str() ).split( QChar::fromLatin1('/') );
             Plugin* p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
 

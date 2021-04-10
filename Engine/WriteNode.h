@@ -111,6 +111,7 @@ public:
     void renderSequenceStarted();
     void renderSequenceEnd();
 
+    virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
