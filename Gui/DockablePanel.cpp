@@ -1189,6 +1189,16 @@ DockablePanel::getFloatingWindow() const
     return _imp->_floatingWidget;
 }
 
+void
+DockablePanel::restoreHideUnmodifiedState(bool hideUnmodified)
+{
+    if (!_imp->_hideUnmodifiedButton) {
+        return;
+    }
+    _imp->_hideUnmodifiedButton->setChecked(hideUnmodified);
+    onHideUnmodifiedButtonClicked(hideUnmodified);
+}
+
 FloatingWidget*
 DockablePanel::floatPanel()
 {
@@ -1299,6 +1309,15 @@ bool
 DockablePanel::isFloating() const
 {
     return _imp->_floating;
+}
+
+bool
+DockablePanel::isHideUnmodified() const
+{
+    if (_imp->_hideUnmodifiedButton) {
+        return _imp->_hideUnmodifiedButton->isChecked();
+    }
+    return false;
 }
 
 void

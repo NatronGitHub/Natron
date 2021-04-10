@@ -150,6 +150,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
             Project* isProject = dynamic_cast<Project*>(holder);
             bool isMinimized = (*it)->isMinimized();
+            bool hideUnmodified = (*it)->isHideUnmodified();
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
@@ -161,6 +162,9 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 _openedPanelsOrdered.push_back(nodeName);
                 if (isMinimized) {
                     _openedPanelsMinimizedOrdered.push_back(nodeName);
+                }
+                if (hideUnmodified) {
+                    _openedPanelsHideUnmodifiedOrdered.push_back(nodeName);
                 }
             }
         }

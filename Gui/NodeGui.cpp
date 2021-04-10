@@ -416,7 +416,7 @@ NodeGui::restoreStateAfterCreation()
 }
 
 void
-NodeGui::ensurePanelCreated(bool minimized)
+NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
 {
     if (_panelCreated) {
         return;
@@ -468,6 +468,10 @@ NodeGui::ensurePanelCreated(bool minimized)
             panel->onChildCreated(*it);
         }
         panel->setRedrawOnSelectionChanged(true);
+    }
+
+    if (hideUnmodified) {
+        _settingsPanel->restoreHideUnmodifiedState(true);
     }
 
     if (minimized) {
@@ -2091,10 +2095,10 @@ NodeGui::initializeKnobs()
 }
 
 void
-NodeGui::setVisibleSettingsPanel(bool b, bool m)
+NodeGui::setVisibleSettingsPanel(bool b, bool m, bool h)
 {
     if (!_panelCreated) {
-        ensurePanelCreated(m);
+        ensurePanelCreated(m, h);
     }
     if (_settingsPanel) {
         _settingsPanel->setClosed(!b);

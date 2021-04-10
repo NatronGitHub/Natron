@@ -81,7 +81,8 @@ GCC_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP 10
 #define PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS 11
 #define PROJECT_GUI_SERIALIZATION_INTRODUCES_MINIMIZED_PANELS 12
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_INTRODUCES_MINIMIZED_PANELS
+#define PROJECT_GUI_SERIALIZATION_INTRODUCES_HIDE_UNMODIFIED_PANELS 13
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_INTRODUCES_HIDE_UNMODIFIED_PANELS
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -658,6 +659,7 @@ class ProjectGuiSerialization
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
     std::list<std::string> _openedPanelsMinimizedOrdered;
+    std::list<std::string> _openedPanelsHideUnmodifiedOrdered;
     std::string _scriptEditorInput;
     std::list<PythonPanelSerializationPtr> _pythonPanels;
 
@@ -683,6 +685,7 @@ class ProjectGuiSerialization
             ar & ::boost::serialization::make_nvp("item", **it);
         }
         ar & ::boost::serialization::make_nvp("OpenedPanelsMinimized", _openedPanelsMinimizedOrdered);
+        ar & ::boost::serialization::make_nvp("OpenedPanelsHideUnmodified", _openedPanelsHideUnmodifiedOrdered);
     }
 
     template<class Archive>
@@ -731,6 +734,10 @@ class ProjectGuiSerialization
             ar & ::boost::serialization::make_nvp("OpenedPanelsMinimized", _openedPanelsMinimizedOrdered);
         }
 
+        if (version >= PROJECT_GUI_SERIALIZATION_INTRODUCES_HIDE_UNMODIFIED_PANELS) {
+            ar & ::boost::serialization::make_nvp("OpenedPanelsHideUnmodified", _openedPanelsHideUnmodifiedOrdered);
+        }
+
         _version = version;
     }
 
@@ -744,6 +751,7 @@ public:
         , _backdrops()
         , _openedPanelsOrdered()
         , _openedPanelsMinimizedOrdered()
+        , _openedPanelsHideUnmodifiedOrdered()
         , _version(0)
     {
     }
@@ -788,6 +796,11 @@ public:
     const std::list<std::string> & getOpenedPanelsMinimized() const
     {
         return _openedPanelsMinimizedOrdered;
+    }
+
+    const std::list<std::string> & getOpenedPanelsHideUnmodified() const
+    {
+        return _openedPanelsHideUnmodifiedOrdered;
     }
 
     const std::string& getInputScript() const
