@@ -3,8 +3,8 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.2.13.0
-pkgrel=3
+pkgver=2.2.13.1
+pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -31,20 +31,20 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         git+https://github.com/OpenImageIO/oiio-images.git
         oiio-2.1.10-boost.diff
         oiio-2.0.8-invalidatespec.patch
-        oiio-2.2.13.0-c++11.patch
+        #oiio-2.2.13.0-c++11.patch
   )
-sha256sums=('fcb938d7d0060816bad18f62ebed6e5a1d959555db2e9d282543b46519237755'
+sha256sums=('7f810124e866ac14ad9c11b0ab528a6ed4c8e62a190cc44a77eed8159f57405c'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
-            'ed831f62a84c312aa7a079caf1a207de4cf5564bb1cb184cf625abbd78cb8da2'
+            #'ed831f62a84c312aa7a079caf1a207de4cf5564bb1cb184cf625abbd78cb8da2'
       )
 
 prepare() {
   cd ${srcdir}/oiio-Release-${pkgver}
   patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
-  patch -p1 -i ${srcdir}/oiio-2.2.13.0-c++11.patch
+  # patch -p1 -i ${srcdir}/oiio-2.2.13.0-c++11.patch # added in 2.2.13.1
 }
 
 build() {
