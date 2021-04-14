@@ -622,7 +622,7 @@ public Q_SLOTS:
      **/
     int saveWarning();
 
-    void setVisibleProjectSettingsPanel();
+    void setVisibleProjectSettingsPanel(bool minimized = false);
 
     void putSettingsPanelFirst(DockablePanel* panel);
 

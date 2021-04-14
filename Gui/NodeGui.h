@@ -152,7 +152,7 @@ public:
                     const NodePtr & internalNode);
 
     //Creates panel if needed, might be expensive
-    void ensurePanelCreated();
+    void ensurePanelCreated(bool minimized = false, bool hideUnmodified = false);
 
 
     virtual void destroyGui() OVERRIDE FINAL;
@@ -506,7 +506,7 @@ public Q_SLOTS:
     /*Use NULL for src to disconnect.*/
     bool connectEdge(int edgeNumber);
 
-    void setVisibleSettingsPanel(bool b);
+    void setVisibleSettingsPanel(bool b, bool minimized = false, bool hideUnmodified = false);
 
     void refreshRenderingIndicator();
 

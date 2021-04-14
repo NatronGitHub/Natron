@@ -91,6 +91,7 @@ public:
     QVBoxLayout* getContainer() const;
     bool isClosed() const;
     bool isFloating() const;
+    bool isHideUnmodified() const;
 
     /*Creates a new button and inserts it in the header
        at position headerPosition. You can then take
@@ -137,6 +138,9 @@ public:
 
 
     FloatingWidget* getFloatingWindow() const;
+
+    void restoreHideUnmodifiedState(bool hideUnmodified);
+
 public:
 
 

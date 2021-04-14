@@ -429,12 +429,15 @@ Gui::buildTabFocusOrderPropertiesBin()
 }
 
 void
-Gui::setVisibleProjectSettingsPanel()
+Gui::setVisibleProjectSettingsPanel(bool minimized)
 {
     if ( _imp->_projectGui->getPanel()->isClosed() ) {
         _imp->_projectGui->getPanel()->setClosed(false);
     } else {
         addVisibleDockablePanel( _imp->_projectGui->getPanel() );
+    }
+    if (minimized) {
+        _imp->_projectGui->getPanel()->minimizeOrMaximize(true);
     }
     if ( !_imp->_projectGui->isVisible() ) {
         _imp->_projectGui->setVisible(true);
