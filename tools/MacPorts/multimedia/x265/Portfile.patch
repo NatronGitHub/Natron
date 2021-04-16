@@ -1,5 +1,5 @@
---- Portfile.orig	2021-02-13 18:49:29.000000000 -0800
-+++ Portfile	2021-02-13 19:38:27.000000000 -0800
+--- Portfile.orig	2021-04-16 10:52:48.000000000 -0700
++++ Portfile	2021-04-16 10:55:06.000000000 -0700
 @@ -13,7 +13,7 @@
  legacysupport.newest_darwin_requires_legacy 9
  
@@ -9,7 +9,7 @@
  
  checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
                      sha256  544d147bf146f8994a7bf8521ed878c93067ea1c7c6e93ab602389be3117eaaf \
-@@ -62,6 +62,12 @@
+@@ -65,6 +65,12 @@
          set merger_configure_args(${uarch}) -DOVERRIDE_SYSTEM_PROCESSOR=${uarch}
      }
  
@@ -22,7 +22,7 @@
  } else {
  
  	if {${configure.build_arch} in {i386 x86_64}} {
-@@ -73,60 +79,10 @@
+@@ -76,62 +82,10 @@
          # error: illegal text-relocation to '_x265_pw_1'
  		configure.ldflags-append -Wl,-read_only_relocs,suppress
  	}
@@ -32,6 +32,11 @@
 -    if {${configure.build_arch} eq "x86_64"} {
 -        default_variants +highdepth
 -    }
+-}
+-
+-if {[variant_isset highdepth]} {
+-    # we need to explore how to use the method below with the muniversal PG.
+-    universal_variant no
 +    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
 +    build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
  }
@@ -41,9 +46,6 @@
 -    # this builds the recommended multi-library interface
 -    # https://x265.readthedocs.io/en/master/api.html#multi-library-interface
 -    # with the default ABI being the standard 8bit ABI as always
--
--    # we need to explore how to use the method below with the muniversal PG.
--    universal_variant no
 -
 -    pre-configure {
 -        system "mkdir ${workpath}/10bit"

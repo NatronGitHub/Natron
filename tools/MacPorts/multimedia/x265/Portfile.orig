@@ -84,14 +84,16 @@ if {${universal_possible} && [variant_isset universal]} {
     }
 }
 
+if {[variant_isset highdepth]} {
+    # we need to explore how to use the method below with the muniversal PG.
+    universal_variant no
+}
+
 variant highdepth conflicts universal description {Enable 10-bit and 12-bit encoding} {
 
     # this builds the recommended multi-library interface
     # https://x265.readthedocs.io/en/master/api.html#multi-library-interface
     # with the default ABI being the standard 8bit ABI as always
-
-    # we need to explore how to use the method below with the muniversal PG.
-    universal_variant no
 
     pre-configure {
         system "mkdir ${workpath}/10bit"

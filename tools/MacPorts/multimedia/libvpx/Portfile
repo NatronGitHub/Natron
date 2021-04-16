@@ -5,7 +5,8 @@ PortGroup           compiler_blacklist_versions 1.0
 PortGroup           muniversal 1.0
 
 name                libvpx
-version             1.9.0
+version             1.10.0
+revision            0
 categories          multimedia
 maintainers         {devans @dbevans} openmaintainer
 platforms           darwin
@@ -30,15 +31,6 @@ homepage            http://webmproject.org/tools/
 fetch.type          git
 git.url             https://chromium.googlesource.com/webm/${name}
 git.branch          v${version}
-
-# on BigSur or newer, use a recent 20210203 commit with the arm64 fixes in it
-# because we also need to support +universal, do this for all builds for now
-
-if {${os.platform} eq "darwin" && ${os.major} >= 20} {
-    git.branch      5a4cfa95630ee3ebb5d74cd6c21336492e8707a4
-    version         1.9.0-20210203
-    livecheck.version 1.9.0
-}
 
 # support for non-intel archs removed in version 1.5.0
 supported_archs     x86_64 i386 arm64
