@@ -10,7 +10,6 @@
 ### Known issues
 
 - Rendering sometimes silently stalls after X frames #248
-- Remember Minimize state when reopening project #168
 - Some image formats may have issues (PCX, PSB, CR2)
 
 ### Changes
@@ -28,6 +27,7 @@
 - Support cloned group nodes or hard links between groups. #568 #579 #594 #598
 - Default keyframe interpolation method for strokes and shapes is now "Smooth" (was "Linear"). #597
 - Fix animation of Roto Beziers with non-broken tangents. #102
+- Remember properties panels state when reopening project #168
 
 ### Plugins
 
