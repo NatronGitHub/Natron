@@ -2,7 +2,7 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.2.13.0 # compiled for C++11 (see -DCMAKE_CXX_STANDARD=11 below, and openexr build)
+OIIO_VERSION=2.2.13.1 # compiled for C++11 (see -DCMAKE_CXX_STANDARD=11 below, and openexr build)
 OIIO_VERSION_SHORT=2.2 # ${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if download_step; then
