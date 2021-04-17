@@ -196,7 +196,7 @@ catDll libunistring-
 catDll libvorbis-
 catDll libvorbisenc-
 catDll libvpx-
-catDll libwavpack-
+#catDll libwavpack-
 catDll libwebp-
 catDll libwebpdemux-
 catDll libwebpmux-

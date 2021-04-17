@@ -1,6 +1,6 @@
 pkgname=natron-sdk
 pkgver=2021
-pkgrel=1
+pkgrel=2
 pkgdesc='Meta package for the Natron Windows SDK'
 url='https://github.com/NatronGitHub'
 arch=('any')
@@ -104,7 +104,6 @@ ${MINGW_PACKAGE_PREFIX}-libcdr
 ${MINGW_PACKAGE_PREFIX}-lame
 ${MINGW_PACKAGE_PREFIX}-speex
 ${MINGW_PACKAGE_PREFIX}-libtheora
-${MINGW_PACKAGE_PREFIX}-wavpack
 ${MINGW_PACKAGE_PREFIX}-xvidcore
 ${MINGW_PACKAGE_PREFIX}-tinyxml
 ${MINGW_PACKAGE_PREFIX}-yaml-cpp
