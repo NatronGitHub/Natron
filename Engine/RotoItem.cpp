@@ -195,6 +195,7 @@ RotoItem::setGloballyActivated(bool a,
             isDrawable->incrementNodesAge();
         }
         c->evaluateChange();
+        c->onItemGloballyActivatedChanged(shared_from_this());
     }
 }
 

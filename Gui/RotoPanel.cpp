@@ -476,8 +476,6 @@ public:
 
     void insertSelectionRecursively(const RotoLayerPtr & layer);
 
-    void setChildrenActivatedRecursively(bool activated, QTreeWidgetItem* item);
-
     void setChildrenLockedRecursively(bool locked, QTreeWidgetItem* item);
 
     bool itemHasKey(const RotoItemPtr& item, double time) const;
@@ -507,6 +505,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     QObject::connect( _imp->context.get(), SIGNAL(itemScriptNameChanged(RotoItemPtr)), this, SLOT(onItemScriptNameChanged(RotoItemPtr)) );
     QObject::connect( _imp->context.get(), SIGNAL(itemLabelChanged(RotoItemPtr)), this, SLOT(onItemLabelChanged(RotoItemPtr)) );
     QObject::connect( _imp->context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onItemLockChanged(int)) );
+    QObject::connect( _imp->context.get(), SIGNAL(itemGloballyActivatedChanged(RotoItemPtr)), this, SLOT(onItemGloballyActivatedChanged(RotoItemPtr)) );
     const QSize medButtonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize medButtonIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
@@ -1482,9 +1481,7 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
                 TreeItems::iterator found = _imp->findItem(selected[i]);
                 assert( found != _imp->items.end() );
                 found->rotoItem->setGloballyActivated(activated, true);
-                _imp->setChildrenActivatedRecursively(activated, found->treeItem);
             }
-            _imp->context->emitRefreshViewerOverlays();
             break;
         }
 
@@ -1576,16 +1573,6 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
 }
 
 void
-RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,
-                                                  QTreeWidgetItem* item)
-{
-    item->setIcon(COL_ACTIVATED, activated ? iconVisible : iconUnvisible);
-    for (int i = 0; i < item->childCount(); ++i) {
-        setChildrenActivatedRecursively( activated, item->child(i) );
-    }
-}
-
-void
 RotoPanel::onItemLockChanged(int reason)
 {
     RotoItemPtr item = getContext()->getLastItemLocked();
@@ -1597,6 +1584,16 @@ RotoPanel::onItemLockChanged(int reason)
     if ( found != _imp->items.end() ) {
         found->treeItem->setIcon(COL_LOCKED, item->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
     }
+}
+
+void
+RotoPanel::onItemGloballyActivatedChanged(const RotoItemPtr& item)
+{
+    TreeItems::iterator found = _imp->findItem(item);
+    if ( found != _imp->items.end() ) {
+        found->treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? _imp->iconVisible : _imp->iconUnvisible);
+    }
+    _imp->context->emitRefreshViewerOverlays();
 }
 
 void
