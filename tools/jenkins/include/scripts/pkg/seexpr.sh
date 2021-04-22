@@ -16,6 +16,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; };
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0003-seexpr-2.11-fix-dll-installation.patch"
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0004-seexpr-2.11-c++98.patch"
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0005-seexpr-2.11-noeditordemos.patch"
+    patch -Np1 -i "$INC_PATH/patches/SeExpr/0006-seexpr-2.11-cstylecast.patch"
     #patch -p0 -i "$INC_PATH/patches/SeExpr/seexpr2-cmake.diff"
     mkdir build
     pushd build

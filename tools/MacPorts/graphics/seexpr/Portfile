@@ -29,7 +29,8 @@ depends_build       port:doxygen
 
 patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
                     0002-seexpr-2.11-fix-inline-error.patch \
-                    0004-seexpr-2.11-c++98.patch
+                    0004-seexpr-2.11-c++98.patch \
+                    0006-seexpr-2.11-cstylecast.patch
 #patch.cmd           "git apply -v"
 patch.pre_args      -p1
 
