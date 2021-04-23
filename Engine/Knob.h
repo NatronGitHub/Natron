@@ -1195,7 +1195,7 @@ public:
                    const std::string& knobName,
                    int dimension)
     {
-        _links.push_back(Link({nodeNameFull, nodeName, trackName, knobName, dimension}));
+        _links.push_back(Link(nodeNameFull, nodeName, trackName, knobName, dimension));
     }
 
     void restoreLinks(const NodesList & allNodes,
@@ -1209,6 +1209,18 @@ private:
         std::string trackName;
         std::string knobName;
         int dimension; // -1 means alias
+
+        Link(const std::string& nodeNameFull_,
+             const std::string& nodeName_,
+             const std::string& trackName_,
+             const std::string& knobName_,
+             int dimension_)
+        : nodeNameFull(nodeNameFull_)
+        , nodeName(nodeName_)
+        , trackName(trackName_)
+        , knobName(knobName_)
+        , dimension(dimension_)
+        {}
     };
 
     std::vector<Link> _links;
