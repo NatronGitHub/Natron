@@ -1,0 +1,2619 @@
+--- src/3rdparty/webkit/Source/JavaScriptCore/API/JSContextRef.cpp.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/API/JSContextRef.cpp
+@@ -66,7 +66,7 @@
+ #if OS(DARWIN)
+     // When running on Tiger or Leopard, or if the application was linked before JSGlobalContextCreate was changed
+     // to use a unique JSGlobalData, we use a shared one for compatibility.
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     if (NSVersionOfLinkTimeLibrary("JavaScriptCore") <= webkitFirstVersionWithConcurrentGlobalContexts) {
+ #else
+     {
+--- src/3rdparty/webkit/Source/JavaScriptCore/ChangeLog.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/ChangeLog
+@@ -1944,21 +1944,6 @@
+         * Android.mk: Removed.
+         * Android.v8.wtf.mk: Removed.
+ 
+-2011-04-27  Mark Rowe  <mrowe@apple.com>
+-
+-        Fix 32-bit build after r85036.
+-
+-        * wtf/Platform.h: USE(PLUGIN_HOST_PROCESS) is only true for 64-bit.
+-
+-2011-04-27  Csaba Osztrogonác  <ossy@webkit.org>
+-
+-        Unreviewed buildfix after r85036.
+-
+-        Readd non-dead code.
+-
+-        * wtf/OSAllocatorPosix.cpp:
+-        (WTF::OSAllocator::reserveAndCommit):
+-
+ 2011-04-27  Adam Barth  <abarth@webkit.org>
+ 
+         Reviewed by Kenneth Russell.
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/FastMalloc.cpp.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/FastMalloc.cpp
+@@ -97,7 +97,12 @@
+ #endif
+ 
+ // Use a background thread to periodically scavenge memory to release back to the system
++// https://bugs.webkit.org/show_bug.cgi?id=27900: don't turn this on for Tiger until we have figured out why it caused a crash.
++#if defined(BUILDING_ON_TIGER)
++#define USE_BACKGROUND_THREAD_TO_SCAVENGE_MEMORY 0
++#else
+ #define USE_BACKGROUND_THREAD_TO_SCAVENGE_MEMORY 1
++#endif
+ 
+ #ifndef NDEBUG
+ namespace WTF {
+@@ -4607,10 +4612,10 @@
+ malloc_introspection_t jscore_fastmalloc_introspection = { &FastMallocZone::enumerate, &FastMallocZone::goodSize, &FastMallocZone::check, &FastMallocZone::print,
+     &FastMallocZone::log, &FastMallocZone::forceLock, &FastMallocZone::forceUnlock, &FastMallocZone::statistics
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     , 0 // zone_locked will not be called on the zone unless it advertises itself as version five or higher.
+ #endif
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     , 0, 0, 0, 0 // These members will not be used unless the zone advertises itself as version seven or higher.
+ #endif
+ 
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/OSAllocatorPosix.cpp.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/OSAllocatorPosix.cpp
+@@ -76,7 +76,7 @@
+     flags |= MAP_NORESERVE;
+ #endif
+ 
+-#if OS(DARWIN)
++#if OS(DARWIN) && !defined(BUILDING_ON_TIGER)
+     int fd = usage;
+ #else
+     int fd = -1;
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/Platform.h.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/Platform.h
+@@ -392,12 +392,16 @@
+ 
+ /* FIXME: BUILDING_ON_.., and TARGETING... macros should be folded into the OS() system */
+ #include <AvailabilityMacros.h>
+-#if !defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6
++#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5
++#define BUILDING_ON_TIGER 1
++#elif !defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6
+ #define BUILDING_ON_LEOPARD 1
+ #elif !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+ #define BUILDING_ON_SNOW_LEOPARD 1
+ #endif
+-#if !defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
++#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
++#define TARGETING_TIGER 1
++#elif !defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+ #define TARGETING_LEOPARD 1
+ #elif !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7
+ #define TARGETING_SNOW_LEOPARD 1
+@@ -623,10 +627,10 @@
+ #endif
+ 
+ #if PLATFORM(MAC) && !PLATFORM(IOS)
+-#if !defined(BUILDING_ON_LEOPARD) && CPU(X86_64)
++#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_TIGER) && CPU(X86_64)
+ #define WTF_USE_PLUGIN_HOST_PROCESS 1
+ #endif
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ #define ENABLE_GESTURE_EVENTS 1
+ #define ENABLE_RUBBER_BANDING 1
+ #define WTF_USE_WK_SCROLLBAR_PAINTER 1
+@@ -661,7 +665,7 @@
+ #define WTF_USE_CF 1
+ #endif
+ 
+-#if OS(DARWIN) && !PLATFORM(GTK) && !PLATFORM(QT)
++#if OS(DARWIN) && !defined(BUILDING_ON_TIGER) && !PLATFORM(GTK) && !PLATFORM(QT)
+ #define ENABLE_PURGEABLE_MEMORY 1
+ #endif
+ 
+@@ -725,8 +729,12 @@
+ #define ENABLE_GLOBAL_FASTMALLOC_NEW 0
+ #if OS(DARWIN)
+ #define WTF_USE_CF 1
++#ifndef BUILDING_ON_TIGER
+ #define WTF_USE_CORE_TEXT 1
+ #define ENABLE_WEB_ARCHIVE 1
++#else
++#define WTF_USE_ATSUI 1
++#endif
+ #endif
+ #endif
+ 
+@@ -791,7 +799,7 @@
+ #define HAVE_SYS_TIMEB_H 1
+ #define WTF_USE_ACCELERATE 1
+ 
+-#ifndef TARGETING_LEOPARD
++#if !defined(TARGETING_TIGER) && !defined(TARGETING_LEOPARD)
+ 
+ #define HAVE_DISPATCH_H 1
+ #define HAVE_HOSTED_CORE_ANIMATION 1
+@@ -1153,7 +1161,7 @@
+ 
+ #if PLATFORM(MAC)
+ /* Complex text framework */
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ #define WTF_USE_ATSUI 0
+ #define WTF_USE_CORE_TEXT 1
+ #else
+@@ -1163,15 +1171,15 @@
+ #endif
+ 
+ /* Accelerated compositing */
+-#if PLATFORM(MAC) || PLATFORM(IOS) || PLATFORM(QT) || (PLATFORM(WIN) && !OS(WINCE) &&!defined(WIN_CAIRO))
++#if (PLATFORM(MAC) && !defined(BUILDING_ON_TIGER)) || PLATFORM(IOS) || PLATFORM(QT) || (PLATFORM(WIN) && !OS(WINCE) &&!defined(WIN_CAIRO))
+ #define WTF_USE_ACCELERATED_COMPOSITING 1
+ #endif
+ 
+-#if (PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)) || PLATFORM(IOS)
++#if (PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)) || PLATFORM(IOS)
+ #define WTF_USE_PROTECTION_SPACE_AUTH_CALLBACK 1
+ #endif
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ #define WTF_USE_AVFOUNDATION 1
+ #endif
+ 
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/VMTags.h.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/VMTags.h
+@@ -32,6 +32,8 @@
+ 
+ #include <mach/vm_statistics.h>
+ 
++#if !defined(TARGETING_TIGER)
++
+ #if defined(VM_MEMORY_TCMALLOC)
+ #define VM_TAG_FOR_TCMALLOC_MEMORY VM_MAKE_TAG(VM_MEMORY_TCMALLOC)
+ #else
+@@ -50,6 +52,19 @@
+ #define VM_TAG_FOR_REGISTERFILE_MEMORY VM_MAKE_TAG(65)
+ #endif // defined(VM_MEMORY_JAVASCRIPT_JIT_REGISTER_FILE)
+ 
++#else // !defined(TARGETING_TIGER)
++
++// mmap on Tiger fails with tags that work on Leopard, so fall
++// back to Tiger-compatible tags (that also work on Leopard)
++// when targeting Tiger.
++#define VM_TAG_FOR_TCMALLOC_MEMORY -1
++#define VM_TAG_FOR_EXECUTABLEALLOCATOR_MEMORY -1
++#define VM_TAG_FOR_REGISTERFILE_MEMORY -1
++
++#endif // !defined(TARGETING_TIGER)
++
++// Tags for vm_map and vm_allocate work on both Tiger and Leopard.
++
+ #if defined(VM_MEMORY_JAVASCRIPT_CORE)
+ #define VM_TAG_FOR_COLLECTOR_MEMORY VM_MAKE_TAG(VM_MEMORY_JAVASCRIPT_CORE)
+ #else
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/unicode/icu/CollatorICU.cpp.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/unicode/icu/CollatorICU.cpp
+@@ -61,7 +61,7 @@
+ {
+ #if OS(DARWIN) && USE(CF)
+     // Mac OS X doesn't set UNIX locale to match user-selected one, so ICU default doesn't work.
+-#if !defined(BUILDING_ON_LEOPARD) && !OS(IOS)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !OS(IOS)
+     RetainPtr<CFLocaleRef> currentLocale(AdoptCF, CFLocaleCopyCurrent());
+     CFStringRef collationOrder = (CFStringRef)CFLocaleGetValue(currentLocale.get(), kCFLocaleCollatorIdentifier);
+ #else
+--- src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/Base.xcconfig.orig
++++ src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/Base.xcconfig
+@@ -35,6 +35,9 @@
+ 
+ // If the target Mac OS X version does not match the current Mac OS X version then we'll want to build using the target version's SDK.
+ SDKROOT = $(SDKROOT_$(MAC_OS_X_VERSION_MAJOR)_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++SDKROOT_1050_1040 = macosx10.4internal;
++SDKROOT_1060_1040 = macosx10.4internal;
+ SDKROOT_1060_1050 = macosx10.5internal;
++SDKROOT_1070_1040 = macosx10.4internal;
+ SDKROOT_1070_1050 = macosx10.5internal;
+ SDKROOT_1070_1060 = macosx10.6internal;
+--- src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/CompilerVersion.xcconfig.orig
++++ src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/CompilerVersion.xcconfig
+@@ -29,6 +29,8 @@
+ // number.  Newer versions of Xcode use XCODE_VERSION_MINOR for the minor version, and
+ // XCODE_VERSION_ACTUAL for the full version number.
+ TARGET_GCC_VERSION = $(TARGET_GCC_VERSION_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++TARGET_GCC_VERSION_ = $(TARGET_GCC_VERSION_1040);
++TARGET_GCC_VERSION_1040 = GCC_40;
+ 
+ TARGET_GCC_VERSION_1050 = $(TARGET_GCC_VERSION_1050_$(XCODE_VERSION_MINOR));
+ TARGET_GCC_VERSION_1050_ = $(TARGET_GCC_VERSION_1050_$(XCODE_VERSION_ACTUAL));
+--- src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/DebugRelease.xcconfig.orig
++++ src/3rdparty/webkit/Source/ThirdParty/ANGLE/Configurations/DebugRelease.xcconfig
+@@ -1,6 +1,8 @@
+ #include "Base.xcconfig"
+ 
+ ARCHS = $(ARCHS_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++ARCHS_ = $(ARCHS_1040);
++ARCHS_1040 = $(NATIVE_ARCH);
+ ARCHS_1050 = $(NATIVE_ARCH);
+ ARCHS_1060 = $(ARCHS_STANDARD_32_64_BIT);
+ ARCHS_1070 = $(ARCHS_STANDARD_32_64_BIT);
+@@ -8,6 +10,8 @@
+ ONLY_ACTIVE_ARCH = YES;
+ 
+ MACOSX_DEPLOYMENT_TARGET = $(MACOSX_DEPLOYMENT_TARGET_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++MACOSX_DEPLOYMENT_TARGET_ = 10.4;
++MACOSX_DEPLOYMENT_TARGET_1040 = 10.4;
+ MACOSX_DEPLOYMENT_TARGET_1050 = 10.5;
+ MACOSX_DEPLOYMENT_TARGET_1060 = 10.6;
+ MACOSX_DEPLOYMENT_TARGET_1070 = 10.7;
+--- src/3rdparty/webkit/Source/WebCore/WebCore.exp.in.orig
++++ src/3rdparty/webkit/Source/WebCore/WebCore.exp.in
+@@ -1419,7 +1419,7 @@
+ __ZN7WebCore20LogNotYetImplementedE
+ #endif
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ _wkContentAreaDidHide
+ _wkContentAreaDidShow
+ _wkContentAreaResized
+@@ -1785,6 +1785,21 @@
+ .objc_class_name_DOMSVGForeignObjectElement
+ #endif
+ 
++#if defined(BUILDING_ON_TIGER)
++_wkClearGlyphVector
++_wkConvertCharToGlyphs
++_wkCopyFullFontName
++_wkGetATSStyleGroup
++_wkGetCGFontFromNSFont
++_wkGetFontMetrics
++_wkGetGlyphVectorFirstRecord
++_wkGetGlyphVectorNumGlyphs
++_wkGetGlyphVectorRecordSize
++_wkGetNSFontATSUFontId
++_wkInitializeGlyphVector
++_wkReleaseStyleGroup
++_wkSupportsMultipartXMixedReplace
++#endif
+ 
+ #if ENABLE(VIDEO)
+ __ZN7WebCore16HTMLMediaElement12endScrubbingEv
+@@ -1850,7 +1865,7 @@
+ __ZNK7WebCore23ApplicationCacheStorage11maximumSizeEv
+ #endif
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ __ZN7WebCore6Editor13lowercaseWordEv
+ __ZN7WebCore6Editor13uppercaseWordEv
+ __ZN7WebCore6Editor14capitalizeWordEv
+--- src/3rdparty/webkit/Source/WebCore/accessibility/AccessibilityList.h.orig
++++ src/3rdparty/webkit/Source/WebCore/accessibility/AccessibilityList.h
+@@ -29,7 +29,7 @@
+ #ifndef AccessibilityList_h
+ #define AccessibilityList_h
+ 
+-#if PLATFORM(MAC) && defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && (defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD))
+ #define ACCESSIBILITY_LISTS 0
+ #else
+ #define ACCESSIBILITY_LISTS 1
+--- src/3rdparty/webkit/Source/WebCore/accessibility/AccessibilityTable.h.orig
++++ src/3rdparty/webkit/Source/WebCore/accessibility/AccessibilityTable.h
+@@ -32,7 +32,7 @@
+ #include "AccessibilityRenderObject.h"
+ #include <wtf/Forward.h>
+ 
+-#if PLATFORM(MAC) && defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && (defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD))
+ #define ACCESSIBILITY_TABLES 0
+ #else
+ #define ACCESSIBILITY_TABLES 1
+--- src/3rdparty/webkit/Source/WebCore/bridge/jni/jsc/JavaInstanceJSC.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/bridge/jni/jsc/JavaInstanceJSC.cpp
+@@ -205,7 +205,7 @@
+ 
+ // This is a deprecated code path which should not be required on Android.
+ // Remove this guard once Bug 39476 is fixed.
+-#if PLATFORM(ANDROID)
++#if PLATFORM(ANDROID) || defined(BUILDING_ON_TIGER)
+     if (!handled)
+         result = callJNIMethod(m_instance->m_instance, jMethod->returnType(), jMethod->name().utf8().data(), jMethod->signature(), jArgs.data());
+ #endif
+--- src/3rdparty/webkit/Source/WebCore/config.h.orig
++++ src/3rdparty/webkit/Source/WebCore/config.h
+@@ -239,6 +239,10 @@
+ #endif
+ #endif /* USE(CG) */
+ 
++#ifdef BUILDING_ON_TIGER
++#undef ENABLE_FTPDIR
++#define ENABLE_FTPDIR 0
++#endif
+ 
+ #if PLATFORM(WIN) && USE(CG)
+ #define WTF_USE_SAFARI_THEME 1
+--- src/3rdparty/webkit/Source/WebCore/css/CSSImportRule.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/css/CSSImportRule.cpp
+@@ -67,7 +67,7 @@
+     bool enforceMIMEType = strict;
+     bool needsSiteSpecificQuirks = parent && parent->document() && parent->document()->settings() && parent->document()->settings()->needsSiteSpecificQuirks();
+ 
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+     if (enforceMIMEType && needsSiteSpecificQuirks) {
+         // Covers both http and https, with or without "www."
+         if (baseURL.string().contains("mcafee.com/japan/", false))
+--- src/3rdparty/webkit/Source/WebCore/dom/Document.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/dom/Document.cpp
+@@ -326,9 +326,9 @@
+ 
+ static bool disableRangeMutation(Page* page)
+ {
+-    // This check is made on super-hot code paths, so we only want this on Leopard.
+-#ifdef TARGETING_LEOPARD
+-    // Disable Range mutation on document modifications in Leopard Mail.
++    // This check is made on super-hot code paths, so we only want this on Tiger and Leopard.
++#if defined(TARGETING_TIGER) || defined(TARGETING_LEOPARD)
++    // Disable Range mutation on document modifications in Tiger and Leopard Mail
+     // See <rdar://problem/5865171>
+     return page && (page->settings()->needsLeopardMailQuirks() || page->settings()->needsTigerMailQuirks());
+ #else
+--- src/3rdparty/webkit/Source/WebCore/editing/Editor.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/editing/Editor.cpp
+@@ -1908,10 +1908,14 @@
+         return;
+     }
+ 
++#ifndef BUILDING_ON_TIGER
++    // Post-Tiger, this menu item is a show/hide toggle, to match AppKit. Leave Tiger behavior alone
++    // to match rest of OS X.
+     if (client()->spellingUIIsShowing()) {
+         client()->showSpellingUI(false);
+         return;
+     }
++#endif
+     
+     advanceToNextMisspelling(true);
+     client()->showSpellingUI(true);
+@@ -3151,9 +3155,9 @@
+             }
+         }
+ 
+-#if !PLATFORM(MAC) || (PLATFORM(MAC) && (defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)))
++#if !PLATFORM(MAC) || (PLATFORM(MAC) && (defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)))
+         // This only erases markers that are in the first unit (word or sentence) of the selection.
+-        // Perhaps peculiar, but it matches AppKit on these Mac OS X versions.
++        // Perhaps peculiar, but it matches AppKit on these Mac OSX versions.
+         if (RefPtr<Range> wordRange = newAdjacentWords.toNormalizedRange())
+             m_frame->document()->markers()->removeMarkers(wordRange.get(), DocumentMarker::Spelling);
+ #endif
+--- src/3rdparty/webkit/Source/WebCore/editing/SpellingCorrectionController.h.orig
++++ src/3rdparty/webkit/Source/WebCore/editing/SpellingCorrectionController.h
+@@ -26,7 +26,7 @@
+ #ifndef SpellingCorrectionController_h
+ #define SpellingCorrectionController_h
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ // Some platforms provide UI for suggesting autocorrection.
+ #define SUPPORT_AUTOCORRECTION_PANEL 1
+ // Some platforms use spelling and autocorrection markers to provide visual cue.
+@@ -35,7 +35,7 @@
+ #else
+ #define SUPPORT_AUTOCORRECTION_PANEL 0
+ #define REMOVE_MARKERS_UPON_EDITING 0
+-#endif // #if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#endif // #if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ 
+ #include "DocumentMarker.h"
+ #include "EditCommand.h"
+--- src/3rdparty/webkit/Source/WebCore/editing/TypingCommand.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/editing/TypingCommand.cpp
+@@ -321,7 +321,7 @@
+ 
+ void TypingCommand::markMisspellingsAfterTyping(ETypingCommand commandType)
+ {
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     if (!document()->frame()->editor()->isContinuousSpellCheckingEnabled()
+      && !document()->frame()->editor()->isAutomaticQuoteSubstitutionEnabled()
+      && !document()->frame()->editor()->isAutomaticLinkDetectionEnabled()
+@@ -356,7 +356,7 @@
+ {
+     updatePreservesTypingStyle(commandTypeForAddedTyping);
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     document()->frame()->editor()->appliedEditing(this);
+     // Since the spellchecking code may also perform corrections and other replacements, it should happen after the typing changes.
+     if (!m_shouldPreventSpellChecking)
+--- src/3rdparty/webkit/Source/WebCore/html/HTMLLinkElement.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/html/HTMLLinkElement.cpp
+@@ -376,7 +376,7 @@
+     if (enforceMIMEType && document()->page() && !document()->page()->settings()->enforceCSSMIMETypeInNoQuirksMode())
+         enforceMIMEType = false;
+ 
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+     if (enforceMIMEType && needsSiteSpecificQuirks) {
+         // Covers both http and https, with or without "www."
+         if (baseURL.string().contains("mcafee.com/japan/", false))
+--- src/3rdparty/webkit/Source/WebCore/loader/EmptyClients.h.orig
++++ src/3rdparty/webkit/Source/WebCore/loader/EmptyClients.h
+@@ -492,8 +492,11 @@
+     virtual void setInsertionPasteboard(NSPasteboard*) { };
+     virtual NSURL* canonicalizeURL(NSURL*) { return 0; }
+     virtual NSURL* canonicalizeURLString(NSString*) { return 0; }
++#ifdef BUILDING_ON_TIGER
++    virtual NSArray* pasteboardTypesForSelection(Frame*) { return 0; }
+ #endif
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#endif
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     virtual void uppercaseWord() { }
+     virtual void lowercaseWord() { }
+     virtual void capitalizeWord() { }
+--- src/3rdparty/webkit/Source/WebCore/loader/FrameLoader.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/loader/FrameLoader.cpp
+@@ -2126,8 +2126,12 @@
+ 
+         case FrameLoadTypeStandard:
+             history()->updateForStandardLoad();
++#ifndef BUILDING_ON_TIGER
++            // This code was originally added for a Leopard performance imporvement. We decided to 
++            // ifdef it to fix correctness issues on Tiger documented in <rdar://problem/5441823>.
+             if (m_frame->view())
+                 m_frame->view()->setScrollbarsSuppressed(true);
++#endif
+             m_client->transitionToCommittedForNewPage();
+             break;
+ 
+--- src/3rdparty/webkit/Source/WebCore/loader/MainResourceLoader.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/loader/MainResourceLoader.cpp
+@@ -42,6 +42,9 @@
+ #include "HTMLFormElement.h"
+ #include "InspectorInstrumentation.h"
+ #include "Page.h"
++#if PLATFORM(QT)
++#include "PluginDatabase.h"
++#endif
+ #include "ResourceError.h"
+ #include "ResourceHandle.h"
+ #include "ResourceLoadScheduler.h"
+@@ -50,10 +53,6 @@
+ #include "Settings.h"
+ #include <wtf/CurrentTime.h>
+ 
+-#if PLATFORM(QT)
+-#include "PluginDatabase.h"
+-#endif
+-
+ // FIXME: More that is in common with SubresourceLoader should move up into ResourceLoader.
+ 
+ namespace WebCore {
+@@ -435,7 +434,7 @@
+ 
+     ASSERT(!m_response.isNull());
+ 
+-#if USE(CFNETWORK) || PLATFORM(MAC)
++#if USE(CFNETWORK) || (PLATFORM(MAC) && !defined(BUILDING_ON_TIGER))
+     // Workaround for <rdar://problem/6060782>
+     if (m_response.isNull()) {
+         m_response = ResourceResponse(KURL(), "text/html", 0, String(), String());
+--- src/3rdparty/webkit/Source/WebCore/page/ContextMenuController.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/page/ContextMenuController.cpp
+@@ -361,9 +361,11 @@
+     case ContextMenuItemTagCheckSpellingWhileTyping:
+         frame->editor()->toggleContinuousSpellChecking();
+         break;
++#ifndef BUILDING_ON_TIGER
+     case ContextMenuItemTagCheckGrammarWithSpelling:
+         frame->editor()->toggleGrammarChecking();
+         break;
++#endif
+ #if PLATFORM(MAC)
+     case ContextMenuItemTagShowFonts:
+         frame->editor()->showFontPanel();
+@@ -375,7 +377,7 @@
+         frame->editor()->showColorPanel();
+         break;
+ #endif
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     case ContextMenuItemTagMakeUpperCase:
+         frame->editor()->uppercaseWord();
+         break;
+@@ -465,6 +467,7 @@
+     fontMenuItem.setSubMenu(&fontMenu);
+ }
+ 
++#if !defined(BUILDING_ON_TIGER)
+ 
+ #if !PLATFORM(GTK)
+ 
+@@ -501,6 +504,27 @@
+ 
+ #endif // !PLATFORM(GTK)
+ 
++#else
++
++void ContextMenuController::createAndAppendSpellingSubMenu(ContextMenuItem& spellingMenuItem)
++{
++    ContextMenu spellingMenu;
++
++    ContextMenuItem showSpellingPanel(ActionType, ContextMenuItemTagShowSpellingPanel, 
++        contextMenuItemTagShowSpellingPanel(true));
++    ContextMenuItem checkSpelling(ActionType, ContextMenuItemTagCheckSpelling, 
++        contextMenuItemTagCheckSpelling());
++    ContextMenuItem checkAsYouType(CheckableActionType, ContextMenuItemTagCheckSpellingWhileTyping, 
++        contextMenuItemTagCheckSpellingWhileTyping());
++
++    appendItem(showSpellingPanel, &spellingMenu);
++    appendItem(checkSpelling, &spellingMenu);
++    appendItem(checkAsYouType, &spellingMenu);
++
++    spellingMenuItem.setSubMenu(&spellingMenu);
++}
++
++#endif
+ 
+ #if PLATFORM(MAC)
+ 
+@@ -554,7 +578,7 @@
+ 
+ #endif
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ void ContextMenuController::createAndAppendSubstitutionsSubMenu(ContextMenuItem& substitutionsMenuItem)
+ {
+@@ -609,7 +633,7 @@
+ }
+ 
+ #if PLATFORM(MAC)
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+ #define INCLUDE_SPOTLIGHT_CONTEXT_MENU_ITEM 1
+ #else
+ #define INCLUDE_SPOTLIGHT_CONTEXT_MENU_ITEM 0
+@@ -839,7 +863,7 @@
+                 } else
+                     appendItem(IgnoreGrammarItem, m_contextMenu.get());
+                 appendItem(*separatorItem(), m_contextMenu.get());
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             } else {
+                 // If the string was autocorrected, generate a contextual menu item allowing it to be changed back.
+                 String replacedString = m_hitTestResult.replacedString();
+@@ -899,6 +923,7 @@
+ #endif
+ 
+         if (!inPasswordField) {
++#ifndef BUILDING_ON_TIGER
+ #if !PLATFORM(GTK)
+             appendItem(*separatorItem(), m_contextMenu.get());
+             ContextMenuItem SpellingAndGrammarMenuItem(SubmenuType, ContextMenuItemTagSpellingMenu, 
+@@ -906,7 +931,13 @@
+             createAndAppendSpellingAndGrammarSubMenu(SpellingAndGrammarMenuItem);
+             appendItem(SpellingAndGrammarMenuItem, m_contextMenu.get());
+ #endif
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#else
++            ContextMenuItem SpellingMenuItem(SubmenuType, ContextMenuItemTagSpellingMenu, 
++                contextMenuItemTagSpellingMenu());
++            createAndAppendSpellingSubMenu(SpellingMenuItem);
++            appendItem(SpellingMenuItem, m_contextMenu.get());
++#endif
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             ContextMenuItem substitutionsMenuItem(SubmenuType, ContextMenuItemTagSubstitutionsMenu, 
+                 contextMenuItemTagSubstitutionsMenu());
+             createAndAppendSubstitutionsSubMenu(substitutionsMenuItem);
+@@ -1059,9 +1090,11 @@
+             shouldEnable = frame->selection()->isRange();
+             break;
+         case ContextMenuItemTagCheckGrammarWithSpelling:
++#ifndef BUILDING_ON_TIGER
+             if (frame->editor()->isGrammarCheckingEnabled())
+                 shouldCheck = true;
+             shouldEnable = true;
++#endif
+             break;
+         case ContextMenuItemTagItalic: {
+             shouldCheck = frame->editor()->selectionHasStyle(CSSPropertyFontStyle, "italic") != FalseTriState;
+@@ -1077,10 +1110,12 @@
+             shouldEnable = false;
+             break;
+         case ContextMenuItemTagShowSpellingPanel:
++#ifndef BUILDING_ON_TIGER
+             if (frame->editor()->spellingPanelIsShowing())
+                 item.setTitle(contextMenuItemTagShowSpellingPanel(false));
+             else
+                 item.setTitle(contextMenuItemTagShowSpellingPanel(true));
++#endif
+             shouldEnable = frame->editor()->canEdit();
+             break;
+         case ContextMenuItemTagNoGuessesFound:
+@@ -1094,7 +1129,7 @@
+         case ContextMenuItemTagTransformationsMenu:
+             break;
+         case ContextMenuItemTagShowSubstitutions:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             if (frame->editor()->substitutionsPanelIsShowing())
+                 item.setTitle(contextMenuItemTagShowSubstitutions(false));
+             else
+@@ -1109,32 +1144,32 @@
+             shouldEnable = frame->editor()->canEdit();
+             break;
+         case ContextMenuItemTagCorrectSpellingAutomatically:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->isAutomaticSpellingCorrectionEnabled();
+ #endif
+             break;
+         case ContextMenuItemTagSmartCopyPaste:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->smartInsertDeleteEnabled();
+ #endif
+             break;
+         case ContextMenuItemTagSmartQuotes:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->isAutomaticQuoteSubstitutionEnabled();
+ #endif
+             break;
+         case ContextMenuItemTagSmartDashes:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->isAutomaticDashSubstitutionEnabled();
+ #endif
+             break;
+         case ContextMenuItemTagSmartLinks:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->isAutomaticLinkDetectionEnabled();
+ #endif
+             break;
+         case ContextMenuItemTagTextReplacement:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             shouldCheck = frame->editor()->isAutomaticTextReplacementEnabled();
+ #endif
+             break;
+--- src/3rdparty/webkit/Source/WebCore/page/EditorClient.h.orig
++++ src/3rdparty/webkit/Source/WebCore/page/EditorClient.h
+@@ -132,9 +132,12 @@
+     virtual void setInsertionPasteboard(NSPasteboard*) = 0;
+     virtual NSURL* canonicalizeURL(NSURL*) = 0;
+     virtual NSURL* canonicalizeURLString(NSString*) = 0;
++#ifdef BUILDING_ON_TIGER
++    virtual NSArray* pasteboardTypesForSelection(Frame*) = 0;
++#endif
+ #endif
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     virtual void uppercaseWord() = 0;
+     virtual void lowercaseWord() = 0;
+     virtual void capitalizeWord() = 0;
+--- src/3rdparty/webkit/Source/WebCore/platform/DefaultLocalizationStrategy.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/DefaultLocalizationStrategy.cpp
+@@ -316,7 +316,7 @@
+ 
+ String DefaultLocalizationStrategy::contextMenuItemTagLookUpInDictionary(const String& selectedString)
+ {
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+     UNUSED_PARAM(selectedString);
+     return WEB_UI_STRING("Look Up in Dictionary", "Look Up in Dictionary context menu item");
+ #else
+--- src/3rdparty/webkit/Source/WebCore/platform/SuddenTermination.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/SuddenTermination.h
+@@ -34,7 +34,7 @@
+     void disableSuddenTermination();
+     void enableSuddenTermination();
+ 
+-#if (!PLATFORM(MAC) || defined(BUILDING_ON_LEOPARD)) && !PLATFORM(CHROMIUM)
++#if (!PLATFORM(MAC) || defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)) && !PLATFORM(CHROMIUM)
+     inline void disableSuddenTermination() { }
+     inline void enableSuddenTermination() { }
+ #endif
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/FontPlatformData.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/FontPlatformData.h
+@@ -62,7 +62,9 @@
+ #endif
+ 
+ typedef struct CGFont* CGFontRef;
++#ifndef BUILDING_ON_TIGER
+ typedef const struct __CTFont* CTFontRef;
++#endif
+ 
+ #include <CoreFoundation/CFBase.h>
+ #include <objc/objc-auto.h>
+@@ -85,18 +87,20 @@
+ #if USE(CG) || USE(SKIA_ON_MAC_CHROME)
+ typedef struct CGFont* CGFontRef;
+ #if OS(DARWIN)
++#ifndef BUILDING_ON_TIGER
+ typedef const struct __CTFont* CTFontRef;
+ typedef UInt32 FMFont;
+ typedef FMFont ATSUFontID;
+ typedef UInt32 ATSFontRef;
+ #endif
+ #endif
++#endif
+ 
+ namespace WebCore {
+ 
+ class FontDescription;
+ 
+-#if OS(DARWIN)
++#if OS(DARWIN) && !defined(BUILDING_ON_TIGER)
+ inline CTFontRef toCTFontRef(NSFont *nsFont) { return reinterpret_cast<CTFontRef>(nsFont); }
+ #endif
+ 
+@@ -114,7 +118,7 @@
+ #elif OS(DARWIN)
+         , m_font(hashTableDeletedFontValue())
+ #endif
+-#if USE(CG) && PLATFORM(WIN)
++#if USE(CG) && (defined(BUILDING_ON_TIGER) || PLATFORM(WIN))
+         , m_cgFont(0)
+ #elif USE(CAIRO)
+         , m_scaledFont(hashTableDeletedFontValue())
+@@ -136,7 +140,7 @@
+ #if OS(DARWIN)
+         , m_font(0)
+ #endif
+-#if USE(CG) && PLATFORM(WIN)
++#if USE(CG) && (defined(BUILDING_ON_TIGER) || PLATFORM(WIN))
+         , m_cgFont(0)
+ #elif USE(CAIRO)
+         , m_scaledFont(0)
+@@ -161,7 +165,7 @@
+ #if OS(DARWIN)
+         , m_font(0)
+ #endif
+-#if USE(CG) && PLATFORM(WIN)
++#if USE(CG) && (defined(BUILDING_ON_TIGER) || PLATFORM(WIN))
+         , m_cgFont(0)
+ #elif USE(CAIRO)
+         , m_scaledFont(0)
+@@ -214,7 +218,11 @@
+ 
+ #if USE(CG) || USE(SKIA_ON_MAC_CHROME)
+ #if OS(DARWIN)
++#ifndef BUILDING_ON_TIGER
+     CGFontRef cgFont() const { return m_cgFont.get(); }
++#else
++    CGFontRef cgFont() const { return m_cgFont; }
++#endif
+     CTFontRef ctFont() const;
+ 
+     bool roundsGlyphAdvances() const;
+@@ -325,7 +333,11 @@
+ #if PLATFORM(WIN)
+     RetainPtr<CGFontRef> m_cgFont;
+ #else
++#ifndef BUILDING_ON_TIGER
+     RetainPtr<CGFontRef> m_cgFont;
++#else
++    CGFontRef m_cgFont; // It is not necessary to refcount this, since either an NSFont owns it or some CachedFont has it referenced.
++#endif
+     mutable RetainPtr<CTFontRef> m_CTFont;
+ #endif
+ #endif
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/Gradient.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/Gradient.h
+@@ -39,7 +39,7 @@
+ 
+ typedef struct CGContext* CGContextRef;
+ 
+-#define USE_CG_SHADING defined(BUILDING_ON_LEOPARD)
++#define USE_CG_SHADING defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+ 
+ #if USE_CG_SHADING
+ typedef struct CGShading* CGShadingRef;
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/SimpleFontData.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/SimpleFontData.h
+@@ -256,6 +256,12 @@
+     float m_syntheticBoldOffset;
+ #endif
+ 
++#ifdef BUILDING_ON_TIGER
++public:
++    void* m_styleGroup;
++
++private:
++#endif
+ 
+ #if USE(ATSUI)
+ public:
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/GraphicsLayerCA.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/GraphicsLayerCA.cpp
+@@ -45,7 +45,7 @@
+ 
+ using namespace std;
+ 
+-#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_LEOPARD))
++#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD))
+ 
+ namespace WebCore {
+ 
+@@ -1263,7 +1263,7 @@
+ 
+         // FIXME: maybe only do trilinear if the image is being scaled down,
+         // but then what if the layer size changes?
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+         m_contentsLayer->setMinificationFilter(PlatformCALayer::Trilinear);
+ #endif
+         m_contentsLayer->setContents(m_pendingContentsImage.get());
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/mac/PlatformCAAnimationMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/mac/PlatformCAAnimationMac.mm
+@@ -35,7 +35,7 @@
+ #import <QuartzCore/QuartzCore.h>
+ #import <wtf/UnusedParam.h>
+ 
+-#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_LEOPARD))
++#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD))
+ 
+ using namespace WebCore;
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/mac/PlatformCALayerMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/ca/mac/PlatformCALayerMac.mm
+@@ -41,7 +41,7 @@
+ #import <wtf/CurrentTime.h>
+ #import <wtf/UnusedParam.h>
+ 
+-#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_LEOPARD))
++#define HAVE_MODERN_QUARTZCORE (!defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD))
+ 
+ using namespace WebCore;
+ 
+@@ -91,7 +91,7 @@
+ 
+ @interface CALayer(Private)
+ - (void)setContentsChanged;
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ - (void)setAcceleratesDrawing:(BOOL)flag;
+ - (BOOL)acceleratesDrawing;
+ #endif
+@@ -557,7 +557,7 @@
+ 
+ bool PlatformCALayer::acceleratesDrawing() const
+ {
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     return [m_layer.get() acceleratesDrawing];
+ #else
+     return false;
+@@ -566,7 +566,7 @@
+ 
+ void PlatformCALayer::setAcceleratesDrawing(bool acceleratesDrawing)
+ {
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     BEGIN_BLOCK_OBJC_EXCEPTIONS
+     [m_layer.get() setAcceleratesDrawing:acceleratesDrawing];
+     END_BLOCK_OBJC_EXCEPTIONS
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/GraphicsContextCG.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/GraphicsContextCG.cpp
+@@ -53,12 +53,12 @@
+ 
+ #if PLATFORM(MAC) || (PLATFORM(CHROMIUM) && OS(DARWIN))
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ // Building on 10.6 or later: kCGInterpolationMedium is defined in the CGInterpolationQuality enum.
+ #define HAVE_CG_INTERPOLATION_MEDIUM 1
+ #endif
+ 
+-#ifndef TARGETING_LEOPARD
++#if !defined(TARGETING_TIGER) && !defined(TARGETING_LEOPARD)
+ // Targeting 10.6 or later: use kCGInterpolationMedium.
+ #define WTF_USE_CG_INTERPOLATION_MEDIUM 1
+ #endif
+@@ -93,7 +93,7 @@
+ CGColorSpaceRef sRGBColorSpaceRef()
+ {
+     // FIXME: Windows should be able to use kCGColorSpaceSRGB, this is tracked by http://webkit.org/b/31363.
+-#if PLATFORM(WIN)
++#if PLATFORM(WIN) || defined(BUILDING_ON_TIGER)
+     return deviceRGBColorSpaceRef();
+ #else
+     static CGColorSpaceRef sRGBSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+@@ -104,7 +104,7 @@
+ CGColorSpaceRef linearRGBColorSpaceRef()
+ {
+     // FIXME: Windows should be able to use kCGColorSpaceGenericRGBLinear, this is tracked by http://webkit.org/b/31363.
+-#if PLATFORM(WIN)
++#if PLATFORM(WIN) || defined(BUILDING_ON_TIGER)
+     return deviceRGBColorSpaceRef();
+ #else
+     static CGColorSpaceRef linearRGBSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGBLinear);
+@@ -1353,7 +1353,7 @@
+ void GraphicsContext::setAllowsFontSmoothing(bool allowsFontSmoothing)
+ {
+     UNUSED_PARAM(allowsFontSmoothing);
+-#if !defined(BUILDING_ON_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     CGContextRef context = platformContext();
+     CGContextSetAllowsFontSmoothing(context, allowsFontSmoothing);
+ #endif
+@@ -1457,6 +1457,7 @@
+     CGContextSetShouldSmoothFonts(platformContext(), enable);
+ }
+ 
++#ifndef BUILDING_ON_TIGER // Tiger's setPlatformCompositeOperation() is defined in GraphicsContextMac.mm.
+ void GraphicsContext::setPlatformCompositeOperation(CompositeOperator mode)
+ {
+     if (paintingDisabled())
+@@ -1509,5 +1510,6 @@
+     }
+     CGContextSetBlendMode(platformContext(), target);
+ }
++#endif
+ 
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageBufferDataCG.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageBufferDataCG.h
+@@ -29,7 +29,7 @@
+ #include <wtf/RefPtr.h>
+ #include <wtf/RetainPtr.h>
+ 
+-#if (PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD))
++#if (PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD))
+ #define WTF_USE_IOSURFACE_CANVAS_BACKING_STORE 1
+ #endif
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageCG.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageCG.cpp
+@@ -313,9 +313,11 @@
+     // Adjust the color space.
+     subImage = imageWithColorSpace(subImage.get(), styleColorSpace);
+     
++#ifndef BUILDING_ON_TIGER
+     // Leopard has an optimized call for the tiling of image patterns, but we can only use it if the image has been decoded enough that
+     // its buffer is the same size as the overall image.  Because a partially decoded CGImageRef with a smaller width or height than the
+     // overall image buffer needs to tile with "gaps", we can't use the optimized tiling call in that case.
++    // FIXME: Could create WebKitSystemInterface SPI for CGCreatePatternWithImage2 and probably make Tiger tile faster as well.
+     // FIXME: We cannot use CGContextDrawTiledImage with scaled tiles on Leopard, because it suffers from rounding errors.  Snow Leopard is ok.
+     float scaledTileWidth = tileRect.width() * narrowPrecisionToFloat(patternTransform.a());
+     float w = CGImageGetWidth(tileImage);
+@@ -326,8 +328,12 @@
+ #endif
+         CGContextDrawTiledImage(context, FloatRect(adjustedX, adjustedY, scaledTileWidth, scaledTileHeight), subImage.get());
+     else {
++#endif
+ 
+-    // On Leopard and newer, this code now only runs for partially decoded images whose buffers do not yet match the overall size of the image.
++    // On Leopard, this code now only runs for partially decoded images whose buffers do not yet match the overall size of the image.
++    // On Tiger this code runs all the time.  This code is suboptimal because the pattern does not reference the image directly, and the
++    // pattern is destroyed before exiting the function.  This means any decoding the pattern does doesn't end up cached anywhere, so we
++    // redecode every time we paint.
+     static const CGPatternCallbacks patternCallbacks = { 0, drawPatternCallback, NULL };
+     CGAffineTransform matrix = CGAffineTransformMake(narrowPrecisionToCGFloat(patternTransform.a()), 0, 0, narrowPrecisionToCGFloat(patternTransform.d()), adjustedX, adjustedY);
+     matrix = CGAffineTransformConcat(matrix, CGContextGetCTM(context));
+@@ -352,7 +358,9 @@
+     CGContextSetFillColorWithColor(context, color.get());
+     CGContextFillRect(context, CGContextGetClipBoundingBox(context));
+ 
++#ifndef BUILDING_ON_TIGER
+     }
++#endif
+ 
+     stateSaver.restore();
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageSourceCG.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/cg/ImageSourceCG.cpp
+@@ -83,7 +83,7 @@
+ 
+ void ImageSource::clear(bool destroyAllFrames, size_t, SharedBuffer* data, bool allDataReceived)
+ {
+-#if !defined(BUILDING_ON_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     // Recent versions of ImageIO discard previously decoded image frames if the client
+     // application no longer holds references to them, so there's no need to throw away
+     // the decoder unless we're explicitly asked to destroy all of the frames.
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/cocoa/FontPlatformDataCocoa.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/cocoa/FontPlatformDataCocoa.mm
+@@ -37,7 +37,11 @@
+ void FontPlatformData::loadFont(NSFont* nsFont, float, NSFont*& outNSFont, CGFontRef& cgFont)
+ {
+     outNSFont = nsFont;
++#ifndef BUILDING_ON_TIGER
+     cgFont = CTFontCopyGraphicsFont(toCTFontRef(nsFont), 0);
++#else
++    cgFont = wkGetCGFontFromNSFont(nsFont);
++#endif
+ }
+ #endif  // PLATFORM(MAC)
+ 
+@@ -50,7 +54,7 @@
+     , m_size(size)
+     , m_widthVariant(widthVariant)
+     , m_font(nsFont)
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     // FIXME: Chromium: The following code isn't correct for the Chromium port since the sandbox might
+     // have blocked font loading, in which case we'll only have the real loaded font file after the call to loadFont().
+     , m_isColorBitmapFont(CTFontGetSymbolicTraits(toCTFontRef(nsFont)) & kCTFontColorGlyphsTrait)
+@@ -66,7 +70,11 @@
+     if (m_font)
+         CFRetain(m_font);
+ 
++#ifndef BUILDING_ON_TIGER
+     m_cgFont.adoptCF(cgFont);
++#else
++    m_cgFont = cgFont;
++#endif
+ }
+ 
+ FontPlatformData:: ~FontPlatformData()
+@@ -138,8 +146,12 @@
+     }
+ #endif
+     
++#ifndef BUILDING_ON_TIGER
+     m_cgFont.adoptCF(cgFont);
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#else
++    m_cgFont = cgFont;
++#endif
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     m_isColorBitmapFont = CTFontGetSymbolicTraits(toCTFontRef(m_font)) & kCTFontColorGlyphsTrait;
+ #endif
+     m_CTFont = 0;
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp
+@@ -1611,7 +1611,7 @@
+ 
+ bool MediaPlayerPrivateGStreamer::supportsFullscreen() const
+ {
+-#if defined(BUILDING_ON_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+     // See <rdar://problem/7389945>
+     return false;
+ #else
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/ComplexTextController.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/ComplexTextController.h
+@@ -122,6 +122,9 @@
+         ComplexTextRun(const SimpleFontData*, const UChar* characters, unsigned stringLocation, size_t stringLength, bool ltr);
+ 
+ #if USE(ATSUI)
++#ifdef BUILDING_ON_TIGER
++        typedef UInt32 URefCon;
++#endif
+         static OSStatus overrideLayoutOperation(ATSULayoutOperationSelector, ATSULineRef, URefCon, void*, ATSULayoutOperationCallbackStatus*);
+ #endif
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/ComplexTextControllerCoreText.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/ComplexTextControllerCoreText.cpp
+@@ -144,7 +144,7 @@
+         static CFDictionaryRef ltrTypesetterOptions = CFDictionaryCreate(kCFAllocatorDefault, optionKeys, ltrOptionValues, WTF_ARRAY_LENGTH(optionKeys), &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+         static CFDictionaryRef rtlTypesetterOptions = CFDictionaryCreate(kCFAllocatorDefault, optionKeys, rtlOptionValues, WTF_ARRAY_LENGTH(optionKeys), &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+         ProviderInfo info = { cp, length, fontData->getCFStringAttributes(m_font.typesettingFeatures(), fontData->platformData().orientation()) };
+         RetainPtr<CTTypesetterRef> typesetter(AdoptCF, wkCreateCTTypesetterWithUniCharProviderAndOptions(&provideStringAndAttributes, 0, &info, m_run.ltr() ? ltrTypesetterOptions : rtlTypesetterOptions));
+ #else
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontCacheMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontCacheMac.mm
+@@ -39,6 +39,9 @@
+ #import <wtf/MainThread.h>
+ #import <wtf/StdLibExtras.h>
+ 
++#ifdef BUILDING_ON_TIGER
++typedef int NSInteger;
++#endif
+ 
+ namespace WebCore {
+ 
+@@ -52,7 +55,7 @@
+     fontCache()->invalidate();
+ }
+ 
+-#if !defined(BUILDING_ON_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) &&  !defined(BUILDING_ON_LEOPARD)
+ static void fontCacheRegisteredFontsChangedNotificationCallback(CFNotificationCenterRef, void* observer, CFStringRef name, const void *, CFDictionaryRef)
+ {
+     ASSERT_UNUSED(observer, observer == fontCache());
+@@ -69,7 +72,7 @@
+ void FontCache::platformInit()
+ {
+     wkSetUpFontCache();
+-#if !defined(BUILDING_ON_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), this, fontCacheRegisteredFontsChangedNotificationCallback, kCTFontManagerRegisteredFontsChangedNotification, 0, CFNotificationSuspensionBehaviorDeliverImmediately);
+ #else
+     // kCTFontManagerRegisteredFontsChangedNotification does not exist on Leopard and earlier.
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontCustomPlatformData.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontCustomPlatformData.cpp
+@@ -31,7 +31,7 @@
+ 
+ FontCustomPlatformData::~FontCustomPlatformData()
+ {
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+     if (m_atsContainer)
+         ATSFontDeactivate(m_atsContainer, NULL, kATSOptionFlagsDefault);
+ #endif
+@@ -69,7 +69,7 @@
+ 
+     RetainPtr<CGFontRef> cgFontRef;
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     RetainPtr<CFDataRef> bufferData(AdoptCF, buffer->createCFData());
+     RetainPtr<CGDataProviderRef> dataProvider(AdoptCF, CGDataProviderCreateWithCFData(bufferData.get()));
+ 
+@@ -100,14 +100,16 @@
+     }
+     
+     cgFontRef.adoptCF(CGFontCreateWithPlatformFont(&fontRef));
++#ifndef BUILDING_ON_TIGER
+     // Workaround for <rdar://problem/5675504>.
+     if (cgFontRef && !CGFontGetNumberOfGlyphs(cgFontRef.get()))
+         cgFontRef = 0;
++#endif
+     if (!cgFontRef) {
+         ATSFontDeactivate(containerRef, NULL, kATSOptionFlagsDefault);
+         return 0;
+     }
+-#endif // !defined(BUILDING_ON_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+     return new FontCustomPlatformData(containerRef, cgFontRef.releaseRef());
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/FontMac.mm
+@@ -119,7 +119,7 @@
+         } else
+             CGContextShowGlyphsWithAdvances(context, glyphs, advances, count);
+     }
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+     else {
+         if (!count)
+             return;
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/GlyphPageTreeNodeMac.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/GlyphPageTreeNodeMac.cpp
+@@ -36,6 +36,7 @@
+ 
+ namespace WebCore {
+ 
++#ifndef BUILDING_ON_TIGER
+ static bool shouldUseCoreText(UChar* buffer, unsigned bufferLength, const SimpleFontData* fontData)
+ {
+     if (fontData->platformData().widthVariant() != RegularWidth || fontData->hasVerticalGlyphs()) {
+@@ -48,11 +49,13 @@
+ 
+     return false;
+ }
++#endif
+ 
+ bool GlyphPage::fill(unsigned offset, unsigned length, UChar* buffer, unsigned bufferLength, const SimpleFontData* fontData)
+ {
+     bool haveGlyphs = false;
+ 
++#ifndef BUILDING_ON_TIGER
+     if (!shouldUseCoreText(buffer, bufferLength, fontData)) {
+         Vector<CGGlyph, 512> glyphs(bufferLength);
+         wkGetGlyphsForCharacters(fontData->platformData().cgFont(), buffer, glyphs.data(), bufferLength);
+@@ -124,6 +127,39 @@
+             }
+         }
+     }
++#else
++    // Use an array of long so we get good enough alignment.
++    long glyphVector[(GLYPH_VECTOR_SIZE + sizeof(long) - 1) / sizeof(long)];
++    
++    OSStatus status = wkInitializeGlyphVector(GlyphPage::size, &glyphVector);
++    if (status != noErr)
++        // This should never happen, perhaps indicates a bad font!  If it does the
++        // font substitution code will find an alternate font.
++        return false;
++
++    wkConvertCharToGlyphs(fontData->m_styleGroup, buffer, bufferLength, &glyphVector);
++
++    unsigned numGlyphs = wkGetGlyphVectorNumGlyphs(&glyphVector);
++    if (numGlyphs != length) {
++        // This should never happen, perhaps indicates a bad font?
++        // If it does happen, the font substitution code will find an alternate font.
++        wkClearGlyphVector(&glyphVector);
++        return false;
++    }
++
++    ATSLayoutRecord* glyphRecord = (ATSLayoutRecord*)wkGetGlyphVectorFirstRecord(glyphVector);
++    for (unsigned i = 0; i < length; i++) {
++        Glyph glyph = glyphRecord->glyphID;
++        if (!glyph)
++            setGlyphDataForIndex(offset + i, 0, 0);
++        else {
++            setGlyphDataForIndex(offset + i, glyph, fontData);
++            haveGlyphs = true;
++        }
++        glyphRecord = (ATSLayoutRecord *)((char *)glyphRecord + wkGetGlyphVectorRecordSize(glyphVector));
++    }
++    wkClearGlyphVector(&glyphVector);
++#endif
+ 
+     return haveGlyphs;
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/GraphicsContextMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/GraphicsContextMac.mm
+@@ -46,9 +46,15 @@
+ 
+ static void drawFocusRingToContext(CGContextRef context, CGPathRef focusRingPath, CGColorRef color, int radius)
+ {
++#ifdef BUILDING_ON_TIGER
++    CGContextBeginTransparencyLayer(context, 0);
++#endif
+     CGContextBeginPath(context);
+     CGContextAddPath(context, focusRingPath);
+     wkDrawFocusRing(context, color, radius);
++#ifdef BUILDING_ON_TIGER
++    CGContextEndTransparencyLayer(context);
++#endif
+ }
+ 
+ void GraphicsContext::drawFocusRing(const Path& path, int width, int /*offset*/, const Color& color)
+@@ -81,6 +87,17 @@
+     drawFocusRingToContext(platformContext(), focusRingPath.get(), colorRef, radius);
+ }
+ 
++#ifdef BUILDING_ON_TIGER // Post-Tiger's setPlatformCompositeOperation() is defined in GraphicsContextCG.cpp.
++void GraphicsContext::setPlatformCompositeOperation(CompositeOperator op)
++{
++    if (paintingDisabled())
++        return;
++    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
++    [[NSGraphicsContext graphicsContextWithGraphicsPort:platformContext() flipped:YES]
++        setCompositingOperation:(NSCompositingOperation)op];
++    [pool drain];
++}
++#endif
+ 
+ static NSColor* createPatternColor(NSString* name, NSColor* defaultColor, bool& usingDot)
+ {
+@@ -125,7 +142,7 @@
+             patternColor = grammarPatternColor.get();
+             break;
+         }
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+         // To support correction panel.
+         case TextCheckingReplacementLineStyle:
+         {
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/IconMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/IconMac.mm
+@@ -46,7 +46,12 @@
+         return 0;
+ 
+     bool useIconFromFirstFile;
++#ifdef BUILDING_ON_TIGER
++    // FIXME: find a better image for multiple files to use on Tiger.
++    useIconFromFirstFile = true;
++#else
+     useIconFromFirstFile = filenames.size() == 1;
++#endif
+     if (useIconFromFirstFile) {
+         // Don't pass relative filenames -- we don't want a result that depends on the current directory.
+         // Need 0U here to disambiguate String::operator[] from operator(NSString*, int)[]
+@@ -59,11 +64,15 @@
+ 
+         return adoptRef(new Icon(image));
+     }
++#ifdef BUILDING_ON_TIGER
++    return 0;
++#else
+     NSImage* image = [NSImage imageNamed:NSImageNameMultipleDocuments];
+     if (!image)
+         return 0;
+ 
+     return adoptRef(new Icon(image));
++#endif
+ }
+ 
+ void Icon::paint(GraphicsContext* context, const IntRect& rect)
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/MediaPlayerPrivateQTKit.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/MediaPlayerPrivateQTKit.mm
+@@ -35,6 +35,9 @@
+ #include "DocumentLoader.h"
+ #endif
+ 
++#ifdef BUILDING_ON_TIGER
++#import "AutodrainedPool.h"
++#endif
+ 
+ #import "BlockExceptions.h"
+ #import "DocumentLoader.h"
+@@ -61,6 +64,14 @@
+ #import <wtf/UnusedParam.h>
+ 
+ #if USE(ACCELERATED_COMPOSITING)
++#ifdef BUILDING_ON_TIGER
++static IMP method_setImplementation(Method m, IMP imp)
++{
++    IMP result = m->method_imp;
++    m->method_imp = imp;
++    return result;
++}
++#endif
+ #include "GraphicsLayer.h"
+ #endif
+ 
+@@ -111,8 +122,10 @@
+ SOFT_LINK_POINTER(QTKit, QTSecurityPolicyNoLocalToRemoteSiteAttribute, NSString *)
+ SOFT_LINK_POINTER(QTKit, QTSecurityPolicyNoRemoteToLocalSiteAttribute, NSString *)
+ SOFT_LINK_POINTER(QTKit, QTVideoRendererWebKitOnlyNewImageAvailableNotification, NSString *)
++#ifndef BUILDING_ON_TIGER
+ SOFT_LINK_POINTER(QTKit, QTMovieApertureModeClean, NSString *)
+ SOFT_LINK_POINTER(QTKit, QTMovieApertureModeAttribute, NSString *)
++#endif
+ 
+ #define QTMovie getQTMovieClass()
+ #define QTMovieView getQTMovieViewClass()
+@@ -149,8 +162,10 @@
+ #define QTSecurityPolicyNoLocalToRemoteSiteAttribute getQTSecurityPolicyNoLocalToRemoteSiteAttribute()
+ #define QTSecurityPolicyNoRemoteToLocalSiteAttribute getQTSecurityPolicyNoRemoteToLocalSiteAttribute()
+ #define QTVideoRendererWebKitOnlyNewImageAvailableNotification getQTVideoRendererWebKitOnlyNewImageAvailableNotification()
++#ifndef BUILDING_ON_TIGER
+ #define QTMovieApertureModeClean getQTMovieApertureModeClean()
+ #define QTMovieApertureModeAttribute getQTMovieApertureModeAttribute()
++#endif
+ 
+ // Older versions of the QTKit header don't have these constants.
+ #if !defined QTKIT_VERSION_MAX_ALLOWED || QTKIT_VERSION_MAX_ALLOWED <= QTKIT_VERSION_7_0
+@@ -195,6 +210,9 @@
+ @end
+ 
+ namespace WebCore {
++#ifdef BUILDING_ON_TIGER
++static const long minimumQuickTimeVersion = 0x07300000; // 7.3
++#endif
+ 
+ PassOwnPtr<MediaPlayerPrivateInterface> MediaPlayerPrivateQTKit::create(MediaPlayer* player)
+ { 
+@@ -256,7 +274,9 @@
+             [NSNumber numberWithBool:NO], QTMovieAskUnresolvedDataRefsAttribute,
+             [NSNumber numberWithBool:NO], QTMovieLoopsAttribute,
+             [NSNumber numberWithBool:!m_privateBrowsing], @"QTMovieAllowPersistentCacheAttribute",
++#ifndef BUILDING_ON_TIGER
+             QTMovieApertureModeClean, QTMovieApertureModeAttribute,
++#endif
+             nil];
+ 
+     if (m_preload < MediaPlayer::Auto)
+@@ -478,7 +498,12 @@
+     parentView = m_player->frameView()->documentView();
+     [parentView addSubview:m_qtMovieView.get()];
+ #endif
++#ifdef BUILDING_ON_TIGER
++    // setDelegate: isn't a public call in Tiger, so use performSelector to keep the compiler happy
++    [m_qtMovieView.get() performSelector:@selector(setDelegate:) withObject:m_objcObserver.get()];    
++#else
+     [m_qtMovieView.get() setDelegate:m_objcObserver.get()];
++#endif
+     [m_objcObserver.get() setView:m_qtMovieView.get()];
+     [m_qtMovieView.get() setMovie:m_qtMovie.get()];
+     [m_qtMovieView.get() setControllerVisible:NO];
+@@ -499,7 +524,12 @@
+ {
+     if (m_qtMovieView) {
+         [m_objcObserver.get() setView:nil];
++#ifdef BUILDING_ON_TIGER
++        // setDelegate: isn't a public call in Tiger, so use performSelector to keep the compiler happy
++        [m_qtMovieView.get() performSelector:@selector(setDelegate:) withObject:nil];    
++#else
+         [m_qtMovieView.get() setDelegate:nil];
++#endif
+         [m_qtMovieView.get() removeFromSuperview];
+         m_qtMovieView = nil;
+     }
+@@ -900,7 +930,7 @@
+ 
+ bool MediaPlayerPrivateQTKit::supportsFullscreen() const
+ {
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     return true;
+ #else
+     // See <rdar://problem/7389945>
+@@ -926,7 +956,7 @@
+     if (metaDataAvailable()) {
+         wkQTMovieSetShowClosedCaptions(m_qtMovie.get(), closedCaptionsVisible);
+ 
+-#if USE(ACCELERATED_COMPOSITING) && !defined(BUILDING_ON_LEOPARD)
++#if USE(ACCELERATED_COMPOSITING) && (!defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD))
+     if (closedCaptionsVisible && m_qtVideoLayer) {
+         // Captions will be rendered upside down unless we flag the movie as flipped (again). See <rdar://7408440>.
+         [m_qtVideoLayer.get() setGeometryFlipped:YES];
+@@ -1019,7 +1049,7 @@
+     NSSize initialSize = NSZeroSize;
+     NSSize naturalSize = [[m_qtMovie.get() attributeForKey:QTMovieNaturalSizeAttribute] sizeValue];
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     // QTMovieCurrentSizeAttribute is not allowed with instances of QTMovie that have been 
+     // opened with QTMovieOpenForPlaybackAttribute, so ask for the display transform attribute instead.
+     NSAffineTransform *displayTransform = [m_qtMovie.get() attributeForKey:@"QTMoviePreferredTransformAttribute"];
+@@ -1318,6 +1348,9 @@
+         if (1==m_frameCountWhilePlaying)
+             m_timeStartedPlaying = [NSDate timeIntervalSinceReferenceDate];
+     }
++#ifdef BUILDING_ON_TIGER
++    AutodrainedPool pool;
++#endif
+ #endif
+     m_videoFrameHasDrawn = true;
+     m_player->repaint();
+@@ -1513,8 +1546,23 @@
+ 
+ bool MediaPlayerPrivateQTKit::isAvailable()
+ {
++#ifdef BUILDING_ON_TIGER
++    SInt32 version;
++    OSErr result;
++    result = Gestalt(gestaltQuickTime, &version);
++    if (result != noErr) {
++        LOG_ERROR("No QuickTime available. Disabling <video> and <audio> support.");
++        return false;
++    }
++    if (version < minimumQuickTimeVersion) {
++        LOG_ERROR("QuickTime version %x detected, at least %x required. Disabling <video> and <audio> support.", version, minimumQuickTimeVersion);
++        return false;
++    }
++    return true;
++#else
+     // On 10.5 and higher, QuickTime will always be new enough for <video> and <audio> support, so we just check that the framework can be loaded.
+     return QTKitLibrary();
++#endif
+ }
+ 
+ void MediaPlayerPrivateQTKit::getSitesInMediaCache(Vector<String>& sites) 
+--- src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/SimpleFontDataMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/graphics/mac/SimpleFontDataMac.mm
+@@ -67,6 +67,33 @@
+     if (!fontData->platformData().cgFont())
+         return false;
+ 
++#ifdef BUILDING_ON_TIGER
++    ATSUStyle fontStyle;
++    if (ATSUCreateStyle(&fontStyle) != noErr)
++        return false;
++
++    ATSUFontID fontId = fontData->platformData().m_atsuFontID;
++    if (!fontId) {
++        ATSUDisposeStyle(fontStyle);
++        return false;
++    }
++
++    ATSUAttributeTag tag = kATSUFontTag;
++    ByteCount size = sizeof(ATSUFontID);
++    ATSUFontID *valueArray[1] = {&fontId};
++    OSStatus status = ATSUSetAttributes(fontStyle, 1, &tag, &size, (void* const*)valueArray);
++    if (status != noErr) {
++        ATSUDisposeStyle(fontStyle);
++        return false;
++    }
++
++    if (wkGetATSStyleGroup(fontStyle, &fontData->m_styleGroup) != noErr) {
++        ATSUDisposeStyle(fontStyle);
++        return false;
++    }
++
++    ATSUDisposeStyle(fontStyle);
++#endif
+ 
+     return true;
+ }
+@@ -78,7 +105,7 @@
+ }
+ 
+ #if !ERROR_DISABLED
+-#if defined(__LP64__) || (!defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD))
++#if defined(__LP64__) || (!defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD))
+ static NSString* pathFromFont(NSFont*)
+ {
+     // FMGetATSFontRefFromFont is not available. As pathFromFont is only used for debugging purposes,
+@@ -88,12 +115,27 @@
+ #else
+ static NSString* pathFromFont(NSFont *font)
+ {
++#ifndef BUILDING_ON_TIGER
+     ATSFontRef atsFont = FMGetATSFontRefFromFont(CTFontGetPlatformFont(toCTFontRef(font), 0));
++#else
++    ATSFontRef atsFont = FMGetATSFontRefFromFont(wkGetNSFontATSUFontId(font));
++#endif
+     FSRef fileRef;
+ 
++#ifndef BUILDING_ON_TIGER
+     OSStatus status = ATSFontGetFileReference(atsFont, &fileRef);
+     if (status != noErr)
+         return nil;
++#else
++    FSSpec oFile;
++    OSStatus status = ATSFontGetFileSpecification(atsFont, &oFile);
++    if (status != noErr)
++        return nil;
++
++    status = FSpMakeFSRef(&oFile, &fileRef);
++    if (status != noErr)
++        return nil;
++#endif
+ 
+     UInt8 filePathBuffer[PATH_MAX];
+     status = FSRefMakePath(&fileRef, filePathBuffer, PATH_MAX);
+@@ -107,6 +149,9 @@
+ 
+ void SimpleFontData::platformInit()
+ {
++#ifdef BUILDING_ON_TIGER
++    m_styleGroup = 0;
++#endif
+ #if USE(ATSUI)
+     m_ATSUMirrors = false;
+     m_checkedShapesArabic = false;
+@@ -178,10 +223,14 @@
+     int iDescent;
+     int iLineGap;
+     unsigned unitsPerEm;
++#ifdef BUILDING_ON_TIGER
++    wkGetFontMetrics(m_platformData.cgFont(), &iAscent, &iDescent, &iLineGap, &unitsPerEm);
++#else
+     iAscent = CGFontGetAscent(m_platformData.cgFont());
+     iDescent = CGFontGetDescent(m_platformData.cgFont());
+     iLineGap = CGFontGetLeading(m_platformData.cgFont());
+     unitsPerEm = CGFontGetUnitsPerEm(m_platformData.cgFont());
++#endif
+ 
+     float pointSize = m_platformData.m_size;
+     float ascent = scaleEmToUnits(iAscent, unitsPerEm) * pointSize;
+@@ -252,7 +301,27 @@
+ 
+ static CFDataRef copyFontTableForTag(FontPlatformData& platformData, FourCharCode tableName)
+ {
++#ifdef BUILDING_ON_TIGER
++    ATSFontRef atsFont = FMGetATSFontRefFromFont(platformData.m_atsuFontID);
++
++    ByteCount tableSize;
++    if (ATSFontGetTable(atsFont, tableName, 0, 0, NULL, &tableSize) != noErr)
++        return 0;
++    
++    CFMutableDataRef data = CFDataCreateMutable(kCFAllocatorDefault, tableSize);
++    if (!data)
++        return 0;
++    
++    CFDataIncreaseLength(data, tableSize);
++    if (ATSFontGetTable(atsFont, tableName, 0, tableSize, CFDataGetMutableBytePtr(data), &tableSize) != noErr) {
++        CFRelease(data);
++        return 0;
++    }
++    
++    return data;
++#else
+     return CGFontCopyTableForTag(platformData.cgFont(), tableName);
++#endif
+ }
+ 
+ void SimpleFontData::platformCharWidthInit()
+@@ -293,6 +362,10 @@
+             fontCache()->releaseFontData(m_derivedFontData->emphasisMark.leakPtr());
+     }
+ 
++#ifdef BUILDING_ON_TIGER
++    if (m_styleGroup)
++        wkReleaseStyleGroup(m_styleGroup);
++#endif
+ #if USE(ATSUI)
+     HashMap<unsigned, ATSUStyle>::iterator end = m_ATSUStyleMap.end();
+     for (HashMap<unsigned, ATSUStyle>::iterator it = m_ATSUStyleMap.begin(); it != end; ++it)
+--- src/3rdparty/webkit/Source/WebCore/platform/image-decoders/cg/ImageDecoderCG.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/image-decoders/cg/ImageDecoderCG.cpp
+@@ -82,7 +82,7 @@
+         return CGColorSpaceCreateDeviceRGB();
+ 
+     RetainPtr<CFDataRef> data(AdoptCF, CFDataCreate(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(colorProfile.data()), colorProfile.size()));
+-#ifndef TARGETING_LEOPARD
++#if !defined(TARGETING_TIGER) && !defined(TARGETING_LEOPARD)
+     return CGColorSpaceCreateWithICCProfile(data.get());
+ #else
+     RetainPtr<CGDataProviderRef> profileDataProvider(AdoptCF, CGDataProviderCreateWithCFData(data.get()));
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/ClipboardMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/ClipboardMac.mm
+@@ -41,6 +41,9 @@
+ #import "SecurityOrigin.h"
+ #import "WebCoreSystemInterface.h"
+ 
++#ifdef BUILDING_ON_TIGER
++typedef unsigned NSUInteger;
++#endif
+ 
+ namespace WebCore {
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/CookieJar.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/CookieJar.mm
+@@ -36,6 +36,9 @@
+ #import "WebCoreSystemInterface.h"
+ #import <wtf/RetainPtr.h>
+ 
++#ifdef BUILDING_ON_TIGER
++typedef unsigned NSUInteger;
++#endif
+ 
+ @interface NSHTTPCookie (WebCoreHTTPOnlyCookies)
+ - (BOOL)isHTTPOnly;
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/DragDataMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/DragDataMac.mm
+@@ -114,7 +114,7 @@
+     static NSArray *types = nil;
+     if (!types) {
+         types = [[NSArray alloc] initWithObjects:WebArchivePboardType, NSHTMLPboardType, NSFilenamesPboardType, NSTIFFPboardType, NSPDFPboardType,
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+                  NSPICTPboardType,
+ #endif
+                  NSURLPboardType, NSRTFDPboardType, NSRTFPboardType, NSStringPboardType, NSColorPboardType, kUTTypePNG, nil];
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/EmptyProtocolDefinitions.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/EmptyProtocolDefinitions.h
+@@ -29,7 +29,7 @@
+ @protocol NAME <NSObject> \
+ @end
+ 
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+ 
+ EMPTY_PROTOCOL(NSTableViewDataSource)
+ EMPTY_PROTOCOL(NSTableViewDelegate)
+@@ -37,7 +37,7 @@
+ 
+ #endif
+ 
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+ 
+ EMPTY_PROTOCOL(NSURLConnectionDelegate)
+ EMPTY_PROTOCOL(NSURLDownloadDelegate)
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/FileSystemMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/FileSystemMac.mm
+@@ -68,14 +68,23 @@
+ 
+ bool canExcludeFromBackup()
+ {
++#ifdef BUILDING_ON_TIGER
++    return false;
++#else
+     return true;
++#endif
+ }
+ 
+ bool excludeFromBackup(const String& path)
+ {
++#ifdef BUILDING_ON_TIGER
++    UNUSED_PARAM(path);
++    return false;
++#else
+     // It is critical to pass FALSE for excludeByPath because excluding by path requires root privileges.
+     CSBackupSetItemExcluded(pathAsURL(path).get(), TRUE, FALSE); 
+     return true;
++#endif
+ }
+ 
+ } // namespace WebCore
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/HTMLConverter.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/HTMLConverter.h
+@@ -79,7 +79,7 @@
+     } _flags;
+ }
+ 
+-#if !defined(BUILDING_ON_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ - (id)init;
+ - (id)initWithDOMRange:(DOMRange *)domRange;
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/HTMLConverter.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/HTMLConverter.mm
+@@ -50,7 +50,7 @@
+ static NSFileWrapper *fileWrapperForURL(DocumentLoader *, NSURL *);
+ static NSFileWrapper *fileWrapperForElement(Element*);
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ // Additional control Unicode characters
+ const unichar WebNextLineCharacter = 0x0085;
+@@ -100,7 +100,7 @@
+ 
+ @implementation WebHTMLConverter
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ static NSFont *_fontForNameAndSize(NSString *fontName, CGFloat size, NSMutableDictionary *cache)
+ {
+@@ -1657,7 +1657,7 @@
+     return (0 == _errorCode) ? [[_attrStr retain] autorelease] : nil;
+ }
+ 
+-#endif // !defined(BUILDING_ON_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ // This function uses TextIterator, which makes offsets in its result compatible with HTML editing.
+ + (NSAttributedString *)editingAttributedStringFromRange:(Range*)range
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/PasteboardMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/PasteboardMac.mm
+@@ -69,6 +69,7 @@
+ NSString *WebURLPboardType = @"public.url";
+ NSString *WebURLsWithTitlesPboardType = @"WebURLsWithTitlesPboardType";
+ 
++#ifndef BUILDING_ON_TIGER
+ static NSArray* selectionPasteboardTypes(bool canSmartCopyOrDelete, bool selectionContainsAttachments)
+ {
+     if (selectionContainsAttachments) {
+@@ -83,6 +84,7 @@
+             return [NSArray arrayWithObjects:WebArchivePboardType, NSRTFPboardType, NSStringPboardType, nil];
+     }
+ }
++#endif
+ 
+ static NSArray* writableTypesForURL()
+ {
+@@ -147,7 +149,7 @@
+     NSAttributedString *attributedString = nil;
+     if (frame->view()->platformWidget())
+         attributedString = [[[NSAttributedString alloc] _initWithDOMRange:kit(selectedRange)] autorelease];
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     else {
+         // In WebKit2 we are using a different way to create the NSAttributedString from the DOMrange that doesn't require access to the WebView.
+         RetainPtr<WebHTMLConverter> converter = [[WebHTMLConverter alloc] initWithDOMRange:kit(selectedRange)];
+@@ -156,9 +158,26 @@
+     }
+ #endif
+ 
++#ifdef BUILDING_ON_TIGER
++    // 4930197: Mail overrides [WebHTMLView pasteboardTypesForSelection] in order to add another type to the pasteboard
++    // after WebKit does.  On Tiger we must call this function so that Mail code will be executed, meaning that 
++    // we can't call WebCore::Pasteboard's method for setting types. 
++    UNUSED_PARAM(canSmartCopyOrDelete);
++
++    NSArray *types = pasteboardTypes ? pasteboardTypes : frame->editor()->client()->pasteboardTypesForSelection(frame);
++    // Don't write RTFD to the pasteboard when the copied attributed string has no attachments.
++    NSMutableArray *mutableTypes = nil;
++    if (![attributedString containsAttachments]) {
++        mutableTypes = [[types mutableCopy] autorelease];
++        [mutableTypes removeObject:NSRTFDPboardType];
++        types = mutableTypes;
++    }
++    [pasteboard declareTypes:types owner:nil];    
++#else
+     NSArray *types = pasteboardTypes ? pasteboardTypes : selectionPasteboardTypes(canSmartCopyOrDelete, [attributedString containsAttachments]);
+     [pasteboard declareTypes:types owner:nil];
+     frame->editor()->client()->didSetSelectionTypesForPasteboard();
++#endif
+     
+     // Put HTML on the pasteboard.
+     if ([types containsObject:WebArchivePboardType]) {
+@@ -552,7 +571,7 @@
+         (fragment = documentFragmentWithImageResource(frame, ArchiveResource::create(SharedBuffer::wrapNSData([[[m_pasteboard.get() dataForType:NSPDFPboardType] copy] autorelease]), uniqueURLWithRelativePart(@"application.pdf"), "application/pdf", "", ""))))
+         return fragment.release();
+ 
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+     if ([types containsObject:NSPICTPboardType] &&
+         (fragment = documentFragmentWithImageResource(frame, ArchiveResource::create(SharedBuffer::wrapNSData([[[m_pasteboard.get() dataForType:NSPICTPboardType] copy] autorelease]), uniqueURLWithRelativePart(@"image.pict"), "image/pict", "", ""))))
+         return fragment.release();
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/PopupMenuMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/PopupMenuMac.mm
+@@ -75,10 +75,10 @@
+     if (!client()->shouldPopOver())
+         [m_popup.get() addItemWithTitle:@""];
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     TextDirection menuTextDirection = client()->menuStyle().textDirection();
+     [m_popup.get() setUserInterfaceLayoutDirection:menuTextDirection == LTR ? NSUserInterfaceLayoutDirectionLeftToRight : NSUserInterfaceLayoutDirectionRightToLeft];
+-#endif // !defined(BUILDING_ON_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+     ASSERT(client());
+     int size = client()->listSize();
+@@ -98,7 +98,7 @@
+                 [attributes setObject:font forKey:NSFontAttributeName];
+             }
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+             RetainPtr<NSMutableParagraphStyle> paragraphStyle(AdoptNS, [[NSParagraphStyle defaultParagraphStyle] mutableCopy]);
+             [paragraphStyle.get() setAlignment:menuTextDirection == LTR ? NSLeftTextAlignment : NSRightTextAlignment];
+             NSWritingDirection writingDirection = style.textDirection() == LTR ? NSWritingDirectionLeftToRight : NSWritingDirectionRightToLeft;
+@@ -109,7 +109,7 @@
+                 [attributes setObject:writingDirectionArray.get() forKey:NSWritingDirectionAttributeName];
+             }
+             [attributes setObject:paragraphStyle.get() forKey:NSParagraphStyleAttributeName];
+-#endif // !defined(BUILDING_ON_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+             // FIXME: Add support for styling the foreground and background colors.
+             // FIXME: Find a way to customize text color when an item is highlighted.
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/PurgeableBufferMac.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/PurgeableBufferMac.cpp
+@@ -153,4 +153,4 @@
+     
+ }
+ 
+-#endif
++#endif // BUILDING_ON_TIGER
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/SharedBufferMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/SharedBufferMac.mm
+@@ -31,6 +31,9 @@
+ #include <string.h>
+ #include <wtf/PassRefPtr.h>
+ 
++#ifdef BUILDING_ON_TIGER
++typedef unsigned NSUInteger;
++#endif
+ 
+ using namespace WebCore;
+ 
+@@ -52,7 +55,9 @@
+ #else
+     WTF::initializeMainThreadToProcessMainThread();
+ #endif
++#ifndef BUILDING_ON_TIGER
+     WebCoreObjCFinalizeOnMainThread(self);
++#endif
+ }
+ 
+ - (void)dealloc
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/SharedTimerMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/SharedTimerMac.mm
+@@ -36,7 +36,7 @@
+ #include <stdio.h>
+ 
+ // On Snow Leopard and newer we'll ask IOKit to deliver notifications on a queue.
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+ #define IOKIT_WITHOUT_LIBDISPATCH 1
+ #endif
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/SuddenTermination.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/SuddenTermination.mm
+@@ -26,7 +26,7 @@
+ #import "config.h"
+ #import "SuddenTermination.h"
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ namespace WebCore {
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreObjCExtras.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreObjCExtras.mm
+@@ -46,13 +46,19 @@
+ {
+     // This method relies on threading being initialized by the caller, otherwise
+     // WebCoreObjCScheduleDeallocateOnMainThread will crash.
+-#ifndef DONT_FINALIZE_ON_MAIN_THREAD
++#if !defined(BUILDING_ON_TIGER) && !defined(DONT_FINALIZE_ON_MAIN_THREAD)
+     objc_finalizeOnMainThread(cls);
+ #else
+     UNUSED_PARAM(cls);
+ #endif
+ }
+ 
++#ifdef BUILDING_ON_TIGER
++static inline IMP method_getImplementation(Method method) 
++{
++    return method->method_imp;
++}
++#endif
+ 
+ typedef std::pair<Class, id> ClassAndIdPair;
+ 
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreSystemInterface.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreSystemInterface.h
+@@ -54,7 +54,7 @@
+ typedef FMFont ATSUFontID;
+ typedef UInt16 ATSGlyphRef;
+ 
+-#if PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ typedef struct __IOSurface *IOSurfaceRef;
+ #endif
+ 
+@@ -209,11 +209,29 @@
+ extern void (*wkSetCONNECTProxyAuthorizationForStream)(CFReadStreamRef, CFStringRef proxyAuthorizationString);
+ extern CFHTTPMessageRef (*wkCopyCONNECTProxyResponse)(CFReadStreamRef, CFURLRef responseURL);
+ 
++#ifndef BUILDING_ON_TIGER
+ extern void (*wkGetGlyphsForCharacters)(CGFontRef, const UniChar[], CGGlyph[], size_t);
++#else
++#define GLYPH_VECTOR_SIZE (50 * 32)
++
++extern void (*wkClearGlyphVector)(void* glyphs);
++extern OSStatus (*wkConvertCharToGlyphs)(void* styleGroup, const UniChar*, unsigned numCharacters, void* glyphs);
++extern CFStringRef (*wkCopyFullFontName)(CGFontRef font);
++extern OSStatus (*wkGetATSStyleGroup)(ATSUStyle, void** styleGroup);
++extern CGFontRef (*wkGetCGFontFromNSFont)(NSFont*);
++extern void (*wkGetFontMetrics)(CGFontRef, int* ascent, int* descent, int* lineGap, unsigned* unitsPerEm);
++extern ATSLayoutRecord* (*wkGetGlyphVectorFirstRecord)(void* glyphVector);
++extern void* wkGetGlyphsForCharacters;
++extern int (*wkGetGlyphVectorNumGlyphs)(void* glyphVector);
++extern size_t (*wkGetGlyphVectorRecordSize)(void* glyphVector);
++extern OSStatus (*wkInitializeGlyphVector)(int count, void* glyphs);
++extern void (*wkReleaseStyleGroup)(void* group);
++extern BOOL (*wkSupportsMultipartXMixedReplace)(NSMutableURLRequest *);
++#endif
+ 
+ extern BOOL (*wkUseSharedMediaUI)();
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ extern void* wkGetHyphenationLocationBeforeIndex;
+ #else
+ extern CFIndex (*wkGetHyphenationLocationBeforeIndex)(CFStringRef string, CFIndex index);
+@@ -229,7 +247,7 @@
+ #endif
+ 
+ extern CTLineRef (*wkCreateCTLineWithUniCharProvider)(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*);
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ extern CTTypesetterRef (*wkCreateCTTypesetterWithUniCharProviderAndOptions)(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*, CFDictionaryRef options);
+ 
+ extern CGContextRef (*wkIOSurfaceContextCreate)(IOSurfaceRef surface, unsigned width, unsigned height, CGColorSpaceRef colorSpace);
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreSystemInterface.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/WebCoreSystemInterface.mm
+@@ -107,9 +107,26 @@
+ void (*wkSetCONNECTProxyAuthorizationForStream)(CFReadStreamRef, CFStringRef proxyAuthorizationString);
+ CFHTTPMessageRef (*wkCopyCONNECTProxyResponse)(CFReadStreamRef, CFURLRef responseURL);
+ 
++#ifndef BUILDING_ON_TIGER
+ void (*wkGetGlyphsForCharacters)(CGFontRef, const UniChar[], CGGlyph[], size_t);
++#else
++void (*wkClearGlyphVector)(void* glyphs);
++OSStatus (*wkConvertCharToGlyphs)(void* styleGroup, const UniChar*, unsigned numCharacters, void* glyphs);
++CFStringRef (*wkCopyFullFontName)(CGFontRef font);
++OSStatus (*wkGetATSStyleGroup)(ATSUStyle, void** styleGroup);
++CGFontRef (*wkGetCGFontFromNSFont)(NSFont*);
++void (*wkGetFontMetrics)(CGFontRef, int* ascent, int* descent, int* lineGap, unsigned* unitsPerEm);
++ATSLayoutRecord* (*wkGetGlyphVectorFirstRecord)(void* glyphVector);
++void* wkGetGlyphsForCharacters;
++int (*wkGetGlyphVectorNumGlyphs)(void* glyphVector);
++size_t (*wkGetGlyphVectorRecordSize)(void* glyphVector);
++OSStatus (*wkInitializeGlyphVector)(int count, void* glyphs);
++void (*wkReleaseStyleGroup)(void* group);
++ATSUFontID (*wkGetNSFontATSUFontId)(NSFont*);
++BOOL (*wkSupportsMultipartXMixedReplace)(NSMutableURLRequest *);
++#endif
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ void* wkGetHyphenationLocationBeforeIndex;
+ #else
+ CFIndex (*wkGetHyphenationLocationBeforeIndex)(CFStringRef string, CFIndex index);
+@@ -117,7 +134,7 @@
+ #endif
+ 
+ CTLineRef (*wkCreateCTLineWithUniCharProvider)(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*);
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ CTTypesetterRef (*wkCreateCTTypesetterWithUniCharProviderAndOptions)(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*, CFDictionaryRef options);
+ 
+ CGContextRef (*wkIOSurfaceContextCreate)(IOSurfaceRef surface, unsigned width, unsigned height, CGColorSpaceRef colorSpace);
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/WebFontCache.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/WebFontCache.mm
+@@ -38,6 +38,9 @@
+ 
+ using namespace WebCore;
+ 
++#ifdef BUILDING_ON_TIGER
++typedef int NSInteger;
++#endif
+ 
+ #define SYNTHESIZED_FONT_TRAITS (NSBoldFontMask | NSItalicFontMask)
+ 
+@@ -104,7 +107,7 @@
+ // Workaround for <rdar://problem/5781372>.
+ static inline void fixUpWeight(NSInteger& weight, NSString *fontName)
+ {
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     UNUSED_PARAM(weight);
+     UNUSED_PARAM(fontName);
+ #else
+@@ -290,6 +293,7 @@
+ 
+ + (NSFont *)fontWithFamily:(NSString *)desiredFamily traits:(NSFontTraitMask)desiredTraits weight:(int)desiredWeight size:(float)size
+ {
++#ifndef BUILDING_ON_TIGER
+     NSFont *font = [self internalFontWithFamily:desiredFamily traits:desiredTraits weight:desiredWeight size:size];
+     if (font)
+         return font;
+@@ -297,6 +301,7 @@
+     // Auto activate the font before looking for it a second time.
+     // Ignore the result because we want to use our own algorithm to actually find the font.
+     [NSFont fontWithName:desiredFamily size:size];
++#endif
+ 
+     return [self internalFontWithFamily:desiredFamily traits:desiredTraits weight:desiredWeight size:size];
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/mac/WidgetMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/mac/WidgetMac.mm
+@@ -26,6 +26,9 @@
+ #import "config.h"
+ #import "Widget.h"
+ 
++#ifdef BUILDING_ON_TIGER
++#import "AutodrainedPool.h"
++#endif
+ 
+ #import "BlockExceptions.h"
+ #import "Chrome.h"
+@@ -302,6 +305,9 @@
+ 
+         BEGIN_BLOCK_OBJC_EXCEPTIONS;
+         {
++#ifdef BUILDING_ON_TIGER
++            AutodrainedPool pool;
++#endif
+             NSGraphicsContext *nsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cgContext flipped:YES];
+             [view displayRectIgnoringOpacity:dirtyRect inContext:nsContext];
+         }
+--- src/3rdparty/webkit/Source/WebCore/platform/network/Credential.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/network/Credential.h
+@@ -27,7 +27,7 @@
+ 
+ #include "PlatformString.h"
+ 
+-#define CERTIFICATE_CREDENTIALS_SUPPORTED ((PLATFORM(MAC) || PLATFORM(IOS)) && !defined(BUILDING_ON_LEOPARD))
++#define CERTIFICATE_CREDENTIALS_SUPPORTED ((PLATFORM(MAC) || PLATFORM(IOS)) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD))
+ 
+ #if CERTIFICATE_CREDENTIALS_SUPPORTED
+ #include <Security/SecBase.h>
+--- src/3rdparty/webkit/Source/WebCore/platform/text/TextBreakIteratorICU.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/TextBreakIteratorICU.cpp
+@@ -148,6 +148,7 @@
+     return ubrk_isBoundary(reinterpret_cast<UBreakIterator*>(iterator), position);
+ }
+ 
++#ifndef BUILDING_ON_TIGER
+ static TextBreakIterator* setUpIteratorWithRules(bool& createdIterator, TextBreakIterator*& iterator,
+     const char* breakRules, const UChar* string, int length)
+ {
+@@ -172,9 +173,14 @@
+ 
+     return iterator;
+ }
++#endif // BUILDING_ON_TIGER
+ 
+ TextBreakIterator* cursorMovementIterator(const UChar* string, int length)
+ {
++#ifdef BUILDING_ON_TIGER
++    // ICU 3.2 cannot compile the below rules.
++    return characterBreakIterator(string, length);
++#else
+     // This rule set is based on character-break iterator rules of ICU 4.0
+     // <http://source.icu-project.org/repos/icu/icu/tags/release-4-0/source/data/brkitr/char.txt>.
+     // The major differences from the original ones are listed below:
+@@ -254,6 +260,7 @@
+     static bool createdCursorMovementIterator = false;
+     static TextBreakIterator* staticCursorMovementIterator;
+     return setUpIteratorWithRules(createdCursorMovementIterator, staticCursorMovementIterator, kRules, string, length);
++#endif // BUILDING_ON_TIGER
+ }
+ 
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/text/TextChecking.h.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/TextChecking.h
+@@ -33,9 +33,11 @@
+ 
+ namespace WebCore {
+ 
++#if !defined(BUILDING_ON_TIGER)
+ #define WTF_USE_GRAMMAR_CHECKING 1
++#endif
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ #define WTF_USE_UNIFIED_TEXT_CHECKING 1
+ #define WTF_USE_AUTOMATIC_TEXT_REPLACEMENT 1
+ #endif
+--- src/3rdparty/webkit/Source/WebCore/platform/text/TextEncodingDetectorICU.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/TextEncodingDetectorICU.cpp
+@@ -34,8 +34,10 @@
+ #include "TextEncoding.h"
+ #include <wtf/UnusedParam.h>
+ 
++#ifndef BUILDING_ON_TIGER
+ #include "unicode/ucnv.h"
+ #include "unicode/ucsdet.h"
++#endif
+ 
+ namespace WebCore {
+ 
+@@ -44,6 +46,13 @@
+                         TextEncoding* detectedEncoding)
+ {
+     *detectedEncoding = TextEncoding();
++#ifdef BUILDING_ON_TIGER
++    // Tiger came with ICU 3.2 and does not have the encoding detector.
++    UNUSED_PARAM(data);
++    UNUSED_PARAM(len);
++    UNUSED_PARAM(hintEncodingName);
++    return false;
++#else
+     int matchesCount = 0; 
+     UErrorCode status = U_ZERO_ERROR;
+     UCharsetDetector* detector = ucsdet_open(&status);
+@@ -114,6 +123,7 @@
+     }    
+     ucsdet_close(detector);
+     return false;
++#endif
+ }
+ 
+ }
+--- src/3rdparty/webkit/Source/WebCore/platform/text/cf/HyphenationCF.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/cf/HyphenationCF.cpp
+@@ -26,7 +26,7 @@
+ #include "config.h"
+ #include "Hyphenation.h"
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ 
+ #include "AtomicStringKeyedMRUCache.h"
+ #include "TextBreakIteratorInternalICU.h"
+@@ -93,4 +93,4 @@
+ 
+ } // namespace WebCore
+ 
+-#endif // !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+--- src/3rdparty/webkit/Source/WebCore/platform/text/cf/StringImplCF.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/cf/StringImplCF.cpp
+@@ -28,7 +28,7 @@
+ #include <wtf/PassRefPtr.h>
+ #include <wtf/Threading.h>
+ 
+-#if PLATFORM(MAC)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER)
+ #include <objc/objc-auto.h>
+ #endif
+ 
+@@ -114,7 +114,7 @@
+ 
+     static CFAllocatorRef create()
+     {
+-#if PLATFORM(MAC)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER)
+         // Since garbage collection isn't compatible with custom allocators, don't use this at all when garbage collection is active.
+         if (objc_collectingEnabled())
+             return 0;
+--- src/3rdparty/webkit/Source/WebCore/platform/text/mac/HyphenationMac.mm.orig
++++ src/3rdparty/webkit/Source/WebCore/platform/text/mac/HyphenationMac.mm
+@@ -26,7 +26,7 @@
+ #import "config.h"
+ #import "Hyphenation.h"
+ 
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+ 
+ #import "AtomicStringKeyedMRUCache.h"
+ #import "TextBreakIteratorInternalICU.h"
+@@ -67,4 +67,4 @@
+ 
+ } // namespace WebCore
+ 
+-#endif // defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#endif // defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+--- src/3rdparty/webkit/Source/WebCore/rendering/RenderLayerBacking.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/rendering/RenderLayerBacking.cpp
+@@ -900,7 +900,7 @@
+     if (renderer()->isVideo() && toRenderVideo(renderer())->shouldDisplayVideo())
+         return hasBoxDecorationsOrBackground(renderer());
+ #endif
+-#if PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if PLATFORM(MAC) && USE(CA) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ #elif ENABLE(WEBGL) || ENABLE(ACCELERATED_2D_CANVAS)
+     if (isAcceleratedCanvas(renderer()))
+         return hasBoxDecorationsOrBackground(renderer());
+--- src/3rdparty/webkit/Source/WebCore/rendering/RenderText.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/rendering/RenderText.cpp
+@@ -1506,6 +1506,14 @@
+     if (result == TextBreakDone)
+         result = current - 1;
+ 
++#ifdef BUILDING_ON_TIGER
++    // ICU 3.2 allows character breaks before a half-width Katakana voiced mark.
++    if (static_cast<unsigned>(result) < si->length()) {
++        UChar character = (*si)[result];
++        if (character == 0xFF9E || character == 0xFF9F)
++            --result;
++    }
++#endif
+ 
+     return result;
+ }
+@@ -1633,6 +1641,14 @@
+     if (result == TextBreakDone)
+         result = current + 1;
+ 
++#ifdef BUILDING_ON_TIGER
++    // ICU 3.2 allows character breaks before a half-width Katakana voiced mark.
++    if (static_cast<unsigned>(result) < si->length()) {
++        UChar character = (*si)[result];
++        if (character == 0xFF9E || character == 0xFF9F)
++            ++result;
++    }
++#endif
+ 
+     return result;
+ }
+--- src/3rdparty/webkit/Source/WebCore/rendering/break_lines.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/rendering/break_lines.cpp
+@@ -145,6 +145,15 @@
+     return ch > asciiLineBreakTableLastChar && ch != noBreakSpace;
+ }
+ 
++#if PLATFORM(MAC) && defined(BUILDING_ON_TIGER)
++static inline TextBreakLocatorRef lineBreakLocator()
++{
++    TextBreakLocatorRef locator = 0;
++    UCCreateTextBreakLocator(0, 0, kUCTextBreakLineMask, &locator);
++    return locator;
++}
++#endif
++
+ int nextBreakablePosition(LazyLineBreakIterator& lazyBreakIterator, int pos, bool treatNoBreakSpaceAsBreak)
+ {
+     const UChar* str = lazyBreakIterator.string();
+@@ -160,9 +169,18 @@
+ 
+         if (needsLineBreakIterator(ch) || needsLineBreakIterator(lastCh)) {
+             if (nextBreak < i && i) {
++#if !PLATFORM(MAC) || !defined(BUILDING_ON_TIGER)
+                 TextBreakIterator* breakIterator = lazyBreakIterator.get();
+                 if (breakIterator)
+                     nextBreak = textBreakFollowing(breakIterator, i - 1);
++#else
++                static TextBreakLocatorRef breakLocator = lineBreakLocator();
++                if (breakLocator) {
++                    UniCharArrayOffset nextUCBreak;
++                    if (UCFindTextBreak(breakLocator, kUCTextBreakLineMask, 0, str, len, i, &nextUCBreak) == 0)
++                        nextBreak = nextUCBreak;
++                }
++#endif
+             }
+             if (i == nextBreak && !isBreakableSpace(lastCh, treatNoBreakSpaceAsBreak))
+                 return i;
+--- src/3rdparty/webkit/Source/WebKit/mac/Configurations/Version.xcconfig.orig
++++ src/3rdparty/webkit/Source/WebKit/mac/Configurations/Version.xcconfig
+@@ -35,6 +35,8 @@
+ SYSTEM_VERSION_PREFIX_iphoneos = 6; // iPhone OS is most like SnowLeopard currently.
+ SYSTEM_VERSION_PREFIX_iphonesimulator = $(SYSTEM_VERSION_PREFIX_iphoneos);
+ SYSTEM_VERSION_PREFIX_macosx = $(SYSTEM_VERSION_PREFIX_macosx_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++SYSTEM_VERSION_PREFIX_macosx_ = 4; // Some Tiger versions of Xcode don't set MAC_OS_X_VERSION_MAJOR.
++SYSTEM_VERSION_PREFIX_macosx_1040 = 4;
+ SYSTEM_VERSION_PREFIX_macosx_1050 = 5;
+ SYSTEM_VERSION_PREFIX_macosx_1060 = 6;
+ SYSTEM_VERSION_PREFIX_macosx_1070 = 7;
+--- src/3rdparty/webkit/Source/WebKit2/Configurations/Base.xcconfig.orig
++++ src/3rdparty/webkit/Source/WebKit2/Configurations/Base.xcconfig
+@@ -93,6 +93,9 @@
+ 
+ // If the target Mac OS X version does not match the current Mac OS X version then we'll want to build using the target version's SDK.
+ SDKROOT = $(SDKROOT_$(MAC_OS_X_VERSION_MAJOR)_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++SDKROOT_1050_1040 = macosx10.4;
++SDKROOT_1060_1040 = macosx10.4;
+ SDKROOT_1060_1050 = macosx10.5;
++SDKROOT_1070_1040 = macosx10.4;
+ SDKROOT_1070_1050 = macosx10.5;
+ SDKROOT_1070_1060 = macosx10.6;
+--- src/3rdparty/webkit/Source/WebKit2/Configurations/CompilerVersion.xcconfig.orig
++++ src/3rdparty/webkit/Source/WebKit2/Configurations/CompilerVersion.xcconfig
+@@ -29,6 +29,8 @@
+ // number.  Newer versions of Xcode use XCODE_VERSION_MINOR for the minor version, and
+ // XCODE_VERSION_ACTUAL for the full version number.
+ TARGET_GCC_VERSION = $(TARGET_GCC_VERSION_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++TARGET_GCC_VERSION_ = $(TARGET_GCC_VERSION_1040);
++TARGET_GCC_VERSION_1040 = GCC_40;
+ 
+ TARGET_GCC_VERSION_1050 = $(TARGET_GCC_VERSION_1050_$(XCODE_VERSION_MINOR));
+ TARGET_GCC_VERSION_1050_ = $(TARGET_GCC_VERSION_1050_$(XCODE_VERSION_ACTUAL));
+--- src/3rdparty/webkit/Source/WebKit2/Configurations/DebugRelease.xcconfig.orig
++++ src/3rdparty/webkit/Source/WebKit2/Configurations/DebugRelease.xcconfig
+@@ -24,6 +24,8 @@
+ #include "Base.xcconfig"
+ 
+ ARCHS = $(ARCHS_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++ARCHS_ = $(ARCHS_1040);
++ARCHS_1040 = $(NATIVE_ARCH);
+ ARCHS_1050 = $(NATIVE_ARCH);
+ ARCHS_1060 = $(ARCHS_STANDARD_32_64_BIT);
+ ARCHS_1070 = $(ARCHS_STANDARD_32_64_BIT);
+@@ -31,6 +33,8 @@
+ ONLY_ACTIVE_ARCH = YES;
+ 
+ MACOSX_DEPLOYMENT_TARGET = $(MACOSX_DEPLOYMENT_TARGET_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++MACOSX_DEPLOYMENT_TARGET_ = 10.4;
++MACOSX_DEPLOYMENT_TARGET_1040 = 10.4;
+ MACOSX_DEPLOYMENT_TARGET_1050 = 10.5;
+ MACOSX_DEPLOYMENT_TARGET_1060 = 10.6;
+ MACOSX_DEPLOYMENT_TARGET_1070 = 10.7;
+@@ -40,6 +44,8 @@
+ SECTORDER_FLAGS = ;
+ 
+ WEBKIT_SYSTEM_INTERFACE_LIBRARY = $(WEBKIT_SYSTEM_INTERFACE_LIBRARY_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++WEBKIT_SYSTEM_INTERFACE_LIBRARY_ = WebKitSystemInterfaceTiger;
++WEBKIT_SYSTEM_INTERFACE_LIBRARY_1040 = WebKitSystemInterfaceTiger;
+ WEBKIT_SYSTEM_INTERFACE_LIBRARY_1050 = WebKitSystemInterfaceLeopard;
+ WEBKIT_SYSTEM_INTERFACE_LIBRARY_1060 = WebKitSystemInterfaceSnowLeopard;
+ WEBKIT_SYSTEM_INTERFACE_LIBRARY_1070 = WebKitSystemInterfaceSnowLeopard;
+--- src/3rdparty/webkit/Source/WebKit2/Configurations/Version.xcconfig.orig
++++ src/3rdparty/webkit/Source/WebKit2/Configurations/Version.xcconfig
+@@ -32,6 +32,8 @@
+ 
+ // The system version prefix is based on the current system version.
+ SYSTEM_VERSION_PREFIX = $(SYSTEM_VERSION_PREFIX_$(TARGET_MAC_OS_X_VERSION_MAJOR));
++SYSTEM_VERSION_PREFIX_ = 4; // Some Tiger versions of Xcode don't set MAC_OS_X_VERSION_MAJOR.
++SYSTEM_VERSION_PREFIX_1040 = 4;
+ SYSTEM_VERSION_PREFIX_1050 = 5;
+ SYSTEM_VERSION_PREFIX_1060 = 6;
+ SYSTEM_VERSION_PREFIX_1070 = 7;
+--- src/3rdparty/webkit/Source/WebKit2/Shared/mac/PasteboardTypes.mm.orig
++++ src/3rdparty/webkit/Source/WebKit2/Shared/mac/PasteboardTypes.mm
+@@ -44,7 +44,7 @@
+ NSArray* PasteboardTypes::forEditing()
+ {
+     static NSArray *types = retain([NSArray arrayWithObjects:WebArchivePboardType, NSHTMLPboardType, NSFilenamesPboardType, NSTIFFPboardType, NSPDFPboardType,
+-#ifdef BUILDING_ON_LEOPARD
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD)
+         NSPICTPboardType,
+ #endif
+         NSURLPboardType, NSRTFDPboardType, NSRTFPboardType, NSStringPboardType, NSColorPboardType, kUTTypePNG, nil]);
+--- src/3rdparty/webkit/Source/WebKit2/UIProcess/mac/WKFullScreenWindowController.mm.orig
++++ src/3rdparty/webkit/Source/WebKit2/UIProcess/mac/WKFullScreenWindowController.mm
+@@ -397,7 +397,7 @@
+ - (void)_updateMenuAndDockForFullScreen
+ {
+     // NSApplicationPresentationOptions is available on > 10.6 only:
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     NSApplicationPresentationOptions options = NSApplicationPresentationDefault;
+     NSScreen* fullScreenScreen = [[self window] screen];
+     
+@@ -421,6 +421,7 @@
+         SetSystemUIMode(_isFullScreen ? kUIModeNormal : kUIModeAllHidden, 0);
+ }
+ 
++#if !defined(BUILDING_ON_TIGER) // IOPMAssertionCreateWithName not defined on < 10.5
+ - (void)_disableIdleDisplaySleep
+ {
+     if (_idleDisplaySleepAssertion == kIOPMNullAssertionID) 
+@@ -475,9 +476,11 @@
+ {
+     UpdateSystemActivity(OverallAct);
+ }
++#endif
+ 
+ - (void)_updatePowerAssertions
+ {
++#if !defined(BUILDING_ON_TIGER) 
+     if (_isPlaying && _isFullScreen) {
+         [self _disableIdleSystemSleep];
+         [self _disableIdleDisplaySleep];
+@@ -487,6 +490,7 @@
+         [self _enableIdleDisplaySleep];
+         [self _disableTickleTimer];
+     }
++#endif
+ }
+ 
+ - (WebFullScreenManagerProxy*)_manager
+@@ -531,7 +535,7 @@
+ {
+     static const CFTimeInterval defaultDuration = 0.5;
+     CFTimeInterval duration = defaultDuration;
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     NSUInteger modifierFlags = [NSEvent modifierFlags];
+ #else
+     NSUInteger modifierFlags = [[NSApp currentEvent] modifierFlags];
+@@ -564,7 +568,7 @@
+     [self setAcceptsMouseMovedEvents:YES];
+     [self setReleasedWhenClosed:NO];
+     [self setHasShadow:YES];
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     [self setMovable:NO];
+ #else
+     [self setMovableByWindowBackground:NO];
+--- src/3rdparty/webkit/Source/WebKit2/UIProcess/mac/WebContextMac.mm.orig
++++ src/3rdparty/webkit/Source/WebKit2/UIProcess/mac/WebContextMac.mm
+@@ -56,11 +56,15 @@
+     NSString *cacheDir = [defaults objectForKey:WebKitLocalCacheDefaultsKey];
+ 
+     if (!cacheDir || ![cacheDir isKindOfClass:[NSString class]]) {
++#ifdef BUILDING_ON_TIGER
++        cacheDir = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches"];
++#else
+         char cacheDirectory[MAXPATHLEN];
+         size_t cacheDirectoryLen = confstr(_CS_DARWIN_USER_CACHE_DIR, cacheDirectory, MAXPATHLEN);
+     
+         if (cacheDirectoryLen)
+             cacheDir = [[NSFileManager defaultManager] stringWithFileSystemRepresentation:cacheDirectory length:cacheDirectoryLen - 1];
++#endif
+     }
+ 
+     return [cacheDir stringByAppendingPathComponent:appName];
+--- src/3rdparty/webkit/Source/WebKit2/WebProcess/WebCoreSupport/WebEditorClient.h.orig
++++ src/3rdparty/webkit/Source/WebKit2/WebProcess/WebCoreSupport/WebEditorClient.h
+@@ -99,9 +99,12 @@
+     virtual void setInsertionPasteboard(NSPasteboard *);
+     virtual NSURL* canonicalizeURL(NSURL*);
+     virtual NSURL* canonicalizeURLString(NSString*);
++#ifdef BUILDING_ON_TIGER
++    virtual NSArray *pasteboardTypesForSelection(WebCore::Frame*);
++#endif
+ #endif
+ 
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     virtual void uppercaseWord();
+     virtual void lowercaseWord();
+     virtual void capitalizeWord();
+@@ -132,7 +135,7 @@
+     virtual void checkSpellingOfString(const UChar*, int length, int* misspellingLocation, int* misspellingLength);
+     virtual String getAutoCorrectSuggestionForMisspelledWord(const String& misspelledWord);
+     virtual void checkGrammarOfString(const UChar*, int length, Vector<WebCore::GrammarDetail>&, int* badGrammarLocation, int* badGrammarLength);
+-#if PLATFORM(MAC) && !defined(BUILDING_ON_LEOPARD)
++#if PLATFORM(MAC) && !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+     virtual void checkTextOfParagraph(const UChar* text, int length, WebCore::TextCheckingTypeMask checkingTypes, Vector<WebCore::TextCheckingResult>& results);
+ #endif
+     virtual void updateSpellingUIWithGrammarString(const String&, const WebCore::GrammarDetail& detail);
+--- src/3rdparty/webkit/Source/WebKit2/WebProcess/WebCoreSupport/mac/WebEditorClientMac.mm.orig
++++ src/3rdparty/webkit/Source/WebKit2/WebProcess/WebCoreSupport/mac/WebEditorClientMac.mm
+@@ -131,6 +131,13 @@
+     notImplemented();
+ }
+ 
++#ifdef BUILDING_ON_TIGER
++NSArray *WebEditorClient::pasteboardTypesForSelection(Frame*)
++{
++    notImplemented();
++    return nil;
++}
++#endif
+ 
+ static void changeWordCase(WebPage* page, SEL selector)
+ {
+--- src/3rdparty/webkit/WebKitLibraries/WebKitSystemInterface.h.orig
++++ src/3rdparty/webkit/WebKitLibraries/WebKitSystemInterface.h
+@@ -38,7 +38,7 @@
+ NSTimeInterval WKGetNSURLResponseFreshnessLifetime(NSURLResponse *response);
+ NSString *WKCopyNSURLResponseStatusLine(NSURLResponse *response);
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ CFArrayRef WKCopyNSURLResponseCertificateChain(NSURLResponse *response);
+ #endif
+ 
+@@ -147,10 +147,23 @@
+ void WKSetPatternPhaseInUserSpace(CGContextRef, CGPoint);
+ CGAffineTransform WKGetUserToBaseCTM(CGContextRef);
+ 
++#ifndef BUILDING_ON_TIGER
+ void WKGetGlyphsForCharacters(CGFontRef, const UniChar[], CGGlyph[], size_t);
++#else
++typedef void *WKGlyphVectorRef;
++OSStatus WKConvertCharToGlyphs(void *styleGroup, const UniChar* characters, unsigned numCharacters, WKGlyphVectorRef glyphs);
++OSStatus WKGetATSStyleGroup(ATSUStyle fontStyle, void **styleGroup);
++void WKReleaseStyleGroup(void *group);
++OSStatus WKInitializeGlyphVector(int count, WKGlyphVectorRef glyphs);
++void WKClearGlyphVector(WKGlyphVectorRef glyphs);
++
++int WKGetGlyphVectorNumGlyphs(WKGlyphVectorRef glyphVector);
++ATSLayoutRecord *WKGetGlyphVectorFirstRecord(WKGlyphVectorRef glyphVector);
++size_t WKGetGlyphVectorRecordSize(WKGlyphVectorRef glyphVector);
++#endif
+ 
+ CTLineRef WKCreateCTLineWithUniCharProvider(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*);
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ CTTypesetterRef WKCreateCTTypesetterWithUniCharProviderAndOptions(const UniChar* (*provide)(CFIndex stringIndex, CFIndex* charCount, CFDictionaryRef* attributes, void*), void (*dispose)(const UniChar* chars, void*), void*, CFDictionaryRef options);
+ 
+ CGContextRef WKIOSurfaceContextCreate(IOSurfaceRef, unsigned width, unsigned height, CGColorSpaceRef);
+@@ -179,6 +192,20 @@
+ 
+ OSStatus WKThemeDrawTrack(const HIThemeTrackDrawInfo* inDrawInfo, CGContextRef inContext, int inArrowStyle);
+ 
++#ifdef BUILDING_ON_TIGER
++// CGFontGetAscent, CGFontGetDescent, CGFontGetLeading and CGFontGetUnitsPerEm were not available until Leopard
++void WKGetFontMetrics(CGFontRef font, int *ascent, int *descent, int *lineGap, unsigned *unitsPerEm);
++// CTFontCopyGraphicsFont was not available until Leopard
++CGFontRef WKGetCGFontFromNSFont(NSFont *font);
++// CTFontGetPlatformFont was not available until Leopard
++ATSUFontID WKGetNSFontATSUFontId(NSFont *font);
++// CGFontCopyFullName was not available until Leopard
++CFStringRef WKCopyFullFontName(CGFontRef font);
++#endif
++#ifdef BUILDING_ON_TIGER
++// WKSupportsMultipartXMixedReplace is not required on Leopard as multipart/x-mixed-replace is always handled by NSURLRequest
++BOOL WKSupportsMultipartXMixedReplace(NSMutableURLRequest *request);
++#endif
+ 
+ BOOL WKCGContextIsBitmapContext(CGContextRef context);
+ 
+@@ -285,7 +312,7 @@
+ void WKQTClearMediaDownloadCacheForSite(NSString *site);
+ void WKQTClearMediaDownloadCache();
+     
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ mach_port_t WKInitializeRenderServer(void);
+     
+ @class CALayer;
+@@ -324,7 +351,7 @@
+ 
+ NSUInteger WKGetInputPanelWindowStyle(void);
+ UInt8 WKGetNSEventKeyChar(NSEvent *);
+-#endif // !defined(BUILDING_ON_LEOPARD)
++#endif // !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ 
+ @class CAPropertyAnimation;
+ void WKSetCAAnimationValueFunction(CAPropertyAnimation*, NSString* function);
+@@ -339,7 +366,7 @@
+ void WKSetCONNECTProxyAuthorizationForStream(CFReadStreamRef, CFStringRef proxyAuthorizationString);
+ CFHTTPMessageRef WKCopyCONNECTProxyResponse(CFReadStreamRef, CFURLRef responseURL);
+ 
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+ typedef enum {
+     WKEventPhaseNone = 0,
+     WKEventPhaseBegan = 1,
+@@ -350,10 +377,12 @@
+ int WKGetNSEventMomentumPhase(NSEvent *);
+ #endif
+ 
++#ifndef BUILDING_ON_TIGER
+ void WKWindowSetAlpha(NSWindow *window, float alphaValue);
+ void WKWindowSetScaledFrame(NSWindow *window, NSRect scaleFrame, NSRect nonScaledFrame);
++#endif
+ 
+-#ifndef BUILDING_ON_LEOPARD
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD)
+ void WKSyncSurfaceToView(NSView *view);
+ 
+ void WKEnableSettingCursorWhenInBackground(void);
+@@ -370,7 +399,7 @@
+ 
+ #endif
+ 
+-#if defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
++#if defined(BUILDING_ON_TIGER) || defined(BUILDING_ON_LEOPARD) || defined(BUILDING_ON_SNOW_LEOPARD)
+ CFIndex WKGetHyphenationLocationBeforeIndex(CFStringRef string, CFIndex index);
+ #endif
+ 
+@@ -383,7 +412,7 @@
+ CFStringRef WKCopyCFURLResponseSuggestedFilename(CFURLResponseRef);
+ void WKSetCFURLResponseMIMEType(CFURLResponseRef, CFStringRef mimeType);
+ 
+-#if !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
++#if !defined(BUILDING_ON_TIGER) && !defined(BUILDING_ON_LEOPARD) && !defined(BUILDING_ON_SNOW_LEOPARD)
+ typedef enum {
+     WKSandboxExtensionTypeReadOnly,
+     WKSandboxExtensionTypeWriteOnly,    

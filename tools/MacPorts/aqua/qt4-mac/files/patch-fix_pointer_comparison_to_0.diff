@@ -1,0 +1,22 @@
+--- src/3rdparty/webkit/Source/WebCore/html/HTMLImageElement.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/html/HTMLImageElement.cpp
+@@ -74,7 +74,7 @@
+     RefPtr<HTMLImageElement> image = adoptRef(new HTMLImageElement(imgTag, document));
+     if (optionalWidth)
+         image->setWidth(*optionalWidth);
+-    if (optionalHeight > 0)
++    if (optionalHeight)
+         image->setHeight(*optionalHeight);
+     return image.release();
+ }
+--- tools/linguist/linguist/messagemodel.cpp.orig
++++ tools/linguist/linguist/messagemodel.cpp
+@@ -183,7 +183,7 @@
+         if (ContextItem *c = one->findContext(oc->context())) {
+             for (int j = 0; j < oc->messageCount(); ++j) {
+                 MessageItem *m = oc->messageItem(j);
+-                if (c->findMessage(m->text(), m->comment()) >= 0)
++                if (c->findMessage(m->text(), m->comment()))
+                     ++inBoth;
+             }
+         }

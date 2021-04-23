@@ -1,0 +1,29 @@
+--- src/gui/kernel/qcocoaview_mac.mm.orig	2021-04-22 11:42:11.000000000 -0700
++++ src/gui/kernel/qcocoaview_mac.mm	2021-04-22 11:43:21.000000000 -0700
+@@ -997,6 +997,18 @@
+     }
+ }
+ 
++#if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_12
++- (void) viewWillDraw
++{
++    if (NSAppKitVersionNumber >= 2022.00) // Big Sur
++    {
++        CALayer* layer = self.layer;
++        layer.contentsFormat = kCAContentsFormatRGBA8Uint;
++    }
++    
++    [super viewWillDraw];
++}
++#endif
+ 
+ // NSTextInput Protocol implementation
+ 
+--- src/gui/kernel/mac.pri.orig	2021-04-22 13:28:24.000000000 -0700
++++ src/gui/kernel/mac.pri	2021-04-22 13:28:54.000000000 -0700
+@@ -1,4 +1,4 @@
+ !x11:!embedded:!qpa:mac {
+-   LIBS_PRIVATE += -framework Carbon -lz
++   LIBS_PRIVATE += -framework QuartzCore -framework Carbon -lz
+    *-mwerks:INCLUDEPATH += compat
+ }
