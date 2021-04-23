@@ -7,7 +7,7 @@ if [ -n "${UBUNTU:-}" ] || [ "${CENTOS:-6}" -gt 7 ]; then
     echo "i386 is not supported on CentOS 8 and later or Ubuntu"
     exit 1
 fi
-env GEN_DOCKERFILE32=1 ../../jenkins/include/scripts/build-Linux-sdk.sh> Dockerfile
+env GEN_DOCKERFILE=1 GEN_DOCKERFILE32=1 ../../jenkins/include/scripts/build-Linux-sdk.sh> Dockerfile
 cp  ../../jenkins/*.sh .
 (cd ../../jenkins/; tar cf - include) | tar xf -
 docker build -t "${LABEL}:latest" .
