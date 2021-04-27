@@ -221,6 +221,7 @@ bigtosmall.txt
 #Documentation/source/_group*
 #Documentation/source/_prefs.rst
 #Documentation/source/plugins
+Documentation/source/_build
 .qmake.stash
 App/Natron
 BreakpadClient.xcodeproj/
@@ -275,3 +276,5 @@ Gui/Resources/etc/fonts/fonts.conf
 
 # VS Code
 .vscode/
+
+

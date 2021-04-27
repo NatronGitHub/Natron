@@ -14,4 +14,4 @@ Tutorials
    tutorials-hugin
    tutorials-svgworkflow
    tutorials-AlternativeMatteExtraction
-
+   tutorials-compositing-projects-setup
