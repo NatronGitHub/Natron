@@ -64,7 +64,12 @@ The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang
 
 #### Install Ports
 
-Install the required packages:
+Now, use libjpeg-turbo instead of jpeg:
+
+    sudo port -f uninstall jpeg
+    sudo port -v -N install libjpeg-turbo
+
+And finally install the required packages:
 
 ```Shell
 sudo port -v -N install opencolorio -quartz -python27
@@ -322,10 +327,8 @@ In the past, OCIO configs were a submodule, though due to the size of the reposi
 to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron source tree:
 
-```Shell
-curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
-mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
-```
+    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
+    mv OpenColorIO-Configs-Natron-v* OpenColorIO-Configs
 
 
 ## Add the config.pri file
