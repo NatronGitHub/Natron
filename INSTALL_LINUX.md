@@ -235,167 +235,65 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 ## Arch Linux
 
-On Arch Linux you can do the following:
-```
-sudo pacman -S expat boost
-```
-Install the following packages from AUR:
-```
-qt4 python2-pyside python2-shiboken
-```
+On Arch Linux, there are two tested methods of compiling Natron: using the AUR or via manual compiling.
 
-Cairo has to be build from source, because Arch Linux does not provide a static version (as far as we know). It is fairly easy to do:
+### If using AUR
+
+Simply run the command below:
 
 ```
-git clone git://anongit.freedesktop.org/git/cairo
-cd cairo
-./autogen.sh
+yay -S natron-compositor
+```
+
+### If compiling manually
+
+First, install build dependencies. You can install GCC, Expat and Boost directly from the Arch Linux official repositories, like so:
+
+```
+sudo pacman -S expat boost gcc
+```
+
+You will also need additional Boost libraries, cairo, and Qt4 (provided by PySide). They can be installed with the following command:
+
+```
+yay -S boost-libs cairo glfw-x11 python2-pyside
+```
+
+Then, clone Natron's repo:
+
+```
+git clone https://github.com/NatronGitHub/Natron && cd Natron
+```
+
+Update submodules:
+
+```
+git submodule init
+git submodule update -i --recursive
+```
+
+And make a build folder:
+
+```
+mkdir build && cd build
+```
+
+At this point, you need a special configuration file called a `config.pri`. On every operating system and distro this will be different, but for Arch Linux there is a pre-configured `config.pri`. You can let `qmake` use this by running this command:
+
+```
+cp ../build-configs/arch-linux/config.pri ..
+```
+
+You're now all set to compile. Use `qmake` to generate a Makefile for final compiling, like this:
+
+```
+qmake-qt4 -r ../Project.pro PREFIX=/usr BUILD_USER_NAME="Arch_Linux" CONFIG+=custombuild CONFIG+=openmp DEFINES+=QT_NO_DEBUG_OUTPUT QMAKE_CFLAGS_RELEASE="${CFLAGS}" QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" QMAKE_LFLAGS_RELEASE="${LDFLAGS}"
+```
+
+Last, compile with `make`:
+
+```
 make
-sudo make install
 ```
 
-It should be installed in `/usr/local/lib`
-
-For the config.pri, use the following:
-
-```pri
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
-expat: LIBS += -lexpat
-expat: PKGCONFIG -= expat
-cairo {
-        # Building cairo from source (git clone, make, make install) is installed in /usr/local/lib
-        PKGCONFIG -= cairo
-        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-        LIBS += /usr/local/lib/libcairo.a
-}
-pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-}
-shiboken {
-        PKGCONFIG -= shiboken
-        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken-py2)
-        LIBS += -lshiboken-python2.7
-}
-```
-
-
-## Debian-based
-
-Installing dependencies using `apt-get` should work on
-any Debian-based distribution (e.g. Ubuntu).
-
-If your version of Ubuntu does not provide cairo 1.12 (required for rotoscoping), use the xorg-edger PPA:
-```
-sudo add-apt-repository -y ppa:xorg-edgers/ppa 
-```
-If your version of Ubuntu does not provide boost 1.49, the irie PPA can be used:
-```
-sudo add-apt-repository -y ppa:irie/boost 
-```
-Install the required packages:
-```
-sudo apt-get install libqt4-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
-```
-
-For the config.pri use:
-
-```
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
-expat: LIBS += -lexpat
-expat: PKGCONFIG -= expat
-cairo: PKGCONFIG -= cairo
-
-pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-pyside: PKGCONFIG += pyside
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-```
-
-for linux mint you will need to add:
-
-```
-pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-}
-```
-
-## CentOS7
-
-Instructions for CentOS and Fedora.
-
-On CentOS you need the EPEL repository:
-
-```
-yum install epel-release
-```
-
-Install required packages:
-
-```
-yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-devel qt-devel boost-devel pixman-devel cairo-devel
-```
-
-config.pri:
-```pri
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
-PKGCONFIG += expat
-PKGCONFIG += fontconfig
-cairo {
-        PKGCONFIG += cairo
-        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-}
-pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-}
-shiboken {
-        PKGCONFIG -= shiboken
-        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)
-        LIBS += -lshiboken-python2.7
-}
-```
-
-# Generating Python bindings
-
-This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
-
-```Shell
-SDK_PREFIX=/opt/Natron-sdk
-PYSIDE_PREFIX=/opt/Natron-sdk/qt4
-rm Engine/NatronEngine/* Gui/NatronGui/*
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken.sh
-```
-
-If using PySide2 for Qt5, the command-line would be:
-
-```Shell
-SDK_PREFIX=/opt/Natron-sdk
-PYSIDE_PREFIX=/opt/Natron-sdk
-rm Engine/NatronEngine/* Gui/NatronGui/*
-
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken.sh
-```
-
-**Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
+Compiling should take approximately 10 minutes. The binaries will be found in the `build/App` folder. In order to launch Natron after compiling, simply do `./App/Natron`, and you can then start using Natron!
