@@ -1,13 +1,7 @@
-=======================================================
-
-These are step-by-step instructions to compile Natron on macOS.
-
-OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest macOS (although a few Homebrew casks have to be downgraded).
-=======
 Instructions for installing Natron from sources on MacOS
 =======================================================
 
-These are step-by-step instructions to compile Natron on MacOS.
+These are step-by-step instructions to compile Natron on macOS.
 
 MacOS 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest version of MacOS.
 
@@ -463,7 +457,7 @@ qmake -r CONFIG+=debug
 
 It is possible to build Natron using clang (version 3.8 is required,
 version 9.0 is recommended) with OpenMP support on
-MacPorts (or homebrew for MacOS 10.9 or later).  OpenMP brings speed improvements in the
+MacPorts (or Homebrew for MacOS 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
 First, install clang 9.0. On MacOS 10.9 and later with MacPorts, simply execute:
