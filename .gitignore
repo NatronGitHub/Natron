@@ -27,6 +27,8 @@ TestImages
 TestWrite
 .pro.user
 config.pri
+!build-configs/*
+!build-configs/arch-linux/*
 *.vcxproj
 Info.plist
 *Win32
