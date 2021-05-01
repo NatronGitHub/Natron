@@ -5,7 +5,7 @@
 
 Natron is a free, open-source (GPLv2 license) video compositor, similar in functionality to Adobe After Effects, Foundry's Nuke, or Blackmagic Fusion. It is portable and cross-platform (GNU/Linux, macOS, and Microsoft Windows).
 
-![Hero Image of Natron](./MarkdownAssets/Natron-Hero-Image.png)
+For more details on Natron, please visit its [website](https://natrongithub.github.io/).
 
 **Natron around the web**
 
