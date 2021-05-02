@@ -15,7 +15,7 @@ Really important nodes are marked with an asterix:
 
 
 
-**Add****
+**Add***
 
 This node affects all values within the image in the same way: literally adding to them.
 Positive values will brighten all parts of the image. As a stand alone color manipulation it is of limited use, though it is ideal for lightening the blacks of distant objects.
@@ -49,7 +49,7 @@ The effect of this is similar to image editors hue blend mode. I have found it u
 Try also blurring the a and b channels. This will blur only the hue and saturation components of an image and leave its lightness values alone.
 A novel use for the ColorSpace node can be found in the Assets page (see the Double Rainbows asset).
 
-**ColorCorrect** *
+**ColorCorrect***
 
 Artists have for thousands of years been separating the lightness values of their paintings into three bands: shadows, midtones and highlights. The ColorCorrect node is a collection of operations that not only can effect the entire image but can address separately these three ranges 
 
@@ -57,13 +57,13 @@ Artists have for thousands of years been separating the lightness values of thei
 
 This raises or lowers the middle-ish point of the color curve. The default value is one, with smaller numbers darkening the lower registers and higher numbers lightening them. There is a Gamma node but I find that stand-alone gamma adjustments are best done using ColorLookup so as to give you flexibility over where the ‘grab point‘ of your curve is. Both ColorCorrect and Grade have built in Gamma value sliders.
 
-**Grade** *
+**Grade***
 
 This node is a collection of operations that combine to work upon the lightness and hue values of an image. It is mostly a fixer: used for correcting and matching, though of course it can also be used for more aesthetically lavish purposes.
 
 **Histogram**
 
-**HueCorrect** *
+**HueCorrect***
 
 This can be a very tricky node to get to know.
 We can conclude that the perception of the amount of hue within a color (its chroma) is linked to two things: saturation and lightness.
@@ -91,7 +91,7 @@ This only effects the image if first the 'Luminance' or 'Luminance components' h
 The HSVTool has three functions: Color replacement, Color adjust, Hue keyer
 
 
-**Saturation** *
+**Saturation***
 
 A color becomes a grey if its RGB values are all identical.
 The Saturation node desaturates an image by averaging its RGB channels.

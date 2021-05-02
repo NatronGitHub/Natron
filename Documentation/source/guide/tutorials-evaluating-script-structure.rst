@@ -3,8 +3,6 @@
    
    .. _evaluating-script-structure:
 
-
-Thanks to Martin Constable to allow us to use his documents.
    
 Evaluating Script Structure
 ===========================
