@@ -29,6 +29,11 @@ Francesco Paglia <fPaglia@github>
 rcspam <rcspam@github>
 Jean-Christophe Levet
 
+#Documentation (not everyone listed):
+
+Marc-André Gasser <magdesign@github>
+Martin Constable
+
 
 Version 1.0:
 -----------
