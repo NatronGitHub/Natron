@@ -1,4 +1,5 @@
 # Natron
+
 [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.svg?branch=RB-2.4)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.svg?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.4)](http://natron.readthedocs.io/en/rb-2.4/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received) [![OpenHub](https://www.openhub.net/p/natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron)
 
 ---
@@ -20,7 +21,7 @@ Natron is looking for developers and maintainers! You can help develop and maint
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
 - [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [PySide support in Qt5](https://wiki.qt.io/Qt_for_Python_Development_Notes), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
-- Basic knowledge of [Python](https://en.wikipedia.org/wiki/Python_(programming_language))
+- Basic knowledge of [Python](<https://en.wikipedia.org/wiki/Python_(programming_language)>)
 
 For more information, see the "Contributing" section below.
 
@@ -29,11 +30,8 @@ If you are willing to help, please contact the development team on the [pixls.us
 ## Features
 
 - 32-bit floating-point linear color processing pipeline.
-
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
-
 - Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
-
 - Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported.
   - [TuttleOFX](https://sites.google.com/site/tuttleofx/)
   - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) to read anything else than standard 8-bits images
@@ -45,30 +43,19 @@ If you are willing to help, please contact the development team on the [pixls.us
   - [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
   - [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
   - ...And many more! Please tell us if you successfully tested other commercial plugins.
-
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
-
 - Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
-
 - Multi-task: Natron can render multiple graphs at the same time. It can also be used as a background process in headless mode.
-
 - Recover easily from bugs: Natron's auto-save system detects inactivity and saves your work for yourself. Natron is also able to render frames in a separate process, meaning that any crash in the main application would not crash the ongoing render (and the other way around).
-
 - Project files saved in XML and easily editable by humans.
-
 - Fast & interactive viewer - Smooth & accurate zooming/panning even for very large image sizes (tested on 27k x 30k images).
-
 - Real-time playback: Natron offers real-time playback with excellent performance thanks to its RAM/Disk cache. Once a frame is rendered it can be reproduced instantly afterward, even for large image sizes.
-
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
-
 - Command-line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
-
 - Rotoscoping, rotopainting, and tracking support
-
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.
-
 - Python 2 scripting integration:
+
   - Parameters expressions
   - User-defined parameters
   - Nodes groups as Python scripts
@@ -100,12 +87,12 @@ The following graphics cards are supported for hardware-accelerated rendering:
 
 On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
 
-
 ## Installing
 
 ### Binary distribution
 
 Standalone binary distributions of Natron are available for GNU/Linux, Windows, and macOS on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
+
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
 - [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
@@ -116,6 +103,7 @@ For each architecture / operating system, you can either download a stable relea
 ### Building and installing from source
 
 There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
+
 - [GNU/Linux](INSTALL_LINUX.md)
 - [macOS](INSTALL_MACOS.md)
 - [FreeBSD](INSTALL_FREEBSD.md)

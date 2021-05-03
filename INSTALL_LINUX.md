@@ -1,9 +1,15 @@
 Instructions for installing Natron from sources on GNU/Linux
 ============================================================
 
-This file is supposed to guide you step by step to have working (compiling) version of
-Natron on GNU/Linux.
+This file is supposed to guide you step by step to have working (compiling) version of Natron on GNU/Linux. Here's the gist of what you need to know:
 
+* It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
+* If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
+* If you are on Centos, Fedora or RHEL, see [here](#centos7) for specific instructions 
+* If you are on a Debian-based Linux (such as Ubuntu, KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
+* If you are willing to try the complete installation process, the instructions are below
+
+0. [Using Docker](#using-docker)
 1. [Dependencies](#dependencies)
   - [Installing the full Natron SDK](#installing-the-full-natron-sdk)
     - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
@@ -26,6 +32,15 @@ Natron on GNU/Linux.
     - [CentOS7/Fedora](#centos7)
 5. [Generating Python bindings](#generating-python-bindings)
 
+# Using Docker
+
+If you have `docker` installed, the installation procedure is very simple. Simply create a directory called `builds`, and then run the following command:
+
+```bash
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+```
+
+Docker will automatically do the rest for you, and you should have a complete Natron binary in `./builds` (as a tgz archive).
 
 # Dependencies
 
@@ -220,45 +235,73 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 ## Arch Linux
 
-On Arch Linux you can do the following:
-```
-sudo pacman -S expat boost
-```
-Install the following packages from AUR:
-```
-qt4 python2-pyside python2-shiboken
-```
+On Arch Linux, there are two tested methods of compiling Natron: using the AUR or via manual compiling.
 
-Cairo has to be build from source, because Arch Linux does not provide a static version (as far as we know). It is fairly easy to do:
+### If using AUR
+
+Simply run the command below:
 
 ```
-git clone git://anongit.freedesktop.org/git/cairo
-cd cairo
-./autogen.sh
-make
-sudo make install
+yay -S natron-compositor
 ```
 
-It should be installed in `/usr/local/lib`
+### If compiling manually
 
-For the config.pri, use the following:
+First, install build dependencies. You can install GCC, Expat and Boost directly from the Arch Linux official repositories, like so:
 
-```pri
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
+```
+sudo pacman -S expat boost gcc
+```
+
+You will also need additional Boost libraries, cairo, and Qt4 (provided by PySide). They can be installed with the following command:
+
+```
+yay -S boost-libs cairo glfw-x11 python2-pyside
+```
+
+Then, clone Natron's repo:
+
+```
+git clone https://github.com/NatronGitHub/Natron && cd Natron
+```
+
+Update submodules:
+
+```
+git submodule init
+git submodule update -i --recursive
+```
+
+And make a build folder:
+
+```
+mkdir build && cd build
+```
+
+At this point, you need a special configuration file called a `config.pri`. On every operating system and distro this will be different, including for Arch Linux. First, make it by running this command:
+
+```
+touch ../config.pri
+```
+
+Now, open `../config.pri` with Vim or Emacs (or whatever editor you prefer), and paste in these lines to the empty file. Here are some recommended instructions to do so:
+
+```
+# These are the lines you should paste into your empty `config.pri`
+boost: LIBS += -lboost_serialization
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo {
-        # Building cairo from source (git clone, make, make install) is installed in /usr/local/lib
-        PKGCONFIG -= cairo
+        PKGCONFIG += cairo
         LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-        LIBS += /usr/local/lib/libcairo.a
 }
 pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+        PKGCONFIG -= pyside
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
+        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+        LIBS += -lpyside-python2.7
 }
 shiboken {
         PKGCONFIG -= shiboken
@@ -266,6 +309,20 @@ shiboken {
         LIBS += -lshiboken-python2.7
 }
 ```
+
+You're now all set to compile. Use `qmake` to generate a Makefile for final compiling, like this:
+
+```
+qmake-qt4 -r ../Project.pro PREFIX=/usr BUILD_USER_NAME="Arch_Linux" CONFIG+=custombuild CONFIG+=openmp DEFINES+=QT_NO_DEBUG_OUTPUT QMAKE_CFLAGS_RELEASE="${CFLAGS}" QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" QMAKE_LFLAGS_RELEASE="${LDFLAGS}"
+```
+
+Last, compile with `make`:
+
+```
+make
+```
+
+Compiling should take approximately 10 minutes. The binaries will be found in the `build/App` folder. In order to launch Natron after compiling, simply do `./App/Natron`, and you can then start using Natron!
 
 
 ## Debian-based
