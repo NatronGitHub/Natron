@@ -733,48 +733,19 @@ ViewerGL::Implementation::drawSelectionRectangle()
 void
 ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
 {
-    ///We divide by 2 the tiles count because one texture is 4 tiles actually
-    QPointF topLeft, btmRight;
-    double screenW, screenH;
-    QPointF rodBtmLeft;
-    QPointF rodTopRight;
-    {
-        QMutexLocker l(&zoomCtxMutex);
-        topLeft = zoomCtx.toZoomCoordinates(0, 0);
-        screenW = zoomCtx.screenWidth();
-        screenH = zoomCtx.screenHeight();
-        btmRight = zoomCtx.toZoomCoordinates(screenW - 1, screenH - 1);
-        rodBtmLeft = zoomCtx.toWidgetCoordinates(rod.x1, rod.y1);
-        rodTopRight = zoomCtx.toWidgetCoordinates(rod.x2, rod.y2);
-    }
-    double xTilesCountF = screenW / (checkerboardTileSize * 4); //< 4 because the texture contains 4 tiles
-    double yTilesCountF = screenH / (checkerboardTileSize * 4);
-    GLuint savedTexture;
+    // Re-use drawCheckerboardTexture(const QPolygonF& polygon).
+    // Another solution would be to use glScissor, but:
+    // - glScissor is not used often in OpenGL, and often has bugs in OpenGL implementations.
+    // - glScissor seems to have a bug, at least on macOS Catalina and Big Sur (10.15/11.x).
+    // See:
+    // - https://discuss.pixls.us/t/checker-mask-offset-issue/24784
+    // - https://github.com/NatronGitHub/Natron/issues/614
+    // glScissor-based implementation available from:
+    // https://github.com/NatronGitHub/Natron/blob/c8e931817493afaf44bac0ca8f78c982b4c50a31/Gui/ViewerGLPrivate.cpp#L735
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
-    {
-        GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-
-        glEnable(GL_SCISSOR_TEST);
-        glScissor( rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y() );
-
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-        glBegin(GL_POLYGON);
-        glTexCoord2d(0., 0.);
-        glVertex2d( topLeft.x(), btmRight.y() );
-        glTexCoord2d(0., yTilesCountF);
-        glVertex2d( topLeft.x(), topLeft.y() );
-        glTexCoord2d(xTilesCountF, yTilesCountF);
-        glVertex2d( btmRight.x(), topLeft.y() );
-        glTexCoord2d(xTilesCountF, 0.);
-        glVertex2d( btmRight.x(), btmRight.y() );
-        glEnd();
-
-        //glDisable(GL_SCISSOR_TEST);
-    } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
-    glCheckError();
+    QPolygonF polygon;
+    polygon << QPointF(rod.x1, rod.y1) << QPointF(rod.x2, rod.y1) << QPointF(rod.x2, rod.y2) << QPointF(rod.x1, rod.y2);
+    drawCheckerboardTexture(polygon);
 }
 
 void
@@ -804,8 +775,10 @@ ViewerGL::Implementation::drawCheckerboardTexture(const QPolygonF& polygon)
         for (QPolygonF::const_iterator it = polygon.begin();
              it != polygon.end();
              ++it) {
+            // Count the y texture coordinate from the top, so that the checkerboard texture doesn't
+            // change when we enable wipe (which removes space from the bottom of the window).
             glTexCoord2d( xTilesCountF * ( it->x() - topLeft.x() )  / ( btmRight.x() - topLeft.x() ),
-                          yTilesCountF * ( it->y() - btmRight.y() ) / ( topLeft.y() - btmRight.y() ) );
+                          yTilesCountF * ( topLeft.y() - it->y() ) / ( topLeft.y() - btmRight.y() ) );
             glVertex2d( it->x(), it->y() );
         }
         glEnd();
