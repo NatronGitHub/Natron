@@ -156,8 +156,8 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
-  #allow_failures:
-  #  - os: osx # if we exceed the time limit
+  allow_failures:
+    - os: osx # if we exceed the time limit
   fast_finish: true
 
 

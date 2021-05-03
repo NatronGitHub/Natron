@@ -89,7 +89,7 @@
 #define PLUGINID_OFX_READPNG      "fr.inria.openfx.ReadPNG"
 #define PLUGINID_OFX_WRITEPNG     "fr.inria.openfx.WritePNG"
 #define PLUGINID_OFX_READPDF      "fr.inria.openfx.ReadPDF"
-#define PLUGINID_OFX_READBRAW     "net.sf.openfx.BlackMagicRAW"
+#define PLUGINID_OFX_READBRAW     "net.sf.openfx.BlackmagicRAW"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")

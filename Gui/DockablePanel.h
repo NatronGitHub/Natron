@@ -140,6 +140,7 @@ public:
     FloatingWidget* getFloatingWindow() const;
 
     void restoreHideUnmodifiedState(bool hideUnmodified);
+    void restoreMinimizedState(bool minimized);
 
 public:
 
