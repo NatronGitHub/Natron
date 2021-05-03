@@ -1199,6 +1199,16 @@ DockablePanel::restoreHideUnmodifiedState(bool hideUnmodified)
     onHideUnmodifiedButtonClicked(hideUnmodified);
 }
 
+void
+DockablePanel::restoreMinimizedState(bool minimized)
+{
+    if (!_imp->_minimize) {
+        return;
+    }
+    _imp->_minimize->setChecked(minimized);
+    minimizeOrMaximize(minimized);
+}
+
 FloatingWidget*
 DockablePanel::floatPanel()
 {

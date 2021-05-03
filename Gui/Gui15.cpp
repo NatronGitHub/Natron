@@ -437,7 +437,7 @@ Gui::setVisibleProjectSettingsPanel(bool minimized)
         addVisibleDockablePanel( _imp->_projectGui->getPanel() );
     }
     if (minimized) {
-        _imp->_projectGui->getPanel()->minimizeOrMaximize(true);
+        _imp->_projectGui->getPanel()->restoreMinimizedState(true);
     }
     if ( !_imp->_projectGui->isVisible() ) {
         _imp->_projectGui->setVisible(true);

@@ -475,7 +475,7 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     }
 
     if (minimized) {
-        _settingsPanel->minimizeOrMaximize(true);
+        _settingsPanel->restoreMinimizedState(true);
     }
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
