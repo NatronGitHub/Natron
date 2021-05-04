@@ -5,12 +5,22 @@
 # History
 
 
-## Version 2.4.0
+## Version 2.4.1
 
 ### Known issues
 
-- Rendering sometimes silently stalls after X frames #248
-- Some image formats may have issues (PCX, PSB, CR2) #602
+- Rendering sometimes silently stalls after X frames. #248
+- Some image formats may have issues (PCX, PSB, CR2). #602
+- MTS video files are sometimes not read correctly. #186
+
+### Changes
+
+- Fix checkerboard drawing on macOS Catalina and later. #614
+
+### Plugins
+
+
+## Version 2.4.0
 
 ### Changes
 

@@ -8,7 +8,7 @@ cp ../html/_groupChannel.html groupitem-foot.txt
 cp ../html/_group.html group-head.txt
 cp ../html/_group.html group-foot.txt
 
-sed -e "s/Natron 2.4.0 documentation/NATRON_DOCUMENTATION/g" -e "s/Dot/%1/g" -e "s/Channel/%1/g" -i .bak *txt
+sed -e "s/Natron 2.4.1 documentation/NATRON_DOCUMENTATION/g" -e "s/Dot/%1/g" -e "s/Channel/%1/g" -i .bak *txt
 
 sed -e 's/<link rel="next".*//g' -e 's/<link rel="prev".*//g' -i .bak plugin*txt
 ```

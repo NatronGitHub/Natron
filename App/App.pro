@@ -23,7 +23,7 @@ TARGET = Natron
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
 VERSION_23 = 2.3.16
-VERSION_24 = 2.4.0
+VERSION_24 = 2.4.1
 VERSION_30 = 3.0.0
 
 # The version for this branch
