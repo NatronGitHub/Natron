@@ -49,6 +49,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
+
 #include "Engine/LibraryBinary.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Settings.h"
@@ -289,7 +293,14 @@ void
 GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
-    QApplication* app = new Application(this, argc, argv);
+    QApplication* app;
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                               boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
+        app = new Application(this, argc, argv);
+    }
     QDesktopWidget* desktop = app->desktop();
     int dpiX = desktop->logicalDpiX();
     int dpiY = desktop->logicalDpiY();
