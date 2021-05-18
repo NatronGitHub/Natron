@@ -779,6 +779,7 @@ build harfbuzz
 build fribidi # (for libass and ffmpeg)
 build pango
 build libcroco # (requires glib and libxml2)
+build xmlto # (required by shared-mime-info)
 build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)

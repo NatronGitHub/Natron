@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -311,9 +311,9 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_colorButton = new Button(QIcon(p), QString(), _imp->_headerWidget);
             _imp->_colorButton->setFixedSize(mediumBSize);
             _imp->_colorButton->setIconSize(mediumIconSize);
-            _imp->_colorButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
-                                                                              "By default the color of the node is the one set in the "
-                                                                              "preferences of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ),
+            _imp->_colorButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Node color in the nodegraph. "
+                                                                              "The default node color is set in the "
+                                                                              "%1 preferences.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ),
                                                                            NATRON_NAMESPACE::WhiteSpaceNormal) );
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
@@ -331,8 +331,8 @@ DockablePanel::DockablePanel(Gui* gui,
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(mediumBSize);
                 _imp->_overlayButton->setIconSize(mediumIconSize);
-                _imp->_overlayButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
-                                                                                    "Some plug-ins understand it and will use it to change the color of "
+                _imp->_overlayButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Overlay color in the viewer. "
+                                                                                    "Some plug-ins will use it to change the color of "
                                                                                     "the overlay."), NATRON_NAMESPACE::WhiteSpaceNormal) );
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
                 QObject::connect( _imp->_overlayButton, SIGNAL(clicked()), this, SLOT(onOverlayButtonClicked()) );
@@ -385,7 +385,7 @@ DockablePanel::DockablePanel(Gui* gui,
                 QObject::connect( node.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
             }
             _imp->_nameLineEdit->setText(initialName);
-            QObject::connect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
+            QObject::connect( _imp->_nameLineEdit, SIGNAL(returnPressed()), this, SLOT(onLineEditNameEditingFinished()) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new Label(initialName, _imp->_headerWidget);
@@ -760,6 +760,12 @@ DockablePanel::onLineEditNameEditingFinished()
     }
 
     if (oldName == newName) {
+        return;
+    }
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+        _imp->_nameLineEdit->setText(oldName);
+        Dialogs::errorDialog(_imp->_pluginLabel.toStdString(), newName.toStdString() + " is a Python keyword");
+
         return;
     }
 

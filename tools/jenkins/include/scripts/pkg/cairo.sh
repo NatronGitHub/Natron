@@ -2,11 +2,11 @@
 
 # Install cairo
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/cairo.html
-CAIRO_VERSION=1.17.2+f93fc72c03e
-CAIRO_VERSION_PKGCONFIG=1.17.3
+CAIRO_VERSION=1.17.4
+CAIRO_VERSION_PKGCONFIG=${CAIRO_VERSION}
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
-#CAIRO_SITE="https://www.cairographics.org/releases"
-CAIRO_SITE="http://anduin.linuxfromscratch.org/BLFS/cairo"
+CAIRO_SITE="https://www.cairographics.org/snapshots"
+#CAIRO_SITE="http://anduin.linuxfromscratch.org/BLFS/cairo"
 if download_step; then
     download "$CAIRO_SITE" "$CAIRO_TAR"
 fi

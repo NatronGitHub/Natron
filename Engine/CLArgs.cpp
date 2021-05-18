@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -245,7 +245,7 @@ void
 CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = tr("%1 Version %2\n"
-                     "(C) 2018-2020 The Natron developers\n"
+                     "(C) 2018-2021 The Natron developers\n"
                      "(C) 2013-2018 INRIA and Alexandre Gauthier-Foichat\n"
                      ">>>Use the --help or -h option to print usage.<<<").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) );
     std::cout << msg.toStdString() << std::endl;

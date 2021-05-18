@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -859,8 +859,12 @@ DopeSheet::onNodeNameEditDialogFinished()
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
-            _imp->pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+                Dialogs::errorDialog(dialog->getNode()->getNode()->getLabel(), newName.toStdString() + " is a Python keyword");
+            } else {
+                QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
+                _imp->pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            }
         }
         dialog->deleteLater();
     }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -544,8 +544,12 @@ NodeGraph::onNodeNameEditDialogFinished()
         QDialog::DialogCode code =  (QDialog::DialogCode)dialog->result();
         if (code == QDialog::Accepted) {
             QString newName = dialog->getTypedName();
-            QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
-            pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName.toStdString()) ) {
+                Dialogs::errorDialog(dialog->getNode()->getNode()->getLabel(), newName.toStdString() + " is a Python keyword");
+            } else {
+                QString oldName = QString::fromUtf8( dialog->getNode()->getNode()->getLabel().c_str() );
+                pushUndoCommand( new RenameNodeUndoRedoCommand(dialog->getNode(), oldName, newName) );
+            }
         }
         dialog->deleteLater();
     }
@@ -616,6 +620,11 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
         return;
     }
     std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        Dialogs::errorDialog(isGrp->getNode()->getLabel(), newName + " is a Python keyword");
+
+        return;
+    }
     for (std::size_t i = 0; i < newName.size(); ++i) {
         if (newName[i] == '.') {
             newName[i] = '_';
@@ -667,16 +676,12 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 
         //Restore links once all children are created for alias knobs/expressions
         NodesList allNodes;
-        group->getActiveNodes(&allNodes);
-        // If the group is a Group node, append to all nodes reachable through links
-        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
-        if (isGroupNode) {
-            allNodes.push_back(isGroupNode->getNode());
-        }
+        getGui()->getApp()->getProject()->getActiveNodesExpandGroups(&allNodes);
 
         std::list<NodeSerializationPtr>::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr> > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
-            it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
+            it->second->getNode()->storeKnobsLinks(**itSerialization, oldNewScriptNamesMapping);
+            it->second->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // may not fail
         }
 
     }

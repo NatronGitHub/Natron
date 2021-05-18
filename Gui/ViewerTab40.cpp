@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -829,6 +829,11 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 {
     // always running in the main thread
     std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        Dialogs::errorDialog(_imp->viewerNode->getNode()->getLabel(), newName + " is a Python keyword");
+
+        return;
+    }
     std::string oldName = getScriptName();
 
     for (std::size_t i = 0; i < newName.size(); ++i) {

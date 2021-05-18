@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -1217,13 +1217,11 @@ LoadNodePresetsCommand::redo()
     }
 
     NodesList allNodes;
-    internalNode->getGroup()->getActiveNodes(&allNodes);
-    NodeGroup* isGroup = internalNode->isEffectGroup();
-    if (isGroup) {
-        isGroup->getActiveNodes(&allNodes);
-    }
+    internalNode->getApp()->getProject()->getActiveNodesExpandGroups(&allNodes);
+
     std::map<std::string, std::string> oldNewScriptNames;
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes, oldNewScriptNames);
+    internalNode->storeKnobsLinks(*_newSerializations.front(), oldNewScriptNames);
+    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames, true); // may not fail
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;

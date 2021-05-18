@@ -77,13 +77,13 @@ if [ "$FAIL" = "0" ]; then
         mkdir -p ~/.cache/INRIA/Natron/{ViewerCache,DiskCache} || true
         ocio="$TMP_PORTABLE_DIR/Resources/OpenColorIO-Configs/blender/config.ocio"
         if [ ! -f "$ocio" ]; then
-            echo "*** Error: OCIO file $ocio is missing"
+            printStatusMessage "*** Error: OCIO file $ocio is missing"
         fi
         bin="$TMP_PORTABLE_DIR/bin/NatronRenderer-bin"
         if [ ! -f "$bin" ]; then
             bin="$TMP_PORTABLE_DIR/bin/NatronRenderer"
             if [ ! -f "$bin" ]; then
-                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+                printStatusMessage "*** Error: NatronRenderer binary $bin is missing"
             fi
         fi
         env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
@@ -129,7 +129,7 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$bin" ]; then
             bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer"
             if [ ! -f "$bin" ]; then
-                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+                echo "*** Error: NatronRenderer binary $bin is missing"
             fi
         fi
         env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
@@ -138,7 +138,9 @@ if [ "$FAIL" = "0" ]; then
     popd
 
     printStatusMessage "*** END unit tests -> $FAIL"
-    
+
+    # Save unit tests results
+    pushd "$TMP_PATH/$TESTDIR"
     if [ -d "$CACHEDIR" ]; then
         rm -rf "$CACHEDIR"
     fi
@@ -152,13 +154,17 @@ if [ "$FAIL" = "0" ]; then
         echo "-----------------------------------------------------------------------"
         cat result.txt
         echo "-----------------------------------------------------------------------"
+        printStatusMessage "Moving test results to $BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
+        mv result.txt "$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
     fi
 
     UNIT_TESTS_FAIL_DIR="$BUILD_ARCHIVE_DIRECTORY/unit_tests_failures"
-    mkdir -p "$UNIT_TESTS_FAIL_DIR"
-    if [ -n "$UNIT_TESTS_FAIL_DIR:-}" ] && [ -d "failed" ] && [ "$(ls -A failed)" ]; then
+    if [ -n "${UNIT_TESTS_FAIL_DIR:-}" ] && [ -d "failed" ] && [ "$(ls -A failed)" ]; then
+        printStatusMessage "Moving test failures to $UNIT_TESTS_FAIL_DIR"
+        mkdir -p "$UNIT_TESTS_FAIL_DIR"
         cd failed && mv ./* "$UNIT_TESTS_FAIL_DIR/"
     fi
+    popd
 fi
 cd "$CWD"
 exit $FAIL

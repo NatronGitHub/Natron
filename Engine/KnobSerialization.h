@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -86,7 +86,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
 
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
-#define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME
+#define MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL 3
+#define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL
 
 NATRON_NAMESPACE_ENTER
 
@@ -94,12 +95,14 @@ struct MasterSerialization
 {
     int masterDimension;
     std::string masterNodeName;
+    std::string masterNodeNameFull;
     std::string masterTrackName;
     std::string masterKnobName;
 
     MasterSerialization()
         : masterDimension(-1)
         , masterNodeName()
+        , masterNodeNameFull()
         , masterTrackName()
         , masterKnobName()
     {
@@ -111,6 +114,7 @@ struct MasterSerialization
     {
         ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
         ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
+        ar & ::boost::serialization::make_nvp("MasterNodeNameFull", masterNodeNameFull);
         ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
         ar & ::boost::serialization::make_nvp("MasterTrackName", masterTrackName);
     }
@@ -121,6 +125,9 @@ struct MasterSerialization
     {
         ar & ::boost::serialization::make_nvp("MasterDimension", masterDimension);
         ar & ::boost::serialization::make_nvp("MasterNodeName", masterNodeName);
+        if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL) {
+            ar & ::boost::serialization::make_nvp("MasterNodeNameFull", masterNodeNameFull);
+        }
         ar & ::boost::serialization::make_nvp("MasterKnobName", masterKnobName);
 
         if (version >= MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME) {
@@ -928,11 +935,9 @@ public:
     ~KnobSerialization() { delete _extraData; }
 
     /**
-     * @brief This function cannot be called until all knobs of the project have been created.
+     * @brief Store the links, which can be restored once all Nodes and Knobs have been created, using KnobI::restoreLinks()
      **/
-    void restoreKnobLinks(const KnobIPtr & knob,
-                          const NodesList & allNodes,
-                          const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+    void storeKnobLinks(const KnobIPtr & knob);
 
     /**
      * @brief This function cannot be called until all knobs of the project have been created.

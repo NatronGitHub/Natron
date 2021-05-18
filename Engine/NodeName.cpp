@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -312,6 +312,9 @@ Node::setNameInternal(const std::string& name,
 
 
     if ( !newName.empty() ) {
+        if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+            throw std::runtime_error(newName + " is a Python keyword");
+        }
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
         PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
@@ -408,6 +411,10 @@ Node::setScriptName(const std::string& name)
     } else {
         newName = name;
     }
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(newName) ) {
+        throw std::runtime_error(newName + " is a Python keyword");
+    }
+
     //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if ( dynamic_cast<GroupOutput*>( _imp->effect.get() ) ) {
         throw std::runtime_error( tr("Changing the script-name of an Output node is not a valid operation.").toStdString() );

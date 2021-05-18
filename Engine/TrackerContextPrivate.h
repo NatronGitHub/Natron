@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -57,8 +57,6 @@ GCC_DIAG_ON(maybe-uninitialized)
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QtConcurrentMap>
-
-#include <boost/bind.hpp>
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeSerialization.h"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,8 +37,6 @@
 
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
@@ -1848,7 +1846,7 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
 
 
     KnobStringPtr knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
-    knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
+    knobChangedCallback->setHintToolTip( tr("Name of a Python function to be called at each  "
                                             "parameter change. Either define this function in the Script Editor "
                                             "or in the init.py script or even in the script of a Python group plug-in.\n"
                                             "The signature of the callback is: callback(thisParam, thisNode, thisGroup, app, userEdited) where:\n"
@@ -1864,8 +1862,8 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     _imp->knobChangedCallback = knobChangedCallback;
 
     KnobStringPtr inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback"), 1, false);
-    inputChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called after "
-                                             "each connection is changed for the inputs of the node. "
+    inputChangedCallback->setHintToolTip( tr("Name of a Python function to be called after "
+                                             "an input connection of the node is changed. "
                                              "Either define this function in the Script Editor "
                                              "or in the init.py script or even in the script of a Python group plug-in.\n"
                                              "The signature of the callback is: callback(inputIndex, thisNode, thisGroup, app):\n"
@@ -1884,10 +1882,10 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
     if (isGroup) {
         KnobStringPtr onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After Node Created"), 1, false);
         onNodeCreated->setName("afterNodeCreated");
-        onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
-                                          "is created in the group. This will be called in addition to the After Node Created "
+        onNodeCreated->setHintToolTip( tr("Name of a Python function to be called each time a node "
+                                          "is created in the group. This is called in addition to the After Node Created "
                                           " callback of the project for the group node and all nodes within it (not recursively).\n"
-                                          "The boolean variable userEdited will be set to True if the node was created "
+                                          "The boolean variable userEdited is set to True if the node was created "
                                           "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
                                           "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
                                           "- thisNode: the node which has just been created\n"
@@ -6528,7 +6526,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     if (getScriptName_mt_safe().empty()) {
         return;
     }
-
+    if ( NATRON_PYTHON_NAMESPACE::isKeyword(nodeName) ) {
+        throw std::runtime_error(nodeName + " is a Python keyword");
+    }
 
     PythonGILLocker pgl;
     PyObject* mainModule = appPTR->getMainModule();

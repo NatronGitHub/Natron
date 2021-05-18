@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -592,8 +592,8 @@ Settings::initializeKnobsUserInterface()
                                          "held by the properties dock at the same time."
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(1);
-    _maxPanelsOpened->setMaximum(100);
+    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMaximum(99);
     _uiPage->addKnob(_maxPanelsOpened);
 
     _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( this, tr("Value increments based on cursor position") );
@@ -1511,7 +1511,7 @@ Settings::setDefaultValues()
     // Caching
     _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50, 0);
-    _unreachableRAMPercent->setDefaultValue(5);
+    _unreachableRAMPercent->setDefaultValue(20); // see https://github.com/NatronGitHub/Natron/issues/486
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
     //_diskCachePath
@@ -2738,7 +2738,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "<hr/>\n"
         "<div role=\"contentinfo\">\n"
         "<p>\n"
-        "&copy; Copyright 2013-2020 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+        "&copy; Copyright 2013-2021 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
         "</p>\n"
         "</div>\n"
         "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -277,9 +277,13 @@ public:
                                    const KnobGroupPtr& group,
                                    const KnobPagePtr& page);
 
-    void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                   const NodesList & allNodes,
-                                   const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+    void storeKnobLinksRecursive(const GroupKnobSerialization* group,
+                                 const std::map<std::string, std::string>& oldNewScriptNamesMapping);
+
+    void restoreKnobLinksRecursive(const NodesList & allNodes,
+                                   const KnobGroupPtr& group,
+                                   const std::map<std::string, std::string>& oldNewScriptNamesMapping,
+                                   bool throwOnFailure);
 
     void ifGroupForceHashChangeOfInputs();
 

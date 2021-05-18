@@ -201,9 +201,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         fi
         # - openimageio
         if [ ! -d "$HOME/oiio/lib" ]; then
-            wget https://github.com/OpenImageIO/oiio/archive/Release-2.1.10.0.tar.gz -O /tmp/oiio.tgz;
+            wget https://github.com/OpenImageIO/oiio/archive/Release-2.2.12.0.tar.gz -O /tmp/oiio.tgz;
             tar -xvzf /tmp/oiio.tgz -C $HOME;
-            pushd $HOME/oiio-Release-2.1.10.0;
+            pushd $HOME/oiio-Release-2.2.12.0;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_ROOT_DIR=$HOME/openexr -DOPENEXR_ROOT_DIR=$HOME/openexr -DOCIO_HOME=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
             make $J && make install;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -307,8 +307,12 @@ AppManagerPrivate::declareSettingsToPython()
     ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
     const KnobsVec& knobs = _settings->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const std::string name = (*it)->getName();
+        if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
+            throw std::runtime_error(name + " is a Python keyword");
+        }
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
-        (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
+        name << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << name << "')\n";
     }
 }
 

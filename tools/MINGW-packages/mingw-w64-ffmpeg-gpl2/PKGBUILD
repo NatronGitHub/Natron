@@ -5,7 +5,7 @@
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}-gpl2"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
-pkgver=4.3.1
+pkgver=4.3.2
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
@@ -41,13 +41,14 @@ depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-x264"
          "${MINGW_PACKAGE_PREFIX}-x265"
          "${MINGW_PACKAGE_PREFIX}-xvidcore"
+	 "${MINGW_PACKAGE_PREFIX}-dav1d"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-nasm"
              "${MINGW_PACKAGE_PREFIX}-aom")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz)
-sha256sums=('ad009240d46e307b4e03a213a0f49c11b650e445b1f8be0dda2a9212b34d2ffb')
+sha256sums=('46e4e64f1dd0233cbc0934b9f1c0da676008cad34725113fb7f802cfa84ccddb')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
@@ -75,6 +76,7 @@ build() {
     --enable-fontconfig \
     --enable-gnutls \
     --enable-gpl \
+    --enable-libdav1d \
     --enable-libaom \
     --enable-libass \
     --enable-libbluray \

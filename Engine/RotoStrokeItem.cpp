@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,8 +36,6 @@
 #include <QtCore/QDebug>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -385,55 +383,6 @@ RotoStrokeItem::appendPoint(bool newStroke,
         }
         _imp->lastTimestamp = t;
         qDebug("t[%d]=%g", nk, t);
-
-#if 0   // the following was disabled because it creates oscillations.
-
-        // if it's at least the 3rd point in curve, add intermediate point if
-        // the time since last keyframe is larger that the time to the previous one...
-        // This avoids overshooting when the pen suddenly stops, and restarts much later
-        if (nk >= 2) {
-            KeyFrame xp, xpp;
-            bool valid;
-            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 1, &xp);
-            assert(valid);
-            valid = _imp->xCurve.getKeyFrameWithIndex(nk - 2, &xpp);
-            assert(valid);
-
-            double tp = xp.getTime();
-            double tpp = xpp.getTime();
-            if ( (t != tp) && (tp != tpp) && ( (t - tp) > (tp - tpp) ) ) {
-                //printf("adding extra keyframe, %g > %g\n", t - tp, tp - tpp);
-                // add a keyframe to avoid overshoot when the pen stops suddenly and starts again much later
-                KeyFrame yp, ypp;
-                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 1, &yp);
-                assert(valid);
-                valid = _imp->yCurve.getKeyFrameWithIndex(nk - 2, &ypp);
-                assert(valid);
-                KeyFrame pp, ppp;
-                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 1, &pp);
-                assert(valid);
-                valid = _imp->pressureCurve.getKeyFrameWithIndex(nk - 2, &ppp);
-                assert(valid);
-                double tn = tp + (tp - tpp);
-                KeyFrame xn, yn, pn;
-                double alpha = (tp - tpp) / (t - tp);
-                assert(0 < alpha && alpha < 1);
-                xn.setTime(tn);
-                yn.setTime(tn);
-                pn.setTime(tn);
-                xn.setValue(xp.getValue() * (1 - alpha) + p.pos.x * alpha);
-                yn.setValue(yp.getValue() * (1 - alpha) + p.pos.y * alpha);
-                pn.setValue(pp.getValue() * (1 - alpha) + p.pressure * alpha);
-                _imp->xCurve.addKeyFrame(xn);
-                _imp->xCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                _imp->yCurve.addKeyFrame(yn);
-                _imp->yCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                _imp->pressureCurve.addKeyFrame(pn);
-                _imp->pressureCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
-                ++nk;
-            }
-        }
-#endif
 
         bool addKeyFrameOk; // did we add a new keyframe (normally yes, but just in case)
         int ki; // index of the new keyframe (normally nk, but just in case)

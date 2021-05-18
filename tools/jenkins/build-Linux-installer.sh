@@ -54,7 +54,8 @@ else
 fi
 export LD_LIBRARY_PATH
 
-
+# Pretty architecture/platform identifier (used for breakpad symbol files)
+PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
@@ -578,7 +579,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/2.7/get-pip.py
+    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi

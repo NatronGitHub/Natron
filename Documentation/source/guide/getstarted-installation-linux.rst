@@ -15,12 +15,12 @@ Requirements
 Natron will work on any Linux distribution which still receives seccurity updates.
 This includes (but not limited to):
 
- * `CentOS <https://www.centos.org/>`_ / `RHEL <https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux>`_ 6.10 and later
+ * `CentOS <https://www.centos.org/>`_ / `RHEL <https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux>`_ 7 and later
  * `Debian <https://www.debian.org/>`_ 8 "Jessie" and later
  * `Ubuntu <https://www.ubuntu.com/>`_ 16.04 LTS (Xenial Xerus) and later
- * `Fedora <https://getfedora.org>`_ 28 and later
+ * `Fedora <https://getfedora.org>`_ 32 and later
 
-The official binaries are built on CentOS 6.10, thus the basic system requirements are:
+The official binaries are built on CentOS 7, thus the basic system requirements are:
 
  * x86 compatible CPU (Core2 x86_64 or higher recommended)
  * Linux 2.6.32 and higher

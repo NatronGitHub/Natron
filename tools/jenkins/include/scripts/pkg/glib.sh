@@ -7,7 +7,7 @@
 # https://github.com/GNOME/glib/commit/0beb62f564072f3585762c9c55fe894485993b62#diff-6b790fb09bbee6ca6c8ee1a76c0f49be
 #GLIB_VERSION=2.54.3 # last version before 2.56
 #GLIB_VERSION=2.58.3 # last version before meson
-GLIB_VERSION=2.66.7 # requires meson, but also a recent version of binutils
+GLIB_VERSION=2.66.8 # requires meson, but also a recent version of binutils
 #if grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
 #    GLIB_VERSION=2.56.1
 #fi
@@ -28,8 +28,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc"
 		patch -Np1 -i "$INC_PATH/patches/glib/glib-2.60.2-skip_warnings-1.patch"
 		mkdir build
 		pushd build
-		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME"      \
-			-Dman=false -Dgtk_doc=false        \
+		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" \
+			-Dman=false -Dgtk_doc=false \
 			-Dselinux=disabled \
 			..
 		env CFLAGS="$BF" CXXFLAGS="$BF" ninja

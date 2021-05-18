@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,6 +44,8 @@
 
 NATRON_NAMESPACE_ENTER
 
+// Was eKeyframeTypeLinear until Natron 2.3.15.
+#define BEZIER_KEYFRAME_INTERPOLATION_TYPE eKeyframeTypeSmooth
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
 
@@ -112,7 +114,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time, x);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveX->addKeyFrame(k);
         }
@@ -120,7 +122,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time, y);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveY->addKeyFrame(k);
         }
@@ -267,7 +269,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time, x);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveLeftBezierX->addKeyFrame(k);
         } else {
@@ -276,7 +278,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time, y);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveLeftBezierY->addKeyFrame(k);
         } else {
@@ -293,7 +295,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time, x);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveRightBezierX->addKeyFrame(k);
         }
@@ -301,7 +303,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time, y);
-        k.setInterpolation(eKeyframeTypeLinear);
+        k.setInterpolation(BEZIER_KEYFRAME_INTERPOLATION_TYPE);
         if (!useGuiCurves) {
             _imp->curveRightBezierY->addKeyFrame(k);
         }

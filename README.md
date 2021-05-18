@@ -1,5 +1,5 @@
 # Natron
-[![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](code-of-conduct.md) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.svg?branch=RB-2.3)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.svg?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received)
+[![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.svg?branch=RB-2.3)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.svg?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received) [![OpenHub](https://www.openhub.net/p/natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron)
 
 ---
 
@@ -13,7 +13,7 @@ Natron is a free, open-source (GPLv2 license) video compositor, similar in funct
 
 ## Help wanted
 
-Natron is looking for developers and maintainers! You can help developing and maintaining Natron if you have the following skills:
+Natron is looking for developers and maintainers! You can help develop and maintain Natron if you have the following skills:
 
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
 - [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
@@ -28,7 +28,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 ## Features
 
-- 32-bit floating point linear color processing pipeline.
+- 32-bit floating-point linear color processing pipeline.
 
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
 
@@ -48,7 +48,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
 
-- Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower res to speed up rendering).
+- Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
 
 - Multi-task: Natron can render multiple graphs at the same time. It can also be used as a background process in headless mode.
 
@@ -58,11 +58,11 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - Fast & interactive viewer - Smooth & accurate zooming/panning even for very large image sizes (tested on 27k x 30k images).
 
-- Real-time playback: Natron offers real-time playback with best performances thanks to its RAM/Disk cache. Once a frame is rendered it can be reproduced instantly afterwards, even for large image sizes.
+- Real-time playback: Natron offers real-time playback with excellent performance thanks to its RAM/Disk cache. Once a frame is rendered it can be reproduced instantly afterward, even for large image sizes.
 
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
 
-- Command line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
+- Command-line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
 
 - Rotoscoping, rotopainting, and tracking support
 
@@ -76,7 +76,7 @@ If you are willing to help, please contact the development team on the [pixls.us
   - User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
   - Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
 
-- Multi-channel compositing: Natron is able to manipulate multi-layered EXR files thanks to OpenImageIO. Users can choose to work with any layer or channel on any node, new custom layers can also be created.
+- Multi-channel compositing: Natron can manipulate multi-layered EXR files thanks to OpenImageIO. Users can choose to work with any layer or channel on any node, new custom layers can also be created.
 
 ## Requirements
 
@@ -138,7 +138,7 @@ You should start contributing to the Natron project by first picking an easy tas
 - 2: Pyplugs, Shadertoy scripts (there are still developers for these, see https://github.com/NatronGitHub/natron-plugins )
 - 4: Write an OpenFX plugin, starting from an example in [openfx-misc](https://github.com/NatronGitHub/openfx-misc) or from the [official OpenFX](https://github.com/NatronGitHub/openfx) examples, for example try to make an OpenFX plugin from a widely-used PyPlug. There are a few OFX plugin developers in the community.
 - 5: Build Natron locally (on any system)
-- 7: Compile a redistributable Natron binary (Linux is easier, since we build and ship most dependencies using the build scripts)
+- 7: Compile a redistributable Natron binary (Linux is easier since we build and ship most dependencies using the build scripts)
 - 9: Fix a simple Natron bug
 - 10: Add new functionality to Natron (see issues)
 
@@ -148,7 +148,7 @@ We coordinate development through the [GitHub issue tracker](https://github.com/
 
 The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.3.
 
-Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, version which are no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
+Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, a version that is no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.3), preferably on the ["RB-2.3"](https://github.com/NatronGitHub/Natron/tree/RB-2.3) branch.
 

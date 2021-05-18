@@ -448,9 +448,15 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     cd "$CWD"
     # Update build scripts, except launchBuildMain.sh, which is being executed
     # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
-    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ]; then
-        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
+    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ] && ! cmp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" "launchBuildMain.sh" >/dev/null 2>&1 && [ -z "${LAUNCHBUILDMAIN_UPDATED+x}" ]; then
+        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Restarting after a 5s pause."
         sleep 5
+        if [ -f ./launchBuildMain.sh.orig ]; then
+            rm -f ./launchBuildMain.sh.orig || true
+        fi
+        mv ./launchBuildMain.sh ./launchBuildMain.sh.orig || true
+        cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh || true
+        exec env LAUNCHBUILDMAIN_UPDATED=1 ./launchBuildMain.sh "$*"
     fi
     if [ -z "${NOUPDATE:+x}" ]; then
         (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
@@ -509,12 +515,18 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${PKGOS}-${PKGOS_BITS}"
+INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
 
 if [ "$COMPILE_TYPE" = "debug" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-debug"
 fi
 PORTABLE_DIRNAME="${INSTALLER_BASENAME}-no-installer"
+
+if [ "$PKGOS" = "Windows" ] && [ -f "/Setup.exe" ]; then
+    # Windows portable has installer, don't append "no-installer"
+    PORTABLE_DIRNAME="$INSTALLER_BASENAME"
+fi
+
 setBuildOption "INSTALLER_BASENAME" "$INSTALLER_BASENAME"
 setBuildOption "PORTABLE_DIRNAME" "$PORTABLE_DIRNAME"
 setBuildOption "TMP_PORTABLE_DIR" "${TMP_BINARIES_PATH}/$PORTABLE_DIRNAME"

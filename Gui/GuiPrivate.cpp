@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -371,9 +371,12 @@ GuiPrivate::createPropertiesBinGui()
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
-    _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
-    _maxPanelsOpenedSpinBox->setMinimum(1);
-    _maxPanelsOpenedSpinBox->setMaximum(100);
+    const int fontSize = appPTR->getAppFontSize();
+    const QSize maxPanelsOpenedSpinBoxSize(TO_DPIX(std::max(NATRON_SMALL_BUTTON_SIZE, 2 * fontSize)),
+                                           TO_DPIY(std::max(NATRON_SMALL_BUTTON_SIZE, fontSize * 3 / 2)));
+    _maxPanelsOpenedSpinBox->setFixedSize(maxPanelsOpenedSpinBoxSize);
+    _maxPanelsOpenedSpinBox->setMinimum(0);
+    _maxPanelsOpenedSpinBox->setMaximum(99);
     _maxPanelsOpenedSpinBox->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
                                                                            "that an unlimited number of panels can be opened."),

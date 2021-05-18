@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2020 The Natron developers
+ * (C) 2018-2021 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -992,8 +992,11 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     ss << appIDStr << " = " << NATRON_GUI_PYTHON_MODULE_NAME << ".natron.getGuiInstance(" << getAppID() << ") \n";
     const KnobsVec& knobs = getProject()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ss << appIDStr << "." << (*it)->getName() << " = "  << appIDStr  << ".getProjectParam('" <<
-        (*it)->getName() << "')\n";
+        const std::string& name = (*it)->getName();
+        if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
+            throw std::runtime_error(name + " is a Python keyword");
+        }
+        ss << appIDStr << "." << name << " = "  << appIDStr  << ".getProjectParam('" << name << "')\n";
     }
 
     std::string script = ss.str();

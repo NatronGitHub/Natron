@@ -484,7 +484,7 @@ See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
 
     :param icon: :class:`str<NatronEngine.std::string>`
 
-Set here the icon file path for the label. This should be either an absolute path or
+Icon file path for the label. This should be either an absolute path or
 a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
 label of the parameter.
 
@@ -497,7 +497,7 @@ label of the parameter.
 
     :param help: :class:`str<NatronEngine.std::string>`
 
-Set the help tooltip of the parameter.
+Tooltip help string for the parameter.
 See :func:`getHelp()<NatronEngine.Param.getHelp>`
 
 

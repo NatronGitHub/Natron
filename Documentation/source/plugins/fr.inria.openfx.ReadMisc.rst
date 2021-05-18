@@ -9,12 +9,12 @@ ReadMisc node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of ReadMisc (fr.inria.openfx.ReadMisc).*
+*This documentation is for version 1.2 of ReadMisc (fr.inria.openfx.ReadMisc).*
 
 Description
 -----------
 
-Read Misc image format.
+Read various image formats supported by ImageMagick.
 
 Inputs
 ------

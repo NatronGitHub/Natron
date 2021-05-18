@@ -4,6 +4,12 @@
 # see https://github.com/openexr/openexr/releases/
 if [ -z ${EXR_VERSION+x} ]; then
 EXR_VERSION=2.5.5
+EXR_CXX11_CONFIGURE_FLAGS=
+if version_gt "2.4.0" "${EXR_VERSION}"; then
+    EXR_CXX11_CONFIGURE_FLAGS=--enable-cxxstd=11
+else
+    EXR_CXX11_CONFIGURE_FLAGS=-DOPENEXR_CXX_STANDARD=11
+fi
 fi
 
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"
@@ -24,13 +30,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" 
         env PATH="$SDK_HOME/bin:$PATH" ./bootstrap
         #mkdir build;cd build
         # cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF -I${SDK_HOME}/include/OpenEXR" -DCMAKE_LIBRARY_PATH="${SDK_HOME}/lib" -DCMAKE_SHARED_LINKER_FLAGS="-L${SDK_HOME}/lib" -DCMAKE_EXE_LINKER_FLAGS="-L${SDK_HOME}/lib" -DCMAKE_C_COMPILER="$SDK_HOME/gcc/bin/gcc" -DCMAKE_CXX_COMPILER="${SDK_HOME}/gcc/bin/g++"  -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBUILD_SHARED_LIBS=ON -DNAMESPACE_VERSIONING=ON
-        env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static --disable-debug --disable-dependency-tracking
+        env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static --disable-debug --disable-dependency-tracking ${EXR_CXX11_CONFIGURE_FLAGS}
         make -j${MKJOBS}
         make install
     else
         mkdir build
         pushd build
-        cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME"
+        cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME" ${EXR_CXX11_CONFIGURE_FLAGS}
         # compiling openexr 2.5 requires lots of memory, let's limit to 2 jobs
         j=${MKJOBS}
         if [ $j -gt 2 ]; then

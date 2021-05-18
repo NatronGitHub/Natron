@@ -24,6 +24,9 @@ platforms           darwin
 license             GPL-2+
 maintainers         nomaintainer
 
+# exclude pre-release versions
+github.livecheck.regex  {([0-9.]+)}
+
 description         H.265 encoder
 long_description    x265 is a free software library and application for \
                     encoding video streams into the H.265/MPEG-H HEVC \

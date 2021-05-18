@@ -39,7 +39,7 @@ function updateBuildOptions() {
 
 # Set a build option in the build option file so it can be retrieved at different places
 function setBuildOption() {
-    $GSED -e "s/${1//\//\\/}=.*/${1//\//\\/}=${2//\//\\/}/" --in-place "$BUILD_OPTIONS_FILE"
+    $GSED -e "s/^ *${1//\//\\/}=.*/${1//\//\\/}=${2//\//\\/}/" --in-place "$BUILD_OPTIONS_FILE"
 }
 
 function dumpBuildOptions() {
