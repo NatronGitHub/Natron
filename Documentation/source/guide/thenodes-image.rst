@@ -1,10 +1,12 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
    
-Working with nodes
-==================
-Todo
+Image Nodes
+===========
 
-Nodes description
-=================
-See :doc:`the Nodes Description section<thenodes>`
+These are the nodes located in the image icon of the toolbar.
+
+.. toctree::
+   :maxdepth: 1
+   
+   thenodes-image-read

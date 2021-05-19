@@ -84,10 +84,8 @@ Export Layout...
   Save a ``.nl`` file.
   
 Restore default layout
-
-Some UI elements are stacked in the same screen position to acees these you can click on their tab names.
-
-In default Layout: Node Graph, Curve Editor, Dope Sheet are in the same lower left pane accessible through Tab navigation
+  Some UI elements are stacked in the same screen position to acees these you can click on their tab names.
+  In default Layout: Node Graph, Curve Editor, Dope Sheet are in the same lower left pane accessible through Tab navigation
 
 Here are 3 commands better used through their keyboard shortcuts:
 
@@ -122,11 +120,7 @@ Viewer(s)>Connect to A/B side>Connect Viewer to input 1/.../10
   Show the image connected to input 1..10 in the A (or B) side of the viewer.
   If a node is selected it is also connected to the input 1..10 of the viewer.
   
-  It is very convenient to use shortcuts:
-  :kbd:'0'
-  to
-  :kbd:'9'
-  to quickly show the output of the selected node.
+  It is very convenient to use shortcuts: ``0`` to ``9`` to quickly show the output of the selected node.
   
 Show project Settings...
 
