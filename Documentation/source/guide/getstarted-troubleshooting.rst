@@ -50,11 +50,7 @@ You will quickly notice that using individual frames instead of videos for input
 OpenGL/GPU Rendering Issues
 ---------------------------
 
-If the viewer displays some error message about OpenGL, or if the Viewer display is corrupted, then GPU rendering is probably going bad. Note that this kind of problem seems to only happen on Windows, so you might want to consider switching to Linux or macOS to use Natron if your GPU is not well supported by Natron under Windows.
-
-#. Update you graphics driver to at least the latest stable version. On Windows, make a restoration point before updating the driver, and case anything goes wrong.
-
-#. For systems with integrated and discrete GPUs (e.g. Intel and NVIDIA), configure the system so that Natron uses the discrete GPU. For NVIDIA discrete GPUs, this is done by opening the NVIDIA control panel, select "Manage 3D Settings", then "Program Settings", and for Natron select the NVIDIA GPU as the preferred graphics processor.
+If the viewer displays some error message about OpenGL, then GPU rendering is probably going bad. Note that this kind of problem seems to only happen on Windows, so you might want to consider switching to Linux or macOS to use Natron if your GPU is not well supported by Natron under Windows.
 
 #. Create a :ref:`Shadertoy <net.sf.openfx.Shadertoy>`, click "Renderer Info..." and check that the OpenGL version is at least 2.1 and that the extension ``GL_ARB_texture_non_power_of_two`` is available. If the displayed info does not correspond to your graphics card, check that the OpenGL drivers for your card are installed. If not, install the software called "OpenGL Extension Viewer" and check that your card appears in the list of renderers. If not, then it is a drivers issue.
 #. In Natron Preferences / GPU Rendering, check that the displayed is consistent with what "Renderer Info..." above gave.
@@ -62,6 +58,6 @@ If the viewer displays some error message about OpenGL, or if the Viewer display
 #. To temporarily fix this issue, in Natron Preferences / GPU Rendering, set "OpenGL Rendering" to "Disabled", click the "Save" button in the Preferences window, quit Natron, launch Natron, check that GPU rendering is still disabled in the Preferences, and test your project.
 
 
-| If there is an error similar to ``Shadertoy3: Can not render: glGetString(GL_VERSION) failed.`` 
+| If you there is an error similar to ``Shadertoy3: Can not render: glGetString(GL_VERSION) failed.`` 
 | Go to File => Preferences => GPU Rendering and set No. of OpenGL Context to 5
 | Save and relaunch Natron.

@@ -17,8 +17,7 @@ Generic Description
 ###################
 The purpose of Natron is to process video images using elementary "effect" bricks called nodes.
 
-for more details see:
-:doc:`Main concepts <getstarted-about-mainconcepts>`
+for more details see: :doc:`Main concepts <getstarted-about-mainconcepts>`
 
 The image is processed in order passing through each node. The nodes are connected with links that define the order of the processing.
 These connected nodes are called the node graph.
@@ -34,6 +33,8 @@ The Toolbar
 It is the list of icons on the left-hand side of Natron.
 
 Each icon is a menu giving access to different categories of nodes (ie. image processing tools) that Natron offers to process or create images.
+See :doc:`the Toolbar section<getstarted-environment-toolbar>`
+
 
 The Menu bar 
 ##############
@@ -42,6 +43,7 @@ The Menu bar
 
 Located on top of Natron window, it gives acces to various actions other than adding nodes to the node graph.
 Most actions are done on the whole project like saving, rendering...
+
 
 The Viewer panel
 #################
