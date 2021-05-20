@@ -10,3 +10,4 @@ These are the nodes located in the image icon of the toolbar.
    :maxdepth: 1
    
    thenodes-image-read
+   thenodes-image-write
