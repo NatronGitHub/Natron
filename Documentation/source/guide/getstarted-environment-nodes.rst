@@ -32,6 +32,56 @@ Merge nodes can have many inputs added when required to allow many merge operati
 .. image:: _images/TheNodes-Image/node_multiple_inputs.gif
    :width: 600
 
+Creating nodes
+--------------
+Nodes can be created in 3 ways
+
+- Use their shortcut
+   ``G`` Grade
+   
+   ``T`` Transform
+   
+   ``B`` Blur
+   
+   ``C`` ColorCorrect 
+   
+   ``R`` Read
+   
+   ``W`` Write
+   
+   ``.`` Dot
+   
+   ``O`` Roto
+   
+   ``P`` Rotopaint
+   
+   ``M`` Merge
+- Pick the node in the tools palette under each category.
+
+.. image:: _images/toolbar_02.jpg
+
+- Call the Node search menu with ``tab`` then type some letters to make the list of the names appears
+
+.. image:: _images/Environment/environment-nodes-node_select.gif
+
+Duplicating Nodes
+-----------------
+
+Nodes can be duplicated by copying (shortcut ``CTRL+C``) and pasting  (shortcut ``CTRL+V``)
+
+This create two independent copies.
+
+If you want the two copies to process different images with the same parameters even when they are changed the nodes can be cloned (shortcut ``ALT+K``). 
+
+The link between the nodes is shown with a pink arrow.
+
+.. image:: _images/Environment/environment-nodes-clones.gif
+
+
+.. note::
+   - Even Group (New in v2.4) and Roto can be cloned (which is not possible in nuke)
+   - Beware that parameters of the group are clones dynamically updated but not the internal structure of nodes inside the group
+
 Connections
 ------------
 To connect a node to another:
@@ -51,6 +101,7 @@ select it, press ``ctrl+shift+x``
 .. image:: _images/TheNodes-Image/node_extract.gif
 
 **community scripts**
+
 To connect distant nodes, select output node, input node, press ``y``
 
 .. image:: _images/TheNodes-Image/node_distant_connect.gif
