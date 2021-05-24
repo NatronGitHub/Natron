@@ -13,7 +13,7 @@ The Write node is where the result of the script is rendered out. This may be fo
 - Connect the write node to the last node of your NodeTree.
 - Press the little folder icon next to the 'file' value, then navigate to Where you wish the result to be rendered. 
 
-   See :doc:`The File Browser <file_browser>` section for more informations
+See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
 
 - The name of the output must be followed by the file extension of the format (.mov, .tga, .tiff etc). Once this is in place, the parameters in the Write node will expand to include those that are specific to that format.
 - The "frame range" "First Frame" "Last Frame" parameter should be specified. In the screen shot below, a frame range of 1 to 665 has been set. 
@@ -51,6 +51,7 @@ The file will be converted from "Input colorspace" to "File Colorspace"
 
 .. note::
    **Tips:**
+   Natron
   * It is recommended to leave "Input" to linear as this is the recommended basic workflow in Natron
   * When file and Input spaces are the same, no conversion will occur
   * Output usually is set to the same colorspace as the main read node. This results in an unmodified image.

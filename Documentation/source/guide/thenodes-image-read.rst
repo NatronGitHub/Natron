@@ -15,7 +15,7 @@ It might be easier to just drag your files onto the Node Graph where they will a
 Filename
 --------
 | Click on the folder icon to open the file browser and choose the file you want to read from disk.
-| See :doc:`The File Browser <file_browser>` section for more informations
+| See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
 
 Timing
 ------
