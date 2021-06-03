@@ -79,6 +79,8 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
     k.knobUI = guiKnob;
     k.keyframes = keys;
     _keys.push_back(k);
+
+    setText( tr("Add multiple keyframes") );
 }
 
 void
@@ -183,8 +185,6 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
     }
 
     _curveWidget->update();
-
-    setText( tr("Add multiple keyframes") );
 } // addOrRemoveKeyframe
 
 void
@@ -253,6 +253,7 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
     , _keys(keys)
     , _curveWidget(editor)
 {
+    setText( tr("Remove multiple keyframes") );
 }
 
 void
@@ -347,7 +348,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
     }
 
     _curveWidget->update();
-    setText( tr("Remove multiple keyframes") );
 } // RemoveKeysCommand::addOrRemoveKeyframe
 
 void
@@ -377,6 +377,7 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
     , _keys(keys)
     , _widget(widget)
 {
+    setText( tr("Move multiple keys") );
 }
 
 static void
@@ -484,7 +485,6 @@ void
 MoveKeysCommand::undo()
 {
     move(-_dt, -_dv);
-    setText( tr("Move multiple keys") );
 }
 
 void
@@ -492,7 +492,6 @@ MoveKeysCommand::redo()
 {
     move(_dt, _dv);
     _firstRedoCalled = true;
-    setText( tr("Move multiple keys") );
 }
 
 bool
@@ -545,6 +544,7 @@ SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,
     , _keys(keys)
     , _widget(widget)
 {
+    setText( tr("Set multiple keys interpolation") );
 }
 
 void
@@ -614,7 +614,6 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     }
 
     _widget->refreshSelectedKeysAndUpdate();
-    setText( tr("Set multiple keys interpolation") );
 } // SetKeysInterpolationCommand::setNewInterpolation
 
 void
@@ -748,6 +747,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     default:
         break;
     }
+    setText( tr("Move keyframe slope") );
 }
 
 void
@@ -791,7 +791,6 @@ void
 MoveTangentCommand::undo()
 {
     setNewDerivatives(true);
-    setText( tr("Move keyframe slope") );
 }
 
 void
@@ -799,7 +798,6 @@ MoveTangentCommand::redo()
 {
     setNewDerivatives(false);
     _firstRedoCalled = true;
-    setText( tr("Move keyframe slope") );
 }
 
 int
