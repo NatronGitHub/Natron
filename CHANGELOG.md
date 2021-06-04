@@ -16,11 +16,13 @@
 ### Changes
 
 - Fix checkerboard drawing on macOS Catalina and later. #614
-- Fix undoing "Reset to default" on parameters #630
+- Fix undoing "Reset to default" on parameters. #630
+- Fix NodeGraph manipulation and navigation issues. #491 #627
 
 ### Plugins
 
-- Transform node now displays the motion path
+- Transform and CornerPin nodes now displays the motion path.
+
 
 ## Version 2.4.0
 
