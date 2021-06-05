@@ -68,9 +68,9 @@ The Node graph
 
 This panel is were connections are made between the nodes to define the processing order of the image.
 
-See: :doc:`Nodes <getstarted-environment-nodes>`
+See: :doc:`Nodes <getstarted-environment-nodes>` for informations on using nodes one by one.
 
-See: :doc:`Nodegraph <getstarted-environment-nodegraph>`
+See: :doc:`Nodegraph <getstarted-environment-nodegraph>` for informations on creating a Node Graph to process your images
 
 The Curve editor
 #################
@@ -86,8 +86,17 @@ The Dopesheet
 
 This panel allows to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
 
+The File Browser
+################
+.. image:: _images/compositing-Read_node02.png
+ :width: 600px
+
+This panel allows to choose where to write / read an image to/from the disk. It is opened from the properties of a read/write node
+
+See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    getstarted-environment-menus
    getstarted-environment-toolbar
