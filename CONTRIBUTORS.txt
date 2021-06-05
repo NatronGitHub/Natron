@@ -1,4 +1,4 @@
-Version 2.0:
+Version 2.x:
 -----------
 
 #Developers:
@@ -33,6 +33,8 @@ Jean-Christophe Levet
 
 Marc-André Gasser <magdesign@github>
 Martin Constable
+Alexandre Bon <bonalex01dev@github>
+Omar Brown <blackearth2014@github>
 
 
 Version 1.0:
