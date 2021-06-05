@@ -91,5 +91,5 @@ These are two different ways to tell Natron to use 4 digits in the file name. Th
 
 Slash Antislash
 ---------------
-Linux shows subfolder with '/' when windows uses '\\'
+Linux shows subfolder with `/` when windows uses `\\`
 Natron support both syntax in the file path of the browser.
