@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.6.15
+version         3.6.16
 revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
@@ -17,22 +17,20 @@ categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
 maintainers     {mps @Schamschula} openmaintainer
-description     GNU Transport Layer Security Library
-homepage        http://www.gnutls.org/
 platforms       darwin
-
+description     GNU Transport Layer Security Library
 long_description \
-    GnuTLS is a portable ANSI C based library which implements the TLS 1.2, \
-    TLS 1.1, TLS 1.0, SSL 3.0, and Datagram TLS protocols. The library does \
-    not include any patented algorithms \
-    and is available under the GNU Lesser General Public License (LGPL).
-
+                GnuTLS is a portable ANSI C based library which implements the TLS 1.2, \
+                TLS 1.1, TLS 1.0, SSL 3.0, and Datagram TLS protocols. The library does \
+                not include any patented algorithms and is available under the GNU \
+                Lesser General Public License (LGPL).
+homepage        http://www.gnutls.org/
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 https://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  870c338ae8c2b6acd7000eb7daa287082ab04609 \
-                sha256  0ea8c3283de8d8335d7ae338ef27c53a916f15f382753b174c18b45ffd481558 \
-                size    6081656
+checksums       rmd160  d6bc8751c569db6033234c810b45eb661f77b4b4 \
+                sha256  1b79b381ac283d8b054368b335c408fedcb9b7144e0c07f531e3537d4328f3b3 \
+                size    5639992
 
 use_xz          yes
 
@@ -58,22 +56,10 @@ depends_lib-append \
 
 patchfiles      patch-lib-system-certs.c.diff
 
-# Catalina/Xcode 11.4 issue. See: https://trac.macports.org/ticket/60285
-platform darwin {
-    if {${os.major} == 19 && [vercmp ${xcodeversion} "11.4.1"] <= 0} {
-        patchfiles-append \
-                patch-configure.ac.diff
-    }
-}
-
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
     reinplace {/^#/d} {*}[glob ${worksrcpath}/lib/accelerated/x86/macosx/*.s]
 }
-
-# use autoreconf to update glibtool to correctly handle -std
-use_autoreconf  yes
-autoreconf.args -fvi
 
 configure.args  --disable-guile \
                 --disable-silent-rules \
@@ -92,13 +78,13 @@ compiler.thread_local_storage yes
 compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
 
 if {${os.platform} eq "darwin" && ${os.major} < 10 && [string match *clang* ${configure.compiler}] } {
-	depends_build-append  port:cctools
-	configure.env-append  NM=${prefix}/bin/nm
-	configure.args-append lt_cv_path_NM=${prefix}/bin/nm
+    depends_build-append    port:cctools
+    configure.env-append    NM=${prefix}/bin/nm
+    configure.args-append   lt_cv_path_NM=${prefix}/bin/nm
 }
 
 platform darwin 8 {
-    depends_build-append   port:texinfo
+    depends_build-append    port:texinfo
     configure.cppflags-append -D__WORDSIZE=32
 }
 
@@ -106,6 +92,17 @@ variant dane description {Build libdane using unbound libraries} {
     depends_lib-append      port:unbound
     configure.args-append   --with-unbound-root-key-file="${prefix}/var/run/unbound/root.key"
     configure.args-delete   --disable-libdane
+}
+
+if {${os.platform} eq "darwin" && ${os.major} > 19 && ${os.arch} eq "arm"} {
+    depends_build-append    port:libtool
+
+    use_autoreconf          yes
+    autoreconf.args         --install --verbose --force
+
+    pre-configure {
+        xinstall -m 644 -W ${prefix}/share/libtool/build-aux config.guess config.sub ${worksrcpath}
+    }
 }
 
 # as of r120660 (#43881) unbound installs its root key file at ${prefix}/var/run/unbound/root.key

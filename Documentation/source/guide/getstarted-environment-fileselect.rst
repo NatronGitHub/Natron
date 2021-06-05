@@ -89,7 +89,7 @@ These are two different ways to tell Natron to use 4 digits in the file name. Th
    It's good practice to put the image number between two dots
 
 
-Slash Antislash
+Slash/Backslash
 ---------------
-Linux shows subfolder with '/' when windows uses '\\'
-Natron support both syntax in the file path of the browser.
+In Linux and macOS, the directory separator is "`/`" (slash), whereas Windows uses "`\\`" (backslash).
+Natron support both syntaxes in the file path of the browser.

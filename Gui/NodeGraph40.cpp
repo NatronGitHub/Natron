@@ -189,7 +189,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
         return false;
     }
 
-    _imp->pasteNodesInternal(cb, pos, true, &newNodes);
+    _imp->pasteNodesInternal(cb, _imp->_root->mapFromScene(pos), true, &newNodes);
 
     return true;
 }
@@ -197,7 +197,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 bool
 NodeGraph::pasteNodeClipBoards()
 {
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF position = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     return pasteNodeClipBoards(position);
 }
@@ -215,13 +215,13 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
     std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
+    _imp->pasteNodesInternal(tmpClipboard, _imp->_root->mapFromScene(pos), true, &newNodes);
 }
 
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     duplicateSelectedNodes(scenePos);
 }
@@ -337,7 +337,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 void
 NodeGraph::cloneSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     cloneSelectedNodes(scenePos);
 } // cloneSelectedNodes
@@ -457,7 +457,10 @@ NodeGraph::centerOnAllNodes()
             }
         }
     }
-    QRectF bbox( xmin, ymin, (xmax - xmin), (ymax - ymin) );
+    // Move the scene so that topleft of the viewing area is at 0,0, and avoid issues
+    // when topleft has negative coords.
+    moveRootInternal(-xmin, -ymin);
+    QRectF bbox( 0, 0, (xmax - xmin), (ymax - ymin) );
     fitInView(bbox, Qt::KeepAspectRatio);
 
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();

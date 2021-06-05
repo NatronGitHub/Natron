@@ -2217,7 +2217,12 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 #endif
     EffectTLSDataPtr tls = tlsData->getOrCreateTLSData();
 
-    assert( !rectToRender.rect.isNull() );
+    if ( rectToRender.rect.isNull() ) {
+        // should never happen, but crashes when loading
+        // https://github.com/NatronGitHub/Natron/files/4630686/maskissue.log
+        //assert(false);
+        return eRenderingFunctorRetOK;
+    }
 
     /*
      * renderMappedRectToRender is in the mapped mipmap level, i.e the expected mipmap level of the render action of the plug-in

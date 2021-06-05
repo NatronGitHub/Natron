@@ -1,5 +1,5 @@
---- base/unix-dll.mak.orig	2019-01-16 17:24:24.000000000 +0000
-+++ base/unix-dll.mak	2020-04-24 02:39:18.000000000 -0700
+--- base/unix-dll.mak.orig	2021-03-20 17:30:38.000000000 +0000
++++ base/unix-dll.mak	2021-05-25 06:30:37.000000000 +0000
 @@ -91,13 +91,26 @@
  
  
@@ -34,47 +34,3 @@
  
  GS_SO=$(BINDIR)/$(GS_SONAME)
  GS_SO_MAJOR=$(BINDIR)/$(GS_SONAME_MAJOR)
-@@ -301,7 +314,7 @@
- install-sodebug:
- 	$(MAKE) $(SUB_MAKE_OPTION) install-so-subtarget GENOPT='-DDEBUG' BUILDDIRPREFIX=$(SODEBUGDIRPREFIX)
- 
--install-so-subtarget: so-subtarget
-+install-so-subtarget: so-subtarget install-so-subtarget-$(PCL_TARGET) install-so-subtarget-$(XPS_TARGET) install-so-subtarget-$(GPDL_TARGET)
- 	-mkdir -p $(DESTDIR)$(prefix)
- 	-mkdir -p $(DESTDIR)$(datadir)
- 	-mkdir -p $(DESTDIR)$(gsdir)
-@@ -321,6 +334,34 @@
- 	$(INSTALL_DATA) $(GLSRC)gserrors.h $(DESTDIR)$(gsincludedir)gserrors.h
- 	$(INSTALL_DATA) $(DEVSRC)gdevdsp.h $(DESTDIR)$(gsincludedir)gdevdsp.h
- 
-+install-so-subtarget-gpcl6:
-+	$(INSTALL_PROGRAM) $(PCLSOC) $(DESTDIR)$(bindir)/$(PCLSOC_XENAME)
-+	$(INSTALL_PROGRAM) $(BINDIR)/$(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR_MINOR)
-+	$(RM_) $(DESTDIR)$(libdir)/$(PCL_SONAME)
-+	ln -s $(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME)
-+	$(RM_) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR)
-+	ln -s $(PCL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(PCL_SONAME_MAJOR)
-+
-+install-so-subtarget-gxps:
-+	$(INSTALL_PROGRAM) $(XPSSOC) $(DESTDIR)$(bindir)/$(XPSSOC_XENAME)
-+	$(INSTALL_PROGRAM) $(BINDIR)/$(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR_MINOR)
-+	$(RM_) $(DESTDIR)$(libdir)/$(XPS_SONAME)
-+	ln -s $(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME)
-+	$(RM_) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR)
-+	ln -s $(XPS_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(XPS_SONAME_MAJOR)
-+
-+install-so-subtarget-gpdl:
-+	$(INSTALL_PROGRAM) $(GPDLSOC) $(DESTDIR)$(bindir)/$(GPDLSOC_XENAME)
-+	$(INSTALL_PROGRAM) $(BINDIR)/$(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR_MINOR)
-+	$(RM_) $(DESTDIR)$(libdir)/$(GPDL_SONAME)
-+	ln -s $(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME)
-+	$(RM_) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR)
-+	ln -s $(GPDL_SONAME_MAJOR_MINOR) $(DESTDIR)$(libdir)/$(GPDL_SONAME_MAJOR)
-+
-+# Dummy target if PCL / XPS / PDL not enabled
-+install-so-subtarget-:
-+	$(NO_OP)
-+
- soinstall:
- 	$(MAKE) $(SUB_MAKE_OPTION) soinstall-subtarget BUILDDIRPREFIX=$(SODIRPREFIX)
- 

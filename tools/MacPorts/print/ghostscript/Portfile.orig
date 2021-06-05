@@ -4,8 +4,8 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.53.3
-revision            1
+version             9.54.0
+revision            0
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -35,18 +35,14 @@ distfiles           ${distname}.tar.gz:source \
 patchfiles          patch-base_unix-dll.mak.diff \
                     patch-base_unixinst.mak.diff
 
-# Provide FT_CALLBACK_DEF macro removed from
-# <freetype/config/ftconfig.h> in freetype 2.10.3
-# https://trac.macports.org/ticket/61306
-patchfiles-append    patch-base_fapi_ft.c.diff
+# Fix newline issue in configure.ac
+# https://bugs.ghostscript.com/show_bug.cgi?id=703880
+patchfiles-append   patch-configure.ac.diff
 
-# Missing stdlib.h for abs()
-patchfiles-append    patch-jpegxr_r_strip.c.diff
-
-checksums           ghostpdl-9.53.3.tar.gz \
-                    rmd160  3f4a51e75d6378dd754b40081a9de76d904dc1ae \
-                    sha256  96d04e4e464bddb062c1774ea895c4f1c1c94e6c4b62f5d32218ebd44dd65ba1 \
-                    size    61264209 \
+checksums           ghostpdl-9.54.0.tar.gz \
+                    rmd160  a48ecd441c761a9401a5e4a34ea90afd6936d419 \
+                    sha256  63e54cddcdf48ea296b6315353f86b8a622d4e46959b10d536297e006b85687b \
+                    size    78771565 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -88,6 +84,10 @@ post-extract {
         move ${worksrcpath}/${d} ${worksrcpath}/${d}_local
     }
 
+    # https://trac.macports.org/ticket/62832
+    delete ${worksrcpath}/tesseract
+    delete ${worksrcpath}/leptonica
+
     #move ${workpath}/MappingOther/Adobe-CNS1-ETen-B5 ${workpath}/MappingOther/Adobe-CNS1-ETenms-B5
     copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/pdf2unicode/*] ${worksrcpath}/Resource/CMap
     copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/pdf2other/*]    ${worksrcpath}/Resource/CMap
@@ -117,8 +117,7 @@ configure.cppflags-replace \
                     -I${prefix}/include \
                     -isystem${prefix}/include
 
-configure.args      --enable-gpdl \
-                    --disable-compile-inits \
+configure.args      --disable-compile-inits \
                     --disable-cups \
                     --disable-dbus \
                     --disable-gtk \
@@ -126,7 +125,6 @@ configure.args      --enable-gpdl \
                     --without-xps \
                     --without-gpdl \
                     --without-x \
-                    --without-luratech \
                     --with-system-libtiff
 
 build.target        so
@@ -190,10 +188,6 @@ post-destroot {
         xinstall -m 644 {*}[glob -directory ${worksrcpath}/pcl/urwfonts *.ttf] \
             ${destroot}${prefix}/share/${name}/urwfonts
     }
-
-    # install missing header
-    xinstall -m 0644 ${worksrcpath}/base/gserrors.h \
-            ${destroot}${prefix}/include/ghostscript/
 }
 
 post-activate {

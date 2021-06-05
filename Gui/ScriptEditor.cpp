@@ -442,6 +442,7 @@ InputScriptCommand::InputScriptCommand(ScriptEditor* editor,
     , _script(script)
     , _firstRedoCalled(false)
 {
+    setText( tr("Execute script") );
 }
 
 void
@@ -451,14 +452,12 @@ InputScriptCommand::redo()
         _editor->setInputScript(_script);
     }
     _firstRedoCalled = true;
-    setText( tr("Exec script") );
 }
 
 void
 InputScriptCommand::undo()
 {
     _editor->setInputScript(_script);
-    setText( tr("Exec script") );
 }
 
 void
