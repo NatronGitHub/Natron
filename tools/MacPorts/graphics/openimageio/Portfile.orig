@@ -7,8 +7,8 @@ PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 
-github.setup            OpenImageIO oiio 2.1.17.0
-revision                2
+github.setup            OpenImageIO oiio 2.1.17.0 v
+revision                5
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -22,17 +22,27 @@ checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
                         sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
                         size    29052379
 
-compiler.cxx_standard   2011
+compiler.cxx_standard   2014
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
+# error: thread-local storage is not supported for the current target
+compiler.blacklist-append {clang < 800}
+# OpenVDB header files use C++14 features
+configure.args-append   -DCMAKE_CXX_STANDARD=14
 
 compiler.thread_local_storage yes
 
+# When updating this port to a new version, please switch to standard
+# use of the github portgroup by removing the following three lines and
+# replacing them with "github.tarball_from archive".
 github.master_sites     ${github.homepage}/archive
 distname                Release-${version}
 worksrcdir              oiio-Release-${version}
+
+patchfiles-append       patch-FindOpenJpeg.cmake.diff \
+                        patch-pybind11.diff
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
@@ -46,7 +56,6 @@ depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
                         port:boost \
-                        path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
                         port:tiff \
                         port:ilmbase \
@@ -62,7 +71,7 @@ qt5.min_version         5.6
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38}
+set pythons_suffixes    {27 36 37 38 39}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -96,7 +105,7 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 if {${set_python_default}} {
-    default_variants        +python38
+    default_variants        +python39
 }
 
 #configure.args-append       -DUSE_FIELD3D=OFF
@@ -105,18 +114,21 @@ depends_lib-append          port:field3d
 #configure.args-append       -DUSE_FFMPEG=OFF
 depends_lib-append          port:ffmpeg
 
-# conflicts with jpeg
-configure.args-append       -DUSE_JPEGTURBO=OFF
-#depends_lib-append          port:libjpeg-turbo
+#configure.args-append       -DUSE_JPEGTURBO=OFF
+depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
 
 #configure.args-append       -DUSE_OPENJPEG=OFF
 depends_lib-append          port:openjpeg
+configure.args-append       -DOpenJpeg_ROOT=${prefix}
 
 #configure.args-append       -DUSE_OCIO=OFF
 depends_lib-append          port:opencolorio
 
 #configure.args-append       -DUSE_OPENCV=OFF
-depends_lib-append          port:opencv
+set opencv_ver 4
+depends_lib-append          port:opencv${opencv_ver}
+configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
 
 #configure.args-append       -DUSE_FREETYPE=OFF
 depends_lib-append          port:freetype
@@ -146,5 +158,3 @@ depends_lib-append          port:dcmtk
 
 #configure.args-append       -DUSE_WEBP=OFF
 depends_lib-append          port:webp
-
-livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}

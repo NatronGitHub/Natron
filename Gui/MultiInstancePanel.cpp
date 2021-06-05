@@ -912,6 +912,7 @@ public:
         , _panel(panel)
         , _nodes(nodes)
     {
+        setText( tr("Remove instance(s)") );
     }
 
     virtual ~RemoveNodeCommand()
@@ -925,7 +926,6 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( tr("Remove instance(s)") );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -935,7 +935,6 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( tr("Remove instance(s)") );
     }
 };
 

@@ -179,7 +179,6 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-            // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
             scale(scaleFactor, scaleFactor);
             _imp->_accumDelta = 0;
         }

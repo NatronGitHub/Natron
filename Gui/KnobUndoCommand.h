@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
+#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
@@ -184,8 +185,13 @@ private:
             knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        QString holderName;
+        if (effect) {
+            holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
+        }
+
+        setText( tr("Set value of %1.%2").arg(holderName).arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
     } // undo
 
     virtual void redo() OVERRIDE FINAL
@@ -263,8 +269,13 @@ private:
             knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        QString holderName;
+        if (effect) {
+            holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
+        }
+
+        setText( tr("Set value of %1.%2").arg(holderName).arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
 
         _firstRedoCalled = true;
     } // redo
@@ -402,7 +413,8 @@ private:
 
     bool _isNodeReset;
     int _targetDim;
-    std::list<KnobIWPtr> _knobs, _clones;
+    std::list<KnobIWPtr> _knobs;
+    std::list<KnobIPtr> _clones;  // owned by this
 };
 
 class SetExpressionCommand
