@@ -1543,6 +1543,16 @@ Histogram::onCPUHistogramComputed()
 
 #endif
 
+double
+Histogram::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return getGui()->isHighDPI() ? 2. : 1.;
+#endif
+}
+
 void
 HistogramPrivate::drawScale()
 {
@@ -1653,9 +1663,11 @@ HistogramPrivate::drawWarnings()
     }
 }
 
+
 void
 HistogramPrivate::drawMissingImage()
 {
+    double screenPixelRatio = widget->getScreenPixelRatio();
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
     QPointF btmRight = zoomCtx.toZoomCoordinates( widget->width(), widget->height() );
     QPointF topRight( btmRight.x(), topLeft.y() );
@@ -1664,14 +1676,14 @@ HistogramPrivate::drawMissingImage()
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
         glColor4f(0.9, 0.9, 0, 1);
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( topLeft.x(), topLeft.y() );
         glVertex2f( btmRight.x(), btmRight.y() );
         glVertex2f( btmLeft.x(), btmLeft.y() );
         glVertex2f( topRight.x(), topRight.y() );
         glEnd();
-        glLineWidth(1.);
+        glLineWidth(1. * screenPixelRatio);
     }
     QString txt( tr("Missing image") );
     QFontMetrics m(_font);
@@ -1687,8 +1699,9 @@ void
 HistogramPrivate::drawViewerPicker()
 {
     // always running in the main thread
+    double screenPixelRatio = widget->getScreenPixelRatio();
 
-    glLineWidth(2.);
+    glLineWidth(2. * screenPixelRatio);
 
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
@@ -1757,7 +1770,7 @@ HistogramPrivate::drawViewerPicker()
         glEnd();
     }
 
-    glLineWidth(1.);
+    glLineWidth(1. * screenPixelRatio);
 } // HistogramPrivate::drawViewerPicker
 
 void

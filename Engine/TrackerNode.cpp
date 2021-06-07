@@ -731,6 +731,7 @@ TrackerNode::drawOverlay(double time,
     overlay->getPixelScale(pixelScaleX, pixelScaleY);
     double viewportSize[2];
     overlay->getViewportSize(viewportSize[0], viewportSize[1]);
+    double screenPixelRatio = overlay->getScreenPixelRatio();
 
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
@@ -792,7 +793,7 @@ TrackerNode::drawOverlay(double time,
                 ///Draw a custom interact, indicating the track isn't selected
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                glLineWidth(1.5f);
+                glLineWidth(1.5f * screenPixelRatio);
 
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
@@ -812,7 +813,7 @@ TrackerNode::drawOverlay(double time,
                     double x = centerKnob->getValueAtTime(time, 0);
                     double y = centerKnob->getValueAtTime(time, 1);
 
-                    glPointSize(POINT_SIZE);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
                     glVertex2d(x, y);
                     glEnd();
@@ -826,7 +827,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
                     glEnd();
                 }
-                glPointSize(1.);
+                glPointSize(1. * screenPixelRatio);
             } else { // if (isSelected) {
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
@@ -1059,7 +1060,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d( searchBtmLeft.x(), searchBtmRight.y() );
                     glEnd();
 
-                    glPointSize(POINT_SIZE);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
 
                     ///draw center
@@ -1246,7 +1247,7 @@ TrackerNode::drawOverlay(double time,
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            glLineWidth(1.5);
+            glLineWidth(1.5 * screenPixelRatio);
             //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
 
             const double addTrackSize = TO_DPIX(ADDTRACK_SIZE);

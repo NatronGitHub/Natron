@@ -952,6 +952,7 @@ PositionInteract::draw(double time,
     case ePositionInteractStatePicked:
         pR = 0.f; pG = 1.0f; pB = 0.0f; break;
     }
+    double screenPixelRatio = getScreenPixelRatio();
 
     QPointF pos;
     if (_state == ePositionInteractStatePicked) {
@@ -968,7 +969,7 @@ PositionInteract::draw(double time,
         pos.setY(p[1]);
     }
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
-    glPointSize( (GLfloat)pointSize() );
+    glPointSize(pointSize() * screenPixelRatio);
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
@@ -979,6 +980,39 @@ PositionInteract::draw(double time,
         // translate (1,-1) pixels
         glTranslated(direction * shadow.x, -direction * shadow.y, 0);
         glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+
+#warning TODO
+#if 0
+        int numKeys = knob->get;
+
+        if (numKeys > 0) {
+            const double darken = 0.5;
+            glColor3f(pR * l * darken, pG * l * darken, pB * l * darken);
+
+            glBegin(GL_POINTS);
+            for (int i=0; i < numKeys; ++i) {
+                double time = p->getKeyTime(i);
+                OfxPointD pt;
+                p->getValueAtTime(time, pt.x, pt.y);
+                glVertex2d(pt.x, pt.y);
+
+            }
+            glEnd();
+            glBegin(GL_LINE_STRIP);
+            double time = p->getKeyTime(0);
+            for (int i = 1; i < numKeys; ++i) {
+                double timeNext = p->getKeyTime(i);
+                for (int j = (i == 1 ? 0 : 1); j <= steps; ++j) {
+                    double timeStep = time + j * (timeNext - time) / steps;
+                    OfxPointD pt;
+                    p->getValueAtTime(timeStep, pt.x, pt.y);
+                    glVertex2d(pt.x, pt.y);
+                }
+                time = timeNext;
+            }
+            glEnd();
+        }
+#endif
 
         glColor3f(pR * l, pG * l, pB * l);
         glBegin(GL_POINTS);
@@ -1346,6 +1380,7 @@ TransformInteract::draw(double time,
     double skewX, skewY;
     int skewOrder;
     bool inverted = false;
+    double screenPixelRatio = getScreenPixelRatio();
 
     if (_mouseState == TransformInteract::eReleased) {
         getCenter(time, &center.x, &center.y);
@@ -1395,7 +1430,7 @@ TransformInteract::draw(double time,
     glDisable(GL_POINT_SMOOTH);
     glEnable(GL_BLEND);
     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glLineWidth(1.5f);
+    glLineWidth(1.5f * screenPixelRatio);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Draw everything twice
@@ -1487,6 +1522,7 @@ CornerPinInteract::draw(double time,
     OfxPointD from[4];
     bool enable[4];
     bool useFrom;
+    double screenPixelRatio = getScreenPixelRatio();
 
     if (_dragging == -1) {
         for (int i = 0; i < 4; ++i) {
@@ -1533,10 +1569,10 @@ CornerPinInteract::draw(double time,
     //glEnable(GL_POINT_SMOOTH);
     glEnable(GL_BLEND);
     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glLineWidth(1.5f);
+    glLineWidth(1.5f * screenPixelRatio);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPointSize( CornerPinInteract::pointSize() );
+    glPointSize(CornerPinInteract::pointSize() * screenPixelRatio);
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing

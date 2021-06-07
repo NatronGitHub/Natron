@@ -290,7 +290,7 @@ CurveWidgetPrivate::drawSelectionRectangle()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
-
+    double screenPixelRatio = _widget->getScreenPixelRatio();
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
@@ -311,7 +311,7 @@ CurveWidgetPrivate::drawSelectionRectangle()
         glEnd();
 
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         glColor4f(0.5, 0.5, 0.5, 1.);
         glBegin(GL_LINE_LOOP);
@@ -560,6 +560,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
+    double screenPixelRatio = _widget->getScreenPixelRatio();
 
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -576,7 +577,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         double xMid = ( topLeft.x() + btmRight.x() ) / 2.;
         double yMid = ( topLeft.y() + btmRight.y() ) / 2.;
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         glColor4f(0.5, 0.5, 0.5, 1.);
         glBegin(GL_LINE_LOOP);
@@ -623,7 +624,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         }
         glEnd();
 
-        glPointSize(BOUNDING_BOX_HANDLE_SIZE);
+        glPointSize(BOUNDING_BOX_HANDLE_SIZE * screenPixelRatio);
         glBegin(GL_POINTS);
         glVertex2f( topLeft.x(), topLeft.y() );
         glVertex2f( btmRight.x(), topLeft.y() );

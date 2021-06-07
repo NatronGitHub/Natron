@@ -663,6 +663,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     if ( !_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]) ) {
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
+    double screenPixelRatio = overlay->getScreenPixelRatio();
 
     KnobDoublePtr centerKnob = marker->getCenterKnob();
     KnobDoublePtr offsetKnob = marker->getOffsetKnob();
@@ -808,7 +809,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                     }
                 }
 
-                glLineWidth(1.5);
+                glLineWidth(1.5 * screenPixelRatio);
                 glCheckError();
                 glBegin(GL_LINE_LOOP);
                 glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
@@ -864,6 +865,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 {
     TrackMarkerPtr marker = selectedMarker.lock();
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    double screenPixelRatio = overlay->getScreenPixelRatio();
 
     assert(overlay);
     ViewerInstance* viewer = overlay->getInternalViewerNode();
@@ -947,7 +949,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glColor4f(1., 1., 1., 0.5);
-    glLineWidth(1.5);
+    glLineWidth(1.5 * screenPixelRatio);
     glCheckError();
     glBegin(GL_LINE_LOOP);
     glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
@@ -957,7 +959,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     glEnd();
 
     glColor4f(0.8, 0.8, 0.8, 1.);
-    glPointSize(POINT_SIZE);
+    glPointSize(POINT_SIZE * screenPixelRatio);
     glBegin(GL_POINTS);
     glVertex2d(textureRectCanonical.x2, textureRectCanonical.y1);
     glEnd();

@@ -1673,6 +1673,7 @@ RotoPaint::drawOverlay(double time,
     std::list<RotoDrawableItemPtr> drawables = getNode()->getRotoContext()->getCurvesByRenderOrder();
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
+    double screenPixelRatio = getCurrentViewportForOverlays()->getScreenPixelRatio();
 
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
     getCurrentViewportForOverlays()->getViewportSize(viewportSize.first, viewportSize.second);
@@ -1686,11 +1687,11 @@ RotoPaint::drawOverlay(double time,
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
 
         double cpWidth = kControlPointMidSize * 2;
-        glPointSize(cpWidth);
+        glPointSize(cpWidth * screenPixelRatio);
         for (std::list<RotoDrawableItemPtr>::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;

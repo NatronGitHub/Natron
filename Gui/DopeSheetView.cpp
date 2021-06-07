@@ -1110,8 +1110,8 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-
-    glLineWidth( appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() );
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
+    glLineWidth(appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() * screenPixelRatio);
     glColor4f(0.f, 0.f, 0.f, 1.f);
 
     glBegin(GL_LINES);
@@ -1123,6 +1123,7 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
 void
 DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
 {
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
     // Draw the clip
     {
         std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find( dsNode.get() );
@@ -1173,7 +1174,7 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
             GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            glLineWidth(2);
+            glLineWidth(2 * screenPixelRatio);
 
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
@@ -1589,6 +1590,7 @@ void
 DopeSheetViewPrivate::drawSelectionRect() const
 {
     running_in_main_thread_and_context(q_ptr);
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1609,7 +1611,7 @@ DopeSheetViewPrivate::drawSelectionRect() const
         glVertex2f(selectionRect.x2, selectionRect.y1);
         glEnd();
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         // Draw outline
         glColor4f(0.5, 0.5, 0.5, 1.);
@@ -1633,6 +1635,7 @@ void
 DopeSheetViewPrivate::drawSelectedKeysBRect() const
 {
     running_in_main_thread_and_context(q_ptr);
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1643,7 +1646,7 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         glColor4f(0.5, 0.5, 0.5, 1.);
 
@@ -2711,7 +2714,7 @@ DopeSheetView::getScreenPixelRatio() const
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return windowHandle()->devicePixelRatio()
 #else
-    return 1.;
+    return _imp->gui->isHighDPI() ? 2. : 1.;
 #endif
 }
 #endif

@@ -853,6 +853,7 @@ ViewerGL::drawUserRoI()
 void
 ViewerGL::drawWipeControl()
 {
+    double screenPixelRatio = getScreenPixelRatio();
     double wipeAngle;
     QPointF wipeCenter;
     double mixAmount;
@@ -929,7 +930,7 @@ ViewerGL::drawWipeControl()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            glLineWidth(1.5);
+            glLineWidth(1.5 * screenPixelRatio);
             glBegin(GL_LINES);
             if ( (_imp->hs == eHoverStateWipeRotateHandle) || (_imp->ms == eMouseStateRotatingWipeHandle) ) {
                 glColor4f(0., 1. * l, 0., 1.);
@@ -942,7 +943,7 @@ ViewerGL::drawWipeControl()
             glVertex2d( wipeCenter.x(), wipeCenter.y() );
             glVertex2d( mixPos.x(), mixPos.y() );
             glEnd();
-            glLineWidth(1.);
+            glLineWidth(1. * screenPixelRatio);
 
             ///if hovering the rotate handle or dragging it show a small bended arrow
             if ( (_imp->hs == eHoverStateWipeRotateHandle) || (_imp->ms == eMouseStateRotatingWipeHandle) ) {
@@ -987,7 +988,7 @@ ViewerGL::drawWipeControl()
                 glColor4f(baseColor[0], baseColor[1], baseColor[2], 1.);
             }
 
-            glPointSize(5.);
+            glPointSize(5. * screenPixelRatio);
             glEnable(GL_POINT_SMOOTH);
             glBegin(GL_POINTS);
             glVertex2d( wipeCenter.x(), wipeCenter.y() );
@@ -998,7 +999,7 @@ ViewerGL::drawWipeControl()
             }
             glVertex2d( mixPos.x(), mixPos.y() );
             glEnd();
-            glPointSize(1.);
+            glPointSize(1. * screenPixelRatio);
 
             _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI_4 / 2, wipeAngle + 3. * M_PI_4 / 2);
         }
@@ -1027,6 +1028,8 @@ ViewerGL::drawPickerRectangle()
 void
 ViewerGL::drawPickerPixel()
 {
+    double screenPixelRatio = getScreenPixelRatio();
+
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -1035,7 +1038,7 @@ ViewerGL::drawPickerPixel()
         glEnable(GL_POINT_SMOOTH);
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
-            glPointSize( 1. * _imp->zoomCtx.factor() );
+            glPointSize(1. * _imp->zoomCtx.factor() * screenPixelRatio);
         }
 
         QPointF pos = _imp->lastPickerPos;
@@ -3629,7 +3632,7 @@ ViewerGL::getScreenPixelRatio() const
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return windowHandle()->devicePixelRatio()
 #else
-    return 1.;
+    return _imp->viewerTab->getGui()->isHighDPI() ? 2. : 1.;
 #endif
 }
 #endif

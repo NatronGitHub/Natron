@@ -697,6 +697,7 @@ ViewerGL::Implementation::unbindTextureAndReleaseShader(bool useShader)
 void
 ViewerGL::Implementation::drawSelectionRectangle()
 {
+    double screenPixelRatio = _this->getScreenPixelRatio();
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
@@ -717,7 +718,7 @@ ViewerGL::Implementation::drawSelectionRectangle()
         glEnd();
 
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );

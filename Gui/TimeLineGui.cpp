@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ticks.h"
 
@@ -386,6 +387,7 @@ TimeLineGui::paintGL()
     double clearR, clearG, clearB;
     SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
+    double screenPixelRatio = _imp->viewerTab->getViewer()->getScreenPixelRatio();
 
     if ( (left == right) || (top == bottom) ) {
         glClearColor(clearR, clearG, clearB, 1.);
@@ -736,7 +738,7 @@ TimeLineGui::paintGL()
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glCheckError();
-        glLineWidth(2);
+        glLineWidth(2 * screenPixelRatio);
         glCheckError();
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {

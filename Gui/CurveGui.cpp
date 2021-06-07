@@ -324,6 +324,7 @@ CurveGui::drawCurve(int curveIndex,
             hasDrawnExpr = true;
         }
     }
+    double screenPixelRatio = _curveWidget->getScreenPixelRatio();
     bool isPeriodic = false;
     std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
     if (isBezier) {
@@ -404,12 +405,12 @@ CurveGui::drawCurve(int curveIndex,
 
 
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-        glPointSize(_thickness);
+        glPointSize(_thickness * screenPixelRatio);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
         glCheckError();
         if (hasDrawnExpr) {
             drawLineStrip(exprVertices, btmLeft, topRight);
@@ -443,7 +444,7 @@ CurveGui::drawCurve(int curveIndex,
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
 
         //draw keyframes
-        glPointSize(7.f);
+        glPointSize(7.f * screenPixelRatio);
         glEnable(GL_POINT_SMOOTH);
 
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();

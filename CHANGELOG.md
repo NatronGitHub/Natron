@@ -18,11 +18,12 @@
 - Fix checkerboard drawing on macOS Catalina and later. #614
 - Fix undoing "Reset to default" on parameters. #630
 - Fix NodeGraph manipulation and navigation issues. #491 #627
+- Fix Retina/High-DPI display issues on macOS (other platforms need to implement Gui::isHighDPI() or getScreenPixelRatio()).
 
 ### Plugins
 
-- Transform and CornerPin nodes now displays the motion path.
-
+- Transform, CornerPin, Position and Ramp nodes now display the motion path.
+- HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
 
 ## Version 2.4.0
 

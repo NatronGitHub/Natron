@@ -376,7 +376,8 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF topLeft = selectedCpsBbox.topLeft();
         QPointF btmRight = selectedCpsBbox.bottomRight();
 
-        glLineWidth(1.5);
+        double screenPixelRatio = p->publicInterface->getCurrentViewportForOverlays()->getScreenPixelRatio();
+        glLineWidth(1.5 * screenPixelRatio);
 
         if (hoverState == eHoverStateBbox) {
             glColor4f(0.9, 0.5, 0, 1.);
@@ -415,7 +416,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF midLeft(topLeft.x(), ( topLeft.y() + btmRight.y() ) / 2.);
 
         ///draw the 4 corners points and the 4 mid points
-        glPointSize(5.f);
+        glPointSize(5.f * screenPixelRatio);
         glBegin(GL_POINTS);
         glVertex2f( topLeft.x(), topLeft.y() );
         glVertex2f( btmRight.x(), topLeft.y() );

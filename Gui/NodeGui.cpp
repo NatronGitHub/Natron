@@ -3548,7 +3548,8 @@ NodeGui::drawHostOverlay(double time,
                          ViewIdx view)
 {
     if (_hostOverlay) {
-        NatronOverlayInteractSupport::OGLContextSaver s( _hostOverlay->getLastCallingViewport() );
+        OverlaySupport* overlaySupport = _hostOverlay->getLastCallingViewport();
+        NatronOverlayInteractSupport::OGLContextSaver s( overlaySupport );
         _hostOverlay->draw(time, renderScale, view);
     }
 }

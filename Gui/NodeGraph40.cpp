@@ -461,6 +461,7 @@ NodeGraph::centerOnAllNodes()
     // when topleft has negative coords.
     moveRootInternal(-xmin, -ymin);
     QRectF bbox( 0, 0, (xmax - xmin), (ymax - ymin) );
+    setAlignment(Qt::AlignRight|Qt::AlignVCenter);
     fitInView(bbox, Qt::KeepAspectRatio);
 
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();
