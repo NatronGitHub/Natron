@@ -489,15 +489,22 @@ public:
     virtual void ddeOpenFile(const QString& filePath) OVERRIDE FINAL;
 #endif
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     /**
      * @brief Returns true on OS X if on a High DPI (Retina) Display.
      **/
-#ifndef Q_OS_MAC
-    bool isHighDPI() const { return false; }
-
+#if defined(Q_OS_WIN)
+    qreal devicePixelRatio() {
+        HDC screen = GetDC(winId());
+        FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
+        ReleaseDC(0, screen);
+        return static_cast<qreal>horizontalDPI / 96.f;
+    }
+#elif defined(Q_OS_MAC)
+    qreal devicePixelRatio() const { return QtMac::devicePixelRatioInternal(this); }
 #else
-    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
-
+    qreal devicePixelRatio() const { return 1.; }
+#endif
 #endif
 
     AppInstancePtr createNewProject();

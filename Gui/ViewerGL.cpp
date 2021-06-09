@@ -3632,7 +3632,7 @@ ViewerGL::getScreenPixelRatio() const
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return windowHandle()->devicePixelRatio()
 #else
-    return _imp->viewerTab->getGui()->isHighDPI() ? 2. : 1.;
+    return (_imp->viewerTab && _imp->viewerTab->getGui()) ? _imp->viewerTab->getGui()->devicePixelRatio() : 1.;
 #endif
 }
 #endif

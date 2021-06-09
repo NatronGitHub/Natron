@@ -2712,9 +2712,9 @@ double
 DopeSheetView::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
+    return windowHandle()->devicePixelRatio();
 #else
-    return _imp->gui->isHighDPI() ? 2. : 1.;
+    return _imp->gui ? _imp->gui->devicePixelRatio() : 1.;
 #endif
 }
 #endif

@@ -31,6 +31,7 @@
 #include "Engine/EngineFwd.h"
 
 // Qt
+#include <QtCore/QtGlobal>
 
 class QAbstractButton;
 class QAction;
@@ -230,7 +231,9 @@ class ViewerToolButton;
 class KnobPageGui;
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
-bool isHighDPIInternal(const QWidget* w);
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+qreal devicePixelRatioInternal(const QWidget* w);
+#endif
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif

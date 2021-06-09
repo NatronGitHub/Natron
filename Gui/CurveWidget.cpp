@@ -474,7 +474,7 @@ CurveWidget::getScreenPixelRatio() const
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return windowHandle()->devicePixelRatio()
 #else
-    return _imp->_gui->isHighDPI() ? 2. : 1.;
+    return _imp->_gui ? _imp->_gui->devicePixelRatio() : 1.;
 #endif
 }
 #endif
