@@ -68,7 +68,7 @@ Install the required packages:
 
 ```Shell
 sudo port -v -N install opencolorio -quartz -python27
-sudo port -v -N install qt4-mac boost cairo expat
+sudo port -v -N install qt4-mac cairo expat
 sudo port -v -N install gsed gawk coreutils findutils
 sudo port -v -N install cmake keychain
 sudo port -v -N install py27-pyside py39-sphinx py39-sphinx_rtd_theme
@@ -350,13 +350,17 @@ config.pri:
 ```Shell
  # copy and paste the following in a terminal
 cat > config.pri << EOF
-boost: INCLUDEPATH += /opt/local/include
-boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
+boost {
+  BOOST_VERSION = \$\$system("grep 'default boost.version' /opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/_resources/port1.0/group/boost-1.0.tcl |awk '{ print \$3 }'")
+  message("found boost \$\$BOOST_VERSION")
+  INCLUDEPATH += /opt/local/libexec/boost/\$\$BOOST_VERSION/include
+  LIBS += -L/opt/local/libexec/boost/\$\$BOOST_VERSION/lib -lboost_serialization-mt
+}
 macx:openmp {
   QMAKE_CC=/opt/local/bin/clang-mp-9.0
   QMAKE_CXX=/opt/local/bin/clang++-mp-9.0
-  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK=$$QMAKE_CXX
+  QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=\$\$QMAKE_CXX
 
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
@@ -394,8 +398,8 @@ expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
   QMAKE_CC=/usr/local/opt/llvm/bin/clang
   QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
-  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK=$$QMAKE_CXX
+  QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=\$\$QMAKE_CXX
 
   LIBS += -L/usr/local/opt/llvm/lib -lomp
   cc_setting.name = CC

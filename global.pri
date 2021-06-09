@@ -482,6 +482,9 @@ unix {
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
   c++11 {
     lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=c++11
+    enable_cxx11.name = CLANG_CXX_LANGUAGE_STANDARD
+    enable_cxx11.value = c++0x
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx11
   }
 }
 
