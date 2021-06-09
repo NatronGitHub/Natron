@@ -6,6 +6,7 @@ PortGroup               github 1.0
 PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
+PortGroup               boost 1.0
 
 github.setup            OpenImageIO oiio 2.2.15.1
 revision                100
@@ -50,7 +51,6 @@ configure.args-append   -DBUILD_MISSING_DEPS=OFF \
 depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
-                        port:boost \
                         path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
                         port:tiff \

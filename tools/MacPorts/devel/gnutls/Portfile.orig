@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 
 name            gnutls
 version         3.6.16
-revision        0
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security
@@ -43,6 +43,7 @@ conflicts_build autogen
 
 depends_build-append \
                 port:gettext \
+                port:gtk-doc \
                 port:pkgconfig
 
 depends_lib-append \
@@ -64,7 +65,6 @@ post-patch {
 configure.args  --disable-guile \
                 --disable-silent-rules \
                 --disable-libdane \
-                --disable-doc \
                 --enable-local-libopts \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
@@ -121,17 +121,6 @@ if {[variant_isset dane] && ![file exists ${prefix}/var/run/unbound/root.key]} {
 "
 }
 
-variant doc description {Build documentation} {
-    configure.args-delete   --disable-doc
-
-    depends_build-append \
-                port:gtk-doc
-
-    post-destroot {
-        move ${destroot}${prefix}/share/man/man1/certtool.1 ${destroot}${prefix}/share/man/man1/gnutls-certtool.1
-    }
-}
-
 variant guile description {Build guile bindings} {
 # there currently is a build issue with the guile variant
 # the workaround is to first install guile w/o guile and then with +guile
@@ -151,12 +140,10 @@ if {${universal_possible} && [variant_isset universal]} {
     configure.args-append \
         --host=i686-apple-${os.platform}${os.major} \
         --build=i686-apple-${os.platform}${os.major}
-        default_variants    +doc
 } else {
     configure.args-append \
         --host=${build_arch}-apple-${os.platform}${os.major} \
         --build=${build_arch}-apple-${os.platform}${os.major}
-        default_variants    +doc
 }
 
 test.run        yes
@@ -164,6 +151,7 @@ test.target     check
 
 post-destroot {
     move ${destroot}${prefix}/bin/certtool ${destroot}${prefix}/bin/gnutls-certtool
+    move ${destroot}${prefix}/share/man/man1/certtool.1 ${destroot}${prefix}/share/man/man1/gnutls-certtool.1
 }
 
 livecheck.type  regex
