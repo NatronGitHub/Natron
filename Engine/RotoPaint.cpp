@@ -1687,11 +1687,9 @@ RotoPaint::drawOverlay(double time,
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5 * screenPixelRatio);
 
 
         double cpWidth = kControlPointMidSize * 2;
-        glPointSize(cpWidth * screenPixelRatio);
         for (std::list<RotoDrawableItemPtr>::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
@@ -1728,6 +1726,7 @@ RotoPaint::drawOverlay(double time,
                 glColor4dv(curveColor);
 
                 for (std::list<std::list<std::pair<Point, double> > >::iterator itStroke = strokes.begin(); itStroke != strokes.end(); ++itStroke) {
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_STRIP);
                     for (std::list<std::pair<Point, double> >::const_iterator it2 = itStroke->begin(); it2 != itStroke->end(); ++it2) {
                         glVertex2f(it2->first.x, it2->first.y);
@@ -1764,7 +1763,7 @@ RotoPaint::drawOverlay(double time,
                     curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
                 }
                 glColor4dv(curveColor);
-
+                glLineWidth(1.5 * screenPixelRatio);
                 glBegin(GL_LINE_STRIP);
                 for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->x, it2->y);
@@ -1793,6 +1792,7 @@ RotoPaint::drawOverlay(double time,
                     if ( !featherPoints.empty() ) {
                         glLineStipple(2, 0xAAAA);
                         glEnable(GL_LINE_STIPPLE);
+                        glLineWidth(1.5 * screenPixelRatio);
                         glBegin(GL_LINE_STRIP);
                         for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             glVertex2f(it2->x, it2->y);
@@ -1907,6 +1907,7 @@ RotoPaint::drawOverlay(double time,
                             }
                         } // for(cpIt)
 
+                        glPointSize(cpWidth * screenPixelRatio);
                         glBegin(GL_POINTS);
                         glVertex2f(x,y);
                         glEnd();
@@ -1937,6 +1938,7 @@ RotoPaint::drawOverlay(double time,
                         }
 
                         if (drawFeather) {
+                            glPointSize(cpWidth * screenPixelRatio);
                             glBegin(GL_POINTS);
                             glVertex2f(xF, yF);
                             glEnd();
@@ -1961,6 +1963,7 @@ RotoPaint::drawOverlay(double time,
                             ///draw a link between the feather point and the control point.
                             ///Also extend that link of 20 pixels beyond the feather point.
 
+                            glLineWidth(1.5 * screenPixelRatio);
                             glBegin(GL_LINE_STRIP);
                             glVertex2f(x, y);
                             glVertex2f(xF, yF);
@@ -1993,6 +1996,7 @@ RotoPaint::drawOverlay(double time,
                                         glColor4dv(curveColor);
                                     }
 
+                                    glLineWidth(1.5 * screenPixelRatio);
                                     glBegin(GL_LINES);
                                     glVertex2f(x, y);
                                     glVertex2f(featherPoint.x, featherPoint.y);
@@ -2066,6 +2070,7 @@ RotoPaint::drawOverlay(double time,
 
                     if ( ( (_imp->ui->selectedTool == eRotoToolClone) || (_imp->ui->selectedTool == eRotoToolReveal) ) &&
                          ( ( _imp->ui->cloneOffset.first != 0) || ( _imp->ui->cloneOffset.second != 0) ) ) {
+                        glLineWidth(1.5 * screenPixelRatio);
                         glBegin(GL_LINES);
 
                         if (_imp->ui->state == eEventStateDraggingCloneOffset) {

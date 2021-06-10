@@ -124,7 +124,7 @@ public:
     virtual double evaluate(bool useExpr, double x) const = 0;
     virtual CurvePtr  getInternalCurve() const;
 
-    void drawCurve(int curveIndex, int curvesCount);
+    void drawCurve(int curveIndex, int curvesCount, double screenPixelRatio);
 
     virtual Curve::YRange getCurveYRange() const;
     virtual bool areKeyFramesTimeClampedToIntegers() const;

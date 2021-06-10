@@ -1573,6 +1573,7 @@ HistogramPrivate::drawScale()
     QFontMetrics fontM(_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
+    double screenPixelRatio = widget->getScreenPixelRatio();
 
 
     {
@@ -1606,6 +1607,7 @@ HistogramPrivate::drawScale()
 
                 glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
+                glLineWidth(1. * screenPixelRatio);
                 glBegin(GL_LINES);
                 if (axis == 0) {
                     glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
@@ -1701,8 +1703,6 @@ HistogramPrivate::drawViewerPicker()
     // always running in the main thread
     double screenPixelRatio = widget->getScreenPixelRatio();
 
-    glLineWidth(2. * screenPixelRatio);
-
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
 
@@ -1721,36 +1721,42 @@ HistogramPrivate::drawViewerPicker()
     if (mode == Histogram::eDisplayModeY) {
         glColor3f(0.398979, 0.398979, 0.398979);
         double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( luminance, topLeft.y() );
         glVertex2d( luminance, btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeR) {
         glColor3f(0.398979, 0.398979, 0.398979);
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[0], topLeft.y() );
         glVertex2d( imgColor[0], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeG) {
         glColor3f(0.398979, 0.398979, 0.398979);
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[1], topLeft.y() );
         glVertex2d( imgColor[1], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeB) {
         glColor3f(0.398979, 0.398979, 0.398979);
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[2], topLeft.y() );
         glVertex2d( imgColor[2], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeA) {
         glColor3f(0.398979, 0.398979, 0.398979);
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[3], topLeft.y() );
         glVertex2d( imgColor[3], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeRGB) {
         glColor3f(0.851643, 0.196936, 0.196936);
+        glLineWidth(2. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[0], topLeft.y() );
         glVertex2d( imgColor[0], btmRight.y() );
@@ -1917,6 +1923,7 @@ HistogramPrivate::drawHistogramCPU()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
+    double screenPixelRatio = widget->getScreenPixelRatio();
 
     glCheckError();
     {
@@ -1930,6 +1937,7 @@ HistogramPrivate::drawHistogramCPU()
 
         double binSize = (vmax - vmin) / binsCount;
 
+        glLineWidth(1. * screenPixelRatio);
         glBegin(GL_LINES);
         for (unsigned int i = 0; i < binsCount; ++i) {
             double binMinX = vmin + i * binSize;

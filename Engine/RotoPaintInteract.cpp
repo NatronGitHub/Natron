@@ -278,7 +278,7 @@ RotoPaintInteract::drawArrow(double centerX,
                              bool hovered,
                              const std::pair<double, double> & pixelScale)
 {
-    GLProtectMatrix p(GL_MODELVIEW);
+    GLProtectMatrix pm(GL_MODELVIEW);
 
     if (hovered) {
         glColor3f(0., 1., 0.);
@@ -295,6 +295,8 @@ RotoPaintInteract::drawArrow(double centerX,
     QPointF bottom(0., -arrowLenght);
     QPointF top(0, arrowLenght);
     ///the arrow head is 4 pixels long and kTransformArrowWidth * 2 large
+    double screenPixelRatio = p->publicInterface->getCurrentViewportForOverlays()->getScreenPixelRatio();
+    glLineWidth(1 * screenPixelRatio);
     glBegin(GL_LINES);
     glVertex2f( top.x(), top.y() );
     glVertex2f( bottom.x(), bottom.y() );
@@ -377,13 +379,13 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF btmRight = selectedCpsBbox.bottomRight();
 
         double screenPixelRatio = p->publicInterface->getCurrentViewportForOverlays()->getScreenPixelRatio();
-        glLineWidth(1.5 * screenPixelRatio);
 
         if (hoverState == eHoverStateBbox) {
             glColor4f(0.9, 0.5, 0, 1.);
         } else {
             glColor4f(0.8, 0.8, 0.8, 1.);
         }
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );
         glVertex2f( topLeft.x(), topLeft.y() );
@@ -400,6 +402,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QLineF selectedCpsCrossVertLine;
         selectedCpsCrossVertLine.setLine(midX, midY - xHairMidSizeY, midX, midY + xHairMidSizeY);
 
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( std::max( selectedCpsCrossHorizLine.p1().x(), topLeft.x() ), selectedCpsCrossHorizLine.p1().y() );
         glVertex2f( std::min( selectedCpsCrossHorizLine.p2().x(), btmRight.x() ), selectedCpsCrossHorizLine.p2().y() );

@@ -285,12 +285,11 @@ CurveWidgetPrivate::createMenu()
 } // createMenu
 
 void
-CurveWidgetPrivate::drawSelectionRectangle()
+CurveWidgetPrivate::drawSelectionRectangle(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
-    double screenPixelRatio = _widget->getScreenPixelRatio();
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
@@ -360,7 +359,7 @@ CurveWidgetPrivate::refreshTimelinePositions()
 }
 
 void
-CurveWidgetPrivate::drawTimelineMarkers()
+CurveWidgetPrivate::drawTimelineMarkers(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -389,6 +388,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
 
         double leftBound, rightBound;
         _gui->getApp()->getFrameRange(&leftBound, &rightBound);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( leftBound, btmRight.y() );
         glVertex2f( leftBound, topLeft.y() );
@@ -422,7 +422,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
 } // CurveWidgetPrivate::drawTimelineMarkers
 
 void
-CurveWidgetPrivate::drawCurves()
+CurveWidgetPrivate::drawCurves(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -434,12 +434,12 @@ CurveWidgetPrivate::drawCurves()
     int count = (int)visibleCurves.size();
 
     for (int i = 0; i < count; ++i) {
-        visibleCurves[i]->drawCurve(i, count);
+        visibleCurves[i]->drawCurve(i, count, screenPixelRatio);
     }
 }
 
 void
-CurveWidgetPrivate::drawScale()
+CurveWidgetPrivate::drawScale(double screenPixelRatio)
 {
     glCheckError();
     // always running in the main thread
@@ -469,7 +469,6 @@ CurveWidgetPrivate::drawScale()
     scaleColor.setRgbF( Image::clamp(scaleR, 0., 1.),
                         Image::clamp(scaleG, 0., 1.),
                         Image::clamp(scaleB, 0., 1.) );
-
 
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -503,6 +502,7 @@ CurveWidgetPrivate::drawScale()
                 glCheckError();
                 glColor4f(gridR, gridG, gridB, alpha);
 
+                glLineWidth(1.5 * screenPixelRatio);
                 glBegin(GL_LINES);
                 if (axis == 0) {
                     glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
@@ -543,6 +543,7 @@ CurveWidgetPrivate::drawScale()
 
     glCheckError();
     glColor4f(gridR, gridG, gridB, 1.);
+    glLineWidth(1.5 * screenPixelRatio);
     glBegin(GL_LINES);
     glVertex2f(AXIS_MIN, 0);
     glVertex2f(AXIS_MAX, 0);
@@ -555,12 +556,11 @@ CurveWidgetPrivate::drawScale()
 } // drawScale
 
 void
-CurveWidgetPrivate::drawSelectedKeyFramesBbox()
+CurveWidgetPrivate::drawSelectedKeyFramesBbox(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
-    double screenPixelRatio = _widget->getScreenPixelRatio();
 
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
@@ -577,9 +577,8 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         double xMid = ( topLeft.x() + btmRight.x() ) / 2.;
         double yMid = ( topLeft.y() + btmRight.y() ) / 2.;
 
-        glLineWidth(1.5 * screenPixelRatio);
-
         glColor4f(0.5, 0.5, 0.5, 1.);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );
         glVertex2f( topLeft.x(), topLeft.y() );
@@ -588,6 +587,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         glEnd();
 
 
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(), topLeft.x() ), _selectedKeyFramesCrossHorizLine.p1().y() );
         glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(), btmRight.x() ), _selectedKeyFramesCrossHorizLine.p2().y() );

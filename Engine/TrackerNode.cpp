@@ -793,7 +793,6 @@ TrackerNode::drawOverlay(double time,
                 ///Draw a custom interact, indicating the track isn't selected
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                glLineWidth(1.5f * screenPixelRatio);
 
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
@@ -818,6 +817,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d(x, y);
                     glEnd();
 
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINES);
                     glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
                     glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
@@ -1002,6 +1002,7 @@ TrackerNode::drawOverlay(double time,
                     ///Draw center position
                     glEnable(GL_LINE_SMOOTH);
                     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_STRIP);
                     glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
                     for (CenterPointsMap::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
@@ -1013,6 +1014,7 @@ TrackerNode::drawOverlay(double time,
                     glDisable(GL_LINE_SMOOTH);
 
                     glEnable(GL_POINT_SMOOTH);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
                     if (!showErrorColor) {
                         glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
@@ -1046,6 +1048,7 @@ TrackerNode::drawOverlay(double time,
 
 
                     glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_LOOP);
                     glVertex2d( topLeft.x(), topLeft.y() );
                     glVertex2d( topRight.x(), topRight.y() );
@@ -1053,6 +1056,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d( btmLeft.x(), btmLeft.y() );
                     glEnd();
 
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINE_LOOP);
                     glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
                     glVertex2d( searchTopRight.x(), searchTopRight.y() );
@@ -1151,6 +1155,7 @@ TrackerNode::drawOverlay(double time,
                     glEnd();
 
                     if ( (offset.x() != 0) || (offset.y() != 0) ) {
+                        glLineWidth(1.5f * screenPixelRatio);
                         glBegin(GL_LINES);
                         glColor3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
                         glVertex2d( center.x(), center.y() );
@@ -1159,6 +1164,7 @@ TrackerNode::drawOverlay(double time,
                     }
 
                     ///now show small lines at handle positions
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINES);
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
@@ -1266,6 +1272,7 @@ TrackerNode::drawOverlay(double time,
                     glColor4d(0., 1., 0., 0.8);
                 }
 
+                glLineWidth(1.5 * screenPixelRatio);
                 glBegin(GL_LINE_LOOP);
                 glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
                 glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
@@ -1274,6 +1281,7 @@ TrackerNode::drawOverlay(double time,
                 glEnd();
 
                 ///draw a cross at the cursor position
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glVertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
                 glVertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );

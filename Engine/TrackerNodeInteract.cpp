@@ -809,8 +809,8 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                     }
                 }
 
-                glLineWidth(1.5 * screenPixelRatio);
                 glCheckError();
+                glLineWidth(1.5 * screenPixelRatio);
                 glBegin(GL_LINE_LOOP);
                 glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
                 glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
@@ -832,6 +832,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
 
                     glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
 
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_LOOP);
                     glVertex2d(innerTopLeft.x, innerTopLeft.y);
                     glVertex2d(innerTopRight.x, innerTopRight.y);
@@ -839,6 +840,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                     glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
                     glEnd();
 
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
                     glVertex2d(centerPointCanonical.x, centerPointCanonical.y);
                     glEnd();
@@ -950,7 +952,6 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glColor4f(1., 1., 1., 0.5);
     glLineWidth(1.5 * screenPixelRatio);
-    glCheckError();
     glBegin(GL_LINE_LOOP);
     glVertex2d(textureRectCanonical.x1, textureRectCanonical.y1);
     glVertex2d(textureRectCanonical.x1, textureRectCanonical.y2);
@@ -980,7 +981,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
         glMatrixMode(GL_MODELVIEW);
 
         glColor4f(0.8 * l, 0.8 * l, 0.8 * l, 1);
-
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2d(innerTopLeft.x, innerTopLeft.y);
         glVertex2d(innerTopRight.x, innerTopRight.y);
@@ -988,6 +989,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
         glVertex2d(innerBtmLeft.x, innerBtmLeft.y);
         glEnd();
 
+        glPointSize(POINT_SIZE * screenPixelRatio);
         glBegin(GL_POINTS);
         glVertex2d(centerPoint.x, centerPoint.y);
         glEnd();
