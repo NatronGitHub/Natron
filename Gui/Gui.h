@@ -498,7 +498,7 @@ public:
         HDC screen = GetDC(winId());
         FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
         ReleaseDC(0, screen);
-        return static_cast<qreal>horizontalDPI / 96.f;
+        return static_cast<qreal>(horizontalDPI) / 96;
     }
 #elif defined(Q_OS_MAC)
     qreal devicePixelRatio() const { return QtMac::devicePixelRatioInternal(this); }
