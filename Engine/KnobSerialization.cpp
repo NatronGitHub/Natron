@@ -199,8 +199,6 @@ KnobSerialization::createKnob(const std::string & typeName,
 void
 KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
 {
-    int i = 0;
-
     if (_masterIsAlias) {
         /*
          * _masters can be empty for example if we expand a group: the slaved knobs are no longer slaves
@@ -210,14 +208,15 @@ KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
             const std::string& aliasKnobName = _masters.front().masterKnobName;
-            knob->storeLink(aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
+            knob->storeLink(-1, aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
         }
     } else {
-        for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
+        assert(_masters.size() == _dimension);
+        int slaveDim = 0;
+        for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it, ++slaveDim) {
             if (it->masterDimension != -1) {
-                knob->storeLink(it->masterNodeNameFull, it->masterNodeName, it->masterTrackName, it->masterKnobName, it->masterDimension);
+                knob->storeLink(slaveDim, it->masterNodeNameFull, it->masterNodeName, it->masterTrackName, it->masterKnobName, it->masterDimension);
             }
-            ++i;
         }
     }
 }
