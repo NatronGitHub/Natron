@@ -260,10 +260,8 @@ KnobI::restoreLinks(const NodesList & allNodes,
                     const std::map<std::string, std::string>& oldNewScriptNamesMapping,
                     bool throwOnFailure)
 {
-    int i = 0;
     KnobIPtr thisKnob = shared_from_this();
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
-
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
             if (throwOnFailure) {
@@ -287,7 +285,8 @@ KnobI::restoreLinks(const NodesList & allNodes,
        } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
         } else {
-            slaveTo(i, linkedKnob, l->dimension);
+            assert(l->slaveDimension >= 0);
+            slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
     _links.clear();
