@@ -1,5 +1,5 @@
---- Portfile.orig	2021-06-08 16:36:21.000000000 -0700
-+++ Portfile	2021-06-09 09:14:17.000000000 -0700
+--- Portfile.orig	2021-06-11 22:05:18.000000000 -0700
++++ Portfile	2021-06-11 22:09:29.000000000 -0700
 @@ -2,14 +2,14 @@
  
  PortSystem              1.0
@@ -18,7 +18,7 @@
  name                    openimageio
  categories              graphics
  license                 BSD
-@@ -19,31 +19,26 @@
+@@ -19,31 +19,28 @@
                          related classes, utilities, and applications.
  platforms               darwin
  
@@ -35,8 +35,8 @@
  # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
  # Seen on OSX 10.9 and older.
  compiler.blacklist-append {clang < 700}
--# error: thread-local storage is not supported for the current target
--compiler.blacklist-append {clang < 800}
+ # error: thread-local storage is not supported for the current target
+ compiler.blacklist-append {clang < 800}
 -# OpenVDB header files use C++14 features
 -configure.args-append   -DCMAKE_CXX_STANDARD=14
  
@@ -58,7 +58,7 @@
  
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
-@@ -56,22 +51,149 @@
+@@ -56,22 +53,151 @@
  depends_lib-append      port:robin-map \
                          port:zlib \
                          port:bzip2 \
@@ -193,6 +193,8 @@
 +}
 +
 +variant openvdb description {Use OpenVDB.} {
++    # OpenVDB header files use C++14 features
++    configure.args-append   -DCMAKE_CXX_STANDARD=14
 +    configure.args-delete -DUSE_TBB:BOOL=FALSE
 +    configure.args-append -DUSE_TBB:BOOL=TRUE
 +    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
@@ -214,7 +216,7 @@
  
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -104,34 +226,31 @@
+@@ -104,34 +230,31 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -260,7 +262,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -140,21 +259,23 @@
+@@ -140,21 +263,23 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

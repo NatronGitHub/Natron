@@ -28,6 +28,8 @@ compiler.cxx_standard   2011
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
+# error: thread-local storage is not supported for the current target
+compiler.blacklist-append {clang < 800}
 
 compiler.thread_local_storage yes
 
@@ -177,6 +179,8 @@ variant ptex description {Use PTex.} {
 }
 
 variant openvdb description {Use OpenVDB.} {
+    # OpenVDB header files use C++14 features
+    configure.args-append   -DCMAKE_CXX_STANDARD=14
     configure.args-delete -DUSE_TBB:BOOL=FALSE
     configure.args-append -DUSE_TBB:BOOL=TRUE
     configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
