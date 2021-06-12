@@ -1,6 +1,8 @@
 boost {
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt
+  BOOST_VERSION = $$system("grep 'default boost.version' /opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/_resources/port1.0/group/boost-1.0.tcl |awk '{ print $3 }'")
+  message("found boost $$BOOST_VERSION")
+  INCLUDEPATH += /opt/local/libexec/boost/$$BOOST_VERSION/include
+  LIBS += -L/opt/local/libexec/boost/$$BOOST_VERSION/lib -lboost_serialization-mt
 }
 shiboken {
     PKGCONFIG -= shiboken
