@@ -29,7 +29,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <QtCore/QtGlobal>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
