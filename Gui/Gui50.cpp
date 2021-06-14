@@ -62,6 +62,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCursor>
 #include <QCheckBox>
 #include <QTreeView>
+#ifdef Q_WS_X11
+#include <QtGui/QX11Info>
+#endif
 
 #include "Global/QtCompat.h"
 
@@ -109,13 +112,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <wingdi.h>
 #endif
 
-#ifdef Q_WS_X11
-#include <QtGui/QX11Info>
-
-namespace QtX11 {
-qreal devicePixelRatioInternal(Display* display);
-}
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -1085,7 +1081,14 @@ qreal Gui::devicePixelRatio() const
 #elif defined(Q_WS_MACX)
     return QtMac::devicePixelRatioInternal(this);
 #elif defined(Q_WS_X11)
-    return QtX11::devicePixelRatioInternal(x11Info().display());
+    // Use the Xft.dpi X resource, as described there:
+    // - https://github.com/glfw/glfw/blob/84f95a7d7fa454ca99efcdd49da89472294b16bf/src/x11_init.c#L971
+    // - https://wiki.archlinux.org/title/HiDPI#X_Resources
+
+    // QX11Info uses it to set appDpiX() and appDpiY(), see the code:
+    // - https://github.com/qt/qt/blob/0a2f2382541424726168804be2c90b91381608c6/src/gui/kernel/qapplication_x11.cpp#L2203
+
+    return x11Info().appDpiX(x11Info().appScreen()) / 96.;
 #else
     return 1.;
 #endif
