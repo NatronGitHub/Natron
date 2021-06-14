@@ -184,6 +184,7 @@ SOURCES += \
     PyGuiApp.cpp \
     PythonPanels.cpp \
     QtEnumConvert.cpp \
+    QtX11.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \

@@ -109,11 +109,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <wingdi.h>
 #endif
 
-#if defined(Q_WS_X11)
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xresource.h>
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -371,7 +366,7 @@ Gui::handleNativeKeys(int key,
         return key;
     }
 
-#ifdef Q_WS_MAC
+#ifdef Q_WS_MACX
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
     // kVK_ANSI_1                    = 0x12,
@@ -1083,28 +1078,7 @@ qreal Gui::devicePixelRatio() const
 #elif defined(Q_WS_MACX)
     return QtMac::devicePixelRatioInternal(this);
 #elif defined(Q_WS_X11)
-    // see https://github.com/glfw/glfw/blob/84f95a7d7fa454ca99efcdd49da89472294b16bf/src/x11_init.c#L971
-
-    float dpi = 96.;
-
-    char *rms = XResourceManagerString(x11Info().display);
-    if (rms) {
-        XrmDatabase db = XrmGetStringDatabase(rms);
-        if (db) {
-            XrmValue value;
-            char *type = NULL;
-
-            XrmInitialize(); /* Need to initialize the DB before calling Xrm* functions */
-
-            if (XrmGetResource(db, "Xft.dpi", "Xft.Dpi", &type, &value)) {
-                if (type && strcmp(type, "String") == 0) {
-                    dpi = atof(value.addr);
-                }
-            }
-        }
-    }
-
-    return dpi / 96.;
+    return QtX11::devicePixelRatioInternal(x11Info().display);
 #else
     return 1.;
 #endif
