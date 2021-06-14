@@ -182,7 +182,12 @@ Natron's nodes are contained in separate repositories. To use the default nodes,
     https://github.com/NatronGitHub/openfx-misc
     https://github.com/NatronGitHub/openfx-io
 
+#### Install via Apt: ppa:xorg-edgers/ppa 
+~~~shell
+sudo apt install openfx-io-natron openfx-misc-natron
+~~~
 
+#### Install via Build
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 
 Plugins must be installed in /usr/OFX/Plugins on Linux
