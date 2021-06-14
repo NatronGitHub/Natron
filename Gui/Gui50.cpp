@@ -1087,7 +1087,7 @@ qreal Gui::devicePixelRatio() const
 
     float dpi = 96.;
 
-    char *rms = XResourceManagerString(x11Info()->display);
+    char *rms = XResourceManagerString(x11Info().display);
     if (rms) {
         XrmDatabase db = XrmGetStringDatabase(rms);
         if (db) {
