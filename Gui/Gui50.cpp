@@ -63,17 +63,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCheckBox>
 #include <QTreeView>
 
-#if defined(Q_WS_WIN32)
-#include <winuser.h>
-#include <wingdi.h>
-#endif
-
-#if defined(Q_WS_X11)
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xresource.h>
-#endif
-
 #include "Global/QtCompat.h"
 
 #include "Engine/CreateNodeArgs.h"
@@ -114,6 +103,17 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#if defined(Q_WS_WIN32)
+#include <winuser.h>
+#include <wingdi.h>
+#endif
+
+#if defined(Q_WS_X11)
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xresource.h>
+#endif
 
 NATRON_NAMESPACE_ENTER
 
