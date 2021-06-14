@@ -1085,7 +1085,7 @@ qreal Gui::devicePixelRatio() const
 #elif defined(Q_WS_MACX)
     return QtMac::devicePixelRatioInternal(this);
 #elif defined(Q_WS_X11)
-    return QtX11::devicePixelRatioInternal(x11Info().display);
+    return QtX11::devicePixelRatioInternal(x11Info().display());
 #else
     return 1.;
 #endif
