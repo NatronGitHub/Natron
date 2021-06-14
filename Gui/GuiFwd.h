@@ -242,12 +242,6 @@ void setupDockClickHandler(void (*)(void));
 }
 #endif
 
-#ifdef Q_WS_X11
-namespace QtX11 {
-qreal devicePixelRatioInternal(Display* display);
-}
-#endif
-
 NATRON_PYTHON_NAMESPACE_ENTER
 class GuiApp;
 class PyModalDialog;

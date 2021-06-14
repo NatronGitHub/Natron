@@ -109,6 +109,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <wingdi.h>
 #endif
 
+#ifdef Q_WS_X11
+#include <QtGui/qwindowdefs.h> // for Display
+
+namespace QtX11 {
+qreal devicePixelRatioInternal(Display* display);
+}
+#endif
 
 NATRON_NAMESPACE_ENTER
 
