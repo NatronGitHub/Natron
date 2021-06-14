@@ -110,7 +110,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #endif
 
 #ifdef Q_WS_X11
-#include <QtGui/qwindowdefs.h> // for Display
+#include <QtGui/QX11Info>
 
 namespace QtX11 {
 qreal devicePixelRatioInternal(Display* display);
