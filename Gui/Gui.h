@@ -491,20 +491,9 @@ public:
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     /**
-     * @brief Returns true on OS X if on a High DPI (Retina) Display.
+     * @brief Returns 1.0 on a 96 DPI screen, and 2.0 on a Retina  Display.
      **/
-#if defined(Q_OS_WIN)
-    qreal devicePixelRatio() {
-        HDC screen = GetDC(winId());
-        FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
-        ReleaseDC(0, screen);
-        return static_cast<qreal>(horizontalDPI) / 96;
-    }
-#elif defined(Q_OS_MAC)
-    qreal devicePixelRatio() const { return QtMac::devicePixelRatioInternal(this); }
-#else
-    qreal devicePixelRatio() const { return 1.; }
-#endif
+    qreal devicePixelRatio() const;
 #endif
 
     AppInstancePtr createNewProject();

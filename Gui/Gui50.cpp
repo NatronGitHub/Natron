@@ -63,6 +63,17 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCheckBox>
 #include <QTreeView>
 
+#if defined(Q_WS_WIN32)
+#include <winuser.h>
+#include <wingdi.h>
+#endif
+
+#if defined(Q_WS_X11)
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xresource.h>
+#endif
+
 #include "Global/QtCompat.h"
 
 #include "Engine/CreateNodeArgs.h"
@@ -407,7 +418,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_0;
     }
 #endif
-#ifdef Q_WS_WIN
+#ifdef Q_WS_WIN32
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
     //  48   0x30   (VK_0)              | 0 key
     //  49   0x31   (VK_1)              | 1 key
@@ -1057,6 +1068,48 @@ Gui::ddeOpenFile(const QString& filePath)
 
 #endif
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+/**
+ * @brief Returns 1.0 on a 96 DPI screen, and 2.0 on a Retina  Display.
+ **/
+qreal Gui::devicePixelRatio() const
+{
+#if defined(Q_WS_WIN32)
+    HDC screen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
+    ReleaseDC(0, screen);
+
+    return static_cast<qreal>(horizontalDPI) / 96.;
+#elif defined(Q_WS_MACX)
+    return QtMac::devicePixelRatioInternal(this);
+#elif defined(Q_WS_X11)
+    // see https://github.com/glfw/glfw/blob/84f95a7d7fa454ca99efcdd49da89472294b16bf/src/x11_init.c#L971
+
+    float dpi = 96.;
+
+    char *rms = XResourceManagerString(x11Info()->display);
+    if (rms) {
+        XrmDatabase db = XrmGetStringDatabase(rms);
+        if (db) {
+            XrmValue value;
+            char *type = NULL;
+
+            XrmInitialize(); /* Need to initialize the DB before calling Xrm* functions */
+
+            if (XrmGetResource(db, "Xft.dpi", "Xft.Dpi", &type, &value)) {
+                if (type && strcmp(type, "String") == 0) {
+                    dpi = atof(value.addr);
+                }
+            }
+        }
+    }
+
+    return dpi / 96.;
+#else
+    return 1.;
+#endif
+}
+#endif
 
 bool
 Gui::isFocusStealingPossible()
