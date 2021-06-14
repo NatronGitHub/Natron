@@ -9,4 +9,7 @@ These are the nodes located in the pencil icon of the toolbar.
 .. toctree::
       :maxdepth: 1
       
+      thenodes-draw-lightwrap
       thenodes-draw-ramp
+      thenodes-draw-radial
+      thenodes-draw-rectangle
