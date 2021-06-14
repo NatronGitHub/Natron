@@ -179,8 +179,8 @@ install:
   - tools/travis/install_dependencies.sh
   - if [ ! -d "$HOME/OpenColorIO-Configs" ]; then
       pushd $HOME;
-      curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar -xvzf -;
-      mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs;
+      curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz | tar -xvzf -;
+      mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs;
       popd;
     else
       echo 'Using cached OpenColorIO-Configs';
