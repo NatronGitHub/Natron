@@ -18,7 +18,7 @@
 - Fix checkerboard drawing on macOS Catalina and later. #614
 - Fix undoing "Reset to default" on parameters. #630
 - Fix NodeGraph manipulation and navigation issues. #491 #627
-- Fix Retina/High-DPI display issues on macOS and Windows (other platforms need to implement Gui::devicePixelRatio()).
+- Fix Retina/High-DPI display issues on macOS, Windows and Linux/X11. #635
 - Fix multi-dimensional parameter linking (bug introduced in 2.4.0 #594). #631
 
 ### Plugins
