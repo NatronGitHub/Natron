@@ -1538,7 +1538,7 @@ TabBar::makePixmapForDrag(int index)
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#if defined(Q_WS_MACX) && (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
     ///Prevent a bug with grabWidget and retina display on Qt4
     qreal devicePixelRatio = _tabWidget->getGui()->devicePixelRatio();
     if (devicePixelRatio > 1) {
