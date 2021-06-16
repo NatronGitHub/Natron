@@ -486,6 +486,7 @@ TimeLineGui::paintGL()
 
 
         glColor4f(txtR / 2., txtG / 2., txtB / 2., 1.);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(btmLeft.x(), lineYpos);
         glVertex2f(topRight.x(), lineYpos);
@@ -533,7 +534,7 @@ TimeLineGui::paintGL()
                 continue;
             }
             glColor4f(txtR, txtG, txtB, alpha);
-
+            glLineWidth(1.5 * screenPixelRatio);
             glBegin(GL_LINES);
             glVertex2f(value, tickBottom);
             glVertex2f(value, tickTop);
@@ -739,7 +740,6 @@ TimeLineGui::paintGL()
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glCheckError();
         glLineWidth(2 * screenPixelRatio);
-        glCheckError();
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
             if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
@@ -755,6 +755,7 @@ TimeLineGui::paintGL()
         glEnd();
 
         ///now draw keyframes
+        glLineWidth(2 * screenPixelRatio);
         glBegin(GL_LINES);
         glColor4f(kfR, kfG, kfB, 1.);
         std::list<SequenceTime> remainingUserKeys;

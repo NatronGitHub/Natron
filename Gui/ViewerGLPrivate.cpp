@@ -719,7 +719,6 @@ ViewerGL::Implementation::drawSelectionRectangle()
 
 
         glLineWidth(1.5 * screenPixelRatio);
-
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );
         glVertex2f( topLeft.x(), topLeft.y() );

@@ -200,7 +200,7 @@ CustomParamInteract::getScreenPixelRatio() const
     return windowHandle()->devicePixelRatio()
 #else
     KnobGuiPtr k = _imp->knob.lock();
-    return (k && k->getGui()->isHighDPI()) ? 2. : 1.;
+    return (k && k->getGui()) ? k->getGui()->devicePixelRatio() : 1.;
 #endif
 }
 #endif

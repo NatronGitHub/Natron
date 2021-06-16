@@ -969,7 +969,6 @@ PositionInteract::draw(double time,
         pos.setY(p[1]);
     }
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
-    glPointSize(pointSize() * screenPixelRatio);
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
@@ -989,6 +988,7 @@ PositionInteract::draw(double time,
             const double darken = 0.5;
             glColor3f(pR * l * darken, pG * l * darken, pB * l * darken);
 
+            glPointSize(pointSize() * screenPixelRatio);
             glBegin(GL_POINTS);
             for (int i=0; i < numKeys; ++i) {
                 double time = p->getKeyTime(i);
@@ -998,6 +998,7 @@ PositionInteract::draw(double time,
 
             }
             glEnd();
+            glLineWidth(1.5 * screenPixelRatio);
             glBegin(GL_LINE_STRIP);
             double time = p->getKeyTime(0);
             for (int i = 1; i < numKeys; ++i) {
@@ -1015,6 +1016,7 @@ PositionInteract::draw(double time,
 #endif
 
         glColor3f(pR * l, pG * l, pB * l);
+        glPointSize(pointSize() * screenPixelRatio);
         glBegin(GL_POINTS);
         glVertex2d( pos.x(), pos.y() );
         glEnd();
@@ -1569,10 +1571,8 @@ CornerPinInteract::draw(double time,
     //glEnable(GL_POINT_SMOOTH);
     glEnable(GL_BLEND);
     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glLineWidth(1.5f * screenPixelRatio);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPointSize(CornerPinInteract::pointSize() * screenPixelRatio);
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
@@ -1585,6 +1585,7 @@ CornerPinInteract::draw(double time,
         glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
         glColor3f( (float)(color.r / 2) * l, (float)(color.g / 2) * l, (float)(color.b / 2) * l );
+        glLineWidth(1.5f * screenPixelRatio);
         glBegin(GL_LINES);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {
@@ -1594,6 +1595,7 @@ CornerPinInteract::draw(double time,
         }
         glEnd();
         glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        glLineWidth(1.5f * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {
@@ -1601,6 +1603,8 @@ CornerPinInteract::draw(double time,
             }
         }
         glEnd();
+
+        glPointSize(CornerPinInteract::pointSize() * screenPixelRatio);
         glBegin(GL_POINTS);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {

@@ -31,6 +31,7 @@
 #include "Engine/EngineFwd.h"
 
 // Qt
+#include <QtCore/QtGlobal>
 
 class QAbstractButton;
 class QAction;
@@ -228,14 +229,18 @@ class ViewerGL;
 class ViewerTab;
 class ViewerToolButton;
 class KnobPageGui;
+
+#ifdef Q_WS_MACX
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
-bool isHighDPIInternal(const QWidget* w);
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+qreal devicePixelRatioInternal(const QWidget* w);
+#endif
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif
-
 }
+#endif
 
 NATRON_PYTHON_NAMESPACE_ENTER
 class GuiApp;
