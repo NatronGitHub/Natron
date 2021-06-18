@@ -1,6 +1,6 @@
---- Portfile.orig	2021-04-08 19:00:55.000000000 -0700
-+++ Portfile	2021-04-16 14:41:44.000000000 -0700
-@@ -2,13 +2,13 @@
+--- Portfile.orig	2021-06-17 20:47:45.000000000 -0700
++++ Portfile	2021-06-17 20:48:32.000000000 -0700
+@@ -2,14 +2,14 @@
  
  PortSystem              1.0
  PortGroup               github 1.0
@@ -9,49 +9,71 @@
  PortGroup               cmake 1.1
  PortGroup               active_variants 1.1
  PortGroup               compiler_blacklist_versions 1.0
+ PortGroup               boost 1.0
  
--github.setup            OpenImageIO oiio 2.1.17.0
--revision                2
-+github.setup            OpenImageIO oiio 2.2.13.1
+-github.setup            OpenImageIO oiio 2.1.17.0 v
+-revision                6
++github.setup            OpenImageIO oiio 2.2.15.1
 +revision                100
  name                    openimageio
  categories              graphics
  license                 BSD
-@@ -18,9 +18,9 @@
+@@ -19,29 +19,26 @@
                          related classes, utilities, and applications.
  platforms               darwin
  
 -checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
 -                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
 -                        size    29052379
-+checksums           rmd160  e9d0ad32127960886b900ac480ac0e36ed8a2145 \
-+                    sha256  7f810124e866ac14ad9c11b0ab528a6ed4c8e62a190cc44a77eed8159f57405c \
-+                    size    29265740
++checksums           rmd160  86ffa84974b23f2a871538fa45ab282adf63d548 \
++                    sha256  f222c6b51a40aabbc80ddf4055535be9af1ffa907452fa6d1ffa7674854aab17 \
++                    size    29237852
  
- compiler.cxx_standard   2011
+-compiler.cxx_standard   2014
++compiler.cxx_standard   2011
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -34,6 +34,11 @@
+ # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
+ # Seen on OSX 10.9 and older.
+ compiler.blacklist-append {clang < 700}
+-# OpenVDB header files use C++14 features
+-configure.args-append   -DCMAKE_CXX_STANDARD=14
+ 
+ compiler.thread_local_storage yes
+ 
+-# When updating this port to a new version, please switch to standard
+-# use of the github portgroup by removing the following three lines and
+-# replacing them with "github.tarball_from archive".
+ github.master_sites     ${github.homepage}/archive
  distname                Release-${version}
  worksrcdir              oiio-Release-${version}
  
+-patchfiles-append       patch-FindOpenJpeg.cmake.diff \
+-                        patch-pybind11.diff
 +patch.pre_args  -p1
 +patchfiles \
 +    oiio-2.0.8-invalidatespec.patch \
 +    oiio-2.0.8-atomic-load.patch
-+
+ 
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
- configure.args-append   -DUSE_CCACHE=OFF
-@@ -51,14 +56,140 @@
+@@ -54,22 +51,151 @@
+ depends_lib-append      port:robin-map \
+                         port:zlib \
+                         port:bzip2 \
++                        path:include/turbojpeg.h:libjpeg-turbo \
+                         port:libpng \
                          port:tiff \
                          port:ilmbase \
                          port:openexr \
 -                        port:squish \
 -                        port:libfmt
 +                        port:squish
-+
-+# optional components
-+
+ 
+ # optional components
+ 
+-#configure.args-append   -DUSE_OPENGL=OFF \
+-#                        -DUSE_QT=OFF
+-qt5.min_version         5.6
 +# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 +# tested with openimageio 1.4.6rc1:
 +# macports-clang-3.3 and later work
@@ -115,12 +137,9 @@
 +    -DUSE_WEBP:BOOL=TRUE \
 +    -DBUILD_FMT_FORCE:BOOL=TRUE \
 +    -DSTOP_ON_WARNING:BOOL=FALSE
- 
- # optional components
- 
--#configure.args-append   -DUSE_OPENGL=OFF \
--#                        -DUSE_QT=OFF
--qt5.min_version         5.6
++
++# optional components
++
 +default_variants    +opencolorio +openjpeg +freetype
 +
 +variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
@@ -172,6 +191,8 @@
 +}
 +
 +variant openvdb description {Use OpenVDB.} {
++    # OpenVDB header files use C++14 features
++    configure.args-append   -DCMAKE_CXX_STANDARD=14
 +    configure.args-delete -DUSE_TBB:BOOL=FALSE
 +    configure.args-append -DUSE_TBB:BOOL=TRUE
 +    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
@@ -188,12 +209,17 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
-@@ -95,31 +226,31 @@
+-set pythons_suffixes    {27 36 37 38 39}
++set pythons_suffixes    {27 36 37 38}
+ 
+ set pythons_ports       {}
+ foreach s ${pythons_suffixes} {
+@@ -102,34 +228,31 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
 -if {${set_python_default}} {
--    default_variants        +python38
+-    default_variants        +python39
 -}
 +#if {${set_python_default}} {
 +#    default_variants        +python38
@@ -207,13 +233,14 @@
 -depends_lib-append          port:ffmpeg
 +#depends_lib-append          port:ffmpeg
  
- # conflicts with jpeg
--configure.args-append       -DUSE_JPEGTURBO=OFF
-+#configure.args-append       -DUSE_JPEGTURBO=OFF
- #depends_lib-append          port:libjpeg-turbo
++# conflicts with jpeg
+ #configure.args-append       -DUSE_JPEGTURBO=OFF
+-depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
++#depends_lib-append          port:libjpeg-turbo
  
  #configure.args-append       -DUSE_OPENJPEG=OFF
 -depends_lib-append          port:openjpeg
+-configure.args-append       -DOpenJpeg_ROOT=${prefix}
 +#depends_lib-append          port:openjpeg
  
  #configure.args-append       -DUSE_OCIO=OFF
@@ -221,7 +248,10 @@
 +#depends_lib-append          port:opencolorio
  
  #configure.args-append       -DUSE_OPENCV=OFF
--depends_lib-append          port:opencv
+-set opencv_ver 4
+-depends_lib-append          port:opencv${opencv_ver}
+-configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+-                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
 +#depends_lib-append          port:opencv
  
  #configure.args-append       -DUSE_FREETYPE=OFF
@@ -230,7 +260,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -128,21 +259,21 @@
+@@ -138,21 +261,23 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
@@ -256,3 +286,5 @@
  
  #configure.args-append       -DUSE_WEBP=OFF
  depends_lib-append          port:webp
++
++livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}

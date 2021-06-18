@@ -886,6 +886,8 @@ DopeSheetViewPrivate::drawScale() const
                         Image::clamp(scaleG, 0., 1.),
                         Image::clamp(scaleB, 0., 1.) );
 
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
+
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -929,6 +931,7 @@ DopeSheetViewPrivate::drawScale() const
             glColor4f(scaleColor.redF(), scaleColor.greenF(), scaleColor.blueF(), alpha);
 
             // Draw the vertical lines belonging to the grid
+            glLineWidth(1. * screenPixelRatio);
             glBegin(GL_LINES);
             glVertex2f( value, bottomLeft.y() );
             glVertex2f( value, topRight.y() );
@@ -1110,10 +1113,10 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-
-    glLineWidth( appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() );
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
+    glLineWidth(appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() * screenPixelRatio);
     glColor4f(0.f, 0.f, 0.f, 1.f);
-
+    glLineWidth(1. * screenPixelRatio);
     glBegin(GL_LINES);
     glVertex2f( rowRect.left(), rowRect.top() );
     glVertex2f( rowRect.right(), rowRect.top() );
@@ -1123,6 +1126,7 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
 void
 DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
 {
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
     // Draw the clip
     {
         std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find( dsNode.get() );
@@ -1173,10 +1177,10 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
             GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            glLineWidth(2);
+            glLineWidth(2 * screenPixelRatio);
 
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
-
+            glLineWidth(1. * screenPixelRatio);
             glBegin(GL_LINES);
 
             //horizontal line
@@ -1211,6 +1215,7 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
 
         if (isSelected) {
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+            glLineWidth(1. * screenPixelRatio);
             glBegin(GL_LINE_LOOP);
             glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
             glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
@@ -1501,6 +1506,8 @@ DopeSheetViewPrivate::drawProjectBounds() const
     double colorR, colorG, colorB;
     settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
 
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
+
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1508,12 +1515,14 @@ DopeSheetViewPrivate::drawProjectBounds() const
         glColor4f(colorR, colorG, colorB, 1.f);
 
         // Draw start bound
+        glLineWidth(1. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(projectStart, top);
         glVertex2f(projectStart, bottom);
         glEnd();
 
         // Draw end bound
+        glLineWidth(1. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(projectEnd, top);
         glVertex2f(projectEnd, bottom);
@@ -1543,6 +1552,8 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
     double colorR, colorG, colorB;
     settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
 
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
+
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_HINT_BIT | GL_ENABLE_BIT |
@@ -1555,7 +1566,7 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
         glColor4f(colorR, colorG, colorB, 1.f);
-
+        glLineWidth(1. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(currentFrame, top);
         glVertex2f(currentFrame, bottom);
@@ -1589,6 +1600,7 @@ void
 DopeSheetViewPrivate::drawSelectionRect() const
 {
     running_in_main_thread_and_context(q_ptr);
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1609,10 +1621,11 @@ DopeSheetViewPrivate::drawSelectionRect() const
         glVertex2f(selectionRect.x2, selectionRect.y1);
         glEnd();
 
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
 
         // Draw outline
         glColor4f(0.5, 0.5, 0.5, 1.);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f(selectionRect.x1, selectionRect.y1);
         glVertex2f(selectionRect.x1, selectionRect.y2);
@@ -1633,6 +1646,7 @@ void
 DopeSheetViewPrivate::drawSelectedKeysBRect() const
 {
     running_in_main_thread_and_context(q_ptr);
+    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1643,11 +1657,9 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glLineWidth(1.5);
-
-        glColor4f(0.5, 0.5, 0.5, 1.);
-
         // Draw outline
+        glColor4f(0.5, 0.5, 0.5, 1.);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.bottom() );
         glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.top() );
@@ -1664,6 +1676,7 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
         QLineF verticalLine( zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() - CROSS_LINE_OFFSET),
                              zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() + CROSS_LINE_OFFSET) );
 
+        glLineWidth(1. * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( horizontalLine.p1().x(), horizontalLine.p1().y() );
         glVertex2f( horizontalLine.p2().x(), horizontalLine.p2().y() );
@@ -2709,9 +2722,9 @@ double
 DopeSheetView::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
+    return windowHandle()->devicePixelRatio();
 #else
-    return 1.;
+    return _imp->gui ? _imp->gui->devicePixelRatio() : 1.;
 #endif
 }
 #endif

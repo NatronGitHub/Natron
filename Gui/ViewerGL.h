@@ -571,13 +571,13 @@ private:
     /**
      * @brief Called by drawOverlay to draw the user region of interest.
      **/
-    void drawUserRoI();
+    void drawUserRoI(double screenPixelRatio);
 
-    void drawPickerRectangle();
+    void drawPickerRectangle(double screenPixelRatio);
 
-    void drawPickerPixel();
+    void drawPickerPixel(double screenPixelRatio);
 
-    void drawWipeControl();
+    void drawWipeControl(double screenPixelRatio);
 
     /**
      *@brief Draws the persistent message if it is on.

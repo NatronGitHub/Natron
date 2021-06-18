@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ticks.h"
 
@@ -386,6 +387,7 @@ TimeLineGui::paintGL()
     double clearR, clearG, clearB;
     SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
+    double screenPixelRatio = _imp->viewerTab->getViewer()->getScreenPixelRatio();
 
     if ( (left == right) || (top == bottom) ) {
         glClearColor(clearR, clearG, clearB, 1.);
@@ -484,6 +486,7 @@ TimeLineGui::paintGL()
 
 
         glColor4f(txtR / 2., txtG / 2., txtB / 2., 1.);
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(btmLeft.x(), lineYpos);
         glVertex2f(topRight.x(), lineYpos);
@@ -531,7 +534,7 @@ TimeLineGui::paintGL()
                 continue;
             }
             glColor4f(txtR, txtG, txtB, alpha);
-
+            glLineWidth(1.5 * screenPixelRatio);
             glBegin(GL_LINES);
             glVertex2f(value, tickBottom);
             glVertex2f(value, tickTop);
@@ -736,8 +739,7 @@ TimeLineGui::paintGL()
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glCheckError();
-        glLineWidth(2);
-        glCheckError();
+        glLineWidth(2 * screenPixelRatio);
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
             if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
@@ -753,6 +755,7 @@ TimeLineGui::paintGL()
         glEnd();
 
         ///now draw keyframes
+        glLineWidth(2 * screenPixelRatio);
         glBegin(GL_LINES);
         glColor4f(kfR, kfG, kfB, 1.);
         std::list<SequenceTime> remainingUserKeys;

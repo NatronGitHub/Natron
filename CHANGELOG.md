@@ -16,9 +16,15 @@
 ### Changes
 
 - Fix checkerboard drawing on macOS Catalina and later. #614
+- Fix undoing "Reset to default" on parameters. #630
+- Fix NodeGraph manipulation and navigation issues. #491 #627
+- Fix Retina/High-DPI display issues on macOS, Windows and Linux/X11. #635
+- Fix multi-dimensional parameter linking (bug introduced in 2.4.0 #594). #631
 
 ### Plugins
 
+- Transform, CornerPin, Position and Ramp nodes now display the motion path.
+- HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
 
 ## Version 2.4.0
 
@@ -26,7 +32,7 @@
 
 - Updated documentation. #572 #566 #551 #539 #538 #537 #520 #514
 - Handle console output on Windows. #524
-- Detect user installed fonts on Windows 10. #523 
+- Detect user installed fonts on Windows 10. #523
 - New Windows installer. #596
 - Improvements to SequenceFileDialog. #565
 - Snap timeline alpha cursor to nearest frame. #574

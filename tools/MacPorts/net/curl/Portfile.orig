@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.76.1
+version                         7.77.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -17,7 +17,7 @@ long_description                curl is a client to get documents/files from ser
                                 designed to work without user interaction or any kind \
                                 of interactivity.
 
-homepage                        https://curl.haxx.se
+homepage                        https://curl.se
 master_sites                    ${homepage}/download/:curl \
                                 https://curl.askapache.com/:curl
 
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  a7a4afba13bc8d6c757092ae4d4cd50ff3c2a46d \
-                                sha256  64bb5288c39f0840c07d077e30d9052e1cbb9fa6c2dc52523824cc859e679145 \
-                                size    2427636
+                                rmd160  8a122b2decf610fb2b3a9262039610246dd9b0b4 \
+                                sha256  0f64582c54282f31c0de9f0a1a596b182776bd4df9a4c4a2a41bbeb54f62594b \
+                                size    2439336
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -60,7 +60,7 @@ if {${name} eq ${subport}} {
                                 --without-nghttp2 \
                                 --without-nss \
                                 --without-ssl \
-                                --without-darwinssl \
+                                --without-secure-transport \
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
@@ -147,7 +147,7 @@ if {${name} eq ${subport}} {
     }
 
     variant darwinssl conflicts gnutls mbedtls ssl wolfssl description {Allow secure connections using Apple OS native TLS} {
-        configure.args-replace  --without-darwinssl --with-darwinssl
+        configure.args-replace  --without-secure-transport --with-secure-transport
         configure.args-append   --without-ca-bundle
     }
 
@@ -207,7 +207,7 @@ if {${name} eq ${subport}} {
     variant ssl conflicts darwinssl gnutls mbedtls wolfssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
-        configure.args-replace  --without-ssl --with-ssl=${prefix}
+        configure.args-replace  --without-ssl --with-openssl=${prefix}
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 

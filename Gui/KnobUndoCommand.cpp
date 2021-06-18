@@ -256,7 +256,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
 
-    setText( tr("Multiple edits for %1").arg(holderName) );
+    setText( tr("Multiple edits of %1").arg(holderName) );
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
@@ -528,8 +528,22 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
     , _knobs()
 {
     for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        _knobs.push_front(*it);
+        _knobs.push_back(*it);
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
+    }
+
+    KnobIPtr first = _knobs.front().lock();
+    KnobHolder* holder = first ? first->getHolder() : nullptr;
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    QString holderName;
+    if (effect) {
+        holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
+    }
+
+    if (_knobs.size() == 1) {
+        setText( tr("Reset %1.%2 to default").arg(holderName).arg( QString::fromUtf8( first->getLabel().c_str() ) ) );
+    } else {
+        setText( tr("Reset %1 to default").arg(holderName) );
     }
 }
 
@@ -540,19 +554,28 @@ RestoreDefaultsCommand::undo()
 
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
-    AppInstancePtr app = first->getHolder()->getApp();
+    KnobHolder* holder = first ? first->getHolder() : nullptr;
+    AppInstancePtr app;
+    if (holder) {
+        app = holder->getApp();
+    }
     assert(app);
-    std::list<KnobIWPtr>::const_iterator itClone = _clones.begin();
+    std::list<KnobIPtr>::iterator itClone = _clones.begin();
     for (std::list<KnobIWPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
+            // The Knob probably doesn't exist anymore.
+            // We won't need the clone, so we may as well release it (we own it).
+            itClone->reset();
+
             continue;
         }
-        KnobIPtr itCloneKnob = itClone->lock();
-        if (!itCloneKnob) {
+        if (!*itClone) {
+            assert(false); // We own the clone, so it should always be valid
+
             continue;
         }
-        itKnob->cloneAndUpdateGui( itCloneKnob.get() );
+        itKnob->cloneAndUpdateGui( itClone->get() );
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
@@ -571,12 +594,10 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times, true);
 
-    first->getHolder()->incrHashAndEvaluate(true, true);
-    if ( first->getHolder()->getApp() ) {
-        first->getHolder()->getApp()->redrawAllViewers();
+    holder->incrHashAndEvaluate(true, true);
+    if ( app ) {
+        app->redrawAllViewers();
     }
-
-    setText( tr("Restore default value(s)") );
 }
 
 void
@@ -585,7 +606,7 @@ RestoreDefaultsCommand::redo()
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app;
-    KnobHolder* holder = first->getHolder();
+    KnobHolder* holder = first ? first->getHolder() : nullptr;
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
 
     if (holder) {
@@ -666,14 +687,12 @@ RestoreDefaultsCommand::redo()
         isEffect->purgeCaches();
     }
 
-
-    if ( first->getHolder() ) {
-        first->getHolder()->incrHashAndEvaluate(true, true);
-        if ( first->getHolder()->getApp() ) {
-            first->getHolder()->getApp()->redrawAllViewers();
+    if ( holder ) {
+        holder->incrHashAndEvaluate(true, true);
+        if ( app ) {
+            app->redrawAllViewers();
         }
     }
-    setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
 SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
@@ -693,6 +712,7 @@ SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
         _oldExprs.push_back( knob->getExpression(i) );
         _hadRetVar.push_back( knob->isExpressionUsingRetVariable(i) );
     }
+    setText( tr("Set expression") );
 }
 
 void
@@ -713,7 +733,6 @@ SetExpressionCommand::undo()
     }
 
     knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
-    setText( tr("Set expression") );
 }
 
 void
@@ -741,7 +760,6 @@ SetExpressionCommand::redo()
         }
     }
     knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
-    setText( tr("Set expression") );
 }
 
 NATRON_NAMESPACE_EXIT

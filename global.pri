@@ -17,6 +17,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+CONFIG += c++11
+
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
 
@@ -58,11 +60,11 @@ run-without-python {
     	# /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/unicodeobject.h:534:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
     	#     register PyObject *obj,     /* Object */
     	#     ^~~~~~~~~
-        QMAKE_CXXFLAGS += -Wno-deprecated-register
+        QMAKE_CXXFLAGS_WARN_ON += -Wno-deprecated-register
         # Silence clang-10 warnings about deprecated copy (there are too many of these)
-        QMAKE_CXXFLAGS += -Wno-deprecated-copy
+        QMAKE_CXXFLAGS_WARN_ON += -Wno-deprecated-copy
         # Do not warn about unknown warnings (including the one just above on clang <=9)
-        QMAKE_CXXFLAGS += -Wno-unknown-warning-option
+        QMAKE_CXXFLAGS_WARNO_ON += -Wno-unknown-warning-option
     }
     #QMAKE_CFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -pedantic
@@ -203,9 +205,9 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
         error("At least GCC 4.6 is required.")
       } else {
         contains(GCCVer,4\\.6.*) {
-          QMAKE_CXXFLAGS += -std=c++0x
+          lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=c++0x
         } else {
-          QMAKE_CXXFLAGS += -std=c++11
+          lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=c++11
         }
       }
     }
@@ -479,7 +481,10 @@ unix {
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
   c++11 {
-    QMAKE_CXXFLAGS += -std=c++11
+    lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=c++11
+    enable_cxx11.name = CLANG_CXX_LANGUAGE_STANDARD
+    enable_cxx11.value = c++0x
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx11
   }
 }
 
@@ -487,7 +492,7 @@ unix {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
   c++11 {
-    QMAKE_CXXFLAGS += -std=c++11
+    lessThan(QT_GCC_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=c++11
   }
 }
 

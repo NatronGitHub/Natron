@@ -1,0 +1,19 @@
+OpenJPEG seems to include its version number in its include directory.
+As of this writing, OpenJPEG is at 2.4.
+However, add later versions for future use.
+
+--- src/cmake/modules/FindOpenJpeg.cmake.orig	2020-07-01 11:06:00.000000000 -0700
++++ src/cmake/modules/FindOpenJpeg.cmake	2021-04-18 07:39:07.000000000 -0700
+@@ -90,6 +90,12 @@
+        ${OpenJpeg_library_paths}
+       )
+   set (OpenJpeg_include_paths
++       ${OpenJpeg_ROOT}/include/openjpeg-2.9
++       ${OpenJpeg_ROOT}/include/openjpeg-2.8
++       ${OpenJpeg_ROOT}/include/openjpeg-2.7
++       ${OpenJpeg_ROOT}/include/openjpeg-2.6
++       ${OpenJpeg_ROOT}/include/openjpeg-2.5
++       ${OpenJpeg_ROOT}/include/openjpeg-2.4
+        ${OpenJpeg_ROOT}/include/openjpeg-2.3
+        ${OpenJpeg_ROOT}/include/openjpeg-2.2
+        ${OpenJpeg_ROOT}/include/openjpeg-2.1

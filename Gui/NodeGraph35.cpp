@@ -484,14 +484,17 @@ NodeGraph::showMenu(const QPoint & pos)
     if (ret == findAction) {
         popFindDialog();
     } else if (ret == duplicateAction) {
-        QRectF rect = visibleSceneRect();
-        duplicateSelectedNodes( rect.center() );
+        // Duplicate at mouse click position:
+        QPointF scenePos = mapToScene( mapFromGlobal(pos) );
+        cloneSelectedNodes(scenePos);
     } else if (ret == cloneAction) {
-        QRectF rect = visibleSceneRect();
-        cloneSelectedNodes( rect.center() );
+        // Clone at mouse click position:
+        QPointF scenePos = mapToScene( mapFromGlobal(pos) );
+        cloneSelectedNodes(scenePos);
     } else if (ret == pasteAction) {
-        QRectF rect = visibleSceneRect();
-        pasteNodeClipBoards( rect.center() );
+        // Paste at mouse click position:
+        QPointF scenePos = mapToScene( mapFromGlobal(pos) );
+        cloneSelectedNodes(scenePos);
     }
 } // NodeGraph::showMenu
 

@@ -78,13 +78,13 @@ MoveMultipleNodesCommand::move(double dx,
         QPointF pos = (*it)->getPos_mt_safe();
         (*it)->setPosition(pos.x() + dx, pos.y() + dy);
     }
+    setText( tr("Move node(s)") );
 }
 
 void
 MoveMultipleNodesCommand::undo()
 {
     move(-_dx, -_dy);
-    setText( tr("Move nodes") );
 }
 
 void
@@ -94,7 +94,6 @@ MoveMultipleNodesCommand::redo()
         move(_dx, _dy);
     }
     _firstRedoCalled = true;
-    setText( tr("Move nodes") );
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
@@ -133,6 +132,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
             }
         }
     }
+    setText( tr("Add node") );
 }
 
 void
@@ -166,9 +166,7 @@ AddMultipleNodesCommand::undo()
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
-
-
-    setText( tr("Add node") );
+    _graph->updateNavigator();
 }
 
 void
@@ -214,9 +212,8 @@ AddMultipleNodesCommand::redo()
         }
     }
 
-
     _firstRedoCalled = true;
-    setText( tr("Add node") );
+    _graph->updateNavigator();
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
@@ -251,6 +248,7 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         }
         _nodes.push_back(n);
     }
+    setText( tr("Remove node(s)") );
 }
 
 RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
@@ -314,7 +312,7 @@ RemoveMultipleNodesCommand::undo()
 
     _isRedone = false;
     _graph->scene()->update();
-    setText( tr("Remove node") );
+    _graph->updateNavigator();
 } // RemoveMultipleNodesCommand::undo
 
 void
@@ -407,7 +405,7 @@ RemoveMultipleNodesCommand::redo()
     _graph->updateNavigator();
 
     _graph->scene()->update();
-    setText( tr("Remove node") );
+    _graph->updateNavigator();
 } // redo
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,
@@ -422,7 +420,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
     _graph(graph),
     _inputNb( edge->getInputNumber() )
 {
-    assert( _dst.lock() );
+    NodeGuiPtr dst = _dst.lock();
+    assert(dst);
+    if (newSrc) {
+        setText( tr("Connect %1 to %2")
+                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
+    } else {
+        setText( tr("Disconnect %1")
+                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
+    }
 }
 
 void
@@ -436,15 +442,6 @@ ConnectCommand::undo()
               oldSrc,
               dst,
               _inputNb);
-
-    if (newSrc) {
-        setText( tr("Connect %1 to %2")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
-    } else {
-        setText( tr("Disconnect %1")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
-    }
-
 
     ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
     if (!isDstAViewer) {
@@ -464,15 +461,6 @@ ConnectCommand::redo()
               newSrc,
               dst,
               _inputNb);
-
-    if (newSrc) {
-        setText( tr("Connect %1 to %2")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
-    } else {
-        setText( tr("Disconnect %1")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
-    }
-
 
     ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
     if (!isDstAViewer) {
@@ -653,6 +641,7 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
 
     _oldW = bbox.width();
     _oldH = bbox.height();
+    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 ResizeBackdropCommand::~ResizeBackdropCommand()
@@ -663,14 +652,12 @@ void
 ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 bool
@@ -704,6 +691,7 @@ DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
         assert( n.master.lock() );
         _nodes.push_back(n);
     }
+    setText( tr("Declone node(s)") );
 }
 
 DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
@@ -718,7 +706,6 @@ DecloneMultipleNodesCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Declone node") );
 }
 
 void
@@ -729,7 +716,6 @@ DecloneMultipleNodesCommand::redo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Declone node") );
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1050,6 +1036,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
             _nodes.push_back(n);
         }
     }
+    setText( tr("Rearrange nodes") );
 }
 
 void
@@ -1058,7 +1045,6 @@ RearrangeNodesCommand::undo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->oldPos.x(), it->oldPos.y(), true);
     }
-    setText( tr("Rearrange nodes") );
 }
 
 void
@@ -1067,7 +1053,6 @@ RearrangeNodesCommand::redo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->newPos.x(), it->newPos.y(), true);
     }
-    setText( tr("Rearrange nodes") );
 }
 
 DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
@@ -1078,6 +1063,7 @@ DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
+    setText( tr("Disable node(s)") );
 }
 
 void
@@ -1086,7 +1072,6 @@ DisableNodesCommand::undo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( tr("Disable nodes") );
 }
 
 void
@@ -1095,7 +1080,6 @@ DisableNodesCommand::redo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( tr("Disable nodes") );
 }
 
 EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
@@ -1106,6 +1090,7 @@ EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
+    setText( tr("Enable node(s)") );
 }
 
 void
@@ -1114,7 +1099,6 @@ EnableNodesCommand::undo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( tr("Enable nodes") );
 }
 
 void
@@ -1123,7 +1107,6 @@ EnableNodesCommand::redo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( tr("Enable nodes") );
 }
 
 LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
@@ -1135,6 +1118,7 @@ LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
     , _node(node)
     , _newSerializations(serialization)
 {
+    setText( tr("Load presets") );
 }
 
 void
@@ -1168,7 +1152,6 @@ LoadNodePresetsCommand::undo()
     }
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
-    setText( tr("Load presets") );
 }
 
 void
@@ -1225,8 +1208,6 @@ LoadNodePresetsCommand::redo()
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
-
-    setText( tr("Load presets") );
 } // LoadNodePresetsCommand::redo
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
@@ -1345,6 +1326,7 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,
     , _trees()
 {
     extractTreesFromNodes(nodes, _trees);
+    setText( tr("Extract node") );
 }
 
 ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
@@ -1407,7 +1389,6 @@ ExtractNodeUndoRedoCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::undo
 
 void
@@ -1495,9 +1476,6 @@ ExtractNodeUndoRedoCommand::redo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-
-
-    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::redo
 
 GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,

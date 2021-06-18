@@ -137,16 +137,16 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz).
 Place it at the root of Natron repository.
 
-***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.3` rename it to `OpenColorIO-Configs`*
+***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.4` rename it to `OpenColorIO-Configs`*
 
 
 ```
-wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz
-tar -xvzf Natron-v2.3.tar.gz
-mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs
+wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz
+tar -xvzf Natron-v2.4.tar.gz
+mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs
 ```
 
 ***note:*** In order to reclaim disk space, you may keep only the following subfolder : blender*, natron, nuke-default

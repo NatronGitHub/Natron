@@ -2,7 +2,7 @@
 
 # Install snappy (for ffmpeg)
 # see https://github.com/google/snappy/releases
-SNAPPY_VERSION=1.1.8
+SNAPPY_VERSION=1.1.9
 SNAPPY_TAR="snappy-${SNAPPY_VERSION}.tar.gz"
 SNAPPY_SITE="https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}"
 if download_step; then
@@ -16,7 +16,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libsnappy.so" ]; }; };
     pushd "snappy-${SNAPPY_VERSION}"
     mkdir tmp_build
     pushd tmp_build
-    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF -DNDEBUG"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBUILD_SHARED_LIBS=ON -DSNAPPY_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF -DNDEBUG"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBUILD_SHARED_LIBS=ON -DSNAPPY_BUILD_BENCHMARKS=OFF -DSNAPPY_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
     make -j${MKJOBS}
     make install
     popd
