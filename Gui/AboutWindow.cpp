@@ -63,12 +63,23 @@ NATRON_NAMESPACE_ENTER
 AboutWindow::AboutWindow(QWidget* parent)
     : QDialog(parent)
 {
+    _scale = 1.;
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#if defined(Q_WS_WIN32)
+    // code from Gui::devicePixelRatio()
+    HDC wscreen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
+    ReleaseDC(0, wscreen);
+    _scale = static_cast<qreal>(horizontalDPI) / 96.;
+#endif
+#endif
+
     setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
     _iconLabel = new Label(this);
-    _iconLabel->setPixmap( QPixmap( QString::fromUtf8(NATRON_APPLICATION_ICON_PATH) ).scaled(128, 128) );
+    _iconLabel->setPixmap( QPixmap( QString::fromUtf8(NATRON_APPLICATION_ICON_PATH) ).scaled(128 * _scale, 128 * _scale) );
     _mainLayout->addWidget(_iconLabel);
 
     _tabWidget = new QTabWidget(this);
@@ -158,6 +169,10 @@ AboutWindow::AboutWindow(QWidget* parent)
 #elif _OPENMP == 201511
 // since GCC 6.1
 #define OPENMP_VERSION_STRING "4.5"
+#elif _OPENMP == 201811
+#define OPENMP_VERSION_STRING "5.0"
+#elif _OPENMP == 202011
+#define OPENMP_VERSION_STRING "5.1"
 #else
 #define OPENMP_VERSION_STRING STRINGIZE_CPP_NAME(_OPENMP)
 #endif
@@ -530,6 +545,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         readmeIndex->setSelected(true);
     }
     _tabWidget->addTab( thirdPartyContainer, QString::fromUtf8("Third-Party components") );
+    resize(560 * _scale, 460 * _scale);
 }
 
 void
