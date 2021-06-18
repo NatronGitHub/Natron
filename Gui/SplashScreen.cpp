@@ -77,9 +77,9 @@ SplashScreen::SplashScreen(const QString & filePath)
     qreal scale = 1.;
 #if defined(Q_WS_WIN32)
     // code from Gui::devicePixelRatio()
-    HDC screen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
-    ReleaseDC(0, screen);
+    HDC wscreen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
+    ReleaseDC(0, wscreen);
     scale = static_cast<qreal>(horizontalDPI) / 96.;
 #endif
     if (scale != 1.) {
@@ -142,9 +142,9 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     qreal scale = 1.;
 #if defined(Q_WS_WIN32)
     // code from Gui::devicePixelRatio()
-    HDC screen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
-    ReleaseDC(0, screen);
+    HDC wscreen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
+    ReleaseDC(0, wscreen);
     scale = static_cast<qreal>(horizontalDPI) / 96.;
 #endif
     if (scale != 1.) {
