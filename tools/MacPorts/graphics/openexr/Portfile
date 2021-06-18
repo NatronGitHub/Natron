@@ -113,7 +113,7 @@ foreach pver ${python_versions} {
             --with-boost-lib-dir=[boost::lib_dir] \
             --with-boost-python-libname=boost_python${pver}-mt
 
-        set pbranch [string range ${pver} 0 end-1].[string index ${pver} end]
+        set pbranch [string index ${pver} 0].[string range ${pver} 1 end]
         configure.python ${prefix}/bin/python${pbranch}
 
         depends_lib-append     \

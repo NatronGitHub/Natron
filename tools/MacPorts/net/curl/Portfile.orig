@@ -60,7 +60,7 @@ if {${name} eq ${subport}} {
                                 --without-nghttp2 \
                                 --without-nss \
                                 --without-ssl \
-                                --without-darwinssl \
+                                --without-secure-transport \
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
@@ -147,7 +147,7 @@ if {${name} eq ${subport}} {
     }
 
     variant darwinssl conflicts gnutls mbedtls ssl wolfssl description {Allow secure connections using Apple OS native TLS} {
-        configure.args-replace  --without-darwinssl --with-darwinssl
+        configure.args-replace  --without-secure-transport --with-secure-transport
         configure.args-append   --without-ca-bundle
     }
 
@@ -207,7 +207,7 @@ if {${name} eq ${subport}} {
     variant ssl conflicts darwinssl gnutls mbedtls wolfssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
-        configure.args-replace  --without-ssl --with-ssl=${prefix}
+        configure.args-replace  --without-ssl --with-openssl=${prefix}
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 
