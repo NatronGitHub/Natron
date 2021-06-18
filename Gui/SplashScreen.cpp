@@ -74,7 +74,18 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-
+    qreal scale = 1.;
+#if defined(Q_WS_WIN32)
+    // code from Gui::devicePixelRatio()
+    HDC screen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
+    ReleaseDC(0, screen);
+    scale = static_cast<qreal>(horizontalDPI) / 96.;
+#endif
+    if (scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * scale), int(_pixmap.height() * scale),
+                                 Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
     resize( _pixmap.width(), _pixmap.height() );
     {
 #ifdef DEBUG
@@ -128,6 +139,18 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
 
     _pixmap.load( QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png") );
 
+    qreal scale = 1.;
+#if defined(Q_WS_WIN32)
+    // code from Gui::devicePixelRatio()
+    HDC screen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
+    ReleaseDC(0, screen);
+    scale = static_cast<qreal>(horizontalDPI) / 96.;
+#endif
+    if (scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * scale), int(_pixmap.height() * scale),
+                                 Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
     resize( _pixmap.width(), _pixmap.height() );
     show();
 
