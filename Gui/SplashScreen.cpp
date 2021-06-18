@@ -74,16 +74,18 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-    qreal scale = 1.;
+    _scale = 1.;
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #if defined(Q_WS_WIN32)
     // code from Gui::devicePixelRatio()
     HDC wscreen = GetDC(winId());
     FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
     ReleaseDC(0, wscreen);
-    scale = static_cast<qreal>(horizontalDPI) / 96.;
+    _scale = static_cast<qreal>(horizontalDPI) / 96.;
 #endif
-    if (scale != 1.) {
-        _pixmap = _pixmap.scaled( int(_pixmap.width() * scale), int(_pixmap.height() * scale),
+#endif
+    if (_scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     resize( _pixmap.width(), _pixmap.height() );
@@ -124,8 +126,8 @@ SplashScreen::paintEvent(QPaintEvent*)
 
     p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(120, 100), _text);
-    p.drawText(QPointF(20, 450), _versionString);
+    p.drawText(QPointF(120 * _scale, 100 * _scale), _text);
+    p.drawText(QPointF(20 * _scale, _pixmap.height() - 15 * _scale), _versionString);
 }
 
 LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
@@ -139,16 +141,18 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
 
     _pixmap.load( QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png") );
 
-    qreal scale = 1.;
+    _scale = 1.;
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #if defined(Q_WS_WIN32)
     // code from Gui::devicePixelRatio()
     HDC wscreen = GetDC(winId());
     FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
     ReleaseDC(0, wscreen);
-    scale = static_cast<qreal>(horizontalDPI) / 96.;
+    _scale = static_cast<qreal>(horizontalDPI) / 96.;
 #endif
-    if (scale != 1.) {
-        _pixmap = _pixmap.scaled( int(_pixmap.width() * scale), int(_pixmap.height() * scale),
+#endif
+    if (_scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     resize( _pixmap.width(), _pixmap.height() );
@@ -184,12 +188,12 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
 
     p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(250, 250), _text);
+    p.drawText(QPointF(250 * _scale, _pixmap.height() - 51 * _scale), _text);
 
     QString loadString( tr("Loading ") );
     QFontMetrics fm = p.fontMetrics();
-    QPointF loadStrPos(300, 150);
-    p.drawText(QPointF(loadStrPos.x() + fm.width(loadString) + 5, 150), _projectName);
+    QPointF loadStrPos(300 * _scale, _pixmap.height() / 2.);
+    p.drawText(QPointF(loadStrPos.x() + (fm.width(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
     p.setPen( QColor(243, 137, 0) );
     p.drawText(loadStrPos, loadString);
 }

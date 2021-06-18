@@ -57,6 +57,7 @@ class AboutWindow
     Button* _closeButton;
     TableModel* _model;
     TableView* _view;
+    qreal _scale;
 
 public:
 
