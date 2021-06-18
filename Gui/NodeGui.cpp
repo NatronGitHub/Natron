@@ -632,7 +632,7 @@ NodeGui::createGui()
     _persistentMessage = new NodeGraphSimpleTextItem(getDagGui(), this, false);
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
-    f.setPixelSize(25);
+    f.setPointSize(25);
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
