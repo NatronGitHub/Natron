@@ -1954,37 +1954,28 @@ AppManager::loadPythonGroups()
         operateOnPathRecursive(&addToPythonPathFunctor, d);
     }
 
-    ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
+    ///Also import qtpy.QtCore and qtpy.QtGui (the later only in non background mode)
     {
         std::string s;
-#     if (SHIBOKEN_MAJOR_VERSION == 2)
-        s = "import PySide2\nimport PySide2.QtCore as QtCore";
-#     else
-        s = "import PySide\nimport PySide.QtCore as QtCore";
-#     endif
+        s = "import qtpy\nfrom qtpy import QtCore";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            QString message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+            QString message = tr("Failed to import qtpy.QtCore, make sure it is bundled with your Natron installation "
                                      "or reachable through the Python path. "
                                      "Note that Natron disables usage "
                                  "of site-packages).");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"), QDateTime::currentDateTime(), message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("qtpy.QtCore"), QDateTime::currentDateTime(), message);
         }
     }
 
     if ( !isBackground() ) {
-        std::string s;
-#     if (SHIBOKEN_MAJOR_VERSION == 2)
-        s = "import PySide2.QtGui as QtGui";
-#     else
-        s = "import PySide.QtGui as QtGui";
-#     endif
+        std::string s = "from qtpy import QtGui";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            QString message = tr("Failed to import PySide.QtGui");
+            QString message = tr("Failed to import qtpy.QtGui");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"), QDateTime::currentDateTime(), message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("qtpy.QtGui"), QDateTime::currentDateTime(), message);
         }
     }
 
@@ -3402,6 +3393,13 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
+    // Set QT_API for QtPy
+    // https://github.com/spyder-ide/qtpy
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    qputenv("QT_API", "pyside");
+#else
+    qputenv("QT_API", "pyside2");
+#endif
 } // AppManager::initPython
 
 void

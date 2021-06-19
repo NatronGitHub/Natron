@@ -14,6 +14,7 @@ Natron on GNU/Linux.
     - [Cairo](#cairo)
     - [Pyside](#pyside)
     - [Shiboken](#shiboken)
+    - [QtPy](#qtpy)
 2. [Configuration](#configuration)
     - [OpenFX](#openfx)
     - [OpenColorIO-Configs](#download-opencolorio-configs)
@@ -106,6 +107,13 @@ Natron uses pyside for python 2
 
 Natron uses shiboken for python 2
 
+### QtPy
+
+Abstraction layer for PyQt5/PyQt4/PySide2/PySide.
+
+```
+pip install qtpy
+```
 
 # Configuration
 
