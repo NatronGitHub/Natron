@@ -284,7 +284,7 @@ At this point, you need a special configuration file called a `config.pri`. On e
 touch ../config.pri
 ```
 
-Now, open `../config.pri` with Vim or Emacs (or whatever editor you prefer), and paste in these lines to the empty file. Here are some recommended instructions to do so:
+Now, open `../config.pri` with Vim or Emacs (or whatever editor you prefer), and paste in these lines to the empty file. **A template `config.pri` is available [here](./build-configs/arch-linux/config.pri)**. Here are some recommended instructions to do so:
 
 ```
 # These are the lines you should paste into your empty `config.pri`
