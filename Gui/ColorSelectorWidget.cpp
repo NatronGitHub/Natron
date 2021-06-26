@@ -101,11 +101,15 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _slideB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _slideA->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
+    // set line color to match channel (R/G/B/A)
+    // we also use the same colors in mainstyle.qss
+    // for CSS #ColorSelector(Red/Green/Blue/Alpha)
     _slideR->setUseLineColor(true, QColor(200, 70, 70) );
     _slideG->setUseLineColor(true, QColor(86, 166, 66) );
     _slideB->setUseLineColor(true, QColor(83, 121, 180) );
     _slideA->setUseLineColor(true, QColor(215, 215, 215) );
 
+    // override "knob" color on sliders
     _slideR->setUseSliderColor(true, Qt::white);
     _slideG->setUseSliderColor(true, Qt::white);
     _slideB->setUseSliderColor(true, Qt::white);
@@ -171,6 +175,16 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     Label *labelS = new Label(QString::fromUtf8("S"), this);
     Label *labelV = new Label(QString::fromUtf8("V"), this);
     Label *labelHex = new Label(QString::fromUtf8("Hex"), this);
+
+    // tooltips
+    _spinR->setToolTip( QObject::tr("Red color value") );
+    _spinG->setToolTip( QObject::tr("Green color value") );
+    _spinB->setToolTip( QObject::tr("Blue color value") );
+    _spinA->setToolTip( QObject::tr("Alpha value") );
+    _spinH->setToolTip( QObject::tr("Hue color value") );
+    _spinS->setToolTip( QObject::tr("Saturation value") );
+    _spinV->setToolTip( QObject::tr("Brightness/Intensity value") );
+    _hex->setToolTip( QObject::tr("A HTML hexadecimal color is specified with: #RRGGBB, where the RR (red), GG (green) and BB (blue) hexadecimal integers specify the components of the color.") );
 
     // layout
     QWidget *rWidget = new QWidget(this);
