@@ -62,6 +62,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCursor>
 #include <QCheckBox>
 #include <QTreeView>
+#ifdef Q_WS_X11
+#include <QtGui/QX11Info>
+#endif
 
 #include "Global/QtCompat.h"
 
@@ -103,6 +106,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#if defined(Q_WS_WIN32)
+#include <winuser.h>
+#include <wingdi.h>
+#endif
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -360,7 +369,7 @@ Gui::handleNativeKeys(int key,
         return key;
     }
 
-#ifdef Q_WS_MAC
+#ifdef Q_WS_MACX
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
     // kVK_ANSI_1                    = 0x12,
@@ -407,7 +416,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_0;
     }
 #endif
-#ifdef Q_WS_WIN
+#ifdef Q_WS_WIN32
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
     //  48   0x30   (VK_0)              | 0 key
     //  49   0x31   (VK_1)              | 1 key
@@ -1057,6 +1066,34 @@ Gui::ddeOpenFile(const QString& filePath)
 
 #endif
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+/**
+ * @brief Returns 1.0 on a 96 DPI screen, and 2.0 on a Retina  Display.
+ **/
+qreal Gui::devicePixelRatio() const
+{
+#if defined(Q_WS_WIN32)
+    HDC screen = GetDC(winId());
+    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
+    ReleaseDC(0, screen);
+
+    return static_cast<qreal>(horizontalDPI) / 96.;
+#elif defined(Q_WS_MACX)
+    return QtMac::devicePixelRatioInternal(this);
+#elif defined(Q_WS_X11)
+    // Use the Xft.dpi X resource, as described there:
+    // - https://github.com/glfw/glfw/blob/84f95a7d7fa454ca99efcdd49da89472294b16bf/src/x11_init.c#L971
+    // - https://wiki.archlinux.org/title/HiDPI#X_Resources
+
+    // QX11Info uses it to set appDpiX() and appDpiY(), see the code:
+    // - https://github.com/qt/qt/blob/0a2f2382541424726168804be2c90b91381608c6/src/gui/kernel/qapplication_x11.cpp#L2203
+
+    return x11Info().appDpiX(x11Info().appScreen()) / 96.;
+#else
+    return 1.;
+#endif
+}
+#endif
 
 bool
 Gui::isFocusStealingPossible()

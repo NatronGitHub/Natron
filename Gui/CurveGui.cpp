@@ -289,7 +289,8 @@ drawLineStrip(const std::vector<float>& vertices,
 
 void
 CurveGui::drawCurve(int curveIndex,
-                    int curvesCount)
+                    int curvesCount,
+                    double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -387,6 +388,7 @@ CurveGui::drawCurve(int curveIndex,
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glVertex2d(btmLeft.x(), curveYRange.min);
                 glVertex2d(topRight.x(), curveYRange.min);
@@ -404,12 +406,12 @@ CurveGui::drawCurve(int curveIndex,
 
 
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-        glPointSize(_thickness);
+        glPointSize(_thickness * screenPixelRatio);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
         glCheckError();
         if (hasDrawnExpr) {
             drawLineStrip(exprVertices, btmLeft, topRight);
@@ -443,7 +445,6 @@ CurveGui::drawCurve(int curveIndex,
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
 
         //draw keyframes
-        glPointSize(7.f);
         glEnable(GL_POINT_SMOOTH);
 
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
@@ -482,6 +483,7 @@ CurveGui::drawCurve(int curveIndex,
 
             double x = key.getTime();
             double y = key.getValue();
+            glPointSize(7.f * screenPixelRatio);
             glBegin(GL_POINTS);
             glVertex2f(x, y);
             glEnd();
@@ -496,6 +498,7 @@ CurveGui::drawCurve(int curveIndex,
                     glLineStipple(2, 0xAAAA);
                     glEnable(GL_LINE_STIPPLE);
                 }
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glColor4f(1., 0.35, 0.35, 1.);
                 glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
@@ -537,6 +540,7 @@ CurveGui::drawCurve(int curveIndex,
                     _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
                                               coordStr, QColor(240, 240, 240), _curveWidget->getFont() );
                 }
+                glPointSize(7.f * screenPixelRatio);
                 glBegin(GL_POINTS);
                 glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );

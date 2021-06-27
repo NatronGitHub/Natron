@@ -1,129 +1,290 @@
-diff --git a/tools/MacPorts/graphics/openimageio/Portfile b/tools/MacPorts/graphics/openimageio/Portfile
-index 79e1e4d1a..e754f402f 100644
---- a/tools/MacPorts/graphics/openimageio/Portfile
-+++ b/tools/MacPorts/graphics/openimageio/Portfile
-@@ -7,7 +7,7 @@ PortGroup               cmake 1.1
+--- Portfile.orig	2021-06-17 20:47:45.000000000 -0700
++++ Portfile	2021-06-17 20:48:32.000000000 -0700
+@@ -2,14 +2,14 @@
+ 
+ PortSystem              1.0
+ PortGroup               github 1.0
+-PortGroup               qt5 1.0
++#PortGroup               qt5 1.0
+ PortGroup               cmake 1.1
  PortGroup               active_variants 1.1
  PortGroup               compiler_blacklist_versions 1.0
+ PortGroup               boost 1.0
  
--github.setup            OpenImageIO oiio 2.2.13.1
-+github.setup            OpenImageIO oiio 2.2.14.0
- revision                100
- name                    openimageio
- categories              graphics
-@@ -18,9 +18,9 @@ long_description        OpenImageIO is a library for reading and writing images,
-                         related classes, utilities, and applications.
- platforms               darwin
- 
--checksums           rmd160  e9d0ad32127960886b900ac480ac0e36ed8a2145 \
--                    sha256  7f810124e866ac14ad9c11b0ab528a6ed4c8e62a190cc44a77eed8159f57405c \
--                    size    29265740
-+checksums           rmd160  1b3ac6ec97c3bd72831d941a9785647eaa6c13be \
-+                    sha256  e41b4b6958d318250caa1d1f167863a915a99062273583bb96457101d54e89cd \
-+                    size    29226972
- 
- compiler.cxx_standard   2011
- # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-diff --git a/tools/MacPorts/graphics/openimageio/Portfile.orig b/tools/MacPorts/graphics/openimageio/Portfile.orig
-index aeea486b7..8ac6847eb 100644
---- a/tools/MacPorts/graphics/openimageio/Portfile.orig
-+++ b/tools/MacPorts/graphics/openimageio/Portfile.orig
-@@ -7,8 +7,8 @@ PortGroup               cmake 1.1
- PortGroup               active_variants 1.1
- PortGroup               compiler_blacklist_versions 1.0
- 
--github.setup            OpenImageIO oiio 2.1.17.0
--revision                2
-+github.setup            OpenImageIO oiio 2.1.17.0 v
-+revision                5
+-github.setup            OpenImageIO oiio 2.1.17.0 v
+-revision                6
++github.setup            OpenImageIO oiio 2.2.15.1
++revision                100
  name                    openimageio
  categories              graphics
  license                 BSD
-@@ -22,18 +22,28 @@ checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
-                         sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
-                         size    29052379
+@@ -19,29 +19,26 @@
+                         related classes, utilities, and applications.
+ platforms               darwin
  
--compiler.cxx_standard   2011
-+compiler.cxx_standard   2014
+-checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
+-                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
+-                        size    29052379
++checksums           rmd160  86ffa84974b23f2a871538fa45ab282adf63d548 \
++                    sha256  f222c6b51a40aabbc80ddf4055535be9af1ffa907452fa6d1ffa7674854aab17 \
++                    size    29237852
+ 
+-compiler.cxx_standard   2014
++compiler.cxx_standard   2011
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
  # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
  # Seen on OSX 10.9 and older.
  compiler.blacklist-append {clang < 700}
-+# error: thread-local storage is not supported for the current target
-+compiler.blacklist-append {clang < 800}
-+# OpenVDB header files use C++14 features
-+configure.args-append   -DCMAKE_CXX_STANDARD=14
+-# OpenVDB header files use C++14 features
+-configure.args-append   -DCMAKE_CXX_STANDARD=14
  
  compiler.thread_local_storage yes
  
-+# When updating this port to a new version, please switch to standard
-+# use of the github portgroup by removing the following three lines and
-+# replacing them with "github.tarball_from archive".
+-# When updating this port to a new version, please switch to standard
+-# use of the github portgroup by removing the following three lines and
+-# replacing them with "github.tarball_from archive".
  github.master_sites     ${github.homepage}/archive
  distname                Release-${version}
  worksrcdir              oiio-Release-${version}
  
-+patchfiles-append       patch-FindOpenJpeg.cmake.diff \
-+                        patch-pybind11.diff
-+
+-patchfiles-append       patch-FindOpenJpeg.cmake.diff \
+-                        patch-pybind11.diff
++patch.pre_args  -p1
++patchfiles \
++    oiio-2.0.8-invalidatespec.patch \
++    oiio-2.0.8-atomic-load.patch
+ 
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
- configure.args-append   -DUSE_CCACHE=OFF
-@@ -46,7 +56,6 @@ depends_lib-append      port:robin-map \
+@@ -54,22 +51,151 @@
+ depends_lib-append      port:robin-map \
                          port:zlib \
                          port:bzip2 \
-                         port:boost \
--                        path:include/turbojpeg.h:libjpeg-turbo \
++                        path:include/turbojpeg.h:libjpeg-turbo \
                          port:libpng \
                          port:tiff \
                          port:ilmbase \
-@@ -62,7 +71,7 @@ qt5.min_version         5.6
+                         port:openexr \
+-                        port:squish \
+-                        port:libfmt
++                        port:squish
+ 
+ # optional components
+ 
+-#configure.args-append   -DUSE_OPENGL=OFF \
+-#                        -DUSE_QT=OFF
+-qt5.min_version         5.6
++# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
++# tested with openimageio 1.4.6rc1:
++# macports-clang-3.3 and later work
++# gcc-4.2 doesn't work
++# llvm-gcc-4.2 doesn't work
++# macports-clang < 3.3 untested
++# clang < 300 doesn't work
++# see also https://github.com/OpenImageIO/oiio/issues/1363
++compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4.[2-7]} {apple-gcc-4.[2-7]} cc {clang < 300}
++
++# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
++if {${configure.cxx_stdlib} eq "libstdc++"} {
++    if {[vercmp $xcodeversion 3.0] >= 0} {
++        compiler.fallback-append macports-clang-3.4
++    } else {
++        compiler.fallback-append macports-clang-3.3
++    }
++}
++
++# GCC < 4.9 does not have proper GCC intrinsics support
++compiler.blacklist-append {*gcc-4.8}
++#compiler.whitelist-append macports-clang-9.0 macports-clang-8.0 macports-clang-7.0 macports-clang-6.0 macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
++
++# The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
++# Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
++if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
++    # there is no known working clang compiler for ppc
++    compiler.blacklist-append {macports-clang*}
++#    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
++#    pre-configure {
++#        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
++#    }
++#    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
++#    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
++    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DNOTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
++    configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
++    ## uncomment the following to compile with buggy thread support
++    # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DCMAKE_C_COMPILER=gcc-mp-4.9 -DCMAKE_CXX_COMPILER=g++-mp-4.9 -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
++    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
++    #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
++}
++
++configure.args-append \
++    -DOIIO_BUILD_TESTS:BOOL=FALSE \
++    -DBOOST_ROOT=${prefix} \
++    -DUSE_QT:BOOL=FALSE \
++    -DUSE_PYTHON:BOOL=FALSE \
++    -DUSE_PYTHON3:BOOL=FALSE \
++    -DUSE_FIELD3D:BOOL=FALSE \
++    -DUSE_FFMPEG:BOOL=FALSE \
++    -DUSE_OPENJPEG:BOOL=FALSE \
++    -DUSE_OCIO:BOOL=FALSE \
++    -DUSE_OPENCV:BOOL=FALSE \
++    -DUSE_OPENSSL:BOOL=FALSE \
++    -DUSE_FREETYPE:BOOL=FALSE \
++    -DUSE_GIF:BOOL=TRUE \
++    -DUSE_HEIF:BOOL=TRUE \
++    -DUSE_PTEX:BOOL=FALSE \
++    -DUSE_LIBRAW:BOOL=TRUE \
++    -DUSE_OPENGL:BOOL=FALSE \
++    -DUSE_WEBP:BOOL=TRUE \
++    -DBUILD_FMT_FORCE:BOOL=TRUE \
++    -DSTOP_ON_WARNING:BOOL=FALSE
++
++# optional components
++
++default_variants    +opencolorio +openjpeg +freetype
++
++variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
++    if {${configure.cxx_stdlib} eq "libstdc++"} {
++    }
++}
++
++variant opencolorio description {Add OpenColorIO support.} {
++    depends_lib-append  port:opencolorio
++    configure.args-delete       -DUSE_OCIO:BOOL=FALSE
++    configure.args-append       -DUSE_OCIO:BOOL=TRUE
++}
++  
++variant ffmpeg description {Add FFmpeg support.} {
++    depends_lib-append  port:ffmpeg
++    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
++    configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
++}
++
++variant openjpeg description {Add OpenJPEG support.} {
++    depends_lib-append  port:openjpeg
++    configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
++    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
++}
++
++variant field3d description {Use Field3D.} {
++    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
++    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
++    depends_lib-append port:field3d
++}
++
++variant freetype description {Use FreeType.} {
++    configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
++    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
++    depends_lib-append port:freetype
++}
++
++
++variant opencv description {Use OpenCV.} {
++    configure.args-delete -DUSE_OPENCV:BOOL=FALSE
++    configure.args-append -DUSE_OPENCV:BOOL=TRUE
++    depends_lib-append port:opencv
++}
++
++variant ptex description {Use PTex.} {
++    configure.args-delete -DUSE_PTEX:BOOL=FALSE
++    configure.args-append -DUSE_PTEX:BOOL=TRUE
++    depends_lib-append port:ptex
++}
++
++variant openvdb description {Use OpenVDB.} {
++    # OpenVDB header files use C++14 features
++    configure.args-append   -DCMAKE_CXX_STANDARD=14
++    configure.args-delete -DUSE_TBB:BOOL=FALSE
++    configure.args-append -DUSE_TBB:BOOL=TRUE
++    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
++    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
++    depends_lib-append port:tbb \
++                       port:openvdb
++}
++
++variant dicom description {Use DICOM from dcmtk.} {
++    configure.args-delete -DUSE_DICOM:BOOL=FALSE
++    configure.args-append -DUSE_DICOM:BOOL=TRUE
++    depends_lib-append port:dcmtk
++}
  
  configure.args-append   -DUSE_PYTHON=OFF
  
--set pythons_suffixes    {27 36 37 38}
-+set pythons_suffixes    {27 36 37 38 39}
+-set pythons_suffixes    {27 36 37 38 39}
++set pythons_suffixes    {27 36 37 38}
  
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -96,7 +105,7 @@ foreach s ${pythons_suffixes} {
+@@ -102,34 +228,31 @@
+ }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
- if {${set_python_default}} {
--    default_variants        +python38
-+    default_variants        +python39
- }
+-if {${set_python_default}} {
+-    default_variants        +python39
+-}
++#if {${set_python_default}} {
++#    default_variants        +python38
++#}
  
  #configure.args-append       -DUSE_FIELD3D=OFF
-@@ -105,18 +114,21 @@ depends_lib-append          port:field3d
- #configure.args-append       -DUSE_FFMPEG=OFF
- depends_lib-append          port:ffmpeg
+-depends_lib-append          port:field3d
++#depends_lib-append          port:field3d
  
--# conflicts with jpeg
--configure.args-append       -DUSE_JPEGTURBO=OFF
--#depends_lib-append          port:libjpeg-turbo
-+#configure.args-append       -DUSE_JPEGTURBO=OFF
-+depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
+ #configure.args-append       -DUSE_FFMPEG=OFF
+-depends_lib-append          port:ffmpeg
++#depends_lib-append          port:ffmpeg
+ 
++# conflicts with jpeg
+ #configure.args-append       -DUSE_JPEGTURBO=OFF
+-depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
++#depends_lib-append          port:libjpeg-turbo
  
  #configure.args-append       -DUSE_OPENJPEG=OFF
- depends_lib-append          port:openjpeg
-+configure.args-append       -DOpenJpeg_ROOT=${prefix}
+-depends_lib-append          port:openjpeg
+-configure.args-append       -DOpenJpeg_ROOT=${prefix}
++#depends_lib-append          port:openjpeg
  
  #configure.args-append       -DUSE_OCIO=OFF
- depends_lib-append          port:opencolorio
+-depends_lib-append          port:opencolorio
++#depends_lib-append          port:opencolorio
  
  #configure.args-append       -DUSE_OPENCV=OFF
--depends_lib-append          port:opencv
-+set opencv_ver 4
-+depends_lib-append          port:opencv${opencv_ver}
-+configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
-+                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
+-set opencv_ver 4
+-depends_lib-append          port:opencv${opencv_ver}
+-configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+-                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
++#depends_lib-append          port:opencv
  
  #configure.args-append       -DUSE_FREETYPE=OFF
- depends_lib-append          port:freetype
-@@ -146,5 +158,3 @@ depends_lib-append          port:dcmtk
+-depends_lib-append          port:freetype
++#depends_lib-append          port:freetype
+ 
+ #configure.args-append       -DUSE_GIF=OFF
+ depends_lib-append          port:giflib
+@@ -138,21 +261,23 @@
+ depends_lib-append          port:libheif
+ 
+ #configure.args-append       -DUSE_PTEX=OFF
+-depends_lib-append          port:ptex
++#depends_lib-append          port:ptex
+ 
+ #configure.args-append       -DUSE_LIBRAW=OFF
+ depends_lib-append          port:libraw
+ 
+ #configure.args-append       -DUSE_TBB=OFF \
+ #                            -DUSE_OPENVDB=OFF
+-depends_lib-append          port:tbb \
+-                            port:openvdb
++#depends_lib-append          port:tbb \
++#                            port:openvdb
+ 
+ # not in MacPorts
+ configure.args-append       -DUSE_NUKE=OFF
+ 
+ #configure.args-append       -DUSE_DICOM=OFF
+-depends_lib-append          port:dcmtk
++#depends_lib-append          port:dcmtk
  
  #configure.args-append       -DUSE_WEBP=OFF
  depends_lib-append          port:webp
--
--livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}
++
++livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}

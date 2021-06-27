@@ -6,8 +6,8 @@ pkgname="${MINGW_PACKAGE_PREFIX}-libraw-gpl2"
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
-pkgver=0.20.2
-pkgrel=1
+pkgver=0.18.13
+pkgrel=4
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
 url="https://www.libraw.org/"
@@ -22,22 +22,20 @@ source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
         "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL3-0.18.8.tar.gz"
         "LibRaw_wsock32.patch"
         "LibRaw_obsolete-macros.patch"
-        "LibRaw_force-openmp.patch")
-sha256sums=('dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6'
+	)
+sha256sums=('cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca'
             '0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da'
             'ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701'
             '4bd077917fb8f37fa736e3a8bf32fabe3df3ff5438b684acbb5adff8a6c2a73b'
             '4a31c0ee066f43915beff6f7959b6b2cd246d390720df379bfc047d4cedb6a8f'
-            '50ad9fc6b91ed8ed5072d508024e9b745b3c9cfcb5d867db98fd1a3b01a9d326')
+	    )
 
 prepare() {
   mv "${srcdir}/${_realname}-demosaic-pack-GPL2-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
   mv "${srcdir}/${_realname}-demosaic-pack-GPL3-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
   cd "${srcdir}/${_realname}-${pkgver}"
-  #patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
+  patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
   patch -Np1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
-  # From https://github.com/LibRaw/LibRaw/commit/4c954948ba2de262b9cb23a1843fb8651aa3dcc1
-  patch -p1 -i "${srcdir}/LibRaw_force-openmp.patch"
 
   autoreconf -ifv
 }
@@ -47,7 +45,7 @@ build() {
   mkdir -p "${srcdir}/build-${MINGW_CHOST}"
   cd "${srcdir}/build-${MINGW_CHOST}"
 
-  CPPFLAGS+=" -DLIBRAW_BUILDLIB -D__STDC_LIMIT_MACROS -DLIBRAW_FORCE_OPENMP"
+  CPPFLAGS+=" -DLIBRAW_BUILDLIB -D__STDC_LIMIT_MACROS"
   ../${_realname}-${pkgver}/configure \
       --prefix=${MINGW_PREFIX}/libraw-gpl2 \
       --build=${MINGW_CHOST} \

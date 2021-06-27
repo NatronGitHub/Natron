@@ -73,7 +73,6 @@ OTHER_FILES += \
     config.pri
 
 include(global.pri)
-include(config.pri)
 include(libs.pri)
 
 isEmpty(CONFIG_SET) {

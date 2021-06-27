@@ -474,7 +474,7 @@ CurveWidget::getScreenPixelRatio() const
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return windowHandle()->devicePixelRatio()
 #else
-    return 1.;
+    return _imp->_gui ? _imp->_gui->devicePixelRatio() : 1.;
 #endif
 }
 #endif
@@ -619,6 +619,8 @@ CurveWidget::paintGL()
     double bgR, bgG, bgB;
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
 
+    double screenPixelRatio = getScreenPixelRatio();
+
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
         glClearColor(bgR, bgG, bgB, 1.);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -656,22 +658,22 @@ CurveWidget::paintGL()
             glCheckErrorIgnoreOSXBug();
         }
 
-        _imp->drawScale();
+        _imp->drawScale(screenPixelRatio);
 
 
 
         if (_imp->_timelineEnabled) {
-            _imp->drawTimelineMarkers();
+            _imp->drawTimelineMarkers(screenPixelRatio);
         }
 
         if (_imp->_drawSelectedKeyFramesBbox) {
-            _imp->drawSelectedKeyFramesBbox();
+            _imp->drawSelectedKeyFramesBbox(screenPixelRatio);
         }
 
-        _imp->drawCurves();
+        _imp->drawCurves(screenPixelRatio);
 
         if ( !_imp->_selectionRectangle.isNull() ) {
-            _imp->drawSelectionRectangle();
+            _imp->drawSelectionRectangle(screenPixelRatio);
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();

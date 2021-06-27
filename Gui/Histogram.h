@@ -82,6 +82,7 @@ public:
     void hideViewerCursor();
 
     int getViewerTextureInputDisplayed() const;
+    double getScreenPixelRatio() const;
 
 public Q_SLOTS:
 

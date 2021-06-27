@@ -8,7 +8,7 @@ Natron is a free, open-source (GPLv2 license) video compositor, similar in funct
 - Website: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
-- Discord: https://discordapp.com/invite/xWAQzPF
+- Discord: https://discord.gg/cpMj5p3Fv5
 - User documentation: https://natron.readthedocs.io/
 
 ## Help wanted

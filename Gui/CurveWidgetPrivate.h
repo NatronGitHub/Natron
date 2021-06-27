@@ -85,16 +85,16 @@ public:
 
     ~CurveWidgetPrivate();
 
-    void drawSelectionRectangle();
+    void drawSelectionRectangle(double screenPixelRatio);
 
     void refreshTimelinePositions();
 
-    void drawTimelineMarkers();
+    void drawTimelineMarkers(double screenPixelRatio);
 
-    void drawCurves();
+    void drawCurves(double screenPixelRatio);
 
-    void drawScale();
-    void drawSelectedKeyFramesBbox();
+    void drawScale(double screenPixelRatio);
+    void drawSelectedKeyFramesBbox(double screenPixelRatio);
 
     /**
      * @brief Returns whether the click at position pt is nearby the curve.

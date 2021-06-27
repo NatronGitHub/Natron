@@ -6,9 +6,10 @@ PortGroup               qt5 1.0
 PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
+PortGroup               boost 1.0
 
 github.setup            OpenImageIO oiio 2.1.17.0 v
-revision                5
+revision                6
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -27,8 +28,6 @@ compiler.cxx_standard   2014
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
-# error: thread-local storage is not supported for the current target
-compiler.blacklist-append {clang < 800}
 # OpenVDB header files use C++14 features
 configure.args-append   -DCMAKE_CXX_STANDARD=14
 
@@ -55,7 +54,6 @@ configure.args-append   -DBUILD_MISSING_DEPS=OFF \
 depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
-                        port:boost \
                         port:libpng \
                         port:tiff \
                         port:ilmbase \

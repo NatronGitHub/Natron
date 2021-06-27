@@ -77,8 +77,9 @@ set python_versions {27 35 36 37 38 39}
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
+        PortGroup   boost           1.0
 
-        revision    3
+        revision    4
         distname    pyilmbase-${version}
         checksums   rmd160  127329978f2fd5793a267d1c7c46d5514d1d46b7 \
                     sha256  9c898bb16e7bc916c82bebdf32c343c0f2878fc3eacbafa49937e78f2079a425 \
@@ -92,20 +93,24 @@ foreach pver ${python_versions} {
             }
         }
 
+        # Builds randomly fail with what appears a race condition
+        use_parallel_build  no
+
         configure.args-append   \
+            --with-boost-include-dir=[boost::include_dir] \
+            --with-boost-lib-dir=[boost::lib_dir] \
             --with-boost-python-libname=boost_python${pver}-mt
 
-        set pbranch [string range ${pver} 0 end-1].[string index ${pver} end]
+        set pbranch [string index ${pver} 0].[string range ${pver} 1 end]
         configure.python ${prefix}/bin/python${pbranch}
 
         depends_lib-append     \
             port:zlib          \
             port:ilmbase       \
             port:python${pver} \
-            port:boost         \
             port:py${pver}-numpy
 
-        require_active_variants boost python${pver}
+        require_active_variants [boost::depends_portname] python${pver}
     }
 }
 

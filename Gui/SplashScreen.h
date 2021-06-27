@@ -51,6 +51,7 @@ private:
     QPixmap _pixmap;
     QString _text;
     QString _versionString;
+    qreal _scale;
 
 public:
 
@@ -79,6 +80,7 @@ private:
     QPixmap _pixmap;
     QString _text;
     QString _projectName;
+    qreal _scale;
 
 public:
 
