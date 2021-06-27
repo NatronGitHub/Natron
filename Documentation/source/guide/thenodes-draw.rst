@@ -10,6 +10,9 @@ These are the nodes located in the pencil icon of the toolbar.
       :maxdepth: 1
       
       thenodes-draw-lightwrap
-      thenodes-draw-ramp
+      thenodes-draw-plasma
       thenodes-draw-radial
+      thenodes-draw-ramp
+      thenodes-draw-rand_noise
       thenodes-draw-rectangle
+      thenodes-draw-roto
