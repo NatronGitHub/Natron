@@ -289,6 +289,9 @@ QPushButton:focus {
 QPushButton:!enabled {
     color: %8;
 }
+QPushButton:checked {
+    background-color: %4;
+}
 
 QHeaderView:section {
     color: %5;
@@ -750,20 +753,4 @@ QToolButton#ColorSelectorButton:pressed {
     padding-left: 0px;
     top: 0px;
     left: 0px;
-}
-
-SpinBox#ColorSelectorRed {
-    border-color: rgb(200, 70, 70);
-}
-
-SpinBox#ColorSelectorGreen {
-    border-color: rgb(86, 166, 66);
-}
-
-SpinBox#ColorSelectorBlue {
-    border-color: rgb(83, 121, 180);
-}
-
-SpinBox#ColorSelectorAlpha {
-    border-color: rgb(215, 215, 215);
 }

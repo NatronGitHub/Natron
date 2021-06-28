@@ -29,14 +29,14 @@ CLANG_DIAG_OFF(uninitialized)
 #include "Gui/QtColorTriangle.h" // from Qt Solutions
 #include <QMouseEvent>
 #include <QEvent>
+#include <QStackedWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/LineEdit.h"
-
-#define COLOR_WHEEL_DEFAULT_SIZE 160
+#include "Gui/Button.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -46,8 +46,7 @@ class ColorSelectorWidget : public QWidget
 
 public:
 
-    explicit ColorSelectorWidget(QWidget *parent = NULL,
-                                 int colorWheelSize = COLOR_WHEEL_DEFAULT_SIZE);
+    explicit ColorSelectorWidget(QWidget *parent = NULL);
     void getColor(float *r, float *g, float *b, float *a);
 
 Q_SIGNALS:
@@ -81,6 +80,10 @@ private:
 
     LineEdit *_hex;
 
+    Button *_button;
+
+    QStackedWidget *_stack;
+
     void setRedChannel(float value);
     void setGreenChannel(float value);
     void setBlueChannel(float value);
@@ -92,6 +95,8 @@ private:
     void setHex(const QColor &color);
 
     void announceColorChange();
+
+    void setTriangleSize();
 
 private Q_SLOTS:
 
@@ -122,6 +127,8 @@ private Q_SLOTS:
     void setSliderHColor();
     void setSliderSColor();
     void setSliderVColor();
+
+    void handleButtonClicked(bool checked);
 
     // workaround for QToolButton+QWidgetAction
     // triggered signal(s) are never emitted!?

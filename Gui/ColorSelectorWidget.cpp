@@ -23,6 +23,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QMargins>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -31,8 +32,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
-                                         int colorWheelSize)
+ColorSelectorWidget::ColorSelectorWidget(QWidget *parent)
   : QWidget(parent)
   , _spinR(0)
   , _spinG(0)
@@ -50,6 +50,8 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
   , _slideA(0)
   , _triangle(0)
   , _hex(0)
+  , _button(0)
+  , _stack(0)
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
@@ -57,8 +59,7 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _triangle = new QtColorTriangle(this);
     // position the triangle properly before usage
     _triangle->setColor( QColor::fromHsvF(0.0, 0.0, 0.0, 1.0) );
-    // set minimum size
-    _triangle->setMinimumSize(colorWheelSize, colorWheelSize);
+    _triangle->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // sliders
     _slideR = new ScaleSliderQWidget(0.,
@@ -135,8 +136,6 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _slideA->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     // set line color to match channel (R/G/B/A)
-    // we also use the same colors in mainstyle.qss
-    // for CSS #ColorSelector(Red/Green/Blue/Alpha)
     _slideR->setUseLineColor(true, QColor(200, 70, 70) );
     _slideG->setUseLineColor(true, QColor(86, 166, 66) );
     _slideB->setUseLineColor(true, QColor(83, 121, 180) );
@@ -191,8 +190,21 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _spinA->setMaximum(1.);
     _spinA->setMinimum(0.);
 
+    // set color to match channel (R/G/B/A)
+    _spinR->setUseLineColor(true, QColor(200, 70, 70) );
+    _spinG->setUseLineColor(true, QColor(86, 166, 66) );
+    _spinB->setUseLineColor(true, QColor(83, 121, 180) );
+    _spinA->setUseLineColor(true, QColor(215, 215, 215) );
+
     // hex
     _hex = new LineEdit(this);
+
+    // button
+    _button = new Button(QString::fromUtf8("RGB"), this);
+    _button->setCheckable(true);
+
+    // set triangle size
+    setTriangleSize();
 
     // set object names (for stylesheet)
     _spinR->setObjectName( QString::fromUtf8("ColorSelectorRed") );
@@ -203,6 +215,7 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _spinS->setObjectName( QString::fromUtf8("ColorSelectorSat") );
     _spinV->setObjectName( QString::fromUtf8("ColorSelectorVal") );
     _hex->setObjectName( QString::fromUtf8("ColorSelectorHex") );
+    _button->setObjectName( QString::fromUtf8("ColorSelectorSwitch") );
 
     // labels
     Label *labelR = new Label(QString::fromUtf8("R"), this);
@@ -214,6 +227,14 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     Label *labelV = new Label(QString::fromUtf8("V"), this);
     Label *labelHex = new Label(QString::fromUtf8("Hex"), this);
 
+    labelR->setMinimumWidth(10);
+    labelG->setMinimumWidth(10);
+    labelB->setMinimumWidth(10);
+    labelA->setMinimumWidth(10);
+    labelH->setMinimumWidth(10);
+    labelS->setMinimumWidth(10);
+    labelV->setMinimumWidth(10);
+
     // tooltips
     _spinR->setToolTip( QObject::tr("Red color value") );
     _spinG->setToolTip( QObject::tr("Green color value") );
@@ -223,8 +244,11 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _spinS->setToolTip( QObject::tr("Saturation value") );
     _spinV->setToolTip( QObject::tr("Brightness/Intensity value") );
     _hex->setToolTip( QObject::tr("A HTML hexadecimal color is specified with: #RRGGBB, where the RR (red), GG (green) and BB (blue) hexadecimal integers specify the components of the color.") );
+    _button->setToolTip( QObject::tr("Switch to HSV") );
 
     // layout
+    _stack = new QStackedWidget(this);
+
     QWidget *rWidget = new QWidget(this);
     QHBoxLayout *rLayout = new QHBoxLayout(rWidget);
 
@@ -267,13 +291,14 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     QWidget *bottomWidget = new QWidget(this);
     QHBoxLayout *bottomLayout = new QHBoxLayout(bottomWidget);
 
-    hsvWidget->setContentsMargins(0, 0, 0, 0);
+    _stack->setContentsMargins(0, 0, 0, 0);
     hexWidget->setContentsMargins(0, 0, 0, 0);
     topWidget->setContentsMargins(0, 0, 0, 0);
     leftWidget->setContentsMargins(0, 0, 0, 0);
     rightWidget->setContentsMargins(0, 0, 0, 0);
-    bottomWidget->setContentsMargins(0, 10, 10, 0);
+    bottomWidget->setContentsMargins(0, 0, 10, 0);
 
+    _stack->layout()->setContentsMargins(0, 0, 0, 0);
     mainLayout->setContentsMargins(5, 5, 5, 5);
     rLayout->setContentsMargins(0, 0, 0, 0);
     gLayout->setContentsMargins(0, 0, 0, 0);
@@ -281,19 +306,21 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     hLayout->setContentsMargins(0, 0, 0, 0);
     sLayout->setContentsMargins(0, 0, 0, 0);
     vLayout->setContentsMargins(0, 0, 0, 0);
-    aLayout->setContentsMargins(0, 0, 0, 0);
     hexLayout->setContentsMargins(0, 0, 0, 0);
-    hsvLayout->setContentsMargins(10, 0, 10, 0);
     topLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setContentsMargins(0, 0, 0, 0);
 
+    QMargins aMargin = hsvLayout->contentsMargins();
+    aMargin.setTop(0);
+    aLayout->setContentsMargins(aMargin);
+
+    _stack->layout()->setSpacing(0);
     mainLayout->setSpacing(0);
     topLayout->setSpacing(0);
     leftLayout->setSpacing(0);
     rightLayout->setSpacing(0);
-    bottomLayout->setSpacing(0);
 
     rLayout->addWidget(labelR);
     rLayout->addWidget(_spinR);
@@ -325,19 +352,24 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     rgbaLayout->addWidget(rWidget);
     rgbaLayout->addWidget(gWidget);
     rgbaLayout->addWidget(bWidget);
-    rgbaLayout->addWidget(aWidget);
 
     hsvLayout->addWidget(hWidget);
     hsvLayout->addWidget(sWidget);
     hsvLayout->addWidget(vWidget);
 
     leftLayout->addWidget(_triangle);
-    rightLayout->addWidget(hsvWidget);
-    rightLayout->addWidget(rgbaWidget);
+
+    _stack->addWidget(rgbaWidget);
+    _stack->addWidget(hsvWidget);
+
+    rightLayout->addWidget(_stack);
+    rightLayout->addWidget(aWidget);
 
     topLayout->addWidget(leftWidget);
     topLayout->addWidget(rightWidget);
 
+    bottomLayout->addWidget(_button);
+    bottomLayout->addStretch();
     bottomLayout->addWidget(hexWidget);
 
     mainLayout->addWidget(topWidget);
@@ -379,6 +411,9 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
                       this, SLOT( handleSliderVMoved(double) ) );
     QObject::connect( _slideA, SIGNAL( positionChanged(double) ),
                       this, SLOT( handleSliderAMoved(double) ) );
+
+    QObject::connect( _button, SIGNAL( clicked(bool) ),
+                      this, SLOT( handleButtonClicked(bool) ) );
 }
 
 void
@@ -546,6 +581,18 @@ ColorSelectorWidget::announceColorChange()
                          _spinG->value(),
                          _spinB->value(),
                          _spinA->value() );
+}
+
+void
+ColorSelectorWidget::setTriangleSize()
+{
+    int triangleSize = 4;
+    int padding = 10;
+
+    triangleSize = (_spinR->size().height() * triangleSize) + (triangleSize * padding);
+
+    _triangle->setMinimumSize(triangleSize, triangleSize);
+    _triangle->setMaximumSize(triangleSize, triangleSize);
 }
 
 void
@@ -805,6 +852,20 @@ ColorSelectorWidget::setSliderVColor()
                    1.0);
     _spinV->setUseLineColor(true, color);
     _slideV->setUseLineColor(true, color);
+}
+
+void
+ColorSelectorWidget::handleButtonClicked(bool checked)
+{
+    if (checked) {
+        _button->setText( QString::fromUtf8("HSV") );
+        _button->setToolTip( QObject::tr("Switch to RGB") );
+        _stack->setCurrentIndex(1);
+    } else {
+        _button->setText( QString::fromUtf8("RGB") );
+        _button->setToolTip( QObject::tr("Switch to HSV") );
+        _stack->setCurrentIndex(0);
+    }
 }
 
 NATRON_NAMESPACE_EXIT
