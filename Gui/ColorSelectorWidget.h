@@ -72,6 +72,9 @@ private:
     ScaleSliderQWidget *_slideR;
     ScaleSliderQWidget *_slideG;
     ScaleSliderQWidget *_slideB;
+    ScaleSliderQWidget *_slideH;
+    ScaleSliderQWidget *_slideS;
+    ScaleSliderQWidget *_slideV;
     ScaleSliderQWidget *_slideA;
 
     QtColorTriangle *_triangle;
@@ -111,7 +114,14 @@ private Q_SLOTS:
     void handleSliderRMoved(double value);
     void handleSliderGMoved(double value);
     void handleSliderBMoved(double value);
+    void handleSliderHMoved(double value);
+    void handleSliderSMoved(double value);
+    void handleSliderVMoved(double value);
     void handleSliderAMoved(double value);
+
+    void setSliderHColor();
+    void setSliderSColor();
+    void setSliderVColor();
 
     // workaround for QToolButton+QWidgetAction
     // triggered signal(s) are never emitted!?
