@@ -205,6 +205,10 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     _hex->setObjectName( QString::fromUtf8("ColorSelectorHex") );
 
     // labels
+    Label *labelR = new Label(QString::fromUtf8("R"), this);
+    Label *labelG = new Label(QString::fromUtf8("G"), this);
+    Label *labelB = new Label(QString::fromUtf8("B"), this);
+    Label *labelA = new Label(QString::fromUtf8("A"), this);
     Label *labelH = new Label(QString::fromUtf8("H"), this);
     Label *labelS = new Label(QString::fromUtf8("S"), this);
     Label *labelV = new Label(QString::fromUtf8("V"), this);
@@ -291,10 +295,13 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     rightLayout->setSpacing(0);
     bottomLayout->setSpacing(0);
 
+    rLayout->addWidget(labelR);
     rLayout->addWidget(_spinR);
     rLayout->addWidget(_slideR);
+    gLayout->addWidget(labelG);
     gLayout->addWidget(_spinG);
     gLayout->addWidget(_slideG);
+    bLayout->addWidget(labelB);
     bLayout->addWidget(_spinB);
     bLayout->addWidget(_slideB);
 
@@ -308,6 +315,7 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     vLayout->addWidget(_spinV);
     vLayout->addWidget(_slideV);
 
+    aLayout->addWidget(labelA);
     aLayout->addWidget(_spinA);
     aLayout->addWidget(_slideA);
 
@@ -324,8 +332,8 @@ ColorSelectorWidget::ColorSelectorWidget(QWidget *parent,
     hsvLayout->addWidget(vWidget);
 
     leftLayout->addWidget(_triangle);
-    rightLayout->addWidget(rgbaWidget);
     rightLayout->addWidget(hsvWidget);
+    rightLayout->addWidget(rgbaWidget);
 
     topLayout->addWidget(leftWidget);
     topLayout->addWidget(rightWidget);
@@ -771,6 +779,7 @@ ColorSelectorWidget::setSliderHColor()
                    1.0,
                    1.0,
                    1.0);
+    _spinH->setUseLineColor(true, color);
     _slideH->setUseLineColor(true, color);
 }
 
@@ -782,6 +791,7 @@ ColorSelectorWidget::setSliderSColor()
                    _spinS->value(),
                    1.0,
                    1.0);
+    _spinS->setUseLineColor(true, color);
     _slideS->setUseLineColor(true, color);
 }
 
@@ -793,6 +803,7 @@ ColorSelectorWidget::setSliderVColor()
                    _spinS->value(),
                    _spinV->value(),
                    1.0);
+    _spinV->setUseLineColor(true, color);
     _slideV->setUseLineColor(true, color);
 }
 
