@@ -704,20 +704,32 @@ ColorSelectorWidget::handleSpinBChanged(double value)
 }
 
 void
-ColorSelectorWidget::handleSpinHChanged(double /*value*/)
+ColorSelectorWidget::handleSpinHChanged(double value)
 {
+    _slideH->blockSignals(true);
+    _slideH->seekScalePosition(value);
+    _slideH->blockSignals(false);
+
     manageColorHSVChanged();
 }
 
 void
-ColorSelectorWidget::handleSpinSChanged(double /*value*/)
+ColorSelectorWidget::handleSpinSChanged(double value)
 {
+    _slideS->blockSignals(true);
+    _slideS->seekScalePosition(value);
+    _slideS->blockSignals(false);
+
     manageColorHSVChanged();
 }
 
 void
-ColorSelectorWidget::handleSpinVChanged(double /*value*/)
+ColorSelectorWidget::handleSpinVChanged(double value)
 {
+    _slideV->blockSignals(true);
+    _slideV->seekScalePosition(value);
+    _slideV->blockSignals(false);
+
     manageColorHSVChanged();
 }
 
