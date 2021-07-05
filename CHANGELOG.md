@@ -25,6 +25,8 @@
 
 - Transform, CornerPin, Position and Ramp nodes now display the motion path.
 - HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
+- Merge: Fix behavior on most operators when A is not connected or A's RoD and B's RoD are disjoint. #647
+
 
 ## Version 2.4.0
 
