@@ -715,19 +715,23 @@ tryParseMultipleFrameRanges(const QString& args,
                             std::list<std::pair<int, std::pair<int, int> > >& frameRanges)
 {
     QStringList splits = args.split( QChar::fromLatin1(',') );
-    bool added = false;
+    std::list<std::pair<int, std::pair<int, int> > > newFrameRanges;
 
     Q_FOREACH(const QString &split, splits) {
         std::pair<int, int> frameRange;
         int frameStep = 0;
 
-        if ( tryParseFrameRange(split, frameRange, frameStep) ) {
-            added = true;
-            frameRanges.push_back( std::make_pair(frameStep, frameRange) );
+        if ( !tryParseFrameRange(split, frameRange, frameStep) ) {
+            // not a frame range.
+            return false;
+        } else {
+            newFrameRanges.push_back( std::make_pair(frameStep, frameRange) );
         }
     }
 
-    return added;
+    frameRanges.merge(newFrameRanges);
+
+    return !newFrameRanges.empty();
 }
 
 void
