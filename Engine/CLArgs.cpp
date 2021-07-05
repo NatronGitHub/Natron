@@ -297,9 +297,10 @@ CLArgs::printUsage(const std::string& programName)
         "    the command-line.\n\n"
         "\n"
         /* Text must hold in 80 columns ************************************************/
-        "Options for the execution of %1 projects:\n"
-        "  %3 <project file path> [options]\n"
-        "  -w [ --writer ] <Writer node script name> [<filename>] [<frameRange>]\n"
+        "Usage for the execution of %1 projects:\n"
+        "    %3 <project file path> [options] [<frameRanges>]\n"
+        "Options/arguments:\n"
+        "  -w [ --writer ] <Writer node script name> [<filename>]\n"
         "    Specify a Write node to render.\n"
         "    When in background mode, the renderer only renders the node script name\n"
         "    following this argument. If no such node exists in the project file, the\n"
@@ -307,19 +308,8 @@ CLArgs::printUsage(const std::string& programName)
         "    Note that if there is no --writer option, it renders all the writers in\n"
         "    the project.\n"
         "    After the writer node script name you can pass an optional output\n"
-        "    filename and pass an optional frame range in the format:\n"
-        "      <firstFrame>-<lastFrame> (e.g: 10-40).\n"
-        "      The frame-range can also contain a frame-step indicating how many steps\n"
-        "      the timeline should do before rendering a frame:\n"
-        "       <firstFrame>-<lastFrame>:<frameStep> (e.g:1-10:2 Would render 1,3,5,7,9)\n"
-        "      You can also specify multiple frame-ranges to render by separating them\n"
-        "      with commas:\n"
-        "      1-10:1,20-30:2,40-50\n"
-        "      Individual frames can also be specified:\n"
-        "      1329,2450,123,1-10:2\n"
+        "    filename.\n"
         "    Note that several -w options can be set to specify multiple Write nodes\n"
-        "    to render.\n"
-        "    Note that if specified, the frame range is the same for all Write nodes\n"
         "    to render.\n"
         "    You may only specify absolute file paths to the writer optional filename.\n"
         "  -i [ --reader ] <reader node script name> <filename>\n"
@@ -341,6 +331,15 @@ CLArgs::printUsage(const std::string& programName)
         "     This option is useful for debugging purposes or to control that a render\n"
         "     is working correctly.\n"
         "     **Please note** that it does not work when writing video files."
+        "  <frameRanges>\n"
+        "      One or more frame ranges, separated by commas.\n"
+        "      Each frame range must be one of the following:\n"
+        "      - <frame> (a single frame number, e.g. 57)\n"
+        "      - <firstFrame>-<lastFrame> (e.g. 10-40)\n"
+        "      - <firstFrame>-<lastFrame>:<frameStep> (e.g. 1-10:2 would render 1,3,5,7,9)\n"
+        "      Examples:\n"
+        "      1-10:1,20-30:2,40-50\n"
+        "      1329,2450,123,1-10:2\n"
         "Sample uses:\n"
         "  %1 /Users/Me/MyNatronProjects/MyProject.ntp\n"
         "  %1 -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp\n"
@@ -974,15 +973,6 @@ CLArgsPrivate::parse()
         }
     }
 
-    //Parse frame range
-    for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
-        if ( tryParseMultipleFrameRanges(*it, frameRanges) ) {
-            args.erase(it);
-            rangeSet = true;
-            break;
-        }
-    }
-
     //Parse settings
     for (;;) {
         QStringList::iterator it = hasToken( QString::fromUtf8("setting"), QString() );
@@ -1223,6 +1213,15 @@ CLArgsPrivate::parse()
         QStringList::iterator endToErase = next;
         ++endToErase;
         args.erase(it, endToErase);
+    }
+
+    //Parse frame range
+    for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
+        if ( tryParseMultipleFrameRanges(*it, frameRanges) ) {
+            args.erase(it);
+            rangeSet = true;
+            break;
+        }
     }
 
     if (atLeastOneOutput && !rangeSet) {

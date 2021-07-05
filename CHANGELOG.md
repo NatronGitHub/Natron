@@ -20,6 +20,7 @@
 - Fix NodeGraph manipulation and navigation issues. #491 #627
 - Fix Retina/High-DPI display issues on macOS, Windows and Linux/X11. #635
 - Fix multi-dimensional parameter linking (bug introduced in 2.4.0 #594). #631
+- Fix bug where any argument containing an integer between commas would be interpreted as a frame range. #644
 
 ### Plugins
 
