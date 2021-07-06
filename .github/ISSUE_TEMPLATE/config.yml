@@ -1,0 +1,18 @@
+# This file is a template generator for Natron's issue tracker system
+
+# The blank template uses the old issue template
+blank_issues_enabled: true
+
+contact_links:
+  - name: Read the Code of Conduct
+    url: https://github.com/NatronGitHub/Natron/blob/RB-2.4/CODE_OF_CONDUCT.md
+    about: Before creating any issue, please read Natron's code of conduct and follow it to the best of your understanding.
+  - name: Read the contributing guidelines
+    url: https://github.com/NatronGitHub/Natron/blob/RB-2.4/CONTRIBUTING.md
+    about: Not sure of how to contribute? Read the contributing guidelines to get started.
+  - name: View the troubleshooting docs
+    url: http://natron.readthedocs.io/en/rb-2.4/guide/getstarted-troubleshooting.html
+    about: You can find many easy solutions to common questions on the troubleshooting docs, without needing to create an issue!
+  - name: Get help on Natron's forum
+    url: https://discuss.pixls.us/c/software/natron/27
+    about: Have a ("how do I...?") question? Not sure if your issue is reproducible? The quickest way to get help is on Natron's community forum!
