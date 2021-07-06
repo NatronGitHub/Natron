@@ -15,6 +15,7 @@
 
 ### Changes
 
+- Default number of render threads is more reasonable on multi-core systems: `min(num_cores, RAM/3.5Gb)`. #554
 - Fix checkerboard drawing on macOS Catalina and later. #614
 - Fix undoing "Reset to default" on parameters. #630
 - Fix NodeGraph manipulation and navigation issues. #491 #627
