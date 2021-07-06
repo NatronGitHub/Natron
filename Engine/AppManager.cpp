@@ -3499,7 +3499,7 @@ AppManager::launchPythonInterpreter()
         throw std::runtime_error("AppInstance::launchPythonInterpreter(): interpretPythonScript(" + s + " failed!");
     }
 
-    // PythonGILLocker pgl;
+    PythonGILLocker pgl;
 #if PY_MAJOR_VERSION >= 3
     // Python 3
     Py_Main(1, &_imp->commandLineArgsWide[0]);
