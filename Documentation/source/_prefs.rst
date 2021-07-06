@@ -33,11 +33,11 @@ Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores.
+0: Guess the thread count from the number of cores and the available memory (min(num_cores,memory/3.5Gb)).
 
 **Number of parallel renders (0=“guess”)**
 
-Controls the number of parallel frame that will be rendered at the same time by the renderer.A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
+Controls the number of parallel frame that will be rendered at the same time by the renderer. A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
 
 **Effects use the thread-pool**
 
@@ -47,7 +47,7 @@ WARNING: This is known not to work when using The Foundry’s Furnace plug-ins (
 
 **Max threads usable per effect (0=“guess”)**
 
-Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing.By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.
+Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing. By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.
 
 **Render in a separate process**
 
@@ -146,7 +146,7 @@ When activated, all colors picked from the color parameters are linearized befor
 
 **Maximum number of open settings panels (0=“unlimited”)**
 
-This property holds the maximum number of settings panels that can be held by the properties dock at the same time.The special value of 0 indicates there can be an unlimited number of panels opened.
+This property holds the maximum number of settings panels that can be held by the properties dock at the same time. The special value of 0 indicates there can be an unlimited number of panels opened.
 
 **Value increments based on cursor position**
 
@@ -393,11 +393,11 @@ Node Graph
 
 **Display plug-in icon on node-graph**
 
-When checked, each node that has a plug-in icon will display it in the node-graph.Changing this option will not affect already existing nodes, unless a restart of Natron is made.
+When checked, each node that has a plug-in icon will display it in the node-graph. Changing this option will not affect already existing nodes, unless a restart of Natron is made.
 
 **Anti-Aliasing**
 
-When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances. Changing this requires a restart of Natron
+When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performance. Changing this requires a restart of Natron
 
 **Default node color**
 
