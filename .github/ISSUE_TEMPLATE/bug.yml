@@ -37,9 +37,9 @@ body:
   - type: input
     id: os-version
     attributes:
-      label: Operating system version
-      description: The type and version of your operating system
-      placeholder: "e.g. Manjaro Linux 21.0 Ornara with Linux 5.10.42-1"
+      label: Operating system
+      description: The name and version of your operating system
+      placeholder: "e.g. macOS 10.15 Catalina"
     validations:
       required: true
   # System (hardware) info
@@ -48,14 +48,12 @@ body:
       label: System specs
       render: markdown
       description: |
-        Please input the following:
-          - The output of `uname -a && sudo lshw -short` for Mac/Linux, OR the output of `Get-CimInstance Win32_OperatingSystem | FL *` command for Windows
-          - Your system's RAM,
-          - The number, model, and type of your CPU(s) and GPU
-
-        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+        Please input the following (if you know them):
+          - Your system's RAM
+          - The number, model, and type of your CPU(s)
+          - The model and type of your GPU
     validations:
-      required: true
+      required: false
   # Did the user install via the official installer?
   - type: checkboxes
     attributes:
@@ -95,6 +93,8 @@ body:
           - If your problem is a crash in an official release/snapshot, please include verbose output from the application from a terminal if possible.  If you also submitted a crash report, indicate the Crash ID if possible.
           - If you need to report a compilation issue, please create a [gist](https://gist.github.com) that contains the _full_ verbose build log.
           - If your problem is a crash in a build that you made yourself, please create a [gist](https://gist.github.com) that contains a _full_ backtrace.
+
+        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
     validations:
       required: true
   # Step-by-step reproduction instructions
