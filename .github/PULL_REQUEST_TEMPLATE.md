@@ -22,7 +22,7 @@ Thanks for submitting a pull request! Please provide enough information so that 
 
 **Show a few screenshots (if this is a visual change)**
 
-[Your answer]
+[Your answer, delete this section if it is not a visual change.]
 
 **Have you tested your changes (if applicable)? If so, how?**
 
