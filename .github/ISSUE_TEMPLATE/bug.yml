@@ -39,7 +39,7 @@ body:
     attributes:
       label: Operating system
       description: The name and version of your operating system
-      placeholder: "e.g. macOS 10.15 Catalina"
+      placeholder: "macOS 10.15 Catalina"
     validations:
       required: true
   # System (hardware) info
