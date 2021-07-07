@@ -54,7 +54,7 @@ body:
       description: |
         Please input the following (if you know them):
           - Your system's RAM
-          - The number, model, and type of your CPU(s)
+          - The model of your CPU(s)
           - The model and type of your GPU
     validations:
       required: false
