@@ -47,6 +47,10 @@ body:
     attributes:
       label: System specs
       render: markdown
+      placeholder: |
+        RAM: 15.6 GiB
+        CPU: 8 x Intel Core i7-7700HQ CPU @ 2.80GHz
+        GPU: NVIDIA GeForce GTX 1070/PCle/SSE2
       description: |
         Please input the following (if you know them):
           - Your system's RAM
