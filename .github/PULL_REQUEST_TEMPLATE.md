@@ -16,9 +16,9 @@ Thanks for submitting a pull request! Please provide enough information so that 
 - [ ] My change requires a change to the documentation
     - [ ] I have updated the documentation accordingly
 
-**Explain the motivation for making this change. What does the pull request do?**
+**What does this pull request do?**
 
-[Your answer]
+[Your answer, explain the motivation for making this change.]
 
 **Show a few screenshots (if this is a visual change)**
 
