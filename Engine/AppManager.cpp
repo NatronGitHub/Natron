@@ -3411,6 +3411,10 @@ AppManager::tearDownPython()
 
     return;
 #endif
+    if ( !Py_IsInitialized() ) {
+        return;
+    }
+
     ///See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 #if !defined(NDEBUG)
     QThread* curThread = QThread::currentThread();
@@ -3499,14 +3503,19 @@ AppManager::launchPythonInterpreter()
         throw std::runtime_error("AppInstance::launchPythonInterpreter(): interpretPythonScript(" + s + " failed!");
     }
 
-    // PythonGILLocker pgl;
+    PyGILState_Ensure(); // Py_Main does PyGILState_Release() for us.
+
+    assert(PyThreadState_Get());
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
+
 #if PY_MAJOR_VERSION >= 3
     // Python 3
     Py_Main(1, &_imp->commandLineArgsWide[0]);
 #else
     Py_Main(1, &_imp->commandLineArgsUtf8[0]);
 #endif
-
 }
 
 int
