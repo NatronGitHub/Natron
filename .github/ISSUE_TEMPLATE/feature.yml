@@ -1,0 +1,51 @@
+name: New issue for feature request
+description: "Have a feature suggestion? Share your idea with a feature request."
+title: "(Feature): <title>"
+labels: "type: feature"
+body:
+  # Greeter message
+  - type: markdown
+    attributes:
+        value: Thank you for suggesting a feature! Please first check the boxes below to ensure that your feature request meets our requirements.
+  # Requirements checks
+  - type: checkboxes
+    attributes:
+        options:
+            - label: I have read the [feature request guidelines](https://hackmd.io/@natron-dev-awesome/B1SW6Hbau)
+              required: true
+            - label: I've followed the [contributing guidelines](https://github.com/NatronGitHub/Natron/blob/RB-2.4/CONTRIBUTING.md) to the best of my understanding
+              required: true
+            - label: My issue is not on the [issue tracker](https://github.com/NatronGitHub/Natron/issues?q=is%3Abug+type%3Afeature+type%3Aidea) and is not a duplicate
+              required: true
+  # Feature request description
+  - type: textarea
+    attributes:
+        label: Provide a description of your feature request
+        render: markdown
+    validations:
+        required: true
+  # Realistically implementable or not?
+  - type: checkboxes
+    attributes:
+        label: Is this a realistically implementable feature?
+        description: |
+            A feature is realistically implementable if you can reasonably expect yourself to implement the feature within 1 month of the request. A feature can still be added if it is not realistically implementable, but it will be tagged as an *idea* and relegated to be added in the indefinite future.
+        options:
+            - label: My feature is realistically implementable
+            - label: My feature is NOT realistically implementable
+  # Contributable or not?
+  - type: checkboxes
+    attributes:
+        label: Can you contribute in creating this feature?
+        options:
+            - label: I am unable, incapable, or not willing to contribute in creating this feature
+            - label: I am able and willing to contribute in creating this feature
+  # Additional details
+  - type: textarea
+    attributes:
+        label: Additional details
+        description: |
+          You do not have to fill this out but more details are always helpful
+        render: markdown
+    validations:
+        required: false
