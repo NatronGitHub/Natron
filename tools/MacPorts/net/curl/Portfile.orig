@@ -223,7 +223,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -242,11 +242,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1617307855
+    set certdata_updated        1625220659
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         e5df44ac10fece63c6c0a0cbadd70ab1e1ce9898
+    set certdata_commit         4d343134c8a3a46520e41d31e7cb26f718d9daec
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20210308
+    set certdata_date           20210526
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -267,9 +267,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  01e3341e545702f7c822bba9f7f957e1c7bb737c \
-                                sha256  3dc3e624f29774dd559e69f838982ddc26cebebcdf62c248936d508c2f35d644 \
-                                size    244976
+                                rmd160  763c2ffbbc521d7cafb5644ff5d2692b5543197d \
+                                sha256  d3d290e88c6781ba81105205036a5da320d5eb5f58fd14561afee07c344d185d \
+                                size    248478
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \
