@@ -45,7 +45,7 @@ body:
     attributes:
         label: Additional details
         description: |
-          You do not have to fill this out but more details are always helpful.
+          You do not have to fill this out but more details are always helpful!
         render: markdown
     validations:
         required: false
