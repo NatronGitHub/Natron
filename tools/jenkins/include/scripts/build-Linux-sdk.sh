@@ -175,8 +175,9 @@ EOF
         fi
         if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
             # Enable powertools on CentOS >= 8 / Rocky Linux 8
+            # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && dnf -y groupinstall 'Development Tools' && "
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled powertools && dnf -y update && dnf -y groupinstall 'Development Tools' && "
             YUM_DEVEL_EXTRA=""
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
