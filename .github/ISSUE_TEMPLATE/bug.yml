@@ -77,7 +77,7 @@ body:
       placeholder: E.g. I installed Natron at `/opt/Natron-2.4.0`
       render: markdown
     validations:
-      required: true
+      required: false
   # What was the user trying to do?
   - type: textarea
     attributes:
