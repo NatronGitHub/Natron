@@ -31,7 +31,7 @@ body:
     attributes:
       label: Natron version
       description: Natron version/commit (they can be retrieved from the about window or with `natron --about`)
-      placeholder: "e.g. Natron 2.4.0"
+      placeholder: "Natron 2.4.0"
     validations:
       required: true
   - type: input
