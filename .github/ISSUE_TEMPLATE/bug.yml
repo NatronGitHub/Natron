@@ -74,7 +74,7 @@ body:
   - type: textarea
     attributes:
       label: If you installed to a custom (non-default) location please include it here:
-      placeholder: E.g. I installed Natron at `/opt/Natron-2.4.0`
+      placeholder: `/opt/Natron-2.4.0`
       render: markdown
     validations:
       required: false
