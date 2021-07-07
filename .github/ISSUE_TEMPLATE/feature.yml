@@ -38,7 +38,7 @@ body:
     attributes:
         label: Can you contribute in creating this feature?
         options:
-            - label: I am unable, incapable, or not willing to contribute in creating this feature
+            - label: I am unable, or not willing to contribute to creating this feature
             - label: I am able and willing to contribute in creating this feature
   # Additional details
   - type: textarea
