@@ -22,7 +22,7 @@ if [ "$PKGOS" = "OSX" ]; then
         fi
     fi
     # clang path on homebrew (should always be the latest version)
-    if command -v /usr/local/opt/llvm/bin/clang >/dev/null 2>&1; then
+    if command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
         COMPILER=clang-omp
     fi
     #COMPILER=clang-omp
@@ -67,9 +67,9 @@ if [ "$PKGOS" = "OSX" ]; then
         elif command -v clang-mp-4.0 >/dev/null 2>&1; then
             CC=clang-mp-4.0
             CXX="clang++-mp-4.0 -stdlib=libc++ -std=c++11"
-        elif command -v /usr/local/opt/llvm/bin/clang >/dev/null 2>&1; then
-            CC=/usr/local/opt/llvm/bin/clang
-            CXX="/usr/local/opt/llvm/bin/clang++ -std=c++11"
+        elif command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
+            CC=/usr/local/opt/llvm@11/bin/clang
+            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=c++11"
         fi
         # clang > 7.0 sometimes chokes on building Universal CImg.ofx, probably because of #pragma omp atomic
         #Undefined symbols for architecture i386:

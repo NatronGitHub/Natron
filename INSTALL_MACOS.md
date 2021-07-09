@@ -389,6 +389,9 @@ config.pri:
 
 ```Shell
  # copy and paste the following in a terminal
+ # Get the LLVM version corresponding to your Xcode version, from
+ # the table at https://en.wikipedia.org/wiki/Xcode#Toolchain_versions
+ # Here it is LLVM 11 for Xcode 12.5.1
 cat > config.pri << EOF
 boost: INCLUDEPATH += /usr/local/include
 boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
@@ -396,20 +399,20 @@ expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
-  QMAKE_CC=/usr/local/opt/llvm/bin/clang
-  QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
+  QMAKE_CC=/usr/local/opt/llvm@11/bin/clang
+  QMAKE_CXX=/usr/local/opt/llvm@11/bin/clang++
   QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=\$\$QMAKE_CXX
 
-  LIBS += -L/usr/local/opt/llvm/lib -lomp
+  LIBS += -L/usr/local/opt/llvm@11/lib -lomp
   cc_setting.name = CC
-  cc_setting.value = /usr/local/opt/llvm/bin/clang
+  cc_setting.value = /usr/local/opt/llvm@11/bin/clang
   cxx_setting.name = CXX
-  cxx_setting.value = /usr/local/opt/llvm/bin/clang++
+  cxx_setting.value = /usr/local/opt/llvm@11/bin/clang++
   ld_setting.name = LD
-  ld_setting.value = /usr/local/opt/llvm/bin/clang
+  ld_setting.value = /usr/local/opt/llvm@11/bin/clang
   ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = /usr/local/opt/llvm/bin/clang++
+  ldplusplus_setting.value = /usr/local/opt/llvm@11/bin/clang++
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
@@ -481,7 +484,7 @@ Then, configure using the following qmake command on MacPorts:
 Or on Homebrew:
 
 ```Shell
-env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
+env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm@11/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
 ```
 
 To build the plugins, use the following command-line:
