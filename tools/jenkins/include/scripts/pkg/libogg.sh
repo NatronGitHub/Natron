@@ -2,7 +2,7 @@
 
 # Install libogg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libogg.html
-LIBOGG_VERSION=1.3.4
+LIBOGG_VERSION=1.3.5
 LIBOGG_TAR="libogg-${LIBOGG_VERSION}.tar.gz"
 LIBOGG_SITE="http://downloads.xiph.org/releases/ogg"
 if download_step; then

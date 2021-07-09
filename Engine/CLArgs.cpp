@@ -118,6 +118,8 @@ CLArgs::CLArgs()
 {
 }
 
+// ctor
+// Be careful that there are 3 constructors with very similar code, see below
 CLArgs::CLArgs(int& argc,
                char* argv[],
                bool forceBackground)
@@ -149,6 +151,8 @@ CLArgs::CLArgs(int& argc,
     _imp->parse();
 }
 
+// ctor
+// Be careful that there are 3 constructors with very similar code, see above and below
 CLArgs::CLArgs(int& argc,
        wchar_t* argv[],
        bool forceBackground)
@@ -168,6 +172,11 @@ CLArgs::CLArgs(int& argc,
         std::string utf8Str = StrUtils::utf16_to_utf8(ws);
         assert(StrUtils::is_utf8(utf8Str.c_str()));
         QString str = QString::fromUtf8(utf8Str.c_str());
+        if (i == 0) {
+            // save the program name (argv[0])
+            _imp->executable = str;
+            continue;
+        }
         if ( (str.size() >= 2) && ( str[0] == QChar::fromLatin1('"') ) && ( str[str.size() - 1] == QChar::fromLatin1('"') ) ) {
             str.remove(0, 1);
             str.remove(str.size() - 1, 1);
@@ -179,6 +188,8 @@ CLArgs::CLArgs(int& argc,
 
 }
 
+// ctor
+// Be careful that there are 3 constructors with very similar code, see above
 CLArgs::CLArgs(const QStringList &arguments,
                 bool forceBackground)
     : _imp( new CLArgsPrivate() )
@@ -190,8 +201,15 @@ CLArgs::CLArgs(const QStringList &arguments,
 
     // Ensure application has correct locale before doing anything
     AppManager::setApplicationLocale();
-    
+
+    bool first = true;
     Q_FOREACH(const QString &arg, arguments) {
+        if (first) {
+            // save the program name (argv[0])
+            _imp->executable = arg;
+            first = false;
+            continue;
+        }
         QString str = arg;
 
         // Remove surrounding quotes
@@ -218,6 +236,7 @@ CLArgs::~CLArgs()
 void
 CLArgs::operator=(const CLArgs& other)
 {
+    _imp->executable = other._imp->executable;
     _imp->args = other._imp->args;
     _imp->filename = other._imp->filename;
     _imp->isPythonScript = other._imp->isPythonScript;

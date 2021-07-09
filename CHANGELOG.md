@@ -15,6 +15,7 @@
 
 ### Changes
 
+- Default number of render threads is more reasonable on multi-core systems: `min(num_cores, RAM/3.5Gb)`. #554
 - Fix checkerboard drawing on macOS Catalina and later. #614
 - Fix undoing "Reset to default" on parameters. #630
 - Fix NodeGraph manipulation and navigation issues. #491 #627
@@ -27,7 +28,7 @@
 - Transform, CornerPin, Position and Ramp nodes now display the motion path.
 - HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
 - Merge: Fix behavior on most operators when A is not connected or A's RoD and B's RoD are disjoint. #647
-
+- Reformat: fix bugs when "turn" is checked with Resize Type = None or Type = Scale.
 
 ## Version 2.4.0
 

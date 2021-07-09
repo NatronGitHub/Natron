@@ -12,16 +12,21 @@
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.36.2 # 2.36 fails on CentOS6 with:
+UTILLINUX_VERSION=2.37
+UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION} # eg 2.36
+UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION}  # eg 2.36
+# if has minor version, uncomment the proper macros below
+#UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0} # eg 2.35.2
+#UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}  # eg 2.35.2
 if [ "${CENTOS:-0}" = 6 ]; then
     UTILLINUX_VERSION=2.35.2 # 2.36 fails on CentOS6 with:
     # sys-utils/unshare.c:552:21: error: 'CLOCK_BOOTTIME' undeclared (first use in this function); did you mean 'OPT_BOOTTIME'?
+    #UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION} # eg 2.36
+    #UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION}  # eg 2.36
+    # if has minor version, uncomment the proper macros below
+    UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0} # eg 2.35.2
+    UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}  # eg 2.35.2
 fi
-# if has minor version, uncomment the proper macros below
-#UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION} # eg 2.36
-#UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION}  # eg 2.36
-UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0} # eg 2.35.2
-UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}  # eg 2.35.2
 UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION_NOZERO}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
 if download_step; then

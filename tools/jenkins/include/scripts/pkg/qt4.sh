@@ -347,8 +347,8 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     # cc1: error: one or more PCH files were found, but they were invalid
     # cc1: error: use -Winvalid-pch for more information
     # cc1: fatal error: .pch/release-static/QtCore: No such file or directory
-    # Needed at least on CentOS8
-    if [ "${CENTOS:-0}" = 8 ]; then # may we should have a switch on GCC_VERSION instead?
+    # Needed at least on CentOS8 / GCC 8
+    if version_gt "${GCC_VERSION}" 7.99; then
         patch -Np1 -i "$INC_PATH"/patches/Qt/qt-no-pch.patch
         QT_CONF+=("-no-pch")
     fi
