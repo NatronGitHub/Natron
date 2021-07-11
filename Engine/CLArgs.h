@@ -120,7 +120,9 @@ public:
     bool isInterpreterMode() const;
 
     bool isCacheClearRequestedOnLaunch() const;
-    
+
+    bool isOpenFXCacheClearRequestedOnLaunch() const;
+
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?
      */
@@ -139,14 +141,13 @@ public:
 
     bool areRenderStatsEnabled() const;
 
+#ifdef NATRON_USE_BREAKPAD
     const QString& getBreakpadProcessExecutableFilePath() const;
-
     qint64 getBreakpadProcessPID() const;
-
     int getBreakpadClientFD() const;
-
     const QString& getBreakpadPipeFilePath() const;
     const QString& getBreakpadComPipeFilePath() const;
+#endif
     const QString& getExportDocsPath() const;
 
 private:
