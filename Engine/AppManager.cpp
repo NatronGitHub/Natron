@@ -1098,7 +1098,12 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         _imp->restoreCaches();
     }
 
-    setLoadingStatus( tr("Loading plugin cache...") );
+    if (cl.isOpenFXCacheClearRequestedOnLaunch()) {
+        setLoadingStatus( tr("Clearing the OpenFX Plugins cache...") );
+        clearPluginsLoadedCache();
+    } else {
+        setLoadingStatus( tr("Loading plugin cache...") );
+    }
 
 
     ///Set host properties after restoring settings since it depends on the host name.

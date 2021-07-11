@@ -21,6 +21,7 @@ GTEST_API_ int main(int argc, char **argv)
         int argc = 0;
         QStringList args;
         args << QString::fromUtf8("--clear-cache");
+        args << QString::fromUtf8("--clear-openfx-cache");
         args << QString::fromUtf8("--no-settings");
         CLArgs cl(args, true);
         if (!manager.load(argc, 0, cl)) {
