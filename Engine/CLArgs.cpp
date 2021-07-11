@@ -704,18 +704,18 @@ tryParseFrameRange(const QString& arg,
     }
     for (int i = 0; i < strRange.size(); ++i) {
         //whitespace removed from the start and the end.
-        strRange[i] = strRange[i].trimmed();
+        strRange[i] = strRange.at(i).trimmed();
     }
-    range.first = strRange[0].toInt(&ok);
+    range.first = strRange.at(0).toInt(&ok);
     if (!ok) {
         return false;
     }
 
-    int foundColon = strRange[1].indexOf( QChar::fromLatin1(':') );
+    int foundColon = strRange.at(1).indexOf( QChar::fromLatin1(':') );
     if (foundColon != -1) {
         ///A frame-step has been specified
-        QString lastFrameStr = strRange[1].mid(0, foundColon);
-        QString frameStepStr = strRange[1].mid(foundColon + 1);
+        QString lastFrameStr = strRange.at(1).mid(0, foundColon);
+        QString frameStepStr = strRange.at(1).mid(foundColon + 1);
         range.second = lastFrameStr.toInt(&ok);
         if (!ok) {
             return false;
@@ -727,7 +727,7 @@ tryParseFrameRange(const QString& arg,
     } else {
         frameStep = INT_MIN;
         ///Frame range without frame-step specified
-        range.second = strRange[1].toInt(&ok);
+        range.second = strRange.at(1).toInt(&ok);
         if (!ok) {
             return false;
         }
@@ -755,9 +755,12 @@ tryParseMultipleFrameRanges(const QString& args,
         }
     }
 
-    frameRanges.merge(newFrameRanges);
+    if ( newFrameRanges.empty() ) {
+        return false;
+    }
+    frameRanges.merge(newFrameRanges); // empties newFrameRanges
 
-    return !newFrameRanges.empty();
+    return true;
 }
 
 void
@@ -1099,6 +1102,7 @@ CLArgsPrivate::parse()
 #ifdef __NATRON_UNIX__
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
+                it = args.erase(it);
             }
         }
 
