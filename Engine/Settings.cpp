@@ -2119,7 +2119,7 @@ Settings::restoreSettings(bool useDefault)
     try {
         _settingsExisted = _natronSettingsExist->getValue();
 
-        if (!_settingsExisted) {
+        if (!_settingsExisted && !useDefault) {
             _natronSettingsExist->setValue(true);
             saveSetting( _natronSettingsExist.get() );
         }
