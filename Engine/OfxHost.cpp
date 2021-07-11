@@ -875,9 +875,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );
 
-
-    pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
-    pluginCache->setPluginHostPath("Nuke"); // most Nuke OFX plugins are compatible
+    if (useStdOFXPluginsLocation) {
+        pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
+        pluginCache->setPluginHostPath("Nuke"); // most Nuke OFX plugins are compatible
+    }
     std::list<std::string> extraPluginsSearchPaths;
     settings->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
     for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
