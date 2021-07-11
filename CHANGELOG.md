@@ -22,6 +22,7 @@
 - Fix Retina/High-DPI display issues on macOS, Windows and Linux/X11. #635
 - Fix multi-dimensional parameter linking (bug introduced in 2.4.0 #594). #631
 - Fix bug where any argument containing an integer between commas would be interpreted as a frame range. #644
+- Python: `app.saveProject`  and `app.saveProjectAs` now do project variable substitution, as in `app.saveProjectAs("[Variable]/output.ntp")`.
 
 ### Plugins
 
@@ -29,6 +30,7 @@
 - HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
 - Merge: Fix behavior on most operators when A is not connected or A's RoD and B's RoD are disjoint. #647
 - Reformat: fix bugs when "turn" is checked with Resize Type = None or Type = Scale.
+
 
 ## Version 2.4.0
 
