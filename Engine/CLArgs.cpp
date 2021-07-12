@@ -766,6 +766,12 @@ tryParseMultipleFrameRanges(const QString& args,
 void
 CLArgsPrivate::parse()
 {
+#ifdef DEBUG
+    qDebug() << "args:";
+    for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
+        qDebug() << *it;
+    }
+#endif
     {
         QStringList::iterator it = hasToken( QString::fromUtf8("version"), QString::fromUtf8("v") );
         if ( it != args.end() ) {
@@ -1223,13 +1229,14 @@ CLArgsPrivate::parse()
         QStringList::iterator it = findFileNameWithExtension( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
         if ( it == args.end() ) {
             it = findFileNameWithExtension( QString::fromUtf8("py") );
-            if ( ( it == args.end() ) && !isInterpreterMode && isBackground ) {
-                std::cout << tr("You must specify the filename of a script (.py) or a %1 project. (.%2)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ).toStdString() << std::endl;
+            if (it != args.end()) {
+                isPythonScript = true;
+            } else if (!isInterpreterMode && isBackground) {
+                std::cout << tr("You must specify the filename of a script or %1 project. (.%2)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ).toStdString() << std::endl;
                 error = 1;
 
                 return;
             }
-            isPythonScript = true;
         }
         if ( it != args.end() ) {
             filename = *it;
@@ -1294,6 +1301,12 @@ CLArgsPrivate::parse()
     qDebug() << "frameRanges:";
     for (auto&& it: frameRanges) {
         qDebug() << it.first << it.second.first << it.second.second;
+    }
+    if ( !args.empty() ) {
+        qDebug() << "Remaining args:";
+        for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
+            qDebug() << *it;
+        }
     }
     qDebug() << "* End of command-line parsing results.";
 #endif // DEBUG
