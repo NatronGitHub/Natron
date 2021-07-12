@@ -23,6 +23,7 @@ GTEST_API_ int main(int argc, char **argv)
         args << QString::fromUtf8("--clear-cache");
         args << QString::fromUtf8("--clear-openfx-cache");
         args << QString::fromUtf8("--no-settings");
+        args << QString::fromUtf8("dummy.ntp");
         CLArgs cl(args, true);
         if (!manager.load(argc, 0, cl)) {
             printf("Failed to load AppManager\n");
