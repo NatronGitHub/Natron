@@ -908,6 +908,9 @@ if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
     rm get-pip.py
 fi
 
+# Install qtpy
+"${TMP_PORTABLE_DIR}"/bin/natron-python -m pip install qtpy
+
 # Run extra user provided pip install scripts
 if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
