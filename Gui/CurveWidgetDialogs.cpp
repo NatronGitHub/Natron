@@ -52,6 +52,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h" // SequenceFileDialog
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h" // Label
+#include "Gui/Gui.h" // Gui
+#include "Gui/GuiAppInstance.h"
+#include "Engine/Project.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -87,19 +90,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     bool integerIncrement = false;
-    double xstart = -std::numeric_limits<double>::infinity();
-    double xend = std::numeric_limits<double>::infinity();
+    double xstart, xend;
+    gui->getApp()->getProject()->getFrameRange(&xstart, &xend);
     for (size_t i = 0; i < curves.size(); ++i) {
         integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
-        std::pair<double,double> xrange = curves[i]->getInternalCurve()->getXRange();
-        xstart = std::max(xstart, xrange.first);
-        xend = std::min(xend, xrange.second);
-    }
-    if (xstart == -std::numeric_limits<double>::infinity()) {
-        xstart = std::min(0., xend - 1.);
-    }
-    if (xend == std::numeric_limits<double>::infinity()) {
-        xend = std::max(xstart + 1., 1.);
     }
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 3, 0, 0);
@@ -141,7 +135,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _incrLayout->addWidget(_incrLabel);
     _incrLineEdit = new LineEdit(_incrContainer);
     if (xstart == 0. && xend == 1.) {
-        _incrLineEdit->setText(QString::fromUtf8("1./255"));
+        _incrLineEdit->setText(QString::fromUtf8("1"));
     } else {
         _incrLineEdit->setText(QString::number(1));
     }

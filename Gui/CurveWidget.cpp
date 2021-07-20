@@ -2212,36 +2212,15 @@ CurveWidget::importCurveFromAscii()
         std::map<CurveGuiPtr, std::vector<double> > curvesValues;
         ///scan the file to get the curve values
         while ( !ts.atEnd() ) {
-            QString line = ts.readLine();
-            if ( line.isEmpty() ) {
+            QString line = ts.readLine().simplified();
+            if ( line.isEmpty() || line[0] == QLatin1Char('#') ) {
                 continue;
             }
-            int i = 0;
-            std::vector<double> values;
-
             ///read the line to extract all values
-            while ( i < line.size() ) {
-                QString value;
-                while ( i < line.size() && line.at(i) != QLatin1Char('_') ) {
-                    value.push_back( line.at(i) );
-                    ++i;
-                }
-                if ( i < line.size() ) {
-                    if ( line.at(i) != QLatin1Char('_') ) {
-                        Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
-
-                        return;
-                    }
-                    ++i;
-                }
-                bool ok;
-                double v = value.toDouble(&ok);
-                if (!ok) {
-                    Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
-
-                    return;
-                }
-                values.push_back(v);
+            QStringList valuesStr = line.split( QLatin1Char(' ') );
+            std::vector<double> values;
+            Q_FOREACH(const QString& v, valuesStr) {
+                values.push_back( v.toDouble() );
             }
             ///assert that the values count is greater than the number of curves provided by the user
             if ( values.size() < columns.size() ) {
