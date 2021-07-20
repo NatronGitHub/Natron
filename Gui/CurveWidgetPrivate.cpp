@@ -89,7 +89,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _selectedKeyFramesCrossVertLine()
     , _selectedKeyFramesCrossHorizLine()
     , _timeline(timeline)
-    , _timelineEnabled(false)
+    , _timelineEnabled(bool(timeline))
     , _selectedDerivative()
     , _evaluateOnPenUp(false)
     , _keyDragLastMovement()

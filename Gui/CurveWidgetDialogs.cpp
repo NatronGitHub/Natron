@@ -61,7 +61,7 @@ NATRON_NAMESPACE_ENTER
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                                                  const std::vector<CurveGuiPtr> & curves,
                                                  Gui* gui,
-                                                 QWidget* parent)
+                                                 CurveWidget* parent)
     : QDialog(parent)
     , _gui(gui)
     , _isExportDialog(isExportDialog)
@@ -91,7 +91,34 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
 
     bool integerIncrement = false;
     double xstart, xend;
-    gui->getApp()->getProject()->getFrameRange(&xstart, &xend);
+    QString incr;
+    if ( parent->hasTimeline() ) {
+        gui->getApp()->getFrameRange(&xstart, &xend);
+        incr = QString::fromUtf8("1");
+    } else {
+        xstart = std::numeric_limits<double>::infinity();
+        xend = -std::numeric_limits<double>::infinity();
+        for (size_t i = 0; i < curves.size(); ++i) {
+            std::pair<double, double> r = curves[i]->getInternalCurve()->getXRange();
+            if (r.first < xstart) {
+                xstart = r.first;
+            }
+            if (r.second > xend) {
+                xend = r.second;
+            }
+        }
+        if ( xstart == std::numeric_limits<double>::infinity() ) {
+            xstart = 0.;
+        }
+        if ( xend == -std::numeric_limits<double>::infinity() ) {
+            xend = 1.;
+        }
+        if (xstart == 0. && xend == 1.) {
+            incr = QString::fromUtf8("1./255.");
+        } else {
+            incr = QString::number(xend - xstart) + QString::fromUtf8("/100.");
+        }
+    }
     for (size_t i = 0; i < curves.size(); ++i) {
         integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
     }
@@ -135,7 +162,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _incrLayout->addWidget(_incrLabel);
     _incrLineEdit = new LineEdit(_incrContainer);
     if (xstart == 0. && xend == 1.) {
-        _incrLineEdit->setText(QString::fromUtf8("1"));
+        _incrLineEdit->setText(incr);
     } else {
         _incrLineEdit->setText(QString::number(1));
     }

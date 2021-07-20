@@ -148,6 +148,12 @@ CurveWidget::~CurveWidget()
     makeCurrent();
 }
 
+bool
+CurveWidget::hasTimeline() const
+{
+    return bool(_imp->_timeline);
+}
+
 void
 CurveWidget::initializeGL()
 {

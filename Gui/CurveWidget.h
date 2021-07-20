@@ -80,6 +80,8 @@ public:
 
     virtual ~CurveWidget() OVERRIDE;
 
+    bool hasTimeline() const;
+    
     const QFont & getTextFont() const;
 
     void centerOn(double xmin, double xmax);
