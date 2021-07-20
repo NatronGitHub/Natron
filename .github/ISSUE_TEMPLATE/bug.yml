@@ -73,8 +73,8 @@ body:
   # At which location did the user install Natron?
   - type: textarea
     attributes:
-      label: If you installed to a custom (non-default) location please include it here:
-      placeholder: `/opt/Natron-2.4.0`
+      label: If you installed to a custom '(non-default)' location please include it here':'
+      placeholder: '`/opt/Natron-2.4.0`'
       render: markdown
     validations:
       required: false
