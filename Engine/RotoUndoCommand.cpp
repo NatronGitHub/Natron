@@ -834,7 +834,8 @@ dragTangent(double time,
             const Transform::Matrix3x3& transform,
             double dx,
             double dy,
-            bool left,
+            bool both, //< should both tangents be moved symmetrically?
+            bool left, //< which one is being controlled
             bool autoKeying,
             bool breakTangents,
             bool draggedPointIsFeather)
@@ -846,10 +847,18 @@ dragTangent(double time,
     getDeltaForPoint(fp, time, transform, dx, dy, left, breakTangents, &otherFpDiffX, &otherFpDiffY, &isOnKeyframe);
 
     if (autoKeying || isOnKeyframe) {
-        if (left) {
-            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, breakTangents, draggedPointIsFeather);
+        if (both) {
+            if (!left) {
+                dx = -dx;
+                dy = -dy;
+            }
+            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, -dx, -dy, dx, dy, -dx, -dy, breakTangents, draggedPointIsFeather);
         } else {
-            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, dx, dy, breakTangents, draggedPointIsFeather);
+            if (left) {
+                cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, breakTangents, draggedPointIsFeather);
+            } else {
+                cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, dx, dy, breakTangents, draggedPointIsFeather);
+            }
         }
     }
 }
@@ -922,7 +931,7 @@ MoveTangentUndoCommand::redo()
     bool autoKeying = roto->getContext()->isAutoKeyingEnabled();
 
 
-    dragTangent( _time, *cp, *fp, transform, _dx, _dy, _left, autoKeying, _breakTangents, _tangentBeingDragged->isFeatherPoint() );
+    dragTangent( _time, *cp, *fp, transform, _dx, _dy, false, _left, autoKeying, _breakTangents, _tangentBeingDragged->isFeatherPoint() );
 
 
     if (_firstRedoCalled) {
@@ -1459,8 +1468,12 @@ MakeBezierUndoCommand::redo()
             int lastIndex = _newCurve->getControlPointsCount() - 1;
             assert(lastIndex >= 0);
             _lastPointAdded = lastIndex;
-            _newCurve->moveLeftBezierPoint(lastIndex, _time, -_dx, -_dy);
-            _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
+            Transform::Matrix3x3 transform;
+            _newCurve->getTransformAtTime(_time, &transform);
+            BezierCPPtr cp = _newCurve->getControlPointAtIndex(lastIndex);
+            BezierCPPtr fp = _newCurve->getFeatherPointAtIndex(lastIndex);
+
+            dragTangent(_time, *cp, *fp, transform, _dx, _dy, true, false, false, false, false);
         }
 
         RotoItemPtr parentItem;
