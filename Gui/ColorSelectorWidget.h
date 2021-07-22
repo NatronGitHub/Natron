@@ -46,7 +46,7 @@ class ColorSelectorWidget : public QWidget
 
 public:
 
-    explicit ColorSelectorWidget(QWidget *parent = NULL);
+    explicit ColorSelectorWidget(bool withAlpha, QWidget *parent = NULL);
     void getColor(float *r, float *g, float *b, float *a);
 
 Q_SIGNALS:

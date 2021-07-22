@@ -24,6 +24,7 @@
 - Fix bug where any argument containing an integer between commas would be interpreted as a frame range. #644
 - Python: `app.saveProject`  and `app.saveProjectAs` now do project variable substitution, as in `app.saveProjectAs("[Variable]/output.ntp")`.
 - Fix ASCII curve import. #656
+- New color selection dialog for RGB and RGBA knobs. #210
 
 ### Plugins
 
