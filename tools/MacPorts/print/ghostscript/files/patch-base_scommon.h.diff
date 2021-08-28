@@ -1,0 +1,36 @@
+--- base/scommon.h.orig
++++ base/scommon.h
+@@ -118,14 +118,14 @@
+ static inline void
+ stream_cursor_read_init(stream_cursor_read *r, const byte *buf, size_t length)
+ {
+-#ifdef __GNUC__
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || defined(__clang__))
+ #  pragma GCC diagnostic push
+ #  pragma GCC diagnostic ignored "-Warray-bounds"
+ #endif
+     /* starting pos for pointer is always one position back */
+     r->ptr = buf - 1;
+     r->limit = r->ptr + length;
+-#ifdef __GNUC__
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || defined(__clang__))
+ #  pragma GCC diagnostic pop
+ #endif
+ }
+@@ -133,14 +133,14 @@
+ static inline void
+ stream_cursor_write_init(stream_cursor_write *w, const byte *buf, size_t length)
+ {
+-#ifdef __GNUC__
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || defined(__clang__))
+ #  pragma GCC diagnostic push
+ #  pragma GCC diagnostic ignored "-Warray-bounds"
+ #endif
+     /* starting pos for pointer is always one position back */
+     w->ptr = (byte *)buf - 1;
+     w->limit = (byte *)w->ptr + length;
+-#ifdef __GNUC__
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || defined(__clang__))
+ #  pragma GCC diagnostic pop
+ #endif
+ }

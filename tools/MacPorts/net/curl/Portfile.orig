@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.77.0
+version                         7.78.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  8a122b2decf610fb2b3a9262039610246dd9b0b4 \
-                                sha256  0f64582c54282f31c0de9f0a1a596b182776bd4df9a4c4a2a41bbeb54f62594b \
-                                size    2439336
+                                rmd160  a3c6639da7482c5ed9aac36a16d1daa253e4a9d1 \
+                                sha256  be42766d5664a739c3974ee3dfbbcbe978a4ccb1fe628bb1d9b59ac79e445fb5 \
+                                size    2440640
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -53,7 +53,6 @@ if {${name} eq ${subport}} {
                                 --without-gnutls \
                                 --without-gssapi \
                                 --without-libgsasl \
-                                --without-libmetalink \
                                 --without-librtmp \
                                 --without-libssh2 \
                                 --without-mbedtls \
@@ -188,11 +187,6 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-nghttp2 --with-nghttp2
     }
 
-    variant metalink description {Support Metalink XML download description files} {
-        depends_lib-append      port:libmetalink
-        configure.args-replace  --without-libmetalink --with-libmetalink=${prefix}
-    }
-
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
         depends_lib-append      port:openldap
         configure.args-replace  --disable-ldap --enable-ldap
@@ -223,7 +217,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    1
+    revision                    0
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch

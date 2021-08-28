@@ -39,6 +39,10 @@ patchfiles          patch-base_unix-dll.mak.diff \
 # https://bugs.ghostscript.com/show_bug.cgi?id=703880
 patchfiles-append   patch-configure.ac.diff
 
+# Fix issue with GCC pragmas inside function bodies
+# https://trac.macports.org/ticket/63105
+patchfiles-append   patch-base_scommon.h.diff
+
 checksums           ghostpdl-9.54.0.tar.gz \
                     rmd160  a48ecd441c761a9401a5e4a34ea90afd6936d419 \
                     sha256  63e54cddcdf48ea296b6315353f86b8a622d4e46959b10d536297e006b85687b \

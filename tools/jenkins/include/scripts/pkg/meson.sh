@@ -2,7 +2,7 @@
 
 # Install meson
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/meson.html
-MESON_VERSION=0.58.1
+MESON_VERSION=0.59.1
 #MESON_TAR="meson-${MESON_VERSION}.tar.gz"
 #MESON_SITE="https://github.com/mesonbuild/meson/releases/download/v${MESON_VERSION}"
 

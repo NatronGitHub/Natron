@@ -46,11 +46,7 @@ compiler.blacklist-append *llvm-gcc-4.2
 # https://trac.macports.org/ticket/59246
 xcode_workaround.fixed_xcode_version 11.2
 
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
-}
-
-if {${universal_possible} && [variant_isset universal]} {
+if {${universal_possible} && [variant_isset universal] && ![variant_isset highdepth]} {
 
     if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
         depends_build-append port:nasm
@@ -67,26 +63,15 @@ if {${universal_possible} && [variant_isset universal]} {
 
 } else {
 
-	if {${configure.build_arch} in {i386 x86_64}} {
-		depends_build-append port:nasm
-		configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
-	}
-
-	if {${configure.build_arch} eq "i386"} {
-        # error: illegal text-relocation to '_x265_pw_1'
-		configure.ldflags-append -Wl,-read_only_relocs,suppress
-	}
-
-    # at present, this variant will not build universal
-    # TODO: explore how this variant is supported on other archs
-    if {${configure.build_arch} eq "x86_64"} {
-        default_variants +highdepth
+    if {${configure.build_arch} in {i386 x86_64}} {
+        depends_build-append port:nasm
+        configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
     }
-}
 
-if {[variant_isset highdepth]} {
-    # we need to explore how to use the method below with the muniversal PG.
-    universal_variant no
+    if {${configure.build_arch} eq "i386"} {
+        # error: illegal text-relocation to '_x265_pw_1'
+        configure.ldflags-append -Wl,-read_only_relocs,suppress
+    }
 }
 
 variant highdepth conflicts universal description {Enable 10-bit and 12-bit encoding} {
@@ -94,6 +79,8 @@ variant highdepth conflicts universal description {Enable 10-bit and 12-bit enco
     # this builds the recommended multi-library interface
     # https://x265.readthedocs.io/en/master/api.html#multi-library-interface
     # with the default ABI being the standard 8bit ABI as always
+
+    # we can perhaps explore how to use the method below with the muniversal PG
 
     pre-configure {
         system "mkdir ${workpath}/10bit"
