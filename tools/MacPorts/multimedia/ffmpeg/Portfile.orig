@@ -18,7 +18,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.4
-revision            2
+revision            3
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -142,6 +142,7 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-zlib \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
@@ -156,9 +157,16 @@ configure.args      --enable-swscale \
                     --disable-sdl2 \
                     --disable-securetransport \
                     --mandir=${prefix}/share/man \
-                    --enable-shared --enable-pthreads \
+                    --enable-shared \
+                    --enable-pthreads \
                     --cc=${configure.cc}
 
+
+# zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
+if { ${os.platform} eq "darwin" && ${os.major} > 11 } {
+    configure.args-append   --enable-libzimg
+    depends_lib-append      port:zimg
+}
 
 platform darwin {
     # disable asm on Tiger

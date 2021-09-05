@@ -1,6 +1,6 @@
---- Portfile.orig	2021-02-13 18:25:46.000000000 -0800
-+++ Portfile	2021-03-03 16:03:16.000000000 -0800
-@@ -78,6 +78,8 @@
+--- Portfile.orig	2021-09-05 11:01:32.000000000 -0700
++++ Portfile	2021-09-05 11:04:30.000000000 -0700
+@@ -81,6 +81,8 @@
                      port:libbluray \
                      port:libvpx \
                      port:gnutls \
@@ -9,9 +9,9 @@
                      port:openjpeg \
                      port:fontconfig \
                      port:freetype \
-@@ -109,6 +111,11 @@
-     compiler.blacklist-append {clang < 422.1.7}
- }
+@@ -117,6 +119,11 @@
+ # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
+ compiler.blacklist-append {clang < 800}
  
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 +# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
@@ -21,7 +21,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -123,6 +130,8 @@
+@@ -131,6 +138,8 @@
                      --enable-librsvg \
                      --enable-libtheora \
                      --enable-libopenjpeg \
@@ -30,10 +30,10 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -134,12 +143,14 @@
-                     --enable-fontconfig \
+@@ -143,12 +152,14 @@
                      --enable-libfreetype \
                      --enable-libfribidi \
+                     --enable-zlib \
 +                    --disable-libaom \
                      --disable-libjack \
                      --disable-libopencore-amrnb \
@@ -45,15 +45,15 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -149,6 +160,7 @@
-                     --disable-securetransport \
+@@ -159,6 +170,7 @@
                      --mandir=${prefix}/share/man \
-                     --enable-shared --enable-pthreads \
+                     --enable-shared \
+                     --enable-pthreads \
 +                    --cxx=${configure.cxx} \
                      --cc=${configure.cc}
  
  
-@@ -227,6 +239,24 @@
+@@ -243,6 +255,24 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -78,7 +78,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -254,6 +284,15 @@
+@@ -282,6 +312,15 @@
      set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
  }
  if {${universal_possible} && [variant_isset universal]} {
@@ -94,7 +94,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -279,11 +318,53 @@
+@@ -307,11 +346,55 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -119,7 +119,8 @@
 +                    port:fontconfig \
 +                    port:freetype \
 +                    port:fribidi \
-+                    port:libsdl2
++                    port:libsdl2 \
++                    port:zimg
 +
 +    configure.args-delete \
 +                    --enable-libass \
@@ -129,6 +130,7 @@
 +                    --enable-libfreetype \
 +                    --enable-libfribidi \
 +                    --enable-sdl2 \
++                    --enable-libzimg \
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
@@ -148,7 +150,7 @@
  }
  
  if {[variant_isset x11]} {
-@@ -332,6 +413,20 @@
+@@ -360,6 +443,20 @@
      depends_lib-delete      port:gnutls
  }
  
@@ -169,7 +171,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -350,6 +445,12 @@
+@@ -378,6 +475,12 @@
      depends_lib-append      port:samba3
  
      license                 GPL-3+
