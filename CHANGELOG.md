@@ -25,6 +25,7 @@
 - Python: `app.saveProject`  and `app.saveProjectAs` now do project variable substitution, as in `app.saveProjectAs("[Variable]/output.ntp")`.
 - Fix ASCII curve import. #656
 - New color selection dialog for RGB and RGBA knobs. #210
+- Fix histogram smoothing (was 5 times too strong).
 
 ### Plugins
 
