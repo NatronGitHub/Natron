@@ -278,7 +278,8 @@ public:
     int rangeComputationRecursion;
 
     // for rendering
-    QFont *font;
+    double _screenPixelRatio;
+    boost::scoped_ptr<QFont> _textFont;
     TextRenderer textRenderer;
 
     // for textures
@@ -322,7 +323,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
     , nodeRanges()
     , nodeRangesBeingComputed()
     , rangeComputationRecursion(0)
-    , font( new QFont(appFont, appFontSize) )
+    , _screenPixelRatio(0)
+    , _textFont()
     , textRenderer()
     , kfTexturesIDs()
     , zoomContext(0.01, 100.)
@@ -872,7 +874,7 @@ DopeSheetViewPrivate::drawScale() const
         return;
     }
 
-    QFontMetrics fontM(*font);
+    QFontMetrics fm(*_textFont);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
 
@@ -885,8 +887,6 @@ DopeSheetViewPrivate::drawScale() const
     scaleColor.setRgbF( Image::clamp(scaleR, 0., 1.),
                         Image::clamp(scaleG, 0., 1.),
                         Image::clamp(scaleB, 0., 1.) );
-
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -918,7 +918,7 @@ DopeSheetViewPrivate::drawScale() const
 
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = fontM.width( QString::fromUtf8("00") );
+        const double minTickSizeTextPixel = fm.width( QString::fromUtf8("00") ) / _screenPixelRatio;
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
 
         glCheckError();
@@ -931,7 +931,7 @@ DopeSheetViewPrivate::drawScale() const
             glColor4f(scaleColor.redF(), scaleColor.greenF(), scaleColor.blueF(), alpha);
 
             // Draw the vertical lines belonging to the grid
-            glLineWidth(1. * screenPixelRatio);
+            glLineWidth(1. * _screenPixelRatio);
             glBegin(GL_LINES);
             glVertex2f( value, bottomLeft.y() );
             glVertex2f( value, topRight.y() );
@@ -943,7 +943,7 @@ DopeSheetViewPrivate::drawScale() const
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
-                const int sSizePixel = fontM.width(s);
+                const int sSizePixel = fm.width(s) / _screenPixelRatio;
 
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
@@ -958,7 +958,7 @@ DopeSheetViewPrivate::drawScale() const
                     QColor c = scaleColor;
                     c.setAlpha(255 * alphaText);
 
-                    renderText(value, bottomLeft.y(), s, c, *font, Qt::AlignHCenter);
+                    renderText(value, bottomLeft.y(), s, c, *_textFont, Qt::AlignHCenter);
 
                     // Uncomment the line below to draw the indicator on top too
                     // parent->renderText(value, topRight.y() - 20, s, c, *font);
@@ -1113,10 +1113,9 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
-    glLineWidth(appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() * screenPixelRatio);
+    glLineWidth(appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() * _screenPixelRatio);
     glColor4f(0.f, 0.f, 0.f, 1.f);
-    glLineWidth(1. * screenPixelRatio);
+    glLineWidth(1. * _screenPixelRatio);
     glBegin(GL_LINES);
     glVertex2f( rowRect.left(), rowRect.top() );
     glVertex2f( rowRect.right(), rowRect.top() );
@@ -1126,7 +1125,6 @@ DopeSheetViewPrivate::drawNodeRowSeparation(const DSNodePtr dsNode) const
 void
 DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
 {
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
     // Draw the clip
     {
         std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find( dsNode.get() );
@@ -1177,10 +1175,10 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
             GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            glLineWidth(2 * screenPixelRatio);
+            glLineWidth(2 * _screenPixelRatio);
 
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
-            glLineWidth(1. * screenPixelRatio);
+            glLineWidth(1. * _screenPixelRatio);
             glBegin(GL_LINES);
 
             //horizontal line
@@ -1215,7 +1213,7 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
 
         if (isSelected) {
             glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
-            glLineWidth(1. * screenPixelRatio);
+            glLineWidth(1. * _screenPixelRatio);
             glBegin(GL_LINE_LOOP);
             glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
             glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
@@ -1231,20 +1229,20 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
             QColor selectionColor;
             selectionColor.setRgbF(selectionColorRGB[0], selectionColorRGB[1], selectionColorRGB[2]);
 
-            QFontMetrics fm(*font);
-            int fontHeigt = fm.height();
+            QFontMetrics fm(*_textFont);
+            double fontHeight = fm.height() / _screenPixelRatio;
             QString leftText = QString::number(range.first);
             QString rightText = QString::number(range.second - 1);
-            int rightTextW = fm.width(rightText);
+            double rightTextW = fm.width(rightText) / _screenPixelRatio;
             QPointF textLeftPos( zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.first, 0).x() + 3, 0).x(),
-                                 zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
+                                 zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeight / 2.).y() );
 
-            renderText(textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, *font);
+            renderText(textLeftPos.x(), textLeftPos.y(), leftText, selectionColor, *_textFont);
 
             QPointF textRightPos( zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.second, 0).x() - rightTextW - 3, 0).x(),
-                                  zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeigt / 2.).y() );
+                                  zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeight / 2.).y() );
 
-            renderText(textRightPos.x(), textRightPos.y(), rightText, selectionColor, *font);
+            renderText(textRightPos.x(), textRightPos.y(), rightText, selectionColor, *_textFont);
         }
     }
 } // DopeSheetViewPrivate::drawRange
@@ -1444,7 +1442,7 @@ DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture
         QPointF p = zoomContext.toWidgetCoordinates( rect.right(), rect.bottom() );
         p.rx() += 3;
         p = zoomContext.toZoomCoordinates( p.x(), p.y() );
-        renderText(p.x(), p.y(), text, textColor, *font);
+        renderText(p.x(), p.y(), text, textColor, *_textFont);
     }
 }
 
@@ -1506,8 +1504,6 @@ DopeSheetViewPrivate::drawProjectBounds() const
     double colorR, colorG, colorB;
     settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
 
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
-
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1515,14 +1511,14 @@ DopeSheetViewPrivate::drawProjectBounds() const
         glColor4f(colorR, colorG, colorB, 1.f);
 
         // Draw start bound
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(projectStart, top);
         glVertex2f(projectStart, bottom);
         glEnd();
 
         // Draw end bound
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(projectEnd, top);
         glVertex2f(projectEnd, bottom);
@@ -1552,8 +1548,6 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
     double colorR, colorG, colorB;
     settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
 
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
-
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_HINT_BIT | GL_ENABLE_BIT |
@@ -1566,7 +1560,7 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
         glColor4f(colorR, colorG, colorB, 1.f);
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(currentFrame, top);
         glVertex2f(currentFrame, bottom);
@@ -1600,7 +1594,6 @@ void
 DopeSheetViewPrivate::drawSelectionRect() const
 {
     running_in_main_thread_and_context(q_ptr);
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1621,11 +1614,11 @@ DopeSheetViewPrivate::drawSelectionRect() const
         glVertex2f(selectionRect.x2, selectionRect.y1);
         glEnd();
 
-        glLineWidth(1.5 * screenPixelRatio);
+        glLineWidth(1.5 * _screenPixelRatio);
 
         // Draw outline
         glColor4f(0.5, 0.5, 0.5, 1.);
-        glLineWidth(1.5 * screenPixelRatio);
+        glLineWidth(1.5 * _screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f(selectionRect.x1, selectionRect.y1);
         glVertex2f(selectionRect.x1, selectionRect.y2);
@@ -1646,7 +1639,6 @@ void
 DopeSheetViewPrivate::drawSelectedKeysBRect() const
 {
     running_in_main_thread_and_context(q_ptr);
-    double screenPixelRatio = q_ptr->getScreenPixelRatio();
 
     // Perform drawing
     {
@@ -1659,7 +1651,7 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
 
         // Draw outline
         glColor4f(0.5, 0.5, 0.5, 1.);
-        glLineWidth(1.5 * screenPixelRatio);
+        glLineWidth(1.5 * _screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.bottom() );
         glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.top() );
@@ -1676,7 +1668,7 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
         QLineF verticalLine( zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() - CROSS_LINE_OFFSET),
                              zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() + CROSS_LINE_OFFSET) );
 
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( horizontalLine.p1().x(), horizontalLine.p1().y() );
         glVertex2f( horizontalLine.p2().x(), horizontalLine.p2().y() );
@@ -1714,8 +1706,8 @@ DopeSheetViewPrivate::renderText(double x,
         return;
     }
 
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w  * _screenPixelRatio);
+    double scaley = (top - bottom) / (h  * _screenPixelRatio);
 
     textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
 
@@ -3246,6 +3238,15 @@ DopeSheetView::paintGL()
     if (_imp->zoomContext.factor() <= 0) {
         return;
     }
+
+    {
+        double screenPixelRatio = getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+        }
+    }
+    assert(_imp->_textFont);
 
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomContext.left();

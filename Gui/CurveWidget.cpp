@@ -616,6 +616,16 @@ CurveWidget::paintGL()
     if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
+
+    {
+        double screenPixelRatio = getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+        }
+    }
+    assert(_imp->_textFont);
+
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomCtx.left();
     zoomRight = _imp->zoomCtx.right();
@@ -624,8 +634,6 @@ CurveWidget::paintGL()
 
     double bgR, bgG, bgB;
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
-
-    double screenPixelRatio = getScreenPixelRatio();
 
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
         glClearColor(bgR, bgG, bgB, 1.);
@@ -664,22 +672,22 @@ CurveWidget::paintGL()
             glCheckErrorIgnoreOSXBug();
         }
 
-        _imp->drawScale(screenPixelRatio);
+        _imp->drawScale(_imp->_screenPixelRatio);
 
 
 
         if (_imp->_timelineEnabled) {
-            _imp->drawTimelineMarkers(screenPixelRatio);
+            _imp->drawTimelineMarkers(_imp->_screenPixelRatio);
         }
 
         if (_imp->_drawSelectedKeyFramesBbox) {
-            _imp->drawSelectedKeyFramesBbox(screenPixelRatio);
+            _imp->drawSelectedKeyFramesBbox(_imp->_screenPixelRatio);
         }
 
-        _imp->drawCurves(screenPixelRatio);
+        _imp->drawCurves(_imp->_screenPixelRatio);
 
         if ( !_imp->_selectionRectangle.isNull() ) {
-            _imp->drawSelectionRectangle(screenPixelRatio);
+            _imp->drawSelectionRectangle(_imp->_screenPixelRatio);
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();
@@ -727,8 +735,8 @@ CurveWidget::renderText(double x,
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w * _imp->_screenPixelRatio);
+    double scaley = (top - bottom) / (h * _imp->_screenPixelRatio);
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
@@ -2006,7 +2014,7 @@ CurveWidget::getFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->_font;
+    return *_imp->_textFont;
 }
 
 const SelectedKeys &
@@ -2024,7 +2032,7 @@ CurveWidget::getTextFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->_font;
+    return *_imp->_textFont;
 }
 
 void

@@ -80,9 +80,6 @@ public:
     virtual QSize sizeHint() const OVERRIDE FINAL;
     const QFont & textFont() const;
 
-    void setTextFont(const QFont & f);
-
-
     /**
      *@returns Returns true if the viewer is displaying something.
      **/
