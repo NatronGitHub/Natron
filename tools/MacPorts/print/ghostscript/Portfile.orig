@@ -5,7 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.54.0
-revision            0
+revision            1
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -42,6 +42,10 @@ patchfiles-append   patch-configure.ac.diff
 # Fix issue with GCC pragmas inside function bodies
 # https://trac.macports.org/ticket/63105
 patchfiles-append   patch-base_scommon.h.diff
+
+# Fix for CVE-2021-3781
+# https://git.ghostscript.com/?p=ghostpdl.git;a=commitdiff;h=a9bd3dec9fde
+patchfiles-append   patch-cve-2021-3781.diff
 
 checksums           ghostpdl-9.54.0.tar.gz \
                     rmd160  a48ecd441c761a9401a5e4a34ea90afd6936d419 \
