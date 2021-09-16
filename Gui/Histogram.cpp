@@ -106,7 +106,8 @@ public:
         , hasBeenModifiedSinceResize(false)
         , _baseAxisColor(118, 215, 90, 255)
         , _scaleColor(67, 123, 52, 255)
-        , _font(appFont, appFontSize)
+        , _screenPixelRatio(0.)
+        , _textFont()
         , textRenderer()
         , drawCoordinates(false)
         , xCoordinateStr()
@@ -192,7 +193,8 @@ public:
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
     QColor _baseAxisColor;
     QColor _scaleColor;
-    QFont _font;
+    double _screenPixelRatio;
+    boost::scoped_ptr<QFont> _textFont;
     TextRenderer textRenderer;
     bool drawCoordinates;
     QString xCoordinateStr;
@@ -1151,6 +1153,15 @@ Histogram::paintGL()
         return;
     }
 
+    {
+        double screenPixelRatio = getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+        }
+    }
+    assert(_imp->_textFont);
+
     assert(_imp->zoomCtx.factor() > 0.);
 
     double zoomLeft = _imp->zoomCtx.left();
@@ -1570,10 +1581,9 @@ HistogramPrivate::drawScale()
         return;
     }
 
-    QFontMetrics fontM(_font);
+    QFontMetrics fm(*_textFont);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    double screenPixelRatio = widget->getScreenPixelRatio();
 
 
     {
@@ -1598,7 +1608,7 @@ HistogramPrivate::drawScale()
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QLatin1String("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeTextPixel = ( (axis == 0) ? fm.width( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -1607,7 +1617,7 @@ HistogramPrivate::drawScale()
 
                 glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
 
-                glLineWidth(1. * screenPixelRatio);
+                glLineWidth(1. * _screenPixelRatio);
                 glBegin(GL_LINES);
                 if (axis == 0) {
                     glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
@@ -1622,23 +1632,23 @@ HistogramPrivate::drawScale()
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
                     const QString s = QString::number(value);
-                    const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                    const double sSizePixel = ( (axis == 0) ? fm.width(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
                     if (tickSizePixel > sSizePixel) {
-                        const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                        const double sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                         double alphaText = 1.0; //alpha;
                         if (tickSizePixel < sSizeFullPixel) {
                             // when the text size is between sSizePixel and sSizeFullPixel,
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
-                        alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
+                        //alphaText = std::min(alphaText, alpha); // don't draw more opaque than ticks
                         QColor c = _scaleColor;
                         c.setAlpha(255 * alphaText);
                         glCheckError();
                         if (axis == 0) {
-                            widget->renderText(value, btmLeft.y(), s, c, _font, Qt::AlignHCenter); // AXIS-SPECIFIC
+                            widget->renderText(value, btmLeft.y(), s, c, *_textFont, Qt::AlignHCenter); // AXIS-SPECIFIC
                         } else {
-                            widget->renderText(btmLeft.x(), value, s, c, _font, Qt::AlignVCenter); // AXIS-SPECIFIC
+                            widget->renderText(btmLeft.x(), value, s, c, *_textFont, Qt::AlignVCenter); // AXIS-SPECIFIC
                         }
                     }
                 }
@@ -1655,12 +1665,13 @@ HistogramPrivate::drawWarnings()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
     if (mipMapLevel > 0) {
-        QFontMetrics m(_font);
+        QFontMetrics fm(*_textFont);
         QString str( tr("Image downscaled") );
-        int strWidth = m.width(str);
-        QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 5 * m.height() + 30);
+        double strWidth = fm.width(str) / _screenPixelRatio;
+        double strHeight = fm.height() / _screenPixelRatio;
+        QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 5 * strHeight + 30);
         glCheckError();
-        widget->renderText(pos.x(), pos.y(), str, QColor(220, 220, 0), _font);
+        widget->renderText(pos.x(), pos.y(), str, QColor(220, 220, 0), *_textFont);
         glCheckError();
     }
 }
@@ -1669,7 +1680,6 @@ HistogramPrivate::drawWarnings()
 void
 HistogramPrivate::drawMissingImage()
 {
-    double screenPixelRatio = widget->getScreenPixelRatio();
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
     QPointF btmRight = zoomCtx.toZoomCoordinates( widget->width(), widget->height() );
     QPointF topRight( btmRight.x(), topLeft.y() );
@@ -1678,22 +1688,22 @@ HistogramPrivate::drawMissingImage()
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
         glColor4f(0.9, 0.9, 0, 1);
-        glLineWidth(1.5 * screenPixelRatio);
+        glLineWidth(1.5 * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( topLeft.x(), topLeft.y() );
         glVertex2f( btmRight.x(), btmRight.y() );
         glVertex2f( btmLeft.x(), btmLeft.y() );
         glVertex2f( topRight.x(), topRight.y() );
         glEnd();
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
     }
     QString txt( tr("Missing image") );
-    QFontMetrics m(_font);
-    int strWidth = m.width(txt);
-    QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., m.height() + 10);
+    QFontMetrics fm(*_textFont);
+    int strWidth = fm.width(txt) / _screenPixelRatio;
+    QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., fm.height() / _screenPixelRatio + 10);
 
     glCheckError();
-    widget->renderText(pos.x(), pos.y(), txt, QColor(220, 0, 0), _font);
+    widget->renderText(pos.x(), pos.y(), txt, QColor(220, 0, 0), *_textFont);
     glCheckError();
 }
 
@@ -1701,7 +1711,6 @@ void
 HistogramPrivate::drawViewerPicker()
 {
     // always running in the main thread
-    double screenPixelRatio = widget->getScreenPixelRatio();
 
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
@@ -1710,8 +1719,8 @@ HistogramPrivate::drawViewerPicker()
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), wHeight);
 
-    //QFontMetrics m(_font, 0);
-    //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - m.height() * 2.).y();
+    //QFontMetrics fm(_textFont, 0);
+    //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - fm.height() * 2. / _screenPixelRatio).y();
     QColor color;
     double imgColor[4] = {0., 0., 0., 0.};
     for (std::size_t i = 0; i < (std::size_t)std::min( (int)viewerPickerColor.size(), 3 ); ++i) {
@@ -1721,42 +1730,42 @@ HistogramPrivate::drawViewerPicker()
     if (mode == Histogram::eDisplayModeY) {
         glColor3f(0.398979, 0.398979, 0.398979);
         double luminance = 0.299 * imgColor[0] + 0.587 * imgColor[1] + 0.114 * imgColor[2];
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( luminance, topLeft.y() );
         glVertex2d( luminance, btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeR) {
         glColor3f(0.398979, 0.398979, 0.398979);
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[0], topLeft.y() );
         glVertex2d( imgColor[0], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeG) {
         glColor3f(0.398979, 0.398979, 0.398979);
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[1], topLeft.y() );
         glVertex2d( imgColor[1], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeB) {
         glColor3f(0.398979, 0.398979, 0.398979);
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[2], topLeft.y() );
         glVertex2d( imgColor[2], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeA) {
         glColor3f(0.398979, 0.398979, 0.398979);
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[3], topLeft.y() );
         glVertex2d( imgColor[3], btmRight.y() );
         glEnd();
     } else if (mode == Histogram::eDisplayModeRGB) {
         glColor3f(0.851643, 0.196936, 0.196936);
-        glLineWidth(2. * screenPixelRatio);
+        glLineWidth(2. * _screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2d( imgColor[0], topLeft.y() );
         glVertex2d( imgColor[0], btmRight.y() );
@@ -1776,7 +1785,7 @@ HistogramPrivate::drawViewerPicker()
         glEnd();
     }
 
-    glLineWidth(1. * screenPixelRatio);
+    glLineWidth(1. * _screenPixelRatio);
 } // HistogramPrivate::drawViewerPicker
 
 void
@@ -1787,12 +1796,13 @@ HistogramPrivate::drawPicker()
     assert( QGLContext::currentContext() == widget->context() );
 
     glCheckError();
-    QFontMetrics m(_font, 0);
-    int strWidth = std::max( std::max( std::max( m.width(rValueStr), m.width(gValueStr) ), m.width(bValueStr) ), m.width(xCoordinateStr) );
-    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, m.height() + 10);
-    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 2 * m.height() + 15);
-    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 3 * m.height() + 20);
-    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 4 * m.height() + 25);
+    QFontMetrics fm(*_textFont, 0);
+    double strWidth = std::max( std::max( std::max( fm.width(rValueStr), fm.width(gValueStr) ), fm.width(bValueStr) ), fm.width(xCoordinateStr) ) / _screenPixelRatio;
+    double strHeight = fm.height() / _screenPixelRatio;
+    QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, strHeight + 10);
+    QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 2 * strHeight + 15);
+    QPointF gPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 3 * strHeight + 20);
+    QPointF bPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 4 * strHeight + 25);
     QColor xColor, rColor, gColor, bColor;
 
     // Text-aware Magic colors (see recipe below):
@@ -1818,10 +1828,10 @@ HistogramPrivate::drawPicker()
     bColor.setRgbF(0.345293, 0.345293, 1);
 
     glCheckError();
-    widget->renderText(xPos.x(), xPos.y(), xCoordinateStr, xColor, _font);
-    widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, _font);
-    widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, _font);
-    widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, _font);
+    widget->renderText(xPos.x(), xPos.y(), xCoordinateStr, xColor, *_textFont);
+    widget->renderText(rPos.x(), rPos.y(), rValueStr, rColor, *_textFont);
+    widget->renderText(gPos.x(), gPos.y(), gValueStr, gColor, *_textFont);
+    widget->renderText(bPos.x(), bPos.y(), bValueStr, bColor, *_textFont);
     glCheckError();
 }
 
@@ -1923,7 +1933,6 @@ HistogramPrivate::drawHistogramCPU()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
-    double screenPixelRatio = widget->getScreenPixelRatio();
 
     glCheckError();
     {
@@ -1937,7 +1946,7 @@ HistogramPrivate::drawHistogramCPU()
 
         double binSize = (vmax - vmin) / binsCount;
 
-        glLineWidth(1. * screenPixelRatio);
+        glLineWidth(1. * _screenPixelRatio);
         glBegin(GL_LINES);
         for (unsigned int i = 0; i < binsCount; ++i) {
             double binMinX = vmin + i * binSize;
@@ -2034,8 +2043,8 @@ Histogram::renderText(double x,
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w * _imp->_screenPixelRatio);
+    double scaley = (top - bottom) / (h * _imp->_screenPixelRatio);
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }

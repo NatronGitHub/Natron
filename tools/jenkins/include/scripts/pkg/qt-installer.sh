@@ -335,8 +335,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     # cc1: error: one or more PCH files were found, but they were invalid
     # cc1: error: use -Winvalid-pch for more information
     # cc1: fatal error: .pch/release-static/QtCore: No such file or directory
-    # Needed at least on CentOS8
-    if [ "${CENTOS:-7}" -ge 8 ]; then
+    # Needed at least on CentOS8 / GCC 8
+    if version_gt "${SYSTEM_GCC_VERSION}" 7.99; then
         patch -Np1 -i "$INC_PATH"/patches/Qt/qt-no-pch.patch
         QT_CONF+=("-no-pch")
     fi

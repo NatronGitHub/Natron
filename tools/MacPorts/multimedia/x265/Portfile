@@ -46,11 +46,7 @@ compiler.blacklist-append *llvm-gcc-4.2
 # https://trac.macports.org/ticket/59246
 xcode_workaround.fixed_xcode_version 11.2
 
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
-}
-
-if {${universal_possible} && [variant_isset universal]} {
+if {${universal_possible} && [variant_isset universal] && ![variant_isset highdepth]} {
 
     if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
         depends_build-append port:nasm
@@ -73,15 +69,15 @@ if {${universal_possible} && [variant_isset universal]} {
     }
 } else {
 
-	if {${configure.build_arch} in {i386 x86_64}} {
-		depends_build-append port:nasm
-		configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
-	}
+    if {${configure.build_arch} in {i386 x86_64}} {
+        depends_build-append port:nasm
+        configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
+    }
 
-	if {${configure.build_arch} eq "i386"} {
+    if {${configure.build_arch} eq "i386"} {
         # error: illegal text-relocation to '_x265_pw_1'
-		configure.ldflags-append -Wl,-read_only_relocs,suppress
-	}
+        configure.ldflags-append -Wl,-read_only_relocs,suppress
+    }
     configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
     build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
 }

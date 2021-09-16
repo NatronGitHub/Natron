@@ -4,7 +4,8 @@
 # see https://github.com/openexr/openexr/releases/
 # Note: upgrading to 2.4.1-2.5.1 requires rewriting the download and build scripts
 # (openexr is now a single package).
-EXR_VERSION=2.5.5
+#EXR_VERSION=2.5.7
+EXR_VERSION=3.1.1
 EXR_CXX11_CONFIGURE_FLAGS=
 if version_gt "2.4.0" "${EXR_VERSION}"; then
     EXR_CXX11_CONFIGURE_FLAGS=--enable-cxxstd=11

@@ -1884,6 +1884,9 @@ RotoPaint::drawOverlay(double time,
                             colorChanged = true;
                         }
 
+                        glEnable(GL_POINT_SMOOTH);
+                        glPointSize(cpWidth * screenPixelRatio);
+                        // code below draws GL_POINTS
                         for (SelectedCPs::const_iterator cpIt = _imp->ui->selectedCps.begin();
                              cpIt != _imp->ui->selectedCps.end();
                              ++cpIt) {
@@ -1907,7 +1910,6 @@ RotoPaint::drawOverlay(double time,
                             }
                         } // for(cpIt)
 
-                        glPointSize(cpWidth * screenPixelRatio);
                         glBegin(GL_POINTS);
                         glVertex2f(x,y);
                         glEnd();
@@ -1938,6 +1940,7 @@ RotoPaint::drawOverlay(double time,
                         }
 
                         if (drawFeather) {
+                            glEnable(GL_POINT_SMOOTH);
                             glPointSize(cpWidth * screenPixelRatio);
                             glBegin(GL_POINTS);
                             glVertex2f(xF, yF);
@@ -2557,6 +2560,11 @@ RotoPaint::onOverlayPenDown(double time,
 
                         _imp->ui->selectedCps.clear();
                         _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
+
+                        // continue editing the tangent
+
+                        //->ui->tangentBeingDragged = *it;
+                        //_imp->ui->state = eEventStateDraggingRightTangent;
                     } else {
                         BezierCPPtr fp = _imp->ui->builtBezier->getFeatherPointAtIndex(i);
                         assert(fp);

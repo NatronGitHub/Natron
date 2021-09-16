@@ -76,7 +76,8 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _selectedCurveColor(255, 255, 89, 255)
     , _nextCurveAddedColor()
     , textRenderer()
-    , _font( new QFont(appFont, appFontSize) )
+    , _screenPixelRatio(0.)
+    , _textFont()
     , _curves()
     , _selectedKeyFrames()
     , _mustSetDragOrientation(false)
@@ -89,7 +90,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _selectedKeyFramesCrossVertLine()
     , _selectedKeyFramesCrossHorizLine()
     , _timeline(timeline)
-    , _timelineEnabled(false)
+    , _timelineEnabled(bool(timeline))
     , _selectedDerivative()
     , _evaluateOnPenUp(false)
     , _keyDragLastMovement()
@@ -116,7 +117,6 @@ CurveWidgetPrivate::~CurveWidgetPrivate()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    delete _font;
     _curves.clear();
 }
 
@@ -454,7 +454,7 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
         return;
     }
 
-    QFontMetrics fontM(*_font);
+    QFontMetrics fm(*_textFont);
     const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 500.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
@@ -492,7 +492,7 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-            const double minTickSizeTextPixel = (axis == 0) ? fontM.width( QLatin1String("00") ) : fontM.height(); // AXIS-SPECIFIC
+            const double minTickSizeTextPixel = ( (axis == 0) ? fm.width( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -517,22 +517,22 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
                     const QString s = QString::number(value);
-                    const int sSizePixel = (axis == 0) ? fontM.width(s) : fontM.height(); // AXIS-SPECIFIC
+                    const double sSizePixel = ( (axis == 0) ? fm.width(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
                     if (tickSizePixel > sSizePixel) {
-                        const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
+                        const double sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                         double alphaText = 1.0; //alpha;
                         if (tickSizePixel < sSizeFullPixel) {
                             // when the text size is between sSizePixel and sSizeFullPixel,
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
-                        alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
+                        //alphaText = std::min(alphaText, alpha); // don't draw more opaque than ticks
                         QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
-                            _widget->renderText(value, btmLeft.y(), s, c, *_font, Qt::AlignHCenter); // AXIS-SPECIFIC
+                            _widget->renderText(value, btmLeft.y(), s, c, *_textFont, Qt::AlignHCenter); // AXIS-SPECIFIC
                         } else {
-                            _widget->renderText(btmLeft.x(), value, s, c, *_font, Qt::AlignVCenter); // AXIS-SPECIFIC
+                            _widget->renderText(btmLeft.x(), value, s, c, *_textFont, Qt::AlignVCenter); // AXIS-SPECIFIC
                         }
                     }
                 }
@@ -771,7 +771,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
                 topLeftWidget.ry() += yOffset;
 
                 QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( (*it2)->key.getTime() ).arg( (*it2)->key.getValue() );
-                QPointF btmRightWidget( topLeftWidget.x() + fm.width(coordStr), topLeftWidget.y() + fm.height() );
+                QPointF btmRightWidget( topLeftWidget.x() + fm.width(coordStr) / _screenPixelRatio, topLeftWidget.y() + fm.height() / _screenPixelRatio );
 
                 if ( (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && (pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      ( pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && ( pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) {
@@ -836,8 +836,8 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
 
                 QString leftCoordStr =  QString( tr("l: %1") ).arg(std::floor( ( (*it2)->key.getLeftDerivative() * rounding ) + 0.5 ) / rounding);
                 QString rightCoordStr =  QString( tr("r: %1") ).arg(std::floor( ( (*it2)->key.getRightDerivative() * rounding ) + 0.5 ) / rounding);
-                QPointF btmRight_LeftTanWidget( topLeft_LeftTanWidget.x() + fm.width(leftCoordStr), topLeft_LeftTanWidget.y() + fm.height() );
-                QPointF btmRight_RightTanWidget( topLeft_RightTanWidget.x() + fm.width(rightCoordStr), topLeft_RightTanWidget.y() + fm.height() );
+                QPointF btmRight_LeftTanWidget( topLeft_LeftTanWidget.x() + fm.width(leftCoordStr) / _screenPixelRatio, topLeft_LeftTanWidget.y() + fm.height() / _screenPixelRatio );
+                QPointF btmRight_RightTanWidget( topLeft_RightTanWidget.x() + fm.width(rightCoordStr) / _screenPixelRatio, topLeft_RightTanWidget.y() + fm.height() / _screenPixelRatio );
 
                 if ( (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && (pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      ( pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && ( pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) {

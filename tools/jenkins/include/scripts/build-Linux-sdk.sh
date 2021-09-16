@@ -135,14 +135,17 @@ EOF
     if [ -n "${CENTOS:-}" ]; then
         BUILD_LINUX_SDK="CENTOS=${CENTOS} $BUILD_LINUX_SDK"
     fi
+    if [ -n "${ROCKY:-}" ]; then
+        BUILD_LINUX_SDK="ROCKY=${ROCKY} $BUILD_LINUX_SDK"
+    fi
     if [ -n "${UBUNTU:-}" ]; then
         BUILD_LINUX_SDK="UBUNTU=${UBUNTU} $BUILD_LINUX_SDK"
     fi
     LINUX32=
 
-    # yum for CentOS (see below apt for Ubuntu)
-    if [ -n "${CENTOS+x}" ]; then
-        if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+    # yum for CentOS and RockyLinux (see below apt for Ubuntu)
+    if [ -n "${CENTOS+x}" ] || [ -n "${ROCKY+x}" ]; then
+        if [ -n "${CENTOS+x}" ] && [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
             # - base on i386/centos:${CENTOS}
             # - set the yum archs
             # - install util-linux to get the "setarch" executable
@@ -150,6 +153,10 @@ EOF
             LINUX32="setarch i686"
             PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
             ARCH=i686
+        elif [ -n "${ROCKY+x}" ]; then
+            DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
+            PREYUM=
+            ARCH=x86_64
         else
             DOCKER_BASE="centos:${CENTOS}"
             PREYUM=
@@ -162,14 +169,15 @@ EOF
         DTSYUM=
         DTSSDK=
         CENTOS_DEPRECATED=6 # as of 12/2020, all CentOS versions up to 6 are deprecated
-        if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+        if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
             # It's not OK to use deprecated CentOS releases for running stuff, it's OK to use it to build stuff
             PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
         fi
-        if [ "${CENTOS:-7}"  -ge 8 ]; then
-            # Enable powertools on CentOS >= 8
+        if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
+            # Enable powertools on CentOS >= 8 / Rocky Linux 8
+            # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && dnf -y groupinstall 'Development Tools' && "
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled powertools && dnf -y update && dnf -y groupinstall 'Development Tools' && "
             YUM_DEVEL_EXTRA=""
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
@@ -179,7 +187,7 @@ EOF
             if [ "${CENTOS:-7}" -ge 7 ]; then
                 DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
             fi
-            if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+            if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
                 # It's not OK to use deprecated CentOS releases for running stuff, 
                 DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
             fi
@@ -203,7 +211,7 @@ COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 ENV WORKSPACE=/home
 EOF
-    fi # end of CentOS section
+    fi # end of CentOS / Rocky Linux section
     
     # apt for Ubuntu (see above yum for CentOS)
     if [ -n "${UBUNTU+x}" ]; then
@@ -619,6 +627,9 @@ elif [ "${UBUNTU:-0}" = 18.04 ]; then
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ "${CENTOS:-7}" = 8 ]; then
     GCC_VERSION=8.3.1
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ "${ROCKY:-0}" = 8 ]; then
+    GCC_VERSION=8.4.1
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
     DTSSDK="source scl_source enable devtoolset-${DTS} && "

@@ -990,8 +990,8 @@ oiiotool -i "${DMG_BACK}" --powc 0.3 -o "/Volumes/${DISK}/.background/${DMG_BACK
 ln -sf /Applications "/Volumes/${DISK}/Applications"
 
 # dmg window dimensions
-dmg_width=$(oiiotool --info -v "${DMG_BACK}" | grep Exif:PixelXDimension | awk '{print $2}')
-dmg_height=$(oiiotool --info -v "${DMG_BACK}" | grep Exif:PixelYDimension | awk '{print $2}')
+dmg_width=$(identify -format '%w' "${DMG_BACK}")
+dmg_height=$(identify -format '%h' "${DMG_BACK}")
 dmg_topleft_x=200
 dmg_topleft_y=200
 dmg_bottomright_x=$((dmg_topleft_x + dmg_width))

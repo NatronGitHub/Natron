@@ -171,14 +171,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 namespace Smooth1D {
 
 
-    void iir_gaussianFilter1D(std::vector<float>& curve, int smoothingKernelSize)
+    void iir_gaussianFilter1D(std::vector<float>& curve, double sigma)
     {
         if (curve.size() < 3) {
             return;
-        }
-        double sigma = 5.;
-        if (smoothingKernelSize > 1) {
-            sigma *= smoothingKernelSize;
         }
 
         double filter[7];

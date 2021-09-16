@@ -161,7 +161,8 @@ public:
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer textRenderer;
-    QFont* _font;
+    double _screenPixelRatio;
+    boost::scoped_ptr<QFont> _textFont;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
     bool _mustSetDragOrientation;

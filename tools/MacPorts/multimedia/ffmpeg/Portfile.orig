@@ -18,7 +18,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.4
-revision            1
+revision            4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -93,6 +93,12 @@ depends_lib         port:lame \
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
 
+# fix an upstream bug that overrides the max_b_frames setting
+# https://trac.ffmpeg.org/ticket/9231
+# this bug is fixed upstream in commit 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
+# and should therefore be available in the next release version.
+patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
+
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
 #
@@ -136,6 +142,7 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-zlib \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
@@ -150,9 +157,16 @@ configure.args      --enable-swscale \
                     --disable-sdl2 \
                     --disable-securetransport \
                     --mandir=${prefix}/share/man \
-                    --enable-shared --enable-pthreads \
+                    --enable-shared \
+                    --enable-pthreads \
                     --cc=${configure.cc}
 
+
+# zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
+if { ${os.platform} eq "darwin" && ${os.major} > 11 } {
+    configure.args-append   --enable-libzimg
+    depends_lib-append      port:zimg
+}
 
 platform darwin {
     # disable asm on Tiger
@@ -241,6 +255,10 @@ platform powerpc {
     # absence of altivec is not automatically detected
     if {[catch {sysctl hw.vectorunit} result] || $result == 0} {
         configure.args-append --disable-altivec
+
+        # as this machine is a G3, force a local build so we don't download a buildbot-built
+        # version possibly built on a G4+ or cross-compiled from an Intel system
+        archive_sites
     }
 
     # might be needed for any gcc build...

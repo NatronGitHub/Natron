@@ -2,7 +2,8 @@
 
 # Install yaml-cpp (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
 # see https://github.com/jbeder/yaml-cpp/releases
-YAMLCPP_VERSION=0.6.3 # 0.6.0 is the first version to require C++11
+YAMLCPP_VERSION=0.6.3 # 0.7.0 breaks OpenColorIO 1.1.1 - upgrade when OCIO is 2.x
+# 0.6.0 is the first version to require C++11
 if version_gt 5.0.0 "$GCC_VERSION"; then
     YAMLCPP_VERSION=0.5.3 # does not require C++11
 fi

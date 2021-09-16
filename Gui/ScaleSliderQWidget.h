@@ -96,6 +96,7 @@ public:
     bool getAltered() const;
 
     void setUseLineColor(bool use, const QColor& color);
+    void setUseSliderColor(bool use, const QColor &color);
 
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
