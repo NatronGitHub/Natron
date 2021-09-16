@@ -2,7 +2,7 @@
 
 # Install dav1d AV1 decoder
 # see https://code.videolan.org/videolan/dav1d/-/releases
-DAV1D_VERSION=0.9.1
+DAV1D_VERSION=0.9.2
 DAV1D_TAR="dav1d-${DAV1D_VERSION}.tar.bz2"
 DAV1D_SITE="https://code.videolan.org/videolan/dav1d/-/archive/${DAV1D_VERSION}"
 if download_step; then
