@@ -2,7 +2,7 @@
     http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
 Rectangle Node
-=========
+==============
 
 the Rectangle node makes rectangle shapes. It can add rounded corners and soft edges to the shapes.
 It is very useful for masking off a color adjustment and its softness parameter can be edited without compromising its edge values too much. Frequently use it to mask out nebulous regions of an effect. 

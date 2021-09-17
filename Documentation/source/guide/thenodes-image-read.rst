@@ -104,8 +104,8 @@ The file will be converted from "File colorspace" to "Output Colorspace"
 
 .. note::
    **Tips:**
-  * It is recommended to leave "Output" to linear as this is the recommended basic workflow in Natron
-  * When file and Output spaces are the same, no conversion will occur
+     * It is recommended to leave "Output" to linear as this is the recommended basic workflow in Natron
+     * When file and Output spaces are the same, no conversion will occur
 
 See :doc:`The readers <compositing-projects-readers>` section for more information.
    

@@ -2,7 +2,7 @@
     http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
 Lightwrap Node
-=========
+==============
 
 LightWrap helps composite objects onto a bright background by simulating reflections from the background light on the foreground, around its edges. 
 

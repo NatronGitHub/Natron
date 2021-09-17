@@ -2,7 +2,7 @@
     http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
 Radial Node
-=========
+===========
 
 Radial creates a radial gradient. 
 

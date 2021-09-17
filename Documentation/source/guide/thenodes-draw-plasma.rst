@@ -2,7 +2,7 @@
     http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
 Plasma Node
-=========
+===========
 
 Creates cloudy  noise. Brightness of the result can be modulated by the source image
     

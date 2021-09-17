@@ -31,6 +31,7 @@ Rearrange Nodes
 ---------------
 - Select several nodes connected in chain
 - press shortcut ``L``
+
 Nodes are automatically aligned vertically without moving the last one
 
 .. image:: _images/Environment/environment-rearrange-node-graph.gif
@@ -51,7 +52,9 @@ Colored backdrops in a node graph.
 Create a backdrop
   - Tools Palette "Other"
   - Select "Backdrop
+
   or
+
   - Press ``Tab``
   - Type "bac"
   - Select Backdrop in the list
