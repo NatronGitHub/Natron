@@ -88,10 +88,14 @@ quicktime options:
 
 Allows multi track videos (eg. stereo files) to be split in different Layers in Natron
 
-raw file options:
+RAW file options:
 
 .. image:: _images/TheNodes-Image/read_node_decoder_raw.jpg
 
+
+PDF file options:
+
+Multi page PDF can be loaded in Natron. To view the different pages you have to add a shuffle node after the read node to choose the layer containing the page you wat to see.
 
 Color
 -----
