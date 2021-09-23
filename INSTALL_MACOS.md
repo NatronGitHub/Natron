@@ -67,7 +67,7 @@ The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang
 Install the required packages:
 
 ```Shell
-sudo port -v -N install opencolorio -quartz -python27
+sudo port -v -N install opencolorio -quartz -python27 -python39
 sudo port -v -N install qt4-mac cairo expat
 sudo port -v -N install gsed gawk coreutils findutils
 sudo port -v -N install cmake keychain
