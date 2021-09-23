@@ -2,7 +2,7 @@
 
 # Install fftw (GPLv2, for openfx-gmic)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fftw.html
-FFTW_VERSION=3.3.9
+FFTW_VERSION=3.3.10
 FFTW_TAR="fftw-${FFTW_VERSION}.tar.gz"
 FFTW_SITE="http://www.fftw.org"
 if download_step; then

@@ -2,7 +2,7 @@
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=2.9.1
+HARFBUZZ_VERSION=3.0.0
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.xz"
 #HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 HARFBUZZ_SITE="https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}"
@@ -21,6 +21,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/harfbuzz.pc"
 		mkdir build
 		pushd build
 		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" \
+            --buildtype=release \
 			-Dtests=disabled -Ddocs=disabled \
 			-Dbenchmark=disabled \
 			..
