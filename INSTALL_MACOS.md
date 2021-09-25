@@ -60,6 +60,8 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
 #### Notes for OS X 10.6 Snow Leopard
 
+On Snow Leopard, the `+universal` variant may be added to `/opt/local/etc/macports/variants.conf`.
+
 The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to substitute it with the libtool provided by MacPort's `cctools` package, using `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 #### Install Ports
@@ -68,7 +70,8 @@ Install the required packages:
 
 ```Shell
 sudo port -v -N install opencolorio -quartz -python27 -python39
-sudo port -v -N install qt4-mac cairo expat
+sudo port -v -N install cairo -x11
+sudo port -v -N install qt4-mac boost expat
 sudo port -v -N install gsed gawk coreutils findutils
 sudo port -v -N install cmake keychain
 sudo port -v -N install py27-pyside py39-sphinx py39-sphinx_rtd_theme
@@ -107,7 +110,7 @@ sudo port -v -N install libvpx +highbitdepth
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
 sudo port -v -N install libraw +gpl2
 sudo port -v -N install openexr
-sudo port -v -N install opencolorio -quartz -python27
+sudo port -v -N install opencolorio -quartz -python27 -python39
 sudo port -v -N install openimageio +natron
 sudo port -v -N install seexpr
 ```
@@ -115,12 +118,13 @@ sudo port -v -N install seexpr
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
 ```Shell
-sudo port -v -N install librsvg
-sudo port -v -N install ImageMagick +natron
+sudo port -v -N install librsvg -quartz
+sudo port -v -N install ImageMagick +natron -x11
 sudo port -v -N install poppler
 sudo port -v -N install librevenge
 sudo port -v -N install libcdr-0.1
 sudo port -v -N install libzip
+sudo sed -i -e s/Zstd::Zstd/zstd/ /opt/local/lib/pkgconfig/libzip.pc
 sudo port -v -N install sox
 ```
 

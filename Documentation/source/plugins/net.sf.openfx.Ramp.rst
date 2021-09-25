@@ -59,6 +59,8 @@ Controls
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Interactive Update / ``interactive`` | Boolean | Off                 | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released. |
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
+| HiDPI / ``hidpi``                    | Boolean | Off                 | Should be checked when the display area is High-DPI (a.k.a Retina). Draws OpenGL overlays twice larger.                        |
++--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Invert Mask / ``maskInvert``         | Boolean | Off                 | When checked, the effect is fully applied where the mask is 0.                                                                 |
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Mix / ``mix``                        | Double  | 1                   | Mix factor between the original and the transformed image.                                                                     |

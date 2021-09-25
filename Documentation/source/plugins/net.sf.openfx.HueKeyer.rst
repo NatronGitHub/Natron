@@ -9,7 +9,7 @@ HueKeyer node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of HueKeyer (net.sf.openfx.HueKeyer).*
+*This documentation is for version 2.0 of HueKeyer (net.sf.openfx.HueKeyer).*
 
 Description
 -----------
