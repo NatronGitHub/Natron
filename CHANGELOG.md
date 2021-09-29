@@ -34,6 +34,7 @@
 - Merge: Fix behavior on most operators when A is not connected or A's RoD and B's RoD are disjoint. #647
 - Reformat: fix bugs when "turn" is checked with Resize Type = None or Type = Scale.
 - Write: Remove file first when overwriting. #666
+- Mirror: Fix crash. #660
 
 
 ## Version 2.4.0
