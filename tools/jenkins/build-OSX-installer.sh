@@ -933,17 +933,8 @@ rm "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
 echo "* Creating the disk image"
 # Make the dmg
 APP_NAME=Natron
-DMG_FINAL="${APP_NAME}"
-if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
-    DMG_FINAL="${DMG_FINAL}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
-fi
 
-DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
-if [ "$COMPILE_TYPE" = "debug" ]; then
-    DMG_FINAL="${DMG_FINAL}-debug"
-fi
-
-DMG_FINAL="${DMG_FINAL}.dmg"
+DMG_FINAL="${INSTALLER_BASENAME}.dmg"
 DMG_TMP="tmp${DMG_FINAL}"
 
 
@@ -1059,8 +1050,8 @@ rm -rf splashscreen.*
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
-mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer"
-mv "${DMG_FINAL}" "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer/"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
+mv "${DMG_FINAL}" "${BUILD_ARCHIVE_DIRECTORY}/"
 
 echo "*** Artifacts:"
 ls -R  "${BUILD_ARCHIVE_DIRECTORY}"

@@ -158,7 +158,7 @@ if [ "$FAIL" = "0" ]; then
         mv result.txt "$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
     fi
 
-    UNIT_TESTS_FAIL_DIR="$BUILD_ARCHIVE_DIRECTORY/unit_tests_failures"
+    UNIT_TESTS_FAIL_DIR="$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-unit_tests_failures"
     if [ -n "${UNIT_TESTS_FAIL_DIR:-}" ] && [ -d "failed" ] && [ "$(ls -A failed)" ]; then
         printStatusMessage "Moving test failures to $UNIT_TESTS_FAIL_DIR"
         mkdir -p "$UNIT_TESTS_FAIL_DIR"
