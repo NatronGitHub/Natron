@@ -1,0 +1,157 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem              1.0
+PortGroup               cmake 1.0
+if {${os.major} <= 17} {
+    PortGroup           muniversal 1.0
+}
+PortGroup               clang_dependency 1.0
+PortGroup               compiler_blacklist_versions 1.0
+
+name                    libomp
+maintainers             {eborisch @eborisch} openmaintainer
+homepage                https://openmp.llvm.org
+description             The OpenMP subproject of LLVM
+long_description        ${description} is intended to contain all of the\
+                        components required to build an executing OpenMP\
+                        program that are outside the compiler itself. \
+                        This port works with MacPorts' clang-3.7+ (optionally \
+                        with +openmp variant for clang-3.7.)
+
+categories              lang
+platforms               darwin
+supported_archs         arm64 i386 x86_64
+license                 {MIT NCSA}
+
+# Moved to epoch 1 for svn # -> version # change.
+epoch                   1
+
+subport                 libomp-devel {}
+
+if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
+    if { ${subport} eq "libomp-devel" } {
+        version         12.0.1
+        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
+                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
+                        size    1081308
+        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
+    } else {
+        version         12.0.1
+        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
+                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
+                        size    1081308
+        livecheck.regex {"llvmorg-([0-9.]+)".*}
+    }
+
+    if {${os.major} <= 12} {
+        # kmp_alloc.c includes <atomic> but libc++ is not the default on
+        # these systems. https://trac.macports.org/ticket/52554
+        configure.cflags-append -stdlib=libc++
+    }
+
+    # Build requires std::atomic
+    configure.cxxflags-append -std=c++11
+    compiler.cxx_standard   2011
+
+    master_sites        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
+                        https://releases.llvm.org/${version}
+    distname            openmp-[strsed ${version} {s/-//}].src
+    use_xz              yes
+    dist_subdir         openmp-release
+    worksrcdir          ${distname}
+    set rtpath          "runtime/"
+    
+    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
+
+    livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
+} else {
+    if { ${subport} eq "libomp-devel" } {
+        version         291764
+        replaced_by     libomp
+    } else {
+        PortGroup       github 1.0
+        # Last version working on libstdc++
+        github.setup    llvm-mirror openmp 381 svn-tags/RELEASE_
+        name            libomp
+
+        worksrcdir      openmp-${version}/final/runtime
+        version         3.8.1
+        checksums       rmd160  a41054068a127ef84610afef8090109078cb6c46 \
+                        sha256  4c46b5946fe9b2a701661746d11c7c85c51a7f18673194a7ebd2a43470948a34
+        set rtpath      "./"
+    }
+    livecheck.type      none
+}
+
+depends_build-append    port:perl5
+cmake.out_of_source     yes
+
+# According to documentation builds with clang >= 3.3
+compiler.blacklist-append {clang < 500} *gcc*
+
+if {${os.major} <= 17} {
+    default_variants    +universal
+}
+
+# Do actual install into ${prefix}/(install|lib)/libomp
+# A little unorthodox, but to have clang automatically find the includes and
+# lib, with -fopenmp, it is nice to have them their own directories. Not
+# exactly a config cmake supports directly; install into dummy location and
+# move post-install
+configure.pre_args      -DCMAKE_INSTALL_PREFIX=${prefix}/tmp
+
+configure.args-delete   -DCMAKE_INSTALL_RPATH=${prefix}/lib \
+                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib
+
+# With this, cmake sets the correct library name in the dylibs for the
+# final destination we move them to
+configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
+                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
+                        -DLIBOMP_OMPT_SUPPORT=FALSE
+
+variant top_level description \
+    "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
+
+post-extract {
+    # Patch tool for build with CMAKE_INSTALL_PREFIX
+    reinplace "/bulk.*compatibility/s/s\+/s+.*/" \
+        ${rtpath}tools/check-depends.pl
+}
+
+post-destroot {
+    set instdest ${destroot}${prefix}
+    xinstall -d ${instdest}/share/doc/libomp
+    xinstall -d ${instdest}/include/libomp
+    move ${instdest}/tmp/include/omp.h ${instdest}/include/libomp/
+    xinstall -d ${instdest}/lib/libomp
+
+    foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
+        move ${instdest}/tmp/lib/${p} ${instdest}/lib/libomp/
+    }
+
+    if {[variant_isset top_level]} {
+        system -W ${instdest}/include \
+          "ln -s libomp/omp.h"
+        foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
+            system -W ${instdest}/lib/ \
+              "ln -s libomp/${p}"
+        }
+    }
+
+    set fpath ${worksrcpath}/${rtpath}
+    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
+        ${fpath}/../www ${instdest}/share/doc/libomp/
+
+}
+
+notes "
+ To use this OpenMP library:
+  * For clang-3.8+, or clang-3.7 with +openmp variant:
+     add \"-fopenmp\" during compilation / linking.
+  * For clang-3.7 without +openmp variant, use:
+     \"-I${prefix}/include/libomp -L${prefix}/lib/libomp -fopenmp\"
+"
+
+test.run                yes
+test.target             libomp-micro-tests
+
