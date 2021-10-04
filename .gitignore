@@ -293,3 +293,6 @@ Gui/Resources/etc/fonts/fonts.conf
 
 
 Project-xcode.xcodeproj/xcshareddata/xcschemes/Natron.xcscheme
+
+# QTCreator
+*QtCreator.*

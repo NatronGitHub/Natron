@@ -155,7 +155,7 @@ public:
     void selectNode(Effect* effect, bool clearPreviousSelection);
     void setSelection(const std::list<Effect*>& nodes);
     void selectAllNodes(Group* group = 0);
-    void pasteNodes(); // copied from selectAllNodes by bonalex01dev
+    void pasteNodes(Group* group = 0);
     void deselectNode(Effect* effect);
     void clearSelection(Group* group = 0);
 

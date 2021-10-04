@@ -1232,8 +1232,8 @@ static PyObject* Sbk_GuiAppFunc_pasteNodes(PyObject* self, PyObject* args, PyObj
     PyObject* pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 0) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.selectAllNodes(): too many arguments");
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.pasteNodes(): too many arguments");
         return 0;
     }
 
@@ -1242,11 +1242,11 @@ static PyObject* Sbk_GuiAppFunc_pasteNodes(PyObject* self, PyObject* args, PyObj
 
 
     // Overloaded function decisor
-    // 0: selectAllNodes(Group*)
+    // 0: pasteNodes(Group*)
     if (numArgs == 0) {
-        overloadId = 0; // selectAllNodes(Group*)
+        overloadId = 0; // pasteNodes(Group*)
     } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0])))) {
-        overloadId = 0; // selectAllNodes(Group*)
+        overloadId = 0; // pasteNodes(Group*)
     }
 
     // Function signature not found.
@@ -1271,8 +1271,8 @@ static PyObject* Sbk_GuiAppFunc_pasteNodes(PyObject* self, PyObject* args, PyObj
         if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // selectAllNodes(Group*)
-            cppSelf->pasteNodes();
+            // pasteNodes(Group*)
+            cppSelf->pasteNodes(cppArg0);
         }
     }
 
