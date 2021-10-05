@@ -35,6 +35,7 @@
 - Reformat: fix bugs when "turn" is checked with Resize Type = None or Type = Scale.
 - Write: Remove file first when overwriting. #666
 - Mirror: Fix crash. #660
+- SeNoise: Add option for colored noise.
 
 
 ## Version 2.4.0
