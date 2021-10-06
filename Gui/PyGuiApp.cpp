@@ -424,6 +424,35 @@ GuiApp::selectAllNodes(Group* group)
     graph->selectAllNodes(false);
 }
 
+
+void
+GuiApp::copySelectedNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("invalid ggraph");
+    }
+    graph->copySelectedNodes();
+}
+
 void
 GuiApp::deselectNode(Effect* effect)
 {
@@ -449,7 +478,7 @@ GuiApp::deselectNode(Effect* effect)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->deselectNode(nodeUi);
 }
