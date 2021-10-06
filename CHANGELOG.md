@@ -26,6 +26,8 @@
 - Fix ASCII curve import. #656
 - New color selection dialog for RGB and RGBA knobs. #210
 - Fix histogram smoothing (was 5 times too strong).
+- Add Python functions `guiApp.copySelectedNodes` and `guiApp.pasteNodes`. #390 #674 #675
+
 
 ### Plugins
 

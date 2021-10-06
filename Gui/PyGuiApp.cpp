@@ -346,7 +346,7 @@ GuiApp::selectNode(Effect* effect,
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectNode(nodeUi, !clearPreviousSelection);
 }
@@ -388,7 +388,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         }
         assert(graph);
         if (!graph) {
-            throw std::logic_error("");
+            throw std::logic_error("invalid graph");
         }
         graph->setSelection(selection);
     }
@@ -419,7 +419,7 @@ GuiApp::selectAllNodes(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectAllNodes(false);
 }
@@ -450,7 +450,7 @@ GuiApp::copySelectedNodes(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("invalid ggraph");
+        throw std::logic_error("invalid graph");
     }
     graph->copySelectedNodes();
 }
@@ -541,7 +541,7 @@ GuiApp::clearSelection(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->clearSelection();
 }
