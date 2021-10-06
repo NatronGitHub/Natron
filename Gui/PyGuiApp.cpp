@@ -442,6 +442,8 @@ GuiApp::copySelectedNodes(Group* group)
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
         }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
         graph = getInternalGuiApp()->getGui()->getNodeGraph();
