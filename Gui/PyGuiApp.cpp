@@ -442,15 +442,13 @@ GuiApp::copySelectedNodes(Group* group)
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
         }
-    } else {
-        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
         graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid ggraph");
     }
     graph->copySelectedNodes();
 }
@@ -480,7 +478,7 @@ GuiApp::deselectNode(Effect* effect)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->deselectNode(nodeUi);
 }
