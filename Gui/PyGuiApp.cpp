@@ -456,6 +456,36 @@ GuiApp::copySelectedNodes(Group* group)
 }
 
 void
+GuiApp::pasteNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
+    graph->pasteNodeClipBoards();
+}
+
+void
 GuiApp::deselectNode(Effect* effect)
 {
     if ( !effect || appPTR->isBackground() ) {
