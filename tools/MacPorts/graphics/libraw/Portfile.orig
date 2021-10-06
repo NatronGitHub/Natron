@@ -31,9 +31,8 @@ depends_lib         port:jasper \
 
 use_autoreconf      yes
 
-# src/metadata/tiff.cpp:244: error: integer constant is too large for 'long' type
-# https://trac.macports.org/ticket/60906
-compiler.blacklist-append *gcc-4.0 *gcc-4.2
+# libraw_datastream.h:125:8: error: no template named 'unique_ptr' in namespace 'std'
+compiler.cxx_standard 2011
 
 # disable openmp as it is not consistently applicable in MacPorts at present
 configure.args-append --disable-openmp

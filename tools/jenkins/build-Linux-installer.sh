@@ -654,10 +654,15 @@ rm "${TMP_PORTABLE_DIR}/bin/Tests"
 # Build repo and packages
 
 ONLINE_INSTALL_DIR="online_installer"
-BUNDLED_INSTALL_DIR="offline_installer"
-ZIP_INSTALL_DIR="compressed_no_installer"
-DEB_INSTALL_DIR="deb_package"
-RPM_INSTALL_DIR="rpm_package"
+#BUNDLED_INSTALL_DIR="offline_installer"
+#ZIP_INSTALL_DIR="compressed_no_installer"
+#DEB_INSTALL_DIR="deb_package"
+#RPM_INSTALL_DIR="rpm_package"
+# These have easily identifiable filenames and extensions anyway:
+BUNDLED_INSTALL_DIR="."
+ZIP_INSTALL_DIR="."
+DEB_INSTALL_DIR="."
+RPM_INSTALL_DIR="."
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
