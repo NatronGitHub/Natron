@@ -19,7 +19,7 @@ Additional Elements
 Community scripts
 -----------------
 
-many scripts that bring more functionality can be downloaded from:
+Many scripts that bring additional functionality can be downloaded from:
 https://github.com/NatronGitHub/natron-python-scripting
 
 To install these:
@@ -29,25 +29,24 @@ To install these:
 - Enjoy the new items available mostly in Tools and Edit menu.
 
 
-These tool add prederfined roto shapes, multilayer EXR extraction, node connexion tools,...
+These tool add predefined roto shapes, multilayer EXR extraction, node connexion tools, and more.
 They will bring Natron closer to the Nuke interface.
-Albeit experimental these scripts are a recommended download more specifically for previous Nuke users
+Albeit experimental, these scripts are a recommended download, more specifically for previous Nuke users.
 
 
 Community plugins
 -----------------
 
-many plugins that bring new nodes to Natron can be downloaded from:
+Additional Python plugins (PyPlugs) can be downloaded from:
 https://github.com/NatronGitHub/natron-plugins
 
 To install these:
 
 - Copy the content of this repository to any folder of your choice.
-- Edit>preference>plugins>pyplug search path>add>the exracted file location
-- Save preferences
-- Restart Natron
+- Open Natron preferences from the menubar, select Plugins->PyPlugs search path->Add.. and enter the extracted file location.
+- Save preferences.
+- Restart Natron.
 - Enjoy the new tools available in the left toolbar.
 
-These tools bring animated textures for motion designers
-These tools bring many of the most common Nuke gizmos (DespillMadness, PushPixel,...)
+These tools bring animated textures for motion designers, as well as most common Nuke gizmos (DespillMadness, PushPixel,...).
 Albeit experimental these scripts are a recommended download.
