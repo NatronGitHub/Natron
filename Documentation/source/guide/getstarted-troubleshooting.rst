@@ -52,16 +52,13 @@ You will quickly notice that using individual frames instead of videos for input
 User Interface bugs
 ...................
 
-- Can't rename a node \#\ 664 : If the Properties panel does'nt let you rename a node try to rename with the "N" shortcut in the nodegraph.
-
-If it doesn't work either you can do it in Python with: myoldname.setLabel('newname')
+- Can't rename a node `\#664 <https://github.com/NatronGitHub/Natron/issues/664>`_: If the Properties panel does not let you rename a node try to rename with the "N" shortcut in the nodegraph. If it does not work either, it can be done in Python with ``myoldname.setLabel('newname')``
 
 Roto Node bugs
 ..............
 
-- mask input doesn't work \#\ 367: This feature is not yet implemented
-
-Rotopaint clone tool sourceTypeChoice performs the same action when set to both "background" and "foreground" \#\ 629: use multiple rotopaint nodes
+- Mask input does not work `\#367 <https://github.com/NatronGitHub/Natron/issues/367>`_: This feature is not yet implemented.
+- Rotopaint clone tool: sourceTypeChoice performs the same action when set to both "background" and "foreground" `\#629 <https://github.com/NatronGitHub/Natron/issues/629>`_: Use multiple rotopaint nodes.
 
 
 
