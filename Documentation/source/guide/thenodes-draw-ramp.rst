@@ -11,7 +11,7 @@ Ramp is what grown-ups call a gradient. The Ramp node of Natron give a butter-sm
 .. image:: _images/TheNodes-Draw/nodes_draw_ramp01.jpg
     
 Usage
---------
+-----
     
 The End colors can be changed. And the end positions can be moved in the viewer with the point 0 / Point 1 widgets visible in the viewer when the properties of the node are opened.
 

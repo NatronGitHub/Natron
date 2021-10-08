@@ -10,3 +10,4 @@ The Nodes
    thenodes-common-properties
    thenodes-image
    thenodes-draw
+   thenodes-merge
