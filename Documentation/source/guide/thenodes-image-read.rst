@@ -95,7 +95,7 @@ RAW file options:
 
 PDF file options:
 
-Multi page PDF can be loaded in Natron. To view the different pages you have to add a shuffle node after the read node to choose the layer containing the page you wat to see.
+Multi-page PDFs can be loaded in Natron. To view the different pages, add a Shuffle node after the Read node to choose the layer containing the desired page.
 
 Color
 -----
