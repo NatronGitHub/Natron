@@ -6,7 +6,7 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 _ver=1.0.2u
 # use a pacman compatible version scheme
 pkgver=${_ver/[a-z]/.${_ver//[0-9.]/}}
-pkgrel=2
+pkgrel=3
 arch=('any')
 pkgdesc="The Open Source toolkit for Secure Sockets Layer and Transport Layer Security (mingw-w64)"
 depends=("${MINGW_PACKAGE_PREFIX}-ca-certificates" "${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-zlib")
@@ -15,18 +15,20 @@ options=('strip' '!buildflags' 'staticlibs')
 license=('BSD')
 url="https://www.openssl.org"
 noextract=(${_realname}-${_ver}.tar.gz)
-source=(https://www.openssl.org/source/${_realname}-${_ver}.tar.gz
+source=(https://www.openssl.org/source/old/${_realname}-${_ver}.tar.gz
         'openssl-1.0.0a-ldflags.patch'
         'openssl-1.0.2a-parallel-build.patch'
         'openssl-1.0.1-x32.patch'
         'openssl-0.9.6-x509.patch'
-        'openssl-1.0.1i-relocation.patch')
+        'openssl-1.0.1i-relocation.patch'
+        'openssl-1.0.2u-trusted.diff')
 sha256sums=('ecd0c6ffb493dd06707d38b14bb4d8c2288bb7033735606569d8f90f89669d16'
             '164aa4928b022cc716fac545b4fd69899cb274682aa487100e595abb652adbae'
             '609d7ca040f7ab26f5e9844e486b3bcc04f3da656ce2db7733fbd65c6d10457a'
             'f913185a36538315de3ff122ef96fc9a49e068078e65895cfc950bdb4ac4e4f0'
             'e8ed15b50f749064e89f26d49b7fd85b3f95e5dde22e430c0f6181e5b07146c7'
-            'f8e6233fa4c289fb125586bf3f30cd617923f6be0c6fe8a3289aa3fac7d7e814')
+            'f8e6233fa4c289fb125586bf3f30cd617923f6be0c6fe8a3289aa3fac7d7e814'
+            'e58277b15fc972bbe1a1e26348a4e198a0f17e093940f4ccd185ff4e85ac5095')
 
 prepare() {
   # Clean up old sources so re-patching doesn't fail.
@@ -39,6 +41,7 @@ prepare() {
   patch -p1 -i ${srcdir}/openssl-1.0.1-x32.patch
   patch -p1 -i ${srcdir}/openssl-0.9.6-x509.patch
   #patch -p1 -i ${srcdir}/openssl-1.0.1i-relocation.patch
+  patch -p0 -i ${srcdir}/openssl-1.0.2u-trusted.diff
 
 }
 

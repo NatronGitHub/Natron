@@ -16,6 +16,7 @@ Start ``C:\msys64-20180531\mingw64.exe``, then run the following commands:
 	$ sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel = Never/' /etc/pacman.conf
 	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/mingw64" > /etc/pacman.d/mirrorlist.mingw64
 	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/msys" > /etc/pacman.d/mirrorlist.msys
+	$ echo insecure > ~/.curlrc
 	$ pacman -Syu natron-sdk
 
 This will install everything required to build/package Natron and the plug-ins. If some packages fail to download re-run the last command.
