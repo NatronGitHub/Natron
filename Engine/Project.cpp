@@ -1577,6 +1577,7 @@ Project::onKnobValueChanged(KnobI* knob,
                             bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+    bool shouldAutoSave = false;
 
     if ( knob == _imp->viewsList.get() ) {
         /**
@@ -1592,13 +1593,16 @@ Project::onKnobValueChanged(KnobI* knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
+        shouldAutoSave = true;
     } else if  ( knob == _imp->defaultLayersList.get() ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
             forceComputeInputDependentDataOnAllTrees();
         }
+        shouldAutoSave = true;
     } else if ( knob == _imp->setupForStereoButton.get() ) {
         setupProjectForStereo();
+        shouldAutoSave = true;
     } else if ( knob == _imp->formatKnob.get() ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
@@ -1623,22 +1627,47 @@ Project::onKnobValueChanged(KnobI* knob,
             ///Format change, hence probably the PAR so run getClipPreferences again
             forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
+            shouldAutoSave = true;
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
         Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
+        shouldAutoSave = true;
     }  else if ( knob == _imp->frameRate.get() ) {
         forceComputeInputDependentDataOnAllTrees();
+        shouldAutoSave = true;
     } else if ( knob == _imp->frameRange.get() ) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+        shouldAutoSave = true;
     } else if ( knob == _imp->gpuSupport.get() ) {
 
         refreshOpenGLRenderingFlagOnNodes();
+        shouldAutoSave = true;
     } else {
         ret = false;
+    }
+
+    // others knobs that should trigger auto save
+    if ( knob == _imp->colorSpace8u.get() ||
+         knob == _imp->colorSpace16u.get() ||
+         knob == _imp->colorSpace32f.get() ||
+         knob == _imp->lockFrameRange.get() ||
+         knob == _imp->onProjectLoadCB.get() ||
+         knob == _imp->onProjectSaveCB.get() ||
+         knob == _imp->onProjectCloseCB.get() ||
+         knob == _imp->onNodeCreated.get() ||
+         knob == _imp->onNodeDeleted.get() ||
+         knob == _imp->envVars.get() )
+    {
+        shouldAutoSave = true;
+    }
+
+    // auto save on project knobs change
+    if (shouldAutoSave) {
+        _imp->lastAutoSave = QDateTime();
     }
 
     return ret;
