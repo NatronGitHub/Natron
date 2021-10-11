@@ -1667,7 +1667,7 @@ Project::onKnobValueChanged(KnobI* knob,
 
     // auto save on project knobs change
     if (shouldAutoSave) {
-        autoSave();
+        _imp->lastAutoSave = QDateTime();
     }
 
     return ret;
