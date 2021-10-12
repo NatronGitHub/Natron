@@ -1,0 +1,14 @@
+diff --git a/gio/tests/meson.build b/gio/tests/meson.build
+index dca33bd44..47a95b7b3 100644
+--- a/gio/tests/meson.build
++++ b/gio/tests/meson.build
+@@ -406,7 +406,8 @@ if installed_tests_enabled
+   install_subdir('cert-tests', install_dir : installed_tests_execdir)
+ endif
+ 
+-if not meson.is_cross_build() or meson.has_exe_wrapper()
++windows_static = host_system == 'windows' and get_option('default_library') == 'static'
++if (not meson.is_cross_build() or meson.has_exe_wrapper()) and not windows_static
+ 
+   plugin_resources_c = custom_target('plugin-resources.c',
+     input : 'test4.gresource.xml',

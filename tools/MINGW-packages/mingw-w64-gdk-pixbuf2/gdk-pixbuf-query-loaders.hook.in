@@ -1,0 +1,11 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Target = @MINGW_HOOK_TARGET_PREFIX@/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll
+
+[Action]
+Description = Probing GDK-Pixbuf loader modules...
+When = PostTransaction
+Exec = @MINGW_PREFIX@/bin/gdk-pixbuf-query-loaders --update-cache

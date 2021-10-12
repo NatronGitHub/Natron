@@ -1,0 +1,117 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Maintainer: Ray Donnelly <mingw.android@gmail.com>
+
+_realname=gobject-introspection
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}"
+         "${MINGW_PACKAGE_PREFIX}-${_realname}-runtime")
+pkgver=1.68.0
+pkgrel=3
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32')
+url="https://live.gnome.org/GObjectIntrospection"
+license=("LGPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-glib2"
+             "${MINGW_PACKAGE_PREFIX}-libffi"
+             "${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-python2-mako"
+             "${MINGW_PACKAGE_PREFIX}-python2-markdown"
+             "${MINGW_PACKAGE_PREFIX}-python2-setuptools")
+source=(https://download.gnome.org/sources/gobject-introspection/${pkgver%.*}/${_realname}-${pkgver}.tar.xz
+        0002-relocate-tools.patch
+        0022-change-pkg-config-invocations.mingw.patch
+        0024-Support-passing-arguments-to-g-ir-scanner-through-a-.all.patch
+        0026-giscanner-assertions-and-waits.patch
+        0028-no-rpath-on-nt.patch
+        pyscript2exe.py)
+
+sha256sums=('d229242481a201b84a0c66716de1752bca41db4133672cfcfb37c93eb6e54a27'
+            '769abb237a074f25d5fb9ad8534822c49ea7b024e211e7720bb75a13ffc186be'
+            '89224a8bae7256c68dbac5007717b622f39bd5b3a0db2b96ff07d9a17572e169'
+            '594a067618922f10bdc5034f290f49d36944df3b970c9604381e2b9058a648da'
+            '5b13c3571ef9ccceb96b4add46f907a1f099d3da5819e8cc5fbf5e8aab5f5da3'
+            '951d0462fb05b1b250608323b3ffe53c4c59919d255c44a8c5eef7fad0dacecf'
+            'e57174517b08cf8f9fb4f43a381d342d23d2db3cad661107f35ca21c39b5734d')
+
+prepare() {
+  cd ${srcdir}/${_realname}-${pkgver}
+
+  patch -p1 -i "${srcdir}"/0002-relocate-tools.patch
+  patch -p1 -i "${srcdir}"/0022-change-pkg-config-invocations.mingw.patch
+  patch -p1 -i "${srcdir}"/0024-Support-passing-arguments-to-g-ir-scanner-through-a-.all.patch
+  patch -p1 -i "${srcdir}"/0026-giscanner-assertions-and-waits.patch
+  patch -p1 -i "${srcdir}"/0028-no-rpath-on-nt.patch
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  meson \
+    --prefix="${MINGW_PREFIX}" \
+    --buildtype=plain \
+    -Ddoctool=disabled \
+    -Dcairo=disabled \
+    "../${_realname}-${pkgver}"
+
+  GI_SCANNER_DISABLE_CACHE=1 ninja
+}
+
+package_gobject-introspection() {
+  pkgdesc="Introspection system for GObject-based libraries (mingw-w64)"
+  depends=("${MINGW_PACKAGE_PREFIX}-gobject-introspection-runtime=${pkgver}"
+           "${MINGW_PACKAGE_PREFIX}-pkg-config"
+           "${MINGW_PACKAGE_PREFIX}-python2"
+           "${MINGW_PACKAGE_PREFIX}-python2-mako")
+  options=('!emptydirs')
+
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  DESTDIR="${pkgdir}" ninja install
+
+  local _PRE_WIN="$(cygpath -m ${MINGW_PREFIX})"
+  for name in g-ir-scanner g-ir-annotation-tool; do
+    ${MINGW_PREFIX}/bin/python3 \
+      "${srcdir}/pyscript2exe.py" "${pkgdir}${MINGW_PREFIX}/bin/${name}"
+  done
+
+  for pcfile in  "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/*.pc; do
+    sed -s "s|${_PRE_WIN}/lib/libffi|\${prefix}/lib/libffi|g" -i "${pcfile}"
+    # we create an .exe launcher for g-ir-scanner, so adjust here too
+    sed -s "s|/g-ir-scanner|/g-ir-scanner.exe|g" -i "${pcfile}"
+  done
+
+  rm "${pkgdir}${MINGW_PREFIX}/bin/libgirepository"*.dll
+  rm "${pkgdir}${MINGW_PREFIX}/lib/libgirepository"*.a
+  rm -R "${pkgdir}${MINGW_PREFIX}/lib/girepository-1.0"
+}
+
+package_gobject-introspection-runtime() {
+  pkgdesc="Introspection system for GObject-based libraries - runtime files (mingw-w64)"
+  depends=("${MINGW_PACKAGE_PREFIX}-glib2"
+           "${MINGW_PACKAGE_PREFIX}-libffi")
+
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  local tmp_install="$(pwd)/_temp"
+
+  DESTDIR="${tmp_install}" ninja install
+
+  install -Dt "${pkgdir}${MINGW_PREFIX}/bin" "${tmp_install}${MINGW_PREFIX}/bin/libgirepository"*.dll
+  install -Dt "${pkgdir}${MINGW_PREFIX}/lib" "${tmp_install}${MINGW_PREFIX}/lib/libgirepository"*.a
+  install -Dt "${pkgdir}${MINGW_PREFIX}/lib/girepository-1.0" "${tmp_install}${MINGW_PREFIX}/lib/girepository-1.0/"*.typelib
+}
+
+# template start; name=mingw-w64-splitpkg-wrappers; version=1.0;
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#${MINGW_PACKAGE_PREFIX}-}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;

@@ -6,7 +6,7 @@ pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 # Don't update to 1.44.0! https://gitlab.gnome.org/GNOME/pango/issues/385
 pkgver=1.43.0
-pkgrel=4
+pkgrel=5
 pkgdesc="A library for layout and rendering of text (mingw-w64)"
 arch=('any')
 url="https://www.pango.org/"
@@ -54,7 +54,8 @@ build() {
   mkdir -p build-${MINGW_CHOST}
   cd build-${MINGW_CHOST}
 
-  meson \
+MSYS2_ARG_CONV_EXCL="--prefix=" meson \
+    --prefix="${MINGW_PREFIX}" \
     --default-library shared \
     --buildtype plain \
     -Denable_docs=false \
@@ -87,7 +88,7 @@ package() {
   #DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
 
   cd "${srcdir}/build-${MINGW_CHOST}"
-  DESTDIR=${pkgdir}${MINGW_PREFIX} ninja install
+  DESTDIR=${pkgdir} ninja install
 
   # remove installed tests, no need and they contain the build path which
   # leads to pkgbuild warnings

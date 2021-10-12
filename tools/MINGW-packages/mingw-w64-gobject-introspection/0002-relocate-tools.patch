@@ -1,0 +1,27 @@
+--- gobject-introspection-1.66.0/tools/g-ir-tool-template.in.orig	2020-09-12 19:25:46.030139400 +0200
++++ gobject-introspection-1.66.0/tools/g-ir-tool-template.in	2020-09-26 10:38:05.871078700 +0200
+@@ -49,13 +49,14 @@
+ datadir = os.path.abspath(os.path.join(filedir, '..', 'share'))
+ # Fallback to hard-coded paths if the relocatable paths are wrong
+ if not os.path.isdir(os.path.join(datadir, 'gir-1.0')):
+-    datadir = "@datarootdir@"
++    datadir = os.path.join(sys.prefix, "share")
+ 
+ builtins.__dict__['DATADIR'] = datadir
+ 
+ # Respect gir_dir_prefix
+ girdir = ''
+ girdir = os.path.abspath(os.path.join(filedir, '..', '@gir_dir_prefix@'))
++girdir = os.path.join(sys.prefix, "share")
+ builtins.__dict__['GIRDIR'] = [girdir]
+ 
+ # Again, relative paths first so that the installation prefix is relocatable
+@@ -87,7 +88,7 @@
+     else:
+         # Okay, we're not running uninstalled and the prefix is not
+         # relocatable. Use hard-coded libdir.
+-        pylibdir = os.path.join('@libdir@', 'gobject-introspection')
++        pylibdir = os.path.join(sys.prefix, 'lib', 'gobject-introspection')
+ 
+ sys.path.insert(0, pylibdir)
+ 

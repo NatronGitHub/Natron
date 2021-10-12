@@ -1,0 +1,11 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Target = @MINGW_HOOK_TARGET_PREFIX@/lib/gio/modules/*.dll
+
+[Action]
+Description = Updating GIO module cache...
+When = PostTransaction
+Exec = @MINGW_PREFIX@/bin/gio-querymodules.exe @MINGW_PREFIX@/lib/gio/modules

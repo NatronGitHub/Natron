@@ -1,0 +1,55 @@
+diff -rU2 gobject-introspection-1.50.0.orig/giscanner/gdumpparser.py gobject-introspection-1.50.0/giscanner/gdumpparser.py
+--- gobject-introspection-1.50.0.orig/giscanner/gdumpparser.py	2016-10-30 23:06:04.593000000 +0000
++++ gobject-introspection-1.50.0/giscanner/gdumpparser.py	2016-10-30 23:56:17.679914000 +0000
+@@ -29,4 +29,5 @@
+ import shutil
+ import subprocess
++import time
+ from xml.etree.cElementTree import parse
+ 
+@@ -160,4 +164,12 @@
+                 f.write(func)
+                 f.write('\n')
++
++        for i in range(10):
++            if os.path.exists(in_path):
++                break
++            message.warn("functions.txt missing, waiting 2s (%s/10)" % (i+1,))
++            time.sleep(2)
++        assert os.path.exists(in_path), "functions.txt still missing!"
++
+         out_path = os.path.join(self._binary.tmpdir, 'dump.xml')
+ 
+@@ -179,4 +191,12 @@
+                 # Clean up temporaries
+                 raise SystemExit(e)
++
++            for i in range(10):
++                if os.path.exists(out_path):
++                    break
++                message.warn("dump.xml missing, waiting 2s (%s/10)" % (i+1,))
++                time.sleep(2)
++            assert os.path.exists(out_path), "dump.xml still missing"
++
+             return parse(out_path)
+         finally:
+diff -rU2 gobject-introspection-1.50.0.orig/giscanner/gdumpparser.py gobject-introspection-1.50.0/giscanner/gdumpparser.py
+--- gobject-introspection-1.50.0.orig/giscanner/gdumpparser.py	2016-10-31 00:07:38.852765600 +0000
++++ gobject-introspection-1.50.0/giscanner/gdumpparser.py	2016-10-31 00:30:29.243390600 +0000
+@@ -199,5 +199,15 @@
+             assert os.path.exists(out_path), "dump.xml still missing"
+ 
+-            return parse(out_path)
++            # Just in case the XML data is not fully written at this point...
++            for i in range(10):
++                try:
++                    return parse(out_path)
++                except Exception as e:
++                    message.warn("XML parse failed (%d/10): %s" % (i+1, e))
++                    if i >= 10:
++                        raise
++                time.sleep(2)
++            raise RuntimeError("this exception should never happen")
++
+         finally:
+             if not utils.have_debug_flag('save-temps'):

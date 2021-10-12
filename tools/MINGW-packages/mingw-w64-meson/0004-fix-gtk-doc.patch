@@ -1,0 +1,48 @@
+--- meson-0.57.2/mesonbuild/scripts/gtkdochelper.py.orig	2021-04-29 12:15:43.756190700 -0700
++++ meson-0.57.2/mesonbuild/scripts/gtkdochelper.py	2021-04-29 12:17:17.646837400 -0700
+@@ -16,7 +16,7 @@
+ import subprocess
+ import shutil
+ import argparse
+-from ..mesonlib import MesonException, Popen_safe, is_windows, is_cygwin, split_args
++from ..mesonlib import MesonException, Popen_safe, is_windows, is_cygwin, join_args, split_args
+ from . import destdir_join
+ import typing as T
+ 
+@@ -65,7 +65,7 @@
+             library_paths.extend(env['LD_LIBRARY_PATH'].split(os.pathsep))
+         env['LD_LIBRARY_PATH'] = os.pathsep.join(library_paths)
+ 
+-    if is_windows():
++    if is_windows() and not shutil.which(cmd[0]):
+         cmd.insert(0, sys.executable)
+ 
+     # Put stderr into stdout since we want to print it out anyway.
+@@ -149,6 +149,15 @@
+ 
+     if gobject_typesfile:
+         scanobjs_cmd = [options.gtkdoc_scangobj] + scanobjs_args
++
++        library_paths = []
++        for ldflag in split_args(ldflags):
++            if ldflag.startswith('-Wl,-rpath,'):
++                library_paths.append(ldflag[11:])
++
++        if is_windows():
++            ldflags = join_args((arg for arg in split_args(ldflags) if not arg.startswith('-Wl,-rpath,')))
++
+         scanobjs_cmd += ['--types=' + gobject_typesfile,
+                          '--module=' + module,
+                          '--run=' + run,
+@@ -158,11 +167,6 @@
+                          '--ld=' + ld,
+                          '--output-dir=' + abs_out]
+ 
+-        library_paths = []
+-        for ldflag in split_args(ldflags):
+-            if ldflag.startswith('-Wl,-rpath,'):
+-                library_paths.append(ldflag[11:])
+-
+         gtkdoc_run_check(scanobjs_cmd, build_root, library_paths)
+ 
+     # Make docbook files

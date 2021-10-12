@@ -1,0 +1,104 @@
+Support passing arguments to g-ir-scanner through a file
+
+--- gobject-introspection-1.60.1/Makefile.introspection.orig	2019-04-20 19:49:44.101084900 +0200
++++ gobject-introspection-1.60.1/Makefile.introspection	2019-04-20 19:49:56.487025600 +0200
+@@ -132,6 +132,7 @@
+ # needs to be added manually.
+ $(1): $$($(_gir_name)_FILES)
+ 	@ $(MKDIR_P) $(dir $(1))
++	@ echo $$^ > $(1).files
+ 	$(_gir_silent_scanner_prefix) $(_gir_default_scanner_env) $(INTROSPECTION_SCANNER_ENV) $(INTROSPECTION_SCANNER) $(_gir_silent_scanner_opts) \
+ 	$(INTROSPECTION_SCANNER_ARGS) \
+ 	  --namespace=$(_gir_namespace) \
+@@ -148,7 +149,7 @@
+ 	  $($(_gir_name)_CFLAGS) \
+ 	  --cflags-end \
+ 	  $($(_gir_name)_LDFLAGS) \
+-	  $$^ \
++	  --argfile=$(1).files \
+ 	  --output $(1)
+ endef
+ 
+--- a/giscanner/scannermain.py	
++++ a/giscanner/scannermain.py	
+@@ -470,8 +470,9 @@ def write_output(data, options):
+ 
+ 
+ def scanner_main(args):
++    loaded_args = utils.maybe_load_args_from_file(args)
+     parser = _get_option_parser()
+-    (options, args) = parser.parse_args(args)
++    (options, args) = parser.parse_args(loaded_args)
+ 
+     if options.passthrough_gir:
+         passthrough_gir(options.passthrough_gir, sys.stdout)
+--- gobject-introspection-1.58.1/giscanner/utils.py.orig	2018-11-05 19:58:03.000000000 +0100
++++ gobject-introspection-1.58.1/giscanner/utils.py	2018-11-18 12:24:53.599570100 +0100
+@@ -29,6 +29,7 @@
+ import platform
+ import shutil
+ import time
++import shlex
+ import giscanner.pkgconfig
+ 
+ 
+@@ -83,6 +84,59 @@
+     return name
+ 
+ 
++def cygmsys_mangle(arg):
++    shell = which(os.environ.get('SHELL', 'sh.exe'))
++    p = subprocess.Popen([shell, '-c', 'cmd //C echo ' + arg], stdout=subprocess.PIPE)
++    result, _ = p.communicate()
++    return result.decode('utf-8').rstrip('\n').rstrip('\r') if p.returncode == 0 else None
++
++
++def load_args_from_file(filename):
++    with open(filename, 'rb') as source:
++        contents = source.read().decode('UTF-8')
++        result = shlex.split(contents)
++    if os.name == 'nt':
++        args = []
++        for arg in result:
++            mangled = cygmsys_mangle(arg)
++            if mangled is not None:
++                args.append(mangled)
++        result = args
++    return result
++
++
++def maybe_load_args_from_file(args):
++    if os.name != 'nt':
++        return args
++
++    processed_args = []
++    skip = False
++    is_input_file = False
++    argfilelen = len('--argfile=')
++    for argn, arg in enumerate(args):
++        if skip:
++            processed_args.append(arg)
++            continue
++        elif arg == '--':
++            skip = True
++            processed_args.append(arg)
++            continue
++
++        if is_input_file:
++            processed_args.extend(load_args_from_file(arg))
++            is_input_file = False
++            continue
++
++        if arg == '--argfile' and argn + 1 < len(args):
++            is_input_file = True
++            continue
++        elif arg.startswith('--argfile=') and len(arg) > argfilelen:
++            processed_args.extend(load_args_from_file(arg[argfilelen:]))
++            continue
++        processed_args.append(arg)
++    return processed_args
++
++
+ _libtool_pat = re.compile("dlname='([A-z0-9\\.\\-\\+]+)'\n")
+ 
+ 
