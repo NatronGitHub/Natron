@@ -1,0 +1,38 @@
+--- freetype-2.6.2/include/freetype/config/ftoption.h.orig	2014-04-02 21:30:52.858800000 +0400
++++ freetype-2.6.2/include/freetype/config/ftoption.h	2014-04-02 21:32:39.500400000 +0400
+@@ -184,7 +184,7 @@
+   /*   Do not #undef this macro here since the build system might define   */
+   /*   it for certain configurations only.                                 */
+   /*                                                                       */
+-/* #define FT_CONFIG_OPTION_SYSTEM_ZLIB */
++#define FT_CONFIG_OPTION_SYSTEM_ZLIB
+ 
+ 
+   /*************************************************************************/
+@@ -200,7 +200,7 @@
+   /*                                                                       */
+   /*   Define this macro if you want to enable this `feature'.             */
+   /*                                                                       */
+-/* #define FT_CONFIG_OPTION_USE_BZIP2 */
++#define FT_CONFIG_OPTION_USE_BZIP2
+ 
+ 
+   /*************************************************************************/
+@@ -225,7 +225,7 @@
+   /*                                                                       */
+   /*   Define this macro if you want to enable this `feature'.             */
+   /*                                                                       */
+-/* #define FT_CONFIG_OPTION_USE_PNG */
++#define FT_CONFIG_OPTION_USE_PNG
+ 
+ 
+   /*************************************************************************/
+@@ -238,7 +238,7 @@
+   /*                                                                       */
+   /*   Define this macro if you want to enable this `feature'.             */
+   /*                                                                       */
+-/* #define FT_CONFIG_OPTION_USE_HARFBUZZ */
++#define FT_CONFIG_OPTION_USE_HARFBUZZ
+ 
+ 
+   /*************************************************************************/

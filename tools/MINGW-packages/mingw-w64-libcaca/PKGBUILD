@@ -1,0 +1,67 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=libcaca
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0.99.beta19
+pkgrel=5
+pkgdesc="Color AsCii Art library (mingw-w64)"
+arch=('any')
+url="http://caca.zoy.org/wiki/libcaca"
+license=("LGPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cppunit"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             #"${MINGW_PACKAGE_PREFIX}-ncurses"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-ruby")
+depends=("${MINGW_PACKAGE_PREFIX}-fontconfig"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+checkdepends=("${MINGW_PACKAGE_PREFIX}-cppunit")
+options=(!libtool strip staticlibs)
+source=(http://libcaca.zoy.org/files/libcaca/${_realname}-${pkgver}.tar.gz
+        0001-win32-is-not-msvc-it-could-be.mingw.patch
+        0002-correct-installation-order.mingw.patch
+        0004-msc-only-please.all.patch
+        0005-ruby-paths.mingw.patch
+        0006-no-undefined.all.patch)
+sha256sums=('128b467c4ed03264c187405172a4e83049342cc8cc2f655f53a2d0ee9d3772f4'
+            'd7a30c2717d2cc22eee98a635bf885ea057888381c8a452f942931afb5990ded'
+            'bd7b8659347406d76579a6d29148016a452b18dfcc1760db1be8b1f4c0786a63'
+            '6db33ce3ccec000bb425be756aff48edb0182343f1e4815d3f84177a1bdbd5ad'
+            'cec04bee16bd89164b3d63433603fe5cbff212a6f25836bd7f2b877a3a12a67b'
+            '41868030a0e8ec2828476c17918af6d368e84e6aa1e165338000c36cc9898f82')
+
+prepare() {
+  cd ${srcdir}/${_realname}-${pkgver}
+  patch -p1 -i ${srcdir}/0001-win32-is-not-msvc-it-could-be.mingw.patch
+  patch -p1 -i ${srcdir}/0002-correct-installation-order.mingw.patch
+  patch -p1 -i ${srcdir}/0004-msc-only-please.all.patch
+  patch -p1 -i ${srcdir}/0005-ruby-paths.mingw.patch
+  patch -p1 -i ${srcdir}/0006-no-undefined.all.patch
+
+  autoreconf -fi
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --enable-static \
+    --enable-shared \
+    --disable-ncurses \
+    --disable-csharp \
+    --disable-doc
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make -j1 DESTDIR="${pkgdir}" install
+  find "${pkgdir}${MINGW_PREFIX}" -name '*.def' -o -name '*.exp' | xargs -rtl1 rm
+}

@@ -1,0 +1,11 @@
+--- libcaca-0.99.beta17/doc/Makefile.am.orig	2010-02-08 16:34:28 +0400
++++ libcaca-0.99.beta17/doc/Makefile.am	2012-04-03 19:09:57 +0400
+@@ -39,7 +39,7 @@
+ clean-local:
+ 	-rm -Rf html latex man
+ 
+-install-data-local:
++install-data-local: install-man1
+ if BUILD_DOCUMENTATION
+ 	mkdir -p $(DESTDIR)$(datadir)/doc
+ 	ln -sf libcaca-dev $(DESTDIR)$(datadir)/doc/libcucul-dev

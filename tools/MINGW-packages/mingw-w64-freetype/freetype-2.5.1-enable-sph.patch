@@ -1,0 +1,13 @@
+diff --git i/include/freetype/config/ftoption.h w/include/freetype/config/ftoption.h
+index fe2ba15..1ab4226 100644
+--- i/include/freetype/config/ftoption.h
++++ w/include/freetype/config/ftoption.h
+@@ -591,7 +591,7 @@ FT_BEGIN_HEADER
+   /*   This option requires TT_CONFIG_OPTION_BYTECODE_INTERPRETER to be    */
+   /*   defined.                                                            */
+   /*                                                                       */
+-/* #define TT_CONFIG_OPTION_SUBPIXEL_HINTING */
++#define TT_CONFIG_OPTION_SUBPIXEL_HINTING
+ 
+ 
+   /*************************************************************************/

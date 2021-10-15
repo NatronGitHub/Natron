@@ -1,0 +1,27 @@
+--- fontconfig-2.11.0/test/test-migration.c.orig	2014-02-06 14:43:19.691870300 +0000
++++ fontconfig-2.11.0/test/test-migration.c	2014-02-06 14:48:25.336182200 +0000
+@@ -214,6 +214,24 @@
+     return template;
+   }
+ }
++
++static int
++setenv (const char *var, const char *val, int ovr)
++{
++  BOOL b;
++  char c[2];
++  if (!ovr)
++  {
++    DWORD d;
++    d = GetEnvironmentVariableA (var, c, 2);
++    if (0 != d && GetLastError () != ERROR_ENVVAR_NOT_FOUND)
++      return;
++  }
++  b = SetEnvironmentVariableA (var, val);
++  if (b)
++    return 0;
++  return 1;
++}
+ #endif
+ 
+ FcBool

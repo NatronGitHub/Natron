@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=10
+pkgrel=11
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install

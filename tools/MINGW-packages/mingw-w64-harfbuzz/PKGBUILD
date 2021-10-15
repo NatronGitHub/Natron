@@ -4,27 +4,30 @@
 _realname=harfbuzz
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=1.7.5
-pkgrel=3
+pkgver=2.2.0
+pkgrel=2
 pkgdesc="OpenType text shaping engine (mingw-w64)"
 arch=('any')
 url="https://www.freedesktop.org/wiki/Software/HarfBuzz"
 license=("MIT")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-icu"
+             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-cairo")
+             "${MINGW_PACKAGE_PREFIX}-cairo"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-ragel")
 depends=("${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-glib2"
          "${MINGW_PACKAGE_PREFIX}-graphite2")
-options=('strip' 'staticlibs')
-optdepends=(
-  "${MINGW_PACKAGE_PREFIX}-icu: harfbuzz-icu support"
-  "${MINGW_PACKAGE_PREFIX}-cairo: hb-view program"
-)
+checkdepends=("${MINGW_PACKAGE_PREFIX}-python3-fonttools" 
+              "${MINGW_PACKAGE_PREFIX}-python3-setuptools")
+options=('strip' '!staticlibs')
+optdepends=("${MINGW_PACKAGE_PREFIX}-icu: harfbuzz-icu support"
+            "${MINGW_PACKAGE_PREFIX}-cairo: hb-view program")
 source=("https://www.freedesktop.org/software/harfbuzz/release/${_realname}-${pkgver}.tar.bz2")
-sha256sums=('84574e1b1f65ca694cb8fb6905309665c0368af18a312357f8ff886ee2f29563')
+sha256sums=('b7ccfcbd56b970a709e8b9ea9fb46c922c606c2feef8f086fb6a8492e530f810')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
@@ -34,13 +37,15 @@ prepare() {
 build() {
   # Build static and shared libs separately due to necessity of defining DGRAPHITE2_STATIC
   # manually when building static version
-  export _static_dir="${srcdir}/build-${MINGW_CHOST}-static"
-  export _shared_dir="${srcdir}/build-${MINGW_CHOST}-shared"
+  export _static_dir="${srcdir}/build-${CARCH}-static"
+  export _shared_dir="${srcdir}/build-${CARCH}-shared"
 
   # static build
   [[ -d "${_static_dir}" ]] && rm -rf "${_static_dir}"
   mkdir -p "${_static_dir}" && pushd "${_static_dir}"
-  CFLAGS=-DGRAPHITE2_STATIC CXXFLAGS=-DGRAPHITE2_STATIC ../${_realname}-${pkgver}/configure \
+  CFLAGS="${CFLAGS} -DGRAPHITE2_STATIC" \
+  CXXFLAGS="${CXXFLAGS} -DGRAPHITE2_STATIC" \
+  ../${_realname}-${pkgver}/configure \
     --prefix=${MINGW_PREFIX} \
     --build=${MINGW_CHOST} \
     --host=${MINGW_CHOST} \
@@ -48,6 +53,8 @@ build() {
     --enable-static=yes \
     --disable-introspection \
     --with-graphite2=yes \
+    --with-uniscribe=yes \
+    --with-directwrite=yes \
     --with-gobject
   make
   popd
@@ -63,29 +70,31 @@ build() {
     --enable-static=no \
     --disable-introspection \
     --with-graphite2=yes \
+    --with-uniscribe=yes \
+    --with-directwrite=yes \
     --with-gobject
   make
   popd
 }
 
-#check(){
-#  export _static_dir="${srcdir}/build-${MINGW_CHOST}-static"
-#  export _shared_dir="${srcdir}/build-${MINGW_CHOST}-shared"
-#
-#  # static build 
-#  pushd "${_static_dir}"
-#  make check
-#  popd
-#
-#  # shared build
-#  pushd "${_shared_dir}"
-#  make check
-#  popd
-#}
+check(){
+  local _static_dir="${srcdir}/build-${CARCH}-static"
+  local _shared_dir="${srcdir}/build-${CARCH}-shared"
+
+  # static build 
+  pushd "${_static_dir}"
+  make check
+  popd
+
+  # shared build
+  pushd "${_shared_dir}"
+  make check
+  popd
+}
 
 package() {
-  export _static_dir="${srcdir}/build-${MINGW_CHOST}-static"
-  export _shared_dir="${srcdir}/build-${MINGW_CHOST}-shared"
+  local _static_dir="${srcdir}/build-${CARCH}-static"
+  local _shared_dir="${srcdir}/build-${CARCH}-shared"
 
   # static build
   pushd "${_static_dir}"

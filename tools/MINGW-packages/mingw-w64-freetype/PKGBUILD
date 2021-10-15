@@ -1,0 +1,74 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=freetype
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.9.1
+pkgrel=2
+pkgdesc="TrueType font rendering library (mingw-w64)"
+arch=('any')
+url="https://www.freetype.org/"
+license=(GPL2+ custom:FreeType)
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-bzip2"
+         "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+options=('strip' '!libtool' 'staticlibs')
+source=(https://downloads.sourceforge.net/sourceforge/freetype/freetype-${pkgver}.tar.bz2
+        freetype-2.7-enable-valid.patch
+        freetype-2.5.1-enable-spr.patch
+        freetype-2.5.1-enable-sph.patch)
+sha256sums=('db8d87ea720ea9d5edc5388fc7a0497bb11ba9fe972245e0f7f4c7e8b1e1e84d'
+            '975d5a6eb1f6041fe5a497d7658f2e1ca2cfe5610dbd2e94ab375ad481b279d1'
+            '3ee5690d4d7cb48b8862e203d09b530805066cdfda0f51716b8ae2a47eef8b2d'
+            '324012ad68388d22c63368314721d2360b48dd40daa808d0383699a281d931b0')
+
+prepare() {
+  cd "${srcdir}/freetype-${pkgver}"
+  plain "freetype-2.7-enable-valid.patch"
+  patch -p1 -i "${srcdir}/freetype-2.7-enable-valid.patch"
+  plain "freetype-2.5.1-enable-spr.patch"
+  patch -p1 -i "${srcdir}/freetype-2.5.1-enable-spr.patch"
+
+  # Disabled for now due to resistance
+  # Kept here for easier rebuilds via ABS
+  # https://bugs.archlinux.org/task/35274
+  #patch -Np1 -i "${srcdir}/freetype-2.5.1-enable-sph.patch"
+}
+
+build() {
+  [[ -d "${srcdir}/build-${CARCH}" ]] && rm -rf "${srcdir}/build-${CARCH}"
+  mkdir -p "${srcdir}/build-${CARCH}"
+  cd "${srcdir}/build-${CARCH}"
+
+  ../freetype-${pkgver}/configure \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --prefix=${MINGW_PREFIX} \
+    --enable-static \
+    --enable-shared \
+    --with-zlib \
+    --with-bzip2 \
+    --with-png \
+    --with-harfbuzz \
+    --enable-freetype-config
+
+  make
+}
+
+package () {
+  cd "${srcdir}/build-${CARCH}"
+  make DESTDIR="${pkgdir}" install
+
+  # Replace the absolute path.
+  sed -i "s|$(cygpath -m /)|/|g" ${pkgdir}${MINGW_PREFIX}/bin/freetype-config
+
+  # Licenses
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/LICENSE.TXT" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE.TXT"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/GPLv2.TXT"   "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/GPLv2.TXT"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/FTL.TXT"     "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/FTL.TXT"
+}

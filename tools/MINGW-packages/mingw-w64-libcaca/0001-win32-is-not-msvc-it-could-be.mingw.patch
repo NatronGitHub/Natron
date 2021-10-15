@@ -1,0 +1,39 @@
+--- libcaca-0.99.beta17/caca/caca.h.orig	2010-02-08 16:34:28 +0400
++++ libcaca-0.99.beta17/caca/caca.h	2012-04-03 18:21:06 +0400
+@@ -29,9 +29,9 @@
+ 
+ #undef __extern
+ #if defined _DOXYGEN_SKIP_ME
+-#elif defined _WIN32 && defined __LIBCACA__ && defined DLL_EXPORT
++#elif defined _MSC_VER && defined __LIBCACA__ && defined DLL_EXPORT
+ #   define __extern extern __declspec(dllexport)
+-#elif defined _WIN32 && !defined __LIBCACA__ && !defined CACA_STATIC
++#elif defined _MSC_VER && !defined __LIBCACA__ && !defined CACA_STATIC
+ #   define __extern extern __declspec(dllimport)
+ #else
+ #   define __extern extern
+--- libcaca-0.99.beta17/caca/caca0.h.orig	2010-02-08 16:34:28 +0400
++++ libcaca-0.99.beta17/caca/caca0.h	2012-04-03 18:21:17 +0400
+@@ -22,9 +22,9 @@
+ 
+ #undef __extern
+ #if defined _DOXYGEN_SKIP_ME
+-#elif defined _WIN32 && defined __LIBCACA__ && defined DLL_EXPORT
++#elif defined _MSC_VER && defined __LIBCACA__ && defined DLL_EXPORT
+ #   define __extern extern __declspec(dllexport)
+-#elif defined _WIN32 && !defined __LIBCACA__
++#elif defined _MSC_VER && !defined __LIBCACA__
+ #   define __extern extern __declspec(dllimport)
+ #else
+ #   define __extern extern
+--- libcaca-0.99.beta17/cxx/caca++.h.orig	2010-02-08 16:34:28 +0400
++++ libcaca-0.99.beta17/cxx/caca++.h	2012-04-03 18:21:46 +0400
+@@ -23,7 +23,7 @@
+ #include <caca.h>
+ 
+ #undef __class
+-#if defined(_WIN32) && defined(__LIBCACA_PP__)
++#if defined(_MSC_VER) && defined(__LIBCACA_PP__)
+ #   define __class class __declspec(dllexport)
+ #else
+ #   define __class class
