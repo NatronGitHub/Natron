@@ -146,10 +146,9 @@ public:
     // Python 3
     std::vector<wchar_t*> commandLineArgsWideOriginal; // must be free'd on exit
     std::vector<wchar_t*> commandLineArgsWide; // a copy of the above, may be modified
-#else
+#endif
     std::vector<char*> commandLineArgsUtf8Original; // must be free'd on exit
     std::vector<char*> commandLineArgsUtf8; // a copy of the above, may be modified
-#endif
 
     //  QCoreApplication will hold a reference to that int until QCoreApplication destructor is invoked.
     //  Thus ensure that the QCoreApplication is destroyed before AppManager itself
