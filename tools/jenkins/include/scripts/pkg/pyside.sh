@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Install pyside
+# See https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=python-pyside
+# for building both for Python 2 and Python 3.
 PYSIDE_VERSION=1.2.4
 #PYSIDE_TAR="pyside-qt4.8+${PYSIDE_VERSION}.tar.bz2"
 #PYSIDE_SITE="https://download.qt.io/official_releases/pyside"

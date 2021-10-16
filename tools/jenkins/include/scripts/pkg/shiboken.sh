@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Install shiboken
+# See https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=shiboken
+# for building both for Python 2 and Python 3.
 SHIBOKEN_VERSION=1.2.4
 #SHIBOKEN_TAR="shiboken-${SHIBOKEN_VERSION}.tar.bz2"
 #SHIBOKEN_SITE="https://download.qt.io/official_releases/pyside"
