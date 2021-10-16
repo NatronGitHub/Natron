@@ -2695,7 +2695,7 @@ KnobHelper::validateExpression(const std::string& expression,
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            if (PyUnicode_Check(ret) || PyString_Check(ret)) {
+            if (PyUnicode_Check(ret) || PyBytes_Check(ret)) {
                 *resultAsString = isString->pyObjectToType<std::string>(ret);
             } else {
                 int index = 0;
