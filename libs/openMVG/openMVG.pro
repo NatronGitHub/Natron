@@ -12,7 +12,6 @@ CONFIG += openmvg-flags
 
 include(../../global.pri)
 include(../../libs.pri)
-include(../../config.pri)
 
 win32-msvc* {
 	CONFIG(64bit) {

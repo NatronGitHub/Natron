@@ -12,7 +12,6 @@ CONFIG += libmv-flags gflags-flags
 
 include(../../global.pri)
 include(../../libs.pri)
-include(../../config.pri)
 
 CONFIG -= warn_on
 
