@@ -160,23 +160,21 @@ static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
                 std::vector<std::string> rowVec(subSize);
 
                 for (int j = 0; j < subSize; ++j) {
-                    PyObject* pyString = PyList_GET_ITEM(subList,j);
-                    if ( PyString_Check(pyString) ) {
-                        char* buf = PyString_AsString(pyString);
-                        if (buf) {
-                            std::string ret;
-                            ret.append(buf);
-                            rowVec[j] = ret;
-                            }
-                    } else if (PyUnicode_Check(pyString) ) {
-                        PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
-                        if (utf8pyobj) {
-                            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-                            std::string ret;
-                            ret.append(cstr);
-                            Py_DECREF(utf8pyobj);
-                            rowVec[j] = ret;
-                        }
+                    PyObject* py_val = PyList_GET_ITEM(subList,j);
+                    PyObject* s = nullptr;
+                    // The following should work with Python 2 and 3.
+                    // https://stackoverflow.com/a/38600095
+                    if (PyUnicode_Check(py_val) ) {
+                        s = PyUnicode_AsUTF8String(py_val); // newRef
+                    } else if ( PyBytes_Check(py_val) ) {
+                        s = PyObject_Bytes(py_val);
+                    }
+                    if (s) {
+                        char* cstr = PyBytes_AS_STRING(s); // Borrowed pointer
+                        std::string ret;
+                        ret.append(cstr);
+                        Py_DECREF(s);
+                        rowVec[j] = ret;
                     }
                 }
                 table.push_back(rowVec);
