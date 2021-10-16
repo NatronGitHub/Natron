@@ -43,6 +43,24 @@ run-without-python {
     CONFIG += python
     QMAKE_CFLAGS += -include Python.h
     QMAKE_CXXFLAGS += -include Python.h
+    python3 {
+      PYV=3
+    } else {
+      isEmpty(PYV) {
+        PYV=2
+      }
+    }
+    # PYVER contains just major.minor
+    PYVER=$$system(python$$PYV -c \"import platform; print(\'.\'.join(platform.python_version_tuple()[:2]))\")
+    # PYTHON_VERSION contains major.minor.micro
+    PYTHON_VERSION=$$system(python$$PYV -c \"import platform; print(platform.python_version())\")
+    # PYTHON_SITE_PACKAGES contains the location of the site-packages directory
+    PYTHON_SITE_PACKAGES=$$system(python$$PYV -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")
+    # User may specify an alternate python2-config from the command-line,
+    # as in "qmake PYTHON_CONFIG=python2.7-config"
+    isEmpty(PYTHON_CONFIG) {
+      PYTHON_CONFIG = python$$PYV-config
+    }
 }
 
 *g++* | *clang* | *xcode* {
@@ -378,17 +396,17 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
-        shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
-    	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
-   	pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
+      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
+   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
     }
     equals(QT_MAJOR_VERSION, 4) {
-        shiboken:  PKGCONFIG += shiboken-py2
-    	pyside:    PKGCONFIG += pyside-py2
-   	pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-        pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+      shiboken:  PKGCONFIG += shiboken-py$$PYV
+    	pyside:    PKGCONFIG += pyside-py$$PYV
+   	  pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtCore
+      pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtGui
     }
-    python:    PKGCONFIG += python-2.7
+    python:    PKGCONFIG += python-$$PYVER
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
 	
@@ -416,11 +434,6 @@ unix {
          LIBS += -ldl
      }
 
-     # User may specify an alternate python2-config from the command-line,
-     # as in "qmake PYTHON_CONFIG=python2.7-config"
-     isEmpty(PYTHON_CONFIG) {
-         PYTHON_CONFIG = python2-config
-     }
      python {
           #PKGCONFIG += python
           LIBS += -L$$system($$PYTHON_CONFIG --exec-prefix)/lib $$system($$PYTHON_CONFIG --ldflags)
@@ -431,9 +444,9 @@ unix {
      }
 
      equals(QT_MAJOR_VERSION, 5) {
-         shiboken:  INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/shiboken
-    	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2
-   	 pyside:    INCLUDEPATH += $$system(python2 -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")/PySide2/include/PySide2/QtCore
+      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
+   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
      }
 
      equals(QT_MAJOR_VERSION, 4) {
