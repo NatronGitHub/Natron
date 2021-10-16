@@ -2,7 +2,7 @@
 
 # Install itstool
 # see http://www.linuxfromscratch.org/blfs/view/svn/pst/itstool.html
-ITSTOOL_VERSION=2.0.6 
+ITSTOOL_VERSION=2.0.7
 ITSTOOL_TAR="itstool-${ITSTOOL_VERSION}.tar.bz2"
 ITSTOOL_SITE="http://files.itstool.org/itstool"
 if download_step; then
