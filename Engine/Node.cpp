@@ -6546,7 +6546,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
         ss << nodeFullName << " = " << appID << ".getNode(\"" << nodeName << "\")\n";
 #ifdef DEBUG
         ss << "if not " << nodeFullName << ":\n";
-        ss << "    print \"[BUG]: " << nodeFullName << " does not exist!\"";
+        ss << "    print(\"[BUG]: " << nodeFullName << " does not exist!\")";
 #endif
         std::string script = ss.str();
         std::string output;
@@ -6657,7 +6657,7 @@ Node::declarePythonFields()
     std::stringstream ss;
 #ifdef DEBUG
     ss << "if not " << nodeFullName << ":\n";
-    ss << "    print \"[BUG]: " << nodeFullName << " is not defined!\"\n";
+    ss << "    print(\"[BUG]: " << nodeFullName << " is not defined!\")\n";
 #endif
     const KnobsVec& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
