@@ -1,12 +1,13 @@
 pkgname=natron-sdk
 pkgver=2021
-pkgrel=2
+pkgrel=3
 pkgdesc='Meta package for the Natron Windows SDK'
 url='https://github.com/NatronGitHub'
 arch=('any')
 license=('GPL')
 depends=(
 automake-wrapper
+autoconf-archive
 wget
 tar
 dos2unix
