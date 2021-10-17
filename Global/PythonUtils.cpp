@@ -312,20 +312,39 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
         printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
         printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
+#endif
         printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
         printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+#else
+        printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
+        printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
+        printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
+#endif
         printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
+#endif
         printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
         printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
         printf( "Py_GetPath is %s\n", Py_GetPath() );
         printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
+#else
+        printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
+        printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetProgramFullPath is %ls\n", Py_GetProgramFullPath() );
+        printf( "Py_GetPath is %ls\n", Py_GetPath() );
+        printf( "Py_GetPythonHome is %ls\n", Py_GetPythonHome() );
+#endif
 
         PyObject* dict = PyModule_GetDict(mainModule);
 

@@ -315,7 +315,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 #ifdef DEBUG
 #if PY_MAJOR_VERSION >= 3
     for (std::size_t i = 0; i < _imp->commandLineArgsWide.size(); ++i) {
-        std::cout << "argv[" << i << "] = " << _imp->commandLineArgsWide[i] << std::endl;
+        std::cout << "argv[" << i << "] = " << StrUtils::utf16_to_utf8( std::wstring(_imp->commandLineArgsWide[i]) ) << std::endl;
     }
 #else
     for (std::size_t i = 0; i < _imp->commandLineArgsUtf8.size(); ++i) {
@@ -1763,7 +1763,11 @@ addToPythonPathFunctor(const QDir& directory)
     std::string addToPythonPath("sys.path.append(str('");
 
     addToPythonPath += directory.absolutePath().toStdString();
+#if PY_MAJOR_VERSION >= 3
+    addToPythonPath += "'))\n";
+#else
     addToPythonPath += "').decode('utf-8'))\n";
+#endif
 
     std::string err;
     bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
@@ -3102,7 +3106,8 @@ AppManager::initPython()
 #     if 0//def __NATRON_WIN32__
         _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
 #     else
-#      if PY_MAJOR_VERSION >= 3
+        // Py_SetPath() sets the whole path, but setting PYTHONPATH still keeps the system's python path
+#      if 0 // PY_MAJOR_VERSION >= 3
         std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
         Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
 #      else
@@ -3217,6 +3222,10 @@ AppManager::initPython()
 #if PY_MAJOR_VERSION < 3
         printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
         printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+#else
+        printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
+        printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
+        printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
 #endif
         printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
 #if PY_MAJOR_VERSION < 3
