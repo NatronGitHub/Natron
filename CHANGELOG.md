@@ -58,6 +58,7 @@
 - Default keyframe interpolation method for strokes and shapes is now "Smooth" (was "Linear"). #597
 - Fix animation of Roto Beziers with non-broken tangents. #102
 - Remember properties panels state when reopening project. #168
+- Fix slow nodegraph display on macOS 11 Big Sur. #606
 
 ### Plugins
 
