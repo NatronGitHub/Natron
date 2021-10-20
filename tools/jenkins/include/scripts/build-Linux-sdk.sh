@@ -613,10 +613,7 @@ if dobuild; then
     BOOST_ROOT="$SDK_HOME"
     OPENJPEG_HOME="$SDK_HOME"
     THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
-    PYTHON_HOME="$SDK_HOME"
-    PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
-    PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
-    export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
+    export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME
 fi
 
 if [ "${UBUNTU:-0}" = 20.04 ]; then
@@ -862,21 +859,6 @@ checkpoint
 
 # pysetup
 if dobuild; then
-    if [ "$PYV" = "3" ]; then
-        export PYTHON_PATH=$SDK_HOME/lib/python${PYVER}
-        export PYTHON_INCLUDE=$SDK_HOME/include/python${PYVER}
-        PY_EXE=$SDK_HOME/bin/python${PYV}
-        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-        PY_INC=$SDK_HOME/include/python${PYVER}
-        USE_PY3=true
-    else
-        PY_EXE=$SDK_HOME/bin/python${PYV}
-        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-        PY_INC=$SDK_HOME/include/python${PYVER}
-        USE_PY3=false
-    fi
-
-
     # add qt5 to lib path to build shiboken2 and pyside2
     LD_LIBRARY_PATH="$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     #LD_RUN_PATH="$LD_LIBRARY_PATH"

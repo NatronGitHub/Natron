@@ -179,14 +179,26 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# If PYV is not set, set it to 2
-: "${PYV:=2}"
-if [ "$PYV" = "3" ]; then
-    PYVER=3.7
-else
-    PYVER=2.7
+# To default to Python 3, move the Python 2 section below the Python 3 section
+if [[ $(type -P python2) ]]; then
+    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        # default to Python 2 if present
+        PYV=2
+        PYVER="${PY2VER}"
+        PYVERNODOT="${PY2VERNODOT}"
+    fi
 fi
-PYVERNODOT=$(echo ${PYVER:-}| sed 's/\.//')
+if [[ $(type -P python3) ]]; then
+    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        PYV=3
+        PYVER="${PY3VER}"
+        PYVERNODOT="${PY3VERNODOT}"
+    fi
+fi
 
 QT_VERSION_MAJOR=4
 

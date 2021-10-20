@@ -6,18 +6,18 @@ LIBS+="-L/opt/Natron-sdk/lib"
 
 pyside {
 PKGCONFIG -= pyside
-PKGCONFIG -= pyside-py2
+PKGCONFIG -= pyside-py$$PYV
 INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
 INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
 INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
 INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-LIBS += -lpyside.cpython-34m
+LIBS += -lpyside.cpython-$${PYVERNODOT}m
 }
 shiboken {
 PKGCONFIG -= shiboken
-PKGCONFIG -= shiboken-py2
+PKGCONFIG -= shiboken-py$$PYV
 INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)
-LIBS += -lshiboken.cpython-34m
+LIBS += -lshiboken.cpython-$${PYVERNODOT}m
 }
 
 QMAKE_LFLAGS += -Wl,-rpath,\\\$\$ORIGIN/../lib
