@@ -218,6 +218,7 @@ catDll libheif-
 catDll libde265-
 catDll libx265
 catDll libdav1d
+catDll libaom
 
 if [ "$BITS" = "32" ]; then
     catDll libgcc_s_dw2-
