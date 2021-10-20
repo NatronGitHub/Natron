@@ -800,6 +800,8 @@ checkpoint
 
 build x265 # (for ffmpeg and libheif)
 build libde265 # (for libheif)
+build dav1d # (for ffmpeg and libheif)
+build aom # (for ffmpeg and libheif)
 build libheif # (for imagemagick and openimageio)
 
 checkpoint
@@ -846,8 +848,6 @@ build libbluray # (for ffmpeg)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
-build dav1d # (for ffmpeg)
-build aom # (for ffmpeg)
 build ffmpeg
 build ruby # (necessary for qtwebkit)
 build breakpad
