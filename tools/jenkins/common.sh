@@ -63,11 +63,6 @@ Darwin)
     ;;
 esac
 
-unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
-# save the default PATH to avoid growing it each time we source this file
-DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
-PATH="$DEFAULT_PATH"
-
 # Figure out architecture: 32bit, 64bit or Universal
 #
 # Default build flags
@@ -202,6 +197,10 @@ fi
 
 QT_VERSION_MAJOR=4
 
+unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
+# save the default PATH to avoid growing it each time we source this file
+DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
+PATH="$DEFAULT_PATH"
 
 # Keep existing tag, else make a new one
 if [ -z "${CURRENT_DATE:-}" ]; then
