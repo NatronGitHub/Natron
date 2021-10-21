@@ -617,4 +617,6 @@ FC_CACHEDIR += "<cachedir>LOCAL_APPDATA_FONTCONFIG_CACHE</cachedir>"
 
 
 # and finally...
-include(config.pri)
+!include(config.pri) {
+  error("System-specific config.pri file not present, please follow the installation instructions and create it.")
+}
