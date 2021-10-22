@@ -24,10 +24,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     untar "$SRC_PATH/$QT4_TAR"
     pushd "qt-everywhere-opensource-src-${QT4_VERSION}"
 
-        ############################################################
+    ############################################################
     # Fedora patches
 
-    ## Patches from https://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/source/tree/Packages/q/qt-4.8.7-49.fc31.src.rpm
+    ## Patches from https://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/source/tree/Packages/q/qt-4.8.7-66.fc36.src.rpm
 
     # set default QMAKE_CFLAGS_RELEASE
     Patch2=qt-everywhere-opensource-src-4.8.0-tp-multilib-optflags.patch
@@ -168,6 +168,15 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     # https://bugzilla.redhat.com/show_bug.cgi?id=1580047
     Patch96=qt-everywhere-opensource-src-4.8.7-gcc8_qtscript.patch
 
+    # Fix ordered pointer comparison against zero problem reported by gcc-11
+    Patch97=qt-everywhere-opensource-src-4.8.7-gcc11.patch
+
+    # hardcode the compiler version in the build key once and for all
+    Patch98=qt-everywhere-opensource-src-4.8.7-hardcode-buildkey.patch
+
+    # FTBFS openssl3
+    Patch99=qt-everywhere-opensource-src-4.8.7-openssl3.patch
+
     # upstream patches
     # backported from Qt5 (essentially)
     # http://bugzilla.redhat.com/702493
@@ -190,6 +199,15 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     # CVE-2018-19872 qt: malformed PPM image causing division by zero and crash in qppmhandler.cpp
     Patch500=qt-everywhere-opensource-src-4.8.7-crash-in-qppmhandler.patch
 
+    # CVE-2020-17507 qt: buffer over-read in read_xbm_body in gui/image/qxbmhandler.cpp
+    Patch501=qt-CVE-2020-17507.patch
+
+    # no CVE qt: Clamp parsed doubles to float representable values
+    Patch502=qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch
+
+    # CVE-2020-24741 qt: QLibrary loads libraries relative to CWD which could result in arbitrary code execution
+    Patch503=qt-everywhere-opensource-src-4.8.5-CVE-2020-24741.patch
+
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch4" # -p1 -b .uic_multilib
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch5" # -p1 -b .webcore_debuginfo
     # ie, where cups-1.6+ is present
@@ -197,7 +215,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     ##patch6 -p1 -b .cupsEnumDests
     #%endif
     patch -Np0 -i "$INC_PATH/patches/Qt/$Patch10" # -p0 -b .prefer_adwaita_on_gnome
-    # disable for installer build
+    # disable for installer build, which uses a much older freetype
     #patch -Np1 -i "$INC_PATH/patches/Qt/$Patch15" # -p1 -b .enable_ft_lcdfilter
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch23" # -p1 -b .glib_eventloop_nullcheck
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch25" # -p1 -b .qdbusconnection_no_debug
@@ -240,14 +258,15 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch93" # -p1 -b .alsa1.1
     if version_gt "$OPENSSL_VERSION" 1.0.9999; then
         # Fedora patch from https://src.fedoraproject.org/rpms/qt/tree/master
-	    #patch -Np1 -i "$INC_PATH/patches/Qt/$Patch94" # -p1 -b .openssl1.1
-        # The following patch is from MacPorts and fixes a few type issues
-	    patch -Np0 -i "$INC_PATH/patches/Qt/patch-qt4-openssl111.diff" # -p1 -b .openssl1.1
+	    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch94" # -p1 -b .openssl1.1
     fi
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch95" # -p1 -b .icu59
     if version_gt "$SYSTEM_GCC_VERSION" 7.99; then
 	    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch96" # -p1 -b .gcc8_qtscript
     fi
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch97" # -p1 -b .gcc11
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch98" # -p1 -b .hardcode-buildkey
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch99" # -p1 -b .ssl3
 
 
     # upstream patches
@@ -261,6 +280,9 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
 
     # security fixes
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch500" # -p1 -b .malformed-ppb-image-causing-crash
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch501" # -p1 -b .buffer-over-read-in-read_xbm_body
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch502" # -p1 -b .clamp-parsed-doubles-to-float-representtable-values
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch503" # -p1 -b .CVE-2020-24741
 
     # regression fixes for the security fixes
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch84" # -p1 -b .QTBUG-35459
