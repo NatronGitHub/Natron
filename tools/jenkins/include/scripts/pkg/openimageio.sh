@@ -40,7 +40,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     OIIO_CMAKE_FLAGS+=( "-DUSE_FREETYPE:BOOL=TRUE" "-DFREETYPE_INCLUDE_PATH=$SDK_HOME/include" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_FFMPEG:BOOL=FALSE" )
     OIIO_CMAKE_FLAGS+=( "-DLINKSTATIC=0" "-DBUILDSTATIC=0" )
-    OIIO_CMAKE_FLAGS+=( "-DOpenJpeg_ROOT=$SDK_HOME" "-DOPENJPEG_HOME=$SDK_HOME" "-DOPENJPEG_INCLUDE_DIR=$SDK_HOME/include/openjpeg-$OPENJPEG2_VERSION_SHORT" "-DUSE_OPENJPEG:BOOL=TRUE" )
+    OIIO_CMAKE_FLAGS+=( "-DOpenJPEG_ROOT=$SDK_HOME" "-DOPENJPEG_HOME=$SDK_HOME" "-DOPENJPEG_INCLUDE_DIR=$SDK_HOME/include/openjpeg-$OPENJPEG2_VERSION_SHORT" "-DUSE_OPENJPEG:BOOL=TRUE" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_HEIF:BOOL=TRUE" )
     if version_gt 4.8.1 "$GCC_VERSION"; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" )
@@ -51,13 +51,15 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     if version_gt 7.1 "$GCC_VERSION"; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP17:BOOL=FALSE" )
     fi
-    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
+    # Several versions of libraw are installed, use the GPL2 version during SDK build
+    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLibRaw_ROOT=$SDK_HOME/libraw-gpl2")
+    OIIO_CMAKE_FLAGS+=( "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
     OIIO_CMAKE_FLAGS+=( "-DBUILD_FMT_FORCE:BOOL=TRUE" )
     OIIO_CMAKE_FLAGS+=( "-DCMAKE_CXX_STANDARD=11" )
     mkdir build
     pushd build
 
-    cmake "${OIIO_CMAKE_FLAGS[@]}" ..
+    env PKG_CONFIG_PATH="$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH" cmake "${OIIO_CMAKE_FLAGS[@]}" ..
     make -j${MKJOBS} ${OIIOMAKE:-}
     make install
     popd
