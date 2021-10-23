@@ -136,11 +136,7 @@ $GSED "s#__BRANCH__#${NATRON_GIT_BRANCH}#;s#__COMMIT__#${NATRON_GIT_COMMIT}#;s#_
 if [ "$NATRON_VERSION_MAJOR" -ge "3" ]; then
     cat "$INC_PATH/natron/${PKGOS}_natron3.pri" > config.pri
 else
-    if [ "$PYV" = "3" ]; then
-        cat "$INC_PATH/natron/${PKGOS}_py3.pri" > config.pri
-    else
-        cat "$INC_PATH/natron/${PKGOS}.pri" > config.pri
-    fi
+    cat "$INC_PATH/natron/${PKGOS}.pri" > config.pri
 fi
 
 if [ "$NO_BUILD" != "1" ] && ([ "${SDK_VERSION:-}" = "CY2016" ] || [ "${SDK_VERSION:-}" = "CY2017" ]); then
