@@ -924,7 +924,7 @@ checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
-RUN rm -rf $SDK_HOME/var/log/Natron-Linux-x86_64-SDK
+RUN xz $SDK_HOME/var/log/Natron-Linux-x86_64-SDK/*
 FROM $DOCKER_BASE
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
