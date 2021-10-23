@@ -34,7 +34,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/shiboken-py$
         -DPYTHONBRANCH="${PY2VER}" \
         -DPYTHONPREFIX="${SDK_HOME}" \
         -DQT_QMAKE_EXECUTABLE="$QT4PREFIX/bin/qmake"
-    make -j${MKJOBS} 
+    make -j${MKJOBS}
     make install
     cd data
     mkdir "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY2VER}" || true
@@ -63,7 +63,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/shiboken-py$
         -DPYTHON3_LIBRARY="$PY3_LIB" \
         -DPYTHON3_INCLUDE_DIR="$PY3_INC" \
         -DQT_QMAKE_EXECUTABLE="$QT4PREFIX/bin/qmake"
-    make -j${MKJOBS} 
+    make -j${MKJOBS}
     make install
     mkdir "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY3VER}" || true
     mv "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/ShibokenConfig.cmake" "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY3VER}/"

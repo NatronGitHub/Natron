@@ -24,4 +24,3 @@ QMAKE_LFLAGS += -Wl,-rpath,\\\$\$ORIGIN/../lib
 
 # Mocha compat
 LIBS += -lGLU
-
