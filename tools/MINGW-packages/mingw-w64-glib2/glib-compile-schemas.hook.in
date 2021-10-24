@@ -1,5 +1,5 @@
 [Trigger]
-Type = Path
+Type = File
 Operation = Install
 Operation = Upgrade
 Operation = Remove

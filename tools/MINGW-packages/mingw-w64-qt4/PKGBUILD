@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=11
+pkgrel=12
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
@@ -102,7 +102,9 @@ source=("https://download.qt.io/archive/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar
         relwithdeb.diff
         qt4-pcre.patch
         0001-Enable-building-with-C-11-and-C-14.patch
-        qt4-selection-flags-static_cast.patch)
+        qt4-selection-flags-static_cast.patch
+        qt-CVE-2020-17507.patch
+        qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch)
 sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
             '5e6a61ced784d7d24c65d81e769b67b8f6066a33581c8b17cdf374a4c723cd23'
@@ -129,11 +131,13 @@ sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             '51da49e41edac66559d3ec8dd0a152995a51a53e5d1f63f09fa089a8af7e3112'
             '61d6bf45649c728dec5f8d22be5b496ed9d40f52c2c70102696d07133cd1750d'
             'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP')
+            '42c555937269b36c1a34d2a183ea98cf8ab1aac9f4af447ece635a49e738524e'
+            '453cb5bd4a0fc1183636db9a22360f2d6fa58b43f0b5ed02a80c2d1e0a894be0'
+            '92ce0bf38d902acc2f0123f300568f8490849d8602b4919b5ffe55592e1146bb'
+            '7a25e1f42e7a689a4bb3d71f412d03e1c3c45676767ce5c3a2dce9835a9e4fae'
+            '3c35b393b3c4397d4e69e949cd5a77df590938c0f95731c771bf6be6565deaba'
+            'e5f8db55f33352034e55a98ff035192b7ccb87a5f54ae44ccbb2982fd43afa90'
+            'b59135832f6e72dc38e26fc742f5160aa5246b31cddf26948da7237784c5d9bb')
 
 prepare() {
   cd ${srcdir}/${_pkgfqn}
@@ -166,6 +170,8 @@ prepare() {
   patch -p0 -i ${srcdir}/qt4-pcre.patch
   patch -p1 -i ${srcdir}/0001-Enable-building-with-C-11-and-C-14.patch
   patch -p1 -i ${srcdir}/qt4-selection-flags-static_cast.patch
+  patch -p1 -i ${srcdir}/qt-CVE-2020-17507.patch
+  patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch
 
   if check_option "debug" "y"; then
     patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch
