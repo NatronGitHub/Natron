@@ -2,7 +2,7 @@
 
 # Install libuv (for cmake)
 # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-LIBUV_VERSION=1.41.0
+LIBUV_VERSION=1.42.0
 LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 #LIBUV_SITE="http://www.libuv.org/downloads"
 LIBUV_SITE="https://dist.libuv.org/dist/v${LIBUV_VERSION}"

@@ -2,9 +2,11 @@
 
 # Install libffi
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/libffi.html
-FFI_VERSION=3.3
+FFI_VERSION=3.4.2
 FFI_TAR="libffi-${FFI_VERSION}.tar.gz"
-FFI_SITE="ftp://sourceware.org/pub/libffi"
+#FFI_SITE="ftp://sourceware.org/pub/libffi"
+FFI_SITE="https://github.com/libffi/libffi/releases/download/v${FFI_VERSION}"
+
 if download_step; then
     download "$FFI_SITE" "$FFI_TAR"
 fi

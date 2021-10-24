@@ -1,0 +1,11 @@
+--- libcaca-0.99.beta19/ruby/Makefile.am.orig	2010-02-08 00:49:49.000000000 +0000
++++ libcaca-0.99.beta19/ruby/Makefile.am	2014-07-30 11:20:48.699589900 +0000
+@@ -24,7 +24,7 @@
+                   caca-event.c \
+                   caca-event.h \
+                   $(NULL)
+-caca_la_LDFLAGS = -module -avoid-version -shared $(RUBY_LIBS)
++caca_la_LDFLAGS = -module -avoid-version -shared $(RUBY_LIBS) -no-undefined
+ caca_la_LIBADD = ../caca/libcaca.la
+ 
+ EXTRA_DIST = ruby.dox \

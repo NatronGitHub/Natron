@@ -60,6 +60,8 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
 #### Notes for OS X 10.6 Snow Leopard
 
+On Snow Leopard, the `+universal` variant may be added to `/opt/local/etc/macports/variants.conf`.
+
 The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to substitute it with the libtool provided by MacPort's `cctools` package, using `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 #### Install Ports
@@ -67,10 +69,11 @@ The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang
 Install the required packages:
 
 ```Shell
-sudo port -v -N install opencolorio -quartz -python27
-sudo port -v -N install qt4-mac cairo expat
-sudo port -v -N install gsed gawk coreutils findutils
-sudo port -v -N install cmake keychain
+sudo port -v -N install pkgconfig -universal gsed -universal gawk -universal coreutils -universal findutils -universal
+sudo port -v -N install cmake -universal keychain -universal
+sudo port -v -N install opencolorio -quartz -python27 -python39
+sudo port -v -N install cairo -x11
+sudo port -v -N install qt4-mac boost expat
 sudo port -v -N install py27-pyside py39-sphinx py39-sphinx_rtd_theme
 sudo port select --set python python27
 sudo port select --set python2 python27
@@ -107,7 +110,7 @@ sudo port -v -N install libvpx +highbitdepth
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
 sudo port -v -N install libraw +gpl2
 sudo port -v -N install openexr
-sudo port -v -N install opencolorio -quartz -python27
+sudo port -v -N install opencolorio -quartz -python27 -python39
 sudo port -v -N install openimageio +natron
 sudo port -v -N install seexpr
 ```
@@ -115,12 +118,13 @@ sudo port -v -N install seexpr
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
 ```Shell
-sudo port -v -N install librsvg
-sudo port -v -N install ImageMagick +natron
+sudo port -v -N install librsvg -quartz
+sudo port -v -N install ImageMagick +natron -x11
 sudo port -v -N install poppler
 sudo port -v -N install librevenge
 sudo port -v -N install libcdr-0.1
 sudo port -v -N install libzip
+sudo sed -i -e s/Zstd::Zstd/zstd/ /opt/local/lib/pkgconfig/libzip.pc
 sudo port -v -N install sox
 ```
 
@@ -351,32 +355,29 @@ config.pri:
  # copy and paste the following in a terminal
 cat > config.pri << EOF
 boost {
-  BOOST_VERSION = \$\$system("grep 'default boost.version' /opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/_resources/port1.0/group/boost-1.0.tcl |awk '{ print \$3 }'")
-  message("found boost \$\$BOOST_VERSION")
-  INCLUDEPATH += /opt/local/libexec/boost/\$\$BOOST_VERSION/include
-  LIBS += -L/opt/local/libexec/boost/\$\$BOOST_VERSION/lib -lboost_serialization-mt
+  LIBS += -lboost_serialization-mt
 }
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-9.0
-  QMAKE_CXX=/opt/local/bin/clang++-mp-9.0
-  QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
+  QMAKE_CC=/opt/local/bin/clang-mp-12
+  QMAKE_CXX=/opt/local/bin/clang++-mp-12
+  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=\$\$QMAKE_CXX
 
-  INCLUDEPATH += /opt/local/include/libomp
-  LIBS += -L/opt/local/lib/libomp -liomp5
+  INCLUDEPATH += /opt/local/include /opt/local/include/libomp
+  LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-9.0
+  cc_setting.value = \$\$QMAKE_CC
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-9.0
+  cxx_setting.value = \$\$QMAKE_CXX
   ld_setting.name = LD
-  ld_setting.value = /opt/local/bin/clang-mp-9.0
+  ld_setting.value = \$\$QMAKE_CC
   ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = /opt/local/bin/clang++-mp-7.0
+  ldplusplus_setting.value = \$\$QMAKE_CXX
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
-  # clang (as of 5.0) does not yet support index-while-building functionality
-  # present in Xcode 9, and Xcode 9's clang does not yet support OpenMP
+  # clang (as of 12.0.1) does not yet support index-while-building functionality
+  # present in Xcode 9 and later, and Xcode's clang (as of 13.0) does not yet support OpenMP
   compiler_index_store_enable_setting.name = COMPILER_INDEX_STORE_ENABLE
   compiler_index_store_enable_setting.value = NO
   QMAKE_MAC_XCODE_SETTINGS += compiler_index_store_enable_setting
@@ -389,6 +390,9 @@ config.pri:
 
 ```Shell
  # copy and paste the following in a terminal
+ # Get the LLVM version corresponding to your Xcode version, from
+ # the table at https://en.wikipedia.org/wiki/Xcode#Toolchain_versions
+ # Here it is LLVM 11 for Xcode 12.5.1
 cat > config.pri << EOF
 boost: INCLUDEPATH += /usr/local/include
 boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
@@ -396,20 +400,20 @@ expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
-  QMAKE_CC=/usr/local/opt/llvm/bin/clang
-  QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
+  QMAKE_CC=/usr/local/opt/llvm@11/bin/clang
+  QMAKE_CXX=/usr/local/opt/llvm@11/bin/clang++
   QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=\$\$QMAKE_CXX
 
-  LIBS += -L/usr/local/opt/llvm/lib -lomp
+  LIBS += -L/usr/local/opt/llvm@11/lib -lomp
   cc_setting.name = CC
-  cc_setting.value = /usr/local/opt/llvm/bin/clang
+  cc_setting.value = /usr/local/opt/llvm@11/bin/clang
   cxx_setting.name = CXX
-  cxx_setting.value = /usr/local/opt/llvm/bin/clang++
+  cxx_setting.value = /usr/local/opt/llvm@11/bin/clang++
   ld_setting.name = LD
-  ld_setting.value = /usr/local/opt/llvm/bin/clang
+  ld_setting.value = /usr/local/opt/llvm@11/bin/clang
   ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = /usr/local/opt/llvm/bin/clang++
+  ldplusplus_setting.value = /usr/local/opt/llvm@11/bin/clang++
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
@@ -481,7 +485,7 @@ Then, configure using the following qmake command on MacPorts:
 Or on Homebrew:
 
 ```Shell
-env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++'
+env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm@11/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
 ```
 
 To build the plugins, use the following command-line:

@@ -13,7 +13,7 @@ The purpose of Natron is to process video images using elementary "effect" brick
 
 
 Image Layers and Channels
-#####
+#########################
 
 In natron an image is only a stack of black and white images called channels. channels are grouped in layers.
 The Color layer is the base layer. Color layer has channels R,G,B,A

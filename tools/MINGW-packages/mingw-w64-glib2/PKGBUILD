@@ -1,0 +1,137 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Ignacio Casal Quinteiro <icq@gnome.org>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+# Contributor: Ray Donnelly <mingw.android@gmail.com>
+
+_realname=glib2
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.68.4
+pkgrel=3
+url="https://www.gtk.org/"
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+pkgdesc="Common C routines used by GTK+ 3 and other libs (mingw-w64)"
+license=(LGPL2)
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-gettext"
+         "${MINGW_PACKAGE_PREFIX}-pcre"
+         "${MINGW_PACKAGE_PREFIX}-libffi"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         "${MINGW_PACKAGE_PREFIX}-python2")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-gtk-doc"
+             "${MINGW_PACKAGE_PREFIX}-python2-setuptools")
+options=('strip' '!debug' '!staticlibs')
+source=("https://download.gnome.org/sources/glib/${pkgver%.*}/glib-${pkgver}.tar.xz"
+        0001-Update-g_fopen-g_open-and-g_creat-to-open-with-FILE_.patch
+        0001-win32-Make-the-static-build-work-with-MinGW-when-pos.patch
+        0001-disable-some-tests-when-static.patch
+        glib-compile-schemas.hook.in
+        gio-querymodules.hook.in
+        0002-disable_glib_compile_schemas_warning.patch
+        0003-GWin32Mount-Don-t-use-SHGetFileInfoW-for-icons.patch
+        0004-GWin32Mount-Don-t-use-SHGetFileInfoW-for-mount-displ.patch
+        pyscript2exe.py)
+sha256sums=('62fd061d08a75492617e625a73e2c05e259f831acbb8e1f8b9c81f23f7993a3b'
+            '51d02360a1ee978fd45e77b84bca9cfbcf080d91986b5c0efe0732779c6a54ec'
+            '5b238550c8826b0c0695b16b2689ae2c2144e8f488137b7e867b6c651f125a10'
+            '0f44135a139e3951c4b5fa7d4628d75226e0666d891faf524777e1d1ec3b440b'
+            'ae0514635c848f1628c12f855bc8cb47e5cfae5423744ff7ccc90d57ce12bbba'
+            'c28f65b393fd965fb2e0eed81903f4ffc24b77500580bb89661195174011dd76'
+            '396c25cfd740ffbb72209133c7b9453173167577265a4bb14502678de8d5a8f9'
+            '60a8831451976572595b9628260cd2c3210064bc51d196eaf7c4daded4d1f74d'
+            '205760eaf4062c2d992e4b5477c6a898e8802cd8841159a0cf639d05704b3c66'
+            'e57174517b08cf8f9fb4f43a381d342d23d2db3cad661107f35ca21c39b5734d')
+
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Np1 -i "${srcdir}/${_patch}"
+  done
+}
+
+
+prepare() {
+  cd "${srcdir}/glib-${pkgver}"
+
+  apply_patch_with_msg 0001-Update-g_fopen-g_open-and-g_creat-to-open-with-FILE_.patch
+  apply_patch_with_msg 0001-win32-Make-the-static-build-work-with-MinGW-when-pos.patch
+  apply_patch_with_msg 0001-disable-some-tests-when-static.patch
+  apply_patch_with_msg 0002-disable_glib_compile_schemas_warning.patch
+
+  # https://github.com/msys2/MINGW-packages/issues/9154
+  apply_patch_with_msg \
+    0003-GWin32Mount-Don-t-use-SHGetFileInfoW-for-icons.patch \
+    0004-GWin32Mount-Don-t-use-SHGetFileInfoW-for-mount-displ.patch
+}
+
+build() {
+#  msg "Build static version"
+#  [[ -d "${srcdir}"/build-${CARCH}-static ]] && rm -rf "${srcdir}"/build-${CARCH}-static
+#  mkdir "${srcdir}"/build-${CARCH}-static && cd "${srcdir}"/build-${CARCH}-static
+#
+#  declare -a extra_config
+#  if check_option "debug" "n"; then
+#    extra_config+=("--buildtype=release")
+#  else
+#    extra_config+=("--buildtype=debug")
+#  fi
+#
+#  MSYS2_ARG_CONV_EXCL="--prefix=" \
+#  ${MINGW_PREFIX}/bin/meson.exe \
+#    -Dlibelf=disabled \
+#    --prefix="${MINGW_PREFIX}" \
+#    "${extra_config[@]}" \
+#    --wrap-mode=nodownload \
+#    --auto-features=enabled \
+#    --default-library=static \
+#    -Dforce_posix_threads=true \
+#    "../glib-${pkgver}"
+#
+#  ${MINGW_PREFIX}/bin/meson.exe compile
+
+  msg "Build shared version"
+  [[ -d "${srcdir}"/build-${CARCH}-shared ]] && rm -rf "${srcdir}"/build-${CARCH}-shared
+  mkdir "${srcdir}"/build-${CARCH}-shared && cd "${srcdir}"/build-${CARCH}-shared
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  ${MINGW_PREFIX}/bin/meson.exe \
+    -Dlibelf=disabled \
+    --prefix="${MINGW_PREFIX}" \
+    "${extra_config[@]}" \
+    --wrap-mode=nodownload \
+    --auto-features=enabled \
+    -Ddefault_library=shared \
+    -Dman=true \
+    -Dforce_posix_threads=true \
+    -Dgtk_doc=false \
+    "../glib-${pkgver}"
+
+  ${MINGW_PREFIX}/bin/meson.exe compile
+}
+
+package() {
+#  cd "${srcdir}/build-${CARCH}-static"
+#  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/meson.exe install
+
+  cd "${srcdir}/build-${CARCH}-shared"
+  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/meson.exe install
+
+  for hook in glib-compile-schemas gio-querymodules; do
+    local hook_path="${srcdir}/${MINGW_PACKAGE_PREFIX}-${hook}.hook";
+    cp "${srcdir}/${hook}.hook.in" "${hook_path}"
+    sed -s "s|@MINGW_HOOK_TARGET_PREFIX@|${MINGW_PREFIX:1}|g" -i "${hook_path}"
+    sed -s "s|@MINGW_PREFIX@|${MINGW_PREFIX}|g" -i "${hook_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "${hook_path}"
+  done
+
+  install -Dm644 "${srcdir}/glib-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/COPYING"
+
+  for name in glib-mkenums glib-genmarshal gdbus-codegen gtester-report; do
+    ${MINGW_PREFIX}/bin/python3 \
+      "${srcdir}/pyscript2exe.py" "${pkgdir}${MINGW_PREFIX}/bin/${name}"
+  done
+}

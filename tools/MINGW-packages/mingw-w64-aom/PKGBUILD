@@ -1,42 +1,62 @@
 # Maintainer: wirx6 <wirx654@gmail.com>
 
 _realname=aom
+pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=1.0.0
-pkgrel=2
-pkgdesc='AV1 codec library(mingw-w64)'
+pkgver=3.2.0
+pkgrel=1
+pkgdesc='AV1 codec library (mingw-w64)'
 arch=('any')
 url="https://aomedia.org/"
-license=('BSD')
+license=('BSD-2-Clause')
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
-makedepends=("perl" "git"
+makedepends=("perl"
              "${MINGW_PACKAGE_PREFIX}-cmake"
-             "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-yasm"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
              "${MINGW_PACKAGE_PREFIX}-python3")
-source=("git+https://aomedia.googlesource.com/aom#tag=v${pkgver}")
-sha256sums=('SKIP')
+source=("https://storage.googleapis.com/aom-releases/libaom-${pkgver}.tar.gz")
+sha256sums=('8fa7418bf4ea12ef6dcf0eeb21cba932b71c6079ffdf7b9d13cf907fa46c0568')
+noextract=("libaom-${pkgver}.tar.gz")
+
+prepare() {
+  # Extract into a subdirectory
+  (mkdir "${srcdir}/${_realname}" && cd "${srcdir}/${_realname}" && bsdtar -xf "${srcdir}/libaom-${pkgver}.tar.gz")
+
+  cd "${srcdir}/${_realname}"
+}
 
 build() {
-  [[ -d ${srcdir}/build-${CARCH} ]] && rm -rf ${srcdir}/build-${CARCH}
-  mkdir -p ${srcdir}/build-${CARCH} && cd ${srcdir}/build-${CARCH}
+  cd "${srcdir}"/${_realname}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
-  ${MINGW_PREFIX}/bin/cmake \
-    -G"MSYS Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DENABLE_TESTS=OFF \
-    ../${_realname}
+    ${MINGW_PREFIX}/bin/cmake \
+      -GNinja \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      "${extra_config[@]}" \
+      -DBUILD_SHARED_LIBS=ON \
+      -DENABLE_TESTS=OFF \
+      ../${_realname}
 
-  make
+  ${MINGW_PREFIX}/bin/cmake --build .
 }
 
 package() {
-  cd ${srcdir}/build-${CARCH}
-  make DESTDIR="${pkgdir}" install
+  cd "${srcdir}"/build-${CARCH}
+
+  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/cmake --build . --target install
+
   install -Dm644 ${srcdir}/${_realname}/LICENSE ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE
   install -Dm644 ${srcdir}/${_realname}/PATENTS ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/PATENTS
 }

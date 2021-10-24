@@ -1,0 +1,22 @@
+--- fontconfig-2.11.93/m4/pkg.m4.orig	2015-03-09 02:54:03.000000000 +0000
++++ fontconfig-2.11.93/m4/pkg.m4	2015-04-06 11:04:21.862416100 +0000
+@@ -111,8 +111,8 @@
+ pkg_failed=no
+ AC_MSG_CHECKING([for $1])
+ 
+-_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
+-_PKG_CONFIG([$1][_LIBS], [libs], [$2])
++_PKG_CONFIG([$1][_CFLAGS], [cflags --dont-define-prefix], [$2])
++_PKG_CONFIG([$1][_LIBS], [libs --dont-define-prefix], [$2])
+ 
+ m4_define([_PKG_TEXT], [Alternatively, you may set the environment variables $1[]_CFLAGS
+ and $1[]_LIBS to avoid the need to call pkg-config.
+@@ -207,7 +207,7 @@
+ [AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+ AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])dnl
+ 
+-_PKG_CONFIG([$1], [variable="][$3]["], [$2])
++_PKG_CONFIG([$1], [variable="][$3][" --dont-define-prefix], [$2])
+ AS_VAR_COPY([$1], [pkg_cv_][$1])
+ 
+ AS_VAR_IF([$1], [""], [$5], [$4])dnl

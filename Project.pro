@@ -103,8 +103,8 @@ addresssanitizer {
     message("  qmake QMAKE_CC=clang-mp-5.0 QMAKE_CXX='clang++-mp-5.0 -stdlib=libc++' QMAKE_LINK='clang++-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CXX='clang++-mp-5.0 -stdlib=libc++' CONFIG+=addresssanitizer ...")
     message("- with homebrew:")
     message("  brew install llvm")
-    message("  export ASAN_SYMBOLIZER_PATH=/usr/local/opt/llvm/bin/llvm-symbolizer")
-    message("  qmake QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_LINK='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("  export ASAN_SYMBOLIZER_PATH=/usr/local/opt/llvm@11/bin/llvm-symbolizer")
+    message("  qmake QMAKE_CC=/usr/local/opt/llvm@11/bin/clang QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_LINK='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++' QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' CONFIG+=addresssanitizer ...")
     message("see http://clang.llvm.org/docs/AddressSanitizer.html")
   }
 }

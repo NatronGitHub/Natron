@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.77.0
+version                         7.79.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  8a122b2decf610fb2b3a9262039610246dd9b0b4 \
-                                sha256  0f64582c54282f31c0de9f0a1a596b182776bd4df9a4c4a2a41bbeb54f62594b \
-                                size    2439336
+                                rmd160  5cf55aa1d995063cce339518626514750c2fed47 \
+                                sha256  0606f74b1182ab732a17c11613cbbaf7084f2e6cca432642d0e3ad7c224c3689 \
+                                size    2465212
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -53,7 +53,6 @@ if {${name} eq ${subport}} {
                                 --without-gnutls \
                                 --without-gssapi \
                                 --without-libgsasl \
-                                --without-libmetalink \
                                 --without-librtmp \
                                 --without-libssh2 \
                                 --without-mbedtls \
@@ -188,11 +187,6 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-nghttp2 --with-nghttp2
     }
 
-    variant metalink description {Support Metalink XML download description files} {
-        depends_lib-append      port:libmetalink
-        configure.args-replace  --without-libmetalink --with-libmetalink=${prefix}
-    }
-
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
         depends_lib-append      port:openldap
         configure.args-replace  --disable-ldap --enable-ldap
@@ -242,11 +236,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1617307855
+    set certdata_updated        1625220659
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         e5df44ac10fece63c6c0a0cbadd70ab1e1ce9898
+    set certdata_commit         4d343134c8a3a46520e41d31e7cb26f718d9daec
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20210308
+    set certdata_date           20210526
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -267,9 +261,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  01e3341e545702f7c822bba9f7f957e1c7bb737c \
-                                sha256  3dc3e624f29774dd559e69f838982ddc26cebebcdf62c248936d508c2f35d644 \
-                                size    244976
+                                rmd160  763c2ffbbc521d7cafb5644ff5d2692b5543197d \
+                                sha256  d3d290e88c6781ba81105205036a5da320d5eb5f58fd14561afee07c344d185d \
+                                size    248478
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

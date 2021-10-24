@@ -1,0 +1,11 @@
+--- src/raw.imageio/rawinput.cpp.orig	2021-06-26 18:09:54.016303700 +0200
++++ src/raw.imageio/rawinput.cpp	2021-06-26 18:13:58.549159600 +0200
+@@ -368,7 +368,7 @@
+     m_processor->imgdata.params.user_flip
+         = config.get_int_attribute("raw:user_flip", -1);
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && defined(_MSC_VER)
+     // Convert to wide chars, just on Windows.
+     int ret = m_processor->open_file(Strutil::utf8_to_utf16(name).c_str());
+ #else

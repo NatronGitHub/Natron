@@ -346,7 +346,7 @@ GuiApp::selectNode(Effect* effect,
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectNode(nodeUi, !clearPreviousSelection);
 }
@@ -388,7 +388,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         }
         assert(graph);
         if (!graph) {
-            throw std::logic_error("");
+            throw std::logic_error("invalid graph");
         }
         graph->setSelection(selection);
     }
@@ -419,9 +419,70 @@ GuiApp::selectAllNodes(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectAllNodes(false);
+}
+
+
+void
+GuiApp::copySelectedNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("invalid graph");
+    }
+    graph->copySelectedNodes();
+}
+
+void
+GuiApp::pasteNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
+    graph->pasteNodeClipBoards();
 }
 
 void
@@ -449,7 +510,7 @@ GuiApp::deselectNode(Effect* effect)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->deselectNode(nodeUi);
 }
@@ -480,7 +541,7 @@ GuiApp::clearSelection(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->clearSelection();
 }

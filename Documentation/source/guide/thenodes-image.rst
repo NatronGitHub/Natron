@@ -9,5 +9,7 @@ These are the nodes located in the image icon of the toolbar.
 .. toctree::
    :maxdepth: 1
    
+   thenodes-image-checkerboard
+   thenodes-image-ColorWheel
    thenodes-image-read
    thenodes-image-write

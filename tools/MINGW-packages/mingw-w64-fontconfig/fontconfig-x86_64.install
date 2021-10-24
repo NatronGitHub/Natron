@@ -1,0 +1,35 @@
+post_install() {
+  cat << _EOF
+
+  Fontconfig configuration is done via /mingw64/etc/fonts/conf.avail and conf.d.
+  Read /mingw64/etc/fonts/conf.d/README for more information.
+
+_EOF
+
+  if [ -n "${MSYS2_FC_CACHE_SKIP}" ]; then
+    echo "Warning: 'MSYS2_FC_CACHE_SKIP' set, skipping font cache update"
+  else
+    echo -n "updating font cache... "
+    mingw64/bin/fc-cache -f
+    echo "done."
+  fi
+}
+
+post_upgrade() {
+  if [ -n "${MSYS2_FC_CACHE_SKIP}" ]; then
+    echo "Warning: 'MSYS2_FC_CACHE_SKIP' set, skipping font cache update"
+  else
+    echo -n "updating font cache... "
+    mingw64/bin/fc-cache -f
+    echo "done."
+  fi
+}
+
+post_remove() {
+  cat << _EOF
+
+  Check for dead symlinks and leftover files
+  in mingw64/etc/fonts/conf.d/
+
+_EOF
+}

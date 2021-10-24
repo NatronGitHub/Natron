@@ -416,13 +416,23 @@ App::saveTempProject(const QString& filename)
 bool
 App::saveProject(const QString& filename)
 {
-    return getInternalApp()->save( filename.toStdString() );
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->save(outFile);
 }
 
 bool
 App::saveProjectAs(const QString& filename)
 {
-    return getInternalApp()->saveAs( filename.toStdString() );
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->saveAs(outFile);
 }
 
 App*

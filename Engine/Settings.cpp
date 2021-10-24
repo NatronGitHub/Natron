@@ -282,7 +282,7 @@ Settings::initializeKnobsThreading()
 
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
                                         "-1: Disable multithreading totally (useful for debugging) \n"
-                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
+                                        "0: Guess the thread count from the number of cores and the available memory (min(num_cores,memory/3.5Gb)). The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
     _numberOfThreads->setMinimum(-1);
@@ -291,7 +291,7 @@ Settings::initializeKnobsThreading()
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders = AppManager::createKnob<KnobInt>( this, tr("Number of parallel renders (0=\"guess\")") );
-    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
+    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer. "
                                                  "A value of 0 indicate that %1 should automatically determine "
                                                  "the best number of parallel renders to launch given your CPU activity. "
                                                  "Setting a value different than 0 should be done only if you know what you're doing and can lead "
@@ -319,7 +319,7 @@ Settings::initializeKnobsThreading()
     _nThreadsPerEffect->setName("nThreadsPerEffect");
     _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
                                            "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                           "the time spent to launch all the threads might exceed the time spent actually processing."
+                                           "the time spent to launch all the threads might exceed the time spent actually processing. "
                                            "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
                                            "for an effect.") );
 
@@ -589,7 +589,7 @@ Settings::initializeKnobsUserInterface()
     _maxPanelsOpened = AppManager::createKnob<KnobInt>( this, tr("Maximum number of open settings panels (0=\"unlimited\")") );
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip( tr("This property holds the maximum number of settings panels that can be "
-                                         "held by the properties dock at the same time."
+                                         "held by the properties dock at the same time. "
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
     _maxPanelsOpened->setMinimum(0);
@@ -872,14 +872,14 @@ Settings::initializeKnobsNodeGraphColors()
 
     _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( this, tr("Display plug-in icon on node-graph") );
     _usePluginIconsInNodeGraph->setName("usePluginIcons");
-    _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph."
+    _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph. "
                                                    "Changing this option will not affect already existing nodes, unless a restart of Natron is made.") );
     _usePluginIconsInNodeGraph->setAddNewLine(false);
     _nodegraphColorsTab->addKnob(_usePluginIconsInNodeGraph);
 
     _useAntiAliasing = AppManager::createKnob<KnobBool>( this, tr("Anti-Aliasing") );
     _useAntiAliasing->setName("antiAliasing");
-    _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
+    _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performance. "
                                          " Changing this requires a restart of Natron") );
     _nodegraphColorsTab->addKnob(_useAntiAliasing);
 
@@ -1061,8 +1061,8 @@ Settings::initializeKnobsViewers()
     _texturesMode->populateChoices(textureModes);
 
 
-    _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
-                                      " Hover each option with the mouse for a detailed description.") );
+    _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering. "
+                                      "Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
 
     _powerOf2Tiling = AppManager::createKnob<KnobInt>( this, tr("Viewer tile size is 2 to the power of...") );
@@ -2119,7 +2119,7 @@ Settings::restoreSettings(bool useDefault)
     try {
         _settingsExisted = _natronSettingsExist->getValue();
 
-        if (!_settingsExisted) {
+        if (!_settingsExisted && !useDefault) {
             _natronSettingsExist->setValue(true);
             saveSetting( _natronSettingsExist.get() );
         }
@@ -2279,7 +2279,11 @@ Settings::onKnobValueChanged(KnobI* k,
             QThreadPool::globalInstance()->setMaxThreadCount(1);
             appPTR->abortAnyProcessing();
         } else if (nbThreads == 0) {
-            QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+            // See https://github.com/NatronGitHub/Natron/issues/554
+            // min(num_cores, RAM/3.5Gb)
+            int maxThread = getSystemTotalRAM() / ( (3ULL * 1024ULL + 512ULL) * 1024ULL * 1024ULL );
+            maxThread = std::min( std::max(1, maxThread), QThread::idealThreadCount() );
+            QThreadPool::globalInstance()->setMaxThreadCount(maxThread);
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }

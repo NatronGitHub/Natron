@@ -8,7 +8,7 @@ PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
 
-github.setup            OpenImageIO oiio 2.2.15.1
+github.setup            OpenImageIO oiio 2.2.18.0
 revision                100
 name                    openimageio
 categories              graphics
@@ -19,9 +19,9 @@ long_description        OpenImageIO is a library for reading and writing images,
                         related classes, utilities, and applications.
 platforms               darwin
 
-checksums           rmd160  86ffa84974b23f2a871538fa45ab282adf63d548 \
-                    sha256  f222c6b51a40aabbc80ddf4055535be9af1ffa907452fa6d1ffa7674854aab17 \
-                    size    29237852
+checksums           rmd160  ff8376f038694bf7e37a81de1351a46162780a10 \
+                    sha256  b8dd189fbc97f1b172528e324daa904f74a166bad62c32e7166ca6c866734a29 \
+                    size    29246567
 
 compiler.cxx_standard   2011
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'

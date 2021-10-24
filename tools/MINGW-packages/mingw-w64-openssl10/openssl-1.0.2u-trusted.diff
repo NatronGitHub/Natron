@@ -1,0 +1,11 @@
+--- crypto/x509/x509_vfy.c.orig	2021-10-09 19:28:59.204235900 +0200
++++ crypto/x509/x509_vfy.c	2021-10-09 19:30:25.248722900 +0200
+@@ -256,7 +256,7 @@
+         /*
+          * If asked see if we can find issuer in trusted store first
+          */
+-        if (ctx->param->flags & X509_V_FLAG_TRUSTED_FIRST) {
++        if (X509_V_FLAG_TRUSTED_FIRST) {
+             ok = ctx->get_issuer(&xtmp, ctx, x);
+             if (ok < 0) {
+                 ctx->error = X509_V_ERR_STORE_LOOKUP;

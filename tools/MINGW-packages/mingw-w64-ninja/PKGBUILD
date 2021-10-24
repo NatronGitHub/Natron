@@ -3,23 +3,18 @@
 _realname=ninja
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=1.9.0
-pkgrel=2
+pkgver=1.10.2
+pkgrel=3
 pkgdesc="Ninja is a small build system with a focus on speed (mingw-w64)"
 arch=('any')
+#mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
 url="https://ninja-build.org"
 license=('Apache')
 depends=()
 options=('strip' 'staticlibs')
 makedepends=("re2c" "${MINGW_PACKAGE_PREFIX}-python3")
 source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/ninja-build/ninja/archive/v${pkgver}.tar.gz")
-sha256sums=('5d7ec75828f8d3fd1a0c2f31b5b0cea780cdfe1031359228c428c1a48bfcd5b9')
-
-prepare () {
-  cd ${srcdir}/ninja-${pkgver}
-  #linking assumes windows cmd line but we are bash :)
-  sed -i 's|cmd /c $ar cqs $out.tmp $in && move /Y $out.tmp $out|$ar crs $out $in|g' ${srcdir}/ninja-${pkgver}/configure.py
-}
+sha256sums=('ce35865411f0490368a8fc383f29071de6690cbadc27704734978221f25e2bed')
 
 build() {
   mkdir -p "${pkgdir}${MINGW_PREFIX}"/bin

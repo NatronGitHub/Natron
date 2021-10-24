@@ -150,15 +150,7 @@ ViewerGL::textFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return _imp->textFont;
-}
-
-void
-ViewerGL::setTextFont(const QFont & f)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->textFont = f;
+    return *_imp->_textFont;
 }
 
 /**
@@ -264,6 +256,16 @@ ViewerGL::paintGL()
         return;
     }
     glCheckError();
+
+
+    {
+        double screenPixelRatio = getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+        }
+    }
+    assert(_imp->_textFont);
 
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     {
@@ -598,7 +600,8 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
             // Draw format
             {
-                renderText(canonicalFormat.right(), canonicalFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay[i], _imp->textRenderingColor, _imp->textFont);
+                assert(_imp->_textFont);
+                renderText(canonicalFormat.right(), canonicalFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay[i], _imp->textRenderingColor, *_imp->_textFont);
 
 
                 QPoint topRight( canonicalFormat.right(), canonicalFormat.top() );
@@ -636,10 +639,11 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
 
             if (dataW != canonicalFormat) {
+                assert(_imp->_textFont);
                 renderText(dataW.right(), dataW.top(),
-                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
+                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, *_imp->_textFont);
                 renderText(dataW.left(), dataW.bottom(),
-                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
+                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, *_imp->_textFont);
                 glCheckError();
 
                 QPointF topRight2( dataW.right(), dataW.top() );
@@ -1157,20 +1161,21 @@ ViewerGL::drawPersistentMessage()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    QFontMetrics metrics( _imp->textFont );
+    assert(_imp->_textFont);
     int offset =  10;
-    double metricsHeightZoomCoord;
+    double fmHeightZoomCoord;
     QPointF topLeft, bottomRight, offsetZoomCoord;
-
     {
+        QFontMetrics fm( *_imp->_textFont );
+        double fmHeight = fm.height() / _imp->_screenPixelRatio;
         QMutexLocker l(&_imp->zoomCtxMutex);
         topLeft = _imp->zoomCtx.toZoomCoordinates(0, 0);
-        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(), _imp->persistentMessages.size() * (metrics.height() + offset) );
+        bottomRight = _imp->zoomCtx.toZoomCoordinates( _imp->zoomCtx.screenWidth(), _imp->persistentMessages.size() * (fmHeight + offset) );
         offsetZoomCoord = _imp->zoomCtx.toZoomCoordinates(PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS, offset);
-        metricsHeightZoomCoord = topLeft.y() - _imp->zoomCtx.toZoomCoordinates( 0, metrics.height() ).y();
+        fmHeightZoomCoord = topLeft.y() - _imp->zoomCtx.toZoomCoordinates( 0, fmHeight ).y();
     }
     offsetZoomCoord.ry() = topLeft.y() - offsetZoomCoord.y();
-    QPointF textPos(offsetZoomCoord.x(),  topLeft.y() - (offsetZoomCoord.y() / 2.) - metricsHeightZoomCoord);
+    QPointF textPos(offsetZoomCoord.x(),  topLeft.y() - (offsetZoomCoord.y() / 2.) - fmHeightZoomCoord);
 
     {
         GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1191,8 +1196,9 @@ ViewerGL::drawPersistentMessage()
 
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
-            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, _imp->textFont);
-            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
+            assert(_imp->_textFont);
+            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, *_imp->_textFont);
+            textPos.setY( textPos.y() - ( fmHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -3302,8 +3308,8 @@ ViewerGL::renderText(double x,
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w * _imp->_screenPixelRatio);
+    double scaley = (top - bottom) / (h * _imp->_screenPixelRatio);
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
@@ -3314,7 +3320,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if ( !_imp->viewerTab || !_imp->viewerTab->getGui() ) {
+    if ( !_imp->viewerTab || !_imp->viewerTab->getGui() || !_imp->_textFont ) {
         return;
     }
 
@@ -3357,10 +3363,12 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     }
     _imp->persistentMessageType = type;
 
-    QFontMetrics fm(_imp->textFont);
+    assert(_imp->_textFont);
+    QFontMetrics fm(*_imp->_textFont);
 
     for (int i = 0; i < allMessages.size(); ++i) {
-        QStringList wordWrapped = wordWrap(fm, allMessages[i], w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS);
+        QStringList wordWrapped = wordWrap( fm, allMessages[i],
+                                           _imp->_screenPixelRatio * (w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS) );
         for (int j = 0; j < wordWrapped.size(); ++j) {
             _imp->persistentMessages.push_back(wordWrapped[j]);
         }

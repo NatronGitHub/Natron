@@ -1,0 +1,123 @@
+name: New issue for bug report
+description: Got a glitch, crash, or some other problem? If you're sure your issue is reproducible, feel free to report the issue to Natron's development team.
+title: "(Bug): <title>"
+labels: "type:bug"
+body:
+  # Greeter message
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please first check the boxes below to ensure that your bug report meets our requirements.
+  # Requirements checks
+  - type: checkboxes
+    attributes:
+      options:
+        - label: I'm using the latest version of Natron (not required but recommended)
+        - label: I've restarted Natron and the issue persists
+          required: true
+        - label: I've run Natron via the [command line](https://natron.readthedocs.io/en/rb-2.4/devel/natronexecution.html) and the issue persists
+          required: true
+        - label: I've followed the [contributing guidelines](https://github.com/NatronGitHub/Natron/blob/RB-2.4/CONTRIBUTING.md) to the best of my understanding
+          required: true
+        - label: My issue is not on the [issue tracker](https://github.com/NatronGitHub/Natron/issues?q=is%3Aissue+type%3Abug) and is not a duplicate of a forum thread
+          required: true
+        - label: This bug is reproducible
+          required: true
+        - label: This issue is not a feature request or a pull request
+          required: true
+  # Natron & OS versions
+  - type: input
+    id: natron-version
+    attributes:
+      label: Natron version
+      description: Natron version/commit (they can be retrieved from the about window or with `natron --about`)
+      placeholder: "Natron 2.4.0"
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system
+      description: The name and version of your operating system
+      placeholder: "macOS 10.15 Catalina"
+    validations:
+      required: true
+  # System (hardware) info
+  - type: textarea
+    attributes:
+      label: System specs
+      render: markdown
+      placeholder: |
+        RAM: 15.6 GB
+        CPU: Intel Core i7-7700HQ @ 2.80GHz
+        GPU: NVIDIA GeForce GTX 1070
+      description: |
+        Please input the following (if you know them):
+          - Your system's RAM
+          - The model of your CPU(s)
+          - The model of your GPU(s)
+    validations:
+      required: false
+  # Did the user install via the official installer?
+  - type: checkboxes
+    attributes:
+      label: Did you install Natron using the official installer?
+      description: If you installed Natron via another method, please add your installation method in the \"additional details\" section at the bottom of this form
+      options:
+        - label: Yes, I used the official installer
+        - label: No, I installed from a binary archive
+        - label: No, I compiled Natron from sources
+        - label: No, I installed Natron via another method
+    validations:
+      required: true
+  # At which location did the user install Natron?
+  - type: textarea
+    attributes:
+      label: If you installed to a custom '(non-default)' location please include it here':'
+      placeholder: '`/opt/Natron-2.4.0`'
+      render: markdown
+    validations:
+      required: false
+  # What was the user trying to do?
+  - type: textarea
+    attributes:
+      label: What were you trying to do?
+      placeholder: While working on a project in Natron I tried to...
+      render: markdown
+    validations:
+      required: true
+  # What did the user expect to happen? What was the actual behavior?
+  - type: textarea
+    attributes:
+      label: What did you expect to happen? What happened instead?
+      render: markdown
+      description: |
+        You may submit a link to any screenshots/videos that can be used to understand how to reproduce the issue. Additionally, depending on situation, you should also submit one of the following:
+          - If your problem can be reproduced using a Natron project, please include a link to the project on a file sharing service, or attach the project as a zip file to this issue, if possible.
+          - If your problem is a crash in an official release/snapshot, please include verbose output from the application from a terminal if possible.  If you also submitted a crash report, indicate the Crash ID if possible.
+          - If you need to report a compilation issue, please create a [gist](https://gist.github.com) that contains the _full_ verbose build log.
+          - If your problem is a crash in a build that you made yourself, please create a [gist](https://gist.github.com) that contains a _full_ backtrace.
+
+        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+    validations:
+      required: true
+  # Step-by-step reproduction instructions
+  - type: textarea
+    attributes:
+      label: Step-by-step reproduction instructions
+      render: markdown
+      placeholder: |
+        1. Start Natron...
+        2. Open attached project...
+        3. Run "..."
+        4. See error...
+    validations:
+      required: true
+  # Additional details
+  - type: textarea
+    attributes:
+      label: Additional details
+      description: Add any other relevant information here
+      render: markdown
+    validations:
+      required: false

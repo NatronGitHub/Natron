@@ -1,0 +1,383 @@
+From a137bb56674eca0b8d2592e870a1d2595a9eb934 Mon Sep 17 00:00:00 2001
+From: Jeremy Tan <jtanx@outlook.com>
+Date: Sat, 15 Jun 2019 14:40:52 +1000
+Subject: [PATCH] Update g_fopen, g_open and g_creat to open with
+ FILE_SHARE_DELETE sharing access
+
+Very loosely based on the patches in
+https://gitlab.gnome.org/GNOME/glib/issues/539
+
+but with much more robust file mode parsing and error handling.
+Implements most of the definition as provided on msdn for fopen.
+
+If charcter conversion is requested (via _O_U8TEXT, _O_U16TEXT, _O_WTEXT or any
+of the 'ccs=utf8/utf-16le/unicode'), g_fopen and g_open fall back to use
+_wfopen and _wopen respectively, as there is no easy way to replicate the
+expected behaviour of those modes, particularly around BOM handling.
+---
+ glib/gstdio.c | 304 ++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 267 insertions(+), 37 deletions(-)
+
+diff --git a/glib/gstdio.c b/glib/gstdio.c
+index 653c8a3a1..c34440424 100644
+--- a/glib/gstdio.c
++++ b/glib/gstdio.c
+@@ -1035,21 +1035,146 @@ g_open (const gchar *filename,
+ 	int          mode)
+ {
+ #ifdef G_OS_WIN32
+-  wchar_t *wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
++  HANDLE file_handle;
++  DWORD disposition;
++  DWORD desired_access;
++  DWORD flags_and_attributes;
++  DWORD last_error;
++  SECURITY_ATTRIBUTES security_attributes;
++  wchar_t *wfilename;
++  int r;
+   int retval;
+   int save_errno;
+-    
++
++  wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+   if (wfilename == NULL)
+     {
+       errno = EINVAL;
+       return -1;
+     }
+ 
+-  retval = _wopen (wfilename, flags, mode);
+-  save_errno = errno;
++  /* If any of these flags are specified, fall back to _wopen */
++  if (flags & (_O_U8TEXT | _O_U16TEXT | _O_WTEXT))
++    {
++      retval = _wopen (wfilename, flags, mode);
++      save_errno = errno;
++
++      g_free (wfilename);
++      errno = save_errno;
++      return retval;
++    }
++
++  /* Set up the access mode; exactly one of these must be specified */
++  switch (flags & (_O_RDONLY | _O_WRONLY | _O_RDWR))
++    {
++    case _O_RDONLY:
++      desired_access = GENERIC_READ;
++      break;
++    case _O_WRONLY:
++      desired_access = GENERIC_WRITE;
++      break;
++    case _O_RDWR:
++      desired_access = GENERIC_READ | GENERIC_WRITE;
++      break;
++    default:
++      g_free (wfilename);
++      errno = EINVAL;
++      return -1;
++    }
++
++  /* Parse the creation disposition */
++  switch (flags & (_O_CREAT | _O_EXCL | _O_TRUNC))
++    {
++    case _O_CREAT:
++      disposition = OPEN_ALWAYS;
++      break;
++    case _O_CREAT | _O_TRUNC:
++      disposition = CREATE_ALWAYS;
++      break;
++    case _O_CREAT | _O_EXCL:
++    case _O_CREAT | _O_TRUNC | _O_EXCL:
++      disposition = CREATE_NEW;
++      break;
++    case _O_TRUNC:
++    case _O_TRUNC | _O_EXCL:
++      disposition = TRUNCATE_EXISTING;
++      break;
++    default:
++      disposition = OPEN_EXISTING;
++    }
+ 
++  if (!(desired_access & GENERIC_WRITE) && disposition == TRUNCATE_EXISTING)
++    {
++      /* Must have GENERIC_WRITE to be able to truncate */
++      g_free (wfilename);
++      errno = EINVAL;
++      return -1;
++    }
++
++  /* Set up the security descriptor */
++  security_attributes.nLength = sizeof(security_attributes);
++  security_attributes.lpSecurityDescriptor = NULL;
++  security_attributes.bInheritHandle = (flags & _O_NOINHERIT) != _O_NOINHERIT;
++
++  flags_and_attributes = 0;
++  if ((flags & _O_CREAT) && !(mode & _S_IWRITE))
++    flags_and_attributes |= FILE_ATTRIBUTE_READONLY;
++  if (flags & _O_TEMPORARY)
++    {
++      flags_and_attributes |= FILE_FLAG_DELETE_ON_CLOSE;
++      desired_access |= DELETE;
++    }
++  if (flags & _O_SHORT_LIVED)
++    flags_and_attributes |= FILE_ATTRIBUTE_TEMPORARY;
++  if (flags & _O_SEQUENTIAL)
++    flags_and_attributes |= FILE_FLAG_SEQUENTIAL_SCAN;
++  if (flags & _O_RANDOM)
++    flags_and_attributes |= FILE_FLAG_RANDOM_ACCESS;
++
++  file_handle = CreateFileW (wfilename,
++                             desired_access,
++                             FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
++                             &security_attributes,
++                             disposition,
++                             flags_and_attributes,
++                             NULL);
++  last_error = GetLastError ();
+   g_free (wfilename);
+ 
++  if (file_handle == INVALID_HANDLE_VALUE)
++  {
++    errno = w32_error_to_errno (last_error);
++    return -1;
++  }
++
++  retval = _open_osfhandle ((intptr_t)file_handle, flags);
++  save_errno = errno;
++
++  if (retval == -1)
++    {
++      CloseHandle (file_handle);
++      errno = save_errno;
++      return -1;
++    }
++
++  flags &= _O_BINARY | _O_TEXT;
++  if (!flags)
++    /* No explicit specification; try the global mode */
++    flags = _fmode & (_O_BINARY | _O_TEXT);
++
++  if (flags & _O_BINARY)
++    r = _setmode (retval, _O_BINARY);
++  else
++    r = _setmode (retval, _O_TEXT);
++
++  if (r == -1)
++    {
++      save_errno = errno;
++      close (retval);
++      errno = save_errno;
++      return -1;
++    }
++
+   errno = save_errno;
+   return retval;
+ #else
+@@ -1098,23 +1223,7 @@ g_creat (const gchar *filename,
+ 	 int          mode)
+ {
+ #ifdef G_OS_WIN32
+-  wchar_t *wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+-  int retval;
+-  int save_errno;
+-    
+-  if (wfilename == NULL)
+-    {
+-      errno = EINVAL;
+-      return -1;
+-    }
+-
+-  retval = _wcreat (wfilename, mode);
+-  save_errno = errno;
+-
+-  g_free (wfilename);
+-
+-  errno = save_errno;
+-  return retval;
++  return g_open (filename, _O_WRONLY|_O_CREAT|_O_TRUNC, mode);
+ #else
+   return creat (filename, mode);
+ #endif
+@@ -1550,35 +1659,155 @@ g_fopen (const gchar *filename,
+ 	 const gchar *mode)
+ {
+ #ifdef G_OS_WIN32
+-  wchar_t *wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+-  wchar_t *wmode;
+-  FILE *retval;
++  const gchar *orig_mode = mode;
++  char filtered_mode[5];
++  char *filtered_mode_iter;
++  gboolean has_ccs;
++  gboolean has_commit;
++  int fd;
++  int flags;
+   int save_errno;
++  FILE *retval;
+ 
+-  if (wfilename == NULL)
++  if (filename == NULL || mode == NULL)
++    goto err_einval;
++
++  filtered_mode_iter = filtered_mode;
++
++  while (*mode == ' ') ++mode;
++
++  switch (*mode)
+     {
+-      errno = EINVAL;
+-      return NULL;
++    case 'r':
++      flags = _O_RDONLY;
++      break;
++    case 'w':
++      flags = _O_WRONLY | _O_CREAT | _O_TRUNC;
++      break;
++    case 'a':
++      flags = _O_WRONLY | _O_CREAT | _O_APPEND;
++      break;
++    default:
++      goto err_einval;
+     }
+ 
+-  wmode = g_utf8_to_utf16 (mode, -1, NULL, NULL, NULL);
++  *filtered_mode_iter++ = *mode++;
+ 
+-  if (wmode == NULL)
++#define CHECK_AND_ADD(chk, add) \
++  do { \
++    if (flags & (chk)) \
++      goto err_einval; \
++    flags |= (add); \
++  } while (0)
++
++  for (has_ccs = FALSE, has_commit = FALSE; *mode && !has_ccs; ++mode)
++    {
++    switch (*mode)
++      {
++      case '+':
++        CHECK_AND_ADD (_O_RDWR, _O_RDWR);
++        flags &= ~(_O_RDONLY | _O_WRONLY);
++        if ((filtered_mode_iter - filtered_mode) > 1)
++          {
++            *filtered_mode_iter++ = filtered_mode[1];
++            filtered_mode[1] = '+';
++          }
++        else
++          *filtered_mode_iter++ = '+';
++        break;
++      case 't':
++        CHECK_AND_ADD (_O_TEXT | _O_BINARY, _O_TEXT);
++        *filtered_mode_iter++ = 't';
++        break;
++      case 'b':
++        CHECK_AND_ADD (_O_TEXT | _O_BINARY, _O_BINARY);
++        *filtered_mode_iter++ = 'b';
++        break;
++      case 'N':
++        CHECK_AND_ADD (_O_NOINHERIT, _O_NOINHERIT);
++        break;
++      case 'S':
++        CHECK_AND_ADD (_O_SEQUENTIAL, _O_SEQUENTIAL);
++        break;
++      case 'R':
++        CHECK_AND_ADD (_O_RANDOM, _O_RANDOM);
++        break;
++      case 'T':
++        CHECK_AND_ADD (_O_SHORT_LIVED, _O_SHORT_LIVED);
++        break;
++      case 'D':
++        CHECK_AND_ADD (_O_TEMPORARY, _O_TEMPORARY);
++        break;
++      case 'x':
++        CHECK_AND_ADD (_O_EXCL, _O_EXCL);
++        break;
++
++      case 'c':
++      case 'n':
++        if (has_commit)
++          goto err_einval;
++        has_commit = TRUE;
++        *filtered_mode_iter++ = *mode;
++      /* fallthrough */
++      case ' ':
++        break;
++
++      case ',':
++        has_ccs = TRUE;
++        break;
++
++      default:
++        goto err_einval;
++      }
++    }
++
++#undef CHECK_AND_ADD
++
++  *filtered_mode_iter = 0;
++  while (*mode == ' ') ++mode;
++
++  /*
++   * If a ccs is specified, fall back to using _wfopen, as
++   * there's no easy way to handle this
++   */
++  if (has_ccs)
+     {
++      wchar_t *wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
++      wchar_t *wmode = g_utf8_to_utf16 (orig_mode, -1, NULL, NULL, NULL);
++
++      _g_win32_fix_mode (wmode);
++      retval = _wfopen (wfilename, wmode);
++      save_errno = errno;
++
++      g_free (wmode);
+       g_free (wfilename);
+-      errno = EINVAL;
+-      return NULL;
++
++      errno = save_errno;
++      return retval;
+     }
+ 
+-  _g_win32_fix_mode (wmode);
+-  retval = _wfopen (wfilename, wmode);
+-  save_errno = errno;
++  if (*mode)
++    goto err_einval;
+ 
+-  g_free (wfilename);
+-  g_free (wmode);
++  fd = g_open (filename, flags, (_S_IREAD | _S_IWRITE));
++
++  if (fd == -1)
++    /* 'errno' will have already been set by 'g_open()' */
++    return NULL;
++
++  retval = _fdopen (fd, filtered_mode);
++  if (retval == NULL)
++    {
++      save_errno = errno;
++      close (fd);
++      errno = save_errno;
++    }
+ 
+-  errno = save_errno;
+   return retval;
++
++err_einval:
++  errno = EINVAL;
++  return NULL;
+ #else
+   return fopen (filename, mode);
+ #endif
+@@ -1619,6 +1848,7 @@ g_freopen (const gchar *filename,
+     }
+ 
+   wmode = g_utf8_to_utf16 (mode, -1, NULL, NULL, NULL);
++  _g_win32_fix_mode (wmode);
+ 
+   if (wmode == NULL)
+     {
+-- 
+2.22.0
+

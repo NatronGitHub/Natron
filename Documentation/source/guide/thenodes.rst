@@ -7,4 +7,7 @@ The Nodes
 .. toctree::
    :maxdepth: 2
    
+   thenodes-common-properties
    thenodes-image
+   thenodes-draw
+   thenodes-merge

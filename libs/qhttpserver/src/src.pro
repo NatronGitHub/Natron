@@ -11,7 +11,6 @@ QT -= gui
 
 include(../../../global.pri)
 include(../../../libs.pri)
-include(../../../config.pri)
 
 DEFINES += QHTTP_SERVER_STATIC
 DEFINES += QHTTPSERVER_EXPORT

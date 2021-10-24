@@ -1,0 +1,43 @@
+diff -up webkit-qtwebkit-23/Source/WebCore/WebCore.gyp/scripts/rule_bison.py.bison37 webkit-qtwebkit-23/Source/WebCore/WebCore.gyp/scripts/rule_bison.py
+diff -up webkit-qtwebkit-23/Source/WebCore/css/makegrammar.pl.bison37 webkit-qtwebkit-23/Source/WebCore/css/makegrammar.pl
+--- webkit-qtwebkit-23/Source/WebCore/css/makegrammar.pl.bison37	2014-09-24 13:42:05.000000000 +0200
++++ webkit-qtwebkit-23/Source/WebCore/css/makegrammar.pl	2020-08-31 20:06:27.333379631 +0200
+@@ -73,23 +73,6 @@ if ($suffix eq ".y.in") {
+ }
+ 
+ my $fileBase = File::Spec->join($outputDir, $filename);
+-system("$bison -d -p $symbolsPrefix $grammarFilePath -o $fileBase.cpp");
+-
+-open HEADER, ">$fileBase.h" or die;
+-print HEADER << "EOF";
+-#ifndef CSSGRAMMAR_H
+-#define CSSGRAMMAR_H
+-EOF
+-
+-open HPP, "<$fileBase.cpp.h" or open HPP, "<$fileBase.hpp" or die;
+-while (<HPP>) {
+-    print HEADER;
+-}
+-close HPP;
+-
+-print HEADER "#endif\n";
+-close HEADER;
+-
+-unlink("$fileBase.cpp.h");
+-unlink("$fileBase.hpp");
+-
++my @bisonCommand = ($bison, "--defines=$fileBase.h", "-p", $symbolsPrefix, $grammarFilePath, "-o", "$fileBase.cpp");
++push @bisonCommand, "--no-lines" if $^O eq "MSWin32"; # Work around bug in bison >= 3.0 on Windows where it puts backslashes into #line directives.
++system(@bisonCommand) == 0 or die;
+diff -up webkit-qtwebkit-23/Source/WebCore/DerivedSources.pri.me webkit-qtwebkit-23/Source/WebCore/DerivedSources.pri
+--- webkit-qtwebkit-23/Source/WebCore/DerivedSources.pri.me	2020-08-31 21:01:11.524849986 +0200
++++ webkit-qtwebkit-23/Source/WebCore/DerivedSources.pri	2020-08-31 21:03:55.555919630 +0200
+@@ -957,7 +957,7 @@ GENERATORS += stylesheets
+ # GENERATOR 10: XPATH grammar
+ xpathbison.output = ${QMAKE_FILE_BASE}.cpp
+ xpathbison.input = XPATHBISON
+-xpathbison.commands = bison -d -p xpathyy ${QMAKE_FILE_NAME} -o ${QMAKE_FUNC_FILE_OUT_PATH}/${QMAKE_FILE_BASE}.tab.c && $(MOVE) ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.tab.c ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.cpp && $(MOVE) ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.tab.h ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.h
++xpathbison.commands = bison -d -p xpathyy ${QMAKE_FILE_NAME} -o ${QMAKE_FUNC_FILE_OUT_PATH}/${QMAKE_FILE_BASE}.tab.c && cp ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.tab.c ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.cpp && cp ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.tab.h ${QMAKE_FUNC_FILE_OUT_PATH}$${QMAKE_DIR_SEP}${QMAKE_FILE_BASE}.h
+ xpathbison.depends = ${QMAKE_FILE_NAME}
+ GENERATORS += xpathbison
+ 

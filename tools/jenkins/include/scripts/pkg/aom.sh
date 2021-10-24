@@ -2,7 +2,7 @@
 
 # Install aom (Alliance for Open Media AV1)
 # see https://aomedia.googlesource.com/aom/
-AOM_VERSION=3.1.0
+AOM_VERSION=3.2.0
 #AOM_TAR="aom-${AOM_VERSION}.tar.gz"
 #AOM_SITE=""
 AOM_GIT="https://aomedia.googlesource.com/aom.git"

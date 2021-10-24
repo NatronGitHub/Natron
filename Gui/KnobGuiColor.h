@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+#include <QToolButton>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -48,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGuiValue.h"
+#include "Gui/ColorSelectorWidget.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -129,7 +131,7 @@ public:
 
 public Q_SLOTS:
 
-    void showColorDialog();
+    void updateColorSelector();
 
     void setPickingEnabled(bool enabled);
 
@@ -137,8 +139,7 @@ public Q_SLOTS:
 
     void onMustShowAllDimension();
 
-    void onDialogCurrentColorChanged(const QColor & color);
-
+    void onColorSelectorChanged(float r, float g, float b, float a);
 
 Q_SIGNALS:
 
@@ -185,7 +186,8 @@ private:
 
     KnobColorWPtr _knob;
     ColorPickerLabel *_colorLabel;
-    Button *_colorDialogButton;
+    ColorSelectorWidget *_colorSelector;
+    QToolButton *_colorSelectorButton;
     std::vector<double> _lastColor;
     bool _useSimplifiedUI;
 };

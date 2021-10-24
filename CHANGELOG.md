@@ -15,16 +15,30 @@
 
 ### Changes
 
+- Default number of render threads is more reasonable on multi-core systems: `min(num_cores, RAM/3.5Gb)`. #554
 - Fix checkerboard drawing on macOS Catalina and later. #614
 - Fix undoing "Reset to default" on parameters. #630
 - Fix NodeGraph manipulation and navigation issues. #491 #627
 - Fix Retina/High-DPI display issues on macOS, Windows and Linux/X11. #635
 - Fix multi-dimensional parameter linking (bug introduced in 2.4.0 #594). #631
+- Fix bug where any argument containing an integer between commas would be interpreted as a frame range. #644
+- Python: `app.saveProject`  and `app.saveProjectAs` now do project variable substitution, as in `app.saveProjectAs("[Variable]/output.ntp")`.
+- Fix ASCII curve import. #656
+- New color selection dialog for RGB and RGBA knobs. #210
+- Fix histogram smoothing (was 5 times too strong).
+- Add Python functions `guiApp.copySelectedNodes` and `guiApp.pasteNodes`. #390 #674 #675
+
 
 ### Plugins
 
 - Transform, CornerPin, Position and Ramp nodes now display the motion path.
 - HueCorrect now has the ability to do hue vs. hue adjustments, with an option to change the background curve guide. #610
+- Merge: Fix behavior on most operators when A is not connected or A's RoD and B's RoD are disjoint. #647
+- Reformat: fix bugs when "turn" is checked with Resize Type = None or Type = Scale.
+- Write: Remove file first when overwriting. #666
+- Mirror: Fix crash. #660
+- SeNoise: Add option for colored noise.
+
 
 ## Version 2.4.0
 
@@ -44,6 +58,7 @@
 - Default keyframe interpolation method for strokes and shapes is now "Smooth" (was "Linear"). #597
 - Fix animation of Roto Beziers with non-broken tangents. #102
 - Remember properties panels state when reopening project. #168
+- Fix slow nodegraph display on macOS 11 Big Sur. #606
 
 ### Plugins
 

@@ -2,7 +2,7 @@
 
 # Install pcre (required by glib)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre.html
-PCRE_VERSION=8.44
+PCRE_VERSION=8.45
 PCRE_TAR="pcre-${PCRE_VERSION}.tar.bz2"
 PCRE_SITE="https://ftp.pcre.org/pub/pcre"
 if download_step; then

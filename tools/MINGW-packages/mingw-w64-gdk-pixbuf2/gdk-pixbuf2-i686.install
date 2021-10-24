@@ -1,11 +1,5 @@
-post_install() {
-  mingw32/bin/gdk-pixbuf-query-loaders --update-cache
-}
-
-post_upgrade() {
-  post_install
-}
+MINGW_INSTALL=mingw32
 
 pre_remove() {
-  rm -f mingw32/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+  rm -f ${MINGW_INSTALL}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 }

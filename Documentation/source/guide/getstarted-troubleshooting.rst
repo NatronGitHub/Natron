@@ -34,17 +34,32 @@ The best way to have your bug considered for fixing is to first search on the `N
 If this bug does not seem to be a known issue, then post a `new issue <https://github.com/NatronGitHub/Natron/issues/new>`_ on the Natron github, and follow strictly the guidelines to report the bug. The issue title should be as precise as possible ("Natron crash" is *not* a correct title, see existing issues for title examples). If possible, also post a project that exhibits the issue. Make the project as small as possible: remove extra assets or replace them by small JPEG sequences, checkerboards or colorwheels, etc. You can then either attach your project as a zip file to the github issue, or post a link to a file sharing service.
 
 
-Common Workarounds
-------------------
+Known Bugs and Workarounds
+--------------------------   
+
+This document is an very incomplete stage.
+the sharp\+\ number is the number of the issue on github to help keep track of bugfixes.
 
 Luckily, there are workarounds for most Natron crashes or hangs. Here are a few one worth trying, but of course your mileage may vary or you may find another workaround (which you should describe in the proper `Natron issue <https://github.com/NatronGitHub/Natron/issues>`_).
 
-#. Avoid using videos with inter-frame compression as inputs and outputs. This includes H.264 (eg AVCHD) and H.265 (HEVC) video. ProRes is OK but slow, especially for writing. DNxHR is OK. Individual frames are *best* (DPX, EXR, TIFF, PNG, JPEG, whatever suits your input video quality and bit depth). The video reader is here for convenience, but it may have difficulties decoding some videos. The video writer may also be a source of bugs, and should be avoided for long sequences: if Natron crashes in the middle, then the whole sequence has to be rendered. Extract individual frames, do your compositing, then compress the frames (and optionally mux the audio) with an external tool. To extract frames, you may use a simple Natron project or any other tool (e.g. `FFmpeg <https://www.ffmpeg.org/ffmpeg.html>`_). To compress frames to a video, there are also many tools available, e.g. `FFmpeg <https://www.ffmpeg.org/ffmpeg.html>`_, `MEncoder <https://en.wikipedia.org/wiki/MEncoder>`_, or `VirtualDub <http://virtualdub.sourceforge.net/>`_ (windows-only). This is the standard compositing workflow and the preferred method of running Natron. See the :doc:`tutorial on how to convert videos to image sequences <tutorials-imagesequence>`.
-#. If Natron hangs or crashes when rendering an image sequence (this does not work when rendering to a video), check that the rendered frames are OK, relaunch Natron and in the parameters of the Write node uncheck "Overwrite". That way, only the missing frames will be rendered.
-#. If you have a large project, or a project with heavy processing, use the :ref:`DiskCache Plugin <fr.inria.built-in.DiskCache>` at places that make sense: downstream heavy processing in the graph, or before you use the result of processing as inputs to :ref:`Roto <fr.inria.built-in.Roto>` or :ref:`RotoPaint <fr.inria.built-in.RotoPaint>`.
-#. On multicore computers (e.g. Threadripper), go to Edit => Preferences => Threading and under Number of parallel renders limit it to "8".
+- Avoid using videos with inter-frame compression as inputs and outputs. This includes H.264 (eg AVCHD) and H.265 (HEVC) video. ProRes is OK but slow, especially for writing. DNxHR is OK. Individual frames are *best* (DPX, EXR, TIFF, PNG, JPEG, whatever suits your input video quality and bit depth). The video reader is here for convenience, but it may have difficulties decoding some videos. The video writer may also be a source of bugs, and should be avoided for long sequences: if Natron crashes in the middle, then the whole sequence has to be rendered. Extract individual frames, do your compositing, then compress the frames (and optionally mux the audio) with an external tool. To extract frames, you may use a simple Natron project or any other tool (e.g. `FFmpeg <https://www.ffmpeg.org/ffmpeg.html>`_). To compress frames to a video, there are also many tools available, e.g. `FFmpeg <https://www.ffmpeg.org/ffmpeg.html>`_, `MEncoder <https://en.wikipedia.org/wiki/MEncoder>`_, or `VirtualDub <http://virtualdub.sourceforge.net/>`_ (windows-only). This is the standard compositing workflow and the preferred method of running Natron. See the :doc:`tutorial on how to convert videos to image sequences <tutorials-imagesequence>`.
+- If Natron hangs or crashes when rendering an image sequence (this does not work when rendering to a video), check that the rendered frames are OK, relaunch Natron and in the parameters of the Write node uncheck "Overwrite". That way, only the missing frames will be rendered.
+- If you have a large project, or a project with heavy processing, use the :ref:`DiskCache Plugin <fr.inria.built-in.DiskCache>` at places that make sense: downstream heavy processing in the graph, or before you use the result of processing as inputs to :ref:`Roto <fr.inria.built-in.Roto>` or :ref:`RotoPaint <fr.inria.built-in.RotoPaint>`.
+- On multicore computers (e.g. Threadripper), go to Edit => Preferences => Threading and under Number of parallel renders limit it to "8".
 
 You will quickly notice that using individual frames instead of videos for inputs and output give a *big* performance boost and will most probably solve your issues, so once you've learned how to decompress/compress any video, this will become your standard workflow. Just add extra disk space, and you're good to do serious and fluid compositing with Natron.
+
+User Interface bugs
+...................
+
+- Can't rename a node `\#664 <https://github.com/NatronGitHub/Natron/issues/664>`_: If the Properties panel does not let you rename a node try to rename with the "N" shortcut in the nodegraph. If it does not work either, it can be done in Python with ``myoldname.setLabel('newname')``
+
+Roto Node bugs
+..............
+
+- Mask input does not work `\#367 <https://github.com/NatronGitHub/Natron/issues/367>`_: This feature is not yet implemented.
+- Rotopaint clone tool: sourceTypeChoice performs the same action when set to both "background" and "foreground" `\#629 <https://github.com/NatronGitHub/Natron/issues/629>`_: Use multiple rotopaint nodes.
+
 
 
 OpenGL/GPU Rendering Issues
@@ -61,3 +76,8 @@ If the viewer displays some error message about OpenGL, then GPU rendering is pr
 | If you there is an error similar to ``Shadertoy3: Can not render: glGetString(GL_VERSION) failed.`` 
 | Go to File => Preferences => GPU Rendering and set No. of OpenGL Context to 5
 | Save and relaunch Natron.
+
+.. toctree::
+   :maxdepth: 2
+   
+   known-bugs-and-workarounds

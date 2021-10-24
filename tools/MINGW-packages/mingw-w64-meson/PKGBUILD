@@ -3,25 +3,26 @@
 _realname=meson
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.51.1
-pkgrel=2
+pkgver=0.59.1
+pkgrel=1
 pkgdesc="High-productivity build system (mingw-w64)"
 arch=('any')
-url="http://mesonbuild.com/"
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+url="https://mesonbuild.com/"
 license=("Apache 2")
 options=('strip' 'staticlibs')
 depends=("${MINGW_PACKAGE_PREFIX}-python3"
-         "${MINGW_PACKAGE_PREFIX}-python3-setuptools"
          "${MINGW_PACKAGE_PREFIX}-ninja")
+makedepends=("${MINGW_PACKAGE_PREFIX}-python3-setuptools")
 source=("https://github.com/mesonbuild/${_realname}/releases/download/${pkgver}/${_realname}-${pkgver}.tar.gz"
         'color-term.patch'
         '0002-Default-to-sys.prefix-as-the-default-prefix.patch'
-        '0003-Strip-the-prefix-from-all-paths-when-installing-with.patch'
+        '0004-fix-gtk-doc.patch'
         'install-man.patch')
-sha256sums=('f27b7a60f339ba66fe4b8f81f0d1072e090a08eabbd6aa287683b2c2b9dd2d82'
+sha256sums=('db586a451650d46bbe10984a87b79d9bcdc1caebf38d8e189f8848f8d502356d'
             '5805aed0a117536eb16dd8eef978c6be57c2471b655ede63e25517c28b4f4cf0'
-            '4ef1e6fb0e9bd927b4646e416631b8a0a9aece763d259dbba58168bcba93f673'
-            '2093c617cf3146a4cea601e7c73400d8ec5fd52ac5cf642c4f5af2d6493b1cb1'
+            '675e79a0fc78b4236f5b803ffd2e745cb2ff125c9b4a03657773915183a4e19a'
+            '0f9177102976bbcbdf50c1da49842783a0c77be939e839f1bf91dcaba6a5cdee'
             '0682a36cb75e545a78b81293303835a16171f25baf949905dc08029436efff84')
 
 prepare() {
@@ -29,7 +30,7 @@ prepare() {
 
   patch -Np1 -i "${srcdir}"/color-term.patch
   patch -Np1 -i "${srcdir}"/0002-Default-to-sys.prefix-as-the-default-prefix.patch
-  patch -Np1 -i "${srcdir}"/0003-Strip-the-prefix-from-all-paths-when-installing-with.patch
+  patch -Np1 -i "${srcdir}"/0004-fix-gtk-doc.patch
   patch -Np1 -i "${srcdir}"/install-man.patch
 }
 

@@ -73,6 +73,7 @@ struct ScaleSliderQWidgetPrivate
     bool dragging;
     QFont font;
     QColor sliderColor;
+    QColor customSliderColor;
     bool initialized;
     bool mustInitializeSliderPosition;
     bool readOnly;
@@ -82,6 +83,7 @@ struct ScaleSliderQWidgetPrivate
     ScaleSliderQWidget::DataTypeEnum dataType;
     bool altered;
     bool useLineColor;
+    bool useSliderColor;
     QColor lineColor;
     bool allowDraftModeSetting;
 
@@ -112,6 +114,7 @@ struct ScaleSliderQWidgetPrivate
         , dataType(dataType)
         , altered(false)
         , useLineColor(false)
+        , useSliderColor(false)
         , lineColor(Qt::black)
         , allowDraftModeSetting(allowDraftModeSetting)
     {
@@ -549,7 +552,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
-                alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
+                //alphaText = std::min(alphaText, alpha); // don't draw more opaque than ticks
                 QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(_imp->font);
@@ -572,9 +575,13 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value, 0).x();
 
     SettingsPtr settings = appPTR->getCurrentSettings();
-    double sliderColorRGB[3];
-    settings->getSliderColor(&sliderColorRGB[0], &sliderColorRGB[1], &sliderColorRGB[2]);
-    _imp->sliderColor.setRgbF(sliderColorRGB[0], sliderColorRGB[1], sliderColorRGB[2]);
+    if (!_imp->useSliderColor) {
+        double sliderColorRGB[3];
+        settings->getSliderColor(&sliderColorRGB[0], &sliderColorRGB[1], &sliderColorRGB[2]);
+        _imp->sliderColor.setRgbF(sliderColorRGB[0], sliderColorRGB[1], sliderColorRGB[2]);
+    } else {
+        _imp->sliderColor = _imp->customSliderColor;
+    }
 
     double selectionColorRGB[3];
     settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
@@ -649,6 +656,15 @@ ScaleSliderQWidget::setUseLineColor(bool use,
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
+    update();
+}
+
+void
+ScaleSliderQWidget::setUseSliderColor(bool use,
+                                      const QColor &color)
+{
+    _imp->useSliderColor = use;
+    _imp->customSliderColor = color;
     update();
 }
 

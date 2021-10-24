@@ -15,8 +15,8 @@ in order to allow moving files without breaking links or to allow sharing files 
 The Short method 
 :::::::::::::::::
 To use path relative to the current Natron .ntp project file
--  Save your current project where you want but in the disk tree as your video files.
-  This creates a [project] entry in the Project Paths list
+
+- Save your current project where you want but in the disk tree as your video files. This creates a [project] entry in the Project Paths list
 - Create a read or write file. You have now access to Files path relative to the current .ntp file by selecting Relative to:[project]
 
 .. image:: _images/File_Browser-Project_Path.gif
@@ -78,10 +78,11 @@ image.####.jpg 1-3
 
 If you want to pick a single image of the list you should switch the 'sequence' button to 'File' to see each individual file.
 
-|When you set the filename in the bottom line you can tell Natron  how many digits it should use to write or read the files:
-|image.####.jpg
-|or 
-|image.%04d.jpg
+|  When you set the filename in the bottom line you can tell Natron  how many digits it should use to write or read the files:
+|  image.####.jpg
+|  or
+|  image.%04d.jpg
+
 These are two different ways to tell Natron to use 4 digits in the file name. This is called padding
 
 .. note::

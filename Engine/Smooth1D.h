@@ -33,7 +33,7 @@ NATRON_NAMESPACE_ENTER
 namespace Smooth1D
 {
 
-    void iir_gaussianFilter1D(std::vector<float>& curve, int smoothingKernelSize);
+    void iir_gaussianFilter1D(std::vector<float>& curve, double sigma);
 
     void laplacian_1D(std::vector<float>& curve);
 

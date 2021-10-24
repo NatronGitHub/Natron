@@ -903,7 +903,11 @@ export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
+    if [ "$PYV" = "2" ]; then
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+    else
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    fi
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -936,17 +940,8 @@ rm "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
 echo "* Creating the disk image"
 # Make the dmg
 APP_NAME=Natron
-DMG_FINAL="${APP_NAME}"
-if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
-    DMG_FINAL="${DMG_FINAL}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
-fi
 
-DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
-if [ "$COMPILE_TYPE" = "debug" ]; then
-    DMG_FINAL="${DMG_FINAL}-debug"
-fi
-
-DMG_FINAL="${DMG_FINAL}.dmg"
+DMG_FINAL="${INSTALLER_BASENAME}.dmg"
 DMG_TMP="tmp${DMG_FINAL}"
 
 
@@ -993,8 +988,8 @@ oiiotool -i "${DMG_BACK}" --powc 0.3 -o "/Volumes/${DISK}/.background/${DMG_BACK
 ln -sf /Applications "/Volumes/${DISK}/Applications"
 
 # dmg window dimensions
-dmg_width=$(oiiotool --info -v "${DMG_BACK}" | grep Exif:PixelXDimension | awk '{print $2}')
-dmg_height=$(oiiotool --info -v "${DMG_BACK}" | grep Exif:PixelYDimension | awk '{print $2}')
+dmg_width=$(identify -format '%w' "${DMG_BACK}")
+dmg_height=$(identify -format '%h' "${DMG_BACK}")
 dmg_topleft_x=200
 dmg_topleft_y=200
 dmg_bottomright_x=$((dmg_topleft_x + dmg_width))
@@ -1062,8 +1057,8 @@ rm -rf splashscreen.*
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
-mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer"
-mv "${DMG_FINAL}" "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer/"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
+mv "${DMG_FINAL}" "${BUILD_ARCHIVE_DIRECTORY}/"
 
 echo "*** Artifacts:"
 ls -R  "${BUILD_ARCHIVE_DIRECTORY}"

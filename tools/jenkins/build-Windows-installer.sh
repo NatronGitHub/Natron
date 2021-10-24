@@ -430,7 +430,11 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
+    if [ "$PYV" = "2" ]; then
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+    else
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    fi
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -503,8 +507,12 @@ echo "Done"
 # Create installers
 
 ONLINE_INSTALL_DIR="online_installer"
-BUNDLED_INSTALL_DIR="offline_installer"
-ZIP_INSTALL_DIR="compressed_no_installer"
+#BUNDLED_INSTALL_DIR="offline_installer"
+#ZIP_INSTALL_DIR="compressed_no_installer"
+
+# These have easily identifiable filenames and extensions anyway:
+BUNDLED_INSTALL_DIR="."
+ZIP_INSTALL_DIR="."
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 

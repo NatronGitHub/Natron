@@ -63,11 +63,6 @@ Darwin)
     ;;
 esac
 
-unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
-# save the default PATH to avoid growing it each time we source this file
-DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
-PATH="$DEFAULT_PATH"
-
 # Figure out architecture: 32bit, 64bit or Universal
 #
 # Default build flags
@@ -179,17 +174,33 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# If PYV is not set, set it to 2
-: "${PYV:=2}"
-if [ "$PYV" = "3" ]; then
-    PYVER=3.7
-else
-    PYVER=2.7
+# To default to Python 3, move the Python 2 section below the Python 3 section
+if [[ $(type -P python2) ]]; then
+    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        # default to Python 2 if present
+        PYV=2
+        PYVER="${PY2VER}"
+        PYVERNODOT="${PY2VERNODOT}"
+    fi
 fi
-PYVERNODOT=$(echo ${PYVER:-}| sed 's/\.//')
+if [[ $(type -P python3) ]]; then
+    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        PYV=3
+        PYVER="${PY3VER}"
+        PYVERNODOT="${PY3VERNODOT}"
+    fi
+fi
 
 QT_VERSION_MAJOR=4
 
+unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
+# save the default PATH to avoid growing it each time we source this file
+DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
+PATH="$DEFAULT_PATH"
 
 # Keep existing tag, else make a new one
 if [ -z "${CURRENT_DATE:-}" ]; then

@@ -59,7 +59,7 @@ public:
     ImportExportCurveDialog(bool isExportDialog,
                             const std::vector<CurveGuiPtr> & curves,
                             Gui* gui,
-                            QWidget* parent = 0);
+                            CurveWidget* parent = 0);
 
     virtual ~ImportExportCurveDialog();
     QString getFilePath();

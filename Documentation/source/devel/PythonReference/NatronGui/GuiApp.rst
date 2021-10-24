@@ -33,6 +33,8 @@ Functions
 - def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
 - def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
 - def :meth:`selectAllNodes<NatronGui.GuiApp.selectAllNodes>` ([group=None])
+- def :meth:`copySelectedNodes<NatronGui.GuiApp.copySelectedNodes>` ([group=None])
+- def :meth:`pasteNodes<NatronGui.GuiApp.pasteNodes>` ([group=None])
 - def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
 - def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
 - def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
@@ -256,6 +258,20 @@ Returns a user panel matching the given *scriptName* if there is any.
     :param group: :class:`Group<NatronEngine.Group>`
 
     Select all nodes in the given *group*. You can pass the *app* object to get the top-level
+    NodeGraph. If passing None, the last user-selected NodeGraph will be used.
+
+.. method:: NatronGui.GuiApp.copySelectedNodes([group=None])
+
+    :param group: :class:`Group<NatronEngine.Group>`
+
+    Copy all nodes in the given *group*. You can pass the *app* object to get the top-level
+    NodeGraph. If passing None, the last user-selected NodeGraph will be used.
+
+.. method:: NatronGui.GuiApp.pasteNodes([group=None])
+
+    :param group: :class:`Group<NatronEngine.Group>`
+
+    Paste copied nodes in the given *group*. You can pass the *app* object to get the top-level
     NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
 .. method:: NatronGui.GuiApp.clearSelection([group=None])

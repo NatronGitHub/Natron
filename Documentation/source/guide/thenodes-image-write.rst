@@ -50,11 +50,10 @@ The write node can change the color space of the output image.
 The file will be converted from "Input colorspace" to "File Colorspace"
 
 .. note::
-   **Tips:**
-   Natron
-  * It is recommended to leave "Input" to linear as this is the recommended basic workflow in Natron
-  * When file and Input spaces are the same, no conversion will occur
-  * Output usually is set to the same colorspace as the main read node. This results in an unmodified image.
+   **Tips:** Natron
+     * It is recommended to leave "Input" to linear as this is the recommended basic workflow in Natron
+     * When file and Input spaces are the same, no conversion will occur
+     * Output usually is set to the same colorspace as the main read node. This results in an unmodified image.
 
 Interpretation
 --------------
@@ -88,7 +87,8 @@ The read node can change the way an image is rendered from the values in the dis
 
 
 quicktime options:
-- Frame rate 
+
+* Frame rate
    defaults to the value in the project settings. It can be overriden for movie file types. Image sequence don't have Frame rate.
 
 

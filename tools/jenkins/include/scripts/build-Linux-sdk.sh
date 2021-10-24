@@ -104,7 +104,6 @@ EOF
     LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
     CPATH=\"\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
     PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
-    PYTHONPATH=\"\$QTDIR/lib/python2.7/site-packages/\" \\
     PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
@@ -135,14 +134,17 @@ EOF
     if [ -n "${CENTOS:-}" ]; then
         BUILD_LINUX_SDK="CENTOS=${CENTOS} $BUILD_LINUX_SDK"
     fi
+    if [ -n "${ROCKY:-}" ]; then
+        BUILD_LINUX_SDK="ROCKY=${ROCKY} $BUILD_LINUX_SDK"
+    fi
     if [ -n "${UBUNTU:-}" ]; then
         BUILD_LINUX_SDK="UBUNTU=${UBUNTU} $BUILD_LINUX_SDK"
     fi
     LINUX32=
 
-    # yum for CentOS (see below apt for Ubuntu)
-    if [ -n "${CENTOS+x}" ]; then
-        if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+    # yum for CentOS and RockyLinux (see below apt for Ubuntu)
+    if [ -n "${CENTOS+x}" ] || [ -n "${ROCKY+x}" ]; then
+        if [ -n "${CENTOS+x}" ] && [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
             # - base on i386/centos:${CENTOS}
             # - set the yum archs
             # - install util-linux to get the "setarch" executable
@@ -150,6 +152,10 @@ EOF
             LINUX32="setarch i686"
             PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
             ARCH=i686
+        elif [ -n "${ROCKY+x}" ]; then
+            DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
+            PREYUM=
+            ARCH=x86_64
         else
             DOCKER_BASE="centos:${CENTOS}"
             PREYUM=
@@ -162,14 +168,15 @@ EOF
         DTSYUM=
         DTSSDK=
         CENTOS_DEPRECATED=6 # as of 12/2020, all CentOS versions up to 6 are deprecated
-        if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+        if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
             # It's not OK to use deprecated CentOS releases for running stuff, it's OK to use it to build stuff
             PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
         fi
-        if [ "${CENTOS:-7}"  -ge 8 ]; then
-            # Enable powertools on CentOS >= 8
+        if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
+            # Enable powertools on CentOS >= 8 / Rocky Linux 8
+            # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf config-manager --set-enabled PowerTools && dnf -y groupinstall 'Development Tools' && "
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled powertools && dnf -y update && dnf -y groupinstall 'Development Tools' && "
             YUM_DEVEL_EXTRA=""
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
@@ -179,7 +186,7 @@ EOF
             if [ "${CENTOS:-7}" -ge 7 ]; then
                 DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
             fi
-            if [ "${CENTOS}" -le "${CENTOS_DEPRECATED}" ]; then
+            if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
                 # It's not OK to use deprecated CentOS releases for running stuff, 
                 DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
             fi
@@ -187,7 +194,7 @@ EOF
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -203,7 +210,7 @@ COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 ENV WORKSPACE=/home
 EOF
-    fi # end of CentOS section
+    fi # end of CentOS / Rocky Linux section
     
     # apt for Ubuntu (see above yum for CentOS)
     if [ -n "${UBUNTU+x}" ]; then
@@ -605,10 +612,7 @@ if dobuild; then
     BOOST_ROOT="$SDK_HOME"
     OPENJPEG_HOME="$SDK_HOME"
     THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
-    PYTHON_HOME="$SDK_HOME"
-    PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
-    PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
-    export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
+    export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME
 fi
 
 if [ "${UBUNTU:-0}" = 20.04 ]; then
@@ -619,6 +623,9 @@ elif [ "${UBUNTU:-0}" = 18.04 ]; then
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ "${CENTOS:-7}" = 8 ]; then
     GCC_VERSION=8.3.1
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ "${ROCKY:-0}" = 8 ]; then
+    GCC_VERSION=8.4.1
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
     DTSSDK="source scl_source enable devtoolset-${DTS} && "
@@ -789,6 +796,8 @@ checkpoint
 
 build x265 # (for ffmpeg and libheif)
 build libde265 # (for libheif)
+build dav1d # (for ffmpeg and libheif)
+build aom # (for ffmpeg and libheif)
 build libheif # (for imagemagick and openimageio)
 
 checkpoint
@@ -835,8 +844,6 @@ build libbluray # (for ffmpeg)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
-build dav1d # (for ffmpeg)
-build aom # (for ffmpeg)
 build ffmpeg
 build ruby # (necessary for qtwebkit)
 build breakpad
@@ -851,21 +858,6 @@ checkpoint
 
 # pysetup
 if dobuild; then
-    if [ "$PYV" = "3" ]; then
-        export PYTHON_PATH=$SDK_HOME/lib/python${PYVER}
-        export PYTHON_INCLUDE=$SDK_HOME/include/python${PYVER}
-        PY_EXE=$SDK_HOME/bin/python${PYV}
-        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-        PY_INC=$SDK_HOME/include/python${PYVER}
-        USE_PY3=true
-    else
-        PY_EXE=$SDK_HOME/bin/python${PYV}
-        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-        PY_INC=$SDK_HOME/include/python${PYVER}
-        USE_PY3=false
-    fi
-
-
     # add qt5 to lib path to build shiboken2 and pyside2
     LD_LIBRARY_PATH="$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     #LD_RUN_PATH="$LD_LIBRARY_PATH"
@@ -881,6 +873,8 @@ build qt4
 checkpoint
 
 build qt4webkit
+
+checkpoint
 
 if dobuild; then
     # add qt4 to lib path to build shiboken and pyside
@@ -929,7 +923,7 @@ checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
-RUN rm -rf $SDK_HOME/var/log/Natron-Linux-x86_64-SDK
+RUN xz $SDK_HOME/var/log/Natron-Linux-x86_64-SDK/*
 FROM $DOCKER_BASE
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home

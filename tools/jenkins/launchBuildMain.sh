@@ -515,7 +515,47 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
+INSTALLER_OS="${PKGOS}"
+INSTALLER_ARCH="${BITS}"
+if [ "${INSTALLER_OS}" = "OSX" ]; then
+    case "$(sw_vers -productVersion)" in
+        10.5.*) INSTALLER_OS="MacOSX105";; 
+        10.6.*) INSTALLER_OS="MacOSX106";; 
+        10.7.*) INSTALLER_OS="MacOSX107";; 
+        10.8.*) INSTALLER_OS="OSX108";; 
+        10.9.*) INSTALLER_OS="OSX109";; 
+        10.10.*) INSTALLER_OS="OSX1010";; 
+        10.11.*) INSTALLER_OS="OSX1011";; 
+        10.12.*) INSTALLER_OS="macOS1012";; 
+        10.13.*) INSTALLER_OS="macOS1013";; 
+        10.14.*) INSTALLER_OS="macOS1014";; 
+        10.15.*) INSTALLER_OS="macOS1015";; 
+        11.*) INSTALLER_OS="macOS11";; 
+        12.*) INSTALLER_OS="macOS12";; 
+        13.*) INSTALLER_OS="macOS13";; 
+        14.*) INSTALLER_OS="macOS14";; 
+    esac
+
+    case "${BITS}" in
+        32) INSTALLER_ARCH="$(uname -p)";; 
+        64) INSTALLER_ARCH="$(uname -m)";;
+        Universal) INSTALLER_ARCH="Universal-i386-x86_64";;  # TODO: support Universal-x86_64-arm64
+    esac
+fi
+
+if [ "${INSTALLER_OS}" = "Linux" ] || [ "${INSTALLER_OS}" = "FreeBSD" ]; then
+    # Target is always the build arch
+    INSTALLER_ARCH="$(uname -m)"
+fi
+
+if [ "${INSTALLER_OS}" = "Windows" ]; then
+    case "${BITS}" in
+        32) INSTALLER_ARCH="i386";; 
+        64) INSTALLER_ARCH="x86_64";;
+    esac
+fi
+
+INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${INSTALLER_OS}-${INSTALLER_ARCH}"
 
 if [ "$COMPILE_TYPE" = "debug" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-debug"

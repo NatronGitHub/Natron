@@ -14,6 +14,7 @@ First you need to download a MSYS2 snapshot, only **``20180531``** is supported.
 Start ``C:\msys64-20180531\mingw64.exe``, then run the following commands:
 
 	$ sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel = Never/' /etc/pacman.conf
+	$ sed -i 's|#XferCommand = /usr/bin/wget --passive-ftp -c -O %o %u|XferCommand = /usr/bin/wget --no-check-certificate --passive-ftp -c -O %o %u|' /etc/pacman.conf
 	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/mingw64" > /etc/pacman.d/mirrorlist.mingw64
 	$ echo "Server = https://downloads.sourceforge.net/project/natron/MINGW-packages/msys" > /etc/pacman.d/mirrorlist.msys
 	$ pacman -Syu natron-sdk

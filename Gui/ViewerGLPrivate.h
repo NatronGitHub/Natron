@@ -172,7 +172,8 @@ struct ViewerGL::Implementation
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
-    QFont textFont;
+    double _screenPixelRatio;
+    boost::scoped_ptr<QFont> _textFont;
     bool overlay; /*!< True if the user enabled overlay display*/
     bool updatingTexture;
     QColor clearColor;

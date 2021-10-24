@@ -527,7 +527,7 @@ python_site_packages=(PySide shiboken.so)
 
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
-for pydir in "${SDK_HOME}/lib/python${PYVER}" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}"; do
+for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
     (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
     for p in "${python_site_packages[@]}"; do
         if [ -e "$pydir/site-packages/$p" ]; then
@@ -544,7 +544,7 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
 
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
@@ -579,7 +579,11 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
+    if [ "$PYV" = "2" ]; then
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+    else
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    fi
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -657,10 +661,15 @@ rm "${TMP_PORTABLE_DIR}/bin/Tests"
 # Build repo and packages
 
 ONLINE_INSTALL_DIR="online_installer"
-BUNDLED_INSTALL_DIR="offline_installer"
-ZIP_INSTALL_DIR="compressed_no_installer"
-DEB_INSTALL_DIR="deb_package"
-RPM_INSTALL_DIR="rpm_package"
+#BUNDLED_INSTALL_DIR="offline_installer"
+#ZIP_INSTALL_DIR="compressed_no_installer"
+#DEB_INSTALL_DIR="deb_package"
+#RPM_INSTALL_DIR="rpm_package"
+# These have easily identifiable filenames and extensions anyway:
+BUNDLED_INSTALL_DIR="."
+ZIP_INSTALL_DIR="."
+DEB_INSTALL_DIR="."
+RPM_INSTALL_DIR="."
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
