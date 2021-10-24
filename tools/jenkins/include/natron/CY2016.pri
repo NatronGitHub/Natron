@@ -16,9 +16,8 @@ LIBS += -lpyside2-python$$PYVER
 shiboken {
 PKGCONFIG -= shiboken
 PKGCONFIG -= shiboken-py$$PYV
-PKGCONFIG += shiboken2
-INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken2)
-LIBS += -lshiboken2-python$$PYVER
+INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken-py$$PYV)
+LIBS += $$system(pkg-config --libs shiboken-py$$PYV)
 }
 
 QMAKE_LFLAGS += -Wl,-rpath,\\\$\$ORIGIN/../lib
