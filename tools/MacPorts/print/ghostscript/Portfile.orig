@@ -236,4 +236,4 @@ default_variants    +x11
 
 livecheck.type      regex
 livecheck.url       ${homepage}releases.html
-livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"
+livecheck.regex     "Ghostscript (\\d+(?:\\.\\d+)*)"

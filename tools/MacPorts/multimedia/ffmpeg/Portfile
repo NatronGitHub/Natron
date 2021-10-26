@@ -18,8 +18,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.4
-revision            5
+version             4.4.1
+revision            0
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} {mascguy @mascguy} openmaintainer
@@ -62,9 +62,9 @@ distname            ${my_name}-${version}
 dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  0169ae4eb185de3a851a9926bc0b3289512c4be0 \
-                    sha256  06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909 \
-                    size    9557868
+checksums           rmd160  ebb1f042b2ba4f13be86339d30522cd73eb6da3e \
+                    sha256  eadbad9e9ab30b25f5520fbfde99fae4a92a1ae3c0257a8d68569a4651e30e02 \
+                    size    9557516
 
 depends_build       port:pkgconfig \
                     port:gmake \
