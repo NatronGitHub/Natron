@@ -1,6 +1,6 @@
 pkgname=natron-sdk
 pkgver=2021
-pkgrel=3
+pkgrel=4
 pkgdesc='Meta package for the Natron Windows SDK'
 url='https://github.com/NatronGitHub'
 arch=('any')
@@ -222,8 +222,8 @@ ${MINGW_PACKAGE_PREFIX}-osmesa
 ${MINGW_PACKAGE_PREFIX}-pango
 ${MINGW_PACKAGE_PREFIX}-pixman
 ${MINGW_PACKAGE_PREFIX}-poppler
-${MINGW_PACKAGE_PREFIX}-python2-pyside-qt4
-${MINGW_PACKAGE_PREFIX}-python2-shiboken-qt4
+${MINGW_PACKAGE_PREFIX}-pyside
+${MINGW_PACKAGE_PREFIX}-shiboken
 ${MINGW_PACKAGE_PREFIX}-python2-sphinx_rtd_theme
 ${MINGW_PACKAGE_PREFIX}-python2-sphinx
 ${MINGW_PACKAGE_PREFIX}-python2-sphinx-alabaster-theme

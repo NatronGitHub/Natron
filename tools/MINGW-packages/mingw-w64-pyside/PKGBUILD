@@ -1,0 +1,95 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_realname=pyside
+pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
+pkgver=1.2.4
+pkgrel=6
+arch=('any')
+url="http://pyside.github.io/docs/pyside/"
+license=("LGPL")
+source=(https://mirrors.dotsrc.org/qtproject/official_releases/pyside/PySide-${pkgver}.tar.gz pyside.patch)
+sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
+            '7e8e3c26a8ab2f279260965cb44ef7e8b8c5f3093898dc9fff6288ef024d44d9')
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-python3"
+             "${MINGW_PACKAGE_PREFIX}-shiboken"
+             "${MINGW_PACKAGE_PREFIX}-qt4")
+conflicts=("${MINGW_PACKAGE_PREFIX}-python2-${_realname}-qt4")
+options=('strip')
+
+prepare() {
+  cd ${srcdir}/PySide-${pkgver}
+  patch -p1 -i ${srcdir}/pyside.patch
+}
+
+build() {
+  export MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX"
+  for pyv in python2 python3; do
+    local _conf=
+    local _major=$(${pyv} -c "import platform; print(platform.python_version_tuple()[0])")
+    local _minor=$(${pyv} -c "import platform; print(platform.python_version_tuple()[1])")
+    if [ "${pyv}" = "python2" ]; then
+      _conf="-DPYTHON_SUFFIX=-python2.7"
+    fi
+    [[ -d ${srcdir}/build-${MINGW_CHOST}-${pyv} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    mkdir -p ${srcdir}/build-${MINGW_CHOST}-${pyv} && cd ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    ${MINGW_PREFIX}/bin/cmake \
+      -G"MSYS Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      -DCMAKE_BUILD_TYPE=RELEASE \
+      -DBUILD_TESTS=FALSE \
+      -DCMAKE_OBJECT_PATH_MAX=1024 \
+      ${_conf} \
+      -DSITE_PACKAGE=${MINGW_PREFIX}/lib/python${_major}.${_minor}/site-packages \
+      -DShiboken_DIR=${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/py${_major} \
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
+      -DCMAKE_CXX_STANDARD=98 \
+      ${srcdir}/PySide-${pkgver}/sources/pyside
+    make
+  done
+}
+
+fix_paths() {
+  local prefixwin=$(cygpath -am ${MINGW_PREFIX})
+  local prefixinst=$(cygpath -am ${pkgdir}${MINGW_PREFIX})
+  local _files=$(find ${pkgdir}${MINGW_PREFIX}/lib -type f -iname "*.cmake" -o -iname "*.pc")
+  for f in ${_files}; do
+    plain "Patching ${f}..."
+    sed -e "s|${prefixwin}|${MINGW_PREFIX}|g" \
+        -e "s|${prefixinst}|${MINGW_PREFIX}|g" \
+        -i ${f}
+  done
+}
+
+package() {
+  for pyv in python2 python3; do
+    local _major=$(${pyv} -c "import platform; print(platform.python_version_tuple()[0])")
+    local _minor=$(${pyv} -c "import platform; print(platform.python_version_tuple()[1])")
+    local _pyprefix=
+    if [ "${_major}" = "3" ]; then
+      _pyprefix=".cpython-${_major}${_minor}m"
+    else
+      _pyprefix="-python${_major}.${_minor}"
+    fi
+    cd ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    make DESTDIR=${pkgdir} install
+    (cd ${pkgdir} ; mv msys*/mingw*/lib/* ${pkgdir}${MINGW_PREFIX}/lib/)
+    rm -rf ${pkgdir}/msys* || true
+    mv ${pkgdir}${MINGW_PREFIX}/include/PySide{,-py${_major}}
+    mv ${pkgdir}${MINGW_PREFIX}/share/PySide{,-py${_major}}
+    sed -i 's|include/PySide|include/PySide-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/pyside.pc
+    sed -i 's|share/PySide|share/PySide-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/pyside.pc
+    sed -i 's|shiboken|shiboken-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/pyside.pc
+    mv ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/pyside{,-py${_major}}.pc
+    sed -i 's|include/PySide|include/PySide-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig${_pyprefix}.cmake
+    sed -i 's|share/PySide|share/PySide-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig${_pyprefix}.cmake
+    mkdir -p ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}
+    mv ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig${_pyprefix}.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}/PySideConfig.cmake
+    mv ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfigVersion.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}/
+    rm  ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig.cmake
+  done
+  fix_paths
+}
+

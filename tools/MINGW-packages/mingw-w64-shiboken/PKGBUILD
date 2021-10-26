@@ -1,0 +1,92 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_realname=shiboken
+pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
+pkgver=1.2.4
+pkgrel=6
+arch=('any')
+url="https://github.com/PySide"
+license=("LGPL")
+source=(https://mirrors.dotsrc.org/qtproject/official_releases/pyside/PySide-${pkgver}.tar.gz
+        shiboken.patch
+        python3.patch)
+sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
+            '603b3ac935a60494cc9cb52c3e0847f61353df546dfea88544025e9ddea5e7c0'
+            '28cdb804c0bc8e79f5d01df95c5288b01576bd30a01935f2feb92766e3df35e4')
+makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+             "${MINGW_PACKAGE_PREFIX}-libxslt"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-python3"
+             "${MINGW_PACKAGE_PREFIX}-qt4"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-cmake")
+conflicts=("${MINGW_PACKAGE_PREFIX}-python2-${_realname}-qt4")
+options=('strip')
+
+prepare() {
+  cd ${srcdir}/PySide-${pkgver}
+  patch -p1 -i ${srcdir}/shiboken.patch
+  patch -p1 -i ${srcdir}/python3.patch
+}
+
+build() {
+  export MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX"
+  for pyv in python2 python3; do
+    local _conf=
+    if [ "${pyv}" = "python3" ]; then
+      _conf="-DUSE_PYTHON3=yes"
+    fi
+    [[ -d ${srcdir}/build-${MINGW_CHOST}-${pyv} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    mkdir -p ${srcdir}/build-${MINGW_CHOST}-${pyv} && cd ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    ${MINGW_PREFIX}/bin/cmake \
+      -G"MSYS Makefiles" \
+      -DBUILD_TESTS=FALSE \
+      -DCMAKE_OBJECT_PATH_MAX=1024 \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      ${_conf} \
+      -DCMAKE_BUILD_TYPE=RELEASE \
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
+      ${srcdir}/PySide-${pkgver}/sources/shiboken
+    make -j${MKJOBS}
+  done
+}
+
+fix_paths() {
+  local prefixwin=$(cygpath -am ${MINGW_PREFIX})
+  local prefixinst=$(cygpath -am ${pkgdir}${MINGW_PREFIX})
+  local _files=$(find ${pkgdir}${MINGW_PREFIX}/lib -type f -iname "*.cmake" -o -iname "*.pc")
+  for f in ${_files}; do
+    plain "Patching ${f}..."
+    sed -e "s|${prefixwin}|${MINGW_PREFIX}|g" \
+        -e "s|${prefixinst}|${MINGW_PREFIX}|g" \
+        -i ${f}
+  done
+}
+
+package() {
+  for pyv in python2 python3; do
+    local _major=$(${pyv} -c "import platform; print(platform.python_version_tuple()[0])")
+    local _minor=$(${pyv} -c "import platform; print(platform.python_version_tuple()[1])")
+    local _pyprefix=
+    if [ "${_major}" = "3" ]; then
+      _pyprefix=".cpython-${_major}${_minor}m"
+    else
+      _pyprefix="-python${_major}.${_minor}"
+    fi
+    cd ${srcdir}/build-${MINGW_CHOST}-${pyv}
+    make DESTDIR=${pkgdir} install
+    mv ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/shiboken{,-py${_major}}.pc
+    mv ${pkgdir}${MINGW_PREFIX}/bin/shiboken{,-py${_major}}.exe
+    mv ${pkgdir}${MINGW_PREFIX}/include/shiboken{,-py${_major}}
+    sed -i 's#bin/shiboken#bin/shiboken-py'${_major}'#' ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/ShibokenConfig${_pyprefix}.cmake
+    sed -i 's#bin/shiboken#bin/shiboken-py'${_major}'#' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/shiboken-py${_major}.pc
+    sed -i 's#include/shiboken#include/shiboken-py'${_major}'#' ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/ShibokenConfig${_pyprefix}.cmake
+    sed -i 's#include/shiboken#include/shiboken-py'${_major}'#' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/shiboken-py${_major}.pc
+    mkdir -p ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/py${_major}
+    cp ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/ShibokenConfig${_pyprefix}.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/py${_major}/ShibokenConfig.cmake
+    cp ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/ShibokenConfigVersion.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/py${_major}/
+  done
+  rm -f ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/ShibokenConfig.cmake
+  rm -rf ${pkgdir}${MINGW_PREFIX}/share
+  fix_paths
+}
