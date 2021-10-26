@@ -1,7 +1,7 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem              1.0
-PortGroup               cmake 1.0
+PortGroup               cmake 1.1
 if {${os.major} <= 17} {
     PortGroup           muniversal 1.0
 }
@@ -30,16 +30,16 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     if { ${subport} eq "libomp-devel" } {
-        version         12.0.1
-        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
-                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
-                        size    1081308
+        version         13.0.0
+        checksums       rmd160  1ecfcc0f1d18e208f99ce8390281ed6b5f92a28e \
+                        sha256  4930ae7a1829a53b698255c2c6b6ee977cc364b37450c14ee458793c0d5e493c \
+                        size    1139488
         livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
     } else {
-        version         12.0.1
-        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
-                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
-                        size    1081308
+        version         13.0.0
+        checksums       rmd160  1ecfcc0f1d18e208f99ce8390281ed6b5f92a28e \
+                        sha256  4930ae7a1829a53b698255c2c6b6ee977cc364b37450c14ee458793c0d5e493c \
+                        size    1139488
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
 
@@ -139,7 +139,7 @@ post-destroot {
     }
 
     set fpath ${worksrcpath}/${rtpath}
-    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
+    file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
         ${fpath}/../www ${instdest}/share/doc/libomp/
 
 }

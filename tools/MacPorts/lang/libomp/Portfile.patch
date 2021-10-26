@@ -1,13 +1,22 @@
---- Portfile.orig	2021-10-01 12:42:40.000000000 -0700
-+++ Portfile	2021-10-01 12:41:52.000000000 -0700
+--- Portfile.orig	2021-10-25 20:02:31.000000000 -0700
++++ Portfile	2021-10-25 20:06:45.000000000 -0700
+@@ -1,7 +1,7 @@
+ # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+ 
+ PortSystem              1.0
+-PortGroup               cmake 1.1
++PortGroup               cmake 1.0
+ if {${os.major} <= 17} {
+     PortGroup           muniversal 1.0
+ }
 @@ -30,17 +30,17 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
--        version         12.0.1
--        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
--                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
--                        size    1081308
+-        version         13.0.0
+-        checksums       rmd160  1ecfcc0f1d18e208f99ce8390281ed6b5f92a28e \
+-                        sha256  4930ae7a1829a53b698255c2c6b6ee977cc364b37450c14ee458793c0d5e493c \
+-                        size    1139488
 -        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
 +        version                 11.1.0
 +        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
@@ -15,10 +24,10 @@
 +                                size    971628
 +        livecheck.regex         {"llvmorg-([0-9.rc-]+)".*}
      } else {
--        version         12.0.1
--        checksums       rmd160  0c34a8e868b7fd831cf8f4d2413b1084643016c2 \
--                        sha256  60fe79440eaa9ebf583a6ea7f81501310388c02754dbe7dc210776014d06b091 \
--                        size    1081308
+-        version         13.0.0
+-        checksums       rmd160  1ecfcc0f1d18e208f99ce8390281ed6b5f92a28e \
+-                        sha256  4930ae7a1829a53b698255c2c6b6ee977cc364b37450c14ee458793c0d5e493c \
+-                        size    1139488
 -        livecheck.regex {"llvmorg-([0-9.]+)".*}
 +        version                 11.1.0
 +        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
@@ -87,3 +96,12 @@
  }
  
  depends_build-append    port:perl5
+@@ -139,7 +143,7 @@
+     }
+ 
+     set fpath ${worksrcpath}/${rtpath}
+-    file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
++    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
+         ${fpath}/../www ${instdest}/share/doc/libomp/
+ 
+ }
