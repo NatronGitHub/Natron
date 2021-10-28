@@ -3,8 +3,8 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.2.18.0
-pkgrel=2
+pkgver=2.3.8.0
+pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -27,13 +27,13 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-boost"
              "git")
 options=('strip' 'buildflags' '!debug')
-source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/Release-${pkgver}.tar.gz
+source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/v${pkgver}.tar.gz
         git+https://github.com/OpenImageIO/oiio-images.git
         oiio-2.1.10-boost.diff
         oiio-2.0.8-invalidatespec.patch
         oiio-2.2.14-libraw.diff
        )
-sha256sums=('b8dd189fbc97f1b172528e324daa904f74a166bad62c32e7166ca6c866734a29'
+sha256sums=('0b0495e7c2c5213b1c68e9fd4e89e153355b0f61b244d77c50e7999219b07f44'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
@@ -41,7 +41,7 @@ sha256sums=('b8dd189fbc97f1b172528e324daa904f74a166bad62c32e7166ca6c866734a29'
            )
 
 prepare() {
-  cd ${srcdir}/oiio-Release-${pkgver}
+  cd ${srcdir}/oiio-${pkgver}
   patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
   patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
@@ -60,9 +60,6 @@ build() {
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   PKG_CONFIG_PATH="${MINGW_PREFIX}/libraw-gpl2/lib/pkgconfig:${PKG_CONFIG_PATH}" \
-  LibRaw_INCLUDE_DIR="${MINGW_PREFIX}/libraw-gpl2/include/libraw" \
-  LibRaw_r_LIBRARIES="-L${MINGW_PREFIX}/libraw-gpl2/lib -lraw_r -lstdc++ -fopenmp" \
-  LibRaw_ROOT="${MINGW_PREFIX}/libraw-gpl2" \
   ${MINGW_PREFIX}/bin/cmake.exe \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
@@ -77,6 +74,7 @@ build() {
     -DUSE_LIBRAW=ON \
     -DUSE_NUKE=OFF \
     -DSTOP_ON_WARNING=OFF \
+    -DLibRaw_ROOT="${MINGW_PREFIX}/libraw-gpl2" \
     -DBOOST_ROOT=${MINGW_PREFIX} \
     -DOpenJPEG_ROOT=${MINGW_PREFIX} \
     -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
@@ -89,13 +87,11 @@ build() {
     -DCMAKE_CXX_STANDARD=11 \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     ${extra_config} \
-    ../oiio-Release-${pkgver}
+    ../oiio-${pkgver}
   make
 }
 
 package() {
   cd "${srcdir}"/build-${MINGW_CHOST}
   make DESTDIR=${pkgdir} install
-  install -Dm644 ${srcdir}/oiio-Release-${pkgver}/LICENSE.md "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE.md"
-  install -Dm644 ${srcdir}/oiio-Release-${pkgver}/THIRD-PARTY.md "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE-THIRD-PARTY.md"
 }
