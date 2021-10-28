@@ -5,12 +5,21 @@
 # History
 
 
+## Version 2.5.0
+
+### Known issues
+
+- Rendering sometimes silently stalls after X frames. #248
+- Some image formats may have issues (PCX, PSB). #602
+- MTS video files are sometimes not read correctly. #186
+
+
 ## Version 2.4.1
 
 ### Known issues
 
 - Rendering sometimes silently stalls after X frames. #248
-- Some image formats may have issues (PCX, PSB, CR2). #602
+- Some image formats may have issues (PCX, PSB). #602
 - MTS video files are sometimes not read correctly. #186
 
 ### Changes
