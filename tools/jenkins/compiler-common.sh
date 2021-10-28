@@ -81,20 +81,29 @@ if [ "$PKGOS" = "OSX" ]; then
             #9.*|10.*)
             #    true;;
             *)
-                if command -v clang-mp-9.0 >/dev/null 2>&1; then
+                if command -v clang-mp-11 >/dev/null 2>&1; then
+                    CC=clang-mp-11
+                    CXX="clang++-mp-11 -stdlib=libc++ -std=c++11"
+                elif command -v clang-mp-10 >/dev/null 2>&1; then
+                    CC=clang-mp-10
+                    CXX="clang++-mp-10 -stdlib=libc++ -std=c++11"
+                elif command -v clang-mp-9.0 >/dev/null 2>&1; then
                     CC=clang-mp-9.0
                     CXX="clang++-mp-9.0 -stdlib=libc++ -std=c++11"
-                elif command -v clang-mp-8.0 >/dev/null 2>&1; then
-                    CC=clang-mp-8.0
-                    CXX="clang++-mp-8.0 -stdlib=libc++ -std=c++11"
-                elif command -v clang-mp-7.0 >/dev/null 2>&1; then
-                    CC=clang-mp-7.0
-                    CXX="clang++-mp-7.0 -stdlib=libc++ -std=c++11"
                 fi
                 ;;
         esac
-        OBJECTIVE_CC=$CC
-        OBJECTIVE_CXX=$CXX
+        case "$osxver" in
+        2[123].*)
+            # clangg-mp can't compile QtMac.mm on Monterey
+            OBJECTIVE_CC=clang
+            OBJECTIVE_CXX=clang++
+            ;;
+        *)
+            OBJECTIVE_CC=$CC
+            OBJECTIVE_CXX=$CXX
+            ;;
+        esac
     else
         #GCC_VERSION=4.8
         GCC_VERSION=4.9
