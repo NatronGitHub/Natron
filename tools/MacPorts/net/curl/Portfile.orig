@@ -188,7 +188,7 @@ if {${name} eq ${subport}} {
     }
 
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
-        depends_lib-append      port:openldap
+        depends_lib-append      path:lib/libldap.dylib:openldap
         configure.args-replace  --disable-ldap --enable-ldap
         configure.args-replace  --disable-ldaps --enable-ldaps
     }
