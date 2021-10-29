@@ -283,11 +283,11 @@ macx {
       # later OSX instances only run on x86_64, universal builds are useless
       # (unless a later OSX supports ARM)
     }
-  } 
+  }
 
   #link against the CoreFoundation framework for the StandardPaths functionnality
   LIBS += -framework CoreServices
-    
+
   #// Disable availability macros on macOS
   #// because we may be using libc++ on an older macOS,
   #// so that std::locale::numeric may be available
@@ -336,8 +336,8 @@ win32 {
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES += _UNICODE UNICODE
- 
-  DEFINES += QHTTP_SERVER_STATIC 
+
+  DEFINES += QHTTP_SERVER_STATIC
 
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
@@ -412,7 +412,7 @@ win32-g++ {
     python:    PKGCONFIG += python-$$PYVER$$PY_PKG_SUFFIX
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
-	
+
     #See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
     Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj
 }
@@ -517,7 +517,7 @@ addresssanitizer {
   *xcode* {
     enable_cxx_container_overflow_check.name = CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW
     enable_cxx_container_overflow_check.value = YES
-    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check  
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check
   }
   *g++* | *clang* {
     CONFIG += debug

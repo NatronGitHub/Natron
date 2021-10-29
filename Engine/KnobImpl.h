@@ -373,19 +373,7 @@ template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    if ( PyUnicode_Check(o) ) {
-        std::string ret;
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(o); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-
-        return ret;
-    }
-    char* s = PyString_Check(o) ? PyString_AsString(o) : NULL;
-    return s != NULL ? std::string(s) : std::string();
+    return NATRON_PYTHON_NAMESPACE::PyStringToStdString(o);
 }
 
 inline unsigned int

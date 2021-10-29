@@ -249,134 +249,6 @@ setSigSegvSignal()
 
 #endif // if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
 
-
-#if PY_MAJOR_VERSION >= 3
-// Python 3
-
-//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
-//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
-static wchar_t*
-char2wchar(char* arg)
-{
-    wchar_t *res = NULL;
-
-#ifdef HAVE_BROKEN_MBSTOWCS
-    /* Some platforms have a broken implementation of
-     * mbstowcs which does not count the characters that
-     * would result from conversion.  Use an upper bound.
-     */
-    size_t argsize = strlen(arg);
-#else
-    size_t argsize = mbstowcs(NULL, arg, 0);
-#endif
-    size_t count;
-    unsigned char *in;
-    wchar_t *out;
-#ifdef HAVE_MBRTOWC
-    mbstate_t mbs;
-#endif
-    if (argsize != (size_t)-1) {
-        res = (wchar_t *)malloc( (argsize + 1) * sizeof(wchar_t) );
-        if (!res) {
-            goto oom;
-        }
-        count = mbstowcs(res, arg, argsize + 1);
-        if (count != (size_t)-1) {
-            wchar_t *tmp;
-            /* Only use the result if it contains no
-             surrogate characters. */
-            for (tmp = res; *tmp != 0 &&
-                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++) {
-                ;
-            }
-            if (*tmp == 0) {
-                return res;
-            }
-        }
-        free(res);
-    }
-    /* Conversion failed. Fall back to escaping with surrogateescape. */
-#ifdef HAVE_MBRTOWC
-    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
-    /* Overallocate; as multi-byte characters are in the argument, the
-     actual output could use less memory. */
-    argsize = strlen(arg) + 1;
-    res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    std::memset(&mbs, 0, sizeof mbs);
-    while (argsize) {
-        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
-        if (converted == 0) {
-            /* Reached end of string; null char stored. */
-            break;
-        }
-        if (converted == (size_t)-2) {
-            /* Incomplete character. This should never happen,
-             since we provide everything that we have -
-             unless there is a bug in the C library, or I
-             misunderstood how mbrtowc works. */
-            fprintf(stderr, "unexpected mbrtowc result -2\n");
-            free(res);
-
-            return NULL;
-        }
-        if (converted == (size_t)-1) {
-            /* Conversion error. Escape as UTF-8b, and start over
-             in the initial shift state. */
-            *out++ = 0xdc00 + *in++;
-            argsize--;
-            std::memset(&mbs, 0, sizeof mbs);
-            continue;
-        }
-        if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {
-            /* Surrogate character.  Escape the original
-             byte sequence with surrogateescape. */
-            argsize -= converted;
-            while (converted--) {
-                *out++ = 0xdc00 + *in++;
-            }
-            continue;
-        }
-        /* successfully converted some bytes */
-        in += converted;
-        argsize -= converted;
-        out++;
-    }
-#else
-    /* Cannot use C locale for escaping; manually escape as if charset
-     is ASCII (i.e. escape all bytes > 128. This will still roundtrip
-     correctly in the locale's charset, which must be an ASCII superset. */
-    res = (wchar_t*)malloc( (strlen(arg) + 1) * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    while (*in) {
-        if (*in < 128) {
-            *out++ = *in++;
-        } else {
-            *out++ = 0xdc00 + *in++;
-        }
-    }
-    *out = 0;
-#endif // ifdef HAVE_MBRTOWC
-
-    return res;
-oom:
-    fprintf(stderr, "out of memory\n");
-    free(res);
-
-    return NULL;
-} // char2wchar
-
-#endif // if PY_MAJOR_VERSION >= 3
-
-
 //} // anon namespace
 
 void
@@ -441,9 +313,15 @@ AppManager::loadFromArgs(const CLArgs& cl)
 {
 
 #ifdef DEBUG
+#if PY_MAJOR_VERSION >= 3
+    for (std::size_t i = 0; i < _imp->commandLineArgsWide.size(); ++i) {
+        std::cout << "argv[" << i << "] = " << StrUtils::utf16_to_utf8( std::wstring(_imp->commandLineArgsWide[i]) ) << std::endl;
+    }
+#else
     for (std::size_t i = 0; i < _imp->commandLineArgsUtf8.size(); ++i) {
         std::cout << "argv[" << i << "] = " << _imp->commandLineArgsUtf8[i] << std::endl;
     }
+#endif
 #endif
 
     // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
@@ -1885,7 +1763,11 @@ addToPythonPathFunctor(const QDir& directory)
     std::string addToPythonPath("sys.path.append(str('");
 
     addToPythonPath += directory.absolutePath().toStdString();
+#if PY_MAJOR_VERSION >= 3
+    addToPythonPath += "'))\n";
+#else
     addToPythonPath += "').decode('utf-8'))\n";
+#endif
 
     std::string err;
     bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
@@ -3054,36 +2936,29 @@ AppManager::getPluginIDs(const std::string& filter)
 
 
 std::string
-NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
+NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* py_val)
 {
     ///Must be locked
     assert( PyThreadState_Get() );
-    std::string ret;
-
-    if ( PyString_Check(obj) ) {
-        char* buf = PyString_AsString(obj);
-        if (buf) {
-            ret += std::string(buf);
-        }
-    } else if ( PyUnicode_Check(obj) ) {
-        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
-           if (temp_bytes != NULL) {
-           char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-           ret.append(cstr);
-           Py_DECREF(temp_bytes);
-           }*/
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(obj); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-    } else if ( PyBytes_Check(obj) ) {
-        char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
-        ret.append(cstr);
+    std::string val;
+    PyObject* s = nullptr;
+    // The following should work with Python 2 and 3.
+    // https://stackoverflow.com/a/38600095
+    if( PyUnicode_Check(py_val) ) {  // python3 has unicode, but we convert to bytes
+        s = PyUnicode_AsUTF8String(py_val);
+    } else if( PyBytes_Check(py_val) ) {  // python2 has bytes already
+        s = PyObject_Bytes(py_val);
+    } else {
+        // Not a string => Error, warning ...
     }
 
-    return ret;
+    // If succesfully converted to bytes, then convert to C++ string
+    if (s) {
+        val = std::string( PyBytes_AS_STRING(s) );
+        Py_XDECREF(s);
+    }
+
+    return val;
 }
 
 void
@@ -3197,7 +3072,7 @@ AppManager::initPython()
 #if defined(__NATRON_OSX__) && defined DEBUG
     // in debug mode, also prepend the local PySide directory
     // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
+    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside@1.2/1.2.4/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
     // macport's pyside directory
     toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
 #endif
@@ -3222,13 +3097,15 @@ AppManager::initPython()
 #     if 0//def __NATRON_WIN32__
         _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
 #     else
+        // Py_SetPath() sets the whole path, but setting PYTHONPATH still keeps the system's python path
+#      if 0 // PY_MAJOR_VERSION >= 3
+        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
+        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+#      else
         std::string pythonPathString = pythonPath.toStdString();
         qputenv( "PYTHONPATH", pythonPathString.c_str() );
         //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+#      endif
 #     endif
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
@@ -3241,14 +3118,17 @@ AppManager::initPython()
     //
     // Must be done before Py_Initialize (see doc of Py_Initialize)
     //
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
-#endif
 #if PY_MAJOR_VERSION >= 3
     // Python 3
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetProgramName(\"%ls\")\n", _imp->commandLineArgsWide[0] );
+#endif
     Py_SetProgramName(_imp->commandLineArgsWide[0]);
 #else
     // Python 2
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
+#endif
     Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
 #endif
 
@@ -3289,7 +3169,7 @@ AppManager::initPython()
     //
 #if PY_MAJOR_VERSION >= 3
     // Python 3
-    PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
+    PySys_SetArgv( _imp->commandLineArgsWide.size(), &_imp->commandLineArgsWide.front() ); /// relative module import
 #else
     // Python 2
     PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
@@ -3326,20 +3206,39 @@ AppManager::initPython()
         printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
         printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
         printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
+#endif
         printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
         printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+#else
+        printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
+        printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
+        printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
+#endif
         printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
+#endif
         printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
         printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
+#if PY_MAJOR_VERSION < 3
         printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
         printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
         printf( "Py_GetPath is %s\n", Py_GetPath() );
         printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
+#else
+        printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
+        printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetProgramFullPath is %ls\n", Py_GetProgramFullPath() );
+        printf( "Py_GetPath is %ls\n", Py_GetPath() );
+        printf( "Py_GetPythonHome is %ls\n", Py_GetPythonHome() );
+#endif
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
         assert(ok);
         Q_UNUSED(ok);
@@ -4025,14 +3924,18 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {
-                const char* str = PyString_AsString(pyStr);
-                if (error && str) {
+                std::string str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
+                if ( error && !str.empty() ) {
                     *error += std::string("Python exception: ") + str + '\n';
                 }
                 Py_DECREF(pyStr);
 
                 // See if we can get a full traceback
+#if PY_MAJOR_VERSION >= 3
+                PyObject* module_name = PyUnicode_FromString("traceback");
+#else
                 PyObject* module_name = PyString_FromString("traceback");
+#endif
                 PyObject* pyth_module = PyImport_Import(module_name);
                 Py_DECREF(module_name);
 
@@ -4047,16 +3950,20 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
                         if (pyth_val) {
+#if PY_MAJOR_VERSION >= 3
+                            PyObject *emptyString = PyUnicode_FromString("");
+#else
                             PyObject *emptyString = PyString_FromString("");
+#endif
                             PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
                             Py_DECREF(emptyString);
                             Py_DECREF(pyth_val);
                             pyStr = PyObject_Str(strList);
                             Py_DECREF(strList);
                             if (pyStr) {
-                                str = PyString_AsString(pyStr);
-                                if (error && str) {
-                                    *error += std::string(str) + '\n';
+                                str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
+                                if ( error && !str.empty() ) {
+                                    *error += str + '\n';
                                 }
                                 Py_DECREF(pyStr);
                             }
