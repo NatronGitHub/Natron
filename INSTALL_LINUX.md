@@ -5,7 +5,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
-* If you are on Centos, Fedora or RHEL, see [here](#centos7) for specific instructions 
+* If you are on Centos, Fedora or RHEL, see [here](#centos7) for specific instructions
 * If you are on a Debian-based Linux (such as Ubuntu, KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
 * If you are willing to try the complete installation process, the instructions are below
 
@@ -20,6 +20,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
     - [Cairo](#cairo)
     - [Pyside](#pyside)
     - [Shiboken](#shiboken)
+    - [QtPy](#qtpy)
 2. [Configuration](#configuration)
     - [OpenFX](#openfx)
     - [OpenColorIO-Configs](#download-opencolorio-configs)
@@ -52,7 +53,7 @@ The Natron SDK is used for building the official Natron binaries. The script tha
 
     cd tools/jenkins
     include/scripts/build-Linux-sdk.sh
-	
+
 It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
 
 Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
@@ -121,6 +122,13 @@ Natron uses pyside for python 2
 
 Natron uses shiboken for python 2
 
+### QtPy
+
+Abstraction layer for PyQt5/PyQt4/PySide2/PySide.
+
+```
+pip install qtpy
+```
 
 # Configuration
 
@@ -332,11 +340,11 @@ any Debian-based distribution (e.g. Ubuntu).
 
 If your version of Ubuntu does not provide cairo 1.12 (required for rotoscoping), use the xorg-edger PPA:
 ```
-sudo add-apt-repository -y ppa:xorg-edgers/ppa 
+sudo add-apt-repository -y ppa:xorg-edgers/ppa
 ```
 If your version of Ubuntu does not provide boost 1.49, the irie PPA can be used:
 ```
-sudo add-apt-repository -y ppa:irie/boost 
+sudo add-apt-repository -y ppa:irie/boost
 ```
 Install the required packages:
 ```

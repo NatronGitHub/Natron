@@ -901,20 +901,27 @@ export PY_BIN="${MACPORTS}/bin/python${PYVER:-}"
 export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 . "$CWD/zip-python.sh"
 
+NATRON_PYTHON="${TMP_PORTABLE_DIR}.app/Contents/MacOS/natron-python"
 # Install pip
-if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
+if [ -x "${NATRON_PYTHON}" ]; then
     if [ "$PYV" = "2" ]; then
         $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
     else
         $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
     fi
-    "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
+    "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
-fi
-
-# Run extra user provided pip install scripts
-if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-    "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    # Install qtpy
+    if [ "${USE_QT5:-}" != 1 ]; then
+        # Qt4 support was dropped after QtPy 1.11.2
+        "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
+    else
+        "${NATRON_PYTHON}"" -m pip install qtpy
+    fi
+    # Run extra user provided pip install scripts
+    if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
+        "${NATRON_PYTHON}"" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    fi
 fi
 
 
