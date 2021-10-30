@@ -107,7 +107,7 @@ EOF
     PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
-    GIT_BRANCH=RB-2.4 \\
+    GIT_BRANCH=RB-2.5 \\
     GIT_COMMIT= \\
     RELEASE_TAG=  \\
     SNAPSHOT_BRANCH= \\
