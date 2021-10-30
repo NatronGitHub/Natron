@@ -13,6 +13,11 @@
 - Some image formats may have issues (PCX, PSB). #602
 - MTS video files are sometimes not read correctly. #186
 
+### Changes
+
+- Use Python 3 rather than Python 2 (which is not maintained anymore). This will require very few changes to the Python code (mainly print statements), and most code can be easily adapted to be [2-3 compatible](https://python-future.org/compatible_idioms.html).
+- Use [QtPy](https://github.com/spyder-ide/qtpy/tree/v1.11.2)==1.11.2 rather than PySide. QtPy is an abstraction layer for PyQt5/PyQt4/PySide2/PySide (newer versions support PyQt6/PySide6).  QtPy uses the Qt5 layout (where the QtGui module has been split into QtGui and QtWidgets).  Using QtPy guarantees a higher level of forward-compatibility with future versions of Natron, which may use Qt5 or Qt6. PySide can still be imported explicitly, if required, but the resulting code will not be forward-compatible. #687
+
 
 ## Version 2.4.1
 
