@@ -326,7 +326,7 @@ if [ ! -d "${DYNLOAD}" ]; then
     exit 1
 fi
 
-MPLIBS0="$(for i in "${DYNLOAD}"/*.so; do otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+MPLIBS0="$(for i in "$pkglib/Python.framework/Versions/${PYVER}/Python" "${DYNLOAD}"/*.so; do otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
 # also add first-level and second-level dependencies 
 MPLIBS1="$(for i in $MPLIBS0; do echo "$i"; otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
 MPLIBS="$(for i in $MPLIBS1; do echo "$i"; otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
@@ -341,7 +341,7 @@ for mplib in $MPLIBS; do
         chmod +w "$pkglib/${lib}"
     fi
     install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
-    for deplib in "${DYNLOAD}"/*.so; do
+    for deplib in "$pkglib/Python.framework/Versions/${PYVER}/Python" "${DYNLOAD}"/*.so; do
 	if [ -f "$deplib" ]; then
             install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
         fi
