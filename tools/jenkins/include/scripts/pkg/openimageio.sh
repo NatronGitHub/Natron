@@ -4,7 +4,7 @@
 # see https://github.com/OpenImageIO/oiio/releases
 OIIO_VERSION=2.3.8.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
 OIIO_VERSION_SHORT=2.3 # ${OIIO_VERSION%.*}
-OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
+OIIO_TAR="oiio-${OIIO_VERSION}.tar.gz"
 if download_step; then
     download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
 fi
@@ -14,7 +14,7 @@ fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; }; }; then
     start_build
     untar "$SRC_PATH/$OIIO_TAR"
-    pushd "oiio-Release-${OIIO_VERSION}"
+    pushd "oiio-${OIIO_VERSION}"
 
     if [ -d "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" ]; then
         patches=$(find  "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" -type f)
@@ -64,6 +64,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     make install
     popd
     popd
-    rm -rf "oiio-Release-${OIIO_VERSION}"
+    rm -rf "oiio-${OIIO_VERSION}"
     end_build
 fi
