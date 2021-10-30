@@ -205,6 +205,7 @@ fi
 
 if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python${PYVER}${PYTHON_ABIFLAGS}-config"
+    QMAKE_FLAGS_EXTRA+=(CONFIG+=python3)
 fi
 
 # use breakpad?
