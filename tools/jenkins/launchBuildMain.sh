@@ -168,7 +168,7 @@ echo "PYV=${PYV}"
 echo "PYVER=${PYVER}"
 echo "PYVERNODOT=${PYVERNODOT}"
 echo "PYTHON_ABIFLAGS=${PYTHON_ABIFLAGS}"
-echo "PYTHON_PREFIX=${PYTHON_PREFIX}"
+echo "PYTHON_HOME=${PYTHON_HOME}"
 
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
