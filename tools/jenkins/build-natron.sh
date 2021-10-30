@@ -204,7 +204,7 @@ elif [ "$NATRON_BUILD_CONFIG" = "CUSTOM" ]; then
 fi
 
 if [ "$PYV" = "3" ]; then
-    PYO="PYTHON_CONFIG=python${PYVER}m-config"
+    PYO="PYTHON_CONFIG=python${PYVER}${PYTHON_ABIFLAGS}-config"
 fi
 
 # use breakpad?

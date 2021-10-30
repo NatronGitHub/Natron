@@ -163,6 +163,12 @@ if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
     fi
 fi
 
+echo "Python config:"
+echo "PYV=${PYV}"
+echo "PYVER=${PYVER}"
+echo "PYVERNODOT=${PYVERNODOT}"
+echo "PYTHON_ABIFLAGS=${PYTHON_ABIFLAGS}"
+
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
 #check that SED works
