@@ -175,6 +175,7 @@ fi
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
 # To default to Python 2, move the Python 3 section below the Python 2 section
+PYTHON_ABIFLAGS=
 if [[ $(type -P python3) ]]; then
     PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
@@ -182,6 +183,11 @@ if [[ $(type -P python3) ]]; then
         PYV=3
         PYVER="${PY3VER}"
         PYVERNODOT="${PY3VERNODOT}"
+        case "${PYVER}" in
+        3.[01234567])
+            PYTHON_ABIFLAGS="m"
+            ;;
+        esac
     fi
 fi
 if [[ $(type -P python2) ]]; then
@@ -192,6 +198,7 @@ if [[ $(type -P python2) ]]; then
         PYV=2
         PYVER="${PY2VER}"
         PYVERNODOT="${PY2VERNODOT}"
+        PYTHON_ABIFLAGS="m"
     fi
 fi
 
