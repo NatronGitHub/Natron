@@ -174,7 +174,16 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# To default to Python 3, move the Python 2 section below the Python 3 section
+# To default to Python 2, move the Python 3 section below the Python 2 section
+if [[ $(type -P python3) ]]; then
+    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        PYV=3
+        PYVER="${PY3VER}"
+        PYVERNODOT="${PY3VERNODOT}"
+    fi
+fi
 if [[ $(type -P python2) ]]; then
     PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
@@ -183,15 +192,6 @@ if [[ $(type -P python2) ]]; then
         PYV=2
         PYVER="${PY2VER}"
         PYVERNODOT="${PY2VERNODOT}"
-    fi
-fi
-if [[ $(type -P python3) ]]; then
-    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
-    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
-    if [ -z "${PYV:-}" ]; then
-        PYV=3
-        PYVER="${PY3VER}"
-        PYVERNODOT="${PY3VERNODOT}"
     fi
 fi
 
@@ -226,13 +226,17 @@ THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 #
 # Set build threads to 2 if not exists
 if [ -z "${MKJOBS:-}" ]; then
-    if [ "$PKGOS" = "Linux" ]; then
+    case "$system" in
+    Linux)
         DEFAULT_MKJOBS=$(nproc)
-    elif [ "$PKGOS" = "OSX" ]; then
+        ;;
+    Darwin)
         DEFAULT_MKJOBS=$(sysctl -n hw.ncpu)
-    else
+        ;;
+    *)
         DEFAULT_MKJOBS=2
-    fi
+        ;;
+    esac
     MKJOBS=$DEFAULT_MKJOBS
 fi
 
