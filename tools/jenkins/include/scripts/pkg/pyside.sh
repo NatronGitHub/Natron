@@ -70,6 +70,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pyside-py$PY
     ls "$SDK_HOME/lib/cmake"
     popd
 
+    # Also install QtPy for better forward-compatibility https://github.com/NatronGitHub/Natron/pull/687
+    # Qt4 support was dropped after QtPy 1.11.2
+    "$PY2_EXE" -m pip install qtpy==1.11.2
+    "$PY3_EXE" -m pip install qtpy==1.11.2
 
     popd
     #rm -rf "pyside-qt4.8+${PYSIDE_VERSION}"
