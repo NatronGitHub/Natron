@@ -199,7 +199,7 @@ if [[ $(type -P python2) ]]; then
         PYV=2
         PYVER="${PY2VER}"
         PYVERNODOT="${PY2VERNODOT}"
-        PYTHON_ABIFLAGS="m"
+        PYTHON_ABIFLAGS=""
         PYTHON_PREFIX="$(python${PYVER}${PYTHON_ABIFLAGS}-config --prefix)"
     fi
 fi
