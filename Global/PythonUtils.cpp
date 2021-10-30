@@ -289,8 +289,9 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     // Note: on Python >= 3.7 this is already done by Py_Initialize(),
-    // but it doesn't hurt do do it once more.
+#if PY_VERSION_HEX < 0x03070000
     PyEval_InitThreads();
+#endif
 
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call PythonGILLocker beforehand.
