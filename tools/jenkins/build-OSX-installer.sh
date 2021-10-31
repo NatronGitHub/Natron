@@ -473,6 +473,14 @@ cp -a "${MACPORTS}/share/poppler" "${package}/Contents/Resources/"
 
 # install PySide in site-packages
 echo "* installing PySide..."
+
+# The python-specific part in the pyside and shiboken library names
+if [ "$PYV" = 3 ]; then
+    pypart=".cpython-${PYVERNODOT}-darwin"
+else
+    pypart="-python${PYVER}"
+fi
+
 PYLIB="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/PySide"
 rm -rf "${package}/Contents/${PYSIDE}"
@@ -481,13 +489,13 @@ pyshiboken="${PYLIB}/site-packages/shiboken.so"
 rm -rf "${package}/Contents/${pyshiboken}"
 cp "${MACPORTS}/Library/${pyshiboken}" "${package}/Contents/${pyshiboken}"
 # fix shiboken.so
-l="shiboken-python${PYVER}.${SBKVER}"
+l="shiboken${pypart}.${SBKVER}"
 dylib="lib${l}.dylib"
 binary="${package}/Contents/${pyshiboken}"
 install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$binary"
 
 # install pyside and shiboken libs, and fix deps from Qt
-for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
+for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
     dylib="lib${l}.dylib"
     binary="${package}/Contents/Frameworks/$dylib"
     cp "${MACPORTS}/lib/$dylib" "$binary"
@@ -522,7 +530,7 @@ for qtlib in "${qt_libs[@]}" ;do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
 
-        for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
+        for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
             dylib="lib${l}.dylib"
             install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$binary"
         done
@@ -736,7 +744,7 @@ for bin in $natronbins $otherbins; do
 
 	# extra steps (maybe not really necessary)
 	#Change @executable_path for binary deps
-	for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER} intl.8; do
+	for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER} intl.8; do
             lib="lib${l}.dylib"
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
 	done
