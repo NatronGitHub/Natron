@@ -38,7 +38,60 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 
+#define COLOR_SELECTOR_PALETTE_DEFAULT_COLOR 0.0
+#define COLOR_SELECTOR_PALETTE_SETTINGS "ColorSelectorPalette"
+#define COLOR_SELECTOR_PALETTE_ROWS 2
+#define COLOR_SELECTOR_PALETTE_COLS 12
+#define COLOR_SELECTOR_PALETTE_ICON_SIZE 18
+
 NATRON_NAMESPACE_ENTER
+
+class ColorSelectorPaletteButton : public Button
+{
+    Q_OBJECT
+
+public:
+
+    explicit ColorSelectorPaletteButton(QWidget *parent = NULL);
+    explicit ColorSelectorPaletteButton(float r = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR,
+                                        float g = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR,
+                                        float b = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR,
+                                        float a = 1.0,
+                                        QWidget *parent = NULL);
+
+    bool isModified();
+    void clearModified();
+
+    void getColor(float *r, float *g, float *b, float *a);
+
+Q_SIGNALS:
+
+    void colorChanged(float r, float g, float b, float a);
+    void colorPicked(float r, float g, float b, float a);
+
+public Q_SLOTS:
+
+    void clearColor();
+    void setColor(float r, float g, float b, float a);
+
+private:
+
+    float _r;
+    float _g;
+    float _b;
+    float _a;
+    bool _modified;
+
+    void updateColor(bool signal = true);
+
+    void initButton();
+
+private Q_SLOTS:
+
+    void buttonClicked();
+
+    void mouseReleaseEvent(QMouseEvent *e) override;
+};
 
 class ColorSelectorWidget : public QWidget
 {
@@ -57,6 +110,7 @@ Q_SIGNALS:
 public Q_SLOTS:
 
     void setColor(float r, float g, float b, float a);
+    void setColorFromPalette(float r, float g, float b, float a);
 
 private:
 
@@ -84,6 +138,8 @@ private:
 
     QStackedWidget *_stack;
 
+    QVector<ColorSelectorPaletteButton*> _paletteButtons;
+
     void setRedChannel(float value);
     void setGreenChannel(float value);
     void setBlueChannel(float value);
@@ -97,6 +153,13 @@ private:
     void announceColorChange();
 
     void setTriangleSize();
+
+    void initPaletteButtons(QWidget *widget = NULL,
+                            int rows = COLOR_SELECTOR_PALETTE_ROWS,
+                            int cols = COLOR_SELECTOR_PALETTE_COLS);
+    void updatePaletteButtons();
+    void savePaletteButton(int id);
+    void savePaletteButtons();
 
 private Q_SLOTS:
 
@@ -130,12 +193,16 @@ private Q_SLOTS:
 
     void handleButtonClicked(bool checked);
 
+    void setPaletteButtonColor(bool clicked = true);
+    void clearPaletteButtons(bool clicked = true);
+
     // workaround for QToolButton+QWidgetAction
     // triggered signal(s) are never emitted!?
     bool event(QEvent*e) override
     {
         if (e->type() == QEvent::Show) {
             Q_EMIT updateColor();
+            updatePaletteButtons();
         }
         return QWidget::event(e);
     }

@@ -24,13 +24,144 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMargins>
+#include <QSettings>
+#include <QShortcut>
+#include <QKeySequence>
+#include <QPixmap>
+#include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/Label.h"
 #include "Engine/Lut.h"
+#include "Gui/Label.h"
 
 NATRON_NAMESPACE_ENTER
+
+ColorSelectorPaletteButton::ColorSelectorPaletteButton(QWidget *parent)
+    : Button(parent)
+    , _r(COLOR_SELECTOR_PALETTE_DEFAULT_COLOR)
+    , _g(COLOR_SELECTOR_PALETTE_DEFAULT_COLOR)
+    , _b(COLOR_SELECTOR_PALETTE_DEFAULT_COLOR)
+    , _a(1.0)
+    , _modified(false)
+{
+    initButton();
+}
+
+ColorSelectorPaletteButton::ColorSelectorPaletteButton(float r,
+                                                       float g,
+                                                       float b,
+                                                       float a,
+                                                       QWidget *parent)
+    : Button(parent)
+    , _r(r)
+    , _g(g)
+    , _b(b)
+    , _a(a)
+    , _modified(true)
+{
+    initButton();
+}
+
+bool
+ColorSelectorPaletteButton::isModified()
+{
+    return _modified;
+}
+
+void
+ColorSelectorPaletteButton::clearModified()
+{
+    _modified = false;
+}
+
+void
+ColorSelectorPaletteButton::getColor(float *r,
+                                     float *g,
+                                     float *b,
+                                     float *a)
+{
+    *r = _r;
+    *g = _g;
+    *b = _b;
+    *a = _a;
+}
+
+void
+ColorSelectorPaletteButton::clearColor()
+{
+    _r = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR;
+    _g = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR;
+    _b = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR;
+    _a = 1.0;
+    _modified = false;
+    updateColor(false);
+}
+
+void
+ColorSelectorPaletteButton::setColor(float r,
+                                     float g,
+                                     float b,
+                                     float a)
+{
+    _r = r;
+    _g = g;
+    _b = b;
+    _a = a;
+    _modified = true;
+    updateColor();
+}
+
+void
+ColorSelectorPaletteButton::updateColor(bool signal)
+{
+    QColor color;
+    color.setRgbF(Color::to_func_srgb(_r),
+                  Color::to_func_srgb(_g),
+                  Color::to_func_srgb(_b),
+                  _a);
+    QPixmap pixColor(COLOR_SELECTOR_PALETTE_ICON_SIZE,
+                     COLOR_SELECTOR_PALETTE_ICON_SIZE);
+    pixColor.fill(color);
+    setIcon( QIcon(pixColor) );
+    setToolTip( QString::fromUtf8("R: %1\nG: %2\nB: %3\nA: %4")
+                .arg(_r)
+                .arg(_g)
+                .arg(_b)
+                .arg(_a) );
+
+    if (signal) {
+        Q_EMIT colorChanged(_r, _g, _b, _a);
+    }
+}
+
+void
+ColorSelectorPaletteButton::initButton()
+{
+    setIconSize( QSize(COLOR_SELECTOR_PALETTE_ICON_SIZE,
+                       COLOR_SELECTOR_PALETTE_ICON_SIZE) );
+    setStyleSheet( QString::fromUtf8("border: 0; background-color: transparent;") );
+
+    QObject::connect( this, SIGNAL(clicked()),
+                      this, SLOT(buttonClicked()) );
+
+    updateColor(false);
+}
+
+void
+ColorSelectorPaletteButton::buttonClicked()
+{
+    Q_EMIT colorPicked(_r, _g, _b, _a);
+}
+
+void
+ColorSelectorPaletteButton::mouseReleaseEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::RightButton) {
+        clearColor();
+    }
+    Button::mouseReleaseEvent(e);
+}
 
 ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
   : QWidget(parent)
@@ -218,9 +349,16 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     // hex
     _hex = new LineEdit(this);
 
-    // button
+    // rgb/hsv button
     _button = new Button(QString::fromUtf8("RGB"), this);
     _button->setCheckable(true);
+
+    // palette
+    Button *paletteAddColorButton = new Button(QObject::tr("Add"), this);
+    Button *paletteClearButton = new Button(QObject::tr("Clear"), this);
+
+    QShortcut *addPaletteColorShortcut = new QShortcut(QKeySequence( QObject::tr("Shift+A") ), this);
+    QShortcut *clearPaletteColorsShortcut = new QShortcut(QKeySequence( QObject::tr("Shift+C") ), this);
 
     // set triangle size
     setTriangleSize();
@@ -273,6 +411,8 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     _spinV->setToolTip( QObject::tr("Brightness/Intensity value") );
     _hex->setToolTip( QObject::tr("A HTML hexadecimal color is specified with: #RRGGBB, where the RR (red), GG (green) and BB (blue) hexadecimal integers specify the components of the color.") );
     _button->setToolTip( QObject::tr("Switch to HSV") );
+    paletteAddColorButton->setToolTip( QObject::tr("Add current color to palette (Shift+A)") );
+    paletteClearButton->setToolTip( QObject::tr("Clear colors in palette (Shift+C)") );
 
     // layout
     _stack = new QStackedWidget(this);
@@ -323,12 +463,21 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     QWidget *bottomWidget = new QWidget(this);
     QHBoxLayout *bottomLayout = new QHBoxLayout(bottomWidget);
 
+    QWidget *paletteWidget = new QWidget(this);
+    QHBoxLayout *paletteLayout = new QHBoxLayout(paletteWidget);
+
+    QWidget *paletteButtonsWidget = new QWidget(this);
+
+    QWidget *paletteOptionsWidget = new QWidget(this);
+    QVBoxLayout *paletteOptionsLayout = new QVBoxLayout(paletteOptionsWidget);
+
     _stack->setContentsMargins(0, 0, 0, 0);
     hexWidget->setContentsMargins(0, 0, 0, 0);
     topWidget->setContentsMargins(0, 0, 0, 0);
     leftWidget->setContentsMargins(0, 0, 0, 0);
     rightWidget->setContentsMargins(0, 0, 0, 0);
-    bottomWidget->setContentsMargins(0, 0, 10, 0);
+    bottomWidget->setContentsMargins(0, 5, 10, 0);
+    paletteOptionsWidget->setContentsMargins(0, 0, 0, 0);
 
     _stack->layout()->setContentsMargins(0, 0, 0, 0);
     mainLayout->setContentsMargins(5, 5, 5, 5);
@@ -343,6 +492,8 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     leftLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setContentsMargins(0, 0, 0, 0);
+    paletteLayout->setContentsMargins(0, 5, 10, 0);
+    paletteOptionsLayout->setContentsMargins(0, 0, 0, 0);
 
     if (_slideA) {
         QMargins aMargin = hsvLayout->contentsMargins();
@@ -355,6 +506,7 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     topLayout->setSpacing(0);
     leftLayout->setSpacing(0);
     rightLayout->setSpacing(0);
+    paletteOptionsLayout->setSpacing(2);
 
     rLayout->addWidget(labelR);
     rLayout->addWidget(_spinR);
@@ -393,6 +545,13 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     hsvLayout->addWidget(sWidget);
     hsvLayout->addWidget(vWidget);
 
+    paletteLayout->addWidget(paletteOptionsWidget);
+    paletteLayout->addWidget(paletteButtonsWidget);
+
+    paletteOptionsLayout->addWidget(paletteAddColorButton);
+    paletteOptionsLayout->addStretch();
+    paletteOptionsLayout->addWidget(paletteClearButton);
+
     leftLayout->addWidget(_triangle);
 
     _stack->addWidget(rgbaWidget);
@@ -406,12 +565,13 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     topLayout->addWidget(leftWidget);
     topLayout->addWidget(rightWidget);
 
-    bottomLayout->addWidget(_button);
     bottomLayout->addStretch();
+    bottomLayout->addWidget(_button);
     bottomLayout->addWidget(hexWidget);
 
     mainLayout->addWidget(topWidget);
-    mainLayout->addWidget(bottomWidget);
+    mainLayout->addWidget(paletteWidget);
+    rightLayout->addWidget(bottomWidget);
 
     // connect the widgets
     QObject::connect( _triangle, SIGNAL( colorChanged(QColor) ),
@@ -456,6 +616,18 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
 
     QObject::connect( _button, SIGNAL( clicked(bool) ),
                       this, SLOT( handleButtonClicked(bool) ) );
+
+    QObject::connect( paletteAddColorButton, SIGNAL(clicked(bool)),
+                      this, SLOT(setPaletteButtonColor(bool)) );
+    QObject::connect( paletteClearButton, SIGNAL(clicked(bool)),
+                      this, SLOT(clearPaletteButtons(bool)) );
+    QObject::connect( addPaletteColorShortcut, SIGNAL(activated()),
+                      this, SLOT(setPaletteButtonColor()) );
+    QObject::connect( clearPaletteColorsShortcut, SIGNAL(activated()),
+                      this, SLOT(clearPaletteButtons()) );
+
+    // setup palette
+    initPaletteButtons(paletteButtonsWidget);
 }
 
 void
@@ -490,6 +662,16 @@ ColorSelectorWidget::setColor(float r,
     }
     setTriangle(r, g, b, _slideA ? a : 1.);
     setHex( _triangle->color() );
+}
+
+void
+ColorSelectorWidget::setColorFromPalette(float r,
+                                         float g,
+                                         float b,
+                                         float a)
+{
+    setColor(r, g, b, a);
+    announceColorChange();
 }
 
 void
@@ -633,13 +815,108 @@ ColorSelectorWidget::announceColorChange()
 void
 ColorSelectorWidget::setTriangleSize()
 {
-    int triangleSize = 4;
+    int triangleSize = _spinA ? 5 : 4;
     int padding = 10;
 
     triangleSize = (_spinR->size().height() * triangleSize) + (triangleSize * padding);
 
     _triangle->setMinimumSize(triangleSize, triangleSize);
     _triangle->setMaximumSize(triangleSize, triangleSize);
+}
+
+void
+ColorSelectorWidget::initPaletteButtons(QWidget *widget,
+                                        int rows,
+                                        int cols)
+{
+    if (!widget) {
+        return;
+    }
+
+    _paletteButtons.clear();
+    QVBoxLayout *widgetLayout = new QVBoxLayout(widget);
+    widget->setContentsMargins(0, 0, 0, 0);
+    widgetLayout->setContentsMargins(0, 0, 0, 0);
+    widgetLayout->setSpacing(0);
+
+    for (int x = 0; x < rows; ++x) {
+        QWidget *colWidget = new QWidget(widget);
+        colWidget->setContentsMargins(0, 0, 0, 0);
+        QHBoxLayout *colLayout = new QHBoxLayout(colWidget);
+        colLayout->setContentsMargins(0, 0, 0, 0);
+        colLayout->setSpacing(0);
+        widgetLayout->addWidget(colWidget);
+        for (int y = 0; y < cols; ++y) {
+            ColorSelectorPaletteButton *button = new ColorSelectorPaletteButton(colWidget);
+            QObject::connect( button, SIGNAL(colorPicked(float,float,float,float)),
+                              this, SLOT(setColorFromPalette(float,float,float,float)) );
+            colLayout->addWidget(button);
+            _paletteButtons << button;
+        }
+    }
+}
+
+void
+ColorSelectorWidget::updatePaletteButtons()
+{
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
+                        QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
+
+    for (int i = 0; i < _paletteButtons.size(); ++i) {
+        if ( !settings.value( QString::number(i) ).isValid() ) {
+            continue;
+        }
+        QStringList colorValues = settings.value( QString::number(i) ).toStringList();
+        if (colorValues.size() > 3) {
+            _paletteButtons.at(i)->setColor( colorValues.at(0).toFloat(),
+                                             colorValues.at(1).toFloat(),
+                                             colorValues.at(2).toFloat(),
+                                             colorValues.at(3).toFloat() );
+        }
+    }
+
+    settings.endGroup();
+}
+
+void
+ColorSelectorWidget::savePaletteButton(int id)
+{
+    if (_paletteButtons.size() < 1 || id >= _paletteButtons.size() || id < 0) {
+        return;
+    }
+
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
+                        QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
+
+    QStringList colorValues;
+    float r, g, b, a;
+    _paletteButtons.at(id)->getColor(&r, &g, &b, &a);
+    colorValues << QString::number(r) << QString::number(g);
+    colorValues << QString::number(b) << QString::number(a);
+    settings.setValue(QString::number(id), colorValues);
+
+    settings.endGroup();
+}
+
+void
+ColorSelectorWidget::savePaletteButtons()
+{
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
+                        QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
+
+    for (int i = 0; i < _paletteButtons.size(); ++i) {
+        QStringList colorValues;
+        float r, g, b, a;
+        _paletteButtons.at(i)->getColor(&r, &g, &b, &a);
+        colorValues << QString::number(r) << QString::number(g);
+        colorValues << QString::number(b) << QString::number(a);
+        settings.setValue(QString::number(i), colorValues);
+    }
+
+    settings.endGroup();
 }
 
 void
@@ -925,6 +1202,50 @@ ColorSelectorWidget::handleButtonClicked(bool checked)
         _button->setToolTip( QObject::tr("Switch to HSV") );
         _stack->setCurrentIndex(0);
     }
+}
+
+void
+ColorSelectorWidget::setPaletteButtonColor(bool /*clicked*/)
+{
+    if (_paletteButtons.size() < 1) {
+        return;
+    }
+
+    int buttonID = 0;
+    bool resetModified = false;
+    for (int i = 0; i < _paletteButtons.size(); ++i) {
+        if ( _paletteButtons.at(i)->isModified() ) {
+            if (i == (_paletteButtons.size() - 1) ) {
+                resetModified = true;
+            }
+            continue;
+        }
+        buttonID = i;
+        break;
+    }
+
+    if (resetModified) {
+        for (int i = 0; i < _paletteButtons.size(); ++i) {
+            _paletteButtons.at(i)->clearModified();
+        }
+    }
+
+    if ( buttonID < _paletteButtons.size() ) {
+        _paletteButtons.at(buttonID)->setColor( _spinR->value(),
+                                                _spinG->value(),
+                                                _spinB->value(),
+                                                _spinA ? _spinA->value() : 1.0 );
+        savePaletteButton(buttonID);
+    }
+}
+
+void
+ColorSelectorWidget::clearPaletteButtons(bool /*clicked*/)
+{
+    for (int i = 0; i < _paletteButtons.size(); ++i) {
+        _paletteButtons.at(i)->clearColor();
+    }
+    savePaletteButtons();
 }
 
 NATRON_NAMESPACE_EXIT
