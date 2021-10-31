@@ -257,7 +257,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs"
 
     cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
-    cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
+    cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
 
     # Include in the portable version the test program that we will use later on
     if [ "$location" = "${TMP_PORTABLE_DIR}" ]; then
