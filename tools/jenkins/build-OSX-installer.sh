@@ -519,7 +519,7 @@ else
     pycfg="${package}/Contents/${PYLIB}/config"
 fi
 pushd "${pycfg}"
-chmod -x Makefile Setup Setup.config Setup.local config.c config.c.in python.o
+chmod -x Makefile Setup Setup.config Setup.local config.c config.c.in python.o || true
 rm -f "libpython${PYVER}.a" "libpython${PYVER}.dylib"
 # yes, the static library is actually a link to the dynamic library on OS X (check before doing this on other archs)
 ln -s ../../../Python "libpython${PYVER}.a"
