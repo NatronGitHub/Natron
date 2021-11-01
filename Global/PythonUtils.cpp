@@ -181,8 +181,8 @@ void setupPythonEnv(const char* argv0Param)
     if ( !pyPath.empty() ) {
         toPrepend.push_back(pyPath);
     }
-    if ( !pyPathDynLoad.isEmpty() ) {
-        toPrepend.append(pyPathDynLoad);
+    if ( !pyPathDynLoad.empty() ) {
+        toPrepend.push_back(pyPathDynLoad);
     }
     if ( !pluginPath.empty() ) {
         toPrepend.push_back(pluginPath);
