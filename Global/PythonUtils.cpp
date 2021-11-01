@@ -101,6 +101,7 @@ void setupPythonEnv(const char* argv0Param)
 #  endif
     std::string pyPathZip = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING;
+    std::string pyPathDynLoad = pyPath + "/lib-dynload";
     std::string pluginPath = binPath + "/../Plugins";
 #endif
     if ( !fileExists( StrUtils::fromNativeSeparators(pyPathZip) ) ) {
@@ -114,6 +115,12 @@ void setupPythonEnv(const char* argv0Param)
         printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.c_str() );
 #     endif
         pyPath.clear();
+    }
+    if ( !dirExists( StrUtils::fromNativeSeparators(pyPathDynLoad) ) ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathDynLoad.c_str() );
+#     endif
+        pyPathDynLoad.clear();
     }
     if ( !dirExists( StrUtils::fromNativeSeparators(pluginPath) ) ) {
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
@@ -173,6 +180,9 @@ void setupPythonEnv(const char* argv0Param)
     }
     if ( !pyPath.empty() ) {
         toPrepend.push_back(pyPath);
+    }
+    if ( !pyPathDynLoad.isEmpty() ) {
+        toPrepend.append(pyPathDynLoad);
     }
     if ( !pluginPath.empty() ) {
         toPrepend.push_back(pluginPath);

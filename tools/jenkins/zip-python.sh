@@ -11,7 +11,7 @@ set -u # Treat unset variables as an error when substituting.
 if [ "$PYV" = 3 ]; then
     echo "* Downloading Embedded Python zip..."
     pushd "$PYDIR"
-    mv site-packages ..
+    mv site-packages lib-dynload ..
     cd ..
     PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()))")"
     wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
@@ -19,7 +19,7 @@ if [ "$PYV" = 3 ]; then
     rm "python-${PYVERFULL}-embed-amd64.zip"
     rm -rf python${PYVER}
     mkdir python${PYVER}
-    mv site-packages python${PYVER}
+    mv site-packages lib-dynload python${PYVER}
     popd
 fi
 

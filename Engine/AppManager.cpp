@@ -2994,6 +2994,7 @@ AppManager::initPython()
 #  endif
     QString pyPathZip = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
     QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
+    QString pyPathDynLoad = pyPath + QString::fromUtf8("/lib-dynload");
     QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
 #endif
     if ( !QFile( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
@@ -3007,6 +3008,12 @@ AppManager::initPython()
         printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
 #     endif
         pyPath.clear();
+    }
+    if ( !QDir( QDir::fromNativeSeparators(pyPathDynLoad) ).exists() ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathDynLoad.toStdString().c_str() );
+#     endif
+        pyPathDynLoad.clear();
     }
     if ( !QDir( QDir::fromNativeSeparators(pluginPath) ).exists() ) {
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
@@ -3064,6 +3071,9 @@ AppManager::initPython()
     }
     if ( !pyPath.isEmpty() ) {
         toPrepend.append(pyPath);
+    }
+    if ( !pyPathDynLoad.isEmpty() ) {
+        toPrepend.append(pyPathDynLoad);
     }
     if ( !pluginPath.isEmpty() ) {
         toPrepend.append(pluginPath);
