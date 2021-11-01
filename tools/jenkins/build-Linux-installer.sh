@@ -553,7 +553,7 @@ for y in $PYSIDE_DEPENDS; do
 done
 
 # Remove any pycache
-(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ; find . -name __pycache__ -exec rm -rf {} \;) || true
 
 # Strip pyside and python depends
 if [ "${COMPILE_TYPE}" != "debug" ]; then
