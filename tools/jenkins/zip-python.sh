@@ -8,12 +8,12 @@ set -u # Treat unset variables as an error when substituting.
 # PY_BIN: Python binary path
 # PYDIR: Path to python lib path
 
-if [ "$PYV" = 3 ];
+if [ "$PYV" = 3 ]; then
     echo "* Downloading Embedded Python zip..."
     pushd "$PYDIR"
-    PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     mv site-packages ..
     cd ..
+    PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
     unzip "python-${PYVERFULL}-embed-amd64.zip" "python${PYVERNODOT}.zip"
     rm "python-${PYVERFULL}-embed-amd64.zip"
@@ -23,7 +23,7 @@ if [ "$PYV" = 3 ];
     popd
 fi
 
-if [ "$PYV" = 2 ];
+if [ "$PYV" = 2 ]; then
 echo "* Zipping Python..."
 
 pushd "$PYDIR"
