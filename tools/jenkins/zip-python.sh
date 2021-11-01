@@ -8,6 +8,22 @@ set -u # Treat unset variables as an error when substituting.
 # PY_BIN: Python binary path
 # PYDIR: Path to python lib path
 
+if [ "$PYV" = 3 ];
+    echo "* Downloading Embedded Python zip..."
+    pushd "$PYDIR"
+    PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    mv site-packages ..
+    cd ..
+    wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
+    unzip "python-${PYVERFULL}-embed-amd64.zip" "python${PYVERNODOT}.zip"
+    rm "python-${PYVERFULL}-embed-amd64.zip"
+    rm -rf python${PYVER}
+    mkdir python${PYVER}
+    mv site-packages python${PYVER}
+    popd
+fi
+
+if [ "$PYV" = 2 ];
 echo "* Zipping Python..."
 
 pushd "$PYDIR"
@@ -51,6 +67,7 @@ rm -rf "${PY_ZIP_FILES[@]}" || true
 # rm -rf tmp
 
 popd # pushd "$PYDIR"
+fi
 
 # Local variables:
 # mode: shell-script
