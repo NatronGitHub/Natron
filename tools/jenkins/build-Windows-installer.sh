@@ -431,6 +431,7 @@ export PYDIR="$PYDIR"
 NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
+    pushd "$PYDIR/../.."
     if [ "$PYV" = "2" ]; then
         $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
     else
@@ -449,6 +450,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}"" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
     fi
+    popd
 fi
 
 
