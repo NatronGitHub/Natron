@@ -13,7 +13,7 @@ if [ "$PYV" = 3 ]; then
     pushd "$PYDIR"
     mv site-packages ..
     cd ..
-    PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[))")"
     wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
     unzip "python-${PYVERFULL}-embed-amd64.zip" "python${PYVERNODOT}.zip"
     rm "python-${PYVERFULL}-embed-amd64.zip"
