@@ -5,10 +5,12 @@ PortGroup           compiler_blacklist_versions 1.0
 PortGroup           muniversal 1.0
 
 name                libvpx
+conflicts           libvpx-devel
+set my_name         libvpx
 version             1.11.0
 revision            0
 categories          multimedia
-maintainers         {devans @dbevans} openmaintainer
+maintainers         {devans @dbevans} {mascguy @mascguy} openmaintainer
 platforms           darwin
 license             Permissive
 
@@ -24,12 +26,15 @@ long_description    The WebM VP8/VP9 codecs are being developed \
 
 homepage            http://webmproject.org/tools/
 
+distname            ${my_name}-${version}
+dist_subdir         ${my_name}
+
 # use git fetch rather than downloading a snapshot tarball
 # which delivers a different checksum and size on each download
 # this is not a stealth upgrade but a "feature" of this repo
 
 fetch.type          git
-git.url             https://chromium.googlesource.com/webm/${name}
+git.url             https://chromium.googlesource.com/webm/${my_name}
 git.branch          v${version}
 
 # support for non-intel archs removed in version 1.5.0
@@ -121,11 +126,11 @@ if {${universal_possible} && [variant_isset universal]} {
 # shared library uses relative path in install name
 # override with absolute path
 post-destroot {
-    foreach f [glob ${destroot}${prefix}/lib/${name}.*.dylib] {
+    foreach f [glob ${destroot}${prefix}/lib/${my_name}.*.dylib] {
         system "install_name_tool -id [string map [list ${destroot} ""] ${f}] ${f}"
     }
 }
 
 livecheck.type  regex
-livecheck.url   https://chromium.googlesource.com/webm/${name}
+livecheck.url   https://chromium.googlesource.com/webm/${my_name}
 livecheck.regex ">v(\\d+(?:\\.\\d+)*)<"
