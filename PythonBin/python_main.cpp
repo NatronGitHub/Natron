@@ -29,6 +29,28 @@
 
 #include <vector>
 
+#if PY_MAJOR_VERSION >= 3
+
+// OSX 10.6 Snow Leopard is missing wcsdup
+#if (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
+#include <sys/cdefs.h>
+#include <stdlib.h>
+#include <wchar.h>
+
+static wchar_t *
+wcsdup(const wchar_t *s)
+{
+	wchar_t *copy;
+	size_t len;
+
+	len = wcslen(s) + 1;
+	if ( (copy = malloc(len * sizeof(wchar_t))) == NULL ) {
+		return (NULL);
+    }
+	return wmemcpy(copy, s, len);
+}
+#endif
+#endif
 
 
 
