@@ -44,7 +44,7 @@ wcsdup(const wchar_t *s)
 	size_t len;
 
 	len = wcslen(s) + 1;
-	if ( (copy = malloc(len * sizeof(wchar_t))) == NULL ) {
+	if ( (copy = (wchar_t *)malloc(len * sizeof(wchar_t))) == NULL ) {
 		return (NULL);
     }
 	return wmemcpy(copy, s, len);
