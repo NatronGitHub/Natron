@@ -35,6 +35,7 @@
 #include <QScrollBar>
 #include <QtCore/QThread>
 #include <QToolButton>
+#include <QWindow>
 
 // Natron includes
 #include "Engine/Curve.h"

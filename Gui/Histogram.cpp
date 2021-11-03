@@ -42,6 +42,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication>
 #include <QToolButton>
 #include <QActionGroup>
+#include <QWindow>
 
 #include "Engine/HistogramCPU.h"
 #include "Engine/Image.h"

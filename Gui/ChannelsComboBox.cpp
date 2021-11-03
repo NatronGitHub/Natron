@@ -35,6 +35,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QPaintEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QPainter>
+#include <QPainterPath>
 #include <QPen>
 
 NATRON_NAMESPACE_ENTER
