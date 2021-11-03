@@ -334,6 +334,18 @@ PyModalDialog::getParam(const QString& scriptName) const
     return Effect::createParamWrapperForKnob(knob);
 }
 
+QSize
+PyModalDialog::minimumSizeHint() const
+{
+    return QWidget::minimumSizeHint();
+}
+
+QSize
+PyModalDialog::sizeHint() const
+{
+    return QWidget::sizeHint();
+}
+
 struct PyPanelPrivate
 {
     DialogParamHolder* holder;

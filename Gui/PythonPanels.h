@@ -28,7 +28,7 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_GEN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
@@ -104,6 +104,10 @@ public:
     void insertWidget(int index, QWidget* widget);
 
     void addWidget(QWidget* widget);
+
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+
+    virtual QSize sizeHint() const OVERRIDE FINAL;
 
     DialogParamHolder* getKnobsHolder() const;
 

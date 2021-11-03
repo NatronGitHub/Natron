@@ -19,8 +19,14 @@
    - ***** END LICENSE BLOCK ***** -->
 <typesystem package="NatronGui">
 
+    <inject-code class="native" position="beginning">
+        NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+    </inject-code>
+
     <!--Load QtGui typesystem-->
     <load-typesystem name="typesystem_gui.xml" generate="no" />
+    <!--Load QtWidgets typesystem-->
+    <load-typesystem name="typesystem_widgets.xml" generate="no" />
     <!--Load Engine typesystem-->
     <load-typesystem name="typesystem_engine.xml" generate="no" />
 
