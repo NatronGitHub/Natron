@@ -2954,7 +2954,7 @@ AppManager::initPython()
     //
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-    setupPythonEnv(binPath.toStdString());
+    NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
 
     ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
