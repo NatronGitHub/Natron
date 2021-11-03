@@ -57,6 +57,7 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/QtCompat.h" // removeFileExtension
+#include "Global/PythonUtils.h"
 
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/CLArgs.h"

@@ -73,7 +73,7 @@ static bool dirExists(const std::string& path)
     return true;
 }
 
-void setupPythonEnv(const char* argv0Param)
+void setupPythonEnv(const std::string& binPath)
 {
     //Disable user sites as they could conflict with Natron bundled packages.
     //If this is set, Python won’t add the user site-packages directory to sys.path.
@@ -84,8 +84,6 @@ void setupPythonEnv(const char* argv0Param)
     //
     // set up paths, clear those that don't exist or are not valid
     //
-    std::string binPath = ProcInfo::applicationDirPath(argv0Param);
-    binPath = StrUtils::toNativeSeparators(binPath);
 #ifdef __NATRON_WIN32__
     static std::string pythonHome = binPath + "\\.."; // must use static storage
     std::string pyPathZip = pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
@@ -99,6 +97,7 @@ void setupPythonEnv(const char* argv0Param)
 #  else
 #    error "unsupported platform"
 #  endif
+    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome);
     std::string pyPathZip = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING;
     std::string pyPathDynLoad = pyPath + "/lib-dynload";
@@ -157,7 +156,6 @@ void setupPythonEnv(const char* argv0Param)
 #     endif
 #     if PY_MAJOR_VERSION >= 3
         // Python 3
-        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
         Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
 #     else
         // Python 2
@@ -222,16 +220,18 @@ void setupPythonEnv(const char* argv0Param)
         } else {
             pythonPath = toPrependStr + pathSep + pythonPath;
         }
-        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#     if 0//def __NATRON_WIN32__
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath).c_str());
-#     else
-        ProcInfo::putenv_wrapper( "PYTHONPATH", pythonPath.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
+        // Py_SetPath() sets the whole path, but setting PYTHONPATH still keeps the system's python path
+#     if 0 // PY_MAJOR_VERSION >= 3 // commented for the reason above
         std::wstring pythonPathString = StrUtils::utf8_to_utf16(pythonPath);
         Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
+#     else
+#      if 0//def __NATRON_WIN32__
+        // qputenv on mingw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
+        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath).c_str());
+#      else
+        ProcInfo::putenv_wrapper( "PYTHONPATH", pythonPath.c_str() );
+        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
+#      endif
 #     endif
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "PYTHONPATH set to %s\n", pythonPath.c_str() );
@@ -287,6 +287,17 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 #endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
+
+#if PY_MAJOR_VERSION >= 3
+    // Py_SetPath clears sys.prefix and sys.exec_prefix
+    // https://github.com/NatronGitHub/Natron/issues/696
+    PyObject *prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
+    PySys_SetObject(const_cast<char*>("prefix"), prefix);
+    Py_XDECREF(prefix);
+    PyObject *exec_prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
+    PySys_SetObject(const_cast<char*>("exec_prefix"), exec_prefix);
+    Py_XDECREF(exec_prefix);
+#endif
 
     /////////////////////////////////////////
     // PySys_SetArgv
@@ -358,14 +369,48 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
         printf( "Py_GetPath is %s\n", Py_GetPath() );
         printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
-#else
+#else // PY_MAJOR_VERSION >= 3
         printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
         printf( "Py_GetProgramFullPath is %ls\n", Py_GetProgramFullPath() );
         printf( "Py_GetPath is %ls\n", Py_GetPath() );
         printf( "Py_GetPythonHome is %ls\n", Py_GetPythonHome() );
-#endif
+
+#define DUMP_SYS(NAME) \
+            do { \
+                obj = PySys_GetObject(#NAME); \
+                PySys_FormatStderr("  sys.%s = ", #NAME); \
+                if (obj != NULL) { \
+                    PySys_FormatStdout("%A", obj); \
+                } \
+                else { \
+                    PySys_WriteStdout("(not set)"); \
+                } \
+                PySys_FormatStdout("\n"); \
+            } while (0)
+
+        PyObject *obj;
+        DUMP_SYS(version);
+        DUMP_SYS(_base_executable);
+        DUMP_SYS(base_prefix);
+        DUMP_SYS(base_exec_prefix);
+        DUMP_SYS(platlibdir);
+        DUMP_SYS(executable);
+        DUMP_SYS(prefix);
+        DUMP_SYS(exec_prefix);
+#undef DUMP_SYS
+
+        PyObject *sys_path = PySys_GetObject("path");  /* borrowed reference */
+        if (sys_path != NULL && PyList_Check(sys_path)) {
+            PySys_WriteStdout("  sys.path = [\n");
+            Py_ssize_t len = PyList_GET_SIZE(sys_path);
+            for (Py_ssize_t i=0; i < len; i++) {
+                PyObject *path = PyList_GET_ITEM(sys_path, i);
+                PySys_FormatStdout("    %A,\n", path);
+            }
+            PySys_WriteStdout("  ]\n");
+        }
 
         PyObject* dict = PyModule_GetDict(mainModule);
 
@@ -377,6 +422,7 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         if (v) {
             Py_DECREF(v);
         }
+#endif // PY_MAJOR_VERSION >= 3
     }
 #endif
 
@@ -388,6 +434,37 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
     return mainModule;
 } // initializePython
+
+
+std::string
+PyStringToStdString(PyObject* py_val)
+{
+    ///Must be locked
+    assert( PyThreadState_Get() );
+    std::string val;
+    PyObject* s = nullptr;
+    // The following should work with Python 2 and 3.
+    // https://stackoverflow.com/a/38600095
+    if (!py_val) {
+        val = "(null)";
+    } else if( PyUnicode_Check(py_val) ) {  // python3 has unicode, but we convert to bytes
+        s = PyUnicode_AsUTF8String(py_val);
+    } else if( PyBytes_Check(py_val) ) {  // python2 has bytes already
+        s = PyObject_Bytes(py_val);
+    } else {
+        // Not a string => Error, warning ...
+        val = "(not a string)";
+    }
+
+    // If succesfully converted to bytes, then convert to C++ string
+    if (s) {
+        val = std::string( PyBytes_AS_STRING(s) );
+        Py_XDECREF(s);
+    }
+
+    return val;
+}
+
 NATRON_PYTHON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_EXIT

@@ -55,7 +55,7 @@ NATRON_PYTHON_NAMESPACE_ENTER
 /**
  * @brief Calls Py_SetPythonHome and set PYTHONPATH
  **/
-void setupPythonEnv(const char* argv0Param);
+void setupPythonEnv(const std::string& binPath);
 
 /**
  * @brief Must be called after setupPythonEnv(), calls Py_SetProgramName and Py_Initialize, PySys_SetArgv
@@ -67,6 +67,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide);
 PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8);
 #endif
 
+std::string PyStringToStdString(PyObject* obj);
 
 NATRON_PYTHON_NAMESPACE_EXIT
 

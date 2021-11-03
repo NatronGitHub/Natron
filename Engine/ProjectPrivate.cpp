@@ -36,6 +36,8 @@
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 
+#include "Global/PythonUtils.h"
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppManager.h"

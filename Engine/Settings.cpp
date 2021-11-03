@@ -2215,7 +2215,7 @@ Settings::tryLoadOpenColorIOConfig()
     qDebug() << "setting OCIO=" << configFile;
 #endif
     std::string stdConfigFile = configFile.toStdString();
-#if 0 //def __NATRON_WIN32__
+#if 0 //def __NATRON_WIN32__ // commented out in https://github.com/NatronGitHub/Natron/commit/3445d671f15fbd97bca164b53ceb41cef47c61c3
     _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
 #else
     qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );

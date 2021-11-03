@@ -26,6 +26,7 @@
 #include "Global/StrUtils.h"
 #include "Global/ProcInfo.h"
 #include "Global/PythonUtils.h"
+#include "Global/StrUtils.h"
 
 #include <vector>
 
@@ -71,7 +72,9 @@ extern "C" {
         return 1;
     }
 
-    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(commandLineArgsUtf8[0].c_str());
+    std::string binPath = NATRON_NAMESPACE::ProcInfo::applicationDirPath(commandLineArgsUtf8[0].c_str());
+    binPath = NATRON_NAMESPACE::StrUtils::toNativeSeparators(binPath);
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath);
 
 
 #if PY_MAJOR_VERSION >= 3

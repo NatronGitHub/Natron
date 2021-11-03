@@ -52,6 +52,8 @@ GCC_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(mismatched-tags)
 GCC_DIAG_ON(unused-parameter)
 
+#include "Global/PythonUtils.h"
+
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"

@@ -205,6 +205,7 @@ SOURCES += \
     ../Global/glad_source.c \
     ../Global/FStreamsSupport.cpp \
     ../Global/ProcInfo.cpp \
+    ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/animatedparam_wrapper.cpp \
