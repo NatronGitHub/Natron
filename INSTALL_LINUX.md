@@ -130,6 +130,12 @@ Abstraction layer for PyQt5/PyQt4/PySide2/PySide.
 pip install qtpy
 ```
 
+### Other Python packages
+
+```
+pip install six psutil
+```
+
 # Configuration
 
 ### OpenFX

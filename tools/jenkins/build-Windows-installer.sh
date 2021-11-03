@@ -444,11 +444,13 @@ if [ -x "${NATRON_PYTHON}" ]; then
         # Qt4 support was dropped after QtPy 1.11.2
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
     else
-        "${NATRON_PYTHON}"" -m pip install qtpy
+        "${NATRON_PYTHON}" -m pip install qtpy
     fi
+    # Useful Python packages
+    "${NATRON_PYTHON}" -m pip install six psutil
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-        "${NATRON_PYTHON}"" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+        "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
     fi
     popd
 fi
