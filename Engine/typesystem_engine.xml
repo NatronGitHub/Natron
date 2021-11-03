@@ -18,10 +18,13 @@
   - along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
    - ***** END LICENSE BLOCK ***** -->
 <typesystem package="NatronEngine">
-    
+
+    <inject-code class="native" position="beginning">
+        NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+    </inject-code>
+
     <!--Load QtCore typesystem-->
     <load-typesystem name="typesystem_core.xml" generate="no" />
-    
     <!--Primitives-->
     <primitive-type name="bool"/>
     <primitive-type name="double"/>
@@ -209,8 +212,8 @@
         </conversion-rule>
     </container-type>
 
-     <!--Natron global enums-->
-    <namespace-type name="NATRON_NAMESPACE">
+     <!--Natron global enums
+    <namespace-type name="NATRON_NAMESPACE">-->
     <enum-type name="StatusEnum"/>
     <enum-type name="MergingFunctionEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
@@ -225,7 +228,7 @@
     <enum-type name="OrientationEnum"/>
     <enum-type name="PlaybackModeEnum"/>
     <enum-type name="DisplayChannelsEnum"/>
-    </namespace-type>
+    <!--</namespace-type>-->
     
    
    <object-type name="RectI">
@@ -1506,14 +1509,7 @@
 
                     for (int j = 0; j &lt; subSize; ++j) {
                         PyObject* pyString = PyList_GET_ITEM(subList,j);
-                        if ( PyString_Check(pyString) ) {
-                            char* buf = PyString_AsString(pyString);
-                            if (buf) {
-                                std::string ret;
-                                ret.append(buf);
-                                rowVec[j] = ret;
-                                }
-                        } else if (PyUnicode_Check(pyString) ) {
+                        if (PyUnicode_Check(pyString) ) {
                             PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
                             if (utf8pyobj) {
                                 char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer

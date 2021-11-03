@@ -47,7 +47,7 @@ GCC_DIAG_OFF(uninitialized)\
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF\
 #include <shiboken.h> // produces many warnings@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
-sed -e 's@// Extra includes@// Extra includes\
+sed -e 's@// inner classes@// inner classes\
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 # replace NATRON_NAMESPACE with Natron for enums with flags (e.g. StandardButtonEnum)
@@ -56,9 +56,10 @@ sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@, Natron
 # re-add the Natron namespace
 #sed -e 's@" ::\([^s][^t][^d]\)@ NATRON_NAMESPACE::\1@g' -i'.bak' Engine/NatronEngine/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.cpp Gui/NatronGui/*.h
 
-sed -e 's@SbkType< ::@SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::@g' -e 's@SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::QFlags<@SbkType< ::QFlags<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::@g' -e's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Rect@NATRON_NAMESPACE::Rect@g' -i'.bak' Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
+sed -e '/AnimatedParam/ {:y;n;by};s@SbkType< ::\(.*\) >@SbkType<NATRON_NAMESPACE::\1 >@g' -i Engine/NatronEngine/natronengine_python.h
+sed -e 's@SbkType< ::@SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::@g' -e 's@SbkType<NATRON_NAMESPACE::QFlags<@SbkType< ::QFlags<NATRON_NAMESPACE::@g' -e's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Rect@NATRON_NAMESPACE::Rect@g' -i'.bak' Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
 sed -e 's@^class @NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER\
-class @g' -e 's@^};@};\
+class @g;T;{:y;/^};/! {n;by}};s@^};@};\
 NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT@g'  -i'.bak' Engine/NatronEngine/*.h Gui/NatronGui/*.h
 
 # replace NATRON_NAMESPACE::NATRON_NAMESPACE with NATRON_NAMESPACE in the enums wrappers
@@ -67,18 +68,18 @@ sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAM
 sed -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\
 #include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
-sed -e 's@^#include <pyside_qtcore_python.h>$@CLANG_DIAG_OFF(deprecated)\
+sed -e 's@^#include <pyside2_qtcore_python.h>$@CLANG_DIAG_OFF(deprecated)\
 CLANG_DIAG_OFF(uninitialized)\
 CLANG_DIAG_OFF(keyword-macro)\
-#include <pyside_qtcore_python.h> // produces warnings\
+#include <pyside2_qtcore_python.h> // produces warnings\
 CLANG_DIAG_ON(deprecated)\
 CLANG_DIAG_ON(uninitialized)\
 CLANG_DIAG_ON(keyword-macro)@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.h
 
-sed -e 's@^#include <pyside_qtgui_python.h>$@CLANG_DIAG_OFF(deprecated)\
+sed -e 's@^#include <pyside2_qtgui_python.h>$@CLANG_DIAG_OFF(deprecated)\
 CLANG_DIAG_OFF(uninitialized)\
 CLANG_DIAG_OFF(keyword-macro)\
-#include <pyside_qtgui_python.h> // produces warnings\
+#include <pyside2_qtgui_python.h> // produces warnings\
 CLANG_DIAG_ON(deprecated)\
 CLANG_DIAG_ON(uninitialized)\
 CLANG_DIAG_ON(keyword-macro)@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.h

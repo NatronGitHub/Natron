@@ -33,10 +33,8 @@
 #include <set>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/scoped_ptr.hpp>
-#endif
 
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>

@@ -28,11 +28,6 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
-#ifdef SBK_RUN
-// shiboken doesn't generate SbkNatronEngine_StandardButtonEnum_as_number unless it is put in a class or namespace
-NATRON_NAMESPACE_EXIT
-namespace NATRON_NAMESPACE {
-#endif
 
 enum ScaleTypeEnum
 {
@@ -683,11 +678,6 @@ enum MergingFunctionEnum
 
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons, StandardButtonEnum)
-
-#ifdef SBK_RUN
-}
-NATRON_NAMESPACE_ENTER
-#endif
 
 
 NATRON_NAMESPACE_EXIT
