@@ -1509,7 +1509,18 @@
 
                     for (int j = 0; j &lt; subSize; ++j) {
                         PyObject* pyString = PyList_GET_ITEM(subList,j);
+                #if PY_VERSION_MAJOR &lt; 3
+                        if ( PyString_Check(pyString) ) {
+                            char* buf = PyString_AsString(pyString);
+                            if (buf) {
+                                std::string ret;
+                                ret.append(buf);
+                                rowVec[j] = ret;
+                                }
+                        } else if (PyUnicode_Check(pyString) ) {
+                #else
                         if (PyUnicode_Check(pyString) ) {
+                #endif
                             PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
                             if (utf8pyobj) {
                                 char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer

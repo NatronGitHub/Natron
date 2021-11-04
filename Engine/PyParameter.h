@@ -428,7 +428,6 @@ public:
 
     Int2DTuple get() const;
     Int2DTuple get(double frame) const;
-    using IntParam::set;
     void set(int x, int y);
     void set(int x, int y, double frame);
 };
@@ -445,8 +444,6 @@ public:
 
     Int3DTuple get() const;
     Int3DTuple get(double frame) const;
-    using IntParam::set;
-    using Int2DParam::set;
     void set(int x, int y, int z);
     void set(int x, int y, int z, double frame);
 };

@@ -36,7 +36,11 @@
  * Do not include it when compiling Natron.
  **/
 
+#ifdef SBK2_GEN
 #include <pyside2_global.h>
+#else
+#include <pyside_global.h>
+#endif
 #include <string>
 //Global
 #include <GlobalDefines.h>
