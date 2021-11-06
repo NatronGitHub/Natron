@@ -32,7 +32,10 @@
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
 #include <QtCore/QByteArray>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
+#endif
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
