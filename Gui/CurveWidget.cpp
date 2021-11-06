@@ -38,7 +38,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication>
 #include <QToolButton>
 #include <QDesktopWidget>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
+#endif
 
 #include "Engine/Bezier.h"
 #include "Engine/PyParameter.h" // IntParam

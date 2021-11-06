@@ -37,6 +37,7 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
+#include <QWindow>
 #else
 #include <QtGui/QMenu>
 #include <QtGui/QToolButton>
@@ -51,7 +52,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtOpenGL/QGLShaderProgram>
 #include <QTreeWidget>
 #include <QTabBar>
-#include <QWindow>
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
