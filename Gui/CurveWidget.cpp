@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication>
 #include <QToolButton>
 #include <QDesktopWidget>
+#include <QWindow>
 
 #include "Engine/Bezier.h"
 #include "Engine/PyParameter.h" // IntParam
@@ -478,7 +479,7 @@ CurveWidget::getScreenPixelRatio() const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
+    return windowHandle()->devicePixelRatio();
 #else
     return _imp->_gui ? _imp->_gui->devicePixelRatio() : 1.;
 #endif

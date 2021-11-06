@@ -32,6 +32,7 @@
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
 #include <QtCore/QByteArray>
+#include <QWindow>
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -197,7 +198,7 @@ double
 CustomParamInteract::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
+    return windowHandle()->devicePixelRatio();
 #else
     KnobGuiPtr k = _imp->knob.lock();
     return (k && k->getGui()) ? k->getGui()->devicePixelRatio() : 1.;

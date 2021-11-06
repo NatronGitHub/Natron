@@ -47,6 +47,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QApplication> // qApp
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+#include <QMimeData>
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>

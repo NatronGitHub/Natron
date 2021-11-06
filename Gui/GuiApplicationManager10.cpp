@@ -69,8 +69,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 // removed in qt5, just revert the commit (1b58d9acc493111390b31f0bffd6b2a76baca91b)
 Q_INIT_RESOURCE_EXTERN(GuiResources);
+#endif
 
 /**
  * @macro Registers a keybind to the application.
@@ -109,6 +111,12 @@ Q_INIT_RESOURCE_EXTERN(GuiResources);
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
 #define NATRON_SHORTCUTS_DEFAULT_VERSION 8
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+inline void initGuiResource() {
+    Q_INIT_RESOURCE(GuiResources);
+}
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -309,10 +317,15 @@ GuiApplicationManager::initializeQApp(int &argc,
 
     app->setQuitOnLastWindowClosed(true);
 
-    //Q_INIT_RESOURCE(GuiResources);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    // use namespace workaround
+    // https://doc.qt.io/qt-5/qdir.html#Q_INIT_RESOURCE
+    initGuiResource();
+#else
     // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
     // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
     ::qInitResources_GuiResources();
+#endif
 
 #ifdef DEBUG
     QLocale loc;

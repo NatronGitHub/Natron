@@ -51,6 +51,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtOpenGL/QGLShaderProgram>
 #include <QTreeWidget>
 #include <QTabBar>
+#include <QWindow>
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -3640,7 +3641,7 @@ double
 ViewerGL::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
+    return windowHandle()->devicePixelRatio();
 #else
     return (_imp->viewerTab && _imp->viewerTab->getGui()) ? _imp->viewerTab->getGui()->devicePixelRatio() : 1.;
 #endif
