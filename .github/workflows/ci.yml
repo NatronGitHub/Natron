@@ -1,0 +1,81 @@
+name: Tests
+
+on:
+  push:
+    branches:
+    - RB-2.5
+    paths-ignore:
+      - Documentation
+  pull_request:
+    branches:
+    - RB-2.5
+    paths-ignore:
+      - Documentation
+
+jobs:
+  test:
+    name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.special-invocation }}bash -l {0}
+    env:
+      CI: 'True'
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      # PYSIDE2_VERSION: ${{ matrix.pyside2-version }}
+      # PYSIDE2_QT_VERSION: ${{ matrix.pyside2-qt-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04] # macos-latest, windows-latest
+        python-version: ['2.7'] # '3.6', '3.9'
+        include:
+        - os: ubuntu-18.04
+          special-invocation: 'xvfb-run --auto-servernum '
+          python-version: '2.7'
+        #  python-version: '3.6'
+        #  pyside2-version: 5.12.0  # 5.12.1-5.12.6 fails on collection/segfaults on patch test
+        # - os: windows-latest
+        #   python-version: '3.9'
+        #   pyside2-version: 5.15  # No 5.12 wheel on Windows and Python 3.9
+        # - os: macos-latest
+        #   python-version: '2.7'
+        #  python-version: '3.6'
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+      - name: Install Linux system packages
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install libpulse-dev libegl1-mesa libopengl0 gcc-8 g++-8 libqt4-dev libqt4-opengl-dev libglew-dev libexpat1-dev \
+            gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev libtinyxml-dev liblcms2-dev libyaml-cpp-dev \
+            libopenjp2-7-dev libtiff-dev libjpeg-dev libpng-dev libwebp-dev libraw-dev libfreetype6-dev libssl-dev libboost-all-dev \
+            python-qtpy
+      - name: Install Macos system packages
+        if: contains(matrix.os, 'macos')
+        shell: bash
+        run: |
+          brew install xctool python@2 boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite expat cairo \
+            gnu-sed glew openssl ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb
+      - name: Build
+        if: always() && !contains(github.ref, 'coverity_scan')
+        run: |
+          ./.github/workflows/gen_config.sh
+          ./tools/travis/build.sh
+      - name: Upload coverage data to coveralls.io
+        if: contains(matrix.os, 'ubuntu') && contains(github.ref, 'coverity_scan')
+        shell: bash
+        env:
+          COVERALLS_FLAG_NAME: ${{ matrix.os }} Python ${{ matrix.python-version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ln -s Tests/google-mock Tests/google-test .
+          pushd Tests
+          gcov -lp *.gcno > /dev/null
+          popd ..
+          python -m pip install --upgrade cpp-coveralls
+          python -b -X dev -m cpp-coveralls -n --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' \
+            --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' \
+            --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'
