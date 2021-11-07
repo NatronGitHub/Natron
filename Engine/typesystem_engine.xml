@@ -212,8 +212,8 @@
         </conversion-rule>
     </container-type>
 
-     <!--Natron global enums
-    <namespace-type name="NATRON_NAMESPACE">-->
+     <!--Natron global enums-->
+    <namespace-type name="Natron">
     <enum-type name="StatusEnum"/>
     <enum-type name="MergingFunctionEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
@@ -228,7 +228,7 @@
     <enum-type name="OrientationEnum"/>
     <enum-type name="PlaybackModeEnum"/>
     <enum-type name="DisplayChannelsEnum"/>
-    <!--</namespace-type>-->
+    </namespace-type>
     
    
    <object-type name="RectI">
@@ -1509,7 +1509,7 @@
 
                     for (int j = 0; j &lt; subSize; ++j) {
                         PyObject* pyString = PyList_GET_ITEM(subList,j);
-                #if PY_VERSION_MAJOR &lt; 3
+                #if PY_MAJOR_VERSION &lt; 3
                         if ( PyString_Check(pyString) ) {
                             char* buf = PyString_AsString(pyString);
                             if (buf) {

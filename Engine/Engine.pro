@@ -25,6 +25,12 @@ CONFIG += boost boost-serialization-lib qt cairo python shiboken pyside
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
+greaterThan(QT_MAJOR_VERSION, 4) {
+    ENGINE_WRAPPER_DIR = NatronEngine$${QT_MAJOR_VERSION}
+} else {
+    ENGINE_WRAPPER_DIR = NatronEngine
+}
+
 !noexpat: CONFIG += expat
 
 # Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
@@ -208,54 +214,7 @@ SOURCES += \
     ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
-    NatronEngine/animatedparam_wrapper.cpp \
-    NatronEngine/app_wrapper.cpp \
-    NatronEngine/appsettings_wrapper.cpp \
-    NatronEngine/beziercurve_wrapper.cpp \
-    NatronEngine/booleanparam_wrapper.cpp \
-    NatronEngine/boolnodecreationproperty_wrapper.cpp \
-    NatronEngine/buttonparam_wrapper.cpp \
-    NatronEngine/choiceparam_wrapper.cpp \
-    NatronEngine/colorparam_wrapper.cpp \
-    NatronEngine/colortuple_wrapper.cpp \
-    NatronEngine/double2dparam_wrapper.cpp \
-    NatronEngine/double2dtuple_wrapper.cpp \
-    NatronEngine/double3dparam_wrapper.cpp \
-    NatronEngine/double3dtuple_wrapper.cpp \
-    NatronEngine/doubleparam_wrapper.cpp \
-    NatronEngine/effect_wrapper.cpp \
-    NatronEngine/exprutils_wrapper.cpp \
-    NatronEngine/fileparam_wrapper.cpp \
-    NatronEngine/floatnodecreationproperty_wrapper.cpp \
-    NatronEngine/group_wrapper.cpp \
-    NatronEngine/groupparam_wrapper.cpp \
-    NatronEngine/imagelayer_wrapper.cpp \
-    NatronEngine/int2dparam_wrapper.cpp \
-    NatronEngine/int2dtuple_wrapper.cpp \
-    NatronEngine/int3dparam_wrapper.cpp \
-    NatronEngine/int3dtuple_wrapper.cpp \
-    NatronEngine/intnodecreationproperty_wrapper.cpp \
-    NatronEngine/intparam_wrapper.cpp \
-    NatronEngine/itembase_wrapper.cpp \
-    NatronEngine/layer_wrapper.cpp \
-    NatronEngine/natronengine_module_wrapper.cpp \
-    NatronEngine/nodecreationproperty_wrapper.cpp \
-    NatronEngine/outputfileparam_wrapper.cpp \
-    NatronEngine/pageparam_wrapper.cpp \
-    NatronEngine/param_wrapper.cpp \
-    NatronEngine/parametricparam_wrapper.cpp \
-    NatronEngine/pathparam_wrapper.cpp \
-    NatronEngine/pycoreapplication_wrapper.cpp \
-    NatronEngine/rectd_wrapper.cpp \
-    NatronEngine/recti_wrapper.cpp \
-    NatronEngine/roto_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp \
-    NatronEngine/stringnodecreationproperty_wrapper.cpp \
-    NatronEngine/stringparam_wrapper.cpp \
-    NatronEngine/stringparambase_wrapper.cpp \
-    NatronEngine/track_wrapper.cpp \
-    NatronEngine/tracker_wrapper.cpp \
-    NatronEngine/userparamholder_wrapper.cpp \
+    $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp \
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -472,54 +431,68 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
-    NatronEngine/animatedparam_wrapper.h \
-    NatronEngine/app_wrapper.h \
-    NatronEngine/appsettings_wrapper.h \
-    NatronEngine/beziercurve_wrapper.h \
-    NatronEngine/booleanparam_wrapper.h \
-    NatronEngine/boolnodecreationproperty_wrapper.h \
-    NatronEngine/buttonparam_wrapper.h \
-    NatronEngine/choiceparam_wrapper.h \
-    NatronEngine/colorparam_wrapper.h \
-    NatronEngine/colortuple_wrapper.h \
-    NatronEngine/double2dparam_wrapper.h \
-    NatronEngine/double2dtuple_wrapper.h \
-    NatronEngine/double3dparam_wrapper.h \
-    NatronEngine/double3dtuple_wrapper.h \
-    NatronEngine/doubleparam_wrapper.h \
-    NatronEngine/effect_wrapper.h \
-    NatronEngine/exprutils_wrapper.h \
-    NatronEngine/fileparam_wrapper.h \
-    NatronEngine/floatnodecreationproperty_wrapper.h \
-    NatronEngine/group_wrapper.h \
-    NatronEngine/groupparam_wrapper.h \
-    NatronEngine/imagelayer_wrapper.h \
-    NatronEngine/int2dparam_wrapper.h \
-    NatronEngine/int2dtuple_wrapper.h \
-    NatronEngine/int3dparam_wrapper.h \
-    NatronEngine/int3dtuple_wrapper.h \
-    NatronEngine/intnodecreationproperty_wrapper.h \
-    NatronEngine/intparam_wrapper.h \
-    NatronEngine/itembase_wrapper.h \
-    NatronEngine/layer_wrapper.h \
-    NatronEngine/natronengine_python.h \
-    NatronEngine/nodecreationproperty_wrapper.h \
-    NatronEngine/outputfileparam_wrapper.h \
-    NatronEngine/pageparam_wrapper.h \
-    NatronEngine/param_wrapper.h \
-    NatronEngine/parametricparam_wrapper.h \
-    NatronEngine/pathparam_wrapper.h \
-    NatronEngine/pycoreapplication_wrapper.h \
-    NatronEngine/rectd_wrapper.h \
-    NatronEngine/recti_wrapper.h \
-    NatronEngine/roto_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h \
-    NatronEngine/stringnodecreationproperty_wrapper.h \
-    NatronEngine/stringparam_wrapper.h \
-    NatronEngine/stringparambase_wrapper.h \
-    NatronEngine/track_wrapper.h \
-    NatronEngine/tracker_wrapper.h \
-    NatronEngine/userparamholder_wrapper.h \
+    $${ENGINE_WRAPPER_DIR}/natronengine_python.h \
+
+ENGINE_GENERATED_SOURCES = \
+    animatedparam_wrapper \
+    app_wrapper \
+    appsettings_wrapper \
+    beziercurve_wrapper \
+    booleanparam_wrapper \
+    boolnodecreationproperty_wrapper \
+    buttonparam_wrapper \
+    choiceparam_wrapper \
+    colorparam_wrapper \
+    colortuple_wrapper \
+    double2dparam_wrapper \
+    double2dtuple_wrapper \
+    double3dparam_wrapper \
+    double3dtuple_wrapper \
+    doubleparam_wrapper \
+    effect_wrapper \
+    exprutils_wrapper \
+    fileparam_wrapper \
+    floatnodecreationproperty_wrapper \
+    group_wrapper \
+    groupparam_wrapper \
+    imagelayer_wrapper \
+    int2dparam_wrapper \
+    int2dtuple_wrapper \
+    int3dparam_wrapper \
+    int3dtuple_wrapper \
+    intnodecreationproperty_wrapper \
+    intparam_wrapper \
+    itembase_wrapper \
+    layer_wrapper \
+    nodecreationproperty_wrapper \
+    outputfileparam_wrapper \
+    pageparam_wrapper \
+    param_wrapper \
+    parametricparam_wrapper \
+    pathparam_wrapper \
+    pycoreapplication_wrapper \
+    rectd_wrapper \
+    recti_wrapper \
+    roto_wrapper \
+    separatorparam_wrapper \
+    stringnodecreationproperty_wrapper \
+    stringparam_wrapper \
+    stringparambase_wrapper \
+    track_wrapper \
+    tracker_wrapper \
+    userparamholder_wrapper \
+
+for(name, ENGINE_GENERATED_SOURCES) {
+    SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
+    HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
+}
+
+greaterThan(QT_MAJOR_VERSION, 4) {
+    SOURCES += $${ENGINE_WRAPPER_DIR}/natron_wrapper.cpp
+    HEADERS += $${ENGINE_WRAPPER_DIR}/natron_wrapper.h
+} else {
+    SOURCES += $${ENGINE_WRAPPER_DIR}/natron_namespace_wrapper.cpp
+}
 
 OTHER_FILES += \
     typesystem_engine.xml
