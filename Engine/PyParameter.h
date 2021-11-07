@@ -430,6 +430,9 @@ public:
     Int2DTuple get(double frame) const;
     void set(int x, int y);
     void set(int x, int y, double frame);
+
+private:
+    void set(int x);
 };
 
 class Int3DParam
@@ -446,6 +449,10 @@ public:
     Int3DTuple get(double frame) const;
     void set(int x, int y, int z);
     void set(int x, int y, int z, double frame);
+
+private:
+    void set(int x);
+    void set(int x, int y);
 };
 
 

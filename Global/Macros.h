@@ -37,6 +37,14 @@
 #define __NATRON_LINUX__
 #endif
 
+#ifdef __cplusplus
+// Establish the name space.
+namespace Natron { }
+namespace Python { }
+#define NATRON_NAMESPACE_USING using namespace Natron;
+#define NATRON_PYTHON_NAMESPACE_USING using namespace Natron::Python;
+#endif
+
 #ifdef SBK_RUN
 
 // run shiboken without the Natron namespace, and add NATRON_NAMESPACE_USING to each cpp afterwards
@@ -53,18 +61,10 @@
 // Macros to use in each file to enter and exit the right name spaces.
 #define NATRON_NAMESPACE_ENTER namespace NATRON_NAMESPACE {
 #define NATRON_NAMESPACE_EXIT }
-#define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
 
 #define NATRON_PYTHON_NAMESPACE Python
 #define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
 #define NATRON_PYTHON_NAMESPACE_EXIT }
-#define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
-
-#ifdef __cplusplus
-// Establish the name space.
-namespace NATRON_NAMESPACE { }
-namespace NATRON_PYTHON_NAMESPACE { }
-#endif
 
 #endif
 

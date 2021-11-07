@@ -44,6 +44,10 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/PluginActionShortcut.h"
 
+#ifdef SBK_RUN
+NATRON_NAMESPACE_USING
+#endif
+
 NATRON_NAMESPACE_ENTER
 
 class PluginGroupNode
