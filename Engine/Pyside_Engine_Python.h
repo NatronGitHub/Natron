@@ -17,6 +17,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
+#define SBK_RUN
+
 #ifndef PYSIDE_ENGINE_PYTHON_H
 #define PYSIDE_ENGINE_PYTHON_H
 
@@ -33,10 +36,11 @@
  * Do not include it when compiling Natron.
  **/
 
-//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
-#define SBK_RUN
-
+#ifdef SBK2_GEN
+#include <pyside2_global.h>
+#else
 #include <pyside_global.h>
+#endif
 #include <string>
 //Global
 #include <GlobalDefines.h>

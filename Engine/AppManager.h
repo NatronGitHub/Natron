@@ -44,7 +44,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QProcess>
 #include <QtCore/QMap>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_GEN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>

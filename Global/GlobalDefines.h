@@ -66,10 +66,10 @@ CLANG_DIAG_ON(deprecated)
 //#define foreach Q_FOREACH
 
 
-typedef boost::uint32_t U32;
-typedef boost::uint64_t U64;
-typedef boost::uint8_t U8;
-typedef boost::uint16_t U16;
+typedef std::uint32_t U32;
+typedef std::uint64_t U64;
+typedef std::uint8_t U8;
+typedef std::uint16_t U16;
 
 
 NATRON_NAMESPACE_ENTER

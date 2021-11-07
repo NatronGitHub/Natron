@@ -41,8 +41,6 @@ run-without-python {
     # from <https://docs.python.org/3/c-api/intro.html#include-files>:
     # "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
     CONFIG += python
-    QMAKE_CFLAGS += -include Python.h
-    QMAKE_CXXFLAGS += -include Python.h
     python3 {
       PYV=3
       PY_PKG_SUFFIX=-embed

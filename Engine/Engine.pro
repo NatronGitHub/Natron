@@ -238,7 +238,6 @@ SOURCES += \
     NatronEngine/intparam_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
     NatronEngine/layer_wrapper.cpp \
-    NatronEngine/natron_namespace_wrapper.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/outputfileparam_wrapper.cpp \
@@ -383,7 +382,6 @@ HEADERS += \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
-    Pyside_Engine_Python.h \
     ReadNode.h \
     RectD.h \
     RectDSerialization.h \
