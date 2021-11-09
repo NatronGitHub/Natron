@@ -21,7 +21,6 @@ body:
   - type: textarea
     attributes:
         label: Provide a description of your feature request
-        render: markdown
     validations:
         required: true
   # Realistically implementable or not?
@@ -46,6 +45,5 @@ body:
         label: Additional details
         description: |
           You do not have to fill this out but more details are always helpful!
-        render: markdown
     validations:
         required: false
