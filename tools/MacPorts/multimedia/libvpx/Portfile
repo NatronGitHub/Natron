@@ -8,7 +8,7 @@ name                libvpx
 conflicts           libvpx-devel
 set my_name         libvpx
 version             1.11.0
-revision            0
+revision            1
 categories          multimedia
 maintainers         {devans @dbevans} {mascguy @mascguy} openmaintainer
 platforms           darwin
@@ -40,7 +40,8 @@ git.branch          v${version}
 # support for non-intel archs removed in version 1.5.0
 supported_archs     x86_64 i386 arm64
 
-patchfiles          patch-Makefile.diff
+patchfiles          patch-Makefile.diff \
+                    patch-configure.sh.diff
 
 # uses newer assembly features on Intel
 compiler.blacklist-append  {*gcc-[3-4].*} {clang < 800} {macports-clang-3.*}
@@ -67,6 +68,10 @@ variant highbitdepth description {Enable VP9 10/12bit profiles} {
 build.target
 build.args          verbose=1
 destroot.args       verbose=1
+
+if {"${configure.sdkroot}" eq ""} {
+    configure.sdkroot "/"
+}
 
 if {![info exists universal_possible]} {
     set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]

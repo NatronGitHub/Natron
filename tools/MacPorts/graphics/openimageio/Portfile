@@ -28,9 +28,14 @@ compiler.cxx_standard   2014
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
+# OpenVDB header files use C++14 features
+configure.args-append   -DCMAKE_CXX_STANDARD=14
 
 compiler.thread_local_storage yes
 
+# When updating this port to a new version, please switch to standard
+# use of the github portgroup by removing the following three lines and
+# replacing them with "github.tarball_from archive".
 github.master_sites     ${github.homepage}/archive
 distname                Release-${version}
 worksrcdir              oiio-Release-${version}
@@ -51,12 +56,12 @@ configure.args-append   -DBUILD_MISSING_DEPS=OFF \
 depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
-                        path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
                         port:tiff \
                         port:ilmbase \
                         port:openexr \
-                        port:squish
+                        port:squish \
+                        port:libfmt
 
 # optional components
 
@@ -133,69 +138,9 @@ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolori
     }
 }
 
-variant opencolorio description {Add OpenColorIO support.} {
-    depends_lib-append  port:opencolorio
-    configure.args-delete       -DUSE_OCIO:BOOL=FALSE
-    configure.args-append       -DUSE_OCIO:BOOL=TRUE
-}
-  
-variant ffmpeg description {Add FFmpeg support.} {
-    depends_lib-append  port:ffmpeg
-    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
-    configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
-}
-
-variant openjpeg description {Add OpenJPEG support.} {
-    depends_lib-append  port:openjpeg
-    configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
-    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
-}
-
-variant field3d description {Use Field3D.} {
-    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
-    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
-    depends_lib-append port:field3d
-}
-
-variant freetype description {Use FreeType.} {
-    configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
-    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
-    depends_lib-append port:freetype
-}
-
-
-variant opencv description {Use OpenCV.} {
-    configure.args-delete -DUSE_OPENCV:BOOL=FALSE
-    configure.args-append -DUSE_OPENCV:BOOL=TRUE
-    depends_lib-append port:opencv
-}
-
-variant ptex description {Use PTex.} {
-    configure.args-delete -DUSE_PTEX:BOOL=FALSE
-    configure.args-append -DUSE_PTEX:BOOL=TRUE
-    depends_lib-append port:ptex
-}
-
-variant openvdb description {Use OpenVDB.} {
-    # OpenVDB header files use C++14 features
-    configure.args-append   -DCMAKE_CXX_STANDARD=14
-    configure.args-delete -DUSE_TBB:BOOL=FALSE
-    configure.args-append -DUSE_TBB:BOOL=TRUE
-    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
-    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
-    depends_lib-append port:tbb \
-                       port:openvdb
-}
-
-variant dicom description {Use DICOM from dcmtk.} {
-    configure.args-delete -DUSE_DICOM:BOOL=FALSE
-    configure.args-append -DUSE_DICOM:BOOL=TRUE
-    depends_lib-append port:dcmtk
-}
-
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38}
+set pythons_suffixes    {27 36 37 38 39}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -229,30 +174,57 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 #if {${set_python_default}} {
-#    default_variants        +python38
+#    default_variants        +python39
 #}
 
 #configure.args-append       -DUSE_FIELD3D=OFF
-#depends_lib-append          port:field3d
+variant field3d description {Use Field3D.} {
+depends_lib-append          port:field3d
+    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
+    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
+}
 
 #configure.args-append       -DUSE_FFMPEG=OFF
-#depends_lib-append          port:ffmpeg
+variant ffmpeg description {Add FFmpeg support.} {
+depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
+    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
+    configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
+}
 
-# conflicts with jpeg
 #configure.args-append       -DUSE_JPEGTURBO=OFF
-#depends_lib-append          port:libjpeg-turbo
+depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
 
 #configure.args-append       -DUSE_OPENJPEG=OFF
-#depends_lib-append          port:openjpeg
+variant openjpeg description {Add OpenJPEG support.} {
+depends_lib-append          port:openjpeg
+configure.args-append       -DOpenJpeg_ROOT=${prefix}
+    configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
+    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
+}
 
 #configure.args-append       -DUSE_OCIO=OFF
-#depends_lib-append          port:opencolorio
+variant opencolorio description {Add OpenColorIO support.} {
+depends_lib-append          port:opencolorio
+    configure.args-delete       -DUSE_OCIO:BOOL=FALSE
+    configure.args-append       -DUSE_OCIO:BOOL=TRUE
+}
 
 #configure.args-append       -DUSE_OPENCV=OFF
-#depends_lib-append          port:opencv
+variant opencv description {Use OpenCV.} {
+set opencv_ver 4
+depends_lib-append          path:lib/opencv${opencv_ver}/libopencv_core.dylib:opencv${opencv_ver}
+configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
+    configure.args-delete -DUSE_OPENCV:BOOL=FALSE
+    configure.args-append -DUSE_OPENCV:BOOL=TRUE
+}
 
 #configure.args-append       -DUSE_FREETYPE=OFF
-#depends_lib-append          port:freetype
+variant freetype description {Use FreeType.} {
+depends_lib-append          port:freetype
+    configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
+    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
+}
 
 #configure.args-append       -DUSE_GIF=OFF
 depends_lib-append          port:giflib
@@ -261,23 +233,35 @@ depends_lib-append          port:giflib
 depends_lib-append          port:libheif
 
 #configure.args-append       -DUSE_PTEX=OFF
-#depends_lib-append          port:ptex
+variant ptex description {Use PTex.} {
+depends_lib-append          port:ptex
+    configure.args-delete -DUSE_PTEX:BOOL=FALSE
+    configure.args-append -DUSE_PTEX:BOOL=TRUE
+}
 
 #configure.args-append       -DUSE_LIBRAW=OFF
 depends_lib-append          port:libraw
 
 #configure.args-append       -DUSE_TBB=OFF \
 #                            -DUSE_OPENVDB=OFF
-#depends_lib-append          port:tbb \
-#                            port:openvdb
+variant openvdb description {Use OpenVDB.} {
+depends_lib-append          port:tbb \
+                            port:openvdb
+    configure.args-delete -DUSE_TBB:BOOL=FALSE
+    configure.args-append -DUSE_TBB:BOOL=TRUE
+    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
+    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
+}
 
 # not in MacPorts
 configure.args-append       -DUSE_NUKE=OFF
 
 #configure.args-append       -DUSE_DICOM=OFF
-#depends_lib-append          port:dcmtk
+variant dicom description {Use DICOM from dcmtk.} {
+depends_lib-append          port:dcmtk
+    configure.args-delete -DUSE_DICOM:BOOL=FALSE
+    configure.args-append -DUSE_DICOM:BOOL=TRUE
+}
 
 #configure.args-append       -DUSE_WEBP=OFF
 depends_lib-append          port:webp
-
-livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}

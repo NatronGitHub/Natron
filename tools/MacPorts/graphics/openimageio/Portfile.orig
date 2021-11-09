@@ -110,7 +110,7 @@ if {${set_python_default}} {
 depends_lib-append          port:field3d
 
 #configure.args-append       -DUSE_FFMPEG=OFF
-depends_lib-append          port:ffmpeg
+depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
 
 #configure.args-append       -DUSE_JPEGTURBO=OFF
 depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
@@ -124,7 +124,7 @@ depends_lib-append          port:opencolorio
 
 #configure.args-append       -DUSE_OPENCV=OFF
 set opencv_ver 4
-depends_lib-append          port:opencv${opencv_ver}
+depends_lib-append          path:lib/opencv${opencv_ver}/libopencv_core.dylib:opencv${opencv_ver}
 configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
                             -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
 
