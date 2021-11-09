@@ -113,6 +113,5 @@ body:
     attributes:
       label: Additional details
       description: Add any other relevant information here
-      render: markdown
     validations:
       required: false
