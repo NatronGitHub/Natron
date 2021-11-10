@@ -2,16 +2,16 @@
 
 # Install llvm+osmesa
 # be careful if upgrading, the script applies important patches
-OSMESA_VERSION=17.1.10
-OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.gz"
-OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x"
-OSMESA_GLU_VERSION=9.0.0
+OSMESA_VERSION=18.3.6
+OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.xz"
+OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
+OSMESA_GLU_VERSION=9.0.1
 OSMESA_GLU_TAR="glu-${OSMESA_GLU_VERSION}.tar.gz"
 OSMESA_GLU_SITE="ftp://ftp.freedesktop.org/pub/mesa/glu"
-OSMESA_DEMOS_VERSION=8.3.0
+OSMESA_DEMOS_VERSION=8.4.0
 OSMESA_DEMOS_TAR="mesa-demos-${OSMESA_DEMOS_VERSION}.tar.bz2"
 OSMESA_DEMOS_SITE="ftp://ftp.freedesktop.org/pub/mesa/demos/${OSMESA_DEMOS_VERSION}"
-OSMESA_LLVM_VERSION=4.0.1
+OSMESA_LLVM_VERSION=6.0.1
 OSMESA_LLVM_TAR="llvm-${OSMESA_LLVM_VERSION}.src.tar.xz"
 OSMESA_LLVM_SITE="http://releases.llvm.org/${OSMESA_LLVM_VERSION}"
 if download_step; then
@@ -32,7 +32,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc
         LLVM_BUILD=1
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
-    git clone https://github.com/NatronGitHub/osmesa-install
+    git clone https://github.com/devernay/osmesa-install
     pushd osmesa-install
     mkdir build
     pushd build

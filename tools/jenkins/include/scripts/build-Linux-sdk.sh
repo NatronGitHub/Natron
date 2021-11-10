@@ -703,6 +703,7 @@ build libzip # (requires cmake)
 #build berkeleydb # (optional for python2 and python3)
 build sqlite # (required for webkit and QtSql SQLite module, optional for python2)
 build pcre # (required by glib)
+build pcre2 # (required by mariadb)
 
 checkpoint
 

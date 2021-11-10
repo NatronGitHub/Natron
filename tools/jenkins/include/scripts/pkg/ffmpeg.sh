@@ -2,7 +2,7 @@
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=4.4
+FFMPEG_VERSION=4.4.1
 # see https://ffmpeg.org/download.html
 FFMPEG_VERSION_LIBAVCODEC=58.134.100
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"

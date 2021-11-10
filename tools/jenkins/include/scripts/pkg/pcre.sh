@@ -4,7 +4,7 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre.html
 PCRE_VERSION=8.45
 PCRE_TAR="pcre-${PCRE_VERSION}.tar.bz2"
-PCRE_SITE="https://ftp.pcre.org/pub/pcre"
+PCRE_SITE="https://sourceforge.net/projects/pcre/files/pcre/${PCRE_VERSION}"
 if download_step; then
     download "$PCRE_SITE" "$PCRE_TAR"
 fi
