@@ -6,14 +6,20 @@ expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 openmp {
   LIBS += -L/usr/local/opt/llvm@11/lib -lomp
 
+  QMAKE_CC = /usr/local/opt/llvm@11/bin/clang
+  QMAKE_CXX = /usr/local/opt/llvm@11/bin/clang++
+  QMAKE_OBJECTIVE_CXX = $$QMAKE_CXX
+  QMAKE_OBJECTIVE_CC = $$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK = $$QMAKE_CXX
+
   cc_setting.name = CC
-  cc_setting.value = /usr/local/opt/llvm@11/bin/clang
+  cc_setting.value = $$QMAKE_CC
   cxx_setting.name = CXX
-  cxx_setting.value = /usr/local/opt/llvm@11/bin/clang++
+  cxx_setting.value = $$QMAKE_CXX
   ld_setting.name = LD
-  ld_setting.value = /usr/local/opt/llvm@11/bin/clang
+  ld_setting.value = $$QMAKE_CC
   ldxx_setting.name = LDPLUSPLUS
-  ldxx_setting.value = /usr/local/opt/llvm@11/bin/clang++
+  ldxx_setting.value = $$QMAKE_CXX
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldxx_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
