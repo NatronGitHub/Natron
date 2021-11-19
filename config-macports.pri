@@ -4,7 +4,8 @@ boost {
 macx:openmp {
   QMAKE_CC = /opt/local/bin/clang-mp-12
   QMAKE_CXX = /opt/local/bin/clang++-mp-12
-  QMAKE_OBJECTIVE_CC = $$QMAKE_CC -stdlib=libc++
+  QMAKE_OBJECTIVE_CC = clang
+  QMAKE_OBJECTIVE_CXX = clang++
   QMAKE_LINK = $$QMAKE_CXX
 
   INCLUDEPATH += /opt/local/include /opt/local/include/libomp

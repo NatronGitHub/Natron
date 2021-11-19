@@ -4,23 +4,31 @@ expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 openmp {
+  # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
+  # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
   LIBS += -L/usr/local/opt/llvm@11/lib -lomp
-
   QMAKE_CC = /usr/local/opt/llvm@11/bin/clang
   QMAKE_CXX = /usr/local/opt/llvm@11/bin/clang++
-  QMAKE_OBJECTIVE_CXX = $$QMAKE_CXX
-  QMAKE_OBJECTIVE_CC = $$QMAKE_CC -stdlib=libc++
+  # Recent clang cannot compile QtMac.mm
+  QMAKE_OBJECTIVE_CC = clang
+  QMAKE_OBJECTIVE_CXX = clang++
   QMAKE_LINK = $$QMAKE_CXX
-
+  INCLUDEPATH += /usr/local/include
   cc_setting.name = CC
   cc_setting.value = $$QMAKE_CC
   cxx_setting.name = CXX
   cxx_setting.value = $$QMAKE_CXX
+  # These settings are useless, unless someone finds out if there is a variable
+  # to override the Objective-C compiler.
+  objective_cc_setting.name = OBJECTIVE_CC
+  objective_cc_setting.value = $$QMAKE_OBJECTIVE_CC
+  objective_cxx_setting.name = OBJECTIVE_CXX
+  objective_cxx_setting.value = $$QMAKE_OBJECTIVE_CXX
   ld_setting.name = LD
   ld_setting.value = $$QMAKE_CC
   ldxx_setting.name = LDPLUSPLUS
   ldxx_setting.value = $$QMAKE_CXX
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldxx_setting
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting objective_cc_setting objective_cxx_setting ld_setting ldxx_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
   # clang (as of 5.0) does not yet support index-while-building functionality
