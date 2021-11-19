@@ -2,10 +2,10 @@ boost {
   LIBS += -lboost_serialization-mt
 }
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-12
-  QMAKE_CXX=/opt/local/bin/clang++-mp-12
-  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK=$$QMAKE_CXX
+  QMAKE_CC = /opt/local/bin/clang-mp-12
+  QMAKE_CXX = /opt/local/bin/clang++-mp-12
+  QMAKE_OBJECTIVE_CC = $$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK = $$QMAKE_CXX
 
   INCLUDEPATH += /opt/local/include /opt/local/include/libomp
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5

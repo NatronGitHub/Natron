@@ -358,10 +358,10 @@ boost {
   LIBS += -lboost_serialization-mt
 }
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-12
-  QMAKE_CXX=/opt/local/bin/clang++-mp-12
-  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK=\$\$QMAKE_CXX
+  QMAKE_CC = /opt/local/bin/clang-mp-12
+  QMAKE_CXX = /opt/local/bin/clang++-mp-12
+  QMAKE_OBJECTIVE_CC = \$\$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK = \$\$QMAKE_CXX
 
   INCLUDEPATH += /opt/local/include /opt/local/include/libomp
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
@@ -400,20 +400,20 @@ expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
-  QMAKE_CC=/usr/local/opt/llvm@11/bin/clang
-  QMAKE_CXX=/usr/local/opt/llvm@11/bin/clang++
-  QMAKE_OBJECTIVE_CC=\$\$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK=\$\$QMAKE_CXX
+  QMAKE_CC = /usr/local/opt/llvm@11/bin/clang
+  QMAKE_CXX = /usr/local/opt/llvm@11/bin/clang++
+  QMAKE_OBJECTIVE_CC = \$\$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK = \$\$QMAKE_CXX
 
   LIBS += -L/usr/local/opt/llvm@11/lib -lomp
   cc_setting.name = CC
-  cc_setting.value = /usr/local/opt/llvm@11/bin/clang
+  cc_setting.value = \$\$QMAKE_CC
   cxx_setting.name = CXX
-  cxx_setting.value = /usr/local/opt/llvm@11/bin/clang++
+  cxx_setting.value = \$\$QMAKE_CXX
   ld_setting.name = LD
-  ld_setting.value = /usr/local/opt/llvm@11/bin/clang
+  ld_setting.value = \$\$QMAKE_CC
   ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = /usr/local/opt/llvm@11/bin/clang++
+  ldplusplus_setting.value = \$\$QMAKE_CXX
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
