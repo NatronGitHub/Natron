@@ -6,6 +6,11 @@ expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 openmp {
   LIBS += -L/usr/local/opt/llvm@11/lib -lomp
 
+  QMAKE_CC=/usr/local/opt/llvm@11/bin/clang
+  QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
+  QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
+  QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++'
+  QMAKE_LD='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm@11/bin/clang
   cxx_setting.name = CXX
