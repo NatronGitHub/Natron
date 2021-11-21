@@ -4,8 +4,8 @@
 PortSystem          1.0
 PortGroup           cmake 1.0
 
-name                seexpr
-version             3.0.1
+name                seexpr211
+version             2.11
 license             Apache-2
 categories          graphics
 maintainers         nomaintainer
@@ -21,20 +21,17 @@ platforms           darwin
 master_sites        https://github.com/wdas/SeExpr/archive/
 distname            v${version}
 
-checksums           sha1    f71a7be90a2106def61be0e864b2c3b21efc7552 \
-                    rmd160  3415a1b689e34501ec9093ed408ec81de6cb86ba \
-                    sha256  1e4cd35e6d63bd3443e1bffe723dbae91334c2c94a84cc590ea8f1886f96f84e \
-                    size    903297
+checksums           sha1  ff397b05a2bdce17c34cf91148dbc1fec5160fff
 worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
 
+patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
+                    0002-seexpr-2.11-fix-inline-error.patch \
+                    0004-seexpr-2.11-c++98.patch \
+                    0006-seexpr-2.11-cstylecast.patch
+#patch.cmd           "git apply -v"
+patch.pre_args      -p1
+
 build.target-append doc
-
-# Maybe add python variants later.
-
-configure.args-append \
-    -DENABLE_LLVM_BACKEND:BOOL=FALSE \
-    -DENABLE_QT5:BOOL=FALSE \
-    -DUSE_PYTHON:BOOL=FALSE

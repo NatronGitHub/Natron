@@ -12,6 +12,7 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/share/poppler" ]; }; }; th
     untar "$SRC_PATH/$POPPLERDATA_TAR"
     pushd "poppler-data-${POPPLERDATA_VERSION}"
     make install datadir="${SDK_HOME}/share"
+    #cp "$SDK_HOME/share/pkgconfig/poppler-data.pc" "$SDK_HOME/lib/pkgconfig/poppler-data.pc"
     popd
     rm -rf "poppler-data-${POPPLERDATA_VERSION}"
     end_build

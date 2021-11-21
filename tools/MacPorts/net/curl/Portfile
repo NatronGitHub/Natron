@@ -4,7 +4,7 @@ PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
 name                            curl
-version                         7.79.1
+version                         7.80.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,14 +26,14 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  5cf55aa1d995063cce339518626514750c2fed47 \
-                                sha256  0606f74b1182ab732a17c11613cbbaf7084f2e6cca432642d0e3ad7c224c3689 \
-                                size    2465212
+                                rmd160  f6c519631083a610760f2a9001d73a081be6c018 \
+                                sha256  a132bd93188b938771135ac7c1f3ac1d3ce507c1fcbef8c471397639214ae2ab \
+                                size    2474492
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    0
 
     depends_build               port:pkgconfig
 
@@ -236,15 +236,21 @@ subport curl-ca-bundle {
 
     depends_extract-append      bin:unzip:unzip
 
-    depends_build-append        bin:perl:perl5
+    if {${os.platform} eq "darwin" && ${os.major} <= 10} {
+        # Day too big - 24854 > 24853
+        # Cannot handle date (59, 59, 23, 18, 0, 2038) at /System/Library/Perl/5.10.0/darwin-thread-multi-2level/Time/Piece.pm line 315
+        depends_build-append    port:perl5
+    } else {
+        depends_build-append    bin:perl:perl5
+    }
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1625220659
+    set certdata_updated        1636659185
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         4d343134c8a3a46520e41d31e7cb26f718d9daec
+    set certdata_commit         330c22fc463e2de39cae6b9f4c7e91dd6c255931
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20210526
+    set certdata_date           20210917
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -265,20 +271,16 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  763c2ffbbc521d7cafb5644ff5d2692b5543197d \
-                                sha256  d3d290e88c6781ba81105205036a5da320d5eb5f58fd14561afee07c344d185d \
-                                size    248478
+                                rmd160  82401f99c5adffcff5fb8500b28e8d3b94ce85ad \
+                                sha256  aaa70bf3d33878b9863accc11b5fbc0aec83e8a2b3fef4b9e89d4764f3edd9cc \
+                                size    256985
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \
                                 ${worksrcdir}/lib/mk-ca-bundle.pl
 
     post-extract {
-if {[vercmp [macports_version] 2.6.99] >= 0} {
         system -W ${workpath} "unzip -q -a [shellescape ${distpath}/${certdata_distfile}]"
-} else {
-        system -W ${workpath} "unzip -q -a '${distpath}/${certdata_distfile}'"
-}
         move ${workpath}/mozilla-central-${certdata_commit}/${certdata_path} ${worksrcpath}/${certdata_file}
     }
 

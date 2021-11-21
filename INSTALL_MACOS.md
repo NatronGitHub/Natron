@@ -112,7 +112,7 @@ sudo port -v -N install libraw +gpl2
 sudo port -v -N install openexr
 sudo port -v -N install opencolorio -quartz -python27 -python39
 sudo port -v -N install openimageio +natron
-sudo port -v -N install seexpr
+sudo port -v -N install seexpr211 seexpr
 ```
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):

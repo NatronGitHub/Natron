@@ -2,8 +2,8 @@
 
 # install ncurses (required for gdb and readline)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/ncurses.html
-NCURSES_VERSION=6.2
-NCURSES_VERSION_PKG=6.2.20200212
+NCURSES_VERSION=6.3
+NCURSES_VERSION_PKG=${NCURSES_VERSION}.20211021
 NCURSES_TAR="ncurses-${NCURSES_VERSION}.tar.gz"
 NCURSES_SITE="ftp://ftp.gnu.org/gnu/ncurses"
 if download_step; then

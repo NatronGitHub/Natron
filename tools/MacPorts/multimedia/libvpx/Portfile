@@ -10,7 +10,7 @@ set my_name         libvpx
 version             1.11.0
 revision            1
 categories          multimedia
-maintainers         {devans @dbevans} {mascguy @mascguy} openmaintainer
+maintainers         {mascguy @mascguy} openmaintainer
 platforms           darwin
 license             Permissive
 

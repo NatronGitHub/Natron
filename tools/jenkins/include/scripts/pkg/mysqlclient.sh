@@ -4,7 +4,7 @@ if $WITH_MARIADB; then
 # Install mysqlclient (MySQL/MariaDB connector)
 # mysqlclient is a fork of MySQL-python. It adds Python 3 support and fixed many bugs.
 # see https://pypi.python.org/pypi/mysqlclient
-MYSQLCLIENT_VERSION_PY3=2.0.3
+MYSQLCLIENT_VERSION_PY3=2.1.0
 MYSQLCLIENT_VERSION_PY2=1.4.6
 #dobuild && echo "python${PY2_VERSION_SHORT}"
 if build_step && { force_build || { [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/MySQLdb" ] || [ "$("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import MySQLdb; print(MySQLdb.__version__.split(' ', 1)[0])")" != "${MYSQLCLIENT_VERSION_PY2}" ]; }; }; then

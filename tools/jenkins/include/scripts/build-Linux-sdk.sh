@@ -810,9 +810,11 @@ build poppler-glib # (without curl, nss3, qt4, qt5)
 build poppler-data
 build tinyxml # (used by OpenColorIO)
 build yaml-cpp # (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
+build opencolorio1 # (uses yaml-cpp, tinyxml, lcms)
 build opencolorio # (uses yaml-cpp, tinyxml, lcms)
 build webp # (for OIIO)
 build openimageio
+build seexpr211
 build seexpr
 #build eigen
 #build opencv

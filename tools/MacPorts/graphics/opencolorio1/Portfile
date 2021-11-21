@@ -1,0 +1,71 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           github 1.0
+PortGroup           cmake  1.1
+PortGroup           boost 1.0
+
+boost.depends_type  build
+
+github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
+name                opencolorio1
+categories          graphics
+maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+license             BSD
+homepage            https://opencolorio.org
+platforms           darwin
+description         a color management framework for visual effects and animation
+long_description    OpenColorIO (OCIO) is a complete color management solution \
+                    geared towards motion picture production with an emphasis on \
+                    visual effects and computer animation.
+
+# please remove "stealth update" workaround on next version update
+dist_subdir         ${name}/${version}_1
+checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
+                    sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
+                    size    13830493
+
+# Exclude pre-releases from livecheck
+github.livecheck.regex  {([0-9.]+)}
+
+# see https://github.com/imageworks/OpenColorIO/commit/c43cc918c3e79e324f11ca47e95bfe36e9e0dd15
+patchfiles-append   patch-upstream.diff
+
+# see https://gitweb.gentoo.org/repo/gentoo.git/tree/media-libs/opencolorio/files/opencolorio-1.1.0-yaml-cpp-0.6.patch
+patchfiles-append   patch-yaml-cpp.diff
+
+patchfiles-append   patch-yaml-cpp-0.7.diff
+
+patchfiles-append   patch-CMakeLists.txt.diff
+
+set my_prefix       ${prefix}/libexec/${name}
+
+configure.pre_args  -DCMAKE_INSTALL_PREFIX=${my_prefix}
+
+# source assumes C++11 compiler
+compiler.cxx_standard 2011
+configure.cxxflags-append \
+    -std=c++11
+
+# see https://github.com/imageworks/OpenColorIO/issues/563
+configure.cxxflags-append \
+    -Wno-error=self-assign-field
+
+depends_build-append \
+    port:pkgconfig
+
+# not in MacPorts
+configure.args-append \
+    -DOCIO_BUILD_TRUELIGHT=OFF \
+    -DOCIO_BUILD_NUKE=OFF
+
+depends_lib-append  \
+    port:yaml-cpp \
+    port:tinyxml
+
+configure.args-append \
+    -DUSE_EXTERNAL_YAML=ON \
+    -DUSE_EXTERNAL_TINYXML=ON \
+    -DUSE_EXTERNAL_LCMS=ON \
+    -DOCIO_BUILD_PYGLUE=OFF \
+    -DOCIO_BUILD_APPS=OFF

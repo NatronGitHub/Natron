@@ -2,7 +2,7 @@
 
 # Install libtasn1 (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libtasn1.html
-LIBTASN1_VERSION=4.17.0
+LIBTASN1_VERSION=4.18.0
 #LIBTASN1_VERSION_SHORT=${LIBTASN1_VERSION%.*}
 LIBTASN1_TAR="libtasn1-${LIBTASN1_VERSION}.tar.gz"
 LIBTASN1_SITE="https://ftp.gnu.org/gnu/libtasn1"

@@ -2,11 +2,11 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.3.8.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
+OIIO_VERSION=2.3.9.1 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
 OIIO_VERSION_SHORT=2.3 # ${OIIO_VERSION%.*}
 OIIO_TAR="oiio-${OIIO_VERSION}.tar.gz"
 if download_step; then
-    download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
+    download_github OpenImageIO oiio "$OIIO_VERSION" v "$OIIO_TAR"
 fi
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
