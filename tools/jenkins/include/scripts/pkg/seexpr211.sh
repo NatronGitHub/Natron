@@ -7,7 +7,7 @@ SEEXPR211_TAR="SeExpr-${SEEXPR211_VERSION}.tar.gz"
 if download_step; then
     download_github wdas SeExpr "$SEEXPR211_VERSION" v "$SEEXPR211_TAR"
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/libexec/seexpr211/lib/libSeExpr.so" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; }; then
     start_build
     untar "$SRC_PATH/$SEEXPR211_TAR"
     pushd "SeExpr-${SEEXPR211_VERSION}"
@@ -20,10 +20,9 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/libexec/seexpr211/lib/libS
     #patch -p0 -i "$INC_PATH/patches/SeExpr/seexpr2-cmake.diff"
     mkdir build
     pushd build
-    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME/libexec/seexpr211" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
     make
     make install
-    #rm -f $SDK_HOME/lib/libSeExpr.so
     popd
     popd
     rm -rf "SeExpr-${SEEXPR211_VERSION}"

@@ -7,7 +7,7 @@ SEEXPR_TAR="SeExpr-${SEEXPR_VERSION}.tar.gz"
 if download_step; then
     download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR"
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/seexpr2.pc" ]|| [ "$(pkg-config --modversion seexpr2)" != "$SEEXPR_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/seexpr2.pc" ]|| [ "$(pkg-config --modversion seexpr2)" != "$SEEXPR_VERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$SEEXPR_TAR"
     pushd "SeExpr-${SEEXPR_VERSION}"
