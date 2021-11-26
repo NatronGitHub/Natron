@@ -155,7 +155,19 @@ OfxImageEffectInstance::mainEntry(const char *action,
 #endif
     ThreadIsActionCaller_RAII t(this);
 
-    return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
+    OfxStatus retval = OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
+
+    // Maybe paramEditBegin() was called by the effect without a matching paramEditEnd(). Let us fix that.
+    // See issue https://github.com/NatronGitHub/Natron/issues/708
+    // test for getMultipleParamsEditLevel() first, because it costs less.
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
+
+    if ((effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
+        while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
+            effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        }
+    }
+    return retval;
 }
 
 OfxStatus
