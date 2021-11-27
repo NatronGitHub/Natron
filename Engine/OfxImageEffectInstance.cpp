@@ -162,7 +162,7 @@ OfxImageEffectInstance::mainEntry(const char *action,
     // test for getMultipleParamsEditLevel() first, because it costs less.
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    if ((effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
+    if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
         while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
             effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         }
