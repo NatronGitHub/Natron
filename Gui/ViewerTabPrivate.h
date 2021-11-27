@@ -194,8 +194,6 @@ struct ViewerTabPrivate
     mutable QMutex fpsMutex;
     double fps;
 
-    //The last node that took the penDown/motion/keyDown/keyRelease etc...
-    NodeWPtr lastOverlayNode;
     bool hasPenDown;
     bool hasCaughtPenMotionWhileDragging;
 

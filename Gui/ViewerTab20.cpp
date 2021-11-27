@@ -218,9 +218,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
             // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
 
             return true;
         }
@@ -259,22 +257,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
-
-    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
-    if (lastOverlay) {
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it == lastOverlay) {
-                if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, timestamp) ) {
-                    return true;
-                } else {
-                    nodes.erase(it);
-                    break;
-                }
-            }
-        }
-    }
-
-    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
@@ -301,7 +284,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
     getGui()->getNodesEntitledForOverlays(nodes);
 
 
-    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifndef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -346,9 +329,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
                 // to any other interactive object it may own that shares the same view.
-                _imp->lastOverlayNode = *it;
 
                 return true;
             }
@@ -428,14 +409,11 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
             // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
 
             return true;
         }
     }
-
 
     return false;
 } // ViewerTab::notifyOverlaysPenMotion_internal
@@ -463,38 +441,19 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
 
-
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
-
-    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
-    if (lastOverlay) {
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it == lastOverlay) {
-                if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
-                    return true;
-                } else {
-                    nodes.erase(it);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
 
-
     if ( !didSomething && (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) ) {
         getGui()->getApp()->redrawAllViewers();
     }
     getGui()->getApp()->clearOverlayRedrawRequests();
-
 
     return didSomething;
 }
@@ -532,9 +491,6 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     _imp->hasPenDown = false;
     _imp->hasCaughtPenMotionWhileDragging = false;
-
-
-    _imp->lastOverlayNode.reset();
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -697,7 +653,6 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
     }
 #endif
 
-
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
@@ -712,14 +667,11 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
             // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
 
             return true;
         }
     }
-
 
     return false;
 } // ViewerTab::notifyOverlaysKeyDown_internal
@@ -749,29 +701,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
-    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
-    if (lastOverlay) {
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it == lastOverlay) {
-                if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
-                    if (isModifier) {
-                        nodes.erase(it);
-                        break;
-                    }
-
-                    return true;
-                } else {
-                    nodes.erase(it);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    for (NodesList::reverse_iterator it = nodes.rbegin();
-         it != nodes.rend();
-         ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
             if (isModifier) {
                 continue;
@@ -804,8 +734,6 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     if ( !app || app->isClosing() ) {
         return false;
     }
-
-    _imp->lastOverlayNode.reset();
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
@@ -902,9 +830,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
-
             // to any other interactive object it may own that shares the same view.
-            _imp->lastOverlayNode = node;
 
             return true;
         }
@@ -927,22 +853,8 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( qKey);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
-    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
-    if (lastOverlay) {
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it == lastOverlay) {
-                if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
-                    return true;
-                } else {
-                    nodes.erase(it);
-                    break;
-                }
-            }
-        }
-    }
 
-
-    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
             return true;
         }

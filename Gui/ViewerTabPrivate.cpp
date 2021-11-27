@@ -150,7 +150,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , checkerboardEnabled(false)
     , fpsMutex()
     , fps(24.)
-    , lastOverlayNode()
     , hasPenDown(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
