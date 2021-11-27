@@ -20,16 +20,27 @@
 
 ### Plugins
 
-- The OpenColorIO plugins can now use OpenColorIO 2.0.
+- The OpenColorIO plugins can now use OpenColorIO 2.1.
 
 
-## Version 2.4.1
+## Version 2.4.2
 
 ### Known issues
 
 - Rendering sometimes silently stalls after X frames. #248
 - Some image formats may have issues (PCX, PSB). #602
 - MTS video files are sometimes not read correctly. #186
+
+### Changes
+
+- Fix OpenFX overlay actions being executed in the wrong order. #711
+
+### Plugins
+
+- Fix bug in Transform plugin interact. #708
+
+
+## Version 2.4.1
 
 ### Changes
 
