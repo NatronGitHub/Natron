@@ -37,7 +37,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QThread>
 #include <QApplication>
 #include <QToolButton>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
@@ -806,8 +810,13 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if (selectedText) {
         EditKeyFrameDialog* dialog = new EditKeyFrameDialog(mode, this, selectedText, this);
         int dialogW = dialog->sizeHint().width();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        QScreen* desktop = QGuiApplication::primaryScreen();
+        QRect screen = desktop->availableGeometry();
+#else
         QDesktopWidget* desktop = QApplication::desktop();
         QRect screen = desktop->screenGeometry();
+#endif
         QPoint gP = e->globalPos();
         if ( gP.x() > (screen.width() - dialogW) ) {
             gP.rx() -= dialogW;

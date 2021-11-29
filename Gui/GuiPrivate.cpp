@@ -42,7 +42,6 @@
 #include <QtCore/QTimer>
 #include <QTextEdit>
 
-
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QScreen>
 #endif
@@ -55,7 +54,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QGraphicsScene>
 #include <QApplication>
 #include <QMenuBar>
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
 #include <QDesktopWidget>
+#endif
+
 #include <QToolBar>
 #include <QKeySequence>
 #include <QScrollArea>
@@ -647,8 +650,13 @@ GuiPrivate::restoreGuiGeometry()
         _gui->resize(size);
     } else {
         ///No window size serialized, give some appropriate default value according to the screen size
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        QScreen* desktop = QGuiApplication::primaryScreen();
+        QRect screen = desktop->availableGeometry();
+#else
         QDesktopWidget* desktop = QApplication::desktop();
         QRect screen = desktop->screenGeometry();
+#endif
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
     if ( settings.contains( QString::fromUtf8("maximized")) ) {

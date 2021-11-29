@@ -35,7 +35,13 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
+
 #include <QApplication>
 #include <QKeyEvent>
 #include <QDesktopServices>
@@ -1206,8 +1212,13 @@ PreferencesPanel::saveChangesAndClose()
 void
 PreferencesPanel::showEvent(QShowEvent* /*e*/)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    const QRect rect = desktop->availableGeometry();
+#else
     QDesktopWidget* desktop = QApplication::desktop();
     const QRect rect = desktop->screenGeometry();
+#endif
 
     move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
 
