@@ -216,7 +216,7 @@ ToolButton::sortChildren()
     }
     assert(_imp->_menu);
     QList<QAction*> actions = _imp->_menu->actions();
-    qSort( actions.begin(), actions.end(), ToolButtonChildrenSortFunctor() );
+    std::sort( actions.begin(), actions.end(), ToolButtonChildrenSortFunctor() );
     _imp->_menu->clear();
 
     std::vector<ToolButton*> sortedChildren;
