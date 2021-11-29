@@ -32,7 +32,13 @@ CLANG_DIAG_OFF(deprecated)
 #include <QPainter>
 #include <QStyleOption>
 #include <QApplication>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
+
 CLANG_DIAG_ON(deprecated)
 
 #ifdef DEBUG
@@ -96,8 +102,13 @@ SplashScreen::SplashScreen(const QString & filePath)
         show();
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    QRect screen = desktop->availableGeometry();
+#else
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry();
+#endif
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
@@ -158,8 +169,13 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     resize( _pixmap.width(), _pixmap.height() );
     show();
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    QRect screen = desktop->availableGeometry();
+#else
     QDesktopWidget* desktop = QApplication::desktop();
     QRect screen = desktop->screenGeometry();
+#endif
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
