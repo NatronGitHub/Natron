@@ -487,7 +487,11 @@ Edge::initLine()
 
     if (dest) {
         for (int i = 0; i < 4; ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+            QLineF::IntersectionType type = dstEdges[i].intersects(line(), &dstIntersection);
+#else
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
+#endif
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( dstIntersection, line().p2() ) );
                 foundDstIntersection = true;
@@ -502,7 +506,11 @@ Edge::initLine()
         if (foundDstIntersection) {
             ///Find the intersection with the source bbox
             for (int i = 0; i < 4; ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                QLineF::IntersectionType type = srcEdges[i].intersects(line(), &srcInteresect);
+#else
                 QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
+#endif
                 if (type == QLineF::BoundedIntersection) {
                     foundSrcIntersection = true;
                     break;
@@ -544,7 +552,11 @@ Edge::initLine()
         QPointF intersection;
         bool foundIntersection = false;
         for (int i = 0; i < 4; ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+            QLineF::IntersectionType type = dstEdges[i].intersects(line(), &intersection);
+#else
             QLineF::IntersectType type = dstEdges[i].intersect(line(), &intersection);
+#endif
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( intersection, line().p2() ) );
                 foundIntersection = true;
@@ -884,7 +896,11 @@ LinkArrow::refreshPosition()
     QPointF slaveIntersect;
     bool foundIntersection = false;
     for (int i = 0; i < 4; ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        QLineF::IntersectionType type = slaveEdges[i].intersects(line(), &slaveIntersect);
+#else
         QLineF::IntersectType type = slaveEdges[i].intersect(line(), &slaveIntersect);
+#endif
         if (type == QLineF::BoundedIntersection) {
             foundIntersection = true;
             break;
@@ -900,7 +916,11 @@ LinkArrow::refreshPosition()
 
     foundIntersection = false;
     for (int i = 0; i < 4; ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        QLineF::IntersectionType type = masterEdges[i].intersects(line(), &masterIntersect);
+#else
         QLineF::IntersectType type = masterEdges[i].intersect(line(), &masterIntersect);
+#endif
         if (type == QLineF::BoundedIntersection) {
             foundIntersection = true;
             break;

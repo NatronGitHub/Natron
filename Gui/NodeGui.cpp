@@ -1868,7 +1868,11 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
         edgeLine.setP1( (*it)->mapToScene( edgeLine.p1() ) );
         edgeLine.setP2( (*it)->mapToScene( edgeLine.p2() ) );
         for (int j = 0; j < 4; ++j) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+            if (edgeLine.intersects(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+#else
             if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+#endif
                 if (!closest) {
                     closest = *it;
                     closestSquareDist = ( intersection.x() - middleRect.x() ) * ( intersection.x() - middleRect.x() )
@@ -1895,7 +1899,11 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
             edgeLine.setP1( (_outputEdge)->mapToScene( edgeLine.p1() ) );
             edgeLine.setP2( (_outputEdge)->mapToScene( edgeLine.p2() ) );
             for (int j = 0; j < 4; ++j) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                if (edgeLine.intersects(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+#else
                 if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+#endif
                     return _outputEdge;
                 }
             }
