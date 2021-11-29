@@ -918,12 +918,21 @@ ExpandingLineEdit::updateMinimumWidth()
 {
     int left, right;
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    QMargins textMargin = textMargins();
+    int width = textMargin.left() + textMargin.right() + 4;
+    QMargins contentMargin = contentsMargins();
+    width += contentMargin.left() + contentMargin.right();
+
+    QStyleOptionFrame opt;
+#else
     getTextMargins(&left, 0, &right, 0);
     int width = left + right + 4 /*horizontalMargin in qlineedit.cpp*/;
     getContentsMargins(&left, 0, &right, 0);
     width += left + right;
 
     QStyleOptionFrameV2 opt;
+#endif
     initStyleOption(&opt);
 
     int minWidth = style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(width, 0).
