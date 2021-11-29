@@ -193,7 +193,11 @@ Gui::updateRecentFileActions()
             // split each dir, and find the common part of all dirs.
             std::vector<QStringList> dirParts(dirs.size());
             for (int i = 0; i < dirs.size(); ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                dirParts[i] = QDir::toNativeSeparators(dirs.at(i)).split(QDir::separator(), Qt::SkipEmptyParts);
+#else
                 dirParts[i] = QDir::toNativeSeparators(dirs.at(i)).split(QDir::separator(), QString::SkipEmptyParts);
+#endif
             }
             int minComps = dirParts[0].size();
             for (int i = 1; i < dirs.size(); ++i) {
@@ -219,7 +223,11 @@ Gui::updateRecentFileActions()
             // remove the n first element to each dirName corresponding to this filename, and recompose
                 for (int i = 0; i < numRecentFiles; ++i) {
                     if (fileNames[i] == it->first) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                        dirNames[i] = QStringList(QDir::toNativeSeparators(dirNames.at(i)).split(QDir::separator(), Qt::SkipEmptyParts).mid(commonComps)).join(QDir::separator());
+#else
                         dirNames[i] = QStringList(QDir::toNativeSeparators(dirNames.at(i)).split(QDir::separator(), QString::SkipEmptyParts).mid(commonComps)).join(QDir::separator());
+#endif
                     }
                 }
             }
