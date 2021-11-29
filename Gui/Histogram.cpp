@@ -1391,7 +1391,11 @@ Histogram::wheelEvent(QWheelEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if (e->angleDelta().x() != 0) {
+#else
     if (e->orientation() != Qt::Vertical) {
+#endif
         return;
     }
     const double zoomFactor_min = 0.000001;
@@ -1400,8 +1404,13 @@ Histogram::wheelEvent(QWheelEvent* e)
     const double par_max = 1000000.;
     double zoomFactor;
     double par;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+#endif
 
     if ( modCASIsControlShift(e) ) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse

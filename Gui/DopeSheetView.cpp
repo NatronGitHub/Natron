@@ -3657,12 +3657,21 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     running_in_main_thread();
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if (e->angleDelta().x() != 0) {
+#else
     if (e->orientation() != Qt::Vertical) {
+#endif
         return;
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
+    QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
+#endif
 
     _imp->zoomOrPannedSinceLastFit = true;
 

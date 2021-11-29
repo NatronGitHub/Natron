@@ -629,14 +629,23 @@ SpinBox::wheelEvent(QWheelEvent* e)
     if (ignoreWheelEvent) {
         return LineEdit::wheelEvent(e);
     }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if ( (e->angleDelta().x() != 0) ||
+         ( e->angleDelta().y() == 0) ||
+#else
     if ( (e->orientation() != Qt::Vertical) ||
          ( e->delta() == 0) ||
+#endif
          !isEnabled() ||
          isReadOnly() ||
          !hasFocus() ) { // wheel is only effective when the widget has focus (click it first, then wheel)
         return;
     }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    int delta = e->angleDelta().y();
+#else
     int delta = e->delta();
+#endif
     int shift = 0;
     if ( modCASIsShift(e) ) {
         shift = 1;

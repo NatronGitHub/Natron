@@ -189,11 +189,20 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
 void
 NodeGraph::wheelEvent(QWheelEvent* e)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if (e->angleDelta().x() != 0) {
+#else
     if (e->orientation() != Qt::Vertical) {
+#endif
         return;
     }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    wheelEventInternal( modCASIsControl(e), e->angleDelta().y() );
+    _imp->_lastMousePos = QPoint(e->position().x(), e->position().y());
+#else
     wheelEventInternal( modCASIsControl(e), e->delta() );
     _imp->_lastMousePos = e->pos();
+#endif
     update();
 }
 
