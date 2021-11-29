@@ -542,7 +542,11 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        const double minTickSizeTextPixel = ( _imp->isTimeFormatFrames ? fm.horizontalAdvance( QLatin1String("00000") ) : fm.horizontalAdvance( QLatin1String("00:00:00:00") ) ) / _imp->_screenPixelRatio;
+#else
         const double minTickSizeTextPixel = ( _imp->isTimeFormatFrames ? fm.width( QLatin1String("00000") ) : fm.width( QLatin1String("00:00:00:00") ) ) / _imp->_screenPixelRatio; // AXIS-SPECIFIC
+#endif
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -566,7 +570,11 @@ TimeLineGui::paintGL()
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = _imp->isTimeFormatFrames ? QString::number(value) : timecodeString(value, fps);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                const int sSizePixel =  fm.horizontalAdvance(s) / _imp->_screenPixelRatio;
+#else
                 const int sSizePixel =  fm.width(s) / _imp->_screenPixelRatio;
+#endif
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                     double alphaText = 1.0; //alpha;

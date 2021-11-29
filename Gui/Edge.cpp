@@ -536,7 +536,11 @@ Edge::initLine()
                 _imp->label->setPos(pos);
                 QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                double txtWidth = fm.horizontalAdvance( _imp->label->text() );
+#else
                 double txtWidth = fm.width( _imp->label->text() );
+#endif
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _imp->label->hide();
                     _imp->enoughSpaceToShowLabel = false;
@@ -579,7 +583,11 @@ Edge::initLine()
                 double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                    yOffset = -fm.horizontalAdvance( _imp->label->text() );
+#else
                     yOffset = -fm.width( _imp->label->text() );
+#endif
                 } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                     yOffset = +5;
                 } else {

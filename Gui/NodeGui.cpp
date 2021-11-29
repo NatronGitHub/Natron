@@ -985,7 +985,11 @@ NodeGui::resize(int width,
     QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
     metrics = QFontMetrics(f, 0);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    int pMWidth = metrics.horizontalAdvance(persistentMessage);
+#else
     int pMWidth = metrics.width(persistentMessage);
+#endif
     int midNodeX = topLeft.x() + iconWidth + (width - iconWidth) / 2;
     QPointF bitDepthPos(midNodeX, 0);
     _streamIssuesWarning->refreshPosition(bitDepthPos);

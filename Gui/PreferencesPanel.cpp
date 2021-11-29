@@ -769,7 +769,11 @@ PreferencesPanel::createGui()
             uiTabTreeItem = _imp->tabs[i].treeItem;
         }
         QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        int w = fm.horizontalAdvance(label);
+#else
         int w = fm.width(label);
+#endif
         maxLength = std::max(w, maxLength);
     }
     assert(pluginsFrameLayout);

@@ -209,7 +209,11 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
     QString loadString( tr("Loading ") );
     QFontMetrics fm = p.fontMetrics();
     QPointF loadStrPos(300 * _scale, _pixmap.height() / 2.);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    p.drawText(QPointF(loadStrPos.x() + (fm.horizontalAdvance(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
+#else
     p.drawText(QPointF(loadStrPos.x() + (fm.width(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
+#endif
     p.setPen( QColor(243, 137, 0) );
     p.drawText(loadStrPos, loadString);
 }

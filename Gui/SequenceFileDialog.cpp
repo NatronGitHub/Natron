@@ -1327,7 +1327,11 @@ SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option,
     QString str =  index.data(FileSystemModel::FilePathRole).toString();
     QFontMetrics metric(option.font);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    return QSize( metric.horizontalAdvance(str), metric.height() );
+#else
     return QSize( metric.width(str), metric.height() );
+#endif
 }
 
 void
@@ -2670,7 +2674,11 @@ FileDialogComboBox::sizeHint() const
     if ( (index >= 0) && ( index < count() ) ) {
         QFontMetrics fm = fontMetrics();
         QString txt = itemText(index);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        int w = fm.horizontalAdvance(txt);
+#else
         int w = fm.width(txt);
+#endif
 
         return QSize(w + 10, fm.height() * 1.5);
     }

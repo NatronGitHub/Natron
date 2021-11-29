@@ -950,7 +950,11 @@ ExpandingLineEdit::resizeToContents()
     }
     if ( QWidget * parent = parentWidget() ) {
         QPoint position = pos();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        int hintWidth = minimumWidth() + fontMetrics().horizontalAdvance( displayText() );
+#else
         int hintWidth = minimumWidth() + fontMetrics().width( displayText() );
+#endif
         int parentWidth = parent->width();
         int maxWidth = isRightToLeft() ? position.x() + oldWidth : parentWidth - position.x();
         int newWidth = qBound(originalWidth, hintWidth, maxWidth);

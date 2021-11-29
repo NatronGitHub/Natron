@@ -578,7 +578,11 @@ KnobGui::getStringWidthForCurrentFont(const std::string& string) const
         return _imp->customInteract->getStringWidthForCurrentFont(string);
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    return getGui()->fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+#else
     return getGui()->fontMetrics().width( QString::fromUtf8( string.c_str() ) );
+#endif
 }
 
 void
