@@ -1055,7 +1055,11 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& 
 
 struct NodeGroupPrivate
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    mutable QRecursiveMutex nodesLock;
+#else
     mutable QMutex nodesLock; // protects inputs & outputs
+#endif
     std::vector<NodeWPtr> inputs, guiInputs;
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
@@ -1064,7 +1068,11 @@ struct NodeGroupPrivate
     KnobButtonPtr exportAsTemplate, convertToGroup;
 
     NodeGroupPrivate()
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    : nodesLock()
+#else
     : nodesLock(QMutex::Recursive)
+#endif
     , inputs()
     , guiInputs()
     , outputs()

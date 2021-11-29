@@ -423,7 +423,11 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , metadata()
     , runningClipPreferences(false)
     , overlaysViewport(0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    , attachedContextsMutex()
+#else
     , attachedContextsMutex(QMutex::Recursive)
+#endif
     , attachedContexts()
     , mainInstance(0)
     , isDoingInstanceSafeRender(false)
@@ -453,7 +457,11 @@ EffectInstance::Implementation::Implementation(const Implementation& other)
 , metadata(other.metadata)
 , runningClipPreferences(other.runningClipPreferences)
 , overlaysViewport(other.overlaysViewport)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+, attachedContextsMutex()
+#else
 , attachedContextsMutex(QMutex::Recursive)
+#endif
 , attachedContexts()
 , mainInstance(other._publicInterface)
 , isDoingInstanceSafeRender(false)

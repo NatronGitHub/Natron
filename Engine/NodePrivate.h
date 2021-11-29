@@ -173,7 +173,11 @@ public:
         , mustQuitPreview(0)
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        , renderInstancesSharedMutex()
+#else
         , renderInstancesSharedMutex(QMutex::Recursive)
+#endif
         , knobsAge(0)
         , knobsAgeMutex()
         , masterNodeMutex()

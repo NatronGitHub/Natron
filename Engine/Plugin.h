@@ -34,6 +34,9 @@
 #include <list>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#include <QRecursiveMutex>
+#endif
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -173,7 +176,11 @@ class Plugin
     QString _pythonModule;
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    QRecursiveMutex* _lock;
+#else
     QMutex* _lock;
+#endif
     int _majorVersion;
     int _minorVersion;
     NATRON_ENUM::ContextEnum _ofxContext;
@@ -239,7 +246,11 @@ public:
            const QString & iconFilePath,
            const QStringList & groupIconFilePath,
            const QStringList & grouping,
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+           QRecursiveMutex* lock,
+#else
            QMutex* lock,
+#endif
            int majorVersion,
            int minorVersion,
            bool isReader,
@@ -338,7 +349,11 @@ public:
 
     bool getToolsetScript() const;
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    QRecursiveMutex* getPluginLock() const;
+#else
     QMutex* getPluginLock() const;
+#endif
     LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;

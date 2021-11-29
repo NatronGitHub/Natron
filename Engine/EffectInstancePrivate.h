@@ -37,6 +37,9 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutex>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#include <QRecursiveMutex>
+#endif
 
 #include "Global/GlobalDefines.h"
 
@@ -224,7 +227,11 @@ public:
 
     // set during interact actions on main-thread
     OverlaySupport* overlaysViewport;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    mutable QRecursiveMutex attachedContextsMutex;
+#else
     mutable QMutex attachedContextsMutex;
+#endif
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.

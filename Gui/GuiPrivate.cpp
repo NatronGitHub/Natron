@@ -198,7 +198,11 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _lastPluginDir()
     , _nextViewerTabPlace(0)
     , _leftRightSplitter(0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    , _viewerTabsMutex()
+#else
     , _viewerTabsMutex(QMutex::Recursive) // Gui::createNodeViewerInterface() may cause a resizeEvent, which calls Gui:redrawAllViewers()
+#endif
     , _viewerTabs()
     , _masterSyncViewer(0)
     , _activeViewer(0)
