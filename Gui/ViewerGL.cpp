@@ -2773,7 +2773,11 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if ( modCASIsControl(e) ) {
         const int delta_max = 28;
         // threshold delta to the range -delta_max..delta_max
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        int delta = std::max( -delta_max, std::min(e->angleDelta().y(), delta_max) );
+#else
         int delta = std::max( -delta_max, std::min(e->delta(), delta_max) );
+#endif
         _imp->wheelDeltaSeekFrame += delta;
         if (_imp->wheelDeltaSeekFrame <= -delta_max) {
             _imp->wheelDeltaSeekFrame += delta_max;
@@ -2786,7 +2790,11 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return;
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if (e->angleDelta().x() != 0) {
+#else
     if (e->orientation() != Qt::Vertical) {
+#endif
         // we only handle vertical motion for zooming
         return QGLWidget::wheelEvent(e);
     }
@@ -2803,10 +2811,18 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     double zoomFactor;
     unsigned int oldMipMapLevel, newMipMapLevel;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
+#else
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
+#endif
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+#endif
 
         zoomFactor = _imp->zoomCtx.factor();
         //oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;

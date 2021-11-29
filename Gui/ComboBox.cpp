@@ -404,7 +404,11 @@ ComboBox::wheelEvent(QWheelEvent *e)
         return;
     }
     // a standard wheel click is 120
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    _currentDelta += e->angleDelta().y();
+#else
     _currentDelta += e->delta();
+#endif
 
     if ( (_currentDelta <= -120) || (120 <= _currentDelta) ) {
         int c = count();

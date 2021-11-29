@@ -1081,17 +1081,28 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 void
 TimeLineGui::wheelEvent(QWheelEvent* e)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    if (e->angleDelta().x() != 0) {
+        return;
+    }
+    const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
+#else
     if (e->orientation() != Qt::Vertical) {
         return;
     }
     const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
+#endif
     double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
         newZoomFactor = 100.;
     }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    QPointF zoomCenter = toTimeLineCoordinates( e->position().x(), e->position().y() );
+#else
     QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
+#endif
     double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
     _imp->tlZoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->tlZoomCtx.left) * zoomRatio;
     _imp->tlZoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->tlZoomCtx.bottom) * zoomRatio;
