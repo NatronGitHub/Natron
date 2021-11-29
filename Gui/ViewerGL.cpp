@@ -1115,7 +1115,11 @@ wordWrap(const QFontMetrics& fm,
 
     for (int i = 0; i < words.size(); ++i) {
         QString word = words[i];
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+        int wordPixels = fm.horizontalAdvance(word);
+#else
         int wordPixels = fm.width(word);
+#endif
 
         // If adding the new word to the current line would be too long,
         // then put it on a new line (and split it up if it's too long).
@@ -1142,7 +1146,11 @@ wordWrap(const QFontMetrics& fm,
                     stringL.push_back(curString);
                     curString.clear();
                 }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                wordPixels = fm.horizontalAdvance(word);
+#else
                 wordPixels = fm.width(word);
+#endif
                 //tmp.append('\n');
             }
 
@@ -3699,7 +3707,11 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+#else
     return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
+#endif
 }
 
 void

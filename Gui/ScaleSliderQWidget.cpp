@@ -516,7 +516,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
     const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
     const double largestTickSize = range * largestTickSizePixel / rangePixel;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    const double minTickSizeTextPixel = fontM.horizontalAdvance( QLatin1String("00") ); // AXIS-SPECIFIC
+#else
     const double minTickSizeTextPixel = fontM.width( QLatin1String("00") ); // AXIS-SPECIFIC
+#endif
     const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
     for (int i = m1; i <= m2; ++i) {
         double value = i * smallTickSize + offset;
@@ -543,7 +547,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         if ( renderFloating && (tickSize > minTickSizeText) ) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+            const int sSizePixel =  fontM.horizontalAdvance(s);
+#else
             const int sSizePixel =  fontM.width(s);
+#endif
             if (tickSizePixel > sSizePixel) {
                 const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                 double alphaText = 1.0; //alpha;
@@ -560,7 +568,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
                 QPointF textPos = _imp->zoomCtx.toWidgetCoordinates( value, btmLeft.y() );
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                int textWidth = fontM.horizontalAdvance(s);
+#else
                 int textWidth = fontM.width(s);
+#endif
                 int textX = std::floor(textPos.x() + 0.5);
                 int textY = std::floor(textPos.y() + 0.5);
                 // center the text, and make sure it fits

@@ -1535,7 +1535,11 @@ CurveWidget::getWidgetFontHeight() const
 int
 CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+#else
     return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
+#endif
 }
 
 QSize

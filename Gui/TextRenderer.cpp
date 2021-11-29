@@ -174,7 +174,11 @@ TextRendererPrivate::createCharacter(QChar c)
     }
 
     GLuint texture = _usedTextures.back();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    GLsizei width = _fontMetrics.horizontalAdvance(c);
+#else
     GLsizei width = _fontMetrics.width(c);
+#endif
     GLsizei height = _fontMetrics.height();
 
     // render into a new transparent pixmap using QPainter
@@ -284,7 +288,11 @@ TextRenderer::renderText(float x,
     if (flags & Qt::AlignHCenter || flags & Qt::AlignRight) {
         int width = 0;
         for (int i = 0; i < text.length(); ++i) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+            width += p->_fontMetrics.horizontalAdvance(text[i]);
+#else
             width += p->_fontMetrics.width(text[i]);
+#endif
         }
         if (flags & Qt::AlignHCenter) {
             x -= width/2. * scalex;

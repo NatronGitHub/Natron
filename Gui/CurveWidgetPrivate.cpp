@@ -492,7 +492,11 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+            const double minTickSizeTextPixel = ( (axis == 0) ? fm.horizontalAdvance( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio;
+#else
             const double minTickSizeTextPixel = ( (axis == 0) ? fm.width( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
+#endif
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -517,7 +521,11 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
                     const QString s = QString::number(value);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                    const double sSizePixel = ( (axis == 0) ? fm.horizontalAdvance(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
+#else
                     const double sSizePixel = ( (axis == 0) ? fm.width(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
+#endif
                     if (tickSizePixel > sSizePixel) {
                         const double sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                         double alphaText = 1.0; //alpha;
@@ -771,7 +779,11 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
                 topLeftWidget.ry() += yOffset;
 
                 QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( (*it2)->key.getTime() ).arg( (*it2)->key.getValue() );
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                QPointF btmRightWidget( topLeftWidget.x() + fm.horizontalAdvance(coordStr) / _screenPixelRatio, topLeftWidget.y() + fm.height() / _screenPixelRatio );
+#else
                 QPointF btmRightWidget( topLeftWidget.x() + fm.width(coordStr) / _screenPixelRatio, topLeftWidget.y() + fm.height() / _screenPixelRatio );
+#endif
 
                 if ( (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && (pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      ( pt.y() >= topLeftWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && ( pt.y() <= btmRightWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) {
@@ -836,8 +848,13 @@ CurveWidgetPrivate::isNearbySelectedTangentText(const QPoint & pt) const
 
                 QString leftCoordStr =  QString( tr("l: %1") ).arg(std::floor( ( (*it2)->key.getLeftDerivative() * rounding ) + 0.5 ) / rounding);
                 QString rightCoordStr =  QString( tr("r: %1") ).arg(std::floor( ( (*it2)->key.getRightDerivative() * rounding ) + 0.5 ) / rounding);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+                QPointF btmRight_LeftTanWidget( topLeft_LeftTanWidget.x() + fm.horizontalAdvance(leftCoordStr) / _screenPixelRatio, topLeft_LeftTanWidget.y() + fm.height() / _screenPixelRatio );
+                QPointF btmRight_RightTanWidget( topLeft_RightTanWidget.x() + fm.horizontalAdvance(rightCoordStr) / _screenPixelRatio, topLeft_RightTanWidget.y() + fm.height() / _screenPixelRatio );
+#else
                 QPointF btmRight_LeftTanWidget( topLeft_LeftTanWidget.x() + fm.width(leftCoordStr) / _screenPixelRatio, topLeft_LeftTanWidget.y() + fm.height() / _screenPixelRatio );
                 QPointF btmRight_RightTanWidget( topLeft_RightTanWidget.x() + fm.width(rightCoordStr) / _screenPixelRatio, topLeft_RightTanWidget.y() + fm.height() / _screenPixelRatio );
+#endif
 
                 if ( (pt.x() >= topLeft_LeftTanWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && (pt.x() <= btmRight_LeftTanWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      ( pt.y() >= topLeft_LeftTanWidget.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && ( pt.y() <= btmRight_LeftTanWidget.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) {
