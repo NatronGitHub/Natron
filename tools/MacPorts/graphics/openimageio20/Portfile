@@ -4,7 +4,6 @@ PortSystem          1.0
 PortGroup           github 1.0
 #PortGroup           qt5 1.0
 PortGroup           cmake 1.1
-PortGroup           cxx11 1.1
 PortGroup           active_variants 1.1
 
 github.setup        OpenImageIO oiio 2.0.13
@@ -78,6 +77,8 @@ configure.args-append \
     -DUSE_OPENGL:BOOL=FALSE \
     -DUSE_WEBP:BOOL=TRUE \
     -DSTOP_ON_WARNING:BOOL=FALSE
+
+compiler.cxx_standard 2011
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:

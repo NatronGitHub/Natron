@@ -1,0 +1,55 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem                      1.0
+PortGroup                       makefile 1.0
+
+name                            giflib
+version                         5.2.1
+set major                       [lindex [split ${version} .] 0]
+categories                      graphics
+maintainers                     {ryandesign @ryandesign} openmaintainer
+license                         MIT
+platforms                       darwin
+homepage                        https://sourceforge.net/projects/giflib/
+master_sites                    sourceforge:project/giflib
+
+description                     GIF library using patented LZW algorithm
+
+long_description                GIF loading and saving shared library. \
+                                Uses the LZW algorithm.
+
+checksums           rmd160  bc4be3ddaef877e4fd546b1240fe94dec8ef3e27 \
+                    sha256  31da5562f44c5f15d63340a09a4fd62b48c45620cd302f77a6d9acf0077879bd \
+                    size    444187
+
+patchfiles                      Makefile.patch
+
+build.args		PREFIX="${prefix}"  CC="${configure.cc}" \
+                CFLAGS="${configure.cppflags} ${configure.cflags} [get_canonical_archflags cc]" \
+                LDFLAGS="${configure.ldflags} [get_canonical_archflags ld]"
+
+destroot.args	PREFIX="${prefix}"
+
+variant universal {
+    build.args-append   "CFLAGS+=\"${configure.universal_cflags}\"" \
+                        "LDFLAGS+=\"${configure.universal_ldflags}\""
+}
+
+use_parallel_build              yes
+
+set docdir ${prefix}/share/doc/${name}
+post-destroot {
+    xinstall -d ${destroot}${docdir}
+    xinstall -W ${worksrcpath} COPYING NEWS README TODO history.adoc ${destroot}${docdir}
+    xinstall -m 644 {*}[glob ${worksrcpath}/doc/*.1] ${destroot}${prefix}/share/man/man1
+}
+
+variant doc description {Install HTML documentation} {
+    depends_build-append        port:xmlto
+    post-destroot {
+        xinstall -d ${destroot}${docdir}/html
+        xinstall -m 644 {*}[glob ${worksrcpath}/doc/*.html] ${destroot}${docdir}/html
+    }
+}
+
+livecheck.regex                 /${name}-(${major}\\.\[0-9.\]+)${extract.suffix}

@@ -1,0 +1,108 @@
+--- Makefile.orig	2019-06-26 12:08:33.000000000 +1000
++++ Makefile	2019-06-26 12:48:05.000000000 +1000
+@@ -37,6 +37,8 @@
+ UHEADERS = getarg.h
+ UOBJECTS = $(USOURCES:.c=.o)
+ 
++UNAME:=$(shell uname)
++
+ # Some utilities are installed
+ INSTALLABLE = \
+ 	gif2rgb \
+@@ -61,27 +63,53 @@
+ 
+ LDLIBS=libgif.a -lm
+ 
+-all: libgif.so libgif.a libutil.so libutil.a $(UTILS)
++SOEXTENION	= so
++LIBGIFSO	= libgif.$(SOEXTENSION)
++LIBGIFSOMAJOR	= libgif.$(SOEXTENSION).$(LIBMAJOR)
++LIBGIFSOVER	= libgif.$(SOEXTENSION).$(LIBVER)
++LIBUTILSO	= libutil.$(SOEXTENSION)
++LIBUTILSOMAJOR	= libutil.$(SOEXTENSION).$(LIBMAJOR)
++ifeq ($(UNAME), Darwin)
++SOEXTENSION	= dylib
++LIBGIFSO        = libgif.$(SOEXTENSION)
++LIBGIFSOMAJOR   = libgif.$(LIBMAJOR).$(SOEXTENSION)
++LIBGIFSOVER	= libgif.$(LIBVER).$(SOEXTENSION)
++LIBUTILSO	= libutil.$(SOEXTENSION)
++LIBUTILSOMAJOR	= libutil.$(LIBMAJOR).$(SOEXTENSION)
++endif
++
++all: $(LIBGIFSO) libgif.a $(LIBUTILSO) libutil.a $(UTILS)
++ifeq ($(UNAME), Darwin)
++else
+ 	$(MAKE) -C doc
++endif
+ 
+ $(UTILS):: libgif.a libutil.a
+ 
+-libgif.so: $(OBJECTS) $(HEADERS)
+-	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,libgif.so.$(LIBMAJOR) -o libgif.so $(OBJECTS)
++$(LIBGIFSO): $(OBJECTS) $(HEADERS)
++ifeq ($(UNAME), Darwin)
++	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(OBJECTS) -o $(LIBGIFSO)
++else
++	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(PREFIX)/lib/$(LIBGIFSOMAJOR) -o $(LIBGIFSO) $(OBJECTS)
++endif
+ 
+ libgif.a: $(OBJECTS) $(HEADERS)
+ 	$(AR) rcs libgif.a $(OBJECTS)
+ 
+-libutil.so: $(UOBJECTS) $(UHEADERS)
+-	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,libutil.so.$(LIBMAJOR) -o libutil.so $(UOBJECTS)
++$(LIBUTILSO): $(UOBJECTS) $(UHEADERS)
++ifeq ($(UNAME), Darwin)
++	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(OBJECTS) -o $(LIBUTILSO)
++else
++	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(PREFIX)/lib/$(LIBUTILMAJOR) -o $(LIBUTILSO) $(UOBJECTS)
++endif
+ 
+ libutil.a: $(UOBJECTS) $(UHEADERS)
+ 	$(AR) rcs libutil.a $(UOBJECTS)
+ 
+ clean:
+-	rm -f $(UTILS) $(TARGET) libgetarg.a libgif.a libgif.so libutil.a libutil.so *.o
+-	rm -f libgif.so.$(LIBMAJOR).$(LIBMINOR).$(LIBPOINT)
+-	rm -f libgif.so.$(LIBMAJOR)
++	rm -f $(UTILS) $(TARGET) libgetarg.a libgif.a $(LIBGIFSO) libutil.a $(LIBUTILSO) *.o
++	rm -f $(LIBGIFSOVER)
++	rm -f $(LIBGIFSOMAJOR)
+ 	rm -fr doc/*.1 *.html doc/staging
+ 
+ check: all
+@@ -89,7 +117,12 @@
+ 
+ # Installation/uninstallation
+ 
++ifeq ($(UNAME), Darwin)
++install: all install-bin install-include install-lib
++else
+ install: all install-bin install-include install-lib install-man
++endif
++
+ install-bin: $(INSTALLABLE)
+ 	$(INSTALL) -d "$(DESTDIR)$(BINDIR)"
+ 	$(INSTALL) $^ "$(DESTDIR)$(BINDIR)"
+@@ -99,9 +132,9 @@
+ install-lib:
+ 	$(INSTALL) -d "$(DESTDIR)$(LIBDIR)"
+ 	$(INSTALL) -m 644 libgif.a "$(DESTDIR)$(LIBDIR)/libgif.a"
+-	$(INSTALL) -m 755 libgif.so "$(DESTDIR)$(LIBDIR)/libgif.so.$(LIBVER)"
+-	ln -sf libgif.so.$(LIBVER) "$(DESTDIR)$(LIBDIR)/libgif.so.$(LIBMAJOR)"
+-	ln -sf libgif.so.$(LIBMAJOR) "$(DESTDIR)$(LIBDIR)/libgif.so"
++	$(INSTALL) -m 755 $(LIBGIFSO) "$(DESTDIR)$(LIBDIR)/$(LIBGIFSOVER)"
++	ln -sf $(LIBGIFSOVER) "$(DESTDIR)$(LIBDIR)/$(LIBGIFSOMAJOR)"
++	ln -sf $(LIBGIFSOMAJOR) "$(DESTDIR)$(LIBDIR)/$(LIBGIFSO)"
+ install-man:
+ 	$(INSTALL) -d "$(DESTDIR)$(MANDIR)/man1"
+ 	$(INSTALL) -m 644 doc/*.1 "$(DESTDIR)$(MANDIR)/man1"
+@@ -112,7 +145,7 @@
+ 	rm -f "$(DESTDIR)$(INCDIR)/gif_lib.h"
+ uninstall-lib:
+ 	cd "$(DESTDIR)$(LIBDIR)" && \
+-		rm -f libgif.a libgif.so libgif.so.$(LIBMAJOR) libgif.so.$(LIBVER)
++		rm -f libgif.a $(LIBGIFSO) $(LIBGIFSOMAJOR) $(LIBGIFSOVER)
+ uninstall-man:
+ 	cd "$(DESTDIR)$(MANDIR)/man1" && rm -f $(shell cd doc >/dev/null && echo *.1)
+ 

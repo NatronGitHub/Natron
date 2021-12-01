@@ -3,9 +3,10 @@
 
 PortSystem          1.0
 PortGroup           cmake 1.0
+PortGroup           github 1.0
 
 name                seexpr
-version             3.0.1
+github.setup        wdas SeExpr 3.0.1 v
 license             Apache-2
 categories          graphics
 maintainers         nomaintainer
@@ -18,17 +19,19 @@ platforms           darwin
 #distname            ${version}
 #dist_subdir         ${name}/${version}_3
 #use_bzip2           yes
-master_sites        https://github.com/wdas/SeExpr/archive/
-distname            v${version}
+#master_sites        https://github.com/wdas/SeExpr/archive/
+#distname            v${version}
 
-checksums           sha1    f71a7be90a2106def61be0e864b2c3b21efc7552 \
-                    rmd160  3415a1b689e34501ec9093ed408ec81de6cb86ba \
-                    sha256  1e4cd35e6d63bd3443e1bffe723dbae91334c2c94a84cc590ea8f1886f96f84e \
-                    size    903297
+checksums           sha1    bdd27ab6662e1bfb6dc2fe03de0efe4f869d96bc \
+                    rmd160  5d40c10b17b84e51a414a8ea86a070a0881d1427 \
+                    sha256  1b04e8c97e469a9568e72c4ea433e8c92ac8df81ce9c593447b3b08e8773072b \
+                    size    903364
 worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
+
+patchfiles          scandir.patch
 
 build.target-append doc
 

@@ -1,5 +1,5 @@
---- Portfile.orig	2021-11-09 11:54:49.000000000 -0800
-+++ Portfile	2021-11-09 12:09:06.000000000 -0800
+--- Portfile.orig	2021-11-27 00:03:52.000000000 -0800
++++ Portfile	2021-11-30 18:53:13.000000000 -0800
 @@ -2,14 +2,14 @@
  
  PortSystem              1.0
@@ -13,7 +13,7 @@
  
 -github.setup            OpenImageIO oiio 2.1.17.0 v
 -revision                6
-+github.setup            OpenImageIO oiio 2.3.8.0
++github.setup            OpenImageIO oiio 2.3.9.1 v
 +revision                100
  name                    openimageio
  categories              graphics
@@ -25,14 +25,21 @@
 -checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
 -                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
 -                        size    29052379
-+checksums           rmd160  11b101ac888a871d18948e84856c2a07adc2aebd \
-+                    sha256  0b0495e7c2c5213b1c68e9fd4e89e153355b0f61b244d77c50e7999219b07f44 \
-+                    size    29233320
++checksums           rmd160  eae1c8b6d893d389adea1f5e8184d8de445e37ed \
++                    sha256  576442286e95b825a58a38c85d9f889941bf9993d8fd790565e4c834f72b90d0 \
++                    size    29248524
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -40,8 +40,10 @@
- distname                Release-${version}
+@@ -33,15 +33,12 @@
+ 
+ compiler.thread_local_storage yes
+ 
+-# When updating this port to a new version, please switch to standard
+-# use of the github portgroup by removing the following three lines and
+-# replacing them with "github.tarball_from archive".
+-github.master_sites     ${github.homepage}/archive
+-distname                Release-${version}
  worksrcdir              oiio-Release-${version}
  
 -patchfiles-append       patch-FindOpenJpeg.cmake.diff \
@@ -44,7 +51,14 @@
  
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
-@@ -63,9 +65,78 @@
+@@ -56,16 +53,84 @@
+                         port:bzip2 \
+                         port:libpng \
+                         port:tiff \
+-                        port:ilmbase \
+                         port:openexr \
+                         port:squish \
+                         port:libfmt
  
  # optional components
  
@@ -126,7 +140,7 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
-@@ -102,34 +173,58 @@
+@@ -102,34 +167,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -188,7 +202,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -138,21 +233,35 @@
+@@ -138,21 +227,35 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
