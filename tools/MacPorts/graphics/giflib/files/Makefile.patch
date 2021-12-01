@@ -41,9 +41,9 @@
 -	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,libgif.so.$(LIBMAJOR) -o libgif.so $(OBJECTS)
 +$(LIBGIFSO): $(OBJECTS) $(HEADERS)
 +ifeq ($(UNAME), Darwin)
-+	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(OBJECTS) -o $(LIBGIFSO)
++	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) -install_name $(LIBDIR)/$(LIBGIFSOMAJOR) $(OBJECTS) -o $(LIBGIFSO)
 +else
-+	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(PREFIX)/lib/$(LIBGIFSOMAJOR) -o $(LIBGIFSO) $(OBJECTS)
++	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(LIBGIFSOMAJOR) -o $(LIBGIFSO) $(OBJECTS)
 +endif
  
  libgif.a: $(OBJECTS) $(HEADERS)
@@ -53,9 +53,9 @@
 -	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,libutil.so.$(LIBMAJOR) -o libutil.so $(UOBJECTS)
 +$(LIBUTILSO): $(UOBJECTS) $(UHEADERS)
 +ifeq ($(UNAME), Darwin)
-+	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(OBJECTS) -o $(LIBUTILSO)
++	$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) -install_name $(LIBDIR)/$(LIBUTILMAJOR) $(OBJECTS) -o $(LIBUTILSO)
 +else
-+	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(PREFIX)/lib/$(LIBUTILMAJOR) -o $(LIBUTILSO) $(UOBJECTS)
++	$(CC) $(CFLAGS) -shared $(LDFLAGS) -Wl,-soname -Wl,$(LIBUTILMAJOR) -o $(LIBUTILSO) $(UOBJECTS)
 +endif
  
  libutil.a: $(UOBJECTS) $(UHEADERS)
