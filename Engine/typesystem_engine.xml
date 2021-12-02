@@ -18,13 +18,10 @@
   - along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
    - ***** END LICENSE BLOCK ***** -->
 <typesystem package="NatronEngine">
-
-    <inject-code class="native" position="beginning">
-        NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
-    </inject-code>
-
+    
     <!--Load QtCore typesystem-->
     <load-typesystem name="typesystem_core.xml" generate="no" />
+    
     <!--Primitives-->
     <primitive-type name="bool"/>
     <primitive-type name="double"/>
@@ -213,7 +210,7 @@
     </container-type>
 
      <!--Natron global enums-->
-    <namespace-type name="Natron">
+    <namespace-type name="NATRON_NAMESPACE">
     <enum-type name="StatusEnum"/>
     <enum-type name="MergingFunctionEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
