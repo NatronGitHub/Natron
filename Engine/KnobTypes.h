@@ -248,13 +248,13 @@ public:
 
     static const std::string & typeNameStatic();
 
-    ValueIsNormalizedEnum getValueIsNormalized(int dimension) const
+    NATRON_ENUM::ValueIsNormalizedEnum getValueIsNormalized(int dimension) const
     {
         return _valueIsNormalized[dimension];
     }
 
     void setValueIsNormalized(int dimension,
-                              ValueIsNormalizedEnum state)
+                              NATRON_ENUM::ValueIsNormalizedEnum state)
     {
         _valueIsNormalized[dimension] = state;
     }
@@ -372,7 +372,7 @@ private:
     /// - kOfxParamDoubleTypeNormalisedYAbsolute - normalised absolute position on the Y axis (1D only)
     /// - kOfxParamDoubleTypeNormalisedXY - normalised to the project's X and Y size (2D only),
     /// - kOfxParamDoubleTypeNormalisedXYAbsolute - normalised to the projects X and Y size, and is an absolute position on the image plane,
-    std::vector<ValueIsNormalizedEnum> _valueIsNormalized;
+    std::vector<NATRON_ENUM::ValueIsNormalizedEnum> _valueIsNormalized;
 
     ///For double params respecting the kOfxParamCoordinatesNormalised
     ///This tells us that only the default value is stored normalized.
@@ -1009,33 +1009,33 @@ public:
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
     CurvePtr getParametricCurve(int dimension) const;
     CurvePtr getDefaultParametricCurve(int dimension) const;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(int dimension, int *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(int dimension,
+    NATRON_ENUM::StatusEnum addControlPoint(NATRON_ENUM::ValueChangedReasonEnum reason, int dimension, double key, double value, NATRON_ENUM::KeyframeTypeEnum interpolation = NATRON_ENUM::eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum addControlPoint(NATRON_ENUM::ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_ENUM::KeyframeTypeEnum interpolation = NATRON_ENUM::eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum getNControlPoints(int dimension, int *returnValue) const WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum getNthControlPoint(int dimension,
                                   int nthCtl,
                                   double *key,
                                   double *value) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(int dimension,
+    NATRON_ENUM::StatusEnum getNthControlPoint(int dimension,
                                   int nthCtl,
                                   double *key,
                                   double *value,
                                   double *leftDerivative,
                                   double *rightDerivative) const WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
+    NATRON_ENUM::StatusEnum setNthControlPointInterpolation(NATRON_ENUM::ValueChangedReasonEnum reason,
                                                int dimension,
                                                int nThCtl,
-                                               KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
+                                               NATRON_ENUM::KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+    NATRON_ENUM::StatusEnum setNthControlPoint(NATRON_ENUM::ValueChangedReasonEnum reason,
                                   int dimension,
                                   int nthCtl,
                                   double key,
                                   double value) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+    NATRON_ENUM::StatusEnum setNthControlPoint(NATRON_ENUM::ValueChangedReasonEnum reason,
                                   int dimension,
                                   int nthCtl,
                                   double key,
@@ -1044,8 +1044,8 @@ public:
                                   double rightDerivative) WARN_UNUSED_RETURN;
 
 
-    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum deleteControlPoint(NATRON_ENUM::ValueChangedReasonEnum reason, int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    NATRON_ENUM::StatusEnum deleteAllControlPoints(NATRON_ENUM::ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list<Curve >* curves) const;

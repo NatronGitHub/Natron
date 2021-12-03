@@ -615,13 +615,16 @@ shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-path
 tools/utils/runPostShiboken.sh
 ```
 
-on HomeBrew:
+on HomeBrew with Qt5/PySide2/Shiboken2:
 ```Shell
-rm Engine/NatronEngine/* Gui/NatronGui/*
+PYV=3.9 # Set to the python version
+export PATH="/usr/local/opt/pyside@2/bin:$PATH"
 
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+rm Engine/NatronEngine/Qt5/* Gui/NatronGui/Qt5/*
 
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt5 Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine --output-directory=Gui/Qt5 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
 ```

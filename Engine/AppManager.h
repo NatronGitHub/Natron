@@ -44,7 +44,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QProcess>
 #include <QtCore/QMap>
 
-#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_GEN)
+#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -496,7 +496,7 @@ public:
     void setOFXHostHandle(void* handle);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    ContextEnum* ctx);
+                                                                    NATRON_ENUM::ContextEnum* ctx);
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
     GPUContextPool* getGPUContextPool() const;
@@ -569,7 +569,7 @@ public:
 
     bool isTextureFloatSupported() const;
 
-    bool hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* missingOpenGLError = 0) const;
+    bool hasOpenGLForRequirements(NATRON_ENUM::OpenGLRequirementsTypeEnum type, QString* missingOpenGLError = 0) const;
 
     virtual void updateAboutWindowLibrariesVersion() {}
 
@@ -734,14 +734,14 @@ void warningDialog(const std::string & title, const std::string & message, bool*
 void informationDialog(const std::string & title, const std::string & message, bool useHtml = false);
 void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml = false);
 
-StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
-                                  StandardButtons buttons =
-                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                  StandardButtonEnum defaultButton = eStandardButtonNoButton);
+NATRON_ENUM::StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
+                                  NATRON_ENUM::StandardButtons buttons =
+                                      NATRON_ENUM::StandardButtons(NATRON_ENUM::eStandardButtonYes | NATRON_ENUM::eStandardButtonNo),
+                                  NATRON_ENUM::StandardButtonEnum defaultButton = NATRON_ENUM::eStandardButtonNoButton);
 
-StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
-                                  StandardButtons buttons,
-                                  StandardButtonEnum defaultButton,
+NATRON_ENUM::StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
+                                  NATRON_ENUM::StandardButtons buttons,
+                                  NATRON_ENUM::StandardButtonEnum defaultButton,
                                   bool* stopAsking);
 } // namespace Dialogs
 
