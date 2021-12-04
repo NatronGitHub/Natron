@@ -31,7 +31,7 @@ NATRON_NAMESPACE_ENTER
 #ifdef SBK_RUN
 // shiboken doesn't generate SbkNatronEngine_StandardButtonEnum_as_number unless it is put in a class or namespace
 NATRON_NAMESPACE_EXIT
-namespace NATRON_NAMESPACE {
+namespace NATRON_ENUM {
 #endif
 
 enum ScaleTypeEnum
@@ -692,7 +692,7 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_EXIT
 
-Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
+Q_DECLARE_METATYPE(NATRON_ENUM::StandardButtons)
 
 
 #endif // NATRON_GLOBAL_ENUMS_H

@@ -74,13 +74,13 @@ public:
 
     void getFrameRange(int* firstFrame, int* lastFrame) const;
 
-    void setPlaybackMode(NATRON_NAMESPACE::PlaybackModeEnum mode);
+    void setPlaybackMode(NATRON_ENUM::PlaybackModeEnum mode);
 
-    NATRON_NAMESPACE::PlaybackModeEnum getPlaybackMode() const;
+    NATRON_ENUM::PlaybackModeEnum getPlaybackMode() const;
 
-    NATRON_NAMESPACE::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    NATRON_ENUM::ViewerCompositingOperatorEnum getCompositingOperator() const;
 
-    void setCompositingOperator(NATRON_NAMESPACE::ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(NATRON_ENUM::ViewerCompositingOperatorEnum op);
 
     int getAInput() const;
 
@@ -90,9 +90,9 @@ public:
 
     void setBInput(int index);
 
-    void setChannels(NATRON_NAMESPACE::DisplayChannelsEnum channels);
+    void setChannels(NATRON_ENUM::DisplayChannelsEnum channels);
 
-    NATRON_NAMESPACE::DisplayChannelsEnum getChannels() const;
+    NATRON_ENUM::DisplayChannelsEnum getChannels() const;
 
     void setProxyModeEnabled(bool enabled);
 

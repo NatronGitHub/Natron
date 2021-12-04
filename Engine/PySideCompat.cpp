@@ -38,7 +38,7 @@
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
-#ifdef SBK2_GEN
+#ifdef SBK2_RUN
 #include <basewrapper.h>
 #include <sbkconverter.h>
 #include <gilstate.h>

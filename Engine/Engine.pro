@@ -26,7 +26,7 @@ QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4) {
-    ENGINE_WRAPPER_DIR = NatronEngine$${QT_MAJOR_VERSION}
+    ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 } else {
     ENGINE_WRAPPER_DIR = NatronEngine
 }
@@ -464,6 +464,7 @@ ENGINE_GENERATED_SOURCES = \
     intparam_wrapper \
     itembase_wrapper \
     layer_wrapper \
+    natron_enum_wrapper \
     nodecreationproperty_wrapper \
     outputfileparam_wrapper \
     pageparam_wrapper \
@@ -487,12 +488,6 @@ for(name, ENGINE_GENERATED_SOURCES) {
     HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
 }
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-    SOURCES += $${ENGINE_WRAPPER_DIR}/natron_wrapper.cpp
-    HEADERS += $${ENGINE_WRAPPER_DIR}/natron_wrapper.h
-} else {
-    SOURCES += $${ENGINE_WRAPPER_DIR}/natron_namespace_wrapper.cpp
-}
 
 OTHER_FILES += \
     typesystem_engine.xml

@@ -158,8 +158,8 @@ public:
     ColorTuple getColor(double time);
     void setColor(double time, double r, double g, double b);
 
-    void setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum op);
-    NATRON_NAMESPACE::MergingFunctionEnum getCompositingOperator() const;
+    void setCompositingOperator(NATRON_ENUM::MergingFunctionEnum op);
+    NATRON_ENUM::MergingFunctionEnum getCompositingOperator() const;
     BooleanParam* getActivatedParam() const;
     DoubleParam* getOpacityParam() const;
     DoubleParam* getFeatherDistanceParam() const;

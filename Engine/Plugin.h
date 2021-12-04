@@ -176,7 +176,7 @@ class Plugin
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
-    ContextEnum _ofxContext;
+    NATRON_ENUM::ContextEnum _ofxContext;
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader, _isWriter;
 
@@ -198,7 +198,7 @@ class Plugin
     bool _multiThreadingEnabled;
     bool _openglActivated;
 
-    PluginOpenGLRenderSupport _openglRenderSupport;
+    NATRON_ENUM::PluginOpenGLRenderSupport _openglRenderSupport;
 
 public:
 
@@ -358,9 +358,9 @@ public:
     void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
 
     OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
-    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(NATRON_ENUM::ContextEnum* ctx) const;
 
-    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, NATRON_ENUM::ContextEnum ctx);
 
     bool isRenderScaleEnabled() const;
     void setRenderScaleEnabled(bool b);
@@ -374,8 +374,8 @@ public:
     bool isOpenGLEnabled() const;
     void setOpenGLEnabled(bool b);
 
-    void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
-    PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
+    void setOpenGLRenderSupport(NATRON_ENUM::PluginOpenGLRenderSupport support);
+    NATRON_ENUM::PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
 };
 
 struct Plugin_compare_version

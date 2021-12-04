@@ -444,11 +444,13 @@ If using PySide2 for Qt5, the command-line would be:
 ```Shell
 SDK_PREFIX=/opt/Natron-sdk
 PYSIDE_PREFIX=/opt/Natron-sdk
+PYV=3.9
+QT=5
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems --output-directory=Engine/Qt5 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems:Engine --output-directory=Gui/Qt5 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
 ```
