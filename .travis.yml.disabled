@@ -1,0 +1,217 @@
+# This is the http://travis-ci.org configuration file for Natron
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "Kagza287CBDBxPlNU2HC86OWMj22SfUfNb98BzwkI/LabG4HSAe1JnzTM62GZwPJxZBRX691Adtoe43Nw/sSCdP08jHgROHXQ/FQkGw4AbgSzE08B6gSpwXJhjLuOwiuBfLXYPKnXSjD3MA6VNiVNT/KhM06Vro0J6aLyhT5d5czOUnVWKzXzW4bjI2evq27xNxukgFj75Ykwp8bnKV57cZneZVyEGxUWe9hAcIJjynS9gVI0SPkun6VqW4y9Z5TDmU4ZZd/mvq2x0o9dS1qDN1Bf0kG7nNlvcWX9FMeFBo880whiyLPG1EPx8iNopZbL5HUujLP4/v24AYKPw+YoW6aaY2wDOzCZrFyEbsq2jbtnXL8Ik8Gle3WTJZ6f0NvRwwY9vVKbsBihb7vsUqgpfBqe2p8S19nt13b/9AO2eVw/By2i1Gh5yt5rGbOMM7MMFe3jzUhl48KHoGLQb7yFlB6AT2Y7rlX0l0BeZ4qN76LglV72RTW13h4+52rVcFvcVXT9MnVafYDNCO5N5AnHzOvCKNIq872eULJ7buCs3yrlv4I7fsJyVyzqGYQoZYZ6QY1eP0srS0UaIhLXBW7AQP7yaLKg6+bRYnGHzcvekJXKRzHru91n25e0Q/LstdA1vJs7ZQvY1w3VzIhr3SMJ4zRcF2RYA/7dHAgCthwy9Q="
+   # Coverity run condition (avoid matrix multiple runs), need customized
+   # build script. Need an update if new matrix cases.
+   - coverity_scan_run_condition='"$CC" = gcc -a "$TRAVIS_OS_NAME" != osx'
+   # Coverity script test mode (if true no uploading, avoid reaching the quota)
+   # usual processing: false.
+   - coverity_scan_script_test_mode=false
+
+language: cpp
+
+python:
+  - "2.7"
+
+addons:
+  apt:
+    sources:
+    # Natron requires boost >= 1.49 to compile in C++11 mode
+    # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
+    # we could use the ppa:boost-latest/ppa for that purpose (boost 1.55), but this is for precise only
+    # (ppa:afrank/boost offers 1.57, but is not whitelisted)
+    #- boost-latest
+    # samuel-bachmann/boost has a backport of boost 1.60.0 for trusty (not whitelisted)
+    #- sourceline "ppa:samuel-bachmann/boost"
+    # kubuntu-ppa/backports contains OpenCV
+    - kubuntu-backports
+    # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
+    # NOT WHITELISTED https://github.com/travis-ci/apt-source-whitelist/issues/181
+    # (ppa:ricotz/testing contains cairo 1.14, but only for trusty)
+    - sourceline: 'ppa:xorg-edgers/ppa'
+    # ubuntu-toolchain-r/test contains recent versions of gcc
+    - ubuntu-toolchain-r-test
+    # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1) or ppa:spvkgn/ffmpeg-dev(2.8.6)
+    # NOT WHITELISTED
+    #- sourceline: 'ppa:spvkgn/ffmpeg-dev'
+    # this one is for xenial ffmpeg
+    - sourceline: 'ppa:jonathonf/ffmpeg-4'
+    #- kalakris-cmake
+    #- pythonxy-devel
+    packages:
+    - ca-certificates
+    #- gcc-4.9
+    #- g++-4.9
+    #- gcc-5
+    #- g++-5
+    #- gcc-6
+    #- g++-6
+    #- gcc-7
+    #- g++-7
+    - gcc-8
+    - g++-8
+    - libqt4-dev
+    - libqt4-opengl-dev
+    - libglew-dev
+    #- libboost-dev
+    #- libboost-math-dev
+    #- libboost-serialization-dev
+    #- libboost-filesystem-dev
+    #- libboost-regex-dev
+    #- libboost-thread-dev
+    #- libboost-system-dev
+    - libexpat1-dev
+    - gdb
+    - libcairo2-dev
+    - python-dev
+    - python-pyside
+    - libpyside-dev
+    - libshiboken-dev
+    # packages for building openfx-io:
+    #- libavcodec-dev
+    #- libavformat-dev
+    #- libswscale-dev
+    #- libavutil-dev
+    #- libswresample-dev
+    - libtinyxml-dev
+    - liblcms2-dev
+    - libyaml-cpp-dev
+    #- libopenexr-dev
+    #- libilmbase-dev
+    - libopenjp2-7-dev
+    - libtiff-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libwebp-dev
+    - libraw-dev
+    - libfreetype6-dev
+    - libssl-dev
+  coverity_scan:
+    # customized build script URL
+    # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
+    # TRAVIS_BRANCH: name of the branch currently being built
+    build_script_url: https://raw.githubusercontent.com/$TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/.travis-coverity-scan-build.sh
+    # project metadata
+    project:
+      name: $TRAVIS_REPO_SLUG
+    # Where email notification of build analysis results will be sent
+    notification_email: frederic.devernay@m4x.org
+    # Commands to prepare for build_command
+    #build_command_prepend: ./configure
+    # This command will be added as an argument to "cov-build" to compile
+    # the project for analysis
+    build_command: "tools/travis/build.sh"
+    # Pattern to match selecting branches that will run analysis
+    branch_pattern: coverity_scan
+  homebrew:
+    packages:
+    - xctool
+    - python@2
+    - boost
+    - giflib
+    - jpeg
+    - libpng
+    - libtiff
+    - libxml2
+    - openssl
+    - pcre
+    - readline
+    - sqlite
+    - expat
+    - cairo
+    - gnu-sed
+    - glew
+    - openssl
+    - ilmbase
+    - openexr
+    - freetype
+    - fontconfig
+    - ffmpeg
+    - openjpeg
+    - libraw
+    - libheif
+    - openvdb
+    update: false
+
+matrix:
+  include:
+    - os: linux
+      dist: bionic
+      sudo: required
+      compiler: gcc
+    - os: linux
+      dist: bionic
+      sudo: required
+      compiler: clang
+    - os: osx
+      # see https://docs.travis-ci.com/user/osx-ci-environment/
+      # we use macOS 10.14 (Mojave) or 10.13 (High Sierra) to get the precompiled
+      # pyside bottles from https://github.com/cartr/homebrew-qt4
+      # see https://docs.travis-ci.com/user/reference/osx/#macos-version
+      osx_image: xcode11.3 # 10.1 for High Sierra, 11.3 for Mojave
+      compiler: clang
+  exclude:
+    - os: osx
+      compiler: gcc
+  allow_failures:
+    - os: osx # if we exceed the time limit
+  fast_finish: true
+
+
+# Travis CI has 1.5 cores per VM, take advantage of it
+before_install:
+  - date -u
+  - uname -a
+  - if [ ${TRAVIS_OS_NAME} = "linux" ]; then
+      echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ;
+    fi
+  - export J='-j2'
+
+install:
+  - . tools/travis/coverity_env.sh
+  - if [[ ${COVERITY_BUILD_DISABLED} == 1 ]];
+    then
+        exit 0;
+    fi
+  - tools/travis/install_dependencies.sh
+  - if [ ! -d "$HOME/OpenColorIO-Configs" ]; then
+      pushd $HOME;
+      curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz | tar -xvzf -;
+      mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs;
+      popd;
+    else
+      echo 'Using cached OpenColorIO-Configs';
+    fi
+
+# OSX build will timeout if we redirect its output
+#> install_dependencies.log 2>&1
+
+cache:
+  pip: true
+  ccache: false
+  apt: true
+  directories:
+    - $HOME/openexr
+    - $HOME/ocio
+    - $HOME/oiio
+    - $HOME/seexpr
+#    - /usr/local/Cellar
+
+script:
+  - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
+    then
+      echo "Don't build on coverity_scan branch.";
+      exit 0;
+    fi
+  - tools/travis/build.sh
+
+after_success:
+  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux"  ]; then ln -s Tests/google-mock Tests/google-test .; cd Tests; gcov -lp *.gcno > /dev/null; cd ..; coveralls -n --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi
+#  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux" ]; then ln -s Tests/google-mock Tests/google-test .; coveralls --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h' --gcov-options '\-lp'; fi
+
+after_failure:
+  - cat install_dependencies.log || true
+
