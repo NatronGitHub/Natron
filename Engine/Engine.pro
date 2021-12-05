@@ -25,11 +25,7 @@ CONFIG += boost boost-serialization-lib qt cairo python shiboken pyside
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-    ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
-} else {
-    ENGINE_WRAPPER_DIR = NatronEngine
-}
+ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 
 !noexpat: CONFIG += expat
 

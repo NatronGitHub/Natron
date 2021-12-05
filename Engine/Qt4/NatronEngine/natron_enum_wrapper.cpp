@@ -15,7 +15,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <typeinfo>
 #include "natronengine_python.h"
 
-#include "natron_namespace_wrapper.h"
+#include "natron_enum_wrapper.h"
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING

@@ -603,14 +603,14 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
-On MacPorts:
+On MacPorts with qt4-mac, py39-pyside, py39-shiboken:
 ```Shell
 PYV=3.9 # Set to the python version
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems --output-directory=Engine/Qt4 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems:Engine:Shiboken --output-directory=Gui/Qt4 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
 ```
@@ -624,9 +624,9 @@ rm Engine/NatronEngine/Qt5/* Gui/NatronGui/Qt5/*
 
 shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt5 Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine --output-directory=Gui/Qt5 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt5 Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
 
-tools/utils/runPostShiboken.sh
+tools/utils/runPostShiboken2.sh
 ```
 
 **Note**

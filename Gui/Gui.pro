@@ -25,13 +25,8 @@ CONFIG += boost opengl qt cairo python shiboken pyside
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-    GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
-    ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
-} else {
-    GUI_WRAPPER_DIR = NatronGui
-    ENGINE_WRAPPER_DIR = NatronEngine
-}
+GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
+ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 
 CONFIG += glad-flags
 
