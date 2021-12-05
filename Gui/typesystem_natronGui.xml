@@ -21,6 +21,8 @@
 
     <!--Load QtGui typesystem-->
     <load-typesystem name="typesystem_gui.xml" generate="no" />
+    <!--Load QtWidgets typesystem-->
+    <load-typesystem name="typesystem_widgets.xml" generate="no" />
     <!--Load Engine typesystem-->
     <load-typesystem name="typesystem_engine.xml" generate="no" />
 

@@ -28,7 +28,7 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
@@ -76,7 +76,7 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL {}
 
     virtual bool onKnobValueChanged(KnobI* k,
-                                    ValueChangedReasonEnum reason,
+                                    NATRON_ENUM::ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
@@ -93,7 +93,7 @@ class PyModalDialog
 public:
 
     PyModalDialog( Gui* gui,
-                   StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
+                   NATRON_ENUM::StandardButtons defaultButtons = NATRON_ENUM::StandardButtons(NATRON_ENUM::eStandardButtonOk | NATRON_ENUM::eStandardButtonCancel) );
 
     virtual ~PyModalDialog();
 
@@ -104,6 +104,12 @@ public:
     void insertWidget(int index, QWidget* widget);
 
     void addWidget(QWidget* widget);
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+#endif
 
     DialogParamHolder* getKnobsHolder() const;
 

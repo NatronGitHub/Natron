@@ -125,16 +125,16 @@ public:
     virtual void warningDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title, const std::string & message, bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const OVERRIDE FINAL;
-    virtual StandardButtonEnum questionDialog(const std::string & title,
+    virtual NATRON_ENUM::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                              StandardButtonEnum defaultButton = eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StandardButtonEnum questionDialog(const std::string & title,
+                                              NATRON_ENUM::StandardButtons buttons = NATRON_ENUM::StandardButtons(NATRON_ENUM::eStandardButtonYes | NATRON_ENUM::eStandardButtonNo),
+                                              NATRON_ENUM::StandardButtonEnum defaultButton = NATRON_ENUM::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NATRON_ENUM::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              StandardButtons buttons,
-                                              StandardButtonEnum defaultButton,
+                                              NATRON_ENUM::StandardButtons buttons,
+                                              NATRON_ENUM::StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;

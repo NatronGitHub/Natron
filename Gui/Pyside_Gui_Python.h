@@ -17,6 +17,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
+#define SBK_RUN
+
 #ifndef PYSIDE_GUI_PYTHON_H
 #define PYSIDE_GUI_PYTHON_H
 
@@ -28,10 +31,12 @@
 
 #include "Global/Macros.h"
 
-//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
-#define SBK_RUN
-
+#ifdef SBK2_RUN
+#include <pyside2_global.h>
+#else
 #include <pyside_global.h>
+#endif
+
 #include <QtGui/qpytextobject.h>
 
 //Global
