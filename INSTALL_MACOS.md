@@ -622,9 +622,9 @@ export PATH="/usr/local/opt/pyside@2/bin:$PATH"
 
 rm Engine/NatronEngine/Qt5/* Gui/NatronGui/Qt5/*
 
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt5 Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@5/include  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt5 Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt5 Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:Gui:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@5/include:/usr/local/opt/qt@5/include/QtWidgets  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine --output-directory=Gui/Qt5 Gui/PySide2_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken2.sh
 ```
