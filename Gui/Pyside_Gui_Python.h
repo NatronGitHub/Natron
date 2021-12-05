@@ -31,7 +31,7 @@
 
 #include "Global/Macros.h"
 
-#ifdef SBK2_GEN
+#ifdef SBK2_RUN
 #include <pyside2_global.h>
 #else
 #include <pyside_global.h>

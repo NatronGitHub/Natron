@@ -65,6 +65,10 @@ NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT@g'  -i'.bak' Engine/NatronEng
 sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAMESPACE@g' -i'.bak' Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
 sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_ENUM@NATRON_ENUM@g' -i'.bak' Engine/NatronEngine/natronengine_python.h Gui/NatronGui/natrongui_python.h
 
+perl -pe 'BEGIN{undef $/;} s/    \{\n.*SnakeOil(.*\n)*.*SnakeOil.*\n    }//g;' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e '/SnakeOil/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e '/snakeoil_python/d' -i'.bak' Gui/NatronGui/natrongui_python.h
+
 sed -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\
 #include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2@' -i'.bak' Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 

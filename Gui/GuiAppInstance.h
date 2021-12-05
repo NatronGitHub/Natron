@@ -35,6 +35,10 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#ifdef SBK_RUN
+using namespace NATRON_ENUM;
+#endif
+
 #include "Engine/AppInstance.h"
 #include "Engine/ViewIdx.h"
 

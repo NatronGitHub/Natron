@@ -26,8 +26,8 @@ QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4) {
-    GUI_WRAPPER_DIR = NatronGui$${QT_MAJOR_VERSION}
-    ENGINE_WRAPPER_DIR = NatronEngine$${QT_MAJOR_VERSION}
+    GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
+    ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 } else {
     GUI_WRAPPER_DIR = NatronGui
     ENGINE_WRAPPER_DIR = NatronEngine

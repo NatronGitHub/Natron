@@ -28,7 +28,7 @@
 
 #include "Global/Macros.h"
 
-#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_GEN)
+#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
