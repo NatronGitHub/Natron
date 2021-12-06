@@ -296,3 +296,5 @@ Project-xcode.xcodeproj/xcshareddata/xcschemes/Natron.xcscheme
 
 # QTCreator
 *QtCreator.*
+moc_predefs.h
+
