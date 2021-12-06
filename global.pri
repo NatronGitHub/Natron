@@ -41,8 +41,6 @@ run-without-python {
     # from <https://docs.python.org/3/c-api/intro.html#include-files>:
     # "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
     CONFIG += python
-    QMAKE_CFLAGS += -include Python.h
-    QMAKE_CXXFLAGS += -include Python.h
     python3 {
       PYV=3
       PY_PKG_SUFFIX=-embed
@@ -283,11 +281,11 @@ macx {
       # later OSX instances only run on x86_64, universal builds are useless
       # (unless a later OSX supports ARM)
     }
-  } 
+  }
 
   #link against the CoreFoundation framework for the StandardPaths functionnality
   LIBS += -framework CoreServices
-    
+
   #// Disable availability macros on macOS
   #// because we may be using libc++ on an older macOS,
   #// so that std::locale::numeric may be available
@@ -336,8 +334,8 @@ win32 {
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES += _UNICODE UNICODE
- 
-  DEFINES += QHTTP_SERVER_STATIC 
+
+  DEFINES += QHTTP_SERVER_STATIC
 
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
@@ -399,20 +397,23 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
+      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken2
     	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
-   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtGui
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtWidgets
     }
     equals(QT_MAJOR_VERSION, 4) {
       shiboken:  PKGCONFIG += shiboken-py$$PYV
     	pyside:    PKGCONFIG += pyside-py$$PYV
-   	  pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtCore
-      pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtGui
+      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside-py$$PYV)
+   	  pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
     }
     python:    PKGCONFIG += python-$$PYVER$$PY_PKG_SUFFIX
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
-	
+
     #See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
     Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj
 }
@@ -446,11 +447,15 @@ unix {
           INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
-     equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
-    	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
-   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
-     }
+    equals(QT_MAJOR_VERSION, 5) {
+        shiboken: PKGCONFIG += shiboken2
+        pyside:   PKGCONFIG += pyside2
+        # add QtCore to includes
+        PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+    }
 
      equals(QT_MAJOR_VERSION, 4) {
          # There may be different pyside.pc/shiboken.pc for different versions of python.
@@ -472,14 +477,13 @@ unix {
            pyside {
              PKGCONFIG -= pyside
              PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG $$PYTHON_CONFIG_FLAGS --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
-             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-             equals(QT_MAJOR_VERSION, 4) {
-               # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
-               # qtextdocument.h in the QtGui module.
-               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
-             }
+             PYSIDE_INCLUDEDIR = $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+             INCLUDEPATH += $$PYSIDE_INCLUDEDIR
+             INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+             # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+             # qtextdocument.h in the QtGui module.
+             INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
              LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
            }
          }
@@ -517,7 +521,7 @@ addresssanitizer {
   *xcode* {
     enable_cxx_container_overflow_check.name = CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW
     enable_cxx_container_overflow_check.value = YES
-    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check  
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check
   }
   *g++* | *clang* {
     CONFIG += debug
