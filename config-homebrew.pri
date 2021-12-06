@@ -1,8 +1,7 @@
 boost: INCLUDEPATH += /usr/local/include
 boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+# libdir is buggy in pyside@2's pkg-config
 pyside: LIBS += -L/usr/local/opt/pyside@2/lib
-pyside: INCLUDEPATH += /usr/local/opt/pyside@2/include/PySide2/QtGui
-pyside: INCLUDEPATH += /usr/local/opt/pyside@2/include/PySide2/QtWidgets
 
 openmp {
   # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
