@@ -397,15 +397,18 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
+      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken2
     	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
-   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtGui
+      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtWidgets
     }
     equals(QT_MAJOR_VERSION, 4) {
       shiboken:  PKGCONFIG += shiboken-py$$PYV
     	pyside:    PKGCONFIG += pyside-py$$PYV
-   	  pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtCore
-      pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtGui
+      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside-py$$PYV)
+   	  pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
     }
     python:    PKGCONFIG += python-$$PYVER$$PY_PKG_SUFFIX
     boost:     LIBS += -lboost_serialization-mt
@@ -444,11 +447,15 @@ unix {
           INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
-     equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken
-    	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
-   	  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
-     }
+    equals(QT_MAJOR_VERSION, 5) {
+        shiboken: PKGCONFIG += shiboken2
+        pyside:   PKGCONFIG += pyside2
+        # add QtCore to includes
+        PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+    }
 
      equals(QT_MAJOR_VERSION, 4) {
          # There may be different pyside.pc/shiboken.pc for different versions of python.
