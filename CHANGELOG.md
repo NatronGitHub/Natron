@@ -16,6 +16,7 @@
 ### Changes
 
 - Fix OpenFX overlay actions being executed in the wrong order. #711
+- Fix enabling node preview from Python. #710
 
 ### Plugins
 

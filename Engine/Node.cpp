@@ -4896,7 +4896,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock().get() ) {
-        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
+        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) || (reason == eValueChangedReasonNatronInternalEdited) ) {
             Q_EMIT previewKnobToggled();
         }
     } else if ( what == _imp->renderButton.lock().get() ) {
