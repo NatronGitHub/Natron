@@ -1,8 +1,9 @@
 boost: INCLUDEPATH += /usr/local/include
 boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
-expat: PKGCONFIG -= expat
-expat: INCLUDEPATH += /usr/local/opt/expat/include
-expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
+pyside: LIBS += -L/usr/local/opt/pyside@2/lib
+pyside: INCLUDEPATH += /usr/local/opt/pyside@2/include/PySide2/QtGui
+pyside: INCLUDEPATH += /usr/local/opt/pyside@2/include/PySide2/QtWidgets
+
 openmp {
   # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
   # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
@@ -42,5 +43,3 @@ openmp {
 #  sdkroot_setting.value = macosx10.14
 #  QMAKE_MAC_XCODE_SETTINGS += sdkroot_setting
 }
-#expat: INCLUDEPATH += /Users/devernay/Development/openfx/HostSupport/expat-2.1.0/lib
-#expat: LIBS += /Users/devernay/Development/openfx/HostSupport/Darwin-debug
