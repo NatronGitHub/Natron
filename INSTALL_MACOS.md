@@ -482,10 +482,20 @@ Then, configure using the following qmake command on MacPorts:
 /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
 ```
 
-Or on Homebrew:
+Or on Homebrew with Qt4/PySide from cartr/qt4:
 
 ```Shell
-env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp -r QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_CC=/usr/local/opt/llvm@11/bin/clang QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++' QMAKE_LD='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++'
+QT_INSTALL_PREFIX=/usr/local
+qmake=$QT_INSTALL_PREFIX/bin/qmake
+env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/expat/lib/pkgconfig $qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=python3 CONFIG+=sdk_no_version_check CONFIG+=openmp -r
+```
+
+Or on Homebrew with Qt5/PySide2:
+
+```Shell
+QT_INSTALL_PREFIX=/usr/local/opt/qt@5
+qmake=$QT_INSTALL_PREFIX/bin/qmake
+env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/expat/lib/pkgconfig:/usr/local/opt/qt@5/lib/pkgconfig:/usr/local/opt/pyside@2/lib/pkgconfig $qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=python3 CONFIG+=sdk_no_version_check CONFIG+=openmp -r
 ```
 
 To build the plugins, use the following command-line:
