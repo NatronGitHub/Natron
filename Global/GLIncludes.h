@@ -22,6 +22,10 @@
 
 #include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
 
+// Disable including GL/glext.h after glad.h
+#define __glext_h_
+#define __gl_glext_h_
+
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)
 //#    include <OpenGL/glu.h>
