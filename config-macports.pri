@@ -1,6 +1,18 @@
 boost {
   LIBS += -lboost_serialization-mt
 }
+equals(QT_MAJOR_VERSION, 5) {
+  shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/shiboken2_generator/include
+  shiboken:  LIBS += -L$$PYTHON_SITE_PACKAGES/shiboken2 -lshiboken2.cpython-$$PYVERNODOT-darwin.$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}
+  shiboken:  QMAKE_RPATHDIR += $$PYTHON_SITE_PACKAGES/shiboken2
+  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include
+  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/QtCore
+  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/QtGui
+  pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/QtWidgets
+  pyside:    LIBS += -L$$PYTHON_SITE_PACKAGES/PySide2 -lpyside2.cpython-$$PYVERNODOT-darwin.$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}
+  pyside:    QMAKE_RPATHDIR += $$PYTHON_SITE_PACKAGES/PySide2
+}
+
 macx:openmp {
   # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
   # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579

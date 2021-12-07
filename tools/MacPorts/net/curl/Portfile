@@ -3,6 +3,8 @@
 PortSystem                      1.0
 PortGroup                       clang_dependency 1.0
 
+# Increase the revision of p5-www-curl whenever the version of curl gets updated.
+
 name                            curl
 version                         7.80.0
 categories                      net www

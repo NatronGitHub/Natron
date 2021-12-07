@@ -52,7 +52,7 @@ run-without-python {
     }
     # PYVER contains just major.minor
     PYVER=$$system(python$$PYV -c \"import platform; print(\'.\'.join(platform.python_version_tuple()[:2]))\")
-    PYVERNODOT=$$replace($$PYVER,.,)
+    PYVERNODOT=$$replace(PYVER,\.,)
     # PYTHON_VERSION contains major.minor.micro
     PYTHON_VERSION=$$system(python$$PYV -c \"import platform; print(platform.python_version())\")
     # PYTHON_SITE_PACKAGES contains the location of the site-packages directory
@@ -448,13 +448,15 @@ unix {
      }
 
     equals(QT_MAJOR_VERSION, 5) {
-        shiboken: PKGCONFIG += shiboken2
-        pyside:   PKGCONFIG += pyside2
-        # add QtCore to includes
-        PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
-        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
-        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
-        pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+        system(pkg-config --exists pyside2) {
+            shiboken: PKGCONFIG += shiboken2
+            pyside:   PKGCONFIG += pyside2
+            # add QtCore to includes
+            PYSIDE_INCLUDEDIR = $$ && pkg-config --variable=includedir pyside2)
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+        }
     }
 
      equals(QT_MAJOR_VERSION, 4) {
