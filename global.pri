@@ -52,7 +52,7 @@ run-without-python {
     }
     # PYVER contains just major.minor
     PYVER=$$system(python$$PYV -c \"import platform; print(\'.\'.join(platform.python_version_tuple()[:2]))\")
-    PYVERNODOT=$$replace($$PYVER,.,)
+    PYVERNODOT=$$replace(PYVER,\.,)
     # PYTHON_VERSION contains major.minor.micro
     PYTHON_VERSION=$$system(python$$PYV -c \"import platform; print(platform.python_version())\")
     # PYTHON_SITE_PACKAGES contains the location of the site-packages directory
