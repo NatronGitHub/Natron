@@ -1,0 +1,36 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem                  1.0
+PortGroup                   github 1.0
+PortGroup                   clang_dependency 1.0
+
+github.setup                BLAKE2 libb2 0.98.1 v
+revision                    1
+categories                  devel
+# Creative Commons Zero v1.0 Universal (https://creativecommons.org/share-your-work/public-domain/cc0)
+license                     public-domain
+maintainers                 {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+platforms                   darwin
+description                 a cryptographic hash function
+long_description            BLAKE2 is a cryptographic hash function faster than MD5, SHA-1, SHA-2, and SHA-3, yet is at least as secure as the latest standard SHA-3.
+
+homepage                    https://blake2.net
+
+checksums                   rmd160  f74b92740c67977e89b7deb67c0b236235b3b240 \
+                            sha256  d90923c46819228ae4b69e4a92659c3efbb719512cf4b60a2a942ce8de770cae \
+                            size    280788
+
+patchfiles-append           patch-configure.ac.diff
+
+# see README.md
+use_autoreconf              yes
+# see autogen.sh
+autoreconf.args             -fvi
+
+depends_build-append        port:pkgconfig
+
+configure.args-append       --enable-native=no \
+                            --disable-openmp
+
+# see patch-configure.ac
+configure.optflags          -O3

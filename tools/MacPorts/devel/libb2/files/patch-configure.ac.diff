@@ -1,0 +1,13 @@
+do not wipe out MacPorts values of CFLAGS just to set -O3
+
+--- configure.ac.orig	2019-03-10 08:35:26.000000000 -0700
++++ configure.ac	2021-04-11 09:06:12.000000000 -0700
+@@ -60,7 +60,7 @@
+                [enable_native=yes]
+ )
+ 
+-AX_CHECK_COMPILE_FLAG([-O3], [CFLAGS=-O3])
++dnl AX_CHECK_COMPILE_FLAG([-O3], [CFLAGS=-O3])
+ dnl Not all architectures support -march=native
+ if test $enable_native == "yes"; then
+   AX_CHECK_COMPILE_FLAG([-march=native], [], [enable_native=no])

@@ -1,0 +1,10 @@
+--- Portfile.orig	2021-12-07 14:39:36.000000000 -0800
++++ Portfile	2021-12-07 14:39:49.000000000 -0800
+@@ -3,6 +3,7 @@
+ PortSystem                  1.0
+ PortGroup                   github 1.0
+ PortGroup                   clang_dependency 1.0
++PortGroup                   muniversal 1.0
+ 
+ github.setup                BLAKE2 libb2 0.98.1 v
+ revision                    1
