@@ -21,7 +21,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; };
     mkdir build
     pushd build
     cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
-    make
+    make -j${MKJOBS}
     make install
     popd
     popd

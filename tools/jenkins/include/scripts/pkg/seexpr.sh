@@ -14,7 +14,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/seexpr2.pc
     mkdir build
     pushd build
     cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DENABLE_LLVM_BACKEND=FALSE -DENABLE_QT5=FALSE -DUSE_PYTHON=FALSE
-    make
+    make -j${MKJOBS}
     make install
     #cp "$SDK_HOME/share/pkgconfig/seexpr2.pc" "$SDK_HOME/lib/pkgconfig/seexpr2.pc"
     #rm -f $SDK_HOME/lib/libSeExpr.so
