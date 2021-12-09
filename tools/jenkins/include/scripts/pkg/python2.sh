@@ -113,7 +113,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/python2.pc" 
     make -j${MKJOBS}
     make install
     chmod -v 755 "$SDK_HOME/lib/libpython2.7.so.1.0"
-    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --upgrade pip
+    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --upgrade pip setuptools wheel
     popd
     rm -rf "Python-${PY2_VERSION}"
     end_build

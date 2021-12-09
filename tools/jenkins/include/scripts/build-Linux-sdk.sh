@@ -194,7 +194,7 @@ EOF
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -368,7 +368,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install alsa-lib-devel libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXtst-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
         error=true
     fi
 
@@ -594,8 +594,8 @@ if dobuild; then
     export CPATH="$SDK_HOME/include" # gcc/g++'s include path
     export LIBRARY_PATH="$SDK_HOME/lib" # gcc/g++'s library path
 
-    QT4PREFIX="$SDK_HOME/qt4"
-    QT5PREFIX="$SDK_HOME/qt5"
+    export QT4PREFIX="$SDK_HOME/qt4"
+    export QT5PREFIX="$SDK_HOME/qt5"
 
     export PATH="$SDK_HOME/bin:$PATH"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -881,12 +881,29 @@ checkpoint
 
 if dobuild; then
     # add qt4 to lib path to build shiboken and pyside
+    if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+        LD_LIBRARY_PATH_SAVE="$LD_LIBRARY_PATH"
+    fi
     LD_LIBRARY_PATH="$QT4PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     #LD_RUN_PATH="$LD_LIBRARY_PATH"
 fi
 
 build shiboken
 build pyside
+
+if dobuild; then
+    if [ -n "${LD_LIBRARY_PATH_SAVE:-}" ]; then
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH_SAVE"
+    fi
+fi
+
+checkpoint
+
+build qt5
+
+checkpoint
+
+build pyside2
 
 if dobuild; then
     # make sure all libs are user-writable and executable

@@ -2,7 +2,7 @@
 
 # Install Python3
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python3.html
-PY3_VERSION=3.9.7
+PY3_VERSION=3.9.9
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"
@@ -40,7 +40,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/python3.pc" 
         chmod -v 755 "$SDK_HOME/lib/libpython${PY3_VERSION_SHORT}m.so"
         chmod -v 755 "$SDK_HOME/lib/libpython3.so"
     fi
-	${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --upgrade pip
+	${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --upgrade pip setuptools wheel
     popd
     rm -rf "Python-${PY3_VERSION}"
     end_build
