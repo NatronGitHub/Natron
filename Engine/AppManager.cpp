@@ -2023,10 +2023,18 @@ AppManager::registerPlugin(const QString& resourcesPath,
                            int minor,
                            bool isDeprecated)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    QRecursiveMutex* pluginMutex = nullptr;
+#else
     QMutex* pluginMutex = 0;
+#endif
 
     if (mustCreateMutex) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        pluginMutex = new QRecursiveMutex();
+#else
         pluginMutex = new QMutex(QMutex::Recursive);
+#endif
     }
     Plugin* plugin = new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
                                 isReader, isWriter, isDeprecated);

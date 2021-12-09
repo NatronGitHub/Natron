@@ -33,6 +33,9 @@
 #endif
 
 #include <QtCore/QMutex>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#include <QRecursiveMutex>
+#endif
 
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
@@ -67,7 +70,11 @@ struct CurvePrivate
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    mutable QRecursiveMutex _lock;
+#else
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+#endif
     bool isParametric;
     bool isPeriodic;
 
@@ -83,14 +90,22 @@ struct CurvePrivate
         , xMax(std::numeric_limits<double>::infinity())
         , yMin(-std::numeric_limits<double>::infinity())
         , yMax(std::numeric_limits<double>::infinity())
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        , _lock()
+#else
         , _lock(QMutex::Recursive)
+#endif
         , isParametric(false)
         , isPeriodic(false)
     {
     }
 
     CurvePrivate(const CurvePrivate & other)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+        : _lock()
+#else
         : _lock(QMutex::Recursive)
+#endif
     {
         *this = other;
     }

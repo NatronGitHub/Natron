@@ -105,19 +105,31 @@ Knob<T>::Knob(KnobHolder*  holder,
               int dimension,
               bool declaredByPlugin )
     : KnobHelper(holder, description, dimension, declaredByPlugin)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    , _valueMutex()
+#else
     , _valueMutex(QMutex::Recursive)
+#endif
     , _values(dimension)
     , _guiValues(dimension)
     , _defaultValues(dimension)
     , _exprRes(dimension)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    , _minMaxMutex()
+#else
     , _minMaxMutex(QReadWriteLock::Recursive)
+#endif
     , _minimums(dimension)
     , _maximums(dimension)
     , _displayMins(dimension)
     , _displayMaxs(dimension)
     , _setValuesQueueMutex()
     , _setValuesQueue()
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    , _setValueRecursionLevelMutex()
+#else
     , _setValueRecursionLevelMutex(QMutex::Recursive)
+#endif
     , _setValueRecursionLevel(0)
 {
     initMinMax();
