@@ -304,8 +304,12 @@ GuiApplicationManager::initializeQApp(int &argc,
     QApplication* app;
     {
 #ifdef DEBUG
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::overflow);
+#else
         boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                                boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
 #endif
         app = new Application(this, argc, argv);
     }
