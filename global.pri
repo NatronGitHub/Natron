@@ -452,7 +452,7 @@ unix {
             shiboken: PKGCONFIG += shiboken2
             pyside:   PKGCONFIG += pyside2
             # add QtCore to includes
-            PYSIDE_INCLUDEDIR = $$ && pkg-config --variable=includedir pyside2)
+            PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
