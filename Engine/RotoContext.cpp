@@ -4476,7 +4476,12 @@ RotoContextPrivate::bezulate(double time,
                 QPointF intersectionPoint;
                 for (; cur != polygon.end(); ++cur, ++last_pt) {
                     QLineF polygonSegment( QPointF(last_pt->x, last_pt->y), QPointF(cur->x, cur->y) );
-                    if (line.intersect(polygonSegment, &intersectionPoint) == QLineF::BoundedIntersection) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+                    QLineF::IntersectionType intersectType = line.intersects(polygonSegment, &intersectionPoint);
+#else
+                    QLineF::IntersectType intersectType = line.intersect(polygonSegment, &intersectionPoint);
+#endif
+                    if (intersectType == QLineF::BoundedIntersection) {
                         intersections.insert(intersectionPoint);
                     }
                     if (intersections.size() > 2) {
