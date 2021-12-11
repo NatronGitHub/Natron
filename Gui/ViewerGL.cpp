@@ -176,15 +176,22 @@ ViewerGL::resizeGL(int w,
         return;
     }
     glCheckError();
-    assert( w == width() && h == height() ); // if this crashes here, then the viewport size has to be stored to compute glShadow
     glViewport (0, 0, w, h);
+    double zoomWidth = w;
+    double zoomHeight = h;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double screenPixelRatio = getScreenPixelRatio();
+    zoomWidth /= screenPixelRatio;
+    zoomHeight /= screenPixelRatio;
+#endif
+    assert( zoomWidth == width() && zoomHeight == height() ); // if this crashes here, then the viewport size has to be stored to compute glShadow
     bool zoomSinceLastFit;
-    int oldWidth, oldHeight;
+    double oldWidth, oldHeight;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
-        _imp->zoomCtx.setScreenSize(w, h, /*alignTop=*/ true, /*alignRight=*/ false);
+        _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight, /*alignTop=*/ true, /*alignRight=*/ false);
         zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
     glCheckError();
@@ -200,11 +207,11 @@ ViewerGL::resizeGL(int w,
         fitImageToFormat();
     }
     if ( viewer->getUiContext() && !isLoadingProject  &&
-         ( ( oldWidth != w) || ( oldHeight != h) ) ) {
+         ( ( oldWidth != zoomWidth) || ( oldHeight != zoomHeight) ) ) {
         viewer->renderCurrentFrame(true);
 
         if ( !_imp->persistentMessages.empty() ) {
-            updatePersistentMessageToWidth(w - 20);
+            updatePersistentMessage();
         } else {
             update();
         }

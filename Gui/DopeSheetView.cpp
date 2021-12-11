@@ -3203,13 +3203,22 @@ DopeSheetView::resizeGL(int w,
         return;
     }
 
+    if (w == 0) {
+        w = 1;
+    }
     if (h == 0) {
         h = 1;
     }
 
     glViewport(0, 0, w, h);
-
-    _imp->zoomContext.setScreenSize(w, h);
+    double zoomWidth = w;
+    double zoomHeight = h;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double screenPixelRatio = getScreenPixelRatio();
+    zoomWidth /= screenPixelRatio;
+    zoomHeight /= screenPixelRatio;
+#endif
+    _imp->zoomContext.setScreenSize(zoomWidth, zoomHeight);
 
     // Don't do the following when the height of the widget is irrelevant
     if (h == 1) {

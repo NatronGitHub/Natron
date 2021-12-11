@@ -588,10 +588,17 @@ CurveWidget::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
+    double zoomWidth = width;
+    double zoomHeight = height;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double screenPixelRatio = getScreenPixelRatio();
+    zoomWidth /= screenPixelRatio;
+    zoomHeight /= screenPixelRatio;
+#endif
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
-        _imp->zoomCtx.setScreenSize(width, height);
+        _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight);
     }
 
     if (height == 1) {

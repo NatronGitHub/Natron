@@ -1239,7 +1239,15 @@ Histogram::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
-    _imp->zoomCtx.setScreenSize(width, height);
+    double zoomWidth = width;
+    double zoomHeight = height;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    double screenPixelRatio = getScreenPixelRatio();
+    zoomWidth /= screenPixelRatio;
+    zoomHeight /= screenPixelRatio;
+#endif
+
+    _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight);
     if (!_imp->hasBeenModifiedSinceResize) {
         _imp->zoomCtx.fill(0., 1., 0., 10.);
         computeHistogramAndRefresh();
