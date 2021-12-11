@@ -1869,10 +1869,11 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
         edgeLine.setP2( (*it)->mapToScene( edgeLine.p2() ) );
         for (int j = 0; j < 4; ++j) {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-            if (edgeLine.intersects(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+            QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
 #else
-            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+            QLineF::IntersectType intersectType = edgeLine.intersect(rectEdges[j], &intersection);
 #endif
+            if (intersectType == QLineF::BoundedIntersection) {
                 if (!closest) {
                     closest = *it;
                     closestSquareDist = ( intersection.x() - middleRect.x() ) * ( intersection.x() - middleRect.x() )
@@ -1900,10 +1901,11 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
             edgeLine.setP2( (_outputEdge)->mapToScene( edgeLine.p2() ) );
             for (int j = 0; j < 4; ++j) {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-                if (edgeLine.intersects(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
 #else
-                if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                QLineF::IntersectType intersectType = edgeLine.intersect(rectEdges[j], &intersection);
 #endif
+                if (intersectType == QLineF::BoundedIntersection) {
                     return _outputEdge;
                 }
             }
