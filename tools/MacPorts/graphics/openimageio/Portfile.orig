@@ -9,7 +9,7 @@ PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
 
 github.setup            OpenImageIO oiio 2.1.17.0 v
-revision                6
+revision                7
 name                    openimageio
 categories              graphics
 license                 BSD

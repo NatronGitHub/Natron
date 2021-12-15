@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.4.1
-revision            0
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} {mascguy @mascguy} openmaintainer
@@ -68,7 +68,6 @@ checksums           rmd160  ebb1f042b2ba4f13be86339d30522cd73eb6da3e \
 
 depends_build       port:pkgconfig \
                     port:gmake \
-                    port:ld64 \
                     port:cctools \
                     port:texinfo
 
@@ -85,6 +84,7 @@ depends_lib         port:lame \
                     path:lib/pkgconfig/vpx.pc:libvpx \
                     port:gnutls \
                     port:openjpeg \
+                    port:zvbi \
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
@@ -110,12 +110,8 @@ minimum_xcodeversions {9 3.1}
 # requires a C11 compiler
 compiler.c_standard 2011
 
-if {[lsearch [get_canonical_archs] i386] != -1} {
-    # clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
-    # clang-139 hits https://trac.macports.org/ticket/38141
-    compiler.blacklist-append {clang < 422.1.7}
-}
-
+# clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
+# clang-139 hits https://trac.macports.org/ticket/38141
 # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
 # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
 compiler.blacklist-append {clang < 800}
@@ -140,6 +136,7 @@ configure.args      --enable-swscale \
                     --enable-libspeex \
                     --enable-libass \
                     --enable-libbluray \
+                    --enable-libzvbi \
                     --enable-lzma \
                     --enable-gnutls \
                     --enable-fontconfig \

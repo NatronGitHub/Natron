@@ -1,5 +1,5 @@
---- Portfile.orig	2021-11-27 00:03:52.000000000 -0800
-+++ Portfile	2021-11-30 18:53:13.000000000 -0800
+--- Portfile.orig	2021-12-14 14:40:21.000000000 -0800
++++ Portfile	2021-12-14 16:15:33.000000000 -0800
 @@ -2,14 +2,14 @@
  
  PortSystem              1.0
@@ -12,8 +12,8 @@
  PortGroup               boost 1.0
  
 -github.setup            OpenImageIO oiio 2.1.17.0 v
--revision                6
-+github.setup            OpenImageIO oiio 2.3.9.1 v
+-revision                7
++github.setup            OpenImageIO oiio 2.3.10.1 v
 +revision                100
  name                    openimageio
  categories              graphics
@@ -25,9 +25,9 @@
 -checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
 -                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
 -                        size    29052379
-+checksums           rmd160  eae1c8b6d893d389adea1f5e8184d8de445e37ed \
-+                    sha256  576442286e95b825a58a38c85d9f889941bf9993d8fd790565e4c834f72b90d0 \
-+                    size    29248524
++checksums           rmd160  90dda1b7fdc06f4b89cd83ce4332c442e6a3329d \
++                    sha256  8b0eabab80b16d4650fc35cc550af21286420073d628a38aae89114fbcbbd271 \
++                    size    32445919
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
