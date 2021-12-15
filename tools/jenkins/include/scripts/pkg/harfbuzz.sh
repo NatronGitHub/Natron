@@ -2,7 +2,7 @@
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=3.1.1
+HARFBUZZ_VERSION=3.2.0
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.xz"
 #HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 HARFBUZZ_SITE="https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}"
