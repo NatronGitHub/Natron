@@ -153,13 +153,13 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
     ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
     ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
     int nComp = (int)srcImg.getComponentsCount();
-    const Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
-    const Color::Lut* const dstLut_ = lutFromColorspace(dstColorSpace);
+    const Color::Lut* const srcLut = lutFromColorspace(srcColorSpace);
+    const Color::Lut* const dstLut = lutFromColorspace(dstColorSpace);
 
 
     ///no colorspace conversion applied when luts are the same
-    const Color::Lut* const srcLut = (srcLut_ == dstLut_) ? 0 : srcLut_;
-    const Color::Lut* const dstLut = (srcLut_ == dstLut_) ? 0 : dstLut_;
+    bool srcLutOp = srcLut != dstLut && srcLut != nullptr;
+    bool dstLutOp = srcLut != dstLut && dstLut != nullptr;
     if ( intersection.isNull() ) {
         return;
     }
@@ -184,7 +184,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                     assert( !(boost::math::isnan)(srcPixels[k]) ); // check for NaN
 #                 endif
                     DSTPIX pix;
-                    if ( (k == 3) || (!srcLut && !dstLut) ) {
+                    if ( (k == 3) || (!srcLutOp && !dstLutOp) ) {
                         pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
                     } else {
                         float pixFloat;
@@ -203,14 +203,14 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
 
                         if (dstDepth == eImageBitDepthByte) {
                             ///small increase in perf we use Luts. This should be anyway the most used case.
-                            error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                            error[k] = (error[k] & 0xff) + ( dstLutOp ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                              Color::floatToInt<0xff01>(pixFloat) );
                             pix = error[k] >> 8;
                         } else if (dstDepth == eImageBitDepthShort) {
-                            pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                            pix = dstLutOp ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                   convertPixelDepth<float, DSTPIX>(pixFloat);
                         } else {
-                            if (dstLut) {
+                            if (dstLutOp) {
                                 pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
                             }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
@@ -304,8 +304,10 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
         return;
     }
 
-    const Color::Lut* const srcLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)srcColorSpace ) : 0;
-    const Color::Lut* const dstLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)dstColorSpace ) : 0;
+    const Color::Lut* const srcLut = lutFromColorspace( (ViewerColorSpaceEnum)srcColorSpace );
+    const Color::Lut* const dstLut = lutFromColorspace( (ViewerColorSpaceEnum)dstColorSpace );
+    bool srcLutOp = useColorspaces && srcLut != nullptr;
+    bool dstLutOp = useColorspaces && dstLut != nullptr;
 
     for (int y = 0; y < renderWindow.height(); ++y) {
         ///Start of the line for error diffusion
@@ -389,7 +391,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                             }
                             SRCPIX sourcePixel = srcPixels[k];
                             DSTPIX pix;
-                            if ( !useColorspaces || (!srcLut && !dstLut) ) {
+                            if ( !useColorspaces || (!srcLutOp && !dstLutOp) ) {
                                 if (dstMaxValue == 255) {
                                     float pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                     error[k] = (error[k] & 0xff) + Color::floatToInt<0xff01>(pixFloat);
@@ -405,10 +407,10 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 if (unpremultChannel) {
                                     pixFloat = convertPixelDepth<SRCPIX, float>(sourcePixel);
                                     pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
-                                    if (srcLut) {
+                                    if (srcLutOp) {
                                         pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
                                     }
-                                } else if (srcLut) {
+                                } else if (srcLutOp) {
                                     if (srcMaxValue == 255) {
                                         pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(sourcePixel);
                                     } else if (srcMaxValue == 65535) {
@@ -423,14 +425,14 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 ///Apply dst color-space
                                 if (dstMaxValue == 255) {
                                     assert(k < 3);
-                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                    error[k] = (error[k] & 0xff) + ( dstLutOp ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                      Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;
                                 } else if (dstMaxValue == 65535) {
-                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                                    pix = dstLutOp ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                           convertPixelDepth<float, DSTPIX>(pixFloat);
                                 } else {
-                                    if (dstLut) {
+                                    if (dstLutOp) {
                                         pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
                                     }
                                     pix = convertPixelDepth<float, DSTPIX>(pixFloat);

@@ -203,8 +203,8 @@ public:
             ret = knob->setValue(v, ViewSpec::current(), dimension, reason, newKey);
         }
         if ( (ret > 0) && (ret != KnobHelper::eValueChangedReturnCodeNothingChanged) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+            assert(newKey != nullptr);
+            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded && newKey != nullptr) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
             Q_EMIT keyFrameSet();
