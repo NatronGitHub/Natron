@@ -1092,7 +1092,7 @@ GuiApplicationManager::hideSplashScreen()
     if (_imp->_splashScreen) {
         _imp->_splashScreen->hide();
         _imp->_splashScreen->close();
-        delete _imp->_splashScreen;
+        _imp->_splashScreen->deleteLater();
         _imp->_splashScreen = 0;
     }
 }

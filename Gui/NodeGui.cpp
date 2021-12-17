@@ -4052,8 +4052,6 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     refreshUserParamsGUI();
 }
 
-typedef boost::shared_ptr<GroupKnobDialog> GroupKnobDialogPtr;
-
 void
 NodeGui::showGroupKnobAsDialog(KnobGroup* group)
 {
@@ -4061,18 +4059,18 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
     assert(group);
     bool showDialog = group->getValue();
     if (showDialog) {
-        assert(!_activeNodeCustomModalDialog);
-        GroupKnobDialogPtr dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
-        _activeNodeCustomModalDialog = dialog;
-        dialog->move( QCursor::pos() );
-        int accepted = dialog->exec();
+        _activeNodeCustomModalDialog = new GroupKnobDialog(getDagGui()->getGui(), group);
+        _activeNodeCustomModalDialog->move( QCursor::pos() );
+        int accepted = _activeNodeCustomModalDialog->exec();
         Q_UNUSED(accepted);
         // Notify dialog closed
         group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-        _activeNodeCustomModalDialog.reset();
-    } else {
+        _activeNodeCustomModalDialog->deleteLater();
+        _activeNodeCustomModalDialog = 0;
+    } else if (_activeNodeCustomModalDialog) {
         _activeNodeCustomModalDialog->close();
-        _activeNodeCustomModalDialog.reset();
+        _activeNodeCustomModalDialog->deleteLater();
+        _activeNodeCustomModalDialog = 0;
     }
 }
 

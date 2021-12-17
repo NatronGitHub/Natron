@@ -689,7 +689,7 @@ private:
     NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    NATRON_PYTHON_NAMESPACE::PyModalDialogPtr _activeNodeCustomModalDialog;
+    NATRON_PYTHON_NAMESPACE::PyModalDialog* _activeNodeCustomModalDialog;
 };
 
 NATRON_NAMESPACE_EXIT

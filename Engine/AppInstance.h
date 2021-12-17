@@ -357,7 +357,7 @@ public:
 
     virtual void updateProjectLoadStatus(const QString& /*str*/) {}
 
-    virtual void closeLoadPRojectSplashScreen() {}
+    virtual void closeLoadProjectSplashScreen() {}
 
     std::string getAppIDString() const;
     const std::list<NodePtr>& getNodesBeingCreated() const;

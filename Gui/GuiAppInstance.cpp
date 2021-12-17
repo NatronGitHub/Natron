@@ -25,6 +25,12 @@
 
 #include "GuiAppInstance.h"
 
+#if defined(__APPLE__) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#include <string.h>
+#include <stdio.h>
+#include <sys/sysctl.h>
+#endif
+
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -228,11 +234,9 @@ GuiAppInstance::aboutToQuit()
         AppInstance::aboutToQuit();
 
         _imp->_isClosing = true;
+        _imp->_gui->hide();
         _imp->_gui->close();
-        //delete _imp->_gui;
         _imp->_gui->deleteLater();
-
-
 
         // Make sure all events are processed
         qApp->processEvents();
@@ -1011,6 +1015,23 @@ GuiAppInstance::declareCurrentAppVariable_Python()
 void
 GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
 {
+    QCoreApplication::processEvents();
+#if defined(__APPLE__) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    short int version_[3] = {0};
+    char str[256] = {0};
+    size_t size = sizeof(str);
+    int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+    if (ret == 0) {
+        sscanf(str, "%hd.%hd.%hd", &version_[0], &version_[1], &version_[2]);
+    }
+    if (version_[0] >= 21) {
+        // On macOS 12 Monterey, Qt4 crashes the app when closing
+        // a window, including the splash screen.
+        // See: https://github.com/NatronGitHub/Natron/issues/712
+        // This is probably a Qt4 bug, so let us avoid the splash screen.
+        return;
+    }
+#endif
     if (_imp->loadProjectSplash) {
         return;
     }
@@ -1028,11 +1049,12 @@ GuiAppInstance::updateProjectLoadStatus(const QString& str)
 }
 
 void
-GuiAppInstance::closeLoadPRojectSplashScreen()
+GuiAppInstance::closeLoadProjectSplashScreen()
 {
     if (_imp->loadProjectSplash) {
+        _imp->loadProjectSplash->hide();
         _imp->loadProjectSplash->close();
-        delete _imp->loadProjectSplash;
+        _imp->loadProjectSplash->deleteLater();
         _imp->loadProjectSplash = 0;
     }
 }
