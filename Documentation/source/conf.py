@@ -52,7 +52,7 @@ copyright = '2013-2021 The Natron documentation authors, licensed under CC BY-SA
 version_21 = '2.1.10'
 version_22 = '2.2.10'
 version_23 = '2.3.16'
-version_24 = '2.4.1'
+version_24 = '2.4.2'
 version_30 = '3.0.0'
 
 # The version for this branch
