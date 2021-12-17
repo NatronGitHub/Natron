@@ -36,10 +36,12 @@
 
 - Fix OpenFX overlay actions being executed in the wrong order. #711
 - Fix enabling node preview from Python. #710
+- Do not display the "Loading project" splashscreen on macOS 12+ to avoid crash due to Qt4 bug. #712
 
 ### Plugins
 
 - Fix bug in Transform plugin interact. #708
+- Fix EXR reader outputing the color plane only when an OCIO transform is applied. #714
 
 
 ## Version 2.4.1
