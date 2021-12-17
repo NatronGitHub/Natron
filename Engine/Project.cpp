@@ -195,7 +195,7 @@ public:
         AppInstancePtr a = app.lock();
 
         if (a) {
-            a->closeLoadPRojectSplashScreen();
+            a->closeLoadProjectSplashScreen();
         }
     }
 };

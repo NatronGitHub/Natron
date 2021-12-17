@@ -549,7 +549,6 @@ ViewerTab::~ViewerTab()
         } else {
             graph = gui->getNodeGraph();
         }
-        assert(graph);
         GuiAppInstancePtr app = gui->getApp();
         if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
