@@ -181,14 +181,6 @@ if [[ $(type -P python3) ]]; then
     PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
     if [ -z "${PYV:-}" ]; then
         PYV=3
-        PYVER="${PY3VER}"
-        PYVERNODOT="${PY3VERNODOT}"
-        case "${PYVER}" in
-        3.[01234567])
-            PYTHON_ABIFLAGS="m"
-            ;;
-        esac
-        PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
     fi
 fi
 if [[ $(type -P python2) ]]; then
@@ -197,11 +189,31 @@ if [[ $(type -P python2) ]]; then
     if [ -z "${PYV:-}" ]; then
         # default to Python 2 if present
         PYV=2
-        PYVER="${PY2VER}"
-        PYVERNODOT="${PY2VERNODOT}"
-        PYTHON_ABIFLAGS=""
-        PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
     fi
+    case "${RELEASE_TAG:-}" in
+    1.*|2.[01234].*)
+        PYV=2
+    esac
+    case "${GIT_BRANCH:-}" in
+    RB-1|RB-1.*|RB-2.[01234])
+        PYV=2
+    esac
+fi
+if [ "${PYV:-}" = 3 ]; then
+    PYVER="${PY3VER}"
+    PYVERNODOT="${PY3VERNODOT}"
+    case "${PYVER}" in
+    3.[01234567])
+        PYTHON_ABIFLAGS="m"
+        ;;
+    esac
+    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
+fi
+if [ "${PYV:-}" = 2 ]; then
+    PYVER="${PY2VER}"
+    PYVERNODOT="${PY2VERNODOT}"
+    PYTHON_ABIFLAGS=""
+    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
 fi
 
 QT_VERSION_MAJOR=4
