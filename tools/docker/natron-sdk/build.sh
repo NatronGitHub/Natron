@@ -3,7 +3,7 @@ cd `dirname "$0"`
 cp  ../../jenkins/*.sh .
 (cd ../../jenkins/; tar cf - include) | tar xf -
 export CENTOS=7
-export DTS=10
+export DTS=11
 LABEL="natrongithub/natron-sdk${UBUNTU+-ubuntu}${UBUNTU:-}${CENTOS+-centos}${CENTOS:-}${DTS+-dts}${DTS:-}"
 env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile
 docker build -t "${LABEL}:latest" . --progress=plain

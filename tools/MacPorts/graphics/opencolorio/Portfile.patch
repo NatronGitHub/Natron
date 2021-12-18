@@ -1,12 +1,12 @@
---- Portfile.orig	2021-12-01 08:32:07.000000000 -0800
-+++ Portfile	2021-12-01 08:30:21.000000000 -0800
+--- Portfile.orig	2021-12-01 19:02:33.000000000 -0800
++++ Portfile	2021-12-17 16:19:17.000000000 -0800
 @@ -7,8 +7,7 @@
  
  boost.depends_type  build
  
 -github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
 -revision            3
-+github.setup        AcademySoftwareFoundation OpenColorIO 2.1.0 v
++github.setup        AcademySoftwareFoundation OpenColorIO 2.1.1 v
  name                opencolorio
  categories          graphics
  maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -19,9 +19,9 @@
 -checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
 -                    sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
 -                    size    13830493
-+checksums           rmd160  c6905ea3406b043d4d4e97c8470870a3ff868b92 \
-+                    sha256  0b7a51e5fd19c93c46fac5708051dae206b5dd29af9214ffce797421162dd769 \
-+                    size    10976113
++checksums           rmd160  11f40b2157668416c8b5c9ecfc0d8f96a1056119 \
++                    sha256  c3c82c9e6e854db0df9185a7446c63371678c855e54d8737d01d21b4dd1de82d \
++                    size    11018986
  
  # Exclude pre-releases from livecheck
  github.livecheck.regex  {([0-9.]+)}

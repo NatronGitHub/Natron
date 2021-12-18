@@ -7,7 +7,7 @@ PortGroup           boost 1.0
 
 boost.depends_type  build
 
-github.setup        AcademySoftwareFoundation OpenColorIO 2.1.0 v
+github.setup        AcademySoftwareFoundation OpenColorIO 2.1.1 v
 name                opencolorio
 categories          graphics
 maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -19,9 +19,9 @@ long_description    OpenColorIO (OCIO) is a complete color management solution \
                     geared towards motion picture production with an emphasis on \
                     visual effects and computer animation.
 
-checksums           rmd160  c6905ea3406b043d4d4e97c8470870a3ff868b92 \
-                    sha256  0b7a51e5fd19c93c46fac5708051dae206b5dd29af9214ffce797421162dd769 \
-                    size    10976113
+checksums           rmd160  11f40b2157668416c8b5c9ecfc0d8f96a1056119 \
+                    sha256  c3c82c9e6e854db0df9185a7446c63371678c855e54d8737d01d21b4dd1de82d \
+                    size    11018986
 
 # Exclude pre-releases from livecheck
 github.livecheck.regex  {([0-9.]+)}
