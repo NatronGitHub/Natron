@@ -1,0 +1,73 @@
+# Maintainer: ole.andre.rodlie@gmail.com
+
+_realname=opencolorio
+pkgbase=mingw-w64-${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+gitcommit=32b01f6 # 2.1.1
+pkgver=1343.32b01f64
+pkgrel=1
+pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
+arch=('any')
+url="http://opencolorio.org"
+license=('BSD')
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+depends=("${MINGW_PACKAGE_PREFIX}-glew"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-tinyxml"
+         "${MINGW_PACKAGE_PREFIX}-yaml-cpp"
+         "${MINGW_PACKAGE_PREFIX}-expat"
+         "${MINGW_PACKAGE_PREFIX}-openexr")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "git")
+options=('strip')
+source=("${_realname}"::"git+https://github.com/imageworks/OpenColorIO.git#commit=${gitcommit}"
+        OpenColorIO.pc
+        ocio-2.1.1.patch)
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP')
+
+pkgver() {
+  cd "${srcdir}/${_realname}"
+  printf "%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd ${_realname}
+  patch -p1 -i ${srcdir}/ocio-2.1.1.patch
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DOCIO_BUILD_APPS=OFF \
+    -DOCIO_BUILD_NUKE=OFF \
+    -DOCIO_BUILD_DOCS=OFF \
+    -DOCIO_BUILD_TESTS=OFF \
+    -DOCIO_BUILD_GPU_TESTS=OFF \
+    -DOCIO_BUILD_PYTHON=OFF \
+    -DOCIO_USE_OPENEXR_HALF=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=11 \
+    -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON \
+    -DCMAKE_CXX_VISIBILITY_PRESET=hidden \
+    -DOCIO_INLINES_HIDDEN=ON \
+    ../${_realname}
+  make
+}
+
+package() {
+  cd build-${MINGW_CHOST}
+  make DESTDIR=${pkgdir} install
+  rm -r ${pkgdir}/msys64*
+  mkdir -p ${pkgdir}/mingw64/lib/pkgconfig
+  cp ${srcdir}/OpenColorIO.pc ${pkgdir}/mingw64/lib/pkgconfig/
+}

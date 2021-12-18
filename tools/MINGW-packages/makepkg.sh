@@ -1,3 +1,3 @@
 #!/bin/sh
-MINGW_INSTALLS=mingw64 makepkg-mingw -dLfC
+MINGW_INSTALLS=mingw64 makepkg-mingw -LfC
 
