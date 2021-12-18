@@ -1,0 +1,8 @@
+libdir=/mingw64/lib
+includedir=/mingw64/include
+
+Name: OpenColorIO
+Description: A color management framework for visual effects and animation
+Version: 2.1.1
+Cflags: -I${includedir}
+Libs: -L${libdir} -lOpenColorIO
