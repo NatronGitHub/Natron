@@ -511,7 +511,7 @@ NodeCollection::checkNodeName(const Node* node,
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( (it->get() != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
+            if ( (it->get() != node) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
                 foundNodeWithName = true;
                 break;
             }
@@ -760,7 +760,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
     QMutexLocker k(&nodesMutex);
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->getScriptName_mt_safe() == name ) {
+        if ( (*it)->isActivated() && (*it)->getScriptName_mt_safe() == name ) {
             if ( !recurseName.empty() ) {
                 NodeGroup* isGrp = (*it)->isEffectGroup();
                 if (isGrp) {
@@ -769,7 +769,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
                     NodesList children;
                     (*it)->getChildrenMultiInstance(&children);
                     for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                        if ( (*it2)->getScriptName_mt_safe() == recurseName ) {
+                        if ( (*it2)->isActivated() && (*it2)->getScriptName_mt_safe() == recurseName ) {
                             return *it2;
                         }
                     }
@@ -924,7 +924,7 @@ NodeCollection::checkIfNodeLabelExists(const std::string & n,
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
+        if ( (it->get() != caller) && (*it)->isActivated() && ( (*it)->getLabel_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -939,7 +939,7 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
+        if ( (it->get() != caller) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -1173,7 +1173,7 @@ NodeGroup::getInputLabel(int inputNb) const
         ///If the input name starts with "input" remove it, otherwise keep the full name
 
         input = _imp->inputs[inputNb].lock();
-        if (!input) {
+        if (!input || !input->isActivated()) {
             return std::string();
         }
     }

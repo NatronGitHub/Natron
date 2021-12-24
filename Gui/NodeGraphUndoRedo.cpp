@@ -1605,8 +1605,13 @@ GroupFromSelectionCommand::redo()
         int inputNb = 0;
         for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
             NodeGuiPtr foundOriginalOutputNode;
+            if (!it->output.node->isActivated()) {
+                continue;
+            }
+            const std::string outputNodeName = it->output.node->getScriptName_mt_safe();
             for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                if ( (*it3)->getNode()->getScriptName_mt_safe() == it->output.node->getScriptName_mt_safe() ) {
+                NodePtr n = (*it3)->getNode();
+                if ( n && n->isActivated() && n->getScriptName_mt_safe() == outputNodeName) {
                     foundOriginalOutputNode = *it3;
                     break;
                 }
@@ -1621,8 +1626,13 @@ GroupFromSelectionCommand::redo()
             for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
                 // Find the equivalent node in the original nodes and see which inputs we need to create
                 NodeGuiPtr foundOriginalNode;
+                if (!it2->node->isActivated()) {
+                    continue;
+                }
+                const std::string originalNodeName = it2->node->getScriptName_mt_safe();
                 for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                    if ( (*it3)->getNode()->getScriptName_mt_safe() == it2->node->getScriptName_mt_safe() ) {
+                    NodePtr n = (*it3)->getNode();
+                    if ( n && n->isActivated() && n->getScriptName_mt_safe() == originalNodeName) {
                         foundOriginalNode = *it3;
                         break;
                     }

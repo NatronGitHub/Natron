@@ -146,6 +146,19 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
     }
 } // pasteNodesInternal
 
+// Trim underscore followed by digits at the end of baseName (see #732).
+static
+void trimNumber(std::string &baseName)
+{
+    std::size_t found_underscore = baseName.rfind('_');
+    if (found_underscore != std::string::npos && found_underscore != (baseName.size() - 1)) {
+        std::size_t found_nondigit = baseName.find_last_not_of("0123456789");
+        if (found_nondigit == found_underscore) {
+            baseName.erase(found_underscore);
+        }
+    }
+}
+
 NodeGuiPtr
 NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
                             const NodeGuiSerializationPtr & guiSerialization,
@@ -179,20 +192,22 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     std::string name;
     if ( ( grp == group.lock() ) && ( !internalSerialization->getNode() || ( internalSerialization->getNode()->getGroup() == group.lock() ) ) ) {
         //We pasted the node in the same group, give it another label
+        std::string baseName = internalSerialization->getNodeLabel();
+        trimNumber(baseName);
+        std::string name;
         int no = 1;
-        std::string label = internalSerialization->getNodeLabel();
         do {
+            name = baseName;
             if (no > 1) {
+                name += '_';
                 std::stringstream ss;
-                ss << internalSerialization->getNodeLabel();
-                ss << '_';
                 ss << no;
-                label = ss.str();
+                name += ss.str();
             }
             ++no;
-        } while ( grp->checkIfNodeLabelExists( label, n.get() ) );
+        } while ( grp->checkIfNodeLabelExists( name, n.get() ) );
 
-        n->setLabel(label);
+        n->setLabel(name);
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
     }

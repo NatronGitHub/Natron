@@ -36,6 +36,19 @@
 
 NATRON_NAMESPACE_ENTER
 
+// Trim underscore followed by digits at the end of baseName (see #732).
+static
+void trimNumber(std::string &baseName)
+{
+    std::size_t found_underscore = baseName.rfind('_');
+    if (found_underscore != std::string::npos && found_underscore != (baseName.size() - 1)) {
+        std::size_t found_nondigit = baseName.find_last_not_of("0123456789");
+        if (found_nondigit == found_underscore) {
+            baseName.erase(found_underscore);
+        }
+    }
+}
+
 void
 Node::initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName)
 {
@@ -51,15 +64,16 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
     if (!fixedName.isEmpty()) {
 
         std::string baseName = fixedName.toStdString();
-        std::string name = baseName;
+        trimNumber(baseName);
+        std::string name;
         int no = 1;
         do {
+            name = baseName;
             if (no > 1) {
+                name += '_';
                 std::stringstream ss;
-                ss << baseName;
-                ss << '_';
                 ss << no;
-                name = ss.str();
+                name += ss.str();
             }
             ++no;
         } while ( group && group->checkIfNodeNameExists(name, this) );
@@ -72,16 +86,17 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
             QMutexLocker k(&_imp->nameMutex);
             _imp->cacheID = serialization->getCacheID();
         }
-        const std::string& baseName = serialization->getNodeScriptName();
-        std::string name = baseName;
+        std::string baseName = serialization->getNodeScriptName();
+        trimNumber(baseName);
+        std::string name;
         int no = 1;
         do {
+            name = baseName;
             if (no > 1) {
+                name += '_';
                 std::stringstream ss;
-                ss << baseName;
-                ss << '_';
                 ss << no;
-                name = ss.str();
+                name += ss.str();
             }
             ++no;
         } while ( group && group->checkIfNodeNameExists(name, this) );

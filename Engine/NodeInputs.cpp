@@ -1735,7 +1735,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 
         for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr input = it->lock();
-            if ( input && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
+            if ( input && input->isActivated() && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
                 nodeName = input->getScriptName_mt_safe();
 
                 return true;
