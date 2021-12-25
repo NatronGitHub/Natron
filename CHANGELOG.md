@@ -38,6 +38,7 @@
 
 - Fix bug in Transform plugin interact. #708
 - Fix EXR reader outputing the color plane only when an OCIO transform is applied. #714
+- The OpenColorIO plugins can now use OpenColorIO 2.1.
 
 
 ## Version 2.4.1
