@@ -300,7 +300,7 @@ public:
         } else {
             value_type list;
             list.push_back(v);
-            _container.insert( typename container_type::value_type(k, list) );
+            _container.left.insert( typename container_type::value_type(k, list) );
         }
     }
 
