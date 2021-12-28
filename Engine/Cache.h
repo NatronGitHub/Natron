@@ -1601,7 +1601,7 @@ public:
                 const EntryTypePtr & front = entries.front();
 
                 if (front->getKey().getCacheHolderID() == holderID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                         *ramOccupied += (*it)->size();
                     }
                 }
@@ -1614,7 +1614,7 @@ public:
                 const EntryTypePtr & front = entries.front();
 
                 if (front->getKey().getCacheHolderID() == holderID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                         *diskOccupied += (*it)->size();
                     }
                 }
@@ -1640,7 +1640,7 @@ private:
 
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1657,7 +1657,7 @@ private:
 
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
                     } else {
