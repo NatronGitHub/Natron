@@ -178,7 +178,7 @@ public:
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         while ( it != textureBeingRendered.end() ) {
-            textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
+            textureBeingRenderedCond.wait(l.mutex());
             it = std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         }
         ///Okay the image is not used by any other thread, claim that we want to use it

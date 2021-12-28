@@ -829,7 +829,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
             ///Notify that we're no longer doing work
             thread->notifyIsRunning(false);
 
-            _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
+            _imp->framesToRenderNotEmptyCond.wait(l.mutex());
         }
 
         if ( !_imp->framesToRender.empty() ) {
@@ -1443,7 +1443,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             assert(state == eThreadStateActive);
             QMutexLocker bufLocker (&_imp->bufMutex);
             // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
-            _imp->bufEmptyCondition.wait(&_imp->bufMutex);
+            _imp->bufEmptyCondition.wait(bufLocker.mutex());
         } else {
             if ( !_imp->engine->isPlaybackAutoRestartEnabled() ) {
                 //Move the timeline to the last rendered frame to keep it in sync with what is displayed
@@ -3512,7 +3512,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         QMutexLocker k(&currentFrameRenderTasksMutex);
 
         while ( !currentFrameRenderTasks.empty() ) {
-            currentFrameRenderTasksCond.wait(&currentFrameRenderTasksMutex);
+            currentFrameRenderTasksCond.wait(k.mutex());
         }
     }
 
@@ -3684,7 +3684,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsP
                 //_imp->producedFrames.clear();
                 break;
             }
-            _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
+            _imp->producedFramesNotEmpty.wait(k.mutex());
 
             for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
                 if (it->age == args->age) {

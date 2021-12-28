@@ -1463,7 +1463,7 @@ FileGathererThread::abortGathering()
     QMutexLocker k(&_imp->abortRequestsMutex);
     ++_imp->abortRequests;
     while (_imp->abortRequests > 0) {
-        _imp->abortRequestsCond.wait(&_imp->abortRequestsMutex);
+        _imp->abortRequestsCond.wait(k.mutex());
     }
 }
 
@@ -1487,7 +1487,7 @@ FileGathererThread::quitGatherer()
     {
         QMutexLocker k(&_imp->mustQuitMutex);
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(k.mutex());
         }
     }
 }
@@ -1544,7 +1544,7 @@ FileGathererThread::run()
         {
             QMutexLocker l(&_imp->startCountMutex);
             while (_imp->startCount <= 0) {
-                _imp->startCountCond.wait(&_imp->startCountMutex);
+                _imp->startCountCond.wait(l.mutex());
             }
             _imp->startCount = 0;
         }

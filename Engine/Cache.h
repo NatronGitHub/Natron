@@ -145,7 +145,7 @@ public:
             _entriesQueueNotEmptyCond.wakeOne();
         }
         while (mustQuit) {
-            mustQuitCond.wait(&mustQuitMutex);
+            mustQuitCond.wait(k.mutex());
         }
     }
 
@@ -181,7 +181,7 @@ private:
                         return;
                     }
                     while ( _entriesQueue.empty() ) {
-                        _entriesQueueNotEmptyCond.wait(&_entriesQueueMutex);
+                        _entriesQueueNotEmptyCond.wait(k.mutex());
                     }
 
                     assert( !_entriesQueue.empty() );
@@ -275,7 +275,7 @@ public:
             _requestsQueueNotEmptyCond.wakeOne();
         }
         while (mustQuit) {
-            mustQuitCond.wait(&mustQuitMutex);
+            mustQuitCond.wait(k.mutex());
         }
     }
 
@@ -311,7 +311,7 @@ private:
                         return;
                     }
                     while ( _requestsQueues.empty() ) {
-                        _requestsQueueNotEmptyCond.wait(&_requestQueueMutex);
+                        _requestsQueueNotEmptyCond.wait(k.mutex());
                     }
 
                     assert( !_requestsQueues.empty() );
@@ -417,6 +417,10 @@ public:
     {
         return it->second;
     }
+    static const std::list<CachedValue> &  getValueFromIterator(ConstCacheIterator it)
+    {
+        return it->second;
+    }
 
 #else // cache use STL
 
@@ -428,6 +432,10 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
+    {
+        return it->second;
+    }
+    static const std::list<EntryTypePtr> &  getValueFromIterator(ConstCacheIterator it)
     {
         return it->second;
     }
@@ -448,6 +456,10 @@ public:
     {
         return it->second;
     }
+    static const std::list<EntryTypePtr> &  getValueFromIterator(ConstCacheIterator it)
+    {
+        return it->second;
+    }
 
 #else // cache use STL and tree (std map)
 
@@ -455,6 +467,10 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &   getValueFromIterator(CacheIterator it)
+    {
+        return it->second.first;
+    }
+    static const std::list<EntryTypePtr> &   getValueFromIterator(ConstCacheIterator it)
     {
         return it->second.first;
     }
@@ -839,7 +855,7 @@ private:
             //_memoryCacheSize member will get updated while images are being destroyed by the parallel thread.
             //we wait for cache memory occupation to be < 100% to be sure we don't hit swap here
             while ( occupationPercentage >= 1. && _deleterThread.isWorking() ) {
-                _memoryFullCondition.wait(&_sizeLock);
+                _memoryFullCondition.wait(k.mutex());
                 occupationPercentage =  _maximumCacheSize == 0 ? 0.99 : (double)_memoryCacheSize / _maximumCacheSize;
             }
         }
@@ -1579,8 +1595,8 @@ public:
         std::string holderID = holder->getCacheID();
         QMutexLocker locker(&_lock);
 
-        for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+        for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
@@ -1592,8 +1608,8 @@ public:
             }
         }
 
-        for (CacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
-            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+        for (ConstCacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
@@ -1617,8 +1633,8 @@ private:
         {
             QMutexLocker locker(&_lock);
 
-            for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-                std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+            for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+                const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 
@@ -1634,8 +1650,8 @@ private:
                 }
             }
 
-            for (CacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
-                std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
+            for (ConstCacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
+                const std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 

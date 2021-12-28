@@ -64,7 +64,7 @@ BlockingBackgroundRender::blockingRender(bool enableRenderStats,
         _running = false;
     } else {
         while (_running) {
-            _runningCond.wait(&_runningMutex);
+            _runningCond.wait(locker.mutex());
         }
     }
 }

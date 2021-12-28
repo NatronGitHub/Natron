@@ -79,8 +79,8 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
     {
         QMutexLocker l(&_lock);     // must be locked
 
-        for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-            std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
+        for (ConstCacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
+            const std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
             for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
                 if ( (*it2)->isStoredOnDisk() ) {
                     SerializedEntry serialization;

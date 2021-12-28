@@ -120,7 +120,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
 #ifndef NATRON_RENDER_SHARED_CONTEXT
     while (_imp->glContextPool.empty() && (int)_imp->attachedGLContexts.size() >= maxContexts) {
-        _imp->glContextPoolEmpty.wait(&_imp->contextPoolMutex);
+        _imp->glContextPoolEmpty.wait(k.mutex());
     }
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < maxContexts );
