@@ -5,7 +5,7 @@ pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
 gitcommit=32b01f6 # 2.1.1
 pkgver=1343.32b01f64
-pkgrel=1
+pkgrel=2
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
 url="http://opencolorio.org"
@@ -46,9 +46,8 @@ build() {
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   ${MINGW_PREFIX}/bin/cmake \
     -G"MSYS Makefiles" \
-    -Wno-dev \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DOCIO_BUILD_APPS=OFF \
+    -DOCIO_BUILD_APPS=ON \
     -DOCIO_BUILD_NUKE=OFF \
     -DOCIO_BUILD_DOCS=OFF \
     -DOCIO_BUILD_TESTS=OFF \
