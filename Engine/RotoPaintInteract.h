@@ -214,6 +214,9 @@ NATRON_NAMESPACE_ENTER
 
 // Viewer UI buttons
 
+// A secret button used to trigger redraws from onOverlayPenMotion()
+#define kRotoUIParamRedraw "redraw"
+
 // Roto
 #define kRotoUIParamAutoKeyingEnabled "autoKeyingEnabledButton"
 #define kRotoUIParamAutoKeyingEnabledLabel "Enable Auto-Keying"
@@ -588,6 +591,9 @@ public:
     KnobButtonWPtr selectAllMenuAction;
     KnobButtonWPtr openCloseMenuAction;
     KnobButtonWPtr lockShapeMenuAction;
+
+    // Fake button to trigger redraw
+    KnobButtonWPtr redrawButton;
 
     // Roto buttons
     KnobButtonWPtr autoKeyingEnabledButton;
