@@ -234,6 +234,7 @@ RotoPaint::initializeKnobs()
     QObject::connect( context.get(), SIGNAL(breakMultiStroke()), this, SLOT(onBreakMultiStrokeTriggered()) );
 
     KnobButtonPtr redraw = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRedraw) );
+    redraw->setName(kRotoUIParamRedraw);
     redraw->setEvaluateOnChange(false);
     redraw->setSecretByDefault(true);
     generalPage->addKnob(redraw);
