@@ -2146,7 +2146,7 @@ RotoContext::evaluateNeatStrokeRender()
     {
         QMutexLocker k(&_imp->doingNeatRenderMutex);
         while (_imp->doingNeatRender) {
-            _imp->doingNeatRenderCond.wait(&_imp->doingNeatRenderMutex);
+            _imp->doingNeatRenderCond.wait(k.mutex());
         }
     }
 }

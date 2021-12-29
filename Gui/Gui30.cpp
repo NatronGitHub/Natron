@@ -82,14 +82,14 @@ Gui::errorDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
         Q_EMIT doDialog(0, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -119,14 +119,14 @@ Gui::errorDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -157,14 +157,14 @@ Gui::warningDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
         Q_EMIT doDialog(1, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -194,14 +194,14 @@ Gui::warningDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         ++_imp->_uiUsingMainThread;
         locker.unlock();
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -232,7 +232,7 @@ Gui::informationDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
@@ -240,7 +240,7 @@ Gui::informationDialog(const std::string & title,
         Q_EMIT doDialog(2, QString::fromUtf8( title.c_str() ), QString::fromUtf8( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -270,7 +270,7 @@ Gui::informationDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
@@ -278,7 +278,7 @@ Gui::informationDialog(const std::string & title,
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -416,7 +416,7 @@ Gui::questionDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
@@ -424,7 +424,7 @@ Gui::questionDialog(const std::string & title,
         Q_EMIT doDialog(3, QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {
@@ -456,7 +456,7 @@ Gui::questionDialog(const std::string & title,
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
         assert(!_imp->_uiUsingMainThread);
         ++_imp->_uiUsingMainThread;
@@ -465,7 +465,7 @@ Gui::questionDialog(const std::string & title,
                                                  QString::fromUtf8( title.c_str() ), QString::fromUtf8( message.c_str() ), useHtml, buttons, (int)defaultButton );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
-            _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
+            _imp->_uiUsingMainThreadCond.wait(locker.mutex());
         }
     } else {
         {

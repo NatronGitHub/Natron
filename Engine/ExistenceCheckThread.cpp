@@ -97,7 +97,7 @@ ExistenceCheckerThread::quitThread()
         assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(k.mutex());
         }
     }
     wait();

@@ -1349,7 +1349,7 @@ Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
         assert(!mustQuitPreview);
         ++mustQuitPreview;
         while (mustQuitPreview) {
-            mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
+            mustQuitPreviewCond.wait(l.mutex());
         }
     }
 }
@@ -4404,7 +4404,7 @@ Node::lock(const ImagePtr & image)
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
-        _imp->imagesBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        _imp->imagesBeingRenderedCond.wait(l.mutex());
         it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     }
     ///Okay the image is not used by any other thread, claim that we want to use it
@@ -5666,7 +5666,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
     if ( QThread::currentThread() != qApp->thread() ) {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         while ( _imp->nodeIsDequeuing && !aborted() ) {
-            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
+            _imp->nodeIsDequeuingCond.wait(k.mutex());
         }
     }
 

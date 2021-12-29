@@ -2531,8 +2531,10 @@ ViewerGL::penMotionInternal(int x,
     if (!cursorSet) {
         if ( _imp->viewerTab->getGui()->hasPickers() ) {
             setCursor( appPTR->getColorPickerCursor() );
-        } else if (!overlaysCaughtByPlugin) {
+            _imp->setColorPickerCursor = true;
+        } else if (!overlaysCaughtByPlugin && _imp->setColorPickerCursor) {
             unsetCursor();
+            _imp->setColorPickerCursor = false;
         }
     }
 

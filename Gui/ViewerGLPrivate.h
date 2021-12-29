@@ -185,6 +185,7 @@ struct ViewerGL::Implementation
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
+    bool setColorPickerCursor; //< was the color picker cursor set?
 
     /////// currentViewerInfo
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/

@@ -366,7 +366,7 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
 #ifdef NATRON_RENDER_SHARED_CONTEXT
     QMutexLocker k(&_imp->renderOwningContextMutex);
     while (_imp->renderOwningContext && _imp->renderOwningContext != abortInfo) {
-        _imp->renderOwningContextCond.wait(&_imp->renderOwningContextMutex);
+        _imp->renderOwningContextCond.wait(k.mutex());
     }
     _imp->renderOwningContext = abortInfo;
 #ifdef DEBUG

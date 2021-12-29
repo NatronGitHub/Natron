@@ -116,7 +116,7 @@ GenericWatcher::stopWatching()
             _imp->startRequestsCond.wakeOne();
         }
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(quitLocker.mutex());
         }
     }
 
@@ -160,7 +160,7 @@ GenericWatcher::run()
         {
             QMutexLocker l(&_imp->startRequestsMutex);
             while (_imp->startRequests <= 0) {
-                _imp->startRequestsCond.wait(&_imp->startRequestsMutex);
+                _imp->startRequestsCond.wait(l.mutex());
             }
             ///We got the request, reset it back to 0
             _imp->startRequests = 0;

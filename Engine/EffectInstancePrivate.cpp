@@ -636,7 +636,7 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
 
     QMutexLocker kk(&ibr->lock);
     while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
-        ibr->cond.wait(&ibr->lock, 50);
+        ibr->cond.wait(kk.mutex(), 50);
         restToRender.clear();
         isBeingRenderedElseWhere = false;
         img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);

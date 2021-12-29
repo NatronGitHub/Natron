@@ -292,6 +292,7 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
 ProcessInputChannel::~ProcessInputChannel()
 {
     if ( isRunning() ) {
+        assert( !_mustQuitMutex.tryLock() );
         assert(!_mustQuit);
         _mustQuit = true;
         while (_mustQuit) {
