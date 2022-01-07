@@ -523,12 +523,11 @@ findBackups(const QString & filePath)
 
         // If the filename contains target string - put it in the hitlist
         QString fn = file.fileName();
-        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) >= 0) {
+        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) == fileName.size()) {
             ret.append(file.filePath());
         }
     }
     ret.sort();
-    qDebug() << "found backups:" << ret;
 
     return ret;
 }
@@ -542,7 +541,7 @@ nextBackup(const QString & filePath)
     int pos = rx.lastIndexIn(filePath);
     if (pos >= 0) {
         int i = rx.cap(1).toInt();
-        return filePath.left(i) + QString::fromUtf8(".~%1~").arg(i+1);
+        return filePath.left(pos) + QString::fromUtf8(".~%1~").arg(i+1);
     } else {
         return filePath + QString::fromUtf8(".~1~");
     }
@@ -643,20 +642,22 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
 
-    // rotate backups
-    int saveVersions = autoSave ? 0 : appPTR->getCurrentSettings()->saveVersions();
-    // find the list of ordered backups (including the file itself if it exists)
-    QStringList backups = findBackups(filePath);
-    // remove extra backups
-    for (int i = backups.size() - 1; i >= saveVersions; --i) {
-        if ( QFile::exists(backups.last()) ) {
-            QFile::remove(backups.last());
+    if (!autoSave) {
+        // rotate backups
+        int saveVersions = appPTR->getCurrentSettings()->saveVersions();
+        // find the list of ordered backups (including the file itself if it exists)
+        QStringList backups = findBackups(filePath);
+        // remove extra backups
+        for (int i = backups.size() - 1; i >= saveVersions; --i) {
+            if ( QFile::exists(backups.last()) ) {
+                QFile::remove(backups.last());
+            }
+            backups.removeLast();
         }
-        backups.removeLast();
-    }
-    // rename existing backups
-    for (int i = backups.size() - 1; i >= 0; --i) {
-        QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+        // rename existing backups
+        for (int i = backups.size() - 1; i >= 0; --i) {
+            QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+        }
     }
 
     if (!QFile::rename(tmpFilename, filePath)) {
