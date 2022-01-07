@@ -179,6 +179,8 @@ public:
 
     bool isAutoSaveEnabledForUnsavedProjects() const;
 
+    int saveVersions() const;
+
     bool isSnapToNodeEnabled() const;
 
     bool isCheckForUpdatesEnabled() const;
@@ -430,6 +432,7 @@ private:
 #endif
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
+    KnobIntPtr _saveVersions;
     KnobChoicePtr _hostName;
     KnobStringPtr _customHostName;
 

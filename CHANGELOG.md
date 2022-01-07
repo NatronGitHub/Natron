@@ -17,16 +17,10 @@
 ### Changes
 
 - Allow creating a node with the same name that was just deleted. #732
+- Natron can now keep up to 32 project backups (see Preferences/General/Save versions). #562
 
 
 ## Version 2.4.2
-
-### Known issues
-
-- Crash when closing a project window on macOS 12+ (Qt4 only). #712
-- Rendering sometimes silently stalls after X frames. #248
-- Some image formats may have issues (PCX, PSB). #602
-- MTS video files are sometimes not read correctly. #186
 
 ### Changes
 

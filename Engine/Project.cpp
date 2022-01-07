@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QTimer>
 #include <QtCore/QThread>
 #include <QtCore/QDir>
+#include <QtCore/QDirIterator>
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
@@ -500,6 +501,52 @@ fileCopy(const QString & source,
     return success;
 }
 
+static QStringList
+findBackups(const QString & filePath)
+{
+    QStringList ret;
+    if ( QFile::exists(filePath) ) {
+        ret.append(filePath);
+    }
+    // find files matching filePath.~[0-9]+~
+    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    QFileInfo fileInfo(filePath);
+    QString fileName = fileInfo.fileName();
+    QDirIterator it(fileInfo.dir());
+    while (it.hasNext()) {
+        QString filename = it.next();
+        QFileInfo file(filename);
+
+        if (file.isDir()) { // Check if it's a dir
+            continue;
+        }
+
+        // If the filename contains target string - put it in the hitlist
+        QString fn = file.fileName();
+        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) == fileName.size()) {
+            ret.append(file.filePath());
+        }
+    }
+    ret.sort();
+
+    return ret;
+}
+
+// if filePath matches .*\.~[0-9]+~, increment the backup number
+// else append .~1~
+static QString
+nextBackup(const QString & filePath)
+{
+    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    int pos = rx.lastIndexIn(filePath);
+    if (pos >= 0) {
+        int i = rx.cap(1).toInt();
+        return filePath.left(pos) + QString::fromUtf8(".~%1~").arg(i+1);
+    } else {
+        return filePath + QString::fromUtf8(".~1~");
+    }
+}
+
 QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
@@ -595,20 +642,40 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
 
-    if ( QFile::exists(filePath) ) {
-        QFile::remove(filePath);
+    if (!autoSave) {
+        // rotate backups
+        int saveVersions = appPTR->getCurrentSettings()->saveVersions();
+        // find the list of ordered backups (including the file itself if it exists)
+        QStringList backups = findBackups(filePath);
+        // remove extra backups
+        for (int i = backups.size() - 1; i >= saveVersions; --i) {
+            if ( QFile::exists(backups.last()) ) {
+                QFile::remove(backups.last());
+            }
+            backups.removeLast();
+        }
+        // rename existing backups
+        for (int i = backups.size() - 1; i >= 0; --i) {
+            QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+        }
     }
-    int nAttemps = 0;
 
-    while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
-        ++nAttemps;
+    if (!QFile::rename(tmpFilename, filePath)) {
+        // QFile::rename() may fail, e.g. if tmpFilename and filePath are not on the same partition
+        if (!QFile::copy(tmpFilename, filePath)) {
+            int nAttemps = 0;
+
+            while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
+                ++nAttemps;
+            }
+
+            if (nAttemps >= 10) {
+                throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
+            }
+        }
+
+        QFile::remove(tmpFilename);
     }
-
-    if (nAttemps >= 10) {
-        throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
-    }
-
-    QFile::remove(tmpFilename);
 
     if (!autoSave && updateProjectProperties) {
         QString lockFilePath = getLockAbsoluteFilePath();
