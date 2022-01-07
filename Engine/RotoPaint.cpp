@@ -233,14 +233,6 @@ RotoPaint::initializeKnobs()
     QObject::connect( context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onCurveLockedChanged(int)) );
     QObject::connect( context.get(), SIGNAL(breakMultiStroke()), this, SLOT(onBreakMultiStrokeTriggered()) );
 
-    KnobButtonPtr redraw = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRedraw) );
-    redraw->setName(kRotoUIParamRedraw);
-    redraw->setEvaluateOnChange(false);
-    redraw->setSecretByDefault(true);
-    generalPage->addKnob(redraw);
-    addOverlaySlaveParam(redraw);
-    _imp->ui->redrawButton = redraw;
-
     /// Initializing the viewer interface
     KnobButtonPtr autoKeyingEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAutoKeyingEnabledLabel) );
     autoKeyingEnabled->setName(kRotoUIParamAutoKeyingEnabled);
@@ -3088,7 +3080,7 @@ RotoPaint::onOverlayPenMotion(double time,
     _imp->ui->lastMousePos = pos;
 
     if (redraw) {
-        _imp->ui->redrawButton.lock()->trigger();
+        redrawOverlayInteract();
     }
 
     return didSomething;
