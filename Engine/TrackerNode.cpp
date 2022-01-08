@@ -1594,9 +1594,9 @@ TrackerNode::onOverlayPenMotion(double time,
             _imp->ui->hoverMarker = *it;
             hoverProcess = true;
         } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+            redraw = _imp->ui->hoverState != eDrawStateHoveringCenter;
             _imp->ui->hoverState = eDrawStateHoveringCenter;
             _imp->ui->hoverMarker = *it;
-            redraw = true;
         }
 
 

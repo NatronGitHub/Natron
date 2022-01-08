@@ -2713,34 +2713,28 @@ RotoPaint::onOverlayPenMotion(double time,
          && ( _imp->ui->state != eEventStateDraggingLeftTangent) &&
          ( _imp->ui->state != eEventStateDraggingRightTangent) ) {
         double bboxTol = cpTol;
+        HoverStateEnum newState = _imp->ui->hoverState;
         if ( _imp->ui->isNearbyBBoxBtmLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxBtmLeft;
-            redraw = true;
+            newState = eHoverStateBboxBtmLeft;
         } else if ( _imp->ui->isNearbyBBoxBtmRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxBtmRight;
-            redraw = true;
+            newState = eHoverStateBboxBtmRight;
         } else if ( _imp->ui->isNearbyBBoxTopRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxTopRight;
-            redraw = true;
+            newState = eHoverStateBboxTopRight;
         } else if ( _imp->ui->isNearbyBBoxTopLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxTopLeft;
-            redraw = true;
+            newState = eHoverStateBboxTopLeft;
         } else if ( _imp->ui->isNearbyBBoxMidTop(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidTop;
-            redraw = true;
+            newState = eHoverStateBboxMidTop;
         } else if ( _imp->ui->isNearbyBBoxMidRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidRight;
-            redraw = true;
+            newState = eHoverStateBboxMidRight;
         } else if ( _imp->ui->isNearbyBBoxMidBtm(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidBtm;
-            redraw = true;
+            newState = eHoverStateBboxMidBtm;
         } else if ( _imp->ui->isNearbyBBoxMidLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidLeft;
-            redraw = true;
+            newState = eHoverStateBboxMidLeft;
         } else if (lastHoverState != eHoverStateNothing) {
-            _imp->ui->hoverState = eHoverStateNothing;
-            redraw = true;
+            newState = eHoverStateNothing;
         }
+        redraw = _imp->ui->hoverState != newState;
+        _imp->ui->hoverState = newState;
     }
     const bool featherVisible = _imp->ui->isFeatherVisible();
 
