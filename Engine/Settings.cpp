@@ -193,6 +193,18 @@ Settings::initializeKnobsGeneral()
                                                  "Disabling this will no longer save un-saved project.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
+    _saveVersions = AppManager::createKnob<KnobInt>( this, tr("Save versions") );
+    _saveVersions->setName("saveVersions");
+    _saveVersions->disableSlider();
+    _saveVersions->setMinimum(0);
+    _saveVersions->setMaximum(32);
+    _saveVersions->setHintToolTip( tr("Number of versions created (for backup) when saving newer versions of a file.\n"
+                                      "This option keeps saved versions of your file in the same directory, adding "
+                                      ".~1~, .~2~, etc., with the number increasing to the number of versions you specify.\n"
+                                      "Older files will be named with a higher number. E.g. with the default setting of 2, "
+                                      "you will have three versions of your file: *.ntp (last saved), *.ntp.~1~ (second "
+                                      "last saved), *.~2~ (third last saved).") );
+    _generalTab->addKnob(_saveVersions);
 
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
@@ -1447,6 +1459,7 @@ Settings::setDefaultValues()
 #endif
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
+    _saveVersions->setDefaultValue(1);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 
@@ -2876,6 +2889,13 @@ Settings::isAutoSaveEnabledForUnsavedProjects() const
 {
     return _autoSaveUnSavedProjects->getValue();
 }
+
+int
+Settings::saveVersions() const
+{
+    return _saveVersions->getValue();
+}
+
 
 bool
 Settings::isSnapToNodeEnabled() const

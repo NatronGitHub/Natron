@@ -233,14 +233,6 @@ RotoPaint::initializeKnobs()
     QObject::connect( context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onCurveLockedChanged(int)) );
     QObject::connect( context.get(), SIGNAL(breakMultiStroke()), this, SLOT(onBreakMultiStrokeTriggered()) );
 
-    KnobButtonPtr redraw = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRedraw) );
-    redraw->setName(kRotoUIParamRedraw);
-    redraw->setEvaluateOnChange(false);
-    redraw->setSecretByDefault(true);
-    generalPage->addKnob(redraw);
-    addOverlaySlaveParam(redraw);
-    _imp->ui->redrawButton = redraw;
-
     /// Initializing the viewer interface
     KnobButtonPtr autoKeyingEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAutoKeyingEnabledLabel) );
     autoKeyingEnabled->setName(kRotoUIParamAutoKeyingEnabled);
@@ -2721,34 +2713,28 @@ RotoPaint::onOverlayPenMotion(double time,
          && ( _imp->ui->state != eEventStateDraggingLeftTangent) &&
          ( _imp->ui->state != eEventStateDraggingRightTangent) ) {
         double bboxTol = cpTol;
+        HoverStateEnum newState = _imp->ui->hoverState;
         if ( _imp->ui->isNearbyBBoxBtmLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxBtmLeft;
-            redraw = true;
+            newState = eHoverStateBboxBtmLeft;
         } else if ( _imp->ui->isNearbyBBoxBtmRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxBtmRight;
-            redraw = true;
+            newState = eHoverStateBboxBtmRight;
         } else if ( _imp->ui->isNearbyBBoxTopRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxTopRight;
-            redraw = true;
+            newState = eHoverStateBboxTopRight;
         } else if ( _imp->ui->isNearbyBBoxTopLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxTopLeft;
-            redraw = true;
+            newState = eHoverStateBboxTopLeft;
         } else if ( _imp->ui->isNearbyBBoxMidTop(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidTop;
-            redraw = true;
+            newState = eHoverStateBboxMidTop;
         } else if ( _imp->ui->isNearbyBBoxMidRight(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidRight;
-            redraw = true;
+            newState = eHoverStateBboxMidRight;
         } else if ( _imp->ui->isNearbyBBoxMidBtm(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidBtm;
-            redraw = true;
+            newState = eHoverStateBboxMidBtm;
         } else if ( _imp->ui->isNearbyBBoxMidLeft(pos, bboxTol, pixelScale) ) {
-            _imp->ui->hoverState = eHoverStateBboxMidLeft;
-            redraw = true;
+            newState = eHoverStateBboxMidLeft;
         } else if (lastHoverState != eHoverStateNothing) {
-            _imp->ui->hoverState = eHoverStateNothing;
-            redraw = true;
+            newState = eHoverStateNothing;
         }
+        redraw = _imp->ui->hoverState != newState;
+        _imp->ui->hoverState = newState;
     }
     const bool featherVisible = _imp->ui->isFeatherVisible();
 
@@ -3088,7 +3074,7 @@ RotoPaint::onOverlayPenMotion(double time,
     _imp->ui->lastMousePos = pos;
 
     if (redraw) {
-        _imp->ui->redrawButton.lock()->trigger();
+        redrawOverlayInteract();
     }
 
     return didSomething;

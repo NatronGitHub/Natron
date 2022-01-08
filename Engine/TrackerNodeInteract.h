@@ -56,8 +56,6 @@
 
 #define CORRELATION_ERROR_MAX_DISPLAY 0.2
 
-#define kTrackerUIParamRedraw "redraw"
-
 #define kTrackerUIParamAddTrack "addTrack"
 #define kTrackerUIParamAddTrackLabel "Add Track"
 #define kTrackerUIParamAddTrackHint "When enabled you can add new tracks " \
@@ -314,9 +312,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     TrackerNodePrivate* _p;
-
-    // Fake button to trigger redraw
-    KnobButtonWPtr redrawButton;
 
     KnobButtonWPtr addTrackButton;
     KnobButtonWPtr trackRangeButton;

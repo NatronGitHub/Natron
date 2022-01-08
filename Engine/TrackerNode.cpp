@@ -132,14 +132,6 @@ TrackerNode::initializeKnobs()
     TrackerContextPtr context = getNode()->getTrackerContext();
     KnobPagePtr trackingPage = context->getTrackingPageKnob();
 
-    KnobButtonPtr redraw = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamRedraw) );
-    redraw->setName(kTrackerUIParamRedraw);
-    redraw->setEvaluateOnChange(false);
-    redraw->setSecretByDefault(true);
-    trackingPage->addKnob(redraw);
-    addOverlaySlaveParam(redraw);
-    _imp->ui->redrawButton = redraw;
-
     KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamAddTrackLabel) );
     addMarker->setName(kTrackerUIParamAddTrack);
     addMarker->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
@@ -1602,9 +1594,9 @@ TrackerNode::onOverlayPenMotion(double time,
             _imp->ui->hoverMarker = *it;
             hoverProcess = true;
         } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+            redraw = _imp->ui->hoverState != eDrawStateHoveringCenter;
             _imp->ui->hoverState = eDrawStateHoveringCenter;
             _imp->ui->hoverMarker = *it;
-            redraw = true;
         }
 
 
@@ -2267,7 +2259,7 @@ TrackerNode::onOverlayPenMotion(double time,
     _imp->ui->lastMousePos = pos;
 
     if (redraw) {
-        _imp->ui->redrawButton.lock()->trigger();
+        redrawOverlayInteract();
     }
 
     return didSomething;
