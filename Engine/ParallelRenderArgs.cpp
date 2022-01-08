@@ -173,11 +173,20 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             if ( foundInputRoI == inputRois.end() ) {
                 continue;
             }
+            // It's OK to have an infinite RoI, since we intersect with the source RoD in the end,
+            // and it actually happens quite often when composing Transforms,
+            // see getInputsRoIsFunctor(),
+            // which calls transformInputRois(),
+            // which calls Transform::transformRegionFromRoD(),
+            // which calls Transform::transformRegionFromPoints(),
+            // which sets the input RoI to infinite.
+            /*
             if ( foundInputRoI->second.isInfinite() ) {
                 effect->setPersistentMessage( eMessageTypeError, tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
 
                 return EffectInstance::eRenderRoIRetCodeFailed;
             }
+            */
 
             if ( foundInputRoI->second.isNull() ) {
                 continue;
