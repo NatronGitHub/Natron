@@ -18,7 +18,7 @@
 
 - Allow creating a node with the same name that was just deleted. #732
 - Natron can now keep up to 32 project backups (see Preferences/General/Save versions). #562
-- Only display the overlays for nodes that are in the viewer render path and have their properties panel maximized. #744
+- Only display the overlays for nodes that are in the viewer render path and have their properties panel maximized. Can be disabled in Preferences/Viewer. #744
 
 
 ## Version 2.4.2

@@ -114,7 +114,7 @@ ViewerTab::drawOverlays(double time,
         }
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -265,7 +265,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         double transformedTime;
         bool ok = _imp->getTimeTransform(timestamp, view, *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -304,7 +304,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 #else
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -369,7 +369,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 #else
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
-    if (!ok) {
+    if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
         // overlay is not visible in current viewer, even though its parameter panel is open.
         return false;
     }
@@ -522,7 +522,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 #else
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -661,7 +661,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
-    if (!ok) {
+    if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
         // overlay is not visible in current viewer, even though its parameter panel is open.
         return false;
     }
@@ -771,7 +771,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -832,7 +832,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
-    if (!ok) {
+    if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
         // overlay is not visible in current viewer, even though its parameter panel is open.
         return false;
     }
@@ -932,7 +932,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
@@ -986,7 +986,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
-        if (!ok) {
+        if (!ok && appPTR->getCurrentSettings()->viewerOverlaysPath()) {
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
