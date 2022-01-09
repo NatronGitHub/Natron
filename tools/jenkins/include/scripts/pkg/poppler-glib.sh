@@ -2,7 +2,7 @@
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/poppler.html
-POPPLER_VERSION=21.11.0
+POPPLER_VERSION=22.01.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if download_step; then

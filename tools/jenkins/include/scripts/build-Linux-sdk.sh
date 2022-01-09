@@ -857,18 +857,6 @@ fi
 
 checkpoint
 
-# build qt5 # <--- Disabled Qt 5.6 (temporary)
-
-# pysetup
-if dobuild; then
-    # add qt5 to lib path to build shiboken2 and pyside2
-    LD_LIBRARY_PATH="$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    #LD_RUN_PATH="$LD_LIBRARY_PATH"
-fi
-
-# build shiboken2 # only useful for qt5
-# build pyside2 # only useful for qt5
-
 checkpoint
 
 build qt4
@@ -907,7 +895,7 @@ build pyside2
 
 if dobuild; then
     # make sure all libs are user-writable and executable
-    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do
         if compgen -G "$SDK_HOME/$subdir/lib*/lib*.so*" > /dev/null; then
             chmod 755 "$SDK_HOME"/$subdir/lib*/lib*.so*
         fi
@@ -927,8 +915,7 @@ if dobuild; then
 
     echo
     echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
-    # SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
-    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4 qt5; do
         [ -d "$SDK_HOME/$subdir/lib" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
         [ -d "$SDK_HOME/$subdir/bin" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
     done
