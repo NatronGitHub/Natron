@@ -1,0 +1,10 @@
+--- lib/gif_hash.c.orig	2013-09-03 08:41:31.000000000 -0500
++++ lib/gif_hash.c	2020-06-26 14:43:00.000000000 -0500
+@@ -21,6 +21,7 @@
+ #include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <stdlib.h>
+ 
+ #include "gif_lib.h"
+ #include "gif_hash.h"

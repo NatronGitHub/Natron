@@ -8,8 +8,12 @@ PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
 
-github.setup            OpenImageIO oiio 2.1.17.0 v
-revision                7
+github.setup            OpenImageIO oiio 2.1.20.0 v
+revision                0
+checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
+                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
+                        size    29115990
+
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -17,11 +21,6 @@ maintainers             {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                         related classes, utilities, and applications.
-platforms               darwin
-
-checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
-                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
-                        size    29052379
 
 compiler.cxx_standard   2014
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
@@ -33,15 +32,9 @@ configure.args-append   -DCMAKE_CXX_STANDARD=14
 
 compiler.thread_local_storage yes
 
-# When updating this port to a new version, please switch to standard
-# use of the github portgroup by removing the following three lines and
-# replacing them with "github.tarball_from archive".
-github.master_sites     ${github.homepage}/archive
-distname                Release-${version}
-worksrcdir              oiio-Release-${version}
+github.tarball_from     archive
 
-patchfiles-append       patch-FindOpenJpeg.cmake.diff \
-                        patch-pybind11.diff
+patchfiles-append       patch-FindOpenJpeg.cmake.diff
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted

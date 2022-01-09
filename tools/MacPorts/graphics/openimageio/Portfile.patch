@@ -1,6 +1,6 @@
---- Portfile.orig	2021-12-14 14:40:21.000000000 -0800
-+++ Portfile	2021-12-14 16:15:33.000000000 -0800
-@@ -2,14 +2,14 @@
+--- Portfile.orig	2022-01-09 11:06:32.000000000 -0800
++++ Portfile	2021-12-14 17:15:36.000000000 -0800
+@@ -2,18 +2,14 @@
  
  PortSystem              1.0
  PortGroup               github 1.0
@@ -11,39 +11,37 @@
  PortGroup               compiler_blacklist_versions 1.0
  PortGroup               boost 1.0
  
--github.setup            OpenImageIO oiio 2.1.17.0 v
--revision                7
+-github.setup            OpenImageIO oiio 2.1.20.0 v
+-revision                0
+-checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
+-                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
+-                        size    29115990
+-
 +github.setup            OpenImageIO oiio 2.3.10.1 v
 +revision                100
  name                    openimageio
  categories              graphics
  license                 BSD
-@@ -19,9 +19,9 @@
+@@ -21,6 +17,11 @@
+ description             a library for reading and writing images
+ long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                          related classes, utilities, and applications.
- platforms               darwin
- 
--checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
--                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
--                        size    29052379
++platforms               darwin
++
 +checksums           rmd160  90dda1b7fdc06f4b89cd83ce4332c442e6a3329d \
 +                    sha256  8b0eabab80b16d4650fc35cc550af21286420073d628a38aae89114fbcbbd271 \
 +                    size    32445919
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -33,15 +33,12 @@
+@@ -32,9 +33,12 @@
  
  compiler.thread_local_storage yes
  
--# When updating this port to a new version, please switch to standard
--# use of the github portgroup by removing the following three lines and
--# replacing them with "github.tarball_from archive".
--github.master_sites     ${github.homepage}/archive
--distname                Release-${version}
- worksrcdir              oiio-Release-${version}
+-github.tarball_from     archive
++worksrcdir              oiio-Release-${version}
  
--patchfiles-append       patch-FindOpenJpeg.cmake.diff \
--                        patch-pybind11.diff
+-patchfiles-append       patch-FindOpenJpeg.cmake.diff
 +patch.pre_args  -p1
 +patchfiles \
 +    oiio-2.0.8-invalidatespec.patch \
@@ -51,7 +49,7 @@
  
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
-@@ -56,16 +53,84 @@
+@@ -49,16 +53,84 @@
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -140,7 +138,7 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
-@@ -102,34 +167,58 @@
+@@ -95,34 +167,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -202,7 +200,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -138,21 +227,35 @@
+@@ -131,21 +227,35 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

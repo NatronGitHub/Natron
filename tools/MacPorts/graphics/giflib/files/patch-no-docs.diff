@@ -1,0 +1,11 @@
+--- Makefile.in.orig	2012-05-16 19:59:23.000000000 -0500
++++ Makefile.in	2012-05-22 17:53:23.000000000 -0500
+@@ -229,7 +229,7 @@
+ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+-SUBDIRS = lib util doc pic
++SUBDIRS = lib util pic
+ EXTRA_DIST = Makefile.unx \
+ 	     autogen.sh \
+ 	     tests \

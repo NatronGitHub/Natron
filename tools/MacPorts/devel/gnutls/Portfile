@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 
 name            gnutls
 version         3.6.16
-revision        1
+revision        2
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security
@@ -47,6 +47,7 @@ depends_build-append \
                 port:pkgconfig
 
 depends_lib-append \
+                port:gettext-runtime \
                 port:gmp \
                 port:libidn2 \
                 port:libtasn1 \

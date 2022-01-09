@@ -1,0 +1,11 @@
+--- src/core/OCIOYaml.cpp.orig	2021-10-03 10:16:55.000000000 -0700
++++ src/core/OCIOYaml.cpp	2021-10-03 10:17:21.000000000 -0700
+@@ -1405,7 +1405,7 @@
+ #ifdef OLDYAML
+             if(node.FindValue("ocio_profile_version") == NULL)
+ #else
+-            if(node["ocio_profile_version"] == NULL)
++            if(!node["ocio_profile_version"])
+ #endif
+             {
+                 std::ostringstream os;
