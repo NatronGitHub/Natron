@@ -4,7 +4,7 @@ Name: Natron
 Version21: 2.1.10
 Version22: 2.2.10
 Version23: 2.3.16
-Version24: 2.4.2
+Version24: 2.4.3
 Version25: 2.5.0
 Version30: 3.0.0
 
