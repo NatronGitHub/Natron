@@ -34,11 +34,14 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
+#include "Engine/AppManager.h"
+
 #ifdef __NATRON_WIN32__
 #include "Engine/OSGLContext_win.h"
 #elif defined(__NATRON_OSX__)
 #include "Engine/OSGLContext_mac.h"
 #elif defined(__NATRON_LINUX__)
+#include "Engine/OSGLContext_wayland.h"
 #include "Engine/OSGLContext_x11.h"
 #endif
 
@@ -228,7 +231,7 @@ struct OSGLContextPrivate
 #elif defined(__NATRON_OSX__)
     boost::scoped_ptr<OSGLContext_mac> _platformContext;
 #elif defined(__NATRON_LINUX__)
-    boost::scoped_ptr<OSGLContext_x11> _platformContext;
+    boost::scoped_ptr<OSGLContext_xdg> _platformContext;
 #endif
 
 #ifdef NATRON_RENDER_SHARED_CONTEXT
@@ -291,11 +294,15 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
         }
     }
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : nullptr) );
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : nullptr) );
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    if (appPTR->isOnWayland()) {
+        _imp->_platformContext.reset( new OSGLContext_wayland(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? static_cast<const OSGLContext_wayland *>(shareContext->_imp->_platformContext.get()) : nullptr) );
+    } else {
+        _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? static_cast<const OSGLContext_x11 *>(shareContext->_imp->_platformContext.get()) : nullptr) );
+    }
 #endif
 }
 
@@ -308,6 +315,7 @@ OSGLContext::~OSGLContext()
     if (_imp->fboID) {
         glDeleteFramebuffers(1, &_imp->fboID);
     }
+    unsetCurrentContextNoRender();
 }
 
 void
@@ -349,7 +357,11 @@ OSGLContext::setContextCurrentNoRender()
 #elif defined(__NATRON_OSX__)
     OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
+    if (appPTR->isOnWayland()) {
+        OSGLContext_wayland::makeContextCurrent( static_cast<const OSGLContext_wayland *>( _imp->_platformContext.get()) );
+    } else {
+        OSGLContext_x11::makeContextCurrent( static_cast<const OSGLContext_x11 *>( _imp->_platformContext.get()) );
+    }
 #endif
 }
 
@@ -391,11 +403,15 @@ void
 OSGLContext::unsetCurrentContextNoRender()
 {
 #ifdef __NATRON_WIN32__
-    OSGLContext_win::makeContextCurrent( 0 );
+    OSGLContext_win::makeContextCurrent( nullptr );
 #elif defined(__NATRON_OSX__)
-    OSGLContext_mac::makeContextCurrent( 0 );
+    OSGLContext_mac::makeContextCurrent( nullptr );
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::makeContextCurrent( 0 );
+    if (appPTR->isOnWayland()) {
+        OSGLContext_wayland::makeContextCurrent( nullptr );
+    } else {
+        OSGLContext_x11::makeContextCurrent( nullptr );
+    }
 #endif
 }
 
@@ -471,7 +487,7 @@ OSGLContext::getOrCreateFillShader()
         qDebug() << error.c_str();
     }
 #else
-    bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
+    bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, nullptr);
 #endif
 
     assert(ok);
@@ -513,7 +529,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
         qDebug() << error.c_str();
     }
 #else
-    bool ok = _imp->applyMaskMixShader[shader_i]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
+    bool ok = _imp->applyMaskMixShader[shader_i]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), nullptr);
 #endif
     assert(ok);
 #ifdef DEBUG
@@ -578,7 +594,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
         qDebug() << error.c_str();
     }
 #else
-    bool ok = _imp->copyUnprocessedChannelsShader[index]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
+    bool ok = _imp->copyUnprocessedChannelsShader[index]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), nullptr);
 #endif
     assert(ok);
 #ifdef DEBUG
@@ -603,7 +619,11 @@ OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 #elif defined(__NATRON_OSX__)
     OSGLContext_mac::getGPUInfos(renderers);
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::getGPUInfos(renderers);
+    if (appPTR->isOnWayland()) {
+        OSGLContext_wayland::getGPUInfos(renderers);
+    } else {
+        OSGLContext_x11::getGPUInfos(renderers);
+    }
 #endif
 }
 

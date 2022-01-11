@@ -814,6 +814,12 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
 }
 
 bool
+AppManager::isOnWayland() const
+{
+    return _imp->onWayland;
+}
+
+bool
 AppManager::isOpenGLLoaded() const
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
@@ -927,6 +933,12 @@ AppManager::getWGLData() const
 
 #endif
 #ifdef __NATRON_LINUX__
+const OSGLContext_egl_data*
+AppManager::getEGLData() const
+{
+    return _imp->eglInfo.get();
+}
+
 const OSGLContext_glx_data*
 AppManager::getGLXData() const
 {
