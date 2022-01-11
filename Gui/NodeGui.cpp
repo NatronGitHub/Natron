@@ -2130,23 +2130,23 @@ NodeGui::setVisibleSettingsPanel(bool b, bool m, bool h)
     }
     if (_settingsPanel) {
         _settingsPanel->setClosed(!b);
+        if (b) {
+            // also maximize (but don't minimize when closing)
+            _settingsPanel->minimizeOrMaximize(false);
+        }
     }
 }
 
 bool
 NodeGui::isSettingsPanelVisible() const
 {
-    if (_settingsPanel) {
-        return !_settingsPanel->isClosed();
-    } else {
-        return false;
-    }
+    return _settingsPanel && !_settingsPanel->isClosed() && !_settingsPanel->isMinimized();
 }
 
 bool
 NodeGui::isSettingsPanelMinimized() const
 {
-    return _settingsPanel ? _settingsPanel->isMinimized() : false;
+    return _settingsPanel && _settingsPanel->isMinimized();
 }
 
 void
