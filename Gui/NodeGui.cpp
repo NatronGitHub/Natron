@@ -434,6 +434,8 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
         QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
+        QObject::connect( _settingsPanel, SIGNAL(minimized()), this, SLOT(onSettingsPanelMinimized()) );
+        QObject::connect( _settingsPanel, SIGNAL(maximized()), this, SLOT(onSettingsPanelMaximized()) );
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
 
         _graph->getGui()->setNodeViewerInterface(thisShared);
@@ -495,6 +497,32 @@ NodeGui::onSettingsPanelClosed(bool closed)
         }
     }
     Q_EMIT settingsPanelClosed(closed);
+}
+
+void
+NodeGui::onSettingsPanelMinimized()
+{
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
+        const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->updatePersistentMessage();
+        }
+    }
+    Q_EMIT settingsPanelMinimized();
+}
+
+void
+NodeGui::onSettingsPanelMaximized()
+{
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
+        const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->updatePersistentMessage();
+        }
+    }
+    Q_EMIT settingsPanelMaximized();
 }
 
 NodeSettingsPanel*

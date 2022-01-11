@@ -88,6 +88,8 @@ NodeSettingsPanel::NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
 
 
     QObject::connect( this, SIGNAL(closeChanged(bool)), NodeUi.get(), SLOT(onSettingsPanelClosedChanged(bool)) );
+    QObject::connect( this, SIGNAL(minimized()), NodeUi.get(), SLOT(onSettingsPanelMinimized(bool)) );
+    QObject::connect( this, SIGNAL(maximized()), NodeUi.get(), SLOT(onSettingsPanelMaximized(bool)) );
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     QPixmap pixSettings;
