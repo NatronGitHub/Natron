@@ -138,6 +138,10 @@ public Q_SLOTS:
 
     void onNodeSettingsPanelClosed(bool closed);
 
+    void onNodeSettingsPanelMinimized();
+
+    void onNodeSettingsPanelMaximized();
+
 private:
 
     boost::scoped_ptr<NodeViewerContextPrivate> _imp;
