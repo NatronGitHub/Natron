@@ -279,6 +279,12 @@ AppManagerPrivate::AppManagerPrivate()
     setMaxCacheFiles();
 
     runningThreadsCount = 0;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && defined(__NATRON_LINUX__)
+    onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY") && !qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND");
+#else
+    onWayland = false;
+#endif
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -763,9 +769,13 @@ AppManagerPrivate::initGLAPISpecific()
     OSGLContext_win::initWGLData( wglInfo.get() );
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     // scoped_ptr
-    glxInfo.reset(new OSGLContext_glx_data);
-    OSGLContext_x11::initGLXData( glxInfo.get() );
-
+    if (onWayland) {
+        eglInfo.reset(new OSGLContext_egl_data);
+        OSGLContext_wayland::initEGLData( eglInfo.get() );
+    } else {
+        glxInfo.reset(new OSGLContext_glx_data);
+        OSGLContext_x11::initGLXData( glxInfo.get() );
+    }
 #endif // Q_OS_WIN32
 }
 
@@ -928,7 +938,22 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 
     hasInitializedOpenGLFunctions = true;
 
+#ifdef __NATRON_LINUX__
+    bool glLoaded = false;
+    const OSGLContext_egl_data* eglInfo = nullptr;
+
+    if (appPTR->isOnWayland()) {
+        eglInfo = appPTR->getEGLData();
+    }
+
+    if (eglInfo && eglInfo->getProcAddress) {
+        glLoaded = gladLoadGLLoader(eglInfo->getProcAddress);
+    } else {
+        glLoaded = gladLoadGL();
+    }
+#else
     bool glLoaded = gladLoadGL();
+#endif
 
 #ifdef GLAD_DEBUG
     if (glLoaded) {
@@ -1140,6 +1165,9 @@ AppManagerPrivate::tearDownGL()
         OSGLContext_win::destroyWGLData( wglInfo.get() );
     }
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    if (eglInfo) {
+        OSGLContext_wayland::destroyEGLData( eglInfo.get() );
+    }
     if (glxInfo) {
         OSGLContext_x11::destroyGLXData( glxInfo.get() );
     }

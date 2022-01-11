@@ -30,6 +30,7 @@
 
 #include "Global/GLIncludes.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/OSGLContext_xdg.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -57,7 +58,7 @@ public:
 };
 
 struct OSGLContext_x11Private;
-class OSGLContext_x11
+class OSGLContext_x11 : public OSGLContext_xdg
 {
 public:
 

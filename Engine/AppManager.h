@@ -573,10 +573,14 @@ public:
 
     virtual void updateAboutWindowLibrariesVersion() {}
 
+    bool isOnWayland() const;
+
 #ifdef __NATRON_WIN32__
     const OSGLContext_wgl_data* getWGLData() const;
 #endif
 #ifdef __NATRON_LINUX__
+    const OSGLContext_egl_data* getEGLData() const;
+
     const OSGLContext_glx_data* getGLXData() const;
 #endif
 

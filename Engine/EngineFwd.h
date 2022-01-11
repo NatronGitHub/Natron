@@ -283,6 +283,7 @@ typedef boost::shared_ptr<Matrix3x3> Matrix3x3Ptr;
 struct OSGLContext_wgl_data;
 #endif
 #ifdef __NATRON_LINUX__
+class OSGLContext_egl_data;
 class OSGLContext_glx_data;
 #endif
 
