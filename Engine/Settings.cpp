@@ -1140,15 +1140,23 @@ Settings::initializeKnobsViewers()
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 
-    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
-    _viewerKeys->setName("viewerNumberKeys");
-    _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
+    _viewerNumberKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerNumberKeys->setName("viewerNumberKeys");
+    _viewerNumberKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
                                     "is used for switching input (<key> connects input to A side, "
                                     "<shift-key> connects input to B side), even if the corresponding "
                                     "character in the current keyboard layout is not a number.\n"
                                     "This may have to be disabled when using a remote display connection "
                                     "to Linux from a different OS.") );
-    _viewersTab->addKnob(_viewerKeys);
+    _viewersTab->addKnob(_viewerNumberKeys);
+
+    _viewerOverlaysPath = AppManager::createKnob<KnobBool>( this, tr("Only display overlays for the viewer render path") );
+    _viewerOverlaysPath->setName("viewerOverlaysPath");
+    _viewerOverlaysPath->setHintToolTip( tr("When disabled, overlays for all the non-minimized open "
+                                            "properties panels are displayed. When enabled, overlays are "
+                                            "displayed only for the render path for the current viewer "
+                                            "inputs.") );
+    _viewersTab->addKnob(_viewerOverlaysPath);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1546,7 +1554,8 @@ Settings::setDefaultValues()
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _maximumNodeViewerUIOpened->setDefaultValue(2);
-    _viewerKeys->setDefaultValue(true);
+    _viewerNumberKeys->setDefaultValue(true);
+    _viewerOverlaysPath->setDefaultValue(true);
 
     // Nodegraph
     _autoScroll->setDefaultValue(false);
@@ -2493,9 +2502,15 @@ Settings::getMaxOpenedNodesViewerContext() const
 }
 
 bool
-Settings::isViewerKeysEnabled() const
+Settings::viewerNumberKeys() const
 {
-    return _viewerKeys->getValue();
+    return _viewerNumberKeys->getValue();
+}
+
+bool
+Settings::viewerOverlaysPath() const
+{
+    return _viewerOverlaysPath->getValue();
 }
 
 ///////////////////////////////////////////////////////

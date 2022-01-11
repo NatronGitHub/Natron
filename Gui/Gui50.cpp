@@ -365,7 +365,7 @@ Gui::handleNativeKeys(int key,
                       quint32 nativeVirtualKey)
 {
     //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
-    if ( !appPTR->getCurrentSettings()->isViewerKeysEnabled() ) {
+    if ( !appPTR->getCurrentSettings()->viewerNumberKeys() ) {
         return key;
     }
 
