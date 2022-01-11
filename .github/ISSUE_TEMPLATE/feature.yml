@@ -1,7 +1,7 @@
 name: New issue for feature request
-description: "Have a feature suggestion? Share your idea with a feature request."
-title: "(Feature): <title>"
-labels: "type: feature"
+description: Have a feature suggestion? Share your idea with a feature request.
+title: "(Feature): "
+labels: ["type:feature"]
 body:
   # Greeter message
   - type: markdown
@@ -10,6 +10,7 @@ body:
   # Requirements checks
   - type: checkboxes
     attributes:
+        label: Make sure to follow our issue report guidelines
         options:
             - label: I have read the [feature request guidelines](https://hackmd.io/@natron-dev-awesome/B1SW6Hbau)
               required: true
