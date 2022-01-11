@@ -1159,6 +1159,33 @@ DockablePanel::closePanel()
 void
 DockablePanel::minimizeOrMaximize(bool toggled)
 {
+    Gui* gui = getGui();
+    bool redraw = false;
+    NodeGuiPtr nodeGui;
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+        if (nodePanel) {
+            nodeGui = nodePanel->getNode();
+        }
+
+        if (toggled && nodeGui) {
+            NodePtr node = nodeGui->getNode();
+            if (node) {
+                NodesList overlayNodes;
+
+                gui->getNodesEntitledForOverlays(overlayNodes);
+                NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
+                if ( found != overlayNodes.end() ) {
+                    redraw = true;
+                    // qDebug() << "redraw (minimized)";
+                    // assert(toggled);
+                }
+            }
+        }
+    }
+
     _imp->_minimized = toggled;
     if (_imp->_minimized) {
         Q_EMIT minimized();
@@ -1176,9 +1203,28 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
-    Gui* gui = getGui();
+
     if (gui) {
+        if (!toggled && nodeGui) {
+            NodePtr node = nodeGui->getNode();
+            if (node) {
+                NodesList overlayNodes;
+
+                gui->getNodesEntitledForOverlays(overlayNodes);
+                NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
+                if ( found != overlayNodes.end() ) {
+                    redraw = true;
+                    // qDebug() << "redraw (maximized)";
+                    // assert(!toggled);
+                }
+            }
+        }
+
         gui->buildTabFocusOrderPropertiesBin();
+
+        if (redraw) {
+            gui->getApp()->redrawAllViewers();
+        }
     }
     update();
 }

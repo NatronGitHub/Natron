@@ -254,7 +254,8 @@ public:
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;
     int getMaxOpenedNodesViewerContext() const;
-    bool isViewerKeysEnabled() const;
+    bool viewerNumberKeys() const;
+    bool viewerOverlaysPath() const;
     ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
@@ -536,7 +537,8 @@ private:
     KnobBoolPtr _autoProxyWhenScrubbingTimeline;
     KnobChoicePtr _autoProxyLevel;
     KnobIntPtr _maximumNodeViewerUIOpened;
-    KnobBoolPtr _viewerKeys;
+    KnobBoolPtr _viewerNumberKeys;
+    KnobBoolPtr _viewerOverlaysPath;
 
     // Nodegraph
     KnobPagePtr _nodegraphTab;
