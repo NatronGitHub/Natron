@@ -1,7 +1,7 @@
 name: New issue for bug report
 description: Got a glitch, crash, or some other problem? If you're sure your issue is reproducible, feel free to report the issue to Natron's development team.
-title: "(Bug): <title>"
-labels: "type:bug"
+title: "(Bug): "
+labels: ["type:bug"]
 body:
   # Greeter message
   - type: markdown
@@ -11,19 +11,17 @@ body:
   # Requirements checks
   - type: checkboxes
     attributes:
+      label: Make sure to follow our issue report guidelines
       options:
         - label: I'm using the latest version of Natron (not required but recommended)
         - label: I've restarted Natron and the issue persists
           required: true
         - label: I've run Natron via the [command line](https://natron.readthedocs.io/en/rb-2.4/devel/natronexecution.html) and the issue persists
-          required: false
         - label: I've followed the [contributing guidelines](https://github.com/NatronGitHub/Natron/blob/RB-2.4/CONTRIBUTING.md) to the best of my understanding
           required: true
-        - label: My issue is not on the [issue tracker](https://github.com/NatronGitHub/Natron/issues?q=is%3Aissue+type%3Abug) already (go search for it and dig around a little bit!)
+        - label: My issue is not on the [issue tracker](https://github.com/NatronGitHub/Natron/issues?q=is%3Aissue+type%3Abug) or in a [pull request](https://github.com/NatronGitHub/Natron/pulls) already (go search for it and dig around a little bit!)
           required: true
         - label: This bug is reproducible
-          required: true
-        - label: This issue is not a feature request or a pull request
           required: true
   # Natron & OS versions
   - type: input
@@ -46,15 +44,15 @@ body:
   - type: textarea
     attributes:
       label: System specs
-      placeholder: |
-        RAM: 15.6 GB
-        CPU: Intel Core i7-7700HQ @ 2.80GHz
-        GPU: NVIDIA GeForce GTX 1070
       description: |
         Please input the following (if you know them):
           - Your system's RAM
           - The model of your CPU(s)
           - The model of your GPU(s)
+      placeholder: |
+        RAM: 15.6 GB
+        CPU: Intel Core i7-7700HQ @ 2.80GHz
+        GPU: NVIDIA GeForce GTX 1070
     validations:
       required: false
   # Did the user install via the official installer?
@@ -70,9 +68,11 @@ body:
     validations:
       required: true
   # At which location did the user install Natron?
-  - type: textarea
+  - type: input
     attributes:
-      label: If you installed to a custom '(non-default)' location please include it here':'
+      label: Custom installation path
+      description: |
+        If you've installed Natron to a custom (non-default) location please include it here:
       placeholder: '`/opt/Natron-2.4.0`'
     validations:
       required: false
