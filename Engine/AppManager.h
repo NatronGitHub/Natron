@@ -825,6 +825,17 @@ public:
     ~PythonGILLocker();
 };
 
+/**
+ * @brief Small helper class to use as RAII to temporarily release the GIL (Global Interpreter Lock)
+ **/
+class PythonGILUnlocker
+{
+public:
+    PythonGILUnlocker();
+
+    ~PythonGILUnlocker();
+};
+
 NATRON_NAMESPACE_EXIT
 
 
