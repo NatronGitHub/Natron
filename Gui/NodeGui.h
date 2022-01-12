@@ -453,6 +453,10 @@ public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
 
+    void onSettingsPanelMinimized();
+
+    void onSettingsPanelMaximized();
+
     void onSettingsPanelColorChanged(const QColor & color);
 
     void togglePreview();
@@ -542,6 +546,10 @@ Q_SIGNALS:
     void positionChanged(int x, int y);
 
     void settingsPanelClosed(bool b);
+
+    void settingsPanelMinimized();
+
+    void settingsPanelMaximized();
 
     void previewImageComputed();
 

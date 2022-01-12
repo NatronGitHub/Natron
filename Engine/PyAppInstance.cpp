@@ -334,6 +334,9 @@ App::renderInternal(bool forceBlocking,
 
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
+
+    PythonGILUnlocker pgl;
+
     getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
@@ -378,6 +381,9 @@ App::renderInternal(bool forceBlocking,
 
         l.push_back(w);
     }
+
+    PythonGILUnlocker pgl;
+
     getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
