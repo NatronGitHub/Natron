@@ -20,6 +20,7 @@
 - Natron can now keep up to 32 project backups (see Preferences/General/Save versions). #562
 - Only display the overlays for nodes that are in the viewer render path and have their properties panel maximized. Can be disabled in Preferences/Viewer. #744
 - Fix rendering from Python (by calling app.render()) when nodes use Python expressions. #560
+- Fix drawing of closed Bezier overlays. #659
 
 
 ## Version 2.4.2

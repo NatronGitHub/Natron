@@ -1740,12 +1740,16 @@ RotoPaint::drawOverlay(double time,
 
                 RectD bbox = isBezier->getBoundingBox(time);
 
+                // Is the Bezier a closed curve? Only if not an open Bezier, and it's finished.
+                const bool isLoop = !isBezier->isOpenBezier() && isBezier->isCurveFinished();
+
                 // To decomment you must transform the viewport by the OpenGL transform first
                 //if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
                 //                  continue;
                 //            }
 
                 std::list<ParametricPoint > points;
+
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      100,
@@ -1763,7 +1767,7 @@ RotoPaint::drawOverlay(double time,
                 }
                 glColor4dv(curveColor);
                 glLineWidth(1.5 * screenPixelRatio);
-                glBegin(GL_LINE_STRIP);
+                glBegin(isLoop ? GL_LINE_LOOP : GL_LINE_STRIP);
                 for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->x, it2->y);
                 }
@@ -1792,7 +1796,7 @@ RotoPaint::drawOverlay(double time,
                         glLineStipple(2, 0xAAAA);
                         glEnable(GL_LINE_STIPPLE);
                         glLineWidth(1.5 * screenPixelRatio);
-                        glBegin(GL_LINE_STRIP);
+                        glBegin(isLoop ? GL_LINE_LOOP : GL_LINE_STRIP);
                         for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             glVertex2f(it2->x, it2->y);
                         }
