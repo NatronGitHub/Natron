@@ -180,7 +180,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
-#                 ifdef DEBUG
+#                 ifdef DEBUG_NAN
                     assert( !(boost::math::isnan)(srcPixels[k]) ); // check for NaN
 #                 endif
                     DSTPIX pix;
@@ -217,7 +217,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                         }
                     }
                     dstPixels[k] =  pix;
-#                 ifdef DEBUG
+#                 ifdef DEBUG_NAN
                     assert( !(boost::math::isnan)(dstPixels[k]) ); // check for NaN
 #                 endif
                 }
@@ -354,13 +354,13 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                     }
 
                     dstPixels[0] = pix;
-#                 ifdef DEBUG
+#                 ifdef DEBUG_NAN
                     assert( !(boost::math::isnan)(dstPixels[0]) ); // check for NaN
 #                 endif
                 } else { // if (dstNComps == 1) {
                     if (srcNComps == 1) {
                         DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
-#                     ifdef DEBUG
+#                     ifdef DEBUG_NAN
                         assert(  !(boost::math::isnan)(pix) ); // check for NaN
 #                     endif
                         for (int k = 0; k < dstNComps; ++k) {
@@ -437,7 +437,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                 }
                             } // if (!useColorspaces || (!srcLut && !dstLut)) {
                             dstPixels[k] =  pix;
-#                 ifdef DEBUG
+#                 ifdef DEBUG_NAN
                             assert( (boost::math::isnan)(srcPixels[k]) || !(boost::math::isnan)(dstPixels[k]) ); // check for NaN
 #                 endif
                         } // for (int k = 0; k < k < 3 && k < dstNComps; ++k) {

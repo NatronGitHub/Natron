@@ -2189,6 +2189,11 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
     double r = useOpacity ? shapeColor[0] * opacity : shapeColor[0];
     double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
     double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
+#ifdef DEBUG_NAN
+    assert( !(boost::math::isnan)(r) ); // check for NaN
+    assert( !(boost::math::isnan)(g) ); // check for NaN
+    assert( !(boost::math::isnan)(b) ); // check for NaN
+#endif
     int width = pixelRod.width();
     int srcNElements = width * srcNComps;
 
@@ -2201,6 +2206,9 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
              dstPix += dstNComps,
              srcPix += srcNComps) {
             float cairoPixel = !inverted ? ( (float)*srcPix * (maxValue / 255.f) ) : 1. - ( (float)*srcPix * (maxValue / 255.f) );
+#         ifdef DEBUG_NAN
+            assert( !(boost::math::isnan)(cairoPixel) ); // check for NaN
+#         endif
             switch (dstNComps) {
             case 4:
                 dstPix[0] = PIX(cairoPixel * r);
@@ -2224,7 +2232,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
             default:
                 break;
             }
-#         ifdef DEBUG
+#         ifdef DEBUG_NAN
             for (int c = 0; c < dstNComps; ++c) {
                 assert( !(boost::math::isnan)(dstPix[c]) ); // check for NaN
             }
@@ -2362,7 +2370,7 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
             default:
                 break;
             }
-#         ifdef DEBUG
+#         ifdef DEBUG_NAN
             for (int c = 0; c < dstNComps; ++c) {
                 assert( !(boost::math::isnan)(dstPix[x * dstNComps + c]) ); // check for NaN
             }
@@ -2445,7 +2453,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
         assert(srcPix);
 
         for (int x = 0; x < roi.width(); ++x) {
-#         ifdef DEBUG
+#         ifdef DEBUG_NAN
             for (int c = 0; c < srcNComps; ++c) {
                 assert( !(boost::math::isnan)(srcPix[x * srcNComps + c]) ); // check for NaN
             }
