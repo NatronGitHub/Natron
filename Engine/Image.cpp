@@ -2278,12 +2278,13 @@ Image::upscaleMipMapForDepth(const RectI & roi,
             }
             //assert(dstPix == dstPixFirst + xcount*components);
         }
+        assert(dstLineBatchStart == (PIX*)output->pixelAt(dstRoi.x1, yo));
         PIX * dstLineStart = dstLineBatchStart + dstRowSize; // first line was filled already
         // now replicate the line as many times as necessary
         for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
+            assert(dstLineStart == (PIX*)output->pixelAt(dstRoi.x1, yo+i));
+            assert(dstLineStart + dstRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
             std::copy(dstLineBatchStart, dstLineBatchStart + dstRowSize, dstLineStart);
-            assert(dstLineBatchStart == (PIX*)output->pixelAt(dstRoi.x1, yo+i));
-            assert(dstLineBatchStart + dstRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents - 1);
         }
     }
 } // upscaleMipMapForDepth
