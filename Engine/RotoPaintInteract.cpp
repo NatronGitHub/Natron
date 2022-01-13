@@ -695,6 +695,7 @@ RotoPaintInteract::onRoleChangedInternal(const KnobGroupPtr& roleGroup)
     hardnessSpinbox.lock()->setInViewerContextSecret(!isPaintRole);
     pressureHardnessButton.lock()->setInViewerContextSecret(!isPaintRole);
     buildUpButton.lock()->setInViewerContextSecret(!isPaintRole);
+    autoConnectViewerButton.lock()->setInViewerContextSecret(!isPaintRole);
     effectSpinBox.lock()->setInViewerContextSecret(!isPaintRole);
     timeOffsetSpinBox.lock()->setInViewerContextSecret(!isPaintRole);
     timeOffsetModeChoice.lock()->setInViewerContextSecret(!isPaintRole);
@@ -1017,6 +1018,9 @@ isBranchConnectedToRotoNodeRecursive(Node* node,
 void
 RotoPaintInteract::checkViewersAreDirectlyConnected()
 {
+    if (!autoConnectViewerButton.lock()->getValue()) {
+        return;
+    }
     NodePtr rotoNode = p->publicInterface->getNode();
     std::list<ViewerInstance*> viewers;
 

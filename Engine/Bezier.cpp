@@ -2558,7 +2558,12 @@ Bezier::deCastelJau(bool isOpenBezier,
     if ( next != cps.end() ) {
         ++next;
     }
+    BezierCPs::const_iterator nextnext = next;
+    if ( nextnext != cps.end() ) {
+        ++nextnext;
+    }
 
+    const bool isClosed = finished && !isOpenBezier;
 
     for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
         if ( next == cps.end() ) {
@@ -2568,12 +2573,14 @@ Bezier::deCastelJau(bool isOpenBezier,
             next = cps.begin();
         }
 
+        const bool isLastSegment = nextnext == cps.end();
+
         if (points) {
             std::list<ParametricPoint> segmentPoints;
             bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
 
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
+            if (isClosed || !isLastSegment) {
                 if (!segmentPoints.empty()) {
                     segmentPoints.pop_back();
                 }
@@ -2583,7 +2590,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             assert(pointsSingleList);
             bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
+            if (isClosed || !isLastSegment) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -2593,6 +2600,9 @@ Bezier::deCastelJau(bool isOpenBezier,
         // increment for next iteration
         if ( next != cps.end() ) {
             ++next;
+        }
+        if ( nextnext != cps.end() ) {
+            ++nextnext;
         }
     } // for()
 }

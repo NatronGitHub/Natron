@@ -478,6 +478,19 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(buildUp);
     _imp->ui->buildUpButton = buildUp;
 
+    KnobButtonPtr autoConnectViewer = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAutoConnectViewerLabel) );
+    autoConnectViewer->setName(kRotoUIParamAutoConnectViewer);
+    autoConnectViewer->setHintToolTip( tr(kRotoUIParamAutoConnectViewerHint) );
+    autoConnectViewer->setEvaluateOnChange(false);
+    autoConnectViewer->setCheckable(true);
+    autoConnectViewer->setDefaultValue(false);
+    autoConnectViewer->setSecretByDefault(true);
+    autoConnectViewer->setInViewerContextCanHaveShortcut(true);
+    autoConnectViewer->setIconLabel(NATRON_IMAGES_PATH "visible.png", true);
+    autoConnectViewer->setIconLabel(NATRON_IMAGES_PATH "unvisible.png", false);
+    generalPage->addKnob(autoConnectViewer);
+    _imp->ui->autoConnectViewerButton = autoConnectViewer;
+
     KnobDoublePtr effectStrength = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamEffectLabel) );
     effectStrength->setName(kRotoUIParamEffect);
     effectStrength->setInViewerContextLabel( tr(kRotoUIParamEffectLabel) );
@@ -581,6 +594,8 @@ RotoPaint::initializeKnobs()
     pressureHardness->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(buildUp);
     buildUp->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
+    addKnobToViewerUI(autoConnectViewer);
+    autoConnectViewer->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(effectStrength);
     effectStrength->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(timeOffsetSb);
@@ -1740,12 +1755,16 @@ RotoPaint::drawOverlay(double time,
 
                 RectD bbox = isBezier->getBoundingBox(time);
 
+                // Is the Bezier a closed curve? Only if not an open Bezier, and it's finished.
+                const bool isLoop = !isBezier->isOpenBezier() && isBezier->isCurveFinished();
+
                 // To decomment you must transform the viewport by the OpenGL transform first
                 //if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
                 //                  continue;
                 //            }
 
                 std::list<ParametricPoint > points;
+
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      100,
@@ -1763,7 +1782,7 @@ RotoPaint::drawOverlay(double time,
                 }
                 glColor4dv(curveColor);
                 glLineWidth(1.5 * screenPixelRatio);
-                glBegin(GL_LINE_STRIP);
+                glBegin(isLoop ? GL_LINE_LOOP : GL_LINE_STRIP);
                 for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->x, it2->y);
                 }
@@ -1792,7 +1811,7 @@ RotoPaint::drawOverlay(double time,
                         glLineStipple(2, 0xAAAA);
                         glEnable(GL_LINE_STIPPLE);
                         glLineWidth(1.5 * screenPixelRatio);
-                        glBegin(GL_LINE_STRIP);
+                        glBegin(isLoop ? GL_LINE_LOOP : GL_LINE_STRIP);
                         for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             glVertex2f(it2->x, it2->y);
                         }
