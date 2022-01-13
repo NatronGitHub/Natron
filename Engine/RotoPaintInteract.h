@@ -300,6 +300,10 @@ NATRON_NAMESPACE_ENTER
 #define kRotoUIParamBuildUpHint "When build-up is enabled, the next brush stroke will build up " \
     "when painted over itself"
 
+#define kRotoUIParamAutoConnectViewer "autoConnectViewerButton"
+#define kRotoUIParamAutoConnectViewerLabel "Auto-connect Viewer"
+#define kRotoUIParamAutoConnectViewerHint "Auto-connect the viewer(s) to the RotoPaint node when using one of the paint tools."
+
 #define kRotoUIParamEffect "effectSpinbox"
 #define kRotoUIParamEffectLabel "Effect Strength"
 #define kRotoUIParamEffectHint "The strength of the next paint brush effect"
@@ -610,6 +614,7 @@ public:
     KnobDoubleWPtr hardnessSpinbox;
     KnobButtonWPtr pressureHardnessButton;
     KnobButtonWPtr buildUpButton;
+    KnobButtonWPtr autoConnectViewerButton;
     KnobDoubleWPtr effectSpinBox;
     KnobIntWPtr timeOffsetSpinBox;
     KnobChoiceWPtr timeOffsetModeChoice;

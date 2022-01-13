@@ -478,6 +478,19 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(buildUp);
     _imp->ui->buildUpButton = buildUp;
 
+    KnobButtonPtr autoConnectViewer = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAutoConnectViewerLabel) );
+    autoConnectViewer->setName(kRotoUIParamAutoConnectViewer);
+    autoConnectViewer->setHintToolTip( tr(kRotoUIParamAutoConnectViewerHint) );
+    autoConnectViewer->setEvaluateOnChange(false);
+    autoConnectViewer->setCheckable(true);
+    autoConnectViewer->setDefaultValue(false);
+    autoConnectViewer->setSecretByDefault(true);
+    autoConnectViewer->setInViewerContextCanHaveShortcut(true);
+    autoConnectViewer->setIconLabel(NATRON_IMAGES_PATH "visible.png", true);
+    autoConnectViewer->setIconLabel(NATRON_IMAGES_PATH "unvisible.png", false);
+    generalPage->addKnob(autoConnectViewer);
+    _imp->ui->autoConnectViewerButton = autoConnectViewer;
+
     KnobDoublePtr effectStrength = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamEffectLabel) );
     effectStrength->setName(kRotoUIParamEffect);
     effectStrength->setInViewerContextLabel( tr(kRotoUIParamEffectLabel) );
@@ -581,6 +594,8 @@ RotoPaint::initializeKnobs()
     pressureHardness->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(buildUp);
     buildUp->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
+    addKnobToViewerUI(autoConnectViewer);
+    autoConnectViewer->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(effectStrength);
     effectStrength->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(timeOffsetSb);
