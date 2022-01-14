@@ -30,6 +30,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
 #include <QEvent>
 #include <QStackedWidget>
+#include <QButtonGroup>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -134,7 +135,7 @@ private:
 
     LineEdit *_hex;
 
-    Button *_button;
+    QButtonGroup *_buttonColorGroup;
 
     QStackedWidget *_stack;
 
@@ -191,7 +192,7 @@ private Q_SLOTS:
     void setSliderSColor();
     void setSliderVColor();
 
-    void handleButtonClicked(bool checked);
+    void handleButtonColorClicked(int id);
 
     void setPaletteButtonColor(bool clicked = true);
     void clearPaletteButtons(bool clicked = true);

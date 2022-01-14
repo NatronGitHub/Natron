@@ -35,6 +35,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Gui/Label.h"
 
+#define COLOR_SELECTOR_BUTTON_PROPERTY "ColorButtonType"
+#define COLOR_SELECTOR_BUTTON_RGB 0
+#define COLOR_SELECTOR_BUTTON_HSV 1
+
 NATRON_NAMESPACE_ENTER
 
 ColorSelectorPaletteButton::ColorSelectorPaletteButton(QWidget *parent)
@@ -124,11 +128,12 @@ ColorSelectorPaletteButton::updateColor(bool signal)
                      COLOR_SELECTOR_PALETTE_ICON_SIZE);
     pixColor.fill(color);
     setIcon( QIcon(pixColor) );
-    setToolTip( QString::fromUtf8("R: %1\nG: %2\nB: %3\nA: %4")
+    setToolTip( QString::fromUtf8("R: %1\nG: %2\nB: %3\nA: %4\n\n%5")
                 .arg(_r)
                 .arg(_g)
                 .arg(_b)
-                .arg(_a) );
+                .arg(_a)
+                .arg( tr("Clear current color with right-click.") ) );
 
     if (signal) {
         Q_EMIT colorChanged(_r, _g, _b, _a);
@@ -181,7 +186,7 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
   , _slideA(0)
   , _triangle(0)
   , _hex(0)
-  , _button(0)
+  , _buttonColorGroup(0)
   , _stack(0)
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -261,14 +266,14 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
         _slideA->setMinimumAndMaximum(0., 1.);
     }
 
-    _slideR->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _slideG->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _slideB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _slideH->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _slideS->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    _slideV->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    _slideR->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _slideG->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _slideB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _slideH->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _slideS->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _slideV->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     if (_slideA) {
-        _slideA->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        _slideA->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     }
 
     // set line color to match channel (R/G/B/A)
@@ -348,10 +353,29 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
 
     // hex
     _hex = new LineEdit(this);
+    _hex->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // rgb/hsv button
-    _button = new Button(QString::fromUtf8("RGB"), this);
-    _button->setCheckable(true);
+    // color buttons
+    _buttonColorGroup = new QButtonGroup(this);
+
+    Button *buttonRGB = new Button(QString::fromUtf8("RGB"), this);
+    Button *buttonHSV = new Button(QString::fromUtf8("HSV"), this);
+
+    buttonRGB->setProperty(COLOR_SELECTOR_BUTTON_PROPERTY, COLOR_SELECTOR_BUTTON_RGB);
+    buttonHSV->setProperty(COLOR_SELECTOR_BUTTON_PROPERTY, COLOR_SELECTOR_BUTTON_HSV);
+
+    buttonRGB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    buttonHSV->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    buttonRGB->setCheckable(true);
+    buttonRGB->setChecked(true);
+
+    buttonHSV->setCheckable(true);
+    buttonHSV->setChecked(false);
+
+    _buttonColorGroup->setExclusive(true);
+    _buttonColorGroup->addButton(buttonRGB);
+    _buttonColorGroup->addButton(buttonHSV);
 
     // palette
     Button *paletteAddColorButton = new Button(QObject::tr("Add"), this);
@@ -374,7 +398,6 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     _spinS->setObjectName( QString::fromUtf8("ColorSelectorSat") );
     _spinV->setObjectName( QString::fromUtf8("ColorSelectorVal") );
     _hex->setObjectName( QString::fromUtf8("ColorSelectorHex") );
-    _button->setObjectName( QString::fromUtf8("ColorSelectorSwitch") );
 
     // labels
     Label *labelR = new Label(QString::fromUtf8("R"), this);
@@ -399,6 +422,16 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     labelS->setMinimumWidth(10);
     labelV->setMinimumWidth(10);
 
+    labelR->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    labelG->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    labelB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    if (_slideA) {
+        labelA->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    }
+    labelH->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    labelS->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    labelV->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
     // tooltips
     _spinR->setToolTip( QObject::tr("Red color value") );
     _spinG->setToolTip( QObject::tr("Green color value") );
@@ -410,7 +443,6 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     _spinS->setToolTip( QObject::tr("Saturation value") );
     _spinV->setToolTip( QObject::tr("Brightness/Intensity value") );
     _hex->setToolTip( QObject::tr("A HTML hexadecimal color is specified with: #RRGGBB, where the RR (red), GG (green) and BB (blue) hexadecimal integers specify the components of the color.") );
-    _button->setToolTip( QObject::tr("Switch to HSV") );
     paletteAddColorButton->setToolTip( QObject::tr("Add current color to palette (Shift+A)") );
     paletteClearButton->setToolTip( QObject::tr("Clear colors in palette (Shift+C)") );
 
@@ -476,7 +508,7 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     topWidget->setContentsMargins(0, 0, 0, 0);
     leftWidget->setContentsMargins(0, 0, 0, 0);
     rightWidget->setContentsMargins(0, 0, 0, 0);
-    bottomWidget->setContentsMargins(0, 5, 10, 0);
+    bottomWidget->setContentsMargins(10, 5, 10, 0);
     paletteOptionsWidget->setContentsMargins(0, 0, 0, 0);
 
     _stack->layout()->setContentsMargins(0, 0, 0, 0);
@@ -565,8 +597,8 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
     topLayout->addWidget(leftWidget);
     topLayout->addWidget(rightWidget);
 
-    bottomLayout->addStretch();
-    bottomLayout->addWidget(_button);
+    bottomLayout->addWidget(buttonRGB);
+    bottomLayout->addWidget(buttonHSV);
     bottomLayout->addWidget(hexWidget);
 
     mainLayout->addWidget(topWidget);
@@ -614,17 +646,17 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
                          this, SLOT( handleSliderAMoved(double) ) );
     }
 
-    QObject::connect( _button, SIGNAL( clicked(bool) ),
-                      this, SLOT( handleButtonClicked(bool) ) );
+    QObject::connect( _buttonColorGroup, SIGNAL( buttonClicked(int) ),
+                      this, SLOT( handleButtonColorClicked(int) ) );
 
-    QObject::connect( paletteAddColorButton, SIGNAL(clicked(bool)),
-                      this, SLOT(setPaletteButtonColor(bool)) );
-    QObject::connect( paletteClearButton, SIGNAL(clicked(bool)),
-                      this, SLOT(clearPaletteButtons(bool)) );
-    QObject::connect( addPaletteColorShortcut, SIGNAL(activated()),
-                      this, SLOT(setPaletteButtonColor()) );
-    QObject::connect( clearPaletteColorsShortcut, SIGNAL(activated()),
-                      this, SLOT(clearPaletteButtons()) );
+    QObject::connect( paletteAddColorButton, SIGNAL( clicked(bool) ),
+                      this, SLOT( setPaletteButtonColor(bool) ) );
+    QObject::connect( paletteClearButton, SIGNAL( clicked(bool) ),
+                      this, SLOT( clearPaletteButtons(bool) ) );
+    QObject::connect( addPaletteColorShortcut, SIGNAL( activated() ),
+                      this, SLOT( setPaletteButtonColor() ) );
+    QObject::connect( clearPaletteColorsShortcut, SIGNAL( activated() ),
+                      this, SLOT( clearPaletteButtons() ) );
 
     // setup palette
     initPaletteButtons(paletteButtonsWidget);
@@ -848,8 +880,8 @@ ColorSelectorWidget::initPaletteButtons(QWidget *widget,
         widgetLayout->addWidget(colWidget);
         for (int y = 0; y < cols; ++y) {
             ColorSelectorPaletteButton *button = new ColorSelectorPaletteButton(colWidget);
-            QObject::connect( button, SIGNAL(colorPicked(float,float,float,float)),
-                              this, SLOT(setColorFromPalette(float,float,float,float)) );
+            QObject::connect( button, SIGNAL( colorPicked(float,float,float,float) ),
+                              this, SLOT( setColorFromPalette(float,float,float,float) ) );
             colLayout->addWidget(button);
             _paletteButtons << button;
         }
@@ -1191,16 +1223,11 @@ ColorSelectorWidget::setSliderVColor()
 }
 
 void
-ColorSelectorWidget::handleButtonClicked(bool checked)
+ColorSelectorWidget::handleButtonColorClicked(int /*id*/)
 {
-    if (checked) {
-        _button->setText( QString::fromUtf8("HSV") );
-        _button->setToolTip( QObject::tr("Switch to RGB") );
-        _stack->setCurrentIndex(1);
-    } else {
-        _button->setText( QString::fromUtf8("RGB") );
-        _button->setToolTip( QObject::tr("Switch to HSV") );
-        _stack->setCurrentIndex(0);
+    QVariant var = _buttonColorGroup->checkedButton()->property(COLOR_SELECTOR_BUTTON_PROPERTY);
+    if ( var.isValid() ) {
+        _stack->setCurrentIndex( var.toInt() );
     }
 }
 
