@@ -3058,6 +3058,8 @@ catchErrors(PyObject* mainModule,
     return true;
 }
 
+///The return value must be Py_DECRREF
+/// The Python GIL must be held before calling this, so the the PyObject remains valid.
 bool
 KnobHelper::executeExpression(double time,
                               ViewIdx view,
@@ -3078,12 +3080,17 @@ KnobHelper::executeExpression(double time,
 }
 
 
+/// The return value must be Py_DECRREF
+/// The expression must put its result in the Python variable named "ret"
+/// The Python GIL must be held before calling this, so the the PyObject remains valid.
 bool
 KnobHelper::executeExpression(const std::string& expr,
                               PyObject** ret,
                               std::string* error)
 {
-    PythonGILLocker pgl;
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check());  // Not available prior to Python 3.4
+#endif
 
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
