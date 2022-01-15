@@ -133,7 +133,7 @@ ColorSelectorPaletteButton::updateColor(bool signal)
                 .arg(_g)
                 .arg(_b)
                 .arg(_a)
-                .arg( tr("Clear current color with right-click.") ) );
+                .arg( tr("Clear color with right-click.") ) );
 
     if (signal) {
         Q_EMIT colorChanged(_r, _g, _b, _a);
@@ -145,10 +145,10 @@ ColorSelectorPaletteButton::initButton()
 {
     setIconSize( QSize(COLOR_SELECTOR_PALETTE_ICON_SIZE,
                        COLOR_SELECTOR_PALETTE_ICON_SIZE) );
-    setStyleSheet( QString::fromUtf8("border: 0; background-color: transparent;") );
+    setStyleSheet( QString::fromUtf8("QPushButton { border: 0; background-color: transparent; }") );
 
-    QObject::connect( this, SIGNAL(clicked()),
-                      this, SLOT(buttonClicked()) );
+    QObject::connect( this, SIGNAL( clicked() ),
+                      this, SLOT( buttonClicked() ) );
 
     updateColor(false);
 }
