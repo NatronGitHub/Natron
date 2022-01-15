@@ -1634,12 +1634,14 @@ protected:
     void resetMaster(int dimension);
 
     ///The return value must be Py_DECRREF
+    /// The Python GIL must be held before calling this, so the the PyObject remains valid.
     bool executeExpression(double time, ViewIdx view, int dimension, PyObject** ret, std::string* error) const;
 
 public:
 
     /// The return value must be Py_DECRREF
     /// The expression must put its result in the Python variable named "ret"
+    /// The Python GIL must be held before calling this, so the the PyObject remains valid.
     static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
 
     virtual std::pair<int, KnobIPtr> getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
