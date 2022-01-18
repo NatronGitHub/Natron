@@ -5,10 +5,11 @@ Version 2.x:
 
 Frédéric Devernay <devernay@github>
 Alexandre Gauthier-Foichat <MrKepzie@github>
-Ole-André Rodlie <rodlie@github> (Openfx-Arena Plug-Ins)
+Ole-André Rodlie <rodlie@github>
 Axel Airo-Farulla  <Eaknyt@github>
 Yves Lefebvre <Ivanohe73@github>
 Jonathan Hearn <splidje@github>
+Martin Reboredo <YakoYakoYokuYoku@github>
 
 #Artists:
 
