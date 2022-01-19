@@ -14,7 +14,7 @@ if [ "$PKGOS" = "OSX" ]; then
     osxver=$(uname -r)
 
     # if clang-mp-5.0 or clang-mp-4.0 is available
-    if command -v clang-mp-9.0 >/dev/null 2>&1 || command -v clang-mp-8.0 >/dev/null 2>&1 || command -v clang-mp-7.0 >/dev/null 2>&1 || command -v clang-mp-6.0 >/dev/null 2>&1 || command -v clang-mp-5.0 >/dev/null 2>&1 || command -v clang-mp-4.0 >/dev/null 2>&1; then
+    if command -v clang-mp-13 >/dev/null 2>&1 || command -v clang-mp-12 >/dev/null 2>&1 || command -v clang-mp-11 >/dev/null 2>&1 || command -v clang-mp-9.0 >/dev/null 2>&1 || command -v clang-mp-8.0 >/dev/null 2>&1 || command -v clang-mp-7.0 >/dev/null 2>&1 || command -v clang-mp-6.0 >/dev/null 2>&1 || command -v clang-mp-5.0 >/dev/null 2>&1 || command -v clang-mp-4.0 >/dev/null 2>&1; then
         COMPILER=clang-omp
         if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
             true
@@ -81,7 +81,13 @@ if [ "$PKGOS" = "OSX" ]; then
             #9.*|10.*)
             #    true;;
             *)
-                if command -v clang-mp-11 >/dev/null 2>&1; then
+                if command -v clang-mp-13 >/dev/null 2>&1; then
+                    CC=clang-mp-13
+                    CXX="clang++-mp-13 -stdlib=libc++ -std=c++14"
+                elif command -v clang-mp-12 >/dev/null 2>&1; then
+                    CC=clang-mp-12
+                    CXX="clang++-mp-12 -stdlib=libc++ -std=c++14"
+                elif command -v clang-mp-11 >/dev/null 2>&1; then
                     CC=clang-mp-11
                     CXX="clang++-mp-11 -stdlib=libc++ -std=c++14"
                 elif command -v clang-mp-10 >/dev/null 2>&1; then
