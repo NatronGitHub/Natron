@@ -1861,7 +1861,7 @@ Image::halveRoIForDepth(const RectI & roi,
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
-#ifdef DEBUG
+#ifdef DEBUG_NAN
     assert(!checkForNaNsNoLock(srcRoI));
 #endif
     dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
