@@ -40,10 +40,15 @@ docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type
 
 `GIT_URL`, `GIT_BRANCH`, and `GIT_COMMIT` can be set to launch a build from a specific git repository, branch, and/or commit.
 
-If `GIT_URL` is not an official Natron repository (as listed in [gitRepositories.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/gitRepositories.sh)), `GIT_URL_IS_NATRON=1` can be used to force a Natron build, as in the following example, which launches a build from branch `SetDefaultProjectFormat` of repository `https://github.com/rodlie/Natron.git`.
+For example, to launch a snapshot build on branch `RB-2.4`:
+```
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_BRANCH=RB-2.4 natrongithub/natron-sdk:latest
+```
+
+If `GIT_URL` is not an official Natron repository (as listed in [gitRepositories.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/gitRepositories.sh)), `GIT_URL_IS_NATRON=1` can be used to force a Natron build, as in the following example, which launches a build from branch `my-feature-branch` of repository `https://github.com/mygithubaccount/Natron.git`.
 
 ```
-docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_URL_IS_NATRON=1 --env GIT_URL=https://github.com/rodlie/Natron.git --env GIT_BRANCH=SetDefaultProjectFormat natrongithub/natron-sdk:latest
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_URL_IS_NATRON=1 --env GIT_URL=https://github.com/mygithubaccount/Natron.git --env GIT_BRANCH=my-feature-branch natrongithub/natron-sdk:latest
 ```
 
 

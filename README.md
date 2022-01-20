@@ -32,16 +32,14 @@ If you are willing to help, please contact the development team on the [pixls.us
 - 32-bit floating-point linear color processing pipeline.
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
 - Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
-- Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported.
-  - [TuttleOFX](https://sites.google.com/site/tuttleofx/)
-  - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) to read anything else than standard 8-bits images
-  - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc)
-  - [OpenFX-Vegas SDK samples](https://github.com/NatronGitHub/openfx-vegas)
-  - [OpenFX samples](https://github.com/NatronGitHub/openfx) (in the Support and Examples directories)
+- Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported. Those marked with (+) are included in the binary releases.
+  - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) (+)
+  - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc) (+)
+  - [OpenFX-G'MIC](https://github.com/NatronGitHub/openfx-gmic) (+)
+  - [OpenFX-Arena](https://github.com/NatronGitHub/openfx-arena) (+)
   - [All OFX products from RevisionFX](http://www.revisionfx.com)
+  - [Boris FX](https://borisfx.com/) OpenFX plugins, including Sapphire
   - [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
-  - [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
-  - [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
   - ...And many more! Please tell us if you successfully tested other commercial plugins.
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
 - Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
@@ -54,7 +52,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 - Command-line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
 - Rotoscoping, rotopainting, and tracking support
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.
-- Python 2 scripting integration:
+- Python scripting integration:
 
   - Parameters expressions
   - User-defined parameters

@@ -63,21 +63,24 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
 
     if (!fixedName.isEmpty()) {
 
-        std::string baseName = fixedName.toStdString();
-        trimNumber(baseName);
-        std::string name;
-        int no = 1;
-        do {
-            name = baseName;
-            if (no > 1) {
-                name += '_';
-                std::stringstream ss;
-                ss << no;
-                name += ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, this) );
-
+        std::string name = fixedName.toStdString();
+        // If the script name is available, use it as is (else we get issue #755).
+        // Else look for a similar name by adding a (different) number suffix.
+        if ( group && group->checkIfNodeNameExists(name, this) ) {
+            std::string baseName = name;
+            trimNumber(baseName);
+            int no = 1;
+            do {
+                name = baseName;
+                if (no > 1) {
+                    name += '_';
+                    std::stringstream ss;
+                    ss << no;
+                    name += ss.str();
+                }
+                ++no;
+            } while ( group && group->checkIfNodeNameExists(name, this) );
+        }
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
 
@@ -86,20 +89,24 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
             QMutexLocker k(&_imp->nameMutex);
             _imp->cacheID = serialization->getCacheID();
         }
-        std::string baseName = serialization->getNodeScriptName();
-        trimNumber(baseName);
-        std::string name;
-        int no = 1;
-        do {
-            name = baseName;
-            if (no > 1) {
-                name += '_';
-                std::stringstream ss;
-                ss << no;
-                name += ss.str();
-            }
-            ++no;
-        } while ( group && group->checkIfNodeNameExists(name, this) );
+        std::string name = serialization->getNodeScriptName();
+        // If the serialized script name is available, use it as is (else we get issue #755).
+        // Else look for a similar name by adding a (different) number suffix.
+        if ( group && group->checkIfNodeNameExists(name, this) ) {
+            std::string baseName = name;
+            trimNumber(baseName);
+            int no = 1;
+            do {
+                name = baseName;
+                if (no > 1) {
+                    name += '_';
+                    std::stringstream ss;
+                    ss << no;
+                    name += ss.str();
+                }
+                ++no;
+            } while ( group->checkIfNodeNameExists(name, this) );
+        }
 
         //This version of setScriptName will not error if the name is invalid or already taken
         setScriptName_no_error_check(name);
