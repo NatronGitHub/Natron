@@ -189,24 +189,26 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
-    std::string name;
     if ( ( grp == group.lock() ) && ( !internalSerialization->getNode() || ( internalSerialization->getNode()->getGroup() == group.lock() ) ) ) {
-        //We pasted the node in the same group, give it another label
-        std::string baseName = internalSerialization->getNodeLabel();
-        trimNumber(baseName);
-        std::string name;
-        int no = 1;
-        do {
-            name = baseName;
-            if (no > 1) {
-                name += '_';
-                std::stringstream ss;
-                ss << no;
-                name += ss.str();
-            }
-            ++no;
-        } while ( grp->checkIfNodeLabelExists( name, n.get() ) );
-
+        // We pasted the node in the same group, give it another label.
+        // If the label is available, use it as is.
+        // Else look for a similar name by adding a (different) number suffix.
+        std::string name = internalSerialization->getNodeLabel();
+        if ( grp->checkIfNodeLabelExists( name, n.get() ) ) {
+            std::string baseName = name;
+            trimNumber(baseName);
+            int no = 1;
+            do {
+                name = baseName;
+                if (no > 1) {
+                    name += '_';
+                    std::stringstream ss;
+                    ss << no;
+                    name += ss.str();
+                }
+                ++no;
+            } while ( grp->checkIfNodeLabelExists( name, n.get() ) );
+        }
         n->setLabel(name);
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
