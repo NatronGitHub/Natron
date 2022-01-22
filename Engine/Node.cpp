@@ -3164,7 +3164,7 @@ renderPreview(const Image & srcImg,
               bool convertToSrgb,
               unsigned int* dstPixels)
 {
-#ifndef DEBUG_NAN
+#if defined(DEBUG) && !defined(DEBUG_NAN)
     // Some plugins generate FP exceptions
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
