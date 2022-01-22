@@ -20,6 +20,14 @@ The number of seconds after an event that Natron should wait before auto-saving.
 
 When activated Natron will auto-save projects that have never been saved and will prompt you on startup if an auto-save of that unsaved project was found. Disabling this will no longer save un-saved project.
 
+**Save versions**
+
+Number of versions created (for backup) when saving newer versions of a file.
+
+This option keeps saved versions of your file in the same directory, adding .\ :sub:`1`, .\ :sub:`2`, etc., with the number increasing to the number of versions you specify.
+
+Older files will be named with a higher number. E.g. with the default setting of 2, you will have three versions of your file: \*.ntp (last saved), \*.ntp.\ :sub:`1` (second last saved), \*.\ :sub:`2` (third last saved).
+
 **Appear to plug-ins as**
 
 Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the “Custom” entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.
@@ -254,6 +262,10 @@ Controls the maximum amount of nodes that can have their interface showing up at
 When enabled, the row of number keys on the keyboard is used for switching input (<key> connects input to A side, <shift-key> connects input to B side), even if the corresponding character in the current keyboard layout is not a number.
 
 This may have to be disabled when using a remote display connection to Linux from a different OS.
+
+**Only display overlays for the viewer render path**
+
+When disabled, overlays for all the non-minimized open properties panels are displayed. When enabled, overlays are displayed only for the render path for the current viewer inputs.
 
 Nodegraph
 ---------
