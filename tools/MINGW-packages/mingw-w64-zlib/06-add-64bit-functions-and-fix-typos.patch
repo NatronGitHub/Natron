@@ -12,7 +12,7 @@
 @@ -221,8 +221,7 @@
      return ret;
  }
-
+ 
 -void fill_fopen_filefunc (pzlib_filefunc_def)
 -  zlib_filefunc_def* pzlib_filefunc_def;
 +void fill_fopen_filefunc (zlib_filefunc_def* pzlib_filefunc_def)
@@ -25,7 +25,7 @@
 @@ -82,7 +82,7 @@
  #include "mz64conf.h"
  #endif
-
+ 
 -/* a type choosen by DEFINE */
 +/* a type chosen by DEFINE */
  #ifdef HAVE_64BIT_INT_CUSTOM
@@ -34,10 +34,10 @@
 @@ -91,8 +91,6 @@
  typedef uint64_t ZPOS64_T;
  #else
-
+ 
 -/* Maximum unsigned 32-bit value used as placeholder for zip64 */
 -#define MAXU32 0xffffffff
-
+ 
  #if defined(_MSC_VER) || defined(__BORLANDC__)
  typedef unsigned __int64 ZPOS64_T;
 
@@ -62,16 +62,16 @@
      ZPOS64_T byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
      ZPOS64_T num_file;             /* number of the current file in the zipfile*/
 @@ -188,7 +188,7 @@
-
+ 
  #    ifndef NOUNCRYPT
      unsigned long keys[3];     /* keys defining the pseudo-random sequence */
 -    const z_crc_t* pcrc_32_tab;
 +    const unsigned long* pcrc_32_tab;
  #    endif
  } unz64_s;
-
+ 
 @@ -380,14 +380,14 @@
-
+ 
  /*
     Compare two filename (fileName1,fileName2).
 -   If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
@@ -79,19 +79,19 @@
 +   If iCaseSenisivity = 1, comparison is case sensitivity (like strcmp)
 +   If iCaseSenisivity = 2, comparison is not case sensitivity (like strcmpi
                                                                  or strcasecmp)
--   If iCaseSenisivity = 0, case sensitivity is default of your operating system
+-   If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
 +   If iCaseSenisivity = 0, case sensitivity is default of your operating system
          (like 1 on Unix, 2 on Windows)
-
+ 
  */
 -extern int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
 +int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
                                                   const char*  fileName2,
                                                   int iCaseSensitivity)
-
+ 
 @@ -591,9 +591,9 @@
      uLong   uL;
-
+ 
      uLong number_disk;          /* number of the current dist, used for
 -                                   spaning ZIP, unsupported, always 0*/
 +                                   spanning ZIP, unsupported, always 0*/
@@ -103,7 +103,7 @@
                                     (same than number_entry on nospan) */
 @@ -801,9 +801,9 @@
  }
-
+ 
  /*
 -  Close a ZipFile opened with unzOpen.
 -  If there is files inside the .Zip opened with unzOpenCurrentFile (see later),
@@ -129,21 +129,21 @@
              {
 -                                                        uLong uL;
 +                uLong uL2;
-
+ 
 -                                                                if(file_info.uncompressed_size == MAXU32)
 +                if (file_info.uncompressed_size == (ZPOS64_T)(unsigned long)-1)
                                                                  {
                                                                          if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info.uncompressed_size) != UNZ_OK)
                                                                                          err=UNZ_ERRNO;
                                                                  }
-
+ 
 -                                                                if(file_info.compressed_size == MAXU32)
 +                if (file_info.compressed_size == (ZPOS64_T)(unsigned long)-1)
                                                                  {
                                                                          if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info.compressed_size) != UNZ_OK)
                                                                                    err=UNZ_ERRNO;
                                                                  }
-
+ 
 -                                                                if(file_info_internal.offset_curfile == MAXU32)
 +                if (file_info_internal.offset_curfile == (ZPOS64_T)(unsigned long)-1)
                                                                  {
@@ -151,7 +151,7 @@
                                                                          if (unz64local_getLong64(&s->z_filefunc, s->filestream,&file_info_internal.offset_curfile) != UNZ_OK)
                                                                                  err=UNZ_ERRNO;
                                                                  }
-
+ 
 -                                                                if(file_info.disk_num_start == MAXU32)
 +                if(file_info.disk_num_start == (unsigned long)-1)
                                                                  {
@@ -160,7 +160,7 @@
 +                    if (unz64local_getLong(&s->z_filefunc, s->filestream, &uL2) != UNZ_OK)
                                                                                  err=UNZ_ERRNO;
                                                                  }
-
+ 
 @@ -1171,11 +1171,16 @@
      }
      return err;
@@ -191,7 +191,7 @@
 +        *pfile_info = s->cur_file_info;
      return err;
  }
-
+ 
  /*
 -  Set the current file of the zipfile to the next file.
 +  Set the current file of the zipfile to the first file.
@@ -227,7 +227,7 @@
 +        *pfile_info = s->cur_file_info;
      return err;
  }
-
+ 
 +/*
 +  Set the current file of the zipfile to the next file.
 +  return UNZ_OK if there is no problem
@@ -238,18 +238,18 @@
 +    return unzGoToNextFile64(file, NULL, NULL, 0);
 +}
 +
-
+ 
  /*
    Try locate the file szFileName in the zipfile.
 -  For the iCaseSensitivity signification, see unzStringFileNameCompare
 +  For the iCaseSensitivity signification, see unzipStringFileNameCompare
-
+ 
    return value :
    UNZ_OK if the file is found. It becomes the current file.
 @@ -1676,7 +1708,7 @@
    buf contain buffer where data must be copied
    len the size of buf.
-
+ 
 -  return the number of byte copied if somes bytes are copied
 +  return the number of byte copied if some bytes are copied
    return 0 if the end of file was reached
@@ -257,7 +257,7 @@
      (UNZ_ERRNO for IO error, or zLib error for uncompress error)
 @@ -1998,7 +2030,7 @@
  }
-
+ 
  /*
 -  Close the file in zip opened with unzOpenCurrentFile
 +  Close the file in zip opened with unzipOpenCurrentFile
@@ -276,13 +276,13 @@
 +   If iCaseSenisivity = 1, comparison is case sensitivity (like strcmp)
 +   If iCaseSenisivity = 2, comparison is not case sensitivity (like strcmpi
                                  or strcasecmp)
--   If iCaseSenisivity = 0, case sensitivity is default of your operating system
+-   If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
 +   If iCaseSenisivity = 0, case sensitivity is default of your operating system
      (like 1 on Unix, 2 on Windows)
  */
-
+ 
 @@ -197,9 +197,9 @@
-
+ 
  extern int ZEXPORT unzClose OF((unzFile file));
  /*
 -  Close a ZipFile opened with unzOpen.
@@ -291,18 +291,18 @@
 -    these files MUST be closed with unzCloseCurrentFile before call unzClose.
 +    these files MUST be closed with unzipCloseCurrentFile before call unzipClose.
    return UNZ_OK if there is no problem. */
-
+ 
  extern int ZEXPORT unzGetGlobalInfo OF((unzFile file,
 @@ -227,11 +227,22 @@
  /* Unzip package allow you browse the directory of the zipfile */
-
+ 
  extern int ZEXPORT unzGoToFirstFile OF((unzFile file));
 +
  /*
    Set the current file of the zipfile to the first file.
    return UNZ_OK if there is no problem
  */
-
+ 
 +extern int ZEXPORT unzGoToFirstFile64 OF((unzFile file,
 +                        unz_file_info64 *pfile_info,
 +                        char *szFileName,
@@ -319,7 +319,7 @@
 @@ -239,6 +250,17 @@
    return UNZ_END_OF_LIST_OF_FILE if the actual file was the latest.
  */
-
+ 
 +extern int ZEXPORT unzGoToNextFile64 OF((unzFile file,
 +                       unz_file_info64 *pfile_info,
 +                       char *szFileName,
@@ -349,7 +349,7 @@
 @@ -384,7 +406,7 @@
    buf contain buffer where data must be copied
    len the size of buf.
-
+ 
 -  return the number of byte copied if somes bytes are copied
 +  return the number of byte copied if some bytes are copied
    return 0 if the end of file was reached
