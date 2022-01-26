@@ -1303,7 +1303,7 @@ Settings::initializeKnobsCaching()
     QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This points to the location where %1 on-disk caches will be. "
                             "This variable should point to your fastest disk. This parameter can be "
-                            "overriden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
+                            "overridden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
 
     QString diskCacheTt2( tr("If the parameter is left empty or the location set is invalid, "
                              "the default location will be used. The default location is: %1").arg(defaultLocation) );

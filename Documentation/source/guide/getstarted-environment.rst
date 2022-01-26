@@ -25,7 +25,7 @@ These connected nodes are called the node graph.
 Each node has parameters allowing to customize the effect produced on the incoming image.
 
 
-The Toolbar 
+The Toolbar
 ###########
 .. image:: _images/toolbar_02.jpg
  :width: 600px
@@ -37,7 +37,7 @@ Each icon is a menu giving access to different categories of nodes (ie. image pr
 See :doc:`the Toolbar section<getstarted-environment-toolbar>`
 
 
-The Menu bar 
+The Menu bar
 ##############
 .. image:: _images/menubar_01.jpg
  :width: 600px
@@ -77,21 +77,21 @@ The Curve editor
 .. image:: _images/curve_editor_01.png
  :width: 600px
 
-This panel allows to edit graphically the changes intime of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
+This panel allows one to graphically edit the changes in-time of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
 
 The Dopesheet
 ################
 .. image:: _images/dopesheet_01.png
  :width: 600px
 
-This panel allows to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
+This panel allows one to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
 
 The File Browser
 ################
 .. image:: _images/compositing-Read_node02.png
  :width: 600px
 
-This panel allows to choose where to write / read an image to/from the disk. It is opened from the properties of a read/write node
+This panel allows one to choose where to write or read an image to/from the disk. It is opened from the properties of a read or write node
 
 See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
 

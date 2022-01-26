@@ -6,7 +6,7 @@ Rand Node
 
 Creates uniform Random noise.
 This node alone is not suitable for image regrain.
-    
+
 .. image:: _images/TheNodes-Draw/nodes_draw_rand01.jpg
 
 2 different Rand with different values of "Density"
@@ -17,7 +17,7 @@ Usage
 
 .. image:: _images/TheNodes-Draw/nodes_draw_rand02.jpg
 
-The "Density" parameter allows to change the average distance between the random dots of the noise
+The "Density" parameter allows one to change the average distance between the random dots of the noise
 
 check "Static Seed" for a freeze frame of the effect
 
@@ -25,7 +25,7 @@ Noise Node
 ==========
 
 Creates noiseover the source image.
-    
+
 .. image:: _images/TheNodes-Draw/nodes_draw_noise01PoissonGaussian.jpg
 
 2 different types of Noise. Poisson on the left, Gaussian on the right.
