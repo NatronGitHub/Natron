@@ -50,7 +50,7 @@
 ### Plugins
 
 - Fix bug in Transform plugin interact. #708
-- Fix EXR reader outputing the color plane only when an OCIO transform is applied. #714
+- Fix EXR reader outputting the color plane only when an OCIO transform is applied. #714
 - The OpenColorIO plugins can now use OpenColorIO 2.1.
 
 
@@ -154,7 +154,7 @@
 
 ## Version 2.3.14
 
-- Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
+- Error messages are not cleared anymore at each rendered frame. They can be cleared explicitly using the "Refresh" button in the viewer.
 - ReadSVG: Fix reading layers of SVG files. #292
 - Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
 - LensDistortion: fix loading PFBarrel files. #296
@@ -269,7 +269,7 @@ Issue numbers up to version 2.3.10 refer to archived issues in https://github.co
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
 - Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
 - ColorCorrect: Fix wrong render for input values outside the [0-1] range. #1703
-- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should defaut to 0.0. #1705
+- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should default to 0.0. #1705
 
 
 ## Version 2.3.3
@@ -608,7 +608,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 ## Version 2.1.0
 
 - The point tracker was completely reworked. It now uses libmv (from Blender). It now allows tracking different motion types (translation, rotation, scaling, perspective) and can be used for anything that needs match-moving or stabilizing.
-- Readers/Writers are now all under the same Read/Write node. If 2 readers/writers can decode/encode the same format, a drop-down allows to choose between them.
+- Readers/Writers are now all under the same Read/Write node. If 2 readers/writers can decode/encode the same format, a drop-down allows one to choose between them.
 - Python: it is now possible to pass extra properties to the createNode function to control how nodes are created, see (Python reference)[http://natron.readthedocs.io/en/master/devel/PythonReference/NatronEngine/App.html#NatronEngine.NatronEngine.App.createNode].
 - (beta feature) New documentation for Natron: Whenever pressing the "?" button in the properties panel of a node, Natron will open-up a page in your web-browser with documentation for this node. Natron also has a user-guide that is work in progress.
 You may contribute to this user guide, follow (these)[http://natron.readthedocs.io/en/master/guide/writedoc.html] instructions to enrich the documentation.
@@ -642,7 +642,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Expressions are now persistent: it can become invalid if a condition is not met currently to successfully run the expression, but can become valid again automatically.
 - Layers/Channels are now persistent: when copy pasting small "graphlets" or even creating PyPlugs, they will be remembered for convenience. An error may occur next to the corresponding parameter if the channel/layer does not exist any longer. You may right click the drop-down parameter to synchronize the menu to the actual state of the node to see the layers available.
 - Fix a bug where expressions would not be evaluated at the correct time for nodes outside of the tree currently being rendered
-- Fix a bug where the Format parameter would be reseted automatically for the Reformat node
+- Fix a bug where the Format parameter would be reset automatically for the Reformat node
 - Fix a bug with QGroupBox stylesheet for PySide
 - Fix a bug with keyframes for Rotoshapes where some control points would not get keyframed
 - Fix a bug where a size parameter could get ignored from the project if with=1 and height=1
@@ -698,7 +698,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 
 ## Version 2.0rc4
 
-- Write nodes now have a Frame Increment parameter which allows to skip frames while rendering.
+- Write nodes now have a Frame Increment parameter which allows one to skip frames while rendering.
 - The command-line parameters and Python API have been updated in this regard (see Python documentation).
 - Fix multiple bugs when rendering a multi-layered exr
 - Linux: when crashing, Natron will now print a backtrace if launched from the Terminal. This is temporary and will be soon replaced by a cross-platform crash reports handler.
@@ -799,7 +799,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
     - A new button can now toggle on/off the click capture of the bounding box of selected points
     - The smooth/cusp options are now applied with smaller steps and depending of the zoom factor
     - A simple left click is required to cycle through tool buttons and a right click to open the menu
-    - A new button in the settings panel allows to clear the animation of the selected Beziers
+    - A new button in the settings panel allows one to clear the animation of the selected Beziers
     - Only the keyframes of the selected shapes are now displayed on the timeline instead of all shapes keyframes
 - CurveEditor: added a filter to display only nodes containing the filter
 - CurveEditor: double-clicking the item of a node will open the settings panel much like a double-click in the NodeGraph does
@@ -828,7 +828,7 @@ You can by-pass this behaviour and come-back to the original "Aggressive caching
 - New HSVTool node to adjust hue, saturation and brightnes, or perform color replacement.
 - New HSVToRGB & RGBToHSV nodes to convert between these 2 color-spaces
 - New Saturation node to modify the color saturation of an image.
-- New DiskCache node. This node allows to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab.
+- New DiskCache node. This node allows one to cache a branch of the compositing tree to re-use it later on without re-computing the images. This cache is persistent on disk and is saved between 2 runs of Natron. You can configure the location and maximum size of the cache in the preferences of Natron; in the Cache tab.
 - A new progress bar will display the progression while loading a project
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 - Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
@@ -843,8 +843,8 @@ You can by-pass this behaviour and come-back to the original "Aggressive caching
 to avoid creating new beziers by mistake
 - Timeline: when pressing the left and right arrows of the keyboard, the cursor will no longer cross the bounds of the timeline but loop over the range instead.
 - Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options.
-- A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
-- Transform: When holding down the SHIFT modifier and controling the translate handle on the viewer, the direction will be constrained to either the X or  Y axis.
+- A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggleable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
+- Transform: When holding down the SHIFT modifier and controlling the translate handle on the viewer, the direction will be constrained to either the X or  Y axis.
 - Fixed a crash on windows when connecting nodes
 - Fixed a bug on windows where the properties pane would overlap the viewer if placed below it
 - Fixed a bug where the locale won't be taken into account and files with accents wouldn't be correctly displayed in the file dialog
@@ -876,7 +876,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - Added the possibility to edit node names in the node graph by pressing the key N
 - The backdrop node now has its name in the header affected by the font family and color. However the size of the name is controlled by a different parameter so the name and the content can have different font sizes.
 - Roto: when selecting points with the selection rectangle, only points that belong to selected curves will be eligible for selection, unless no curve is selected, in which case all the points are eligible.
-- Roto : when selecting points with the selection rectangle, if the SHIFT modifier is held down, it will not clear the previous selection. Also when holding down SHIFT, clicking on a selected point will remove it from the selection. Similarly, if selecting points with the selection rectangle but while holding down both SHIFT and CTRL will now allow to keep the previous selection but remove from the selection the newly selected points.
+- Roto : when selecting points with the selection rectangle, if the SHIFT modifier is held down, it will not clear the previous selection. Also when holding down SHIFT, clicking on a selected point will remove it from the selection. Similarly, if selecting points with the selection rectangle but while holding down both SHIFT and CTRL will now allow one to keep the previous selection but remove from the selection the newly selected points.
 - Roto : the beziers animation can now be controlled in the curve editor, as well as the per-shape parameters.
 - The ColorCorrect and Grade nodes can now choose on which channels to operate on, including the alpha channel
 - The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the information.
@@ -890,7 +890,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - New ramp node
 - New BlurGuided node using the CImg library. This is a faster bilateral blur
 - New AdjustRoD node to enlarge/shrink the region of definition (bounding box) of an image
-- A new button on the Transform node allows to recenter the handle to the center of the input image.
+- A new button on the Transform node allows one to recenter the handle to the center of the input image.
 - The project can now be versioned by pressing CTRL + ALT + SHIFT + S (or by the File menu). This will save the project and increment its version, e.g.:
   - MyProject_001.ntp
   - MyProject_002.ntp
@@ -941,7 +941,7 @@ for a station with 8 cores. Some tuning may be needed for stations with huge num
 - Fixed the file dialog by changing radically its implementation making it faster and more reliable.
 - Added a new Find node dialog that is accessible by pressing CTRL-F in the node graph or by the right click menu
 - Natron will read correctly the pixel aspect ratio of the images and display them correctly. Due to an OpenFX limitation, if several images in a sequence don't have the same pixel aspect ratio, only the pixel aspect ratio of the first image in the sequence will be taken into account. This cannot be dynamic.
-- When reading RGB opaque images, and using them as RGBA, Natron will set the alpha channel to 0 to match what other compositing softwares do. In some rare cases there might be issues with premultiplication state in some filter plug-ins. In particular the unpremult parameter of the filter nodes (such as Grade) will be checked and can cause a black image. If you really do not want to have support for RGB images, you can disable RGB support in the General preferences of Natron.
+- When reading RGB opaque images, and using them as RGBA, Natron will set the alpha channel to 0 to match what other compositing software does. In some rare cases there might be issues with premultiplication state in some filter plug-ins. In particular the unpremult parameter of the filter nodes (such as Grade) will be checked and can cause a black image. If you really do not want to have support for RGB images, you can disable RGB support in the General preferences of Natron.
 - Roto node will now output RGBA data by default. You can switch it to Alpha only when editing masks for maximum efficiency.
 - Interface clean-up: We adjusted all drop-down menus so that they look more consistent  with the rest of the interface and on Windows the menu bar has also been redesigned.
 - You can now click in the navigator window of the node graph to move the center the node graph on a position
@@ -1091,13 +1091,13 @@ anything any word , e.g. "Blur" and it will propose all types of Blurs.
 - The color picker on the viewer will now show pixel components according to the components present in the image being viewed.
 - Added a setting in the preferences panel allowing to change the application's name as seen by the OpenFX plug-ins. This can help loading plug-ins that wouldn't load otherwise because they restrict their usage to specific applications.
 - Invert/Transform/CornerPin/Merge nodes can now invert their mask
-- Holding control while moving a backdrop now allows to move only the backdrop without moving the nodes within it.
+- Holding control while moving a backdrop now allows one to move only the backdrop without moving the nodes within it.
 - Connecting a viewer to the selected node using the 1,2,3,4... shortcuts will now select back the viewer afterwards so that the user doesn't have to deselect the node to switch quickly between inputs.
 
 ### Bug fixes
 
 - Fixed preview images rendering
-- Fixed a bug where the curves in the RGBLut plug-in would not allow to move the control points in more than 1 direction at a time.
+- Fixed a bug where the curves in the RGBLut plug-in would not allow one to move the control points in more than 1 direction at a time.
 - Fixed a crash that would occur when drag&dropping images within Natron. The same bug would also make Natron crash in some other cases.
 - Fixed a bug where inverting alpha channel would not work
 - Fixed bugs where timeline keyframe markers wouldn't reflect the actual keyframes
