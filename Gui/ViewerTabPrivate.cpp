@@ -32,6 +32,7 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
@@ -164,7 +165,13 @@ ViewerTabPrivate::getOverlayTransform(double time,
                                       EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    EffectInstance* targetNode = target->getEffectInstance().get();
+    NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
+    if (isGroupNode) {
+        NodePtr output = isGroupNode->getOutputNodeInput(false);
+        return getOverlayTransform(time, view, output, currentNode, transform);
+    }
+    if ( currentNode == targetNode  ) {
         return true;
     }
     RenderScale s(1.);
@@ -283,7 +290,14 @@ ViewerTabPrivate::getTimeTransform(double time,
     if (!currentNode) {
         return false;
     }
-    if ( currentNode == target->getEffectInstance().get() ) {
+    EffectInstance* targetNode = target->getEffectInstance().get();
+    NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
+    if (isGroupNode) {
+        NodePtr output = isGroupNode->getOutputNodeInput(false);
+        EffectInstance* outputNode = output->getEffectInstance().get();
+        return getTimeTransform(time, view, output, currentNode, newTime);
+    }
+    if ( currentNode == targetNode  ) {
         *newTime = time;
 
         return true;
