@@ -33,7 +33,12 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QApplication> // qApp
-#include <QtOpenGL/QGLShaderProgram>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLShaderProgram>
+#else
+#include "Gui/QGLExtrasCompat.h"
+#endif
 
 #include "Engine/Lut.h" // Color
 #include "Engine/Settings.h"
@@ -43,6 +48,10 @@
 #include "Gui/GuiApplicationManager.h" // appFont
 #include "Gui/Menu.h"
 #include "Gui/ViewerTab.h"
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -228,7 +237,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _this->context() );
+    assert( QOpenGLContext::currentContext() == _this->context() );
 
     bool useShader = _this->getBitDepth() != eImageBitDepthByte;
 
@@ -472,8 +481,8 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _this->context() );
-    assert( QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) );
+    assert( QOpenGLContext::currentContext() == _this->context() );
+    assert( QOpenGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) );
 
     return true;
 }

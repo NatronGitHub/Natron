@@ -70,6 +70,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 NATRON_NAMESPACE_ENTER
 
 /*****************************CURVE WIDGET***********************************************/
@@ -116,8 +120,12 @@ CurveWidget::CurveWidget(Gui* gui,
                          CurveSelection* selection,
                          TimeLinePtr timeline,
                          QWidget* parent,
-                         const QGLWidget* shareWidget)
-    : QGLWidget(parent, shareWidget)
+                         const QOpenGLWidget* shareWidget)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    : QOpenGLWidget(parent)
+#else
+    : QOpenGLWidget(parent, shareWidget)
+#endif
     , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
@@ -435,7 +443,11 @@ CurveWidget::swapOpenGLBuffers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    update();
+#else
     swapBuffers();
+#endif
 }
 
 /**
@@ -486,7 +498,7 @@ CurveWidget::getScreenPixelRatio() const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio();
+    return devicePixelRatio();
 #else
     return _imp->_gui ? _imp->_gui->devicePixelRatio() : 1.;
 #endif
@@ -579,7 +591,7 @@ CurveWidget::resizeGL(int width,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -620,7 +632,7 @@ CurveWidget::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -735,7 +747,7 @@ CurveWidget::renderText(double x,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( text.isEmpty() ) {
         return;
@@ -1241,7 +1253,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
-        QGLWidget::mouseMoveEvent(e);
+        QOpenGLWidget::mouseMoveEvent(e);
 
         return;
     }
@@ -1364,7 +1376,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdate) {
         update();
     }
-    QGLWidget::mouseMoveEvent(e);
+    QOpenGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
@@ -1622,7 +1634,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         if (ce) {
             ce->handleUnCaughtKeyPressEvent(e);
         }
-        QGLWidget::keyPressEvent(e);
+        QOpenGLWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 
@@ -1630,7 +1642,7 @@ void
 CurveWidget::enterEvent(QEvent* e)
 {
     setFocus();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -2128,7 +2140,7 @@ CurveWidget::onUpdateOnPenUpActionTriggered()
 void
 CurveWidget::focusInEvent(QFocusEvent* e)
 {
-    QGLWidget::focusInEvent(e);
+    QOpenGLWidget::focusInEvent(e);
 }
 
 void

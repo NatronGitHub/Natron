@@ -51,6 +51,10 @@
 #include "Gui/Menu.h"
 #include "Gui/ticks.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
 #define CURSOR_WIDTH 15
@@ -289,7 +293,7 @@ CurveWidgetPrivate::drawSelectionRectangle(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
+    assert( QOpenGLContext::currentContext() == _widget->context() );
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
@@ -363,7 +367,7 @@ CurveWidgetPrivate::drawTimelineMarkers(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
+    assert( QOpenGLContext::currentContext() == _widget->context() );
     glCheckError();
 
     refreshTimelinePositions();
@@ -426,7 +430,7 @@ CurveWidgetPrivate::drawCurves(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
+    assert( QOpenGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
     std::vector<CurveGuiPtr> visibleCurves;
@@ -444,7 +448,7 @@ CurveWidgetPrivate::drawScale(double screenPixelRatio)
     glCheckError();
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
+    assert( QOpenGLContext::currentContext() == _widget->context() );
 
     QPointF btmLeft = zoomCtx.toZoomCoordinates(0, _widget->height() - 1);
     QPointF topRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, 0);
@@ -568,7 +572,7 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox(double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
+    assert( QOpenGLContext::currentContext() == _widget->context() );
 
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);

@@ -33,7 +33,6 @@
 #include <QCheckBox>
 #include <QSplitter>
 #include <QDesktopWidget>
-#include <QGLShaderProgram>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -45,6 +44,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
+#include <QOpenGLShaderProgram>
+#else
+#include "Gui/QGLExtrasCompat.h"
 #endif
 
 #include "Engine/HistogramCPU.h"
@@ -69,6 +71,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/ticks.h"
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -212,18 +218,18 @@ public:
 
     /*The shader that computes the histogram:
        Takes in input the image, and writes to the 256x1 texture*/
-    QGLShaderProgramPtr histogramComputingShader;
+    QOpenGLShaderProgramPtr histogramComputingShader;
 
     /*The shader that computes the maximum of the histogram.
        Takes in input the reduction I and writes to the reduction I+1
        the local maximas of the reduction I. Each pixel of the texture I+1
        holds the maximum of 4 pixels in the texture I.*/
-    QGLShaderProgramPtr histogramMaximumShader;
+    QOpenGLShaderProgramPtr histogramMaximumShader;
 
     /*The shader that renders the histogram. Takes in input the
        image and the histogram texture and produces the 256x256 image
        of the histogram.*/
-    QGLShaderProgramPtr histogramRenderingShader;
+    QOpenGLShaderProgramPtr histogramRenderingShader;
 
     /*vbo ID, This vbo holds the texture coordinates to fetch
        to compute the histogram. It changes when the
@@ -283,8 +289,12 @@ public:
 };
 
 Histogram::Histogram(Gui* gui,
-                     const QGLWidget* shareWidget)
-    : QGLWidget(gui, shareWidget)
+                     const QOpenGLWidget* shareWidget)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    : QOpenGLWidget(gui)
+#else
+    : QOpenGLWidget(gui, shareWidget)
+#endif
     , PanelWidget(this, gui)
     , _imp( new HistogramPrivate(this) )
 {
@@ -685,34 +695,34 @@ Histogram::initializeGL()
         return;
     }
 
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-    _imp->histogramComputingShader.reset( new QGLShaderProgram( context() ) );
-    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramComputationVertex_vert) ) {
+    _imp->histogramComputingShader.reset( new QOpenGLShaderProgram( context() ) );
+    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QOpenGLShader::Vertex, histogramComputationVertex_vert) ) {
         qDebug() << _imp->histogramComputingShader->log();
     }
-    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramComputation_frag) ) {
+    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QOpenGLShader::Fragment, histogramComputation_frag) ) {
         qDebug() << _imp->histogramComputingShader->log();
     }
     if ( !_imp->histogramComputingShader->link() ) {
         qDebug() << _imp->histogramComputingShader->log();
     }
 
-    _imp->histogramMaximumShader.reset( new QGLShaderProgram( context() ) );
-    if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QGLShader::Fragment, histogramMaximum_frag) ) {
+    _imp->histogramMaximumShader.reset( new QOpenGLShaderProgram( context() ) );
+    if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QOpenGLShader::Fragment, histogramMaximum_frag) ) {
         qDebug() << _imp->histogramMaximumShader->log();
     }
     if ( !_imp->histogramMaximumShader->link() ) {
         qDebug() << _imp->histogramMaximumShader->log();
     }
 
-    _imp->histogramRenderingShader.reset( new QGLShaderProgram( context() ) );
-    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramRenderingVertex_vert) ) {
+    _imp->histogramRenderingShader.reset( new QOpenGLShaderProgram( context() ) );
+    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QOpenGLShader::Vertex, histogramRenderingVertex_vert) ) {
         qDebug() << _imp->histogramRenderingShader->log();
     }
-    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramRendering_frag) ) {
+    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QOpenGLShader::Fragment, histogramRendering_frag) ) {
         qDebug() << _imp->histogramRenderingShader->log();
     }
     if ( !_imp->histogramRenderingShader->link() ) {
@@ -822,7 +832,7 @@ HistogramPrivate::resizeComputingVBO(int w,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     glBindBuffer(GL_ARRAY_BUFFER, vboID);
     int vertexCount = w * h;
@@ -942,7 +952,7 @@ HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayModeEnum ch
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     histogramRenderingShader->bind();
     glActiveTexture(GL_TEXTURE0);
@@ -998,7 +1008,7 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
@@ -1092,7 +1102,7 @@ HistogramPrivate::renderHistogram(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
@@ -1141,7 +1151,7 @@ Histogram::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -1226,7 +1236,7 @@ Histogram::resizeGL(int width,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -1333,7 +1343,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         update();
         break;
     }
-    QGLWidget::mouseMoveEvent(e);
+    QOpenGLWidget::mouseMoveEvent(e);
 } // Histogram::mouseMoveEvent
 
 void
@@ -1482,7 +1492,7 @@ Histogram::keyPressEvent(QKeyEvent* e)
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
-        QGLWidget::keyPressEvent(e);
+        QOpenGLWidget::keyPressEvent(e);
     }
 }
 
@@ -1490,14 +1500,14 @@ void
 Histogram::keyReleaseEvent(QKeyEvent* e)
 {
     handleUnCaughtKeyUpEvent(e);
-    QGLWidget::keyReleaseEvent(e);
+    QOpenGLWidget::keyReleaseEvent(e);
 }
 
 void
 Histogram::enterEvent(QEvent* e)
 {
     enterEventBase();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -1507,7 +1517,7 @@ Histogram::leaveEvent(QEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     leaveEventBase();
     _imp->drawCoordinates = false;
-    QGLWidget::leaveEvent(e);
+    QOpenGLWidget::leaveEvent(e);
 }
 
 void
@@ -1516,7 +1526,7 @@ Histogram::showEvent(QShowEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    QGLWidget::showEvent(e);
+    QOpenGLWidget::showEvent(e);
     if ( (width() != 0) && (height() != 0) ) {
         computeHistogramAndRefresh(true);
     }
@@ -1579,7 +1589,7 @@ double
 Histogram::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio();
+    return devicePixelRatio();
 #else
     return getGui() ? getGui()->devicePixelRatio() : 1.;
 #endif
@@ -1590,7 +1600,7 @@ HistogramPrivate::drawScale()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == widget->context() );
+    assert( QOpenGLContext::currentContext() == widget->context() );
 
 
     glCheckError();
@@ -1692,7 +1702,7 @@ HistogramPrivate::drawWarnings()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == widget->context() );
+    assert( QOpenGLContext::currentContext() == widget->context() );
     if (mipMapLevel > 0) {
         QFontMetrics fm(*_textFont);
         QString str( tr("Image downscaled") );
@@ -1750,7 +1760,7 @@ HistogramPrivate::drawViewerPicker()
     // always running in the main thread
 
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == widget->context() );
+    assert( QOpenGLContext::currentContext() == widget->context() );
 
     double wHeight = widget->height();
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
@@ -1830,7 +1840,7 @@ HistogramPrivate::drawPicker()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == widget->context() );
+    assert( QOpenGLContext::currentContext() == widget->context() );
 
     glCheckError();
     QFontMetrics fm(*_textFont, 0);
@@ -1973,7 +1983,7 @@ HistogramPrivate::drawHistogramCPU()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == widget->context() );
+    assert( QOpenGLContext::currentContext() == widget->context() );
 
     glCheckError();
     {
@@ -2069,7 +2079,7 @@ Histogram::renderText(double x,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( text.isEmpty() ) {
         return;

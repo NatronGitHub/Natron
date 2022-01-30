@@ -37,11 +37,12 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include <QtCore/QSize>
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/ViewIdx.h"
@@ -58,7 +59,7 @@ NATRON_NAMESPACE_ENTER
  * OpenGL related code as well as user events.
  **/
 class ViewerGL
-    : public QGLWidget, public OpenGLViewerI
+    : public QOpenGLWidget, public OpenGLViewerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -72,7 +73,7 @@ public:
        can pass a pointer to the 1st viewer you created. It allows the viewers to share the same OpenGL context.
      */
     explicit ViewerGL(ViewerTab* parent,
-                      const QGLWidget* shareWidget = NULL);
+                      const QOpenGLWidget* shareWidget = NULL);
 
 
     virtual ~ViewerGL() OVERRIDE;
@@ -107,7 +108,7 @@ public:
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
-     * It calls QGLWidget::resizeEvent(QResizeEvent*).
+     * It calls QOpenGLWidget::resizeEvent(QResizeEvent*).
      **/
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 

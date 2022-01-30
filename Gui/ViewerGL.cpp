@@ -37,6 +37,7 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
+#include <QScreen>
 #include <QWindow>
 #else
 #include <QtGui/QMenu>
@@ -49,9 +50,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtOpenGL/QGLShaderProgram>
 #include <QTreeWidget>
 #include <QTabBar>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLShaderProgram>
+#else
+#include "Gui/QGLExtrasCompat.h"
+#endif
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -84,6 +90,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
 #define USER_ROI_CROSS_RADIUS 15.f
@@ -114,8 +124,12 @@ NATRON_NAMESPACE_ENTER
 
 
 ViewerGL::ViewerGL(ViewerTab* parent,
-                   const QGLWidget* shareWidget)
-    : QGLWidget(parent, shareWidget)
+                   const QOpenGLWidget* shareWidget)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    : QOpenGLWidget(parent)
+#else
+    : QOpenGLWidget(parent, shareWidget)
+#endif
     , _imp( new Implementation(this, parent) )
 {
     // always running in the main thread
@@ -524,7 +538,7 @@ ViewerGL::clearColorBuffer(double r,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
     glCheckError();
     {
         GLProtectAttrib att(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
@@ -585,7 +599,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     glCheckError();
 
@@ -1175,7 +1189,7 @@ ViewerGL::drawPersistentMessage()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     assert(_imp->_textFont);
     int offset =  10;
@@ -1238,7 +1252,7 @@ ViewerGL::getPboID(int index)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( index >= (int)_imp->pboIds.size() ) {
         GLuint handle;
@@ -1453,25 +1467,25 @@ ViewerGL::initShaderGLSL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if (!_imp->shaderLoaded) {
-        _imp->shaderBlack.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
+        _imp->shaderBlack.reset( new QOpenGLShaderProgram( context() ) );
+        if ( !_imp->shaderBlack->addShaderFromSourceCode(QOpenGLShader::Vertex, vertRGB) ) {
             qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
-        if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment, blackFrag) ) {
+        if ( !_imp->shaderBlack->addShaderFromSourceCode(QOpenGLShader::Fragment, blackFrag) ) {
             qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
         if ( !_imp->shaderBlack->link() ) {
             qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
 
-        _imp->shaderRGB.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
+        _imp->shaderRGB.reset( new QOpenGLShaderProgram( context() ) );
+        if ( !_imp->shaderRGB->addShaderFromSourceCode(QOpenGLShader::Vertex, vertRGB) ) {
             qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
-        if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment, fragRGB) ) {
+        if ( !_imp->shaderRGB->addShaderFromSourceCode(QOpenGLShader::Fragment, fragRGB) ) {
             qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
 
@@ -1599,7 +1613,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
     GLenum e = glGetError();
     Q_UNUSED(e);
 
@@ -2107,7 +2121,7 @@ void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
     if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., currentTimeForEvent(e), e) ) {
-        QGLWidget::mouseMoveEvent(e);
+        QOpenGLWidget::mouseMoveEvent(e);
     }
 } // mouseMoveEvent
 
@@ -2135,17 +2149,17 @@ ViewerGL::tabletEvent(QTabletEvent* e)
             break;
         }
         _imp->pressureOnPress = pressure;
-        QGLWidget::tabletEvent(e);
+        QOpenGLWidget::tabletEvent(e);
         break;
     }
     case QEvent::TabletRelease: {
         _imp->pressureOnRelease = pressure;
-        QGLWidget::tabletEvent(e);
+        QOpenGLWidget::tabletEvent(e);
         break;
     }
     case QEvent::TabletMove: {
         if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
-            QGLWidget::tabletEvent(e);
+            QOpenGLWidget::tabletEvent(e);
         } else {
             e->accept();
         }
@@ -2555,7 +2569,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
     if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl) ) {
         update();
     }
-    QGLWidget::mouseDoubleClickEvent(e);
+    QOpenGLWidget::mouseDoubleClickEvent(e);
 }
 
 QPointF
@@ -2768,7 +2782,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (!_imp->viewerTab) {
-        return QGLWidget::wheelEvent(e);
+        return QOpenGLWidget::wheelEvent(e);
     }
 
     // delta=120 is a standard wheel mouse click, but mice may be more accurate
@@ -2806,13 +2820,13 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical) {
 #endif
         // we only handle vertical motion for zooming
-        return QGLWidget::wheelEvent(e);
+        return QOpenGLWidget::wheelEvent(e);
     }
 
 
     Gui* gui = _imp->viewerTab->getGui();
     if (!gui) {
-        return QGLWidget::wheelEvent(e);
+        return QOpenGLWidget::wheelEvent(e);
     }
 
     NodeGuiIPtr nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
@@ -3150,7 +3164,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( _imp->viewerTab->notifyOverlaysFocusGained( RenderScale(scale) ) ) {
         update();
     }
-    QGLWidget::focusInEvent(e);
+    QOpenGLWidget::focusInEvent(e);
 }
 
 void
@@ -3167,7 +3181,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
     if ( _imp->viewerTab->notifyOverlaysFocusLost( RenderScale(scale) ) ) {
         update();
     }
-    QGLWidget::focusOutEvent(e);
+    QOpenGLWidget::focusOutEvent(e);
 }
 
 void
@@ -3177,7 +3191,7 @@ ViewerGL::enterEvent(QEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->infoViewer[0]->showMouseInfo();
     _imp->infoViewer[1]->showMouseInfo();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -3192,7 +3206,7 @@ ViewerGL::leaveEvent(QEvent* e)
     }
     _imp->infoViewer[0]->hideMouseInfo();
     _imp->infoViewer[1]->hideMouseInfo();
-    QGLWidget::leaveEvent(e);
+    QOpenGLWidget::leaveEvent(e);
 }
 
 void
@@ -3200,7 +3214,7 @@ ViewerGL::resizeEvent(QResizeEvent* e)
 { // public to hack the protected field
   // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    QGLWidget::resizeEvent(e);
+    QOpenGLWidget::resizeEvent(e);
 }
 
 ImageBitDepthEnum
@@ -3319,7 +3333,7 @@ ViewerGL::renderText(double x,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( text.isEmpty() ) {
         return;
@@ -3617,7 +3631,11 @@ ViewerGL::swapOpenGLBuffers()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    update();
+#else
     swapBuffers();
+#endif
 }
 
 /**
@@ -3636,7 +3654,11 @@ ViewerGL::redrawNow()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    update();
+#else
     updateGL();
+#endif
 }
 
 /**
@@ -3672,7 +3694,7 @@ double
 ViewerGL::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio();
+    return devicePixelRatio();
 #else
     return (_imp->viewerTab && _imp->viewerTab->getGui()) ? _imp->viewerTab->getGui()->devicePixelRatio() : 1.;
 #endif

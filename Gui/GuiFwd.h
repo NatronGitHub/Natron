@@ -49,7 +49,7 @@ class QFont;
 class QFontComboBox;
 class QFontMetrics;
 class QFrame;
-class QGLShaderProgram;
+class QOpenGLShaderProgram;
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
 class QGraphicsScene;

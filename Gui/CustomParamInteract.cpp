@@ -47,6 +47,10 @@
 #include "Engine/AppInstance.h"
 #include "Engine/TimeLine.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -85,7 +89,7 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          void* ofxParamHandle,
                                          const OfxParamOverlayInteractPtr & entryPoint,
                                          QWidget* parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
     , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
 {
     double minW, minH;
@@ -103,7 +107,7 @@ CustomParamInteract::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -149,7 +153,7 @@ CustomParamInteract::resizeGL(int w,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -171,7 +175,11 @@ CustomParamInteract::sizeHint() const
 void
 CustomParamInteract::swapOpenGLBuffers()
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    update();
+#else
     swapBuffers();
+#endif
 }
 
 void
@@ -201,7 +209,7 @@ double
 CustomParamInteract::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio();
+    return devicePixelRatio();
 #else
     KnobGuiPtr k = _imp->knob.lock();
     return (k && k->getGui()) ? k->getGui()->devicePixelRatio() : 1.;

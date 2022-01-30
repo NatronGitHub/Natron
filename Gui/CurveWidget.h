@@ -39,13 +39,18 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtOpenGL/QGLWidget>
 #include <QtCore/QMetaType>
 #include <QtCore/QSize>
 #include <QDialog>
 #include <QtCore/QByteArray>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 #include "Global/GlobalDefines.h"
 
@@ -60,7 +65,7 @@ NATRON_NAMESPACE_ENTER
 class CurveWidgetPrivate;
 
 class CurveWidget
-    : public QGLWidget, public OverlaySupport
+    : public QOpenGLWidget, public OverlaySupport
 {
     friend class CurveGui;
     friend class CurveWidgetPrivate;
@@ -76,7 +81,7 @@ public:
                 CurveSelection* selection,
                 TimeLinePtr timeline = TimeLinePtr(),
                 QWidget* parent = NULL,
-                const QGLWidget* shareWidget = NULL);
+                const QOpenGLWidget* shareWidget = NULL);
 
     virtual ~CurveWidget() OVERRIDE;
 

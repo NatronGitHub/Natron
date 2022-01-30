@@ -76,6 +76,10 @@
 #include "Gui/ZoomContext.h"
 #include "Gui/TabWidget.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 #define NATRON_DOPESHEET_MIN_RANGE_FIT 10
 
 NATRON_NAMESPACE_ENTER
@@ -110,14 +114,14 @@ running_in_main_thread()
 }
 
 void
-running_in_main_context(const QGLWidget *glWidget)
+running_in_main_context(const QOpenGLWidget *glWidget)
 {
-    assert( glWidget->context() == QGLContext::currentContext() );
+    assert( glWidget->context() == QOpenGLContext::currentContext() );
     Q_UNUSED(glWidget);
 }
 
 void
-running_in_main_thread_and_context(const QGLWidget *glWidget)
+running_in_main_thread_and_context(const QOpenGLWidget *glWidget)
 {
     running_in_main_thread();
     running_in_main_context(glWidget);
@@ -809,7 +813,10 @@ DopeSheetViewPrivate::generateKeyframeTextures()
         if (std::max( kfTexturesImages[i].width(), kfTexturesImages[i].height() ) != KF_PIXMAP_SIZE) {
             kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
-        kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+        kfTexturesImages[i] = QOpenGLWidget::convertToGLFormat(kfTexturesImages[i]);
+#endif
         glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2562,7 +2569,7 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
                              Gui *gui,
                              const TimeLinePtr &timeline,
                              QWidget *parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
     , _imp( new DopeSheetViewPrivate(this) )
 {
     _imp->model = model;
@@ -2683,7 +2690,12 @@ DopeSheetView::swapOpenGLBuffers()
 {
     running_in_main_thread();
 
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    update();
+#else
     swapBuffers();
+#endif
 }
 
 /**
@@ -2734,7 +2746,7 @@ double
 DopeSheetView::getScreenPixelRatio() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio();
+    return devicePixelRatio();
 #else
     return _imp->gui ? _imp->gui->devicePixelRatio() : 1.;
 #endif
@@ -3707,7 +3719,7 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
 void
 DopeSheetView::focusInEvent(QFocusEvent *e)
 {
-    QGLWidget::focusInEvent(e);
+    QOpenGLWidget::focusInEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT
