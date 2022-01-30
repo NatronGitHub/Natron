@@ -22,8 +22,13 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost opengl qt cairo python shiboken pyside 
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
+QT += gui core network
+
+greaterThan(QT_MAJOR_VERSION, 4) {
+    QT += concurrent
+} else {
+    QT += opengl
+}
 
 GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
