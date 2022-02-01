@@ -4,7 +4,7 @@
 Merge Node
 ==========
 
-Merge is the node that allows to stack imeges one ontop of the other.
+The Merge node allows one to complete compositing operations, by default it places image data from A overtop B with an "over" operation.
 
 Usage
 -----

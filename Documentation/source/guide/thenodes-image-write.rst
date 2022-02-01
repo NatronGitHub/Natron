@@ -1,6 +1,6 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
 Write Node
 ==========
 
@@ -11,19 +11,19 @@ The Write node is where the result of the script is rendered out. This may be fo
 
 - Create a write node (shortcut  ``w``).
 - Connect the write node to the last node of your NodeTree.
-- Press the little folder icon next to the 'file' value, then navigate to Where you wish the result to be rendered. 
+- Press the little folder icon next to the 'file' value, then navigate to Where you wish the result to be rendered.
 
 See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
 
 - The name of the output must be followed by the file extension of the format (.mov, .tga, .tiff etc). Once this is in place, the parameters in the Write node will expand to include those that are specific to that format.
-- The "frame range" "First Frame" "Last Frame" parameter should be specified. In the screen shot below, a frame range of 1 to 665 has been set. 
+- The "frame range" "First Frame" "Last Frame" parameter should be specified. In the screen shot below, a frame range of 1 to 665 has been set.
 
 .. image:: _images/TheNodes-Image/node_image_write_properties.gif
 
 - Start the Render (ie. start calculation of the result)
-   
-   * press the "Render" button in the node properties. 
-   
+
+   * press the "Render" button in the node properties.
+
    .. image:: _images/TheNodes-Image/node_image_write_render.gif
 
    * Or go to the menu select Render->Render Selected Writers
@@ -63,15 +63,15 @@ The Write node can change how the image is exported to disk
 .. image:: _images/TheNodes-Image/read_node_interpret_footage.jpg
 
 - Premultiplication.
-  
-   If the processed image has transparent areas and the state of the "premultiplied" flag has been treated properly in your node tree, Natron will guess the value of the "Input Premult". 
+
+   If the processed image has transparent areas and the state of the "premultiplied" flag has been treated properly in your node tree, Natron will guess the value of the "Input Premult".
    If the result is not correct you can force the "Input Premult" to your liking.
 
    when writing RGBA to a file format that does not support alpha, the write node just drop alpha and don't premultiply (This is new from v2.4 to avoid that the file written to disk look different from the viewer in Nuke
 
 
 
-- Output Components 
+- Output Components
    tells Natron wether or not to ditch the Alpha channel. The A option is disabled when image format doesn't support alpha channel
 
 .. image:: _images/TheNodes-Image/node_image_write_channels.gif
@@ -89,7 +89,7 @@ The read node can change the way an image is rendered from the values in the dis
 quicktime options:
 
 * Frame rate
-   defaults to the value in the project settings. It can be overriden for movie file types. Image sequence don't have Frame rate.
+   defaults to the value in the project settings. It can be overridden for movie file types. Image sequence don't have Frame rate.
 
 
 .. image:: _images/TheNodes-Image/node_image_write_encoder_mov.gif

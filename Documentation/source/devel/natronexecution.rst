@@ -274,7 +274,7 @@ And change the value in the Python script for each call to the command-line, but
 require manual intervention.
 
 That's where another option from the command-line comes into play: the **``-c``** option
-(or ``--cmd``): It allows to pass custom Python code in form of a string that will be
+(or ``--cmd``): It allows one to pass custom Python code in form of a string that will be
 executed before the actual script.
 
 To set the fps from the command-line we could do as such now::

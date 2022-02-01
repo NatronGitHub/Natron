@@ -1741,7 +1741,7 @@ public:
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
-     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by natron allows to do so.
+     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by Natron allows for this.
      **/
     virtual bool supportsConcurrentOpenGLRenders() const { return true; }
 

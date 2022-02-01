@@ -193,7 +193,7 @@ attempting to modify the underlying layout in these circumstances will result in
 
     :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
-Append a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+Append a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly using PySide
 that will be inserted **after** any custom parameter.
 
 .. warning::
@@ -233,7 +233,7 @@ Returns all the user parameters used by the panel.
     :param index: :class:`int`
     :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
-Inserts a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the given *index* of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+Inserts a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly using PySide.
 The widget will always be inserted **after** any user parameter.
 
 .. warning::

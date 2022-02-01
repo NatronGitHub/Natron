@@ -2,7 +2,7 @@
 
 There are two options: using homebrew, or using macports.
 
-The homebrew path is simpler, but doesn't allow to build universal binaries.
+The homebrew path is simpler, but doesn't allow one to build universal binaries.
 
 * Using Homebrew
 
@@ -30,7 +30,7 @@ export CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
     Check that the user "nobody" can read this directory by typing the following command in a Terminal: "sudo -u nobody ls /Users/USER_NAME/Development/dports-dev". If it fails, then try again after having given execution permissions on your home directory using the following command: "chmod o+x /Users/USER_NAME". If this still fails, then something is really wrong.
 
     Edit the sources.conf file for MacPorts, for example using the nano editor: "sudo nano /opt/local/etc/macports/sources.conf", insert at the beginning of the file the configuration for a local repository (read the comments in the file), by inserting the line "file:///Users/USER_NAME/Development/dports-dev" (without quotes, and yes there are 3 slashes). Save and exit (if you're using nano, this means typing ctrl-X, Y and return).
- 
+
    Update MacPorts: "sudo port selfupdate"
 
     Recreate the index in the local repository: "cd /Users/USER_NAME/Development/dports-dev; portindex" (no need to be root for this)
@@ -110,12 +110,12 @@ EOF
 * on OSX 10.7 and below:
 sudo port -v install clang-3.4
 sudo port select clang mp-clang-3.4
-sudo port select python python27 
+sudo port select python python27
 
 * on OSX 10.8 and above
  sudo port select clang none
  sudo port select gcc none
-sudo port select python python27 
+sudo port select python python27
 
 * compiling/installing libjpeg-turbo (don't install it in MacPorts, because it can't coexist with libjpeg):
 - download and install from the dmg file found at from http://sourceforge.net/projects/libjpeg-turbo/files/
@@ -265,7 +265,7 @@ cd build
 on MacPorts:
 
 export LIBRARY_PATH=/opt/local/lib
-cmake -DPYTHON_INCLUDE_DIR=/opt/local/Library/Frameworks/Python.framework/Headers -DOPENIMAGEIO_INCLUDE_DIR=/opt/local/include/OpenImageIO -DCMAKE_INSTALL_PREFIX=/tmp/tuttleofx-install -DCMAKE_PREFIX_PATH="/opt/local;/opt/libjpeg-turbo"  -DPYTHONLIBS_VERSION_STRING=2.7 -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ..  
+cmake -DPYTHON_INCLUDE_DIR=/opt/local/Library/Frameworks/Python.framework/Headers -DOPENIMAGEIO_INCLUDE_DIR=/opt/local/include/OpenImageIO -DCMAKE_INSTALL_PREFIX=/tmp/tuttleofx-install -DCMAKE_PREFIX_PATH="/opt/local;/opt/libjpeg-turbo"  -DPYTHONLIBS_VERSION_STRING=2.7 -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ..
 
 
 on HomeBrew:
@@ -546,8 +546,8 @@ cd ..
 cd TuttleOFX;
 (cd 3rdParty; ln -s ../../CTL/CTL ctl)
 (cd 3rdParty/ctl; git pull; autoreconf -i; ./configure && make)
-(cd 3rdParty; ln -s ../../SeExpr seexpr) 
-(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make) 
+(cd 3rdParty; ln -s ../../SeExpr seexpr)
+(cd 3rdParty/seexpr; git pull; mkdir build; cd build && cmake .. && make)
 
 
 rm host.sconf; cat > host.sconf << EOF

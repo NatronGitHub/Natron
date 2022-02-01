@@ -1,6 +1,6 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
 Read Node
 =========
 
@@ -49,14 +49,14 @@ The read node can change how the image is imported in the project
 
 Main settings
 
-- "Frame rate" defaults to the value as found in the file. It can be overriden if the file has been encoded with the wrong values
+- "Frame rate" defaults to the value as found in the file. It can be overridden if the file has been encoded with the wrong values
 
 .. note::
    A numbered file sequence has no absolute framerate. So, when loading a sequence you should set the Frame rate here as Natron can not guess from the file. As noted below this will however not change the behavior of Natron
 
 
 .. note::
-   Natron is frame rate agnostic. It means that it will always process one frame in the source to one frame to the output. The framerate is mainly a metadata. You can do framerate conversions explicitely in your node tree. (24 to 25fps with "retime" node set at speed 0.96)
+   Natron is frame rate agnostic. It means that it will always process one frame in the source to one frame to the output. The framerate is mainly a metadata. You can do framerate conversions explicitly in your node tree. (24 to 25fps with "retime" node set at speed 0.96)
 
 
 
@@ -112,4 +112,4 @@ The file will be converted from "File colorspace" to "Output Colorspace"
      * When file and Output spaces are the same, no conversion will occur
 
 See :doc:`The readers <compositing-projects-readers>` section for more information.
-   
+

@@ -552,7 +552,7 @@ struct RotoItemPrivate
     ////This controls whether the item (and all its children if it is a layer)
     ////should be visible/rendered or not at any time.
     ////This is different from the "activated" knob for RotoDrawableItem's which in that
-    ////case allows to define a life-time
+    ////case allows one to define a life-time
     bool globallyActivated;
 
     ////A locked item should not be modifiable by the GUI
@@ -1333,7 +1333,7 @@ public:
     KnobDoubleWPtr feather;
     KnobDoubleWPtr featherFallOff;
     KnobChoiceWPtr lifeTime;
-    KnobBoolWPtr activated; //<allows to disable a shape on a specific frame range
+    KnobBoolWPtr activated; //<allows one to disable a shape on a specific frame range
     KnobIntWPtr lifeTimeFrame;
 
 #ifdef NATRON_ROTO_INVERTIBLE

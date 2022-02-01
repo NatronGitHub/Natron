@@ -214,7 +214,7 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overriden by the value of the environment variable NATRON_DISK_CACHE_PATH.
+This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overridden by the value of the environment variable NATRON_DISK_CACHE_PATH.
 
 If the parameter is left empty or the location set is invalid, the default location will be used.
 

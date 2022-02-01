@@ -92,7 +92,7 @@ Member functions description
 
     :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`_
 
-Append a QWidget inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+Append a QWidget inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly using PySide
 that will be inserted **after** any custom parameter.
 
 
@@ -113,7 +113,7 @@ Returns the user parameter with the given *scriptName* if it exists or *None* ot
     :param index: :class:`int`
     :param widget: :class:`PySide.QtGui.QWidget`
 
-Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly using PySide.
 The widget will always be inserted **after** any user parameter.
 
 
