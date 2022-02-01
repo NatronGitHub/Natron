@@ -147,7 +147,10 @@ ProgressPanel::ProgressPanel(Gui* gui)
     : QWidget(gui)
     , PanelWidget(this, gui)
     , _imp( new ProgressPanelPrivate() )
+    , _taskbar(0)
 {
+    _taskbar = new TaskBar(this);
+
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->setSpacing(0);
@@ -466,6 +469,7 @@ ProgressPanel::startTask(const NodePtr& node,
                                      canCancel,
                                      message, process) );
 
+    task->setTaskBar(_taskbar);
 
     if ( canPause || node->getEffectInstance()->isOutput() ) {
         task->createItems();

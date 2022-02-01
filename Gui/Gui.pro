@@ -203,6 +203,7 @@ SOURCES += \
     TabGroup.cpp \
     TabWidget.cpp \
     TableModelView.cpp \
+    TaskBar.cpp \
     TextRenderer.cpp \
     TimeLineGui.cpp \
     ToolButton.cpp \
@@ -347,6 +348,7 @@ HEADERS += \
     TabGroup.h \
     TabWidget.h \
     TableModelView.h \
+    TaskBar.h \
     TextRenderer.h \
     TimeLineGui.h \
     ToolButton.h \
@@ -411,6 +413,8 @@ OTHER_FILES += \
     Resources/Images/splashscreen.svg
 
 macx {
+HEADERS += TaskBarMac.h
 OBJECTIVE_SOURCES += \
-    $$PWD/../Gui/QtMac.mm
+    $$PWD/../Gui/QtMac.mm \
+    $$PWD/../Gui/TaskBarMac.mm
 }

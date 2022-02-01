@@ -38,6 +38,7 @@
 
 #include "Gui/GuiFwd.h"
 
+#include "Gui/TaskBar.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -122,6 +123,12 @@ public:
 
     ProcessHandlerPtr getProcess() const;
 
+    void setTaskBar(TaskBar *taskbar);
+
+    void updateTaskBarProgress(ProgressTaskStatusEnum status, double progress);
+
+    void updateTaskBarState(TaskBar::ProgressState state);
+
 public Q_SLOTS:
 
     void onShowProgressPanelTimerTimeout();
@@ -170,6 +177,7 @@ private:
     void clearItems();
 
     boost::scoped_ptr<ProgressTaskInfoPrivate> _imp;
+    TaskBar *_taskbar;
 };
 
 NATRON_NAMESPACE_EXIT

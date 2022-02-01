@@ -188,6 +188,7 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
                                    const ProcessHandlerPtr& process)
     : QObject()
     , _imp( new ProgressTaskInfoPrivate(panel, node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process) )
+    , _taskbar(0)
 {
     //We compute the time remaining automatically based on a timer if this is not a render but a general progress dialog
     _imp->timer.reset(new TimeLapse);
@@ -250,9 +251,11 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
             if (_imp->canBePaused) {
                 _imp->statusItem->setText( tr("Paused") );
                 _imp->status = eProgressTaskStatusPaused;
+                updateTaskBarState(retCode == 1 ? TaskBar::PausedProgress : TaskBar::NoProgress);
             } else {
                 _imp->statusItem->setText( tr("Canceled") );
                 _imp->status = eProgressTaskStatusCanceled;
+                updateTaskBarState(TaskBar::NoProgress);
             }
         } else {
             if (retCode == 0) {
@@ -262,10 +265,12 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
                 if (_imp->progressBar) {
                     _imp->progressBar->setValue(100);
                 }
+                updateTaskBarState(TaskBar::NormalProgress);
             } else {
                 _imp->statusItem->setTextColor(Qt::red);
                 _imp->statusItem->setText( tr("Failed") );
                 _imp->status = eProgressTaskStatusFinished;
+                updateTaskBarState(TaskBar::ErrorProgress);
             }
         }
         _imp->refreshButtons();
@@ -275,6 +280,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
     node->getApp()->removeRenderFromQueue(effect);
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
+        updateTaskBarState(TaskBar::NoProgress);
     }
     if (!calledFromRenderEngine) {
         Q_EMIT taskCanceled();
@@ -395,6 +401,45 @@ ProcessHandlerPtr
 ProgressTaskInfo::getProcess() const
 {
     return _imp->process;
+}
+
+void
+ProgressTaskInfo::setTaskBar(TaskBar *taskbar)
+{
+    if (!taskbar) {
+        return;
+    }
+    _taskbar = taskbar;
+}
+
+void
+ProgressTaskInfo::updateTaskBarProgress(ProgressTaskInfo::ProgressTaskStatusEnum status,
+                                        double progress)
+{
+    if (!_taskbar) {
+        return;
+    }
+    switch(status) {
+    case eProgressTaskStatusPaused:
+        _taskbar->setProgressState(TaskBar::PausedProgress);
+        break;
+    case eProgressTaskStatusRunning:
+        _taskbar->setProgressState(TaskBar::NormalProgress);
+        break;
+    default:
+        _taskbar->setProgressState(TaskBar::NoProgress);
+        break;
+    }
+    _taskbar->setProgressValue(progress);
+}
+
+void
+ProgressTaskInfo::updateTaskBarState(TaskBar::ProgressState state)
+{
+    if (!_taskbar) {
+        return;
+    }
+    _taskbar->setProgressState(state);
 }
 
 bool
@@ -559,6 +604,8 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,
         _imp->statusItem->setText( tr("Running") );
         _imp->refreshButtons();
     }
+
+    updateTaskBarProgress(_imp->status, _imp->progressPercent);
 }
 
 void
@@ -683,6 +730,8 @@ ProgressTaskInfo::onCancelTriggered()
 
     cancelTask(false, 0);
     _imp->panel->removeTaskFromTable(thisShared);
+
+    updateTaskBarState(TaskBar::NoProgress);
 }
 
 void
