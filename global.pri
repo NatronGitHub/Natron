@@ -56,7 +56,7 @@ run-without-python {
     # PYTHON_VERSION contains major.minor.micro
     PYTHON_VERSION=$$system(python$$PYV -c \"import platform; print(platform.python_version())\")
     # PYTHON_SITE_PACKAGES contains the location of the site-packages directory
-    PYTHON_SITE_PACKAGES=$$system(python$$PYV -c \"from distutils.sysconfig import get_python_lib; print(get_python_lib())\")
+    PYTHON_SITE_PACKAGES=$$system(python$$PYV -c \"import site; print(site.getsitepackages()[0])\")
     # User may specify an alternate python2-config from the command-line,
     # as in "qmake PYTHON_CONFIG=python2.7-config"
     isEmpty(PYTHON_CONFIG) {
