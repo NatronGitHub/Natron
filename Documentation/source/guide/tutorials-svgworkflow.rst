@@ -8,7 +8,7 @@ Vector graphics workflow
   
 Software development is constantly growing. The film and multimedia industry are coming together as partners to provide a one stop shop by allowing applications to communicate via different file formats. One of the formats that have proven to be useful in both industries is the SVG (Scalable Vector Graphics) format. Its architecture algorithm is based on mathematical expressions. In simpler terms, in doesn't suffer image noise & artifacts like bitmap formats such as PNG, TIFF, JPG and etc.
 
-Inkscape's SVG format uses multiple layers and paths, but most graphics applications can only parse this as a flat bitmap. There will times when an artist may want to animate and/or modify those layers in a compositing program but can't due to limitation in the SVG importer. Natron however supports all layers and paths in the SVG file, this enables enhanced control over the vector graphics.
+Inkscape's SVG format uses multiple layers and paths, but most graphics applications can only parse this as a flat bitmap. There will come times when an artist may want to animate and/or modify those layers in a compositing program but can't due to limitation in the SVG importer. Natron however supports all layers and paths in the SVG file, this enables enhanced control over the vector graphics.
 
 This tutorial will show you how to use vector graphics from Inkscape in Natron.
 
