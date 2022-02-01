@@ -12,7 +12,7 @@
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.37.2
+UTILLINUX_VERSION=2.37.2 # 2.37.3 fails to build
 #UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION} # eg 2.36
 #UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION}  # eg 2.36
 # if has minor version, uncomment the proper macros below

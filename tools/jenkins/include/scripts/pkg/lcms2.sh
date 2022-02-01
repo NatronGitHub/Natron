@@ -2,7 +2,7 @@
 
 # Install lcms2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/lcms2.html
-LCMS_VERSION=2.12
+LCMS_VERSION=2.13
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"
 LCMS_SITE="https://sourceforge.net/projects/lcms/files/lcms/${LCMS_VERSION}"
 if download_step; then

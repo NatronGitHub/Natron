@@ -2,7 +2,7 @@
 
 # Install p11-kit (for gnutls)
 # http://www.linuxfromscratch.org/blfs/view/svn/postlfs/p11-kit.html
-P11KIT_VERSION=0.24.0 # select P11KIT_VERSION_SHORT below
+P11KIT_VERSION=0.24.1 # select P11KIT_VERSION_SHORT below
 P11KIT_VERSION_SHORT=${P11KIT_VERSION} # if P11KIT_VERSION has 3 components, eg 0.23.16
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*} # if P11KIT_VERSION has 4 components, eg 0.23.16.1
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.xz"

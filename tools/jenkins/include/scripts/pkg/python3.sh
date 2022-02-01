@@ -2,7 +2,7 @@
 
 # Install Python3
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python3.html
-PY3_VERSION=3.9.9
+PY3_VERSION=3.9.10
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"

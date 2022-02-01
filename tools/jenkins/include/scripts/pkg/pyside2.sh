@@ -2,8 +2,8 @@
 
 # Install pyside2
 # see https://pypi.org/project/PySide2/
-PYSIDE2_VERSION="5.15.2"
-PYSIDE2_VERSION_SHORT=${PYSIDE2_VERSION%.*}
+PYSIDE2_VERSION="5.15.2.1"
+PYSIDE2_VERSION_SHORT="5.15" # ${PYSIDE2_VERSION%.*}
 #PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
 #PYSIDE2_SITE="https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${PYSIDE2_VERSION}-src"
 
@@ -33,7 +33,7 @@ if build_step && { force_build || { [ ! -x "$SDK_HOME/lib/python{PY3_VERSION_SHO
         rm -rf "pyside-setup-opensource-src-${PYSIDE2_VERSION}"
     else
         #${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --index-url=http://download.qt.io/snapshots/ci/pyside/${PYSIDE2_VERSION}/latest/ pyside2 --trusted-host download.qt.io
-        ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install pyside2
+        ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install pyside2=="${PYSIDE2_VERSION}"
         pushd ${SDK_HOME}/lib/python${PY3_VERSION_SHORT}/site-packages/PySide2
         ln -s ../shiboken2/libshiboken2.abi3.so.${PYSIDE2_VERSION_SHORT} .
         cd Qt/lib

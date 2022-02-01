@@ -8,9 +8,18 @@ QT5_VERSION=5.15.2
 QT5_VERSION_SHORT=${QT5_VERSION%.*}
 QT5_TAR="qt-everywhere-src-${QT5_VERSION}.tar.xz"
 QT5_SITE=" https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}/single"
+#  Now that Qt5 updates are restricted to commercial customers, upstream patches for the
+# various modules are being curated at kde. Patches for the modules required by packages
+# in BLFS have been aggregated for the non-modular Qt5 build we use.
+# Required patch: https://www.linuxfromscratch.org/patches/blfs/svn/qt-everywhere-src-5.15.2-kf5.15-2.patch
+# Details of the kde curation can be found at https://dot.kde.org/2021/04/06/announcing-kdes-qt-5-patch-collection
+# and https://community.kde.org/Qt5PatchCollection.
+QT5_PATCH="qt-everywhere-src-5.15.2-kf5.15-2.patch"
+QT5_PATCH_SITE="https://www.linuxfromscratch.org/patches/blfs/svn"
 
 if download_step; then
     download "$QT5_SITE" "$QT5_TAR"
+    download "$QT5_PATCH_SITE" "$QT5_PATCH"
 fi
 if build_step && { force_build || { [ "${REBUILD_QT5:-}" = "1" ]; }; }; then
     rm -rf "$QT5PREFIX"
@@ -22,13 +31,7 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
     start_build
     untar "$SRC_PATH/$QT5_TAR"
     pushd "qt-everywhere-src-${QT5_VERSION}"
-    # First apply a patch to fix an Out Of Bounds read in QtSVG: 
-    patch -Np1 -i "$INC_PATH"/patches/Qt/qt-everywhere-src-5.15.2-CVE-2021-3481-1.patch
-    # Next fix some issues using gcc-11:
-    sed -i '/utility/a #include <limits>'     qtbase/src/corelib/global/qglobal.h         &&
-    sed -i '/string/a #include <limits>'      qtbase/src/corelib/global/qfloat16.h        &&
-    sed -i '/qbytearray/a #include <limits>'  qtbase/src/corelib/text/qbytearraymatcher.h &&
-    sed -i '/type_traits/a #include <limits>' qtdeclarative/src/qmldebug/qqmlprofilerevent_p.h
+    patch -Np1 -i "$SRC_PATH/$QT5_PATCH"
     # Install Qt5 by running the following commands: 
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT5PREFIX" \
             -sysconfdir /etc/xdg                      \
