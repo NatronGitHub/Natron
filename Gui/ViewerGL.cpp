@@ -3632,6 +3632,7 @@ ViewerGL::swapOpenGLBuffers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+    // calls glSwapBuffers in the widget stack as described in https://doc.qt.io/qt-5/qopenglwidget.html#threading
     update();
 #else
     swapBuffers();
