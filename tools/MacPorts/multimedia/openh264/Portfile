@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                openh264
-version             1.7.0
+version             2.2.0
 categories          multimedia
 maintainers         openmaintainer
 platforms           darwin
@@ -16,9 +16,9 @@ long_description    H.264 codec from Cisco
 homepage            http://www.openh264.org
 master_sites        https://github.com/cisco/openh264/archive/
 distfiles           v${version}${extract.suffix}
-
-checksums           rmd160  e03b32dea12ec4c24e373a06d5a0685839857f52 \
-                    sha256  9c07c38d7de00046c9c52b12c76a2af7648b70d05bd5460c8b67f6895738653f
+checksums           rmd160  dad7f299dbe66e8d18a91b6333678bb47085065d \
+                    sha256  e4e5c8ba48e64ba6ce61e8b6e2b76b2d870c74c270147649082feabb40f25905 \
+                    size    60275282
 
 depends_build-append port:nasm
 

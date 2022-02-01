@@ -1,0 +1,12 @@
+Fix failure to detect guile due to implicit declaration of function.
+https://github.com/gnutls/gnutls/commit/2d0f980438a32eb5ca15d907a5a32d10ab7efa16
+--- configure.orig	2021-05-24 03:05:44.000000000 -0500
++++ configure	2022-01-26 00:44:05.000000000 -0600
+@@ -69687,6 +69687,7 @@
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
++#include <libguile.h>
+ int
+ main ()
+ {

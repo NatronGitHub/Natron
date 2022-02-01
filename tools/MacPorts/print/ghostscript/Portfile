@@ -4,8 +4,8 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.54.0
-revision            1
+version             9.55.0
+revision            0
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -33,24 +33,13 @@ distfiles           ${distname}.tar.gz:source \
                     ${mappingresources_commit}.zip:misc
 
 patchfiles          patch-base_unix-dll.mak.diff \
-                    patch-base_unixinst.mak.diff
+                    patch-base_unixinst.mak.diff \
+                    patch-ghostscript-gsicc_lcms2.diff
 
-# Fix newline issue in configure.ac
-# https://bugs.ghostscript.com/show_bug.cgi?id=703880
-patchfiles-append   patch-configure.ac.diff
-
-# Fix issue with GCC pragmas inside function bodies
-# https://trac.macports.org/ticket/63105
-patchfiles-append   patch-base_scommon.h.diff
-
-# Fix for CVE-2021-3781
-# https://git.ghostscript.com/?p=ghostpdl.git;a=commitdiff;h=a9bd3dec9fde
-patchfiles-append   patch-cve-2021-3781.diff
-
-checksums           ghostpdl-9.54.0.tar.gz \
-                    rmd160  a48ecd441c761a9401a5e4a34ea90afd6936d419 \
-                    sha256  63e54cddcdf48ea296b6315353f86b8a622d4e46959b10d536297e006b85687b \
-                    size    78771565 \
+checksums           ghostpdl-9.55.0.tar.gz \
+                    rmd160  ad4d642da9d42f50d7cacdd3deb38548e666653f \
+                    sha256  b73cdfcb7b1c2a305748d23b00a765bcba48310564940b1eff1457f19f898172 \
+                    size    90933732 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \

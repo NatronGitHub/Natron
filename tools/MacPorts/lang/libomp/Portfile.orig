@@ -43,6 +43,8 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
 
+    revision            1
+
     if {${os.major} <= 12} {
         # kmp_alloc.c includes <atomic> but libc++ is not the default on
         # these systems. https://trac.macports.org/ticket/52554
@@ -60,7 +62,7 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     dist_subdir         openmp-release
     worksrcdir          ${distname}
     set rtpath          "runtime/"
-    
+
     patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 
     livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
@@ -106,8 +108,14 @@ configure.args-delete   -DCMAKE_INSTALL_RPATH=${prefix}/lib \
 # With this, cmake sets the correct library name in the dylibs for the
 # final destination we move them to
 configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
-                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
-                        -DLIBOMP_OMPT_SUPPORT=FALSE
+                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp
+
+if {${os.major} <= 10} {
+    set hnames              {omp.h}
+    configure.args-append   -DLIBOMP_OMPT_SUPPORT=FALSE
+} else {
+    set hnames              {omp-tools.h omp.h ompt.h}
+}
 
 variant top_level description \
     "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
@@ -121,17 +129,22 @@ post-extract {
 post-destroot {
     set instdest ${destroot}${prefix}
     xinstall -d ${instdest}/share/doc/libomp
-    xinstall -d ${instdest}/include/libomp
-    move ${instdest}/tmp/include/omp.h ${instdest}/include/libomp/
-    xinstall -d ${instdest}/lib/libomp
 
+    xinstall -d ${instdest}/include/libomp
+    foreach h ${hnames} {
+        move ${instdest}/tmp/include/${h} ${instdest}/include/libomp/
+    }
+
+    xinstall -d ${instdest}/lib/libomp
     foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
         move ${instdest}/tmp/lib/${p} ${instdest}/lib/libomp/
     }
 
     if {[variant_isset top_level]} {
-        system -W ${instdest}/include \
-          "ln -s libomp/omp.h"
+        foreach h ${hnames} {
+            system -W ${instdest}/include \
+              "ln -s libomp/${h}"
+        }
         foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
             system -W ${instdest}/lib/ \
               "ln -s libomp/${p}"

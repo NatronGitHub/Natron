@@ -1,5 +1,5 @@
---- Portfile.orig	2021-10-25 20:02:31.000000000 -0700
-+++ Portfile	2021-10-25 20:06:45.000000000 -0700
+--- Portfile.orig	2022-01-30 14:36:18.000000000 -0800
++++ Portfile	2022-01-30 14:39:37.000000000 -0800
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -9,7 +9,7 @@
  if {${os.major} <= 17} {
      PortGroup           muniversal 1.0
  }
-@@ -30,17 +30,17 @@
+@@ -30,21 +30,19 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
@@ -36,8 +36,12 @@
 +        livecheck.regex         {"llvmorg-([0-9.]+)".*}
      }
  
+-    revision            1
+-
      if {${os.major} <= 12} {
-@@ -53,34 +53,38 @@
+         # kmp_alloc.c includes <atomic> but libc++ is not the default on
+         # these systems. https://trac.macports.org/ticket/52554
+@@ -55,34 +53,38 @@
      configure.cxxflags-append -std=c++11
      compiler.cxx_standard   2011
  
@@ -48,6 +52,8 @@
 -    dist_subdir         openmp-release
 -    worksrcdir          ${distname}
 -    set rtpath          "runtime/"
+-
+-    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 +    master_sites \
 +        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 +        https://releases.llvm.org/${version}
@@ -56,8 +62,7 @@
 +    dist_subdir             openmp-release
 +    worksrcdir              ${distname}
 +    set rtpath              "runtime/"
-     
--    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
++    
 +    # D88252 is to enable arm64 support
 +    patchfiles-append       patch-libomp-use-gettid-on-Leopard.diff \
 +                            reviews.llvm.org_D88252.diff
@@ -96,7 +101,51 @@
  }
  
  depends_build-append    port:perl5
-@@ -139,7 +143,7 @@
+@@ -108,14 +110,8 @@
+ # With this, cmake sets the correct library name in the dylibs for the
+ # final destination we move them to
+ configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
+-                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp
+-
+-if {${os.major} <= 10} {
+-    set hnames              {omp.h}
+-    configure.args-append   -DLIBOMP_OMPT_SUPPORT=FALSE
+-} else {
+-    set hnames              {omp-tools.h omp.h ompt.h}
+-}
++                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
++                        -DLIBOMP_OMPT_SUPPORT=FALSE
+ 
+ variant top_level description \
+     "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
+@@ -129,22 +125,17 @@
+ post-destroot {
+     set instdest ${destroot}${prefix}
+     xinstall -d ${instdest}/share/doc/libomp
+-
+     xinstall -d ${instdest}/include/libomp
+-    foreach h ${hnames} {
+-        move ${instdest}/tmp/include/${h} ${instdest}/include/libomp/
+-    }
+-
++    move ${instdest}/tmp/include/omp.h ${instdest}/include/libomp/
+     xinstall -d ${instdest}/lib/libomp
++
+     foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
+         move ${instdest}/tmp/lib/${p} ${instdest}/lib/libomp/
+     }
+ 
+     if {[variant_isset top_level]} {
+-        foreach h ${hnames} {
+-            system -W ${instdest}/include \
+-              "ln -s libomp/${h}"
+-        }
++        system -W ${instdest}/include \
++          "ln -s libomp/omp.h"
+         foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
+             system -W ${instdest}/lib/ \
+               "ln -s libomp/${p}"
+@@ -152,7 +143,7 @@
      }
  
      set fpath ${worksrcpath}/${rtpath}
