@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+#include "Gui/TaskBar.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -146,6 +147,7 @@ private:
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<ProgressPanelPrivate> _imp;
+    TaskBar *_taskbar;
 };
 
 NATRON_NAMESPACE_EXIT
