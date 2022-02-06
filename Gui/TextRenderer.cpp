@@ -345,19 +345,15 @@ TextRenderer::renderText(float x,
             }
             glCheckError();
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
-            glBegin(GL_TRIANGLES);
+            glBegin(GL_QUADS);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
             glVertex2f(0, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
             glVertex2f(c->w * scalex, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
             glVertex2f(c->w * scalex, c->h * scaley);
-            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, c->h * scaley);
-            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-            glVertex2f(0, 0);
 #else
             glBegin(GL_QUADS);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
