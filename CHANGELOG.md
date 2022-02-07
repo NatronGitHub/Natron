@@ -16,6 +16,7 @@
 
 ### Changes
 
+- Added support for render progress in taskbar icon (Windows/macOS). #766
 - Added palette support in color selector. #754
 - Allow creating a node with the same name that was just deleted. #732
 - Natron can now keep up to 32 project backups (see Preferences/General/Save versions). #562
