@@ -283,8 +283,11 @@ macx {
     }
   }
 
-  #link against the CoreFoundation framework for the StandardPaths functionnality
+  # link against the CoreFoundation framework for the StandardPaths functionality
   LIBS += -framework CoreServices
+
+  # link against the AppKit framework for taskbar support
+  LIBS += -framework AppKit
 
   #// Disable availability macros on macOS
   #// because we may be using libc++ on an older macOS,
@@ -345,7 +348,8 @@ win32 {
   # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
   LIBS += -lopengl32 -lGdi32
 
-
+  # taskbar support
+  LIBS += -lole32
 }
 
 win32-g++ {
