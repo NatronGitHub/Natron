@@ -13,7 +13,7 @@ description         GPL Ghostscript, An interpreter for PostScript and PDF
 long_description    Ghostscript is the well-known PostScript interpreter which \
                     is available for all common and most esoteric platforms and \
                     supports many different printers and some displays.
-platforms           darwin
+
 homepage            https://www.ghostscript.com/
 master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
                     sourceforge:project/gs-fonts/gs-fonts/6.0%20%28misc%2C%20AFPL%29/:otherfonts \
@@ -92,12 +92,12 @@ post-extract {
 
 post-patch {
     reinplace s|__PREFIX__|${prefix}| ${worksrcpath}/base/unix-dll.mak
-    reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| configure.ac
+    reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| ${worksrcpath}/configure.ac
 
     # Ensure that MacPorts perl is used everywhere
     fs-traverse f ${worksrcpath} {
         if {[string match *.pl ${f}]} {
-            reinplace s|/usr/bin/perl|${prefix}/bin/perl| ${f}
+            reinplace -E "s:(/usr/bin/perl|/usr/bin/env perl):${prefix}/bin/perl:g" ${f}
         }
     }
 }
@@ -108,6 +108,7 @@ configure.ldflags-prepend \
 
 use_autoreconf      yes
 autoreconf.args     -fv
+configure.checks.implicit_function_declaration.whitelist-append strchr
 
 # Make included OpenJPEG uses its own headers rather than the system ones
 configure.cppflags-replace \
