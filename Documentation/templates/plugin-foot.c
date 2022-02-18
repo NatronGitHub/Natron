@@ -5,7 +5,7 @@
 "<hr/>\n"
 "<div role=\"contentinfo\">\n"
 "<p>\n"
-"&copy; Copyright 2013-2021 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+"&copy; Copyright 2013-2022 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
 "</p>\n"
 "</div>\n"
 "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"
