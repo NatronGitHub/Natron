@@ -193,7 +193,7 @@ ViewerGL::resizeGL(int w,
     glViewport (0, 0, w, h);
     double zoomWidth = w;
     double zoomHeight = h;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
     double screenPixelRatio = getScreenPixelRatio();
     zoomWidth /= screenPixelRatio;
     zoomHeight /= screenPixelRatio;
