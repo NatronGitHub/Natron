@@ -35,12 +35,15 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSize>
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -52,7 +55,7 @@ NATRON_NAMESPACE_ENTER
  **/
 struct HistogramPrivate;
 class Histogram
-    : public QGLWidget
+    : public QOpenGLWidget
       , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -72,7 +75,7 @@ public:
     };
 
     Histogram(Gui* gui,
-              const QGLWidget* shareWidget = NULL);
+              const QOpenGLWidget* shareWidget = NULL);
 
     virtual ~Histogram();
 

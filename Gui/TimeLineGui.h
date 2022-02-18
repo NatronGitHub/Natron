@@ -38,12 +38,17 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include <QtOpenGL/QGLWidget>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
 #include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 #include "Global/GlobalDefines.h"
 
@@ -54,7 +59,7 @@ NATRON_NAMESPACE_ENTER
 struct TimelineGuiPrivate;
 
 class TimeLineGui
-    : public QGLWidget
+    : public QOpenGLWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

@@ -49,15 +49,18 @@
 #include "Global/KeySymbols.h"
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-CLANG_DIAG_OFF(deprecated)
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QDebug>
 #include <QtCore/QPointF>
 #include <QtCore/QThread>
 #include <QFont>
 #include <QColor>
 #include <QApplication>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 
 #ifndef M_PI

@@ -42,6 +42,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+#include "Gui/QGLExtrasCompat.h"
+#endif
+
 
 #define WIPE_MIX_HANDLE_LENGTH 50.
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
@@ -159,8 +163,8 @@ struct ViewerGL::Implementation
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
-    boost::scoped_ptr<QGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
-    boost::scoped_ptr<QGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
+    boost::scoped_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
+    boost::scoped_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/

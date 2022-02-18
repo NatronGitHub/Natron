@@ -45,6 +45,10 @@
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/KnobGui.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 NATRON_NAMESPACE_ENTER
 
 CurveGui::CurveGui(CurveWidget *curveWidget,
@@ -299,7 +303,7 @@ CurveGui::drawCurve(int curveIndex,
         return;
     }
 
-    assert( QGLContext::currentContext() == _curveWidget->context() );
+    assert( QOpenGLContext::currentContext() == _curveWidget->context() );
 
     std::vector<float> vertices, exprVertices;
     double x1 = 0;

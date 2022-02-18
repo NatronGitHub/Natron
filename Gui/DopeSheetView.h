@@ -36,18 +36,13 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/GlobalDefines.h"
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
+#include <QTreeWidget>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtWidgets/QTreeWidget>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLWidget>
 #else
-#include <QtGui/QTreeWidget>
+#include "Gui/QGLWidgetCompat.h"
 #endif
-
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
@@ -81,7 +76,7 @@ class DopeSheetViewPrivate;
  * /!\ This class should depends less of the hierarchy view.
  */
 class DopeSheetView
-    : public QGLWidget, public OverlaySupport
+    : public QOpenGLWidget, public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

@@ -62,6 +62,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 #include "Gui/ticks.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QOpenGLContext>
+#endif
+
 NATRON_NAMESPACE_ENTER
 
 #define TICK_HEIGHT 7
@@ -235,7 +239,7 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
                          TimeLinePtr timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
-    : QGLWidget(viewerTab)
+    : QOpenGLWidget(viewerTab)
     , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
 {
     setTimeline(timeline);
@@ -856,7 +860,7 @@ TimeLineGui::renderText(double x,
                         const QFont & font,
                         int flags) const
 {
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     glCheckError();
     if ( text.isEmpty() ) {
@@ -1017,7 +1021,7 @@ TimeLineGui::enterEvent(QEvent* e)
 {
     _imp->alphaCursor = true;
     update();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -1025,7 +1029,7 @@ TimeLineGui::leaveEvent(QEvent* e)
 {
     _imp->alphaCursor = false;
     update();
-    QGLWidget::leaveEvent(e);
+    QOpenGLWidget::leaveEvent(e);
 }
 
 void
@@ -1083,7 +1087,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
     }
 
     _imp->state = eTimelineStateIdle;
-    QGLWidget::mouseReleaseEvent(e);
+    QOpenGLWidget::mouseReleaseEvent(e);
 } // TimeLineGui::mouseReleaseEvent
 
 void

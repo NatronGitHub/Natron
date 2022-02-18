@@ -39,9 +39,13 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-CLANG_DIAG_OFF(deprecated)
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#include <QPainter>
+#include <QOpenGLWidget>
+#else
+#include "Gui/QGLWidgetCompat.h"
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -148,7 +152,9 @@ TextRendererPrivate::newTransparentTexture()
 
     QImage image(TEXTURE_SIZE, TEXTURE_SIZE, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
-    image = QGLWidget::convertToGLFormat(image);
+#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+    image = QOpenGLWidget::convertToGLFormat(image);
+#endif
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits() );
 
@@ -196,7 +202,9 @@ TextRendererPrivate::createCharacter(QChar c)
 
 
     // fill the texture with the QImage
-    image = QGLWidget::convertToGLFormat(image);
+#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+    image = QOpenGLWidget::convertToGLFormat(image);
+#endif
     glCheckError();
 
     GLuint savedTexture;
@@ -278,7 +286,7 @@ TextRenderer::renderText(float x,
     TextRendererPrivatePtr p;
     FontRenderers::iterator it = _imp->renderers.find(font);
     if ( it != _imp->renderers.end() ) {
-        p  = (*it).second;
+        p = it->second;
     } else {
         p = TextRendererPrivatePtr( new TextRendererPrivate(font) );
         _imp->renderers[font] = p;
@@ -336,6 +344,17 @@ TextRenderer::renderText(float x,
                 assert( glIsTexture(texture) );
             }
             glCheckError();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+            glBegin(GL_QUADS);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
+            glVertex2f(0, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
+            glVertex2f(c->w * scalex, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
+            glVertex2f(c->w * scalex, c->h * scaley);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
+            glVertex2f(0, c->h * scaley);
+#else
             glBegin(GL_QUADS);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, 0);
@@ -345,6 +364,7 @@ TextRenderer::renderText(float x,
             glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
             glVertex2f(0, c->h * scaley);
+#endif
             glEnd();
             glCheckErrorIgnoreOSXBug();
             glTranslatef(c->w * scalex, 0, 0);

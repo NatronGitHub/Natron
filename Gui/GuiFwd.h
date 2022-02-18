@@ -49,7 +49,6 @@ class QFont;
 class QFontComboBox;
 class QFontMetrics;
 class QFrame;
-class QGLShaderProgram;
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
 class QGraphicsScene;
@@ -94,6 +93,10 @@ class QVBoxLayout;
 class QWheelEvent;
 class QWidget;
 typedef boost::shared_ptr<QUndoStack> QUndoStackPtr;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+class QOpenGLShaderProgram;
+#endif
 
 // Natron Gui
 NATRON_NAMESPACE_ENTER
