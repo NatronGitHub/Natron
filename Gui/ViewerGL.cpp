@@ -583,7 +583,15 @@ void
 ViewerGL::centerWipe()
 {
     QPoint pos = mapFromGlobal( QCursor::pos() );
-    QPointF zoomPos = toZoomCoordinates( QPointF( pos.x(), pos.y() ) );
+    int x = pos.x();
+    int y = pos.y();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+    double screenPixelRatio = getScreenPixelRatio();
+    x *= screenPixelRatio;
+    y *= screenPixelRatio;
+#endif
+
+    QPointF zoomPos = toZoomCoordinates( QPointF(x, y) );
 
     {
         QMutexLocker l(&_imp->wipeControlsMutex);
