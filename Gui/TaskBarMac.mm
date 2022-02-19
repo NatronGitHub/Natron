@@ -28,6 +28,10 @@
 #import <AppKit/NSView.h>
 #import <Foundation/NSString.h>
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+#define NSCompositingOperationCopy NSCompositeCopy
+#endif
+
 @interface TaskBarView : NSView {
     double _progress;
 }
@@ -67,7 +71,11 @@
     [[NSColor blackColor] setFill];
     [NSBezierPath fillRect:progressBoundary];
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
     [[NSColor systemBlueColor] setFill];
+#else
+    [[NSColor blueColor] setFill];
+#endif
     [NSBezierPath fillRect:currentProgress];
 
     [[NSColor blackColor] setStroke];
