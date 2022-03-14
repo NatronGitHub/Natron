@@ -18,7 +18,7 @@ A video compositing software is not a 3D computer graphics software, like Blende
 Theory
 ******
 
-The math behind compositing was formalized by Porter & Duff [PorterDuff1984]_ after the preliminary work by Wallace [Wallace1981]_. More informating about the theory behind compositing can be found in the works of Jim Blinn [Blinn1994a]_ [Blinn1994b]_ and Alvy Ray Smith [Smith1995]_.
+The math behind compositing was formalized by Porter & Duff [PorterDuff1984]_ after the preliminary work by Wallace [Wallace1981]_. More information about the theory behind compositing can be found in the works of Jim Blinn [Blinn1994a]_ [Blinn1994b]_ and Alvy Ray Smith [Smith1995]_.
 
 The compositing theory also introduces the notion of "premultipled" RGB values, or "associated alpha", and there is still a lot of `debate <https://groups.google.com/forum/#!topic/ocio-dev/ZehKhUFqhjc>`_ about `premultiplying or not <http://lists.openimageio.org/pipermail/oiio-dev-openimageio.org/2011-December/004709.html>`_.
 
@@ -27,11 +27,11 @@ Natron made the choice of using premultiplied alpha by default in the compositin
 Practice
 ********
 
-There are excellent books that introduce how to do compositing in practice, and using compositing software: [Wright2010]_, [Brinkmann2008]_, [Lanier2009]_, [VES2014]_.
+There are excellent books that introduce how to do compositing in practice, and how to use compositing software: [Wright2010]_, [Brinkmann2008]_, [Lanier2009]_, [VES2014]_.
 
 Most of what is described in these books also apply to Natron. It is thus strongly recommended to become familiar with the techniques and workflows described in these books before starting to use Natron.
 
-There are also video tutorials available on video streaming platforms (youtube, vimeo) for Natron or other reference compositing software, such as Nuke of Fusion. These tutorials can be used to get acquainted with compositing.
+There are also video tutorials available on video streaming platforms (youtube, vimeo) for Natron or other reference compositing software, such as Nuke or Fusion. These tutorials can be used to get acquainted with compositing.
 
 
 .. [Wikipedia] `Compositing <https://en.wikipedia.org/wiki/Compositing>`_, in Wikipedia, retrieved Sep. 14, 2016 from https://en.wikipedia.org/wiki/Compositing
@@ -52,5 +52,5 @@ There are also video tutorials available on video streaming platforms (youtube, 
 
 .. [Wright2010] Steve Wright, Digital Compositing for Film and Video, Third Edition, 2010 (ISBN 78-0-240-81309-7)
 
-.. [VES2014] The VES Handbook of Visual Effects: Industry Standard VFX Practices and Procedures, 2nd Edition (ISBM 0240825187)
+.. [VES2014] The VES Handbook of Visual Effects: Industry Standard VFX Practices and Procedures, 2nd Edition (ISBN 0240825187)
 
