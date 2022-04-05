@@ -98,6 +98,9 @@ variant dane description {Build libdane using unbound libraries} {
 if {${os.platform} eq "darwin" && ${os.major} > 19 && ${os.arch} eq "arm"} {
     depends_build-append    port:libtool
 
+    # See: https://gitlab.com/gnutls/gnutls/-/issues/1317
+    patchfiles-append       patch-lib-accelerated-aarch64-Makefile.am.diff
+
     use_autoreconf          yes
     autoreconf.args         --install --verbose --force
 

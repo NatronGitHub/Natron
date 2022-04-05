@@ -1,4 +1,4 @@
---- Portfile.orig	2021-09-28 08:47:56.000000000 -0700
+--- Portfile.orig	2022-04-05 16:10:13.000000000 -0700
 +++ Portfile	2021-04-08 19:00:55.000000000 -0700
 @@ -3,8 +3,8 @@
  PortSystem          1.0
@@ -11,7 +11,7 @@
  
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
-@@ -12,16 +12,28 @@
+@@ -12,38 +12,58 @@
  
  categories          graphics
  platforms           darwin
@@ -44,7 +44,8 @@
  
  depends_build       port:pkgconfig
  
-@@ -29,21 +41,29 @@
+-depends_lib         path:lib/pkgconfig/jasper.pc:jasper \
++depends_lib         port:jasper \
                      path:include/turbojpeg.h:libjpeg-turbo \
                      port:lcms2
  

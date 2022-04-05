@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.4.1
-revision            1
+revision            4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} {mascguy @mascguy} openmaintainer
@@ -373,9 +373,11 @@ variant gpl2 description {Enable GPL code, license will be GPL-2+} {
 
 variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+} {
     configure.args-append   --enable-version3 \
-                            --enable-libsmbclient
+                            --enable-libsmbclient \
+                            --enable-libaribb24
 
-    depends_lib-append      port:samba3
+    depends_lib-append      path:lib/pkgconfig/smbclient.pc:samba3 \
+                            port:libaribb24
 
     license                 GPL-3+
 }

@@ -25,7 +25,7 @@ checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
 
 depends_build       port:pkgconfig
 
-depends_lib         port:jasper \
+depends_lib         path:lib/pkgconfig/jasper.pc:jasper \
                     path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
 
