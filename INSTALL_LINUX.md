@@ -85,7 +85,7 @@ You can use them as a reference, but the resulting binaries are not guaranteed t
 
 You'll need to install Qt4 libraries, usually you can get them from your package manager (which depends on your Linux distribution). Many distributions have deprecated Qt 4 and you may thus need to build it from source.
 
-Alternatively you can download it directly from [Qt download](http://qt-project.org/downloads).
+Alternatively you can download it directly from [Qt download](https://download.qt.io/archive/qt/4.8/4.8.7/).
 
 Please download `Qt 4.*`, Natron was not fully tested with Qt 5.
 
