@@ -8,7 +8,7 @@ name                libvpx
 conflicts           libvpx-devel
 set my_name         libvpx
 version             1.11.0
-revision            1
+revision            2
 categories          multimedia
 maintainers         {mascguy @mascguy} openmaintainer
 platforms           darwin
@@ -37,8 +37,8 @@ fetch.type          git
 git.url             https://chromium.googlesource.com/webm/${my_name}
 git.branch          v${version}
 
-# support for non-intel archs removed in version 1.5.0
-supported_archs     x86_64 i386 arm64
+# upstream support for non-intel archs removed in version 1.5.0
+supported_archs     x86_64 i386 arm64 ppc ppc64
 
 patchfiles          patch-Makefile.diff \
                     patch-configure.sh.diff
@@ -55,11 +55,26 @@ configure.args      --enable-vp8 \
                     --enable-postproc \
                     --enable-multithread \
                     --enable-experimental \
-                    --enable-shared \
                     --disable-install-docs \
                     --disable-debug-libs \
                     --disable-examples \
-                    --disable-unit-tests
+                    --enable-unit-tests
+
+platform darwin {
+    if {${build_arch} eq "ppc" || ${build_arch} eq "ppc64"} {
+        # disable a wrong kind of abi
+        patchfiles-append      patch-vpx_ports.diff
+        # with shared enabled the build fails
+        configure.args-append  --disable-shared
+    } else {
+        configure.args-append  --enable-shared
+    }
+}
+
+platform darwin 8 {
+    depends_build-append  port:gmake
+    build.cmd             ${prefix}/bin/gmake
+}
 
 build.target
 build.args          verbose=1
@@ -89,6 +104,15 @@ if {${universal_possible} && [variant_isset universal]} {
         set merger_configure_env(${my_arch})      LD=${configure.cc}
     }
 
+    foreach my_arch {ppc ppc64} {
+
+        set merger_host(${my_arch}) ""
+
+        set merger_configure_args(${my_arch})     --force-target=generic-gnu
+
+        set merger_configure_env(${my_arch})      LD=${configure.cc}
+    }
+
     if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
         depends_build-append  port:yasm
         depends_skip_archcheck-append yasm
@@ -107,10 +131,14 @@ if {${universal_possible} && [variant_isset universal]} {
 
 } else {
 
-    # normal build
-
-    # force the target
-    configure.args-append --force-target=${configure.build_arch}-${os.platform}${os.major}-gcc
+    # single-arch build
+    
+    # force the target: generic fix for PowerPC
+    if {${build_arch} eq "ppc" || ${build_arch} eq "ppc64"} {
+           configure.args-append --force-target=generic-gnu
+    } else {
+           configure.args-append --force-target=${configure.build_arch}-${os.platform}${os.major}-gcc
+    }
 
     # set LD
     configure.env-append  LD=${configure.cc}
@@ -135,6 +163,9 @@ post-destroot {
         system "install_name_tool -id [string map [list ${destroot} ""] ${f}] ${f}"
     }
 }
+
+test.run        yes
+test.target     test
 
 livecheck.type  regex
 livecheck.url   https://chromium.googlesource.com/webm/${my_name}

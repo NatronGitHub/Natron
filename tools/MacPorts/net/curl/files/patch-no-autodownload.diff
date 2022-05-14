@@ -1,8 +1,8 @@
---- Makefile.orig	2018-10-18 08:27:51.000000000 -0500
-+++ Makefile	2018-11-02 08:49:31.000000000 -0500
-@@ -120,7 +120,7 @@
+--- Makefile.orig	2022-04-25 02:28:11.000000000 -0500
++++ Makefile	2022-05-05 08:49:12.000000000 -0500
+@@ -83,7 +83,7 @@
  
- ca-bundle: lib/mk-ca-bundle.pl
+ ca-bundle: scripts/mk-ca-bundle.pl
  	@echo "generate a fresh ca-bundle.crt"
 -	@perl $< -b -l -u lib/ca-bundle.crt
 +	@perl $< -n lib/ca-bundle.crt

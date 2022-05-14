@@ -6,7 +6,7 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         7.82.0
+version                         7.83.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -28,9 +28,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  223c63a2bdc96ca6c389350b10e8d78ae8f35d6f \
-                                sha256  0aaa12d7bd04b0966254f2703ce80dd5c38dbbd76af0297d3d690cdce58a583c \
-                                size    2446764
+                                rmd160  ac59faa4f713bcf13004f7c6663e0ac31031c5d1 \
+                                sha256  2cb9c2356e7263a1272fd1435ef7cdebf2cd21400ec287b068396deb705c22c4 \
+                                size    2474940
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -39,7 +39,8 @@ if {${name} eq ${subport}} {
 
     depends_build               port:pkgconfig
 
-    depends_lib                 port:libidn2 \
+    depends_lib                 port:brotli \
+                                port:libidn2 \
                                 port:libpsl \
                                 port:zlib \
                                 port:zstd
@@ -50,7 +51,6 @@ if {${name} eq ${subport}} {
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
-                                --without-brotli \
                                 --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
@@ -65,8 +65,10 @@ if {${name} eq ${subport}} {
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
+                                --with-brotli \
                                 --with-libidn2=${prefix} \
                                 --with-zlib=${prefix} \
+                                --with-zstd \
                                 ac_cv_prog_AWK=/usr/bin/awk
 
     configure.cflags-append     -mmacosx-version-min=${macosx_deployment_target}
@@ -190,13 +192,29 @@ if {${name} eq ${subport}} {
 
     variant http2 description {Support HTTP/2 with nghttp2} {
         depends_lib-append      port:nghttp2
-        configure.args-replace  --without-nghttp2 --with-nghttp2
+        configure.args-replace  --without-nghttp2 --with-nghttp2=${prefix}
+    }
+
+    # HTTP/2 support is desirable but nghttp2 requires C++14. Some users
+    # use a bootstrap MacPorts installation to provide a newer curl for
+    # a primary MacPorts installation and requiring those users to build
+    # a C++14 compiler for that is undesirable. Also, newer clangs use
+    # cmake, which uses curl, so it would introduce a dependency cycle.
+    # So enable this variant by default only on systems that have a
+    # suitable compiler in Xcode.
+    if {${os.platform} ne "darwin" || ${os.major} >= 14} {
+        default_variants-append +http2
     }
 
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
         depends_lib-append      path:lib/libldap.dylib:openldap
         configure.args-replace  --disable-ldap --enable-ldap
         configure.args-replace  --disable-ldaps --enable-ldaps
+    }
+
+    variant rtmp description {Support RTMP media streams} {
+        depends_lib-append      port:rtmpdump
+        configure.args-replace  --without-librtmp --with-librtmp
     }
 
     variant sftp_scp description {Support SFTP/SCP connections via libssh2} {
@@ -207,17 +225,17 @@ if {${name} eq ${subport}} {
     variant ssl conflicts darwinssl gnutls mbedtls wolfssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
-        configure.args-replace  --without-ssl --with-openssl=${prefix}
+        configure.args-replace  --without-ssl --with-openssl
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 
     if {![variant_isset darwinssl] && ![variant_isset gnutls] && ![variant_isset mbedtls] && ![variant_isset wolfssl]} {
-        default_variants +ssl
+        default_variants-append +ssl
     }
 
     livecheck.type              regex
     livecheck.url               [join [lrange [split [lindex ${master_sites} 0] {:}] 0 end-1] {:}]
-    livecheck.regex             ${name}-(\[0-9.\]+)${extract.suffix}
+    livecheck.regex             ${name}-(\[0-9.\]+)[quotemeta ${extract.suffix}]
 } else {
     livecheck.type              none
 }
@@ -248,11 +266,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1646637096
+    set certdata_updated        1650691528
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         8e3a124602d0da9cec272df4ca05b3a34d03b995
+    set certdata_commit         8cf7b945601fd5ba55e9bb596ad37e59b04f37c2
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20220215
+    set certdata_date           20220325
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -273,17 +291,18 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  dd75649ba413566d6752e1fb28f13d6ebb122481 \
-                                sha256  5b36e9c9343332a3d7ad6905a5da5420ced49285b55822c12fb5bfd7aa327bbf \
-                                size    263791
+                                rmd160  e1119533ee468881d723ea48585aa2e4384c69fb \
+                                sha256  284d41c132a84c0c1a2f4d3de6a040c980c1ae6e230c45720268f8e8565f1636 \
+                                size    264178
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \
-                                ${worksrcdir}/lib/mk-ca-bundle.pl
+                                ${worksrcdir}/scripts/mk-ca-bundle.pl
 
     post-extract {
         system -W ${workpath} "unzip -q -a [shellescape ${distpath}/${certdata_distfile}]"
         move ${workpath}/mozilla-central-${certdata_commit}/${certdata_path} ${worksrcpath}/${certdata_file}
+        file mkdir ${worksrcpath}/lib
     }
 
     patchfiles                  patch-no-autodownload.diff
