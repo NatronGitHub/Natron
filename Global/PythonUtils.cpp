@@ -27,6 +27,8 @@
 
 #include <cstdlib>
 #include <vector>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
@@ -34,7 +36,6 @@
 #pragma warning (disable : 4996)
 #else
 #include <dirent.h>
-#include <sys/stat.h>
 #endif
 
 #include "../Global/FStreamsSupport.h"
@@ -53,24 +54,15 @@ static bool fileExists(const std::string& path)
 
 static bool dirExists(const std::string& path)
 {
-#ifdef _MSC_VER
-    char* pathCpy = strcpy(path.c_str());
-    strcat(path.c_str(), "\\*");
-    WIN32_FIND_DATA find_data;
-    HANDLE h = FindFirstFile(pathCpy, &find_data);
-    pathCpy[strlen(pathCpy) - 2] = '\0';
-    if (h == INVALID_HANDLE_VALUE) {
+    // https://stackoverflow.com/q/18100097
+    struct stat info;
+
+    if(stat(path.c_str(), &info ) != 0) {
         return false;
+    } else if(info.st_mode & S_IFDIR) {
+        return true;
     }
-    FindClose(h);
-#else
-    DIR* d = opendir(path.c_str());
-    if (d == NULL) {
-        return false;
-    }
-    closedir(d);
-#endif
-    return true;
+    return false;
 }
 
 void setupPythonEnv(const std::string& binPath)
