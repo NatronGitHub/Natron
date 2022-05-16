@@ -3,8 +3,11 @@
 # x265
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x265.html
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
-X265_VERSION=3.4
-X265_TAR="x265_${X265_VERSION}.tar.gz"
+#X265_VERSION=3.4
+#X265_TAR="x265_${X265_VERSION}.tar.gz"
+X265_VERSION=20220219
+X265_MODVERSION=3.5
+X265_TAR="x265-${X265_VERSION}.tar.xz"
 X265_SITE="http://anduin.linuxfromscratch.org/BLFS/x265"
 if download_step; then
     download "$X265_SITE" "$X265_TAR"
@@ -13,10 +16,11 @@ if build_step && { force_build || { [ "${REBUILD_X265:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libx265* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/x265* || true
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_MODVERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$X265_TAR"
-    pushd "x265_$X265_VERSION"
+    #pushd "x265_$X265_VERSION"
+    pushd "x265-$X265_VERSION"
     for d in 8 $([[ "$ARCH" == "x86_64" ]] && echo "10 12"); do
         if [[ -d build-$d ]]; then
             rm -rf build-$d

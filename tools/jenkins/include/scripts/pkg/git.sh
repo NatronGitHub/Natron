@@ -2,7 +2,7 @@
 
 # Install git (requires curl and pcre)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/git.html
-GIT_VERSION=2.35.1
+GIT_VERSION=2.36.1
 GIT_TAR="git-${GIT_VERSION}.tar.xz"
 GIT_SITE="https://www.kernel.org/pub/software/scm/git"
 if download_step; then

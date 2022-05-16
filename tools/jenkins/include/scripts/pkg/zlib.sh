@@ -2,7 +2,7 @@
 
 # Install zlib
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/zlib.html
-ZLIB_VERSION=1.2.11
+ZLIB_VERSION=1.2.12
 ZLIB_TAR="zlib-${ZLIB_VERSION}.tar.gz"
 ZLIB_SITE="https://zlib.net"
 if download_step; then

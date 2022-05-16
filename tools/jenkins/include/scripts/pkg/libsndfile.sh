@@ -1,8 +1,8 @@
 #!/bin/bash
 # install libsndfile (for sox)
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libsndfile.html
-LIBSNDFILE_VERSION=1.0.31
-LIBSNDFILE_TAR="libsndfile-${LIBSNDFILE_VERSION}.tar.bz2"
+LIBSNDFILE_VERSION=1.1.0
+LIBSNDFILE_TAR="libsndfile-${LIBSNDFILE_VERSION}.tar.xz"
 #LIBSNDFILE_SITE="http://www.mega-nerd.com/libsndfile/files"
 LIBSNDFILE_SITE="https://github.com/libsndfile/libsndfile/releases/download/${LIBSNDFILE_VERSION}"
 if download_step; then
