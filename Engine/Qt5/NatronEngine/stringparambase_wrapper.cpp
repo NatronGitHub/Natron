@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_StringParamBaseFunc_addAsDependencyOf(PyObject *self, PyObj
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.addAsDependencyOf";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -141,7 +143,8 @@ static PyObject *Sbk_StringParamBaseFunc_addAsDependencyOf(PyObject *self, PyObj
     return pyResult;
 
     Sbk_StringParamBaseFunc_addAsDependencyOf_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.addAsDependencyOf");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -152,6 +155,10 @@ static PyObject *Sbk_StringParamBaseFunc_get(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.get";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -212,7 +219,8 @@ static PyObject *Sbk_StringParamBaseFunc_get(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_StringParamBaseFunc_get_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.get");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -223,6 +231,10 @@ static PyObject *Sbk_StringParamBaseFunc_getDefaultValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.getDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -248,6 +260,10 @@ static PyObject *Sbk_StringParamBaseFunc_getValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.getValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -273,6 +289,10 @@ static PyObject *Sbk_StringParamBaseFunc_getValueAtTime(PyObject *self, PyObject
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.getValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -305,7 +325,8 @@ static PyObject *Sbk_StringParamBaseFunc_getValueAtTime(PyObject *self, PyObject
     return pyResult;
 
     Sbk_StringParamBaseFunc_getValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.getValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -315,6 +336,10 @@ static PyObject *Sbk_StringParamBaseFunc_restoreDefaultValue(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.restoreDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -337,6 +362,10 @@ static PyObject *Sbk_StringParamBaseFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -400,7 +429,8 @@ static PyObject *Sbk_StringParamBaseFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -410,6 +440,10 @@ static PyObject *Sbk_StringParamBaseFunc_setDefaultValue(PyObject *self, PyObjec
         return {};
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.setDefaultValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -440,7 +474,8 @@ static PyObject *Sbk_StringParamBaseFunc_setDefaultValue(PyObject *self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setDefaultValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.setDefaultValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -450,6 +485,10 @@ static PyObject *Sbk_StringParamBaseFunc_setValue(PyObject *self, PyObject *pyAr
         return {};
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.setValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -480,7 +519,8 @@ static PyObject *Sbk_StringParamBaseFunc_setValue(PyObject *self, PyObject *pyAr
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParamBase.setValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -490,6 +530,10 @@ static PyObject *Sbk_StringParamBaseFunc_setValueAtTime(PyObject *self, PyObject
         return {};
     auto cppSelf = reinterpret_cast< ::StringParamBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParamBase.setValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -534,7 +578,8 @@ static PyObject *Sbk_StringParamBaseFunc_setValueAtTime(PyObject *self, PyObject
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.setValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -710,7 +755,6 @@ void init_StringParamBase(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_StringParamBase_TypeF(), &Sbk_StringParamBase_typeDiscovery);
-
 
     StringParamBaseWrapper::pysideInitQtMetaTypes();
 }

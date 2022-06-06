@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_OutputFileParamFunc_openFile(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::OutputFileParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.OutputFileParam.openFile";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -111,6 +113,10 @@ static PyObject *Sbk_OutputFileParamFunc_setSequenceEnabled(PyObject *self, PyOb
         return {};
     auto cppSelf = reinterpret_cast< ::OutputFileParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.OutputFileParam.setSequenceEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -141,7 +147,8 @@ static PyObject *Sbk_OutputFileParamFunc_setSequenceEnabled(PyObject *self, PyOb
     Py_RETURN_NONE;
 
     Sbk_OutputFileParamFunc_setSequenceEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.OutputFileParam.setSequenceEnabled");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -299,7 +306,6 @@ void init_OutputFileParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_OutputFileParam_TypeF(), &Sbk_OutputFileParam_typeDiscovery);
-
 
     OutputFileParamWrapper::pysideInitQtMetaTypes();
 }

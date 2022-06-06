@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -71,10 +69,15 @@ static int
 Sbk_ColorTuple_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::ColorTuple >()))
         return -1;
 
     ::ColorTuple *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ColorTuple.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -402,7 +405,6 @@ void init_ColorTuple(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "ColorTuple*");
     Shiboken::Conversions::registerConverterName(converter, "ColorTuple&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::ColorTuple).name());
-
 
 
 }

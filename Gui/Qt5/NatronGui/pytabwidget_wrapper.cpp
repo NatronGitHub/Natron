@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -36,6 +34,7 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 
 // Extra includes
 #include <PythonPanels.h>
+#include <qwidget.h>
 
 
 #include <cctype>
@@ -78,6 +77,10 @@ static PyObject *Sbk_PyTabWidgetFunc_appendTab(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.appendTab";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -116,7 +119,8 @@ static PyObject *Sbk_PyTabWidgetFunc_appendTab(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_PyTabWidgetFunc_appendTab_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.appendTab");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -126,6 +130,10 @@ static PyObject *Sbk_PyTabWidgetFunc_closeCurrentTab(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.closeCurrentTab";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -148,6 +156,10 @@ static PyObject *Sbk_PyTabWidgetFunc_closePane(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.closePane";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -170,6 +182,10 @@ static PyObject *Sbk_PyTabWidgetFunc_closeTab(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.closeTab";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -200,7 +216,8 @@ static PyObject *Sbk_PyTabWidgetFunc_closeTab(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyTabWidgetFunc_closeTab_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.closeTab");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -211,6 +228,10 @@ static PyObject *Sbk_PyTabWidgetFunc_count(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.count";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -236,6 +257,10 @@ static PyObject *Sbk_PyTabWidgetFunc_currentWidget(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.currentWidget";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -260,6 +285,10 @@ static PyObject *Sbk_PyTabWidgetFunc_floatCurrentTab(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.floatCurrentTab";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -282,6 +311,10 @@ static PyObject *Sbk_PyTabWidgetFunc_floatPane(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.floatPane";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -305,6 +338,10 @@ static PyObject *Sbk_PyTabWidgetFunc_getCurrentIndex(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.getCurrentIndex";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -330,6 +367,10 @@ static PyObject *Sbk_PyTabWidgetFunc_getScriptName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.getScriptName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -355,6 +396,10 @@ static PyObject *Sbk_PyTabWidgetFunc_getTabLabel(PyObject *self, PyObject *pyArg
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.getTabLabel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -387,7 +432,8 @@ static PyObject *Sbk_PyTabWidgetFunc_getTabLabel(PyObject *self, PyObject *pyArg
     return pyResult;
 
     Sbk_PyTabWidgetFunc_getTabLabel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.getTabLabel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -397,6 +443,10 @@ static PyObject *Sbk_PyTabWidgetFunc_insertTab(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.insertTab";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -447,7 +497,8 @@ static PyObject *Sbk_PyTabWidgetFunc_insertTab(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_PyTabWidgetFunc_insertTab_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyTabWidget.insertTab");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -457,6 +508,10 @@ static PyObject *Sbk_PyTabWidgetFunc_removeTab(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.removeTab";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -507,7 +562,8 @@ static PyObject *Sbk_PyTabWidgetFunc_removeTab(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyTabWidgetFunc_removeTab_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.removeTab");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -517,6 +573,10 @@ static PyObject *Sbk_PyTabWidgetFunc_setCurrentIndex(PyObject *self, PyObject *p
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.setCurrentIndex";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -547,7 +607,8 @@ static PyObject *Sbk_PyTabWidgetFunc_setCurrentIndex(PyObject *self, PyObject *p
     Py_RETURN_NONE;
 
     Sbk_PyTabWidgetFunc_setCurrentIndex_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.setCurrentIndex");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -557,6 +618,10 @@ static PyObject *Sbk_PyTabWidgetFunc_setNextTabCurrent(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.setNextTabCurrent";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -580,6 +645,10 @@ static PyObject *Sbk_PyTabWidgetFunc_splitHorizontally(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.splitHorizontally";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -608,6 +677,10 @@ static PyObject *Sbk_PyTabWidgetFunc_splitVertically(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyTabWidget *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyTabWidget.splitVertically";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -791,7 +864,6 @@ void init_PyTabWidget(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "PyTabWidget*");
     Shiboken::Conversions::registerConverterName(converter, "PyTabWidget&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::PyTabWidget).name());
-
 
 
 }

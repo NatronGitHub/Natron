@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_GroupParamFunc_addParam(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<GroupParamWrapper *>(reinterpret_cast< ::GroupParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.GroupParam.addParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -121,7 +123,8 @@ static PyObject *Sbk_GroupParamFunc_addParam(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_GroupParamFunc_addParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.GroupParam.addParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -132,6 +135,10 @@ static PyObject *Sbk_GroupParamFunc_getIsOpened(PyObject *self)
     auto cppSelf = static_cast<GroupParamWrapper *>(reinterpret_cast< ::GroupParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.GroupParam.getIsOpened";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -156,6 +163,10 @@ static PyObject *Sbk_GroupParamFunc_setAsTab(PyObject *self)
         return {};
     auto cppSelf = static_cast<GroupParamWrapper *>(reinterpret_cast< ::GroupParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.GroupParam.setAsTab";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -178,6 +189,10 @@ static PyObject *Sbk_GroupParamFunc_setOpened(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<GroupParamWrapper *>(reinterpret_cast< ::GroupParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.GroupParam.setOpened";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -212,7 +227,8 @@ static PyObject *Sbk_GroupParamFunc_setOpened(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_GroupParamFunc_setOpened_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.GroupParam.setOpened");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -374,7 +390,6 @@ void init_GroupParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_GroupParam_TypeF(), &Sbk_GroupParam_typeDiscovery);
-
 
     GroupParamWrapper::pysideInitQtMetaTypes();
 }

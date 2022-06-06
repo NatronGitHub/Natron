@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -99,22 +97,28 @@ static int
 Sbk_IntNodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::IntNodeCreationProperty >()))
         return -1;
 
     ::IntNodeCreationPropertyWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.IntNodeCreationProperty.__init__";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.IntNodeCreationProperty(): too many arguments");
-        return -1;
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_IntNodeCreationProperty_Init_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:IntNodeCreationProperty", &(pyArgs[0])))
@@ -141,20 +145,28 @@ Sbk_IntNodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
         case 0: // IntNodeCreationProperty(const std::vector<int > & values)
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","values");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_values = Shiboken::String::createStaticString("values");
+                if (PyDict_Contains(kwds, key_values)) {
+                    value = PyDict_GetItem(kwds, key_values);
                     if (value && pyArgs[0]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.IntNodeCreationProperty(): got multiple values for keyword argument 'values'.");
-                        return -1;
+                        errInfo = key_values;
+                        Py_INCREF(errInfo);
+                        goto Sbk_IntNodeCreationProperty_Init_TypeError;
                     }
                     if (value) {
                         pyArgs[0] = value;
                         if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_INT_IDX], (pyArgs[0]))))
                             goto Sbk_IntNodeCreationProperty_Init_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_values);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_IntNodeCreationProperty_Init_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             ::std::vector<int > cppArg0;
@@ -168,6 +180,11 @@ Sbk_IntNodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
         }
         case 1: // IntNodeCreationProperty(int value)
         {
+            if (kwds) {
+                errInfo = kwds;
+                Py_INCREF(errInfo);
+                goto Sbk_IntNodeCreationProperty_Init_TypeError;
+            }
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
 
@@ -181,6 +198,7 @@ Sbk_IntNodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
 
     if (PyErr_Occurred() || !Shiboken::Object::setCppPointer(sbkSelf, Shiboken::SbkType< ::IntNodeCreationProperty >(), cptr)) {
         delete cptr;
+        Py_XDECREF(errInfo);
         return -1;
     }
     if (!cptr) goto Sbk_IntNodeCreationProperty_Init_TypeError;
@@ -196,7 +214,8 @@ Sbk_IntNodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
     return 1;
 
     Sbk_IntNodeCreationProperty_Init_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntNodeCreationProperty");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return -1;
 }
 
@@ -207,6 +226,10 @@ static PyObject *Sbk_IntNodeCreationPropertyFunc_getValues(PyObject *self)
     auto cppSelf = reinterpret_cast< ::IntNodeCreationProperty *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTNODECREATIONPROPERTY_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.IntNodeCreationProperty.getValues";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -231,21 +254,28 @@ static PyObject *Sbk_IntNodeCreationPropertyFunc_setValue(PyObject *self, PyObje
         return {};
     auto cppSelf = reinterpret_cast< ::IntNodeCreationProperty *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTNODECREATIONPROPERTY_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.IntNodeCreationProperty.setValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.IntNodeCreationProperty.setValue(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_IntNodeCreationPropertyFunc_setValue_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.IntNodeCreationProperty.setValue(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_IntNodeCreationPropertyFunc_setValue_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:setValue", &(pyArgs[0]), &(pyArgs[1])))
@@ -268,20 +298,28 @@ static PyObject *Sbk_IntNodeCreationPropertyFunc_setValue(PyObject *self, PyObje
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","index");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_index = Shiboken::String::createStaticString("index");
+            if (PyDict_Contains(kwds, key_index)) {
+                value = PyDict_GetItem(kwds, key_index);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.IntNodeCreationProperty.setValue(): got multiple values for keyword argument 'index'.");
-                    return {};
+                    errInfo = key_index;
+                    Py_INCREF(errInfo);
+                    goto Sbk_IntNodeCreationPropertyFunc_setValue_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_IntNodeCreationPropertyFunc_setValue_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_index);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_IntNodeCreationPropertyFunc_setValue_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg0;
@@ -301,7 +339,8 @@ static PyObject *Sbk_IntNodeCreationPropertyFunc_setValue(PyObject *self, PyObje
     Py_RETURN_NONE;
 
     Sbk_IntNodeCreationPropertyFunc_setValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntNodeCreationProperty.setValue");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -461,7 +500,6 @@ void init_IntNodeCreationProperty(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_IntNodeCreationProperty_TypeF(), &Sbk_IntNodeCreationProperty_typeDiscovery);
-
 
     IntNodeCreationPropertyWrapper::pysideInitQtMetaTypes();
 }

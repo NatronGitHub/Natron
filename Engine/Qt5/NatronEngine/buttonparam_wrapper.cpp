@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_ButtonParamFunc_trigger(PyObject *self)
         return {};
     auto cppSelf = static_cast<ButtonParamWrapper *>(reinterpret_cast< ::ButtonParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ButtonParam.trigger";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -257,7 +259,6 @@ void init_ButtonParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_ButtonParam_TypeF(), &Sbk_ButtonParam_typeDiscovery);
-
 
     ButtonParamWrapper::pysideInitQtMetaTypes();
 }

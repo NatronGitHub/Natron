@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -75,10 +73,15 @@ static int
 Sbk_ImageLayer_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::ImageLayer >()))
         return -1;
 
     ::ImageLayer *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.__init__";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -122,6 +125,7 @@ Sbk_ImageLayer_Init(PyObject *self, PyObject *args, PyObject *kwds)
 
     if (PyErr_Occurred() || !Shiboken::Object::setCppPointer(sbkSelf, Shiboken::SbkType< ::ImageLayer >(), cptr)) {
         delete cptr;
+        Py_XDECREF(errInfo);
         return -1;
     }
     if (!cptr) goto Sbk_ImageLayer_Init_TypeError;
@@ -136,13 +140,18 @@ Sbk_ImageLayer_Init(PyObject *self, PyObject *args, PyObject *kwds)
     return 1;
 
     Sbk_ImageLayer_Init_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ImageLayer");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return -1;
 }
 
 static PyObject *Sbk_ImageLayerFunc_getAlphaComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getAlphaComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -164,6 +173,10 @@ static PyObject *Sbk_ImageLayerFunc_getAlphaComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getBackwardMotionComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getBackwardMotionComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -189,6 +202,10 @@ static PyObject *Sbk_ImageLayerFunc_getComponentsNames(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ImageLayer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getComponentsNames";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -214,6 +231,10 @@ static PyObject *Sbk_ImageLayerFunc_getComponentsPrettyName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ImageLayer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getComponentsPrettyName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -235,6 +256,10 @@ static PyObject *Sbk_ImageLayerFunc_getComponentsPrettyName(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getDisparityLeftComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getDisparityLeftComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -256,6 +281,10 @@ static PyObject *Sbk_ImageLayerFunc_getDisparityLeftComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getDisparityRightComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getDisparityRightComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -277,6 +306,10 @@ static PyObject *Sbk_ImageLayerFunc_getDisparityRightComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getForwardMotionComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getForwardMotionComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -298,6 +331,10 @@ static PyObject *Sbk_ImageLayerFunc_getForwardMotionComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getHash(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getHash";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -337,7 +374,8 @@ static PyObject *Sbk_ImageLayerFunc_getHash(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ImageLayerFunc_getHash_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ImageLayer.getHash");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -348,6 +386,10 @@ static PyObject *Sbk_ImageLayerFunc_getLayerName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ImageLayer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getLayerName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -369,6 +411,10 @@ static PyObject *Sbk_ImageLayerFunc_getLayerName(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getNoneComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getNoneComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -394,6 +440,10 @@ static PyObject *Sbk_ImageLayerFunc_getNumComponents(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ImageLayer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getNumComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -415,6 +465,10 @@ static PyObject *Sbk_ImageLayerFunc_getNumComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getRGBAComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getRGBAComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -436,6 +490,10 @@ static PyObject *Sbk_ImageLayerFunc_getRGBAComponents(PyObject *self)
 static PyObject *Sbk_ImageLayerFunc_getRGBComponents(PyObject *self)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.getRGBComponents";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -461,6 +519,10 @@ static PyObject *Sbk_ImageLayerFunc_isColorPlane(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ImageLayer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ImageLayer.isColorPlane";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -764,6 +826,5 @@ void init_ImageLayer(PyObject *module)
     Shiboken::Conversions::addPythonToCppValueConversion(converter,
         ImageLayer_PythonToCpp_ImageLayer_COPY,
         is_ImageLayer_PythonToCpp_ImageLayer_COPY_Convertible);
-
 
 }

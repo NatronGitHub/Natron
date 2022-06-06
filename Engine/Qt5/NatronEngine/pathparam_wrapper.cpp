@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_PathParamFunc_getTable(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PathParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PathParam.getTable";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -136,6 +138,10 @@ static PyObject *Sbk_PathParamFunc_setAsMultiPathTable(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PathParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PathParam.setAsMultiPathTable";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -158,6 +164,10 @@ static PyObject *Sbk_PathParamFunc_setTable(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PathParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PathParam.setTable";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -238,7 +248,8 @@ static PyObject *Sbk_PathParamFunc_setTable(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PathParamFunc_setTable_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PathParam.setTable");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -398,7 +409,6 @@ void init_PathParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_PathParam_TypeF(), &Sbk_PathParam_typeDiscovery);
-
 
     PathParamWrapper::pysideInitQtMetaTypes();
 }

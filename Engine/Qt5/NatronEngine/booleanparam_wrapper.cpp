@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_BooleanParamFunc_addAsDependencyOf(PyObject *self, PyObject
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.addAsDependencyOf";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -141,7 +143,8 @@ static PyObject *Sbk_BooleanParamFunc_addAsDependencyOf(PyObject *self, PyObject
     return pyResult;
 
     Sbk_BooleanParamFunc_addAsDependencyOf_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.addAsDependencyOf");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -152,6 +155,10 @@ static PyObject *Sbk_BooleanParamFunc_get(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.get";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -212,7 +219,8 @@ static PyObject *Sbk_BooleanParamFunc_get(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_BooleanParamFunc_get_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.get");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -223,6 +231,10 @@ static PyObject *Sbk_BooleanParamFunc_getDefaultValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.getDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -248,6 +260,10 @@ static PyObject *Sbk_BooleanParamFunc_getValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.getValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -273,6 +289,10 @@ static PyObject *Sbk_BooleanParamFunc_getValueAtTime(PyObject *self, PyObject *p
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.getValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -305,7 +325,8 @@ static PyObject *Sbk_BooleanParamFunc_getValueAtTime(PyObject *self, PyObject *p
     return pyResult;
 
     Sbk_BooleanParamFunc_getValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BooleanParam.getValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -315,6 +336,10 @@ static PyObject *Sbk_BooleanParamFunc_restoreDefaultValue(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.restoreDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -337,6 +362,10 @@ static PyObject *Sbk_BooleanParamFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -400,7 +429,8 @@ static PyObject *Sbk_BooleanParamFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -410,6 +440,10 @@ static PyObject *Sbk_BooleanParamFunc_setDefaultValue(PyObject *self, PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.setDefaultValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -440,7 +474,8 @@ static PyObject *Sbk_BooleanParamFunc_setDefaultValue(PyObject *self, PyObject *
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_setDefaultValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BooleanParam.setDefaultValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -450,6 +485,10 @@ static PyObject *Sbk_BooleanParamFunc_setValue(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.setValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -480,7 +519,8 @@ static PyObject *Sbk_BooleanParamFunc_setValue(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_setValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BooleanParam.setValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -490,6 +530,10 @@ static PyObject *Sbk_BooleanParamFunc_setValueAtTime(PyObject *self, PyObject *a
         return {};
     auto cppSelf = reinterpret_cast< ::BooleanParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.BooleanParam.setValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -534,7 +578,8 @@ static PyObject *Sbk_BooleanParamFunc_setValueAtTime(PyObject *self, PyObject *a
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_setValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.setValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -710,7 +755,6 @@ void init_BooleanParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_BooleanParam_TypeF(), &Sbk_BooleanParam_typeDiscovery);
-
 
     BooleanParamWrapper::pysideInitQtMetaTypes();
 }

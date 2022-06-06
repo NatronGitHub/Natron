@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -79,6 +77,10 @@ static PyObject *Sbk_TrackFunc_getParam(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Track *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Track.getParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -114,7 +116,8 @@ static PyObject *Sbk_TrackFunc_getParam(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_TrackFunc_getParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Track.getParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -125,6 +128,10 @@ static PyObject *Sbk_TrackFunc_getParams(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Track *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Track.getParams";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -162,6 +169,10 @@ static PyObject *Sbk_TrackFunc_getScriptName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Track *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Track.getScriptName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -186,6 +197,10 @@ static PyObject *Sbk_TrackFunc_reset(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::Track *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Track.reset";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -208,6 +223,10 @@ static PyObject *Sbk_TrackFunc_setScriptName(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Track *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Track.setScriptName";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -238,7 +257,8 @@ static PyObject *Sbk_TrackFunc_setScriptName(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_TrackFunc_setScriptName_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Track.setScriptName");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -379,7 +399,6 @@ void init_Track(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Track*");
     Shiboken::Conversions::registerConverterName(converter, "Track&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Track).name());
-
 
 
 }

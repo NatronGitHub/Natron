@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_Int2DParamFunc_get(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Int2DParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Int2DParam.get";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -150,7 +152,8 @@ static PyObject *Sbk_Int2DParamFunc_get(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_Int2DParamFunc_get_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int2DParam.get");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -160,6 +163,10 @@ static PyObject *Sbk_Int2DParamFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Int2DParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Int2DParam.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -246,7 +253,8 @@ static PyObject *Sbk_Int2DParamFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_Int2DParamFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int2DParam.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -407,7 +415,6 @@ void init_Int2DParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_Int2DParam_TypeF(), &Sbk_Int2DParam_typeDiscovery);
-
 
     Int2DParamWrapper::pysideInitQtMetaTypes();
 }

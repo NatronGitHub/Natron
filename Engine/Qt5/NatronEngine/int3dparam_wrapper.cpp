@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_Int3DParamFunc_get(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Int3DParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Int3DParam.get";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -150,7 +152,8 @@ static PyObject *Sbk_Int3DParamFunc_get(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_Int3DParamFunc_get_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.get");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -160,6 +163,10 @@ static PyObject *Sbk_Int3DParamFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Int3DParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Int3DParam.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -261,7 +268,8 @@ static PyObject *Sbk_Int3DParamFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_Int3DParamFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -423,7 +431,6 @@ void init_Int3DParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_Int3DParam_TypeF(), &Sbk_Int3DParam_typeDiscovery);
-
 
     Int3DParamWrapper::pysideInitQtMetaTypes();
 }

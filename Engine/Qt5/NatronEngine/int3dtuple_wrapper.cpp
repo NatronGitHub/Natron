@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -71,10 +69,15 @@ static int
 Sbk_Int3DTuple_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::Int3DTuple >()))
         return -1;
 
     ::Int3DTuple *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Int3DTuple.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -371,7 +374,6 @@ void init_Int3DTuple(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Int3DTuple*");
     Shiboken::Conversions::registerConverterName(converter, "Int3DTuple&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Int3DTuple).name());
-
 
 
 }

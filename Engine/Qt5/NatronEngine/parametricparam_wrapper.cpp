@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,21 +88,28 @@ static PyObject *Sbk_ParametricParamFunc_addControlPoint(PyObject *self, PyObjec
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.addControlPoint";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 6) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): too many arguments");
-        return {};
+    if (numArgs > 6) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
     } else if (numArgs < 3) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOOOO:addControlPoint", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5])))
@@ -141,20 +146,28 @@ static PyObject *Sbk_ParametricParamFunc_addControlPoint(PyObject *self, PyObjec
         case 0: // addControlPoint(int dimension, double key, double value, NATRON_ENUM::KeyframeTypeEnum interpolation)
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","interpolation");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_interpolation = Shiboken::String::createStaticString("interpolation");
+                if (PyDict_Contains(kwds, key_interpolation)) {
+                    value = PyDict_GetItem(kwds, key_interpolation);
                     if (value && pyArgs[3]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): got multiple values for keyword argument 'interpolation'.");
-                        return {};
+                        errInfo = key_interpolation;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
                     }
                     if (value) {
                         pyArgs[3] = value;
                         if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(*PepType_SGTP(SbkNatronEngineTypes[SBK_NATRON_ENUM_KEYFRAMETYPEENUM_IDX])->converter, (pyArgs[3]))))
                             goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_interpolation);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             int cppArg0;
@@ -176,20 +189,28 @@ static PyObject *Sbk_ParametricParamFunc_addControlPoint(PyObject *self, PyObjec
         case 1: // addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_ENUM::KeyframeTypeEnum interpolation)
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","interpolation");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_interpolation = Shiboken::String::createStaticString("interpolation");
+                if (PyDict_Contains(kwds, key_interpolation)) {
+                    value = PyDict_GetItem(kwds, key_interpolation);
                     if (value && pyArgs[5]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.ParametricParam.addControlPoint(): got multiple values for keyword argument 'interpolation'.");
-                        return {};
+                        errInfo = key_interpolation;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
                     }
                     if (value) {
                         pyArgs[5] = value;
                         if (!(pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(*PepType_SGTP(SbkNatronEngineTypes[SBK_NATRON_ENUM_KEYFRAMETYPEENUM_IDX])->converter, (pyArgs[5]))))
                             goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_interpolation);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_ParametricParamFunc_addControlPoint_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             int cppArg0;
@@ -221,7 +242,8 @@ static PyObject *Sbk_ParametricParamFunc_addControlPoint(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_ParametricParamFunc_addControlPoint_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.addControlPoint");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -232,6 +254,10 @@ static PyObject *Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject *self, 
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.deleteAllControlPoints";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -264,7 +290,8 @@ static PyObject *Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject *self, 
     return pyResult;
 
     Sbk_ParametricParamFunc_deleteAllControlPoints_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ParametricParam.deleteAllControlPoints");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -275,6 +302,10 @@ static PyObject *Sbk_ParametricParamFunc_deleteControlPoint(PyObject *self, PyOb
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.deleteControlPoint";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -321,7 +352,8 @@ static PyObject *Sbk_ParametricParamFunc_deleteControlPoint(PyObject *self, PyOb
     return pyResult;
 
     Sbk_ParametricParamFunc_deleteControlPoint_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.deleteControlPoint");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -332,6 +364,10 @@ static PyObject *Sbk_ParametricParamFunc_getCurveColor(PyObject *self, PyObject 
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.getCurveColor";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -370,7 +406,8 @@ static PyObject *Sbk_ParametricParamFunc_getCurveColor(PyObject *self, PyObject 
     return pyResult;
 
     Sbk_ParametricParamFunc_getCurveColor_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ParametricParam.getCurveColor");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -381,6 +418,10 @@ static PyObject *Sbk_ParametricParamFunc_getNControlPoints(PyObject *self, PyObj
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.getNControlPoints";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -413,7 +454,8 @@ static PyObject *Sbk_ParametricParamFunc_getNControlPoints(PyObject *self, PyObj
     return pyResult;
 
     Sbk_ParametricParamFunc_getNControlPoints_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ParametricParam.getNControlPoints");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -424,6 +466,10 @@ static PyObject *Sbk_ParametricParamFunc_getNthControlPoint(PyObject *self, PyOb
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.getNthControlPoint";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -481,7 +527,8 @@ static PyObject *Sbk_ParametricParamFunc_getNthControlPoint(PyObject *self, PyOb
     return pyResult;
 
     Sbk_ParametricParamFunc_getNthControlPoint_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.getNthControlPoint");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -492,6 +539,10 @@ static PyObject *Sbk_ParametricParamFunc_getValue(PyObject *self, PyObject *args
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.getValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -538,7 +589,8 @@ static PyObject *Sbk_ParametricParamFunc_getValue(PyObject *self, PyObject *args
     return pyResult;
 
     Sbk_ParametricParamFunc_getValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.getValue");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -548,6 +600,10 @@ static PyObject *Sbk_ParametricParamFunc_setCurveColor(PyObject *self, PyObject 
         return {};
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.setCurveColor";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -598,7 +654,8 @@ static PyObject *Sbk_ParametricParamFunc_setCurveColor(PyObject *self, PyObject 
     Py_RETURN_NONE;
 
     Sbk_ParametricParamFunc_setCurveColor_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.setCurveColor");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -608,6 +665,10 @@ static PyObject *Sbk_ParametricParamFunc_setDefaultCurvesFromCurrentCurves(PyObj
         return {};
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -631,6 +692,10 @@ static PyObject *Sbk_ParametricParamFunc_setNthControlPoint(PyObject *self, PyOb
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.setNthControlPoint";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -689,7 +754,8 @@ static PyObject *Sbk_ParametricParamFunc_setNthControlPoint(PyObject *self, PyOb
     return pyResult;
 
     Sbk_ParametricParamFunc_setNthControlPoint_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.setNthControlPoint");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -700,6 +766,10 @@ static PyObject *Sbk_ParametricParamFunc_setNthControlPointInterpolation(PyObjec
     auto cppSelf = static_cast<ParametricParamWrapper *>(reinterpret_cast< ::ParametricParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ParametricParam.setNthControlPointInterpolation";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -749,7 +819,8 @@ static PyObject *Sbk_ParametricParamFunc_setNthControlPointInterpolation(PyObjec
     return pyResult;
 
     Sbk_ParametricParamFunc_setNthControlPointInterpolation_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.setNthControlPointInterpolation");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -926,7 +997,6 @@ void init_ParametricParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_ParametricParam_TypeF(), &Sbk_ParametricParam_typeDiscovery);
-
 
     ParametricParamWrapper::pysideInitQtMetaTypes();
 }

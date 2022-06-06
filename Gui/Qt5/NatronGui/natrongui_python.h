@@ -76,11 +76,12 @@ enum : int {
     SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                     = 1, // std::list<Effect* >
     SBK_NATRONGUI_STD_LIST_QSTRING_IDX                       = 2, // std::list<QString >
     SBK_NATRONGUI_STD_LIST_INT_IDX                           = 3, // const std::list<int > &
-    SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX                      = 4, // std::list<Param* >
-    SBK_NATRONGUI_QLIST_QVARIANT_IDX                         = 5, // QList<QVariant >
-    SBK_NATRONGUI_QLIST_QSTRING_IDX                          = 6, // QList<QString >
-    SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                  = 7, // QMap<QString,QVariant >
-    SBK_NatronGui_CONVERTERS_IDX_COUNT                       = 8
+    SBK_NATRONGUI_QLIST_QACTIONPTR_IDX                       = 4, // QList<QAction* >
+    SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX                      = 5, // std::list<Param* >
+    SBK_NATRONGUI_QLIST_QVARIANT_IDX                         = 6, // QList<QVariant >
+    SBK_NATRONGUI_QLIST_QSTRING_IDX                          = 7, // QList<QString >
+    SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                  = 8, // QMap<QString,QVariant >
+    SBK_NatronGui_CONVERTERS_IDX_COUNT                       = 9
 };
 // Macros for type check
 

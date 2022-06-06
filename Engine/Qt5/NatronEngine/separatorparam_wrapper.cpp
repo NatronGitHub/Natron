@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -233,7 +231,6 @@ void init_SeparatorParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_SeparatorParam_TypeF(), &Sbk_SeparatorParam_typeDiscovery);
-
 
     SeparatorParamWrapper::pysideInitQtMetaTypes();
 }

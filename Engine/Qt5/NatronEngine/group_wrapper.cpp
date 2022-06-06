@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -93,10 +91,15 @@ static int
 Sbk_Group_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::Group >()))
         return -1;
 
     ::GroupWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Group.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -129,6 +132,10 @@ static PyObject *Sbk_GroupFunc_getChildren(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Group *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Group.getChildren";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -166,6 +173,10 @@ static PyObject *Sbk_GroupFunc_getNode(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Group *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Group.getNode";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -201,7 +212,8 @@ static PyObject *Sbk_GroupFunc_getNode(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_GroupFunc_getNode_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Group.getNode");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -350,7 +362,6 @@ void init_Group(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Group&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Group).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::GroupWrapper).name());
-
 
 
     GroupWrapper::pysideInitQtMetaTypes();

@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -76,10 +74,15 @@ static int
 Sbk_ExprUtils_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::ExprUtils >()))
         return -1;
 
     ::ExprUtils *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -107,6 +110,10 @@ Sbk_ExprUtils_Init(PyObject *self, PyObject *args, PyObject *kwds)
 static PyObject *Sbk_ExprUtilsFunc_boxstep(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.boxstep";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -153,13 +160,18 @@ static PyObject *Sbk_ExprUtilsFunc_boxstep(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_boxstep_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.boxstep");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_ccellnoise(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.ccellnoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -210,13 +222,18 @@ static PyObject *Sbk_ExprUtilsFunc_ccellnoise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_ccellnoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.ccellnoise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cellnoise(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cellnoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -264,28 +281,36 @@ static PyObject *Sbk_ExprUtilsFunc_cellnoise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_cellnoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.cellnoise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cfbm(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cfbm";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cfbm_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cfbm_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:cfbm", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -316,46 +341,58 @@ static PyObject *Sbk_ExprUtilsFunc_cfbm(PyObject *self, PyObject *args, PyObject
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_cfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_cfbm_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -399,28 +436,36 @@ static PyObject *Sbk_ExprUtilsFunc_cfbm(PyObject *self, PyObject *args, PyObject
     return pyResult;
 
     Sbk_ExprUtilsFunc_cfbm_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.cfbm");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cfbm4(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cfbm4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm4(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm4(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:cfbm4", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -451,46 +496,58 @@ static PyObject *Sbk_ExprUtilsFunc_cfbm4(PyObject *self, PyObject *args, PyObjec
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm4(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm4(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cfbm4(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_cfbm4_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -536,13 +593,18 @@ static PyObject *Sbk_ExprUtilsFunc_cfbm4(PyObject *self, PyObject *args, PyObjec
     return pyResult;
 
     Sbk_ExprUtilsFunc_cfbm4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.cfbm4");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cnoise(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cnoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -593,13 +655,18 @@ static PyObject *Sbk_ExprUtilsFunc_cnoise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_cnoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.cnoise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cnoise4(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cnoise4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -652,28 +719,36 @@ static PyObject *Sbk_ExprUtilsFunc_cnoise4(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_cnoise4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.cnoise4");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_cturbulence(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.cturbulence";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cturbulence(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cturbulence(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:cturbulence", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -704,46 +779,58 @@ static PyObject *Sbk_ExprUtilsFunc_cturbulence(PyObject *self, PyObject *args, P
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cturbulence(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cturbulence(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.cturbulence(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_cturbulence_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -787,28 +874,36 @@ static PyObject *Sbk_ExprUtilsFunc_cturbulence(PyObject *self, PyObject *args, P
     return pyResult;
 
     Sbk_ExprUtilsFunc_cturbulence_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.cturbulence");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_fbm(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.fbm";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_fbm_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_fbm_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:fbm", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -839,46 +934,58 @@ static PyObject *Sbk_ExprUtilsFunc_fbm(PyObject *self, PyObject *args, PyObject 
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_fbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_fbm_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -919,28 +1026,36 @@ static PyObject *Sbk_ExprUtilsFunc_fbm(PyObject *self, PyObject *args, PyObject 
     return pyResult;
 
     Sbk_ExprUtilsFunc_fbm_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.fbm");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_fbm4(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.fbm4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm4(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_fbm4_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm4(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_fbm4_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:fbm4", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -971,46 +1086,58 @@ static PyObject *Sbk_ExprUtilsFunc_fbm4(PyObject *self, PyObject *args, PyObject
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm4(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm4(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.fbm4(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_fbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_fbm4_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -1053,13 +1180,18 @@ static PyObject *Sbk_ExprUtilsFunc_fbm4(PyObject *self, PyObject *args, PyObject
     return pyResult;
 
     Sbk_ExprUtilsFunc_fbm4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.fbm4");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_gaussstep(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.gaussstep";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1109,13 +1241,18 @@ static PyObject *Sbk_ExprUtilsFunc_gaussstep(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_gaussstep_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.gaussstep");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_hash(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.hash";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1148,13 +1285,18 @@ static PyObject *Sbk_ExprUtilsFunc_hash(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_hash_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.hash");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_linearstep(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.linearstep";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1204,13 +1346,18 @@ static PyObject *Sbk_ExprUtilsFunc_linearstep(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_linearstep_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.linearstep");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_mix(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.mix";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1260,13 +1407,18 @@ static PyObject *Sbk_ExprUtilsFunc_mix(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_mix_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.mix");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_noise(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.noise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1352,13 +1504,18 @@ static PyObject *Sbk_ExprUtilsFunc_noise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_noise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.noise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_pnoise(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.pnoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1428,13 +1585,18 @@ static PyObject *Sbk_ExprUtilsFunc_pnoise(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_pnoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.pnoise");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_remap(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.remap";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1490,13 +1652,18 @@ static PyObject *Sbk_ExprUtilsFunc_remap(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_remap_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.remap");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_smoothstep(PyObject *self, PyObject *args)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.smoothstep";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1546,7 +1713,8 @@ static PyObject *Sbk_ExprUtilsFunc_smoothstep(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ExprUtilsFunc_smoothstep_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.smoothstep");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1557,6 +1725,10 @@ static PyObject *Sbk_ExprUtilsFunc_snoise(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::ExprUtils *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EXPRUTILS_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.snoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1604,13 +1776,18 @@ static PyObject *Sbk_ExprUtilsFunc_snoise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_snoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.snoise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_snoise4(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.snoise4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1660,28 +1837,36 @@ static PyObject *Sbk_ExprUtilsFunc_snoise4(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_snoise4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.snoise4");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_turbulence(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.turbulence";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.turbulence(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_turbulence_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.turbulence(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_turbulence_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:turbulence", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -1712,46 +1897,58 @@ static PyObject *Sbk_ExprUtilsFunc_turbulence(PyObject *self, PyObject *args, Py
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.turbulence(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.turbulence(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.turbulence(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_turbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_turbulence_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -1792,28 +1989,36 @@ static PyObject *Sbk_ExprUtilsFunc_turbulence(PyObject *self, PyObject *args, Py
     return pyResult;
 
     Sbk_ExprUtilsFunc_turbulence_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.turbulence");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_vfbm(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.vfbm";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vfbm_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vfbm_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:vfbm", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -1844,46 +2049,58 @@ static PyObject *Sbk_ExprUtilsFunc_vfbm(PyObject *self, PyObject *args, PyObject
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_vfbm_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_vfbm_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -1927,28 +2144,36 @@ static PyObject *Sbk_ExprUtilsFunc_vfbm(PyObject *self, PyObject *args, PyObject
     return pyResult;
 
     Sbk_ExprUtilsFunc_vfbm_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.vfbm");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_vfbm4(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.vfbm4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm4(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm4(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:vfbm4", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -1979,46 +2204,58 @@ static PyObject *Sbk_ExprUtilsFunc_vfbm4(PyObject *self, PyObject *args, PyObjec
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm4(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm4(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vfbm4(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_vfbm4_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -2064,13 +2301,18 @@ static PyObject *Sbk_ExprUtilsFunc_vfbm4(PyObject *self, PyObject *args, PyObjec
     return pyResult;
 
     Sbk_ExprUtilsFunc_vfbm4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.vfbm4");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_vnoise(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.vnoise";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -2121,13 +2363,18 @@ static PyObject *Sbk_ExprUtilsFunc_vnoise(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_vnoise_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.vnoise");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_vnoise4(PyObject *self, PyObject *pyArg)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.vnoise4";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -2180,28 +2427,36 @@ static PyObject *Sbk_ExprUtilsFunc_vnoise4(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ExprUtilsFunc_vnoise4_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ExprUtils.vnoise4");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
 static PyObject *Sbk_ExprUtilsFunc_vturbulence(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ExprUtils.vturbulence";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vturbulence(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vturbulence(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:vturbulence", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -2232,46 +2487,58 @@ static PyObject *Sbk_ExprUtilsFunc_vturbulence(PyObject *self, PyObject *args, P
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","octaves");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_octaves = Shiboken::String::createStaticString("octaves");
+            if (PyDict_Contains(kwds, key_octaves)) {
+                value = PyDict_GetItem(kwds, key_octaves);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vturbulence(): got multiple values for keyword argument 'octaves'.");
-                    return {};
+                    errInfo = key_octaves;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_octaves);
             }
-            keyName = Py_BuildValue("s","lacunarity");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_lacunarity = Shiboken::String::createStaticString("lacunarity");
+            if (PyDict_Contains(kwds, key_lacunarity)) {
+                value = PyDict_GetItem(kwds, key_lacunarity);
                 if (value && pyArgs[2]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vturbulence(): got multiple values for keyword argument 'lacunarity'.");
-                    return {};
+                    errInfo = key_lacunarity;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[2] = value;
                     if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2]))))
                         goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_lacunarity);
             }
-            keyName = Py_BuildValue("s","gain");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            static PyObject *const key_gain = Shiboken::String::createStaticString("gain");
+            if (PyDict_Contains(kwds, key_gain)) {
+                value = PyDict_GetItem(kwds, key_gain);
                 if (value && pyArgs[3]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ExprUtils.vturbulence(): got multiple values for keyword argument 'gain'.");
-                    return {};
+                    errInfo = key_gain;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
                 if (value) {
                     pyArgs[3] = value;
                     if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3]))))
                         goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_gain);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ExprUtilsFunc_vturbulence_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg1 = 6;
@@ -2315,7 +2582,8 @@ static PyObject *Sbk_ExprUtilsFunc_vturbulence(PyObject *self, PyObject *args, P
     return pyResult;
 
     Sbk_ExprUtilsFunc_vturbulence_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ExprUtils.vturbulence");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -2500,7 +2768,6 @@ void init_ExprUtils(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "ExprUtils*");
     Shiboken::Conversions::registerConverterName(converter, "ExprUtils&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::ExprUtils).name());
-
 
 
 }

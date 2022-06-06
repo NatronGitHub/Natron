@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -79,6 +77,10 @@ static PyObject *Sbk_AppSettingsFunc_getParam(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::AppSettings *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.AppSettings.getParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -114,7 +116,8 @@ static PyObject *Sbk_AppSettingsFunc_getParam(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_AppSettingsFunc_getParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.AppSettings.getParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -125,6 +128,10 @@ static PyObject *Sbk_AppSettingsFunc_getParams(PyObject *self)
     auto cppSelf = reinterpret_cast< ::AppSettings *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.AppSettings.getParams";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -161,6 +168,10 @@ static PyObject *Sbk_AppSettingsFunc_restoreDefaultSettings(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::AppSettings *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.AppSettings.restoreDefaultSettings";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -183,6 +194,10 @@ static PyObject *Sbk_AppSettingsFunc_saveSettings(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::AppSettings *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.AppSettings.saveSettings";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -334,7 +349,6 @@ void init_AppSettings(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "AppSettings*");
     Shiboken::Conversions::registerConverterName(converter, "AppSettings&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::AppSettings).name());
-
 
 
 }

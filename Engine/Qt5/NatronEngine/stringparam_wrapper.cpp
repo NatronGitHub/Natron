@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_StringParamFunc_setType(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::StringParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.StringParam.setType";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -120,7 +122,8 @@ static PyObject *Sbk_StringParamFunc_setType(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_StringParamFunc_setType_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.StringParam.setType");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -331,7 +334,6 @@ void init_StringParam(PyObject *module)
         Shiboken::Conversions::registerConverterName(converter, "TypeEnum");
     }
     // End of 'TypeEnum' enum.
-
 
     StringParamWrapper::pysideInitQtMetaTypes();
 }

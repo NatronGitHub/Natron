@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -93,10 +91,15 @@ static int
 Sbk_PyCoreApplication_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::PyCoreApplication >()))
         return -1;
 
     ::PyCoreApplicationWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -128,6 +131,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject *self, Py
         return {};
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.appendToNatronPath";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -158,7 +165,8 @@ static PyObject *Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject *self, Py
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_appendToNatronPath_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.appendToNatronPath");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -169,6 +177,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getActiveInstance(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getActiveInstance";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -197,6 +209,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getBuildNumber(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getBuildNumber";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -222,6 +238,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getInstance(PyObject *self, PyObject 
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getInstance";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -257,7 +277,8 @@ static PyObject *Sbk_PyCoreApplicationFunc_getInstance(PyObject *self, PyObject 
     return pyResult;
 
     Sbk_PyCoreApplicationFunc_getInstance_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.getInstance");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -268,6 +289,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronDevelopmentStatus(PyObject *
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronDevelopmentStatus";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -293,6 +318,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronPath(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronPath";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -318,6 +347,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronVersionEncoded(PyObject *sel
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronVersionEncoded";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -343,6 +376,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronVersionMajor(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronVersionMajor";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -368,6 +405,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronVersionMinor(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronVersionMinor";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -393,6 +434,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronVersionRevision(PyObject *se
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronVersionRevision";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -418,6 +463,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNatronVersionString(PyObject *self
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNatronVersionString";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -443,6 +492,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNumCpus(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNumCpus";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -468,6 +521,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getNumInstances(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getNumInstances";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -493,6 +550,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject *self, PyObject
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getPluginIDs";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -553,7 +614,8 @@ static PyObject *Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject *self, PyObject
     return pyResult;
 
     Sbk_PyCoreApplicationFunc_getPluginIDs_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.PyCoreApplication.getPluginIDs");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -564,6 +626,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_getSettings(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.getSettings";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -592,6 +658,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_is64Bit(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.is64Bit";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -617,6 +687,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_isBackground(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.isBackground";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -642,6 +716,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_isLinux(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.isLinux";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -667,6 +745,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_isMacOSX(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.isMacOSX";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -692,6 +774,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_isUnix(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.isUnix";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -717,6 +803,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_isWindows(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.isWindows";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -741,6 +831,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject 
         return {};
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.setOnProjectCreatedCallback";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -771,7 +865,8 @@ static PyObject *Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback(PyObject 
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_setOnProjectCreatedCallback_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectCreatedCallback");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -781,6 +876,10 @@ static PyObject *Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::PyCoreApplication *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PyCoreApplication.setOnProjectLoadedCallback";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -811,7 +910,8 @@ static PyObject *Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback(PyObject *
     Py_RETURN_NONE;
 
     Sbk_PyCoreApplicationFunc_setOnProjectLoadedCallback_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PyCoreApplication.setOnProjectLoadedCallback");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1003,7 +1103,6 @@ void init_PyCoreApplication(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "PyCoreApplication&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::PyCoreApplication).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::PyCoreApplicationWrapper).name());
-
 
 
     PyCoreApplicationWrapper::pysideInitQtMetaTypes();

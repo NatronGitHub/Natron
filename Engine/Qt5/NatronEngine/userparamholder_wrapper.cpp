@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -93,10 +91,15 @@ static int
 Sbk_UserParamHolder_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::UserParamHolder >()))
         return -1;
 
     ::UserParamHolderWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -129,6 +132,10 @@ static PyObject *Sbk_UserParamHolderFunc_createBooleanParam(PyObject *self, PyOb
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createBooleanParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -178,7 +185,8 @@ static PyObject *Sbk_UserParamHolderFunc_createBooleanParam(PyObject *self, PyOb
     return pyResult;
 
     Sbk_UserParamHolderFunc_createBooleanParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createBooleanParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -189,6 +197,10 @@ static PyObject *Sbk_UserParamHolderFunc_createButtonParam(PyObject *self, PyObj
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createButtonParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -238,7 +250,8 @@ static PyObject *Sbk_UserParamHolderFunc_createButtonParam(PyObject *self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createButtonParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createButtonParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -249,6 +262,10 @@ static PyObject *Sbk_UserParamHolderFunc_createChoiceParam(PyObject *self, PyObj
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createChoiceParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -298,7 +315,8 @@ static PyObject *Sbk_UserParamHolderFunc_createChoiceParam(PyObject *self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createChoiceParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createChoiceParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -309,6 +327,10 @@ static PyObject *Sbk_UserParamHolderFunc_createColorParam(PyObject *self, PyObje
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createColorParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -361,7 +383,8 @@ static PyObject *Sbk_UserParamHolderFunc_createColorParam(PyObject *self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createColorParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createColorParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -372,6 +395,10 @@ static PyObject *Sbk_UserParamHolderFunc_createDouble2DParam(PyObject *self, PyO
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createDouble2DParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -421,7 +448,8 @@ static PyObject *Sbk_UserParamHolderFunc_createDouble2DParam(PyObject *self, PyO
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDouble2DParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDouble2DParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -432,6 +460,10 @@ static PyObject *Sbk_UserParamHolderFunc_createDouble3DParam(PyObject *self, PyO
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createDouble3DParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -481,7 +513,8 @@ static PyObject *Sbk_UserParamHolderFunc_createDouble3DParam(PyObject *self, PyO
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDouble3DParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDouble3DParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -492,6 +525,10 @@ static PyObject *Sbk_UserParamHolderFunc_createDoubleParam(PyObject *self, PyObj
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createDoubleParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -541,7 +578,8 @@ static PyObject *Sbk_UserParamHolderFunc_createDoubleParam(PyObject *self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createDoubleParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createDoubleParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -552,6 +590,10 @@ static PyObject *Sbk_UserParamHolderFunc_createFileParam(PyObject *self, PyObjec
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createFileParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -601,7 +643,8 @@ static PyObject *Sbk_UserParamHolderFunc_createFileParam(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createFileParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createFileParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -612,6 +655,10 @@ static PyObject *Sbk_UserParamHolderFunc_createGroupParam(PyObject *self, PyObje
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createGroupParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -661,7 +708,8 @@ static PyObject *Sbk_UserParamHolderFunc_createGroupParam(PyObject *self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createGroupParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createGroupParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -672,6 +720,10 @@ static PyObject *Sbk_UserParamHolderFunc_createInt2DParam(PyObject *self, PyObje
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createInt2DParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -721,7 +773,8 @@ static PyObject *Sbk_UserParamHolderFunc_createInt2DParam(PyObject *self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createInt2DParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createInt2DParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -732,6 +785,10 @@ static PyObject *Sbk_UserParamHolderFunc_createInt3DParam(PyObject *self, PyObje
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createInt3DParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -781,7 +838,8 @@ static PyObject *Sbk_UserParamHolderFunc_createInt3DParam(PyObject *self, PyObje
     return pyResult;
 
     Sbk_UserParamHolderFunc_createInt3DParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createInt3DParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -792,6 +850,10 @@ static PyObject *Sbk_UserParamHolderFunc_createIntParam(PyObject *self, PyObject
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createIntParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -841,7 +903,8 @@ static PyObject *Sbk_UserParamHolderFunc_createIntParam(PyObject *self, PyObject
     return pyResult;
 
     Sbk_UserParamHolderFunc_createIntParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createIntParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -852,6 +915,10 @@ static PyObject *Sbk_UserParamHolderFunc_createOutputFileParam(PyObject *self, P
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createOutputFileParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -901,7 +968,8 @@ static PyObject *Sbk_UserParamHolderFunc_createOutputFileParam(PyObject *self, P
     return pyResult;
 
     Sbk_UserParamHolderFunc_createOutputFileParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createOutputFileParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -912,6 +980,10 @@ static PyObject *Sbk_UserParamHolderFunc_createPageParam(PyObject *self, PyObjec
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createPageParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -961,7 +1033,8 @@ static PyObject *Sbk_UserParamHolderFunc_createPageParam(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createPageParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createPageParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -972,6 +1045,10 @@ static PyObject *Sbk_UserParamHolderFunc_createParametricParam(PyObject *self, P
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createParametricParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1024,7 +1101,8 @@ static PyObject *Sbk_UserParamHolderFunc_createParametricParam(PyObject *self, P
     return pyResult;
 
     Sbk_UserParamHolderFunc_createParametricParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createParametricParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1035,6 +1113,10 @@ static PyObject *Sbk_UserParamHolderFunc_createPathParam(PyObject *self, PyObjec
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createPathParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1084,7 +1166,8 @@ static PyObject *Sbk_UserParamHolderFunc_createPathParam(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_UserParamHolderFunc_createPathParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createPathParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1095,6 +1178,10 @@ static PyObject *Sbk_UserParamHolderFunc_createSeparatorParam(PyObject *self, Py
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createSeparatorParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1144,7 +1231,8 @@ static PyObject *Sbk_UserParamHolderFunc_createSeparatorParam(PyObject *self, Py
     return pyResult;
 
     Sbk_UserParamHolderFunc_createSeparatorParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createSeparatorParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1155,6 +1243,10 @@ static PyObject *Sbk_UserParamHolderFunc_createStringParam(PyObject *self, PyObj
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.createStringParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1204,7 +1296,8 @@ static PyObject *Sbk_UserParamHolderFunc_createStringParam(PyObject *self, PyObj
     return pyResult;
 
     Sbk_UserParamHolderFunc_createStringParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createStringParam");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1214,6 +1307,10 @@ static PyObject *Sbk_UserParamHolderFunc_refreshUserParamsGUI(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.refreshUserParamsGUI";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1241,6 +1338,10 @@ static PyObject *Sbk_UserParamHolderFunc_removeParam(PyObject *self, PyObject *p
     auto cppSelf = reinterpret_cast< ::UserParamHolder *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.UserParamHolder.removeParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1275,7 +1376,8 @@ static PyObject *Sbk_UserParamHolderFunc_removeParam(PyObject *self, PyObject *p
     return pyResult;
 
     Sbk_UserParamHolderFunc_removeParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.UserParamHolder.removeParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1460,7 +1562,6 @@ void init_UserParamHolder(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "UserParamHolder&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::UserParamHolder).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::UserParamHolderWrapper).name());
-
 
 
     UserParamHolderWrapper::pysideInitQtMetaTypes();

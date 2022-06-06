@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -79,6 +77,10 @@ static PyObject *Sbk_TrackerFunc_createTrack(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.createTrack";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -107,6 +109,10 @@ static PyObject *Sbk_TrackerFunc_getAllTracks(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.getAllTracks";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -147,6 +153,10 @@ static PyObject *Sbk_TrackerFunc_getSelectedTracks(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.getSelectedTracks";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -187,6 +197,10 @@ static PyObject *Sbk_TrackerFunc_getTrackByName(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.getTrackByName";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -222,7 +236,8 @@ static PyObject *Sbk_TrackerFunc_getTrackByName(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_TrackerFunc_getTrackByName_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Tracker.getTrackByName");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -232,6 +247,10 @@ static PyObject *Sbk_TrackerFunc_startTracking(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.startTracking";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -282,7 +301,8 @@ static PyObject *Sbk_TrackerFunc_startTracking(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_TrackerFunc_startTracking_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Tracker.startTracking");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -292,6 +312,10 @@ static PyObject *Sbk_TrackerFunc_stopTracking(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::Tracker *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Tracker.stopTracking";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -447,7 +471,6 @@ void init_Tracker(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Tracker*");
     Shiboken::Conversions::registerConverterName(converter, "Tracker&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Tracker).name());
-
 
 
 }

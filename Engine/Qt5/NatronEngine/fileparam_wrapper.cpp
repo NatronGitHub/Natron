@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_FileParamFunc_openFile(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::FileParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.FileParam.openFile";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -111,6 +113,10 @@ static PyObject *Sbk_FileParamFunc_reloadFile(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::FileParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.FileParam.reloadFile";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -133,6 +139,10 @@ static PyObject *Sbk_FileParamFunc_setSequenceEnabled(PyObject *self, PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::FileParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.FileParam.setSequenceEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -163,7 +173,8 @@ static PyObject *Sbk_FileParamFunc_setSequenceEnabled(PyObject *self, PyObject *
     Py_RETURN_NONE;
 
     Sbk_FileParamFunc_setSequenceEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.FileParam.setSequenceEnabled");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -323,7 +334,6 @@ void init_FileParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_FileParam_TypeF(), &Sbk_FileParam_typeDiscovery);
-
 
     FileParamWrapper::pysideInitQtMetaTypes();
 }

@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -74,6 +72,10 @@ static PyObject *Sbk_PyViewerFunc_getAInput(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getAInput";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -99,6 +101,10 @@ static PyObject *Sbk_PyViewerFunc_getBInput(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getBInput";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -124,6 +130,10 @@ static PyObject *Sbk_PyViewerFunc_getChannels(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getChannels";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -149,6 +159,10 @@ static PyObject *Sbk_PyViewerFunc_getCompositingOperator(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getCompositingOperator";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -174,6 +188,10 @@ static PyObject *Sbk_PyViewerFunc_getCurrentFrame(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getCurrentFrame";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -199,6 +217,10 @@ static PyObject *Sbk_PyViewerFunc_getCurrentView(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getCurrentView";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -224,6 +246,10 @@ static PyObject *Sbk_PyViewerFunc_getFrameRange(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getFrameRange";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -257,6 +283,10 @@ static PyObject *Sbk_PyViewerFunc_getPlaybackMode(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getPlaybackMode";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -282,6 +312,10 @@ static PyObject *Sbk_PyViewerFunc_getProxyIndex(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.getProxyIndex";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -307,6 +341,10 @@ static PyObject *Sbk_PyViewerFunc_isProxyModeEnabled(PyObject *self)
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.isProxyModeEnabled";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -331,6 +369,10 @@ static PyObject *Sbk_PyViewerFunc_pause(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.pause";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -353,6 +395,10 @@ static PyObject *Sbk_PyViewerFunc_redraw(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.redraw";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -375,18 +421,23 @@ static PyObject *Sbk_PyViewerFunc_renderCurrentFrame(PyObject *self, PyObject *a
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.renderCurrentFrame";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.PyViewer.renderCurrentFrame(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_PyViewerFunc_renderCurrentFrame_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:renderCurrentFrame", &(pyArgs[0])))
@@ -407,20 +458,28 @@ static PyObject *Sbk_PyViewerFunc_renderCurrentFrame(PyObject *self, PyObject *a
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","useCache");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_useCache = Shiboken::String::createStaticString("useCache");
+            if (PyDict_Contains(kwds, key_useCache)) {
+                value = PyDict_GetItem(kwds, key_useCache);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.PyViewer.renderCurrentFrame(): got multiple values for keyword argument 'useCache'.");
-                    return {};
+                    errInfo = key_useCache;
+                    Py_INCREF(errInfo);
+                    goto Sbk_PyViewerFunc_renderCurrentFrame_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
                         goto Sbk_PyViewerFunc_renderCurrentFrame_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_useCache);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_PyViewerFunc_renderCurrentFrame_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         bool cppArg0 = true;
@@ -438,7 +497,8 @@ static PyObject *Sbk_PyViewerFunc_renderCurrentFrame(PyObject *self, PyObject *a
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_renderCurrentFrame_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyViewer.renderCurrentFrame");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -448,6 +508,10 @@ static PyObject *Sbk_PyViewerFunc_seek(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.seek";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -478,7 +542,8 @@ static PyObject *Sbk_PyViewerFunc_seek(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_seek_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.seek");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -488,6 +553,10 @@ static PyObject *Sbk_PyViewerFunc_setAInput(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setAInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -518,7 +587,8 @@ static PyObject *Sbk_PyViewerFunc_setAInput(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setAInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setAInput");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -528,6 +598,10 @@ static PyObject *Sbk_PyViewerFunc_setBInput(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setBInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -558,7 +632,8 @@ static PyObject *Sbk_PyViewerFunc_setBInput(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setBInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setBInput");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -568,6 +643,10 @@ static PyObject *Sbk_PyViewerFunc_setChannels(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setChannels";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -598,7 +677,8 @@ static PyObject *Sbk_PyViewerFunc_setChannels(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setChannels_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setChannels");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -608,6 +688,10 @@ static PyObject *Sbk_PyViewerFunc_setCompositingOperator(PyObject *self, PyObjec
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setCompositingOperator";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -638,7 +722,8 @@ static PyObject *Sbk_PyViewerFunc_setCompositingOperator(PyObject *self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setCompositingOperator_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setCompositingOperator");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -648,6 +733,10 @@ static PyObject *Sbk_PyViewerFunc_setCurrentView(PyObject *self, PyObject *pyArg
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setCurrentView";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -678,7 +767,8 @@ static PyObject *Sbk_PyViewerFunc_setCurrentView(PyObject *self, PyObject *pyArg
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setCurrentView_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setCurrentView");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -688,6 +778,10 @@ static PyObject *Sbk_PyViewerFunc_setFrameRange(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setFrameRange";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -732,7 +826,8 @@ static PyObject *Sbk_PyViewerFunc_setFrameRange(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setFrameRange_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyViewer.setFrameRange");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -742,6 +837,10 @@ static PyObject *Sbk_PyViewerFunc_setPlaybackMode(PyObject *self, PyObject *pyAr
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setPlaybackMode";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -772,7 +871,8 @@ static PyObject *Sbk_PyViewerFunc_setPlaybackMode(PyObject *self, PyObject *pyAr
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setPlaybackMode_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setPlaybackMode");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -782,6 +882,10 @@ static PyObject *Sbk_PyViewerFunc_setProxyIndex(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setProxyIndex";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -812,7 +916,8 @@ static PyObject *Sbk_PyViewerFunc_setProxyIndex(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setProxyIndex_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setProxyIndex");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -822,6 +927,10 @@ static PyObject *Sbk_PyViewerFunc_setProxyModeEnabled(PyObject *self, PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.setProxyModeEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -852,7 +961,8 @@ static PyObject *Sbk_PyViewerFunc_setProxyModeEnabled(PyObject *self, PyObject *
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setProxyModeEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setProxyModeEnabled");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -862,6 +972,10 @@ static PyObject *Sbk_PyViewerFunc_startBackward(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.startBackward";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -884,6 +998,10 @@ static PyObject *Sbk_PyViewerFunc_startForward(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::PyViewer *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyViewer.startForward";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1077,7 +1195,6 @@ void init_PyViewer(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "PyViewer*");
     Shiboken::Conversions::registerConverterName(converter, "PyViewer&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::PyViewer).name());
-
 
 
 }

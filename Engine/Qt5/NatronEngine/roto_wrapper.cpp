@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -78,6 +76,10 @@ static PyObject *Sbk_RotoFunc_createBezier(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.createBezier";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -134,7 +136,8 @@ static PyObject *Sbk_RotoFunc_createBezier(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RotoFunc_createBezier_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createBezier");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -145,6 +148,10 @@ static PyObject *Sbk_RotoFunc_createEllipse(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.createEllipse";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -207,7 +214,8 @@ static PyObject *Sbk_RotoFunc_createEllipse(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RotoFunc_createEllipse_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createEllipse");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -218,6 +226,10 @@ static PyObject *Sbk_RotoFunc_createLayer(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.createLayer";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -250,6 +262,10 @@ static PyObject *Sbk_RotoFunc_createRectangle(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.createRectangle";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -309,7 +325,8 @@ static PyObject *Sbk_RotoFunc_createRectangle(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RotoFunc_createRectangle_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createRectangle");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -320,6 +337,10 @@ static PyObject *Sbk_RotoFunc_getBaseLayer(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.getBaseLayer";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -348,6 +369,10 @@ static PyObject *Sbk_RotoFunc_getItemByName(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Roto *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Roto.getItemByName";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -383,7 +408,8 @@ static PyObject *Sbk_RotoFunc_getItemByName(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_RotoFunc_getItemByName_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Roto.getItemByName");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -526,7 +552,6 @@ void init_Roto(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Roto*");
     Shiboken::Conversions::registerConverterName(converter, "Roto&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Roto).name());
-
 
 
 }

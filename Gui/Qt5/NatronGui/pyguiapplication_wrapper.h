@@ -5,6 +5,7 @@
 
 
 // Extra includes
+#include <qpixmap.h>
 #include <PyGuiApp.h>
 #include <PyAppInstance.h>
 NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER

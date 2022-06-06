@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -93,10 +91,15 @@ static int
 Sbk_NodeCreationProperty_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::NodeCreationProperty >()))
         return -1;
 
     ::NodeCreationPropertyWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.NodeCreationProperty.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -263,7 +266,6 @@ void init_NodeCreationProperty(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "NodeCreationProperty&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::NodeCreationProperty).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::NodeCreationPropertyWrapper).name());
-
 
 
     NodeCreationPropertyWrapper::pysideInitQtMetaTypes();

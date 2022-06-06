@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,18 +87,23 @@ static PyObject *Sbk_GuiAppFunc_clearSelection(PyObject *self, PyObject *args, P
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.clearSelection";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.clearSelection(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_clearSelection_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:clearSelection", &(pyArgs[0])))
@@ -121,20 +124,28 @@ static PyObject *Sbk_GuiAppFunc_clearSelection(PyObject *self, PyObject *args, P
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","group");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_group = Shiboken::String::createStaticString("group");
+            if (PyDict_Contains(kwds, key_group)) {
+                value = PyDict_GetItem(kwds, key_group);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.clearSelection(): got multiple values for keyword argument 'group'.");
-                    return {};
+                    errInfo = key_group;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_clearSelection_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible(reinterpret_cast<SbkObjectType *>(SbkNatronEngineTypes[SBK_GROUP_IDX]), (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_clearSelection_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_group);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_clearSelection_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -154,7 +165,8 @@ static PyObject *Sbk_GuiAppFunc_clearSelection(PyObject *self, PyObject *args, P
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_clearSelection_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.clearSelection");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -164,18 +176,23 @@ static PyObject *Sbk_GuiAppFunc_copySelectedNodes(PyObject *self, PyObject *args
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.copySelectedNodes";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.copySelectedNodes(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_copySelectedNodes_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:copySelectedNodes", &(pyArgs[0])))
@@ -196,20 +213,28 @@ static PyObject *Sbk_GuiAppFunc_copySelectedNodes(PyObject *self, PyObject *args
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","group");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_group = Shiboken::String::createStaticString("group");
+            if (PyDict_Contains(kwds, key_group)) {
+                value = PyDict_GetItem(kwds, key_group);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.copySelectedNodes(): got multiple values for keyword argument 'group'.");
-                    return {};
+                    errInfo = key_group;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_copySelectedNodes_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible(reinterpret_cast<SbkObjectType *>(SbkNatronEngineTypes[SBK_GROUP_IDX]), (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_copySelectedNodes_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_group);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_copySelectedNodes_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -229,7 +254,8 @@ static PyObject *Sbk_GuiAppFunc_copySelectedNodes(PyObject *self, PyObject *args
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_copySelectedNodes_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.copySelectedNodes");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -240,6 +266,10 @@ static PyObject *Sbk_GuiAppFunc_createModalDialog(PyObject *self)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.createModalDialog";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -264,6 +294,10 @@ static PyObject *Sbk_GuiAppFunc_deselectNode(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.deselectNode";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -296,7 +330,8 @@ static PyObject *Sbk_GuiAppFunc_deselectNode(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_deselectNode_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.deselectNode");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -307,6 +342,10 @@ static PyObject *Sbk_GuiAppFunc_getActiveTabWidget(PyObject *self)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getActiveTabWidget";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -335,6 +374,10 @@ static PyObject *Sbk_GuiAppFunc_getActiveViewer(PyObject *self)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getActiveViewer";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -363,18 +406,23 @@ static PyObject *Sbk_GuiAppFunc_getDirectoryDialog(PyObject *self, PyObject *arg
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getDirectoryDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:getDirectoryDialog", &(pyArgs[0])))
@@ -395,20 +443,28 @@ static PyObject *Sbk_GuiAppFunc_getDirectoryDialog(PyObject *self, PyObject *arg
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","location");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_location = Shiboken::String::createStaticString("location");
+            if (PyDict_Contains(kwds, key_location)) {
+                value = PyDict_GetItem(kwds, key_location);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): got multiple values for keyword argument 'location'.");
-                    return {};
+                    errInfo = key_location;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide2_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_location);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         ::QString cppArg0 = QString();
@@ -428,7 +484,8 @@ static PyObject *Sbk_GuiAppFunc_getDirectoryDialog(PyObject *self, PyObject *arg
     return pyResult;
 
     Sbk_GuiAppFunc_getDirectoryDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getDirectoryDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -439,21 +496,28 @@ static PyObject *Sbk_GuiAppFunc_getFilenameDialog(PyObject *self, PyObject *args
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getFilenameDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:getFilenameDialog", &(pyArgs[0]), &(pyArgs[1])))
@@ -476,20 +540,28 @@ static PyObject *Sbk_GuiAppFunc_getFilenameDialog(PyObject *self, PyObject *args
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","location");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_location = Shiboken::String::createStaticString("location");
+            if (PyDict_Contains(kwds, key_location)) {
+                value = PyDict_GetItem(kwds, key_location);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): got multiple values for keyword argument 'location'.");
-                    return {};
+                    errInfo = key_location;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide2_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                         goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_location);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         ::QStringList cppArg0;
@@ -511,7 +583,8 @@ static PyObject *Sbk_GuiAppFunc_getFilenameDialog(PyObject *self, PyObject *args
     return pyResult;
 
     Sbk_GuiAppFunc_getFilenameDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getFilenameDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -522,6 +595,10 @@ static PyObject *Sbk_GuiAppFunc_getRGBColorDialog(PyObject *self)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getRGBColorDialog";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -547,18 +624,23 @@ static PyObject *Sbk_GuiAppFunc_getSelectedNodes(PyObject *self, PyObject *args,
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getSelectedNodes";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSelectedNodes(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:getSelectedNodes", &(pyArgs[0])))
@@ -579,20 +661,28 @@ static PyObject *Sbk_GuiAppFunc_getSelectedNodes(PyObject *self, PyObject *args,
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","group");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_group = Shiboken::String::createStaticString("group");
+            if (PyDict_Contains(kwds, key_group)) {
+                value = PyDict_GetItem(kwds, key_group);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSelectedNodes(): got multiple values for keyword argument 'group'.");
-                    return {};
+                    errInfo = key_group;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible(reinterpret_cast<SbkObjectType *>(SbkNatronEngineTypes[SBK_GROUP_IDX]), (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_group);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -626,7 +716,8 @@ static PyObject *Sbk_GuiAppFunc_getSelectedNodes(PyObject *self, PyObject *args,
     return pyResult;
 
     Sbk_GuiAppFunc_getSelectedNodes_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getSelectedNodes");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -637,21 +728,28 @@ static PyObject *Sbk_GuiAppFunc_getSequenceDialog(PyObject *self, PyObject *args
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getSequenceDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:getSequenceDialog", &(pyArgs[0]), &(pyArgs[1])))
@@ -674,20 +772,28 @@ static PyObject *Sbk_GuiAppFunc_getSequenceDialog(PyObject *self, PyObject *args
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","location");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_location = Shiboken::String::createStaticString("location");
+            if (PyDict_Contains(kwds, key_location)) {
+                value = PyDict_GetItem(kwds, key_location);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): got multiple values for keyword argument 'location'.");
-                    return {};
+                    errInfo = key_location;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide2_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                         goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_location);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         ::QStringList cppArg0;
@@ -709,7 +815,8 @@ static PyObject *Sbk_GuiAppFunc_getSequenceDialog(PyObject *self, PyObject *args
     return pyResult;
 
     Sbk_GuiAppFunc_getSequenceDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getSequenceDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -720,6 +827,10 @@ static PyObject *Sbk_GuiAppFunc_getTabWidget(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getTabWidget";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -755,7 +866,8 @@ static PyObject *Sbk_GuiAppFunc_getTabWidget(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getTabWidget_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getTabWidget");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -766,6 +878,10 @@ static PyObject *Sbk_GuiAppFunc_getUserPanel(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getUserPanel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -798,7 +914,8 @@ static PyObject *Sbk_GuiAppFunc_getUserPanel(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getUserPanel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getUserPanel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -809,6 +926,10 @@ static PyObject *Sbk_GuiAppFunc_getViewer(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.getViewer";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -844,7 +965,8 @@ static PyObject *Sbk_GuiAppFunc_getViewer(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_GuiAppFunc_getViewer_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getViewer");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -855,6 +977,10 @@ static PyObject *Sbk_GuiAppFunc_moveTab(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.moveTab";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -903,7 +1029,8 @@ static PyObject *Sbk_GuiAppFunc_moveTab(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_GuiAppFunc_moveTab_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.moveTab");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -913,18 +1040,23 @@ static PyObject *Sbk_GuiAppFunc_pasteNodes(PyObject *self, PyObject *args, PyObj
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.pasteNodes";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.pasteNodes(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_pasteNodes_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:pasteNodes", &(pyArgs[0])))
@@ -945,20 +1077,28 @@ static PyObject *Sbk_GuiAppFunc_pasteNodes(PyObject *self, PyObject *args, PyObj
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","group");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_group = Shiboken::String::createStaticString("group");
+            if (PyDict_Contains(kwds, key_group)) {
+                value = PyDict_GetItem(kwds, key_group);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.pasteNodes(): got multiple values for keyword argument 'group'.");
-                    return {};
+                    errInfo = key_group;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_pasteNodes_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible(reinterpret_cast<SbkObjectType *>(SbkNatronEngineTypes[SBK_GROUP_IDX]), (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_pasteNodes_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_group);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_pasteNodes_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -978,7 +1118,8 @@ static PyObject *Sbk_GuiAppFunc_pasteNodes(PyObject *self, PyObject *args, PyObj
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_pasteNodes_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.pasteNodes");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -988,6 +1129,10 @@ static PyObject *Sbk_GuiAppFunc_registerPythonPanel(PyObject *self, PyObject *ar
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.registerPythonPanel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1034,7 +1179,8 @@ static PyObject *Sbk_GuiAppFunc_registerPythonPanel(PyObject *self, PyObject *ar
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_registerPythonPanel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.registerPythonPanel");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1044,21 +1190,28 @@ static PyObject *Sbk_GuiAppFunc_renderBlocking(PyObject *self, PyObject *args, P
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.renderBlocking";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.renderBlocking(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_renderBlocking_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.renderBlocking(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_renderBlocking_TypeError;
     } else if (numArgs == 2)
         goto Sbk_GuiAppFunc_renderBlocking_TypeError;
 
@@ -1091,20 +1244,28 @@ static PyObject *Sbk_GuiAppFunc_renderBlocking(PyObject *self, PyObject *args, P
         case 0: // renderBlocking(Effect * writeNode, int firstFrame, int lastFrame, int frameStep)
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","frameStep");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_frameStep = Shiboken::String::createStaticString("frameStep");
+                if (PyDict_Contains(kwds, key_frameStep)) {
+                    value = PyDict_GetItem(kwds, key_frameStep);
                     if (value && pyArgs[3]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.renderBlocking(): got multiple values for keyword argument 'frameStep'.");
-                        return {};
+                        errInfo = key_frameStep;
+                        Py_INCREF(errInfo);
+                        goto Sbk_GuiAppFunc_renderBlocking_TypeError;
                     }
                     if (value) {
                         pyArgs[3] = value;
                         if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3]))))
                             goto Sbk_GuiAppFunc_renderBlocking_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_frameStep);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_GuiAppFunc_renderBlocking_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -1126,6 +1287,11 @@ static PyObject *Sbk_GuiAppFunc_renderBlocking(PyObject *self, PyObject *args, P
         }
         case 1: // renderBlocking(const std::list<Effect* > & effects, const std::list<int > & firstFrames, const std::list<int > & lastFrames, const std::list<int > & frameSteps)
         {
+            if (kwds) {
+                errInfo = kwds;
+                Py_INCREF(errInfo);
+                goto Sbk_GuiAppFunc_renderBlocking_TypeError;
+            }
 
             if (!PyErr_Occurred()) {
                 // renderBlocking(std::list<Effect*>,std::list<int>,std::list<int>,std::list<int>)
@@ -1188,7 +1354,8 @@ static PyObject *Sbk_GuiAppFunc_renderBlocking(PyObject *self, PyObject *args, P
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_renderBlocking_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.renderBlocking");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1199,21 +1366,28 @@ static PyObject *Sbk_GuiAppFunc_saveFilenameDialog(PyObject *self, PyObject *arg
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.saveFilenameDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:saveFilenameDialog", &(pyArgs[0]), &(pyArgs[1])))
@@ -1236,20 +1410,28 @@ static PyObject *Sbk_GuiAppFunc_saveFilenameDialog(PyObject *self, PyObject *arg
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","location");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_location = Shiboken::String::createStaticString("location");
+            if (PyDict_Contains(kwds, key_location)) {
+                value = PyDict_GetItem(kwds, key_location);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): got multiple values for keyword argument 'location'.");
-                    return {};
+                    errInfo = key_location;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide2_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                         goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_location);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         ::QStringList cppArg0;
@@ -1271,7 +1453,8 @@ static PyObject *Sbk_GuiAppFunc_saveFilenameDialog(PyObject *self, PyObject *arg
     return pyResult;
 
     Sbk_GuiAppFunc_saveFilenameDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveFilenameDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1282,21 +1465,28 @@ static PyObject *Sbk_GuiAppFunc_saveSequenceDialog(PyObject *self, PyObject *arg
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.saveSequenceDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:saveSequenceDialog", &(pyArgs[0]), &(pyArgs[1])))
@@ -1319,20 +1509,28 @@ static PyObject *Sbk_GuiAppFunc_saveSequenceDialog(PyObject *self, PyObject *arg
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","location");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_location = Shiboken::String::createStaticString("location");
+            if (PyDict_Contains(kwds, key_location)) {
+                value = PyDict_GetItem(kwds, key_location);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): got multiple values for keyword argument 'location'.");
-                    return {};
+                    errInfo = key_location;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide2_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
                         goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_location);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         ::QStringList cppArg0;
@@ -1354,7 +1552,8 @@ static PyObject *Sbk_GuiAppFunc_saveSequenceDialog(PyObject *self, PyObject *arg
     return pyResult;
 
     Sbk_GuiAppFunc_saveSequenceDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveSequenceDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1364,18 +1563,23 @@ static PyObject *Sbk_GuiAppFunc_selectAllNodes(PyObject *self, PyObject *args, P
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.selectAllNodes";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.selectAllNodes(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:selectAllNodes", &(pyArgs[0])))
@@ -1396,20 +1600,28 @@ static PyObject *Sbk_GuiAppFunc_selectAllNodes(PyObject *self, PyObject *args, P
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","group");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_group = Shiboken::String::createStaticString("group");
+            if (PyDict_Contains(kwds, key_group)) {
+                value = PyDict_GetItem(kwds, key_group);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.selectAllNodes(): got multiple values for keyword argument 'group'.");
-                    return {};
+                    errInfo = key_group;
+                    Py_INCREF(errInfo);
+                    goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible(reinterpret_cast<SbkObjectType *>(SbkNatronEngineTypes[SBK_GROUP_IDX]), (pyArgs[0]))))
                         goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_group);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_GuiAppFunc_selectAllNodes_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -1429,7 +1641,8 @@ static PyObject *Sbk_GuiAppFunc_selectAllNodes(PyObject *self, PyObject *args, P
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_selectAllNodes_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.selectAllNodes");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1439,6 +1652,10 @@ static PyObject *Sbk_GuiAppFunc_selectNode(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.selectNode";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1485,7 +1702,8 @@ static PyObject *Sbk_GuiAppFunc_selectNode(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_selectNode_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.selectNode");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1495,6 +1713,10 @@ static PyObject *Sbk_GuiAppFunc_setSelection(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.setSelection";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1525,7 +1747,8 @@ static PyObject *Sbk_GuiAppFunc_setSelection(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_setSelection_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.setSelection");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1535,6 +1758,10 @@ static PyObject *Sbk_GuiAppFunc_unregisterPythonPanel(PyObject *self, PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::GuiApp *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.GuiApp.unregisterPythonPanel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1567,7 +1794,8 @@ static PyObject *Sbk_GuiAppFunc_unregisterPythonPanel(PyObject *self, PyObject *
     Py_RETURN_NONE;
 
     Sbk_GuiAppFunc_unregisterPythonPanel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.unregisterPythonPanel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1770,7 +1998,6 @@ void init_GuiApp(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_GuiApp_TypeF(), &Sbk_GuiApp_typeDiscovery);
-
 
     GuiAppWrapper::pysideInitQtMetaTypes();
 }

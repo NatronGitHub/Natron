@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_ParamFunc__addAsDependencyOf(PyObject *self, PyObject *args
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param._addAsDependencyOf";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -138,7 +140,8 @@ static PyObject *Sbk_ParamFunc__addAsDependencyOf(PyObject *self, PyObject *args
     Py_RETURN_NONE;
 
     Sbk_ParamFunc__addAsDependencyOf_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param._addAsDependencyOf");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -149,21 +152,28 @@ static PyObject *Sbk_ParamFunc_copy(PyObject *self, PyObject *args, PyObject *kw
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.copy";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_copy_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_copy_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:copy", &(pyArgs[0]), &(pyArgs[1])))
@@ -186,20 +196,28 @@ static PyObject *Sbk_ParamFunc_copy(PyObject *self, PyObject *args, PyObject *kw
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","dimension");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_dimension = Shiboken::String::createStaticString("dimension");
+            if (PyDict_Contains(kwds, key_dimension)) {
+                value = PyDict_GetItem(kwds, key_dimension);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): got multiple values for keyword argument 'dimension'.");
-                    return {};
+                    errInfo = key_dimension;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ParamFunc_copy_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ParamFunc_copy_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_dimension);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ParamFunc_copy_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         if (!Shiboken::Object::isValid(pyArgs[0]))
@@ -223,7 +241,8 @@ static PyObject *Sbk_ParamFunc_copy(PyObject *self, PyObject *args, PyObject *kw
     return pyResult;
 
     Sbk_ParamFunc_copy_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.copy");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -234,21 +253,28 @@ static PyObject *Sbk_ParamFunc_curve(PyObject *self, PyObject *args, PyObject *k
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.curve";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_curve_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_curve_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:curve", &(pyArgs[0]), &(pyArgs[1])))
@@ -271,20 +297,28 @@ static PyObject *Sbk_ParamFunc_curve(PyObject *self, PyObject *args, PyObject *k
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","dimension");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_dimension = Shiboken::String::createStaticString("dimension");
+            if (PyDict_Contains(kwds, key_dimension)) {
+                value = PyDict_GetItem(kwds, key_dimension);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.curve(): got multiple values for keyword argument 'dimension'.");
-                    return {};
+                    errInfo = key_dimension;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ParamFunc_curve_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ParamFunc_curve_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_dimension);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ParamFunc_curve_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         double cppArg0;
@@ -306,7 +340,8 @@ static PyObject *Sbk_ParamFunc_curve(PyObject *self, PyObject *args, PyObject *k
     return pyResult;
 
     Sbk_ParamFunc_curve_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.curve");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -317,6 +352,10 @@ static PyObject *Sbk_ParamFunc_getAddNewLine(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getAddNewLine";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -342,6 +381,10 @@ static PyObject *Sbk_ParamFunc_getCanAnimate(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getCanAnimate";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -367,6 +410,10 @@ static PyObject *Sbk_ParamFunc_getEvaluateOnChange(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getEvaluateOnChange";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -392,6 +439,10 @@ static PyObject *Sbk_ParamFunc_getHelp(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getHelp";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -417,6 +468,10 @@ static PyObject *Sbk_ParamFunc_getIsAnimationEnabled(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getIsAnimationEnabled";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -442,18 +497,23 @@ static PyObject *Sbk_ParamFunc_getIsEnabled(PyObject *self, PyObject *args, PyOb
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getIsEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.getIsEnabled(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_getIsEnabled_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:getIsEnabled", &(pyArgs[0])))
@@ -474,20 +534,28 @@ static PyObject *Sbk_ParamFunc_getIsEnabled(PyObject *self, PyObject *args, PyOb
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","dimension");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_dimension = Shiboken::String::createStaticString("dimension");
+            if (PyDict_Contains(kwds, key_dimension)) {
+                value = PyDict_GetItem(kwds, key_dimension);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.getIsEnabled(): got multiple values for keyword argument 'dimension'.");
-                    return {};
+                    errInfo = key_dimension;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ParamFunc_getIsEnabled_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
                         goto Sbk_ParamFunc_getIsEnabled_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_dimension);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ParamFunc_getIsEnabled_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         int cppArg0 = 0;
@@ -507,7 +575,8 @@ static PyObject *Sbk_ParamFunc_getIsEnabled(PyObject *self, PyObject *args, PyOb
     return pyResult;
 
     Sbk_ParamFunc_getIsEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.getIsEnabled");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -518,6 +587,10 @@ static PyObject *Sbk_ParamFunc_getIsPersistent(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getIsPersistent";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -543,6 +616,10 @@ static PyObject *Sbk_ParamFunc_getIsVisible(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getIsVisible";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -568,6 +645,10 @@ static PyObject *Sbk_ParamFunc_getLabel(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getLabel";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -593,6 +674,10 @@ static PyObject *Sbk_ParamFunc_getNumDimensions(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getNumDimensions";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -618,6 +703,10 @@ static PyObject *Sbk_ParamFunc_getParent(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getParent";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -646,6 +735,10 @@ static PyObject *Sbk_ParamFunc_getScriptName(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getScriptName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -671,6 +764,10 @@ static PyObject *Sbk_ParamFunc_getTypeName(PyObject *self)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.getTypeName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -696,18 +793,23 @@ static PyObject *Sbk_ParamFunc_random(PyObject *self, PyObject *args, PyObject *
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.random";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_random_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:random", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -743,33 +845,43 @@ static PyObject *Sbk_ParamFunc_random(PyObject *self, PyObject *args, PyObject *
         case 0: // random(double min, double max) const
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","min");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_min = Shiboken::String::createStaticString("min");
+                if (PyDict_Contains(kwds, key_min)) {
+                    value = PyDict_GetItem(kwds, key_min);
                     if (value && pyArgs[0]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): got multiple values for keyword argument 'min'.");
-                        return {};
+                        errInfo = key_min;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParamFunc_random_TypeError;
                     }
                     if (value) {
                         pyArgs[0] = value;
                         if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0]))))
                             goto Sbk_ParamFunc_random_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_min);
                 }
-                keyName = Py_BuildValue("s","max");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                static PyObject *const key_max = Shiboken::String::createStaticString("max");
+                if (PyDict_Contains(kwds, key_max)) {
+                    value = PyDict_GetItem(kwds, key_max);
                     if (value && pyArgs[1]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): got multiple values for keyword argument 'max'.");
-                        return {};
+                        errInfo = key_max;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParamFunc_random_TypeError;
                     }
                     if (value) {
                         pyArgs[1] = value;
                         if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1]))))
                             goto Sbk_ParamFunc_random_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_max);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_ParamFunc_random_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             double cppArg0 = 0.;
@@ -787,20 +899,28 @@ static PyObject *Sbk_ParamFunc_random(PyObject *self, PyObject *args, PyObject *
         case 1: // random(double min, double max, double time, unsigned int seed) const
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","seed");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_seed = Shiboken::String::createStaticString("seed");
+                if (PyDict_Contains(kwds, key_seed)) {
+                    value = PyDict_GetItem(kwds, key_seed);
                     if (value && pyArgs[3]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): got multiple values for keyword argument 'seed'.");
-                        return {};
+                        errInfo = key_seed;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParamFunc_random_TypeError;
                     }
                     if (value) {
                         pyArgs[3] = value;
                         if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3]))))
                             goto Sbk_ParamFunc_random_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_seed);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_ParamFunc_random_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             double cppArg0;
@@ -828,7 +948,8 @@ static PyObject *Sbk_ParamFunc_random(PyObject *self, PyObject *args, PyObject *
     return pyResult;
 
     Sbk_ParamFunc_random_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.random");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -839,21 +960,28 @@ static PyObject *Sbk_ParamFunc_randomInt(PyObject *self, PyObject *args, PyObjec
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.randomInt";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 4) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): too many arguments");
-        return {};
+    if (numArgs > 4) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_randomInt_TypeError;
     } else if (numArgs < 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_randomInt_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OOOO:randomInt", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
@@ -884,6 +1012,11 @@ static PyObject *Sbk_ParamFunc_randomInt(PyObject *self, PyObject *args, PyObjec
     switch (overloadId) {
         case 0: // randomInt(int min, int max)
         {
+            if (kwds) {
+                errInfo = kwds;
+                Py_INCREF(errInfo);
+                goto Sbk_ParamFunc_randomInt_TypeError;
+            }
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             int cppArg1;
@@ -899,20 +1032,28 @@ static PyObject *Sbk_ParamFunc_randomInt(PyObject *self, PyObject *args, PyObjec
         case 1: // randomInt(int min, int max, double time, unsigned int seed) const
         {
             if (kwds) {
-                PyObject *keyName = nullptr;
-                PyObject *value = nullptr;
-                keyName = Py_BuildValue("s","seed");
-                if (PyDict_Contains(kwds, keyName)) {
-                    value = PyDict_GetItem(kwds, keyName);
+                PyObject *value{};
+                PyObject *kwds_dup = PyDict_Copy(kwds);
+                static PyObject *const key_seed = Shiboken::String::createStaticString("seed");
+                if (PyDict_Contains(kwds, key_seed)) {
+                    value = PyDict_GetItem(kwds, key_seed);
                     if (value && pyArgs[3]) {
-                        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): got multiple values for keyword argument 'seed'.");
-                        return {};
+                        errInfo = key_seed;
+                        Py_INCREF(errInfo);
+                        goto Sbk_ParamFunc_randomInt_TypeError;
                     }
                     if (value) {
                         pyArgs[3] = value;
                         if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3]))))
                             goto Sbk_ParamFunc_randomInt_TypeError;
                     }
+                    PyDict_DelItem(kwds_dup, key_seed);
+                }
+                if (PyDict_Size(kwds_dup) > 0) {
+                    errInfo = kwds_dup;
+                    goto Sbk_ParamFunc_randomInt_TypeError;
+                } else {
+                    Py_DECREF(kwds_dup);
                 }
             }
             int cppArg0;
@@ -940,7 +1081,8 @@ static PyObject *Sbk_ParamFunc_randomInt(PyObject *self, PyObject *args, PyObjec
     return pyResult;
 
     Sbk_ParamFunc_randomInt_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.randomInt");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -950,6 +1092,10 @@ static PyObject *Sbk_ParamFunc_setAddNewLine(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setAddNewLine";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -980,7 +1126,8 @@ static PyObject *Sbk_ParamFunc_setAddNewLine(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setAddNewLine_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAddNewLine");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -990,6 +1137,10 @@ static PyObject *Sbk_ParamFunc_setAnimationEnabled(PyObject *self, PyObject *pyA
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setAnimationEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1020,7 +1171,8 @@ static PyObject *Sbk_ParamFunc_setAnimationEnabled(PyObject *self, PyObject *pyA
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setAnimationEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAnimationEnabled");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1031,6 +1183,10 @@ static PyObject *Sbk_ParamFunc_setAsAlias(PyObject *self, PyObject *pyArg)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setAsAlias";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1065,7 +1221,8 @@ static PyObject *Sbk_ParamFunc_setAsAlias(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ParamFunc_setAsAlias_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAsAlias");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1075,21 +1232,28 @@ static PyObject *Sbk_ParamFunc_setEnabled(PyObject *self, PyObject *args, PyObje
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setEnabled";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setEnabled(): too many arguments");
-        return {};
+    if (numArgs > 2) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_setEnabled_TypeError;
     } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setEnabled(): not enough arguments");
-        return {};
+        static PyObject *const too_few = Shiboken::String::createStaticString("<");
+        errInfo = too_few;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_setEnabled_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|OO:setEnabled", &(pyArgs[0]), &(pyArgs[1])))
@@ -1112,20 +1276,28 @@ static PyObject *Sbk_ParamFunc_setEnabled(PyObject *self, PyObject *args, PyObje
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","dimension");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_dimension = Shiboken::String::createStaticString("dimension");
+            if (PyDict_Contains(kwds, key_dimension)) {
+                value = PyDict_GetItem(kwds, key_dimension);
                 if (value && pyArgs[1]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setEnabled(): got multiple values for keyword argument 'dimension'.");
-                    return {};
+                    errInfo = key_dimension;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ParamFunc_setEnabled_TypeError;
                 }
                 if (value) {
                     pyArgs[1] = value;
                     if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                         goto Sbk_ParamFunc_setEnabled_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_dimension);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ParamFunc_setEnabled_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         bool cppArg0;
@@ -1145,7 +1317,8 @@ static PyObject *Sbk_ParamFunc_setEnabled(PyObject *self, PyObject *args, PyObje
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setEnabled_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setEnabled");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1155,18 +1328,23 @@ static PyObject *Sbk_ParamFunc_setEnabledByDefault(PyObject *self, PyObject *arg
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setEnabledByDefault";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setEnabledByDefault(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_ParamFunc_setEnabledByDefault_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:setEnabledByDefault", &(pyArgs[0])))
@@ -1187,20 +1365,28 @@ static PyObject *Sbk_ParamFunc_setEnabledByDefault(PyObject *self, PyObject *arg
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","enabled");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_enabled = Shiboken::String::createStaticString("enabled");
+            if (PyDict_Contains(kwds, key_enabled)) {
+                value = PyDict_GetItem(kwds, key_enabled);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.setEnabledByDefault(): got multiple values for keyword argument 'enabled'.");
-                    return {};
+                    errInfo = key_enabled;
+                    Py_INCREF(errInfo);
+                    goto Sbk_ParamFunc_setEnabledByDefault_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
                         goto Sbk_ParamFunc_setEnabledByDefault_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_enabled);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_ParamFunc_setEnabledByDefault_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         bool cppArg0 = 0;
@@ -1218,7 +1404,8 @@ static PyObject *Sbk_ParamFunc_setEnabledByDefault(PyObject *self, PyObject *arg
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setEnabledByDefault_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.setEnabledByDefault");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1228,6 +1415,10 @@ static PyObject *Sbk_ParamFunc_setEvaluateOnChange(PyObject *self, PyObject *pyA
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setEvaluateOnChange";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1258,7 +1449,8 @@ static PyObject *Sbk_ParamFunc_setEvaluateOnChange(PyObject *self, PyObject *pyA
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setEvaluateOnChange_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setEvaluateOnChange");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1268,6 +1460,10 @@ static PyObject *Sbk_ParamFunc_setHelp(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setHelp";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1298,7 +1494,8 @@ static PyObject *Sbk_ParamFunc_setHelp(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setHelp_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setHelp");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1308,6 +1505,10 @@ static PyObject *Sbk_ParamFunc_setIconFilePath(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setIconFilePath";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1338,7 +1539,8 @@ static PyObject *Sbk_ParamFunc_setIconFilePath(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setIconFilePath_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setIconFilePath");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1348,6 +1550,10 @@ static PyObject *Sbk_ParamFunc_setPersistent(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setPersistent";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1378,7 +1584,8 @@ static PyObject *Sbk_ParamFunc_setPersistent(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setPersistent_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setPersistent");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1388,6 +1595,10 @@ static PyObject *Sbk_ParamFunc_setVisible(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setVisible";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1418,7 +1629,8 @@ static PyObject *Sbk_ParamFunc_setVisible(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setVisible_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setVisible");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1428,6 +1640,10 @@ static PyObject *Sbk_ParamFunc_setVisibleByDefault(PyObject *self, PyObject *pyA
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.setVisibleByDefault";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1458,7 +1674,8 @@ static PyObject *Sbk_ParamFunc_setVisibleByDefault(PyObject *self, PyObject *pyA
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_setVisibleByDefault_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setVisibleByDefault");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1469,6 +1686,10 @@ static PyObject *Sbk_ParamFunc_slaveTo(PyObject *self, PyObject *args)
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.slaveTo";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1520,7 +1741,8 @@ static PyObject *Sbk_ParamFunc_slaveTo(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ParamFunc_slaveTo_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.slaveTo");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1530,6 +1752,10 @@ static PyObject *Sbk_ParamFunc_unslave(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<ParamWrapper *>(reinterpret_cast< ::Param *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Param.unslave";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1560,7 +1786,8 @@ static PyObject *Sbk_ParamFunc_unslave(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ParamFunc_unslave_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.unslave");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1768,7 +1995,6 @@ void init_Param(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "Param&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Param).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::ParamWrapper).name());
-
 
 
     ParamWrapper::pysideInitQtMetaTypes();

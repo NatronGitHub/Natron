@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -131,11 +129,15 @@ PyObject *SbkNatronEngine_NATRON_ENUM_StandardButtonEnum___and__(PyObject *self,
 #ifdef IS_PY3K
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(pyArg)));
+    if (PyErr_Occurred())
+    return nullptr;
 #else
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(pyArg)));
 #endif
 
+    if (PyErr_Occurred())
+        return nullptr;
     cppResult = cppSelf & cppArg;
     return Shiboken::Conversions::copyToPython(*PepType_SGTP(SbkNatronEngineTypes[SBK_QFLAGS_NATRON_ENUM_STANDARDBUTTONENUM_IDX])->converter, &cppResult);
 }
@@ -146,11 +148,15 @@ PyObject *SbkNatronEngine_NATRON_ENUM_StandardButtonEnum___or__(PyObject *self, 
 #ifdef IS_PY3K
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(pyArg)));
+    if (PyErr_Occurred())
+    return nullptr;
 #else
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(pyArg)));
 #endif
 
+    if (PyErr_Occurred())
+        return nullptr;
     cppResult = cppSelf | cppArg;
     return Shiboken::Conversions::copyToPython(*PepType_SGTP(SbkNatronEngineTypes[SBK_QFLAGS_NATRON_ENUM_STANDARDBUTTONENUM_IDX])->converter, &cppResult);
 }
@@ -161,11 +167,15 @@ PyObject *SbkNatronEngine_NATRON_ENUM_StandardButtonEnum___xor__(PyObject *self,
 #ifdef IS_PY3K
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyLong_AsLong(pyArg)));
+    if (PyErr_Occurred())
+    return nullptr;
 #else
     cppSelf = static_cast<::NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(self)));
     cppArg = static_cast<NATRON_ENUM::StandardButtons>(int(PyInt_AsLong(pyArg)));
 #endif
 
+    if (PyErr_Occurred())
+        return nullptr;
     cppResult = cppSelf ^ cppArg;
     return Shiboken::Conversions::copyToPython(*PepType_SGTP(SbkNatronEngineTypes[SBK_QFLAGS_NATRON_ENUM_STANDARDBUTTONENUM_IDX])->converter, &cppResult);
 }
@@ -1843,7 +1853,6 @@ void init_NatronEngineNATRON_ENUM(PyObject *module)
         Shiboken::Conversions::registerConverterName(converter, "MergingFunctionEnum");
     }
     // End of 'MergingFunctionEnum' enum.
-
 
     qRegisterMetaType< ::NATRON_ENUM::StatusEnum >("NATRON_ENUM::StatusEnum");
     qRegisterMetaType< ::NATRON_ENUM::StandardButtonEnum >("NATRON_ENUM::StandardButtonEnum");

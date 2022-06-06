@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_ItemBaseFunc_getLabel(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getLabel";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -115,6 +117,10 @@ static PyObject *Sbk_ItemBaseFunc_getLocked(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getLocked";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -140,6 +146,10 @@ static PyObject *Sbk_ItemBaseFunc_getLockedRecursive(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getLockedRecursive";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -165,6 +175,10 @@ static PyObject *Sbk_ItemBaseFunc_getParam(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -197,7 +211,8 @@ static PyObject *Sbk_ItemBaseFunc_getParam(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ItemBaseFunc_getParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.getParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -208,6 +223,10 @@ static PyObject *Sbk_ItemBaseFunc_getParentLayer(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getParentLayer";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -236,6 +255,10 @@ static PyObject *Sbk_ItemBaseFunc_getScriptName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getScriptName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -261,6 +284,10 @@ static PyObject *Sbk_ItemBaseFunc_getVisible(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.getVisible";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -285,6 +312,10 @@ static PyObject *Sbk_ItemBaseFunc_setLabel(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.setLabel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -319,7 +350,8 @@ static PyObject *Sbk_ItemBaseFunc_setLabel(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ItemBaseFunc_setLabel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setLabel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -329,6 +361,10 @@ static PyObject *Sbk_ItemBaseFunc_setLocked(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.setLocked";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -359,7 +395,8 @@ static PyObject *Sbk_ItemBaseFunc_setLocked(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ItemBaseFunc_setLocked_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setLocked");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -370,6 +407,10 @@ static PyObject *Sbk_ItemBaseFunc_setScriptName(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.setScriptName";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -406,7 +447,8 @@ static PyObject *Sbk_ItemBaseFunc_setScriptName(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ItemBaseFunc_setScriptName_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setScriptName");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -416,6 +458,10 @@ static PyObject *Sbk_ItemBaseFunc_setVisible(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::ItemBase *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ItemBase.setVisible";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -446,7 +492,8 @@ static PyObject *Sbk_ItemBaseFunc_setVisible(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ItemBaseFunc_setVisible_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setVisible");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -612,7 +659,6 @@ void init_ItemBase(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "ItemBase&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::ItemBase).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::ItemBaseWrapper).name());
-
 
 
     ItemBaseWrapper::pysideInitQtMetaTypes();

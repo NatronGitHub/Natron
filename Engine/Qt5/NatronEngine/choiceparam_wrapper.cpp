@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -90,6 +88,10 @@ static PyObject *Sbk_ChoiceParamFunc_addAsDependencyOf(PyObject *self, PyObject 
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.addAsDependencyOf";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -141,7 +143,8 @@ static PyObject *Sbk_ChoiceParamFunc_addAsDependencyOf(PyObject *self, PyObject 
     return pyResult;
 
     Sbk_ChoiceParamFunc_addAsDependencyOf_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.addAsDependencyOf");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -151,6 +154,10 @@ static PyObject *Sbk_ChoiceParamFunc_addOption(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.addOption";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -195,7 +202,8 @@ static PyObject *Sbk_ChoiceParamFunc_addOption(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_addOption_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.addOption");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -206,6 +214,10 @@ static PyObject *Sbk_ChoiceParamFunc_get(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.get";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -266,7 +278,8 @@ static PyObject *Sbk_ChoiceParamFunc_get(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_ChoiceParamFunc_get_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.get");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -277,6 +290,10 @@ static PyObject *Sbk_ChoiceParamFunc_getDefaultValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -302,6 +319,10 @@ static PyObject *Sbk_ChoiceParamFunc_getNumOptions(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getNumOptions";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -327,6 +348,10 @@ static PyObject *Sbk_ChoiceParamFunc_getOption(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getOption";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -359,7 +384,8 @@ static PyObject *Sbk_ChoiceParamFunc_getOption(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_ChoiceParamFunc_getOption_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getOption");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -370,6 +396,10 @@ static PyObject *Sbk_ChoiceParamFunc_getOptions(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getOptions";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -395,6 +425,10 @@ static PyObject *Sbk_ChoiceParamFunc_getValue(PyObject *self)
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -420,6 +454,10 @@ static PyObject *Sbk_ChoiceParamFunc_getValueAtTime(PyObject *self, PyObject *py
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.getValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -452,7 +490,8 @@ static PyObject *Sbk_ChoiceParamFunc_getValueAtTime(PyObject *self, PyObject *py
     return pyResult;
 
     Sbk_ChoiceParamFunc_getValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -462,6 +501,10 @@ static PyObject *Sbk_ChoiceParamFunc_restoreDefaultValue(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.restoreDefaultValue";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -484,6 +527,10 @@ static PyObject *Sbk_ChoiceParamFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -562,7 +609,8 @@ static PyObject *Sbk_ChoiceParamFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -572,6 +620,10 @@ static PyObject *Sbk_ChoiceParamFunc_setDefaultValue(PyObject *self, PyObject *p
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.setDefaultValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -620,7 +672,8 @@ static PyObject *Sbk_ChoiceParamFunc_setDefaultValue(PyObject *self, PyObject *p
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setDefaultValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setDefaultValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -630,6 +683,10 @@ static PyObject *Sbk_ChoiceParamFunc_setOptions(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.setOptions";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -660,7 +717,8 @@ static PyObject *Sbk_ChoiceParamFunc_setOptions(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setOptions_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setOptions");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -670,6 +728,10 @@ static PyObject *Sbk_ChoiceParamFunc_setValue(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.setValue";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -718,7 +780,8 @@ static PyObject *Sbk_ChoiceParamFunc_setValue(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setValue_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setValue");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -728,6 +791,10 @@ static PyObject *Sbk_ChoiceParamFunc_setValueAtTime(PyObject *self, PyObject *ar
         return {};
     auto cppSelf = reinterpret_cast< ::ChoiceParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.ChoiceParam.setValueAtTime";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -772,7 +839,8 @@ static PyObject *Sbk_ChoiceParamFunc_setValueAtTime(PyObject *self, PyObject *ar
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setValueAtTime_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.setValueAtTime");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -961,7 +1029,6 @@ void init_ChoiceParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_ChoiceParam_TypeF(), &Sbk_ChoiceParam_typeDiscovery);
-
 
     ChoiceParamWrapper::pysideInitQtMetaTypes();
 }

@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -99,10 +97,15 @@ static int
 Sbk_RectI_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::RectI >()))
         return -1;
 
     ::RectIWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.__init__";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -183,6 +186,7 @@ Sbk_RectI_Init(PyObject *self, PyObject *args, PyObject *kwds)
 
     if (PyErr_Occurred() || !Shiboken::Object::setCppPointer(sbkSelf, Shiboken::SbkType< ::RectI >(), cptr)) {
         delete cptr;
+        Py_XDECREF(errInfo);
         return -1;
     }
     if (!cptr) goto Sbk_RectI_Init_TypeError;
@@ -198,7 +202,8 @@ Sbk_RectI_Init(PyObject *self, PyObject *args, PyObject *kwds)
     return 1;
 
     Sbk_RectI_Init_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return -1;
 }
 
@@ -209,6 +214,10 @@ static PyObject *Sbk_RectIFunc_bottom(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.bottom";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -233,6 +242,10 @@ static PyObject *Sbk_RectIFunc_clear(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.clear";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -256,6 +269,10 @@ static PyObject *Sbk_RectIFunc_contains(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.contains";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -343,7 +360,8 @@ static PyObject *Sbk_RectIFunc_contains(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RectIFunc_contains_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.contains");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -354,6 +372,10 @@ static PyObject *Sbk_RectIFunc_height(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.height";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -379,6 +401,10 @@ static PyObject *Sbk_RectIFunc_intersect(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.intersect";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -466,7 +492,8 @@ static PyObject *Sbk_RectIFunc_intersect(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RectIFunc_intersect_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.intersect");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -477,6 +504,10 @@ static PyObject *Sbk_RectIFunc_intersects(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.intersects";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -552,7 +583,8 @@ static PyObject *Sbk_RectIFunc_intersects(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_RectIFunc_intersects_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.intersects");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -563,6 +595,10 @@ static PyObject *Sbk_RectIFunc_isInfinite(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.isInfinite";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -588,6 +624,10 @@ static PyObject *Sbk_RectIFunc_isNull(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.isNull";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -613,6 +653,10 @@ static PyObject *Sbk_RectIFunc_left(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.left";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -637,6 +681,10 @@ static PyObject *Sbk_RectIFunc_merge(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.merge";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -709,7 +757,8 @@ static PyObject *Sbk_RectIFunc_merge(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_merge_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.merge");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -720,6 +769,10 @@ static PyObject *Sbk_RectIFunc_right(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.right";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -744,6 +797,10 @@ static PyObject *Sbk_RectIFunc_set(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.set";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -816,7 +873,8 @@ static PyObject *Sbk_RectIFunc_set(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_set_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.set");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -826,6 +884,10 @@ static PyObject *Sbk_RectIFunc_set_bottom(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.set_bottom";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -856,7 +918,8 @@ static PyObject *Sbk_RectIFunc_set_bottom(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_set_bottom_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.RectI.set_bottom");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -866,6 +929,10 @@ static PyObject *Sbk_RectIFunc_set_left(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.set_left";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -896,7 +963,8 @@ static PyObject *Sbk_RectIFunc_set_left(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_set_left_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.RectI.set_left");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -906,6 +974,10 @@ static PyObject *Sbk_RectIFunc_set_right(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.set_right";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -936,7 +1008,8 @@ static PyObject *Sbk_RectIFunc_set_right(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_set_right_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.RectI.set_right");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -946,6 +1019,10 @@ static PyObject *Sbk_RectIFunc_set_top(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.set_top";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -976,7 +1053,8 @@ static PyObject *Sbk_RectIFunc_set_top(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_set_top_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.RectI.set_top");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -987,6 +1065,10 @@ static PyObject *Sbk_RectIFunc_top(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.top";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1011,6 +1093,10 @@ static PyObject *Sbk_RectIFunc_translate(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.translate";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1055,7 +1141,8 @@ static PyObject *Sbk_RectIFunc_translate(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_RectIFunc_translate_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectI.translate");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1066,6 +1153,10 @@ static PyObject *Sbk_RectIFunc_width(PyObject *self)
     auto cppSelf = reinterpret_cast< ::RectI *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTI_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.RectI.width";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1487,7 +1578,6 @@ void init_RectI(PyObject *module)
     Shiboken::Conversions::registerConverterName(converter, "RectI&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::RectI).name());
     Shiboken::Conversions::registerConverterName(converter, typeid(::RectIWrapper).name());
-
 
 
     RectIWrapper::pysideInitQtMetaTypes();

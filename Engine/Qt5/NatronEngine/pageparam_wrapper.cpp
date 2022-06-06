@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_PageParamFunc_addParam(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = static_cast<PageParamWrapper *>(reinterpret_cast< ::PageParam *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], reinterpret_cast<SbkObject *>(self))));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.PageParam.addParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -121,7 +123,8 @@ static PyObject *Sbk_PageParamFunc_addParam(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_PageParamFunc_addParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.PageParam.addParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -277,7 +280,6 @@ void init_PageParam(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_PageParam_TypeF(), &Sbk_PageParam_typeDiscovery);
-
 
     PageParamWrapper::pysideInitQtMetaTypes();
 }

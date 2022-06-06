@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -93,10 +91,15 @@ static int
 Sbk_PyGuiApplication_Init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     SbkObject *sbkSelf = reinterpret_cast<SbkObject *>(self);
+PySide::Feature::Select(self);
     if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::PyGuiApplication >()))
         return -1;
 
     ::PyGuiApplicationWrapper *cptr{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.__init__";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -128,6 +131,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_addMenuCommand(PyObject *self, PyObjec
         return {};
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.addMenuCommand";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -201,7 +208,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_addMenuCommand(PyObject *self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_PyGuiApplicationFunc_addMenuCommand_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.addMenuCommand");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -211,6 +219,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_errorDialog(PyObject *self, PyObject *
         return {};
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.errorDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -255,7 +267,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_errorDialog(PyObject *self, PyObject *
     Py_RETURN_NONE;
 
     Sbk_PyGuiApplicationFunc_errorDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.errorDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -266,6 +279,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject *self, PyObjec
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.getGuiInstance";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -301,7 +318,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_PyGuiApplicationFunc_getGuiInstance_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyGuiApplication.getGuiInstance");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -312,6 +330,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_getIcon(PyObject *self, PyObject *pyAr
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.getIcon";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -344,7 +366,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_getIcon(PyObject *self, PyObject *pyAr
     return pyResult;
 
     Sbk_PyGuiApplicationFunc_getIcon_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyGuiApplication.getIcon");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -354,6 +377,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_informationDialog(PyObject *self, PyOb
         return {};
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.informationDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -398,7 +425,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_informationDialog(PyObject *self, PyOb
     Py_RETURN_NONE;
 
     Sbk_PyGuiApplicationFunc_informationDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.informationDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -409,6 +437,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_questionDialog(PyObject *self, PyObjec
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.questionDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -455,7 +487,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_questionDialog(PyObject *self, PyObjec
     return pyResult;
 
     Sbk_PyGuiApplicationFunc_questionDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.questionDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -465,6 +498,10 @@ static PyObject *Sbk_PyGuiApplicationFunc_warningDialog(PyObject *self, PyObject
         return {};
     auto cppSelf = reinterpret_cast< ::PyGuiApplication *>(Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronGui.PyGuiApplication.warningDialog";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -509,7 +546,8 @@ static PyObject *Sbk_PyGuiApplicationFunc_warningDialog(PyObject *self, PyObject
     Py_RETURN_NONE;
 
     Sbk_PyGuiApplicationFunc_warningDialog_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.warningDialog");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -679,7 +717,6 @@ void init_PyGuiApplication(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_PyGuiApplication_TypeF(), &Sbk_PyGuiApplication_typeDiscovery);
-
 
     PyGuiApplicationWrapper::pysideInitQtMetaTypes();
 }

@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -89,6 +87,10 @@ static PyObject *Sbk_LayerFunc_addItem(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Layer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_LAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Layer.addItem";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -125,7 +127,8 @@ static PyObject *Sbk_LayerFunc_addItem(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_LayerFunc_addItem_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Layer.addItem");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -136,6 +139,10 @@ static PyObject *Sbk_LayerFunc_getChildren(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Layer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_LAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Layer.getChildren";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -172,6 +179,10 @@ static PyObject *Sbk_LayerFunc_insertItem(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Layer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_LAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Layer.insertItem";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -222,7 +233,8 @@ static PyObject *Sbk_LayerFunc_insertItem(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_LayerFunc_insertItem_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Layer.insertItem");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -232,6 +244,10 @@ static PyObject *Sbk_LayerFunc_removeItem(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Layer *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_LAYER_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Layer.removeItem";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -268,7 +284,8 @@ static PyObject *Sbk_LayerFunc_removeItem(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_LayerFunc_removeItem_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Layer.removeItem");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -430,7 +447,6 @@ void init_Layer(PyObject *module)
 
 
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_Layer_TypeF(), &Sbk_Layer_typeDiscovery);
-
 
     LayerWrapper::pysideInitQtMetaTypes();
 }

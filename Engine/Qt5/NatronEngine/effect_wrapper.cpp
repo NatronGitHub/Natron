@@ -18,8 +18,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <pyside.h>
 #include <pysideqenum.h>
 #include <feature_select.h>
-#include <qapp_macro.h>
-
 QT_WARNING_DISABLE_DEPRECATED
 
 #include <typeinfo>
@@ -92,6 +90,10 @@ static PyObject *Sbk_EffectFunc_addUserPlane(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.addUserPlane";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -138,7 +140,8 @@ static PyObject *Sbk_EffectFunc_addUserPlane(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_EffectFunc_addUserPlane_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.addUserPlane");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -148,6 +151,10 @@ static PyObject *Sbk_EffectFunc_beginChanges(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.beginChanges";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -171,6 +178,10 @@ static PyObject *Sbk_EffectFunc_canConnectInput(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.canConnectInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -219,7 +230,8 @@ static PyObject *Sbk_EffectFunc_canConnectInput(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_EffectFunc_canConnectInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.canConnectInput");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -230,6 +242,10 @@ static PyObject *Sbk_EffectFunc_connectInput(PyObject *self, PyObject *args)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.connectInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -282,7 +298,8 @@ static PyObject *Sbk_EffectFunc_connectInput(PyObject *self, PyObject *args)
     return pyResult;
 
     Sbk_EffectFunc_connectInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.connectInput");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -292,18 +309,23 @@ static PyObject *Sbk_EffectFunc_destroy(PyObject *self, PyObject *args, PyObject
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.destroy";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr };
     SBK_UNUSED(pythonToCpp)
-    const Py_ssize_t numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     const Py_ssize_t numArgs = PyTuple_GET_SIZE(args);
     SBK_UNUSED(numArgs)
     PyObject *pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): too many arguments");
-        return {};
+    if (numArgs > 1) {
+        static PyObject *const too_many = Shiboken::String::createStaticString(">");
+        errInfo = too_many;
+        Py_INCREF(errInfo);
+        goto Sbk_EffectFunc_destroy_TypeError;
     }
 
     if (!PyArg_ParseTuple(args, "|O:destroy", &(pyArgs[0])))
@@ -324,20 +346,28 @@ static PyObject *Sbk_EffectFunc_destroy(PyObject *self, PyObject *args, PyObject
     // Call function/method
     {
         if (kwds) {
-            PyObject *keyName = nullptr;
-            PyObject *value = nullptr;
-            keyName = Py_BuildValue("s","autoReconnect");
-            if (PyDict_Contains(kwds, keyName)) {
-                value = PyDict_GetItem(kwds, keyName);
+            PyObject *value{};
+            PyObject *kwds_dup = PyDict_Copy(kwds);
+            static PyObject *const key_autoReconnect = Shiboken::String::createStaticString("autoReconnect");
+            if (PyDict_Contains(kwds, key_autoReconnect)) {
+                value = PyDict_GetItem(kwds, key_autoReconnect);
                 if (value && pyArgs[0]) {
-                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Effect.destroy(): got multiple values for keyword argument 'autoReconnect'.");
-                    return {};
+                    errInfo = key_autoReconnect;
+                    Py_INCREF(errInfo);
+                    goto Sbk_EffectFunc_destroy_TypeError;
                 }
                 if (value) {
                     pyArgs[0] = value;
                     if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0]))))
                         goto Sbk_EffectFunc_destroy_TypeError;
                 }
+                PyDict_DelItem(kwds_dup, key_autoReconnect);
+            }
+            if (PyDict_Size(kwds_dup) > 0) {
+                errInfo = kwds_dup;
+                goto Sbk_EffectFunc_destroy_TypeError;
+            } else {
+                Py_DECREF(kwds_dup);
             }
         }
         bool cppArg0 = true;
@@ -359,7 +389,8 @@ static PyObject *Sbk_EffectFunc_destroy(PyObject *self, PyObject *args, PyObject
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_destroy_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.destroy");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -369,6 +400,10 @@ static PyObject *Sbk_EffectFunc_disconnectInput(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.disconnectInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -403,7 +438,8 @@ static PyObject *Sbk_EffectFunc_disconnectInput(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_disconnectInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.disconnectInput");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -413,6 +449,10 @@ static PyObject *Sbk_EffectFunc_endChanges(PyObject *self)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.endChanges";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -436,6 +476,10 @@ static PyObject *Sbk_EffectFunc_getAvailableLayers(PyObject *self, PyObject *pyA
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getAvailableLayers";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -468,7 +512,8 @@ static PyObject *Sbk_EffectFunc_getAvailableLayers(PyObject *self, PyObject *pyA
     return pyResult;
 
     Sbk_EffectFunc_getAvailableLayers_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getAvailableLayers");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -479,6 +524,10 @@ static PyObject *Sbk_EffectFunc_getBitDepth(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getBitDepth";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -504,6 +553,10 @@ static PyObject *Sbk_EffectFunc_getColor(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getColor";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -538,6 +591,10 @@ static PyObject *Sbk_EffectFunc_getCurrentTime(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getCurrentTime";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -563,6 +620,10 @@ static PyObject *Sbk_EffectFunc_getFrameRate(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getFrameRate";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -588,6 +649,10 @@ static PyObject *Sbk_EffectFunc_getInput(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getInput";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -645,7 +710,8 @@ static PyObject *Sbk_EffectFunc_getInput(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_EffectFunc_getInput_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getInput");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -656,6 +722,10 @@ static PyObject *Sbk_EffectFunc_getInputLabel(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getInputLabel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -688,7 +758,8 @@ static PyObject *Sbk_EffectFunc_getInputLabel(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_EffectFunc_getInputLabel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getInputLabel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -699,6 +770,10 @@ static PyObject *Sbk_EffectFunc_getLabel(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getLabel";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -724,6 +799,10 @@ static PyObject *Sbk_EffectFunc_getMaxInputCount(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getMaxInputCount";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -749,6 +828,10 @@ static PyObject *Sbk_EffectFunc_getOutputFormat(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getOutputFormat";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -774,6 +857,10 @@ static PyObject *Sbk_EffectFunc_getParam(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getParam";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -809,7 +896,8 @@ static PyObject *Sbk_EffectFunc_getParam(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_EffectFunc_getParam_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getParam");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -820,6 +908,10 @@ static PyObject *Sbk_EffectFunc_getParams(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getParams";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -857,6 +949,10 @@ static PyObject *Sbk_EffectFunc_getPixelAspectRatio(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getPixelAspectRatio";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -882,6 +978,10 @@ static PyObject *Sbk_EffectFunc_getPluginID(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getPluginID";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -907,6 +1007,10 @@ static PyObject *Sbk_EffectFunc_getPosition(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getPosition";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -940,6 +1044,10 @@ static PyObject *Sbk_EffectFunc_getPremult(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getPremult";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -965,6 +1073,10 @@ static PyObject *Sbk_EffectFunc_getRegionOfDefinition(PyObject *self, PyObject *
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getRegionOfDefinition";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1011,7 +1123,8 @@ static PyObject *Sbk_EffectFunc_getRegionOfDefinition(PyObject *self, PyObject *
     return pyResult;
 
     Sbk_EffectFunc_getRegionOfDefinition_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.getRegionOfDefinition");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1022,6 +1135,10 @@ static PyObject *Sbk_EffectFunc_getRotoContext(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getRotoContext";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1050,6 +1167,10 @@ static PyObject *Sbk_EffectFunc_getScriptName(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getScriptName";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1075,6 +1196,10 @@ static PyObject *Sbk_EffectFunc_getSize(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getSize";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1108,6 +1233,10 @@ static PyObject *Sbk_EffectFunc_getTrackerContext(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getTrackerContext";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1136,6 +1265,10 @@ static PyObject *Sbk_EffectFunc_getUserPageParam(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.getUserPageParam";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1164,6 +1297,10 @@ static PyObject *Sbk_EffectFunc_isNodeSelected(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.isNodeSelected";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1189,6 +1326,10 @@ static PyObject *Sbk_EffectFunc_isOutputNode(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.isOutputNode";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1214,6 +1355,10 @@ static PyObject *Sbk_EffectFunc_isReaderNode(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.isReaderNode";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1239,6 +1384,10 @@ static PyObject *Sbk_EffectFunc_isWriterNode(PyObject *self)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.isWriterNode";
+    SBK_UNUSED(fullName)
 
     // Call function/method
     {
@@ -1263,6 +1412,10 @@ static PyObject *Sbk_EffectFunc_setColor(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setColor";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1310,7 +1463,8 @@ static PyObject *Sbk_EffectFunc_setColor(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setColor_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.setColor");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1320,6 +1474,10 @@ static PyObject *Sbk_EffectFunc_setLabel(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setLabel";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1354,7 +1512,8 @@ static PyObject *Sbk_EffectFunc_setLabel(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setLabel_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setLabel");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1364,6 +1523,10 @@ static PyObject *Sbk_EffectFunc_setPagesOrder(PyObject *self, PyObject *pyArg)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setPagesOrder";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1394,7 +1557,8 @@ static PyObject *Sbk_EffectFunc_setPagesOrder(PyObject *self, PyObject *pyArg)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setPagesOrder_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setPagesOrder");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1404,6 +1568,10 @@ static PyObject *Sbk_EffectFunc_setPosition(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setPosition";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1448,7 +1616,8 @@ static PyObject *Sbk_EffectFunc_setPosition(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setPosition_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.setPosition");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1459,6 +1628,10 @@ static PyObject *Sbk_EffectFunc_setScriptName(PyObject *self, PyObject *pyArg)
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
     PyObject *pyResult{};
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setScriptName";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1495,7 +1668,8 @@ static PyObject *Sbk_EffectFunc_setScriptName(PyObject *self, PyObject *pyArg)
     return pyResult;
 
     Sbk_EffectFunc_setScriptName_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setScriptName");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1505,6 +1679,10 @@ static PyObject *Sbk_EffectFunc_setSize(PyObject *self, PyObject *args)
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setSize";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { nullptr, nullptr };
     SBK_UNUSED(pythonToCpp)
@@ -1549,7 +1727,8 @@ static PyObject *Sbk_EffectFunc_setSize(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setSize_TypeError:
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.setSize");
+        Shiboken::setErrorAboutWrongArguments(args, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1559,6 +1738,10 @@ static PyObject *Sbk_EffectFunc_setSubGraphEditable(PyObject *self, PyObject *py
         return {};
     auto cppSelf = reinterpret_cast< ::Effect *>(Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], reinterpret_cast<SbkObject *>(self)));
     SBK_UNUSED(cppSelf)
+    PyObject *errInfo{};
+    SBK_UNUSED(errInfo)
+    static const char *fullName = "NatronEngine.Effect.setSubGraphEditable";
+    SBK_UNUSED(fullName)
     int overloadId = -1;
     PythonToCppFunc pythonToCpp{};
     SBK_UNUSED(pythonToCpp)
@@ -1589,7 +1772,8 @@ static PyObject *Sbk_EffectFunc_setSubGraphEditable(PyObject *self, PyObject *py
     Py_RETURN_NONE;
 
     Sbk_EffectFunc_setSubGraphEditable_TypeError:
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setSubGraphEditable");
+        Shiboken::setErrorAboutWrongArguments(pyArg, fullName, errInfo);
+        Py_XDECREF(errInfo);
         return {};
 }
 
@@ -1863,7 +2047,6 @@ void init_Effect(PyObject *module)
     Shiboken::ObjectType::setMultipleInheritanceFunction(Sbk_Effect_TypeF(), func);
     Shiboken::ObjectType::setCastFunction(Sbk_Effect_TypeF(), &Sbk_EffectSpecialCastFunction);
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(Sbk_Effect_TypeF(), &Sbk_Effect_typeDiscovery);
-
 
     EffectWrapper::pysideInitQtMetaTypes();
 }
