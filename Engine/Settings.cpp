@@ -1493,7 +1493,7 @@ Settings::setDefaultValues()
 #if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
     _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
 #else
-    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLEnabled);
 #endif
 
     // General/Projects setup
