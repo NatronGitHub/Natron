@@ -482,24 +482,8 @@ shiboken {
 
 # Generating Python bindings
 
-This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+This is not required as file generation occurs during build with Qt5 and generated files are already in the repository for Qt4. You would need to run it if you were both under Qt4 and either extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
-
-```sh
-SDK_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
-PYSIDE_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
-PYV=3.10
-QT=5
-rm Engine/NatronEngine/* Gui/NatronGui/*
-
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken2.sh
-#tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
-#tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
-```
 
 If using PySide for Qt4, the command-line would be:
 
@@ -513,10 +497,9 @@ shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../En
 
 shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
-tools/utils/runPostShiboken.sh
-#tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
-#tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
+tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
+tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
 ```
 
 **Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run `tools/utils/runPostShiboken2.sh` for Qt5 or `tools/utils/runPostShiboken.sh` for Qt4 once shiboken is called.
+Shiboken has a few glitches which needs fixing with some sed commands, run `tools/utils/runPostShiboken.sh` for Qt4 once shiboken is called.
