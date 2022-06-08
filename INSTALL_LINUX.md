@@ -5,7 +5,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
-* If you are on Centos, Fedora or RHEL, see [here](#centos7) for specific instructions
+* If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
 * If you are on a Debian-based Linux (such as Ubuntu, KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
 * If you are willing to try the complete installation process, the instructions are below
 
@@ -14,10 +14,13 @@ This file is supposed to guide you step by step to have working (compiling) vers
   - [Installing the full Natron SDK](#installing-the-full-natron-sdk)
     - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
   - [Manually install dependencies](#manually-install-dependencies)
-    - [Qt4](#qt-487)
+    - [Qt5](#qt-515)
+    - [Qt4](#qt-48)
     - [Boost](#boost)
     - [Expat](#expat)
     - [Cairo](#cairo)
+    - [Pyside2](#pyside2)
+    - [Shiboken](#shiboken2)
     - [Pyside](#pyside)
     - [Shiboken](#shiboken)
     - [QtPy](#qtpy)
@@ -30,7 +33,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
-    - [CentOS7/Fedora](#centos7)
+    - [Fedora/RHEL-based](#fedorarhel-based)
 5. [Generating Python bindings](#generating-python-bindings)
 
 # Using Docker
@@ -51,8 +54,10 @@ The dependencies necessary to build and install Natron can either be built speci
 
 The Natron SDK is used for building the official Natron binaries. The script that builds the whole SDK and installs it in the default location (`/opt/Natron-sdk`, which must be user-writable) can be exectuted like this:
 
-    cd tools/jenkins
-    include/scripts/build-Linux-sdk.sh
+```
+cd tools/jenkins
+include/scripts/build-Linux-sdk.sh
+```
 
 It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
 
@@ -81,14 +86,15 @@ You can use them as a reference, but the resulting binaries are not guaranteed t
 
 ## Installing dependencies manually
 
-### Qt 4.8.7
+### Qt 5.15
 
-You'll need to install Qt4 libraries, usually you can get them from your package manager (which depends on your Linux distribution). Many distributions have deprecated Qt 4 and you may thus need to build it from source.
+For Qt5 You'll need to install the qtbase libraries, usually you can get them from your package manager (which depends on your Linux distribution).
 
-Alternatively you can download it directly from [Qt download](https://download.qt.io/archive/qt/4.8/4.8.7/).
+Alternatively you can build it from source using the tarballs from [Qt download](https://download.qt.io/archive/qt/5.15/5.15.4/submodules) or the [KDE fork](https://invent.kde.org/qt/qt/qtbase/-/tree/kde/5.15).
 
-Please download `Qt 4.*`, Natron was not fully tested with Qt 5.
+### Qt 4.8
 
+In case you prefer to use Qt4 you'll have to build it from source as many distributions have already deprecated Qt 4, [Qt download](https://download.qt.io/archive/qt/4.8/4.8.7/) has a source archive.
 
 ### Boost
 
@@ -103,44 +109,37 @@ The package depends on your distribution.
 
 ### Cairo
 
-Natron links statically to cairo. Sometimes you can find a static version in development packages.
-If your distribution does not provide a static cairo package you will need to build it from source.
+You can download it with your package manager.
 
-```
-git clone git://anongit.freedesktop.org/git/cairo
-cd cairo
-./autogen.sh
-make
-sudo make install
-```
+### PySide2
 
-### Pyside
+Natron uses pyside2 for Python 3 with Qt5.
 
-Natron uses pyside for python 2  
+### Shiboken2
+
+Natron uses shiboken2 for Python 3 with Qt5, the generator binary (`shiboken2`) and headers are required too.
+
+### PySide
+
+Natron uses pyside for Python 2 with Qt4, notice that it's deprecated in many distros.
 
 ### Shiboken
 
-Natron uses shiboken for python 2
+Natron uses shiboken for Python 2 with Qt4, notice that it's deprecated in many distros.
 
 ### QtPy
 
-Abstraction layer for PyQt5/PyQt4/PySide2/PySide.
+Abstraction layer for PyQt5/PyQt4/PySide2/PySide. Preferably you can use your distribution package manager or install it via pip
 
 ```
 pip install qtpy
-```
-
-### Other Python packages
-
-```
-pip install six psutil
 ```
 
 # Configuration
 
 ### OpenFX
 
-Natron uses the OpenFX API, before building you should make sure it is up to date.
+Natron uses the OpenFX API, before building you should make sure its submodule is up to date.
 
 For that, go under Natron and type
 
@@ -154,7 +153,7 @@ In the past, OCIO configs were a submodule, though due to the size of the reposi
 to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz).
 Place it at the root of Natron repository.
 
-***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.4` rename it to `OpenColorIO-Configs`*
+***note:*** *If it is named something like: `OpenColorIO-Configs-Natron-v2.4` rename it to `OpenColorIO-Configs`*
 
 
 ```
@@ -163,10 +162,10 @@ tar -xvzf Natron-v2.4.tar.gz
 mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs
 ```
 
-***note:*** In order to reclaim disk space, you may keep only the following subfolder : blender*, natron, nuke-default
+***note:*** In order to reclaim disk space, you may keep only the following subfolders : blender\*, natron, nuke-default
 
 ```
-(cd OpenColorIO-Configs && rm -v !("blender"|"blender-cycles"|"natron"|"nuke-default") -R)
+cd OpenColorIO-Configs && rm -v !("blender"|"blender-cycles"|"natron"|"nuke-default") -R
 ```
 
 ### config.pri
@@ -182,9 +181,14 @@ Of course you need to provide valid paths that are valid on your system.
 
 You can find more examples specific to distributions below.
 
-INCLUDEPATH is the path to the include files
+`INCLUDEPATH` is the path to the include files.
 
-LIBS is the path to the libs
+`LIBS` is the path to the libs.
+
+`PKGCONFIG` is the pkg-config.
+
+An example configuration for a Qt4 build might be
+
 ```
 ----- copy and paste the following in a terminal -----
 cat > config.pri << EOF
@@ -192,7 +196,6 @@ boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
-cairo: PKGCONFIG -= cairo
 pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
 pyside: PKGCONFIG += pyside
 pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
@@ -201,48 +204,57 @@ EOF
 ----- end -----
 ```
 
-***note:*** *the last line for cairo is only necessary if the package for cairo in your distribution
-is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
-
 ### Nodes
 
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
-    https://github.com/NatronGitHub/openfx-misc
-    https://github.com/NatronGitHub/openfx-io
+- [NatronGitHub/openfx-misc](https://github.com/NatronGitHub/openfx-misc)
+- [NatronGitHub/openfx-io](https://github.com/NatronGitHub/openfx-io)
 
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 
-Plugins must be installed in /usr/OFX/Plugins on Linux
+Plugins can be installed in /usr/OFX/Plugins on Linux
 Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g.:
 
-
-    bin/
-        Natron
-    Plugins/
-        IO.ofx.bundle
-
+```
+bin/
+    Natron
+Plugins/
+    IO.ofx.bundle
+```
 
 # Build
 
 To build, go into the Natron directory and type:
 
-    qmake -r
-    make
+```
+qmake -r
+make
+```
 
 If everything has been installed and configured correctly, it should build without errors.
-if you have both QT4 and QT5 installed qmake can generate errors, you can try
+In case you have many versions of Qt installed qmake can generate errors, you can try for a Qt5 build
 
-    QT_SELECT=4 qmake -r
-    make
+```
+QT_SELECT=5 qmake -r
+make
+```
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-    qmake -r CONFIG+=debug
+```
+qmake -r CONFIG+=debug
+```
+
+In case for compiling with Clang:
+
+```
+qmake -r -spec linux-clang
+```
 
 Some debug options are available for developers of Natron and you can see them in the
-global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake call.
+`global.pri` file. To enable an option just add `CONFIG+=<option>` in the `qmake` call.
 
 
 # Distribution specific
@@ -264,13 +276,13 @@ yay -S natron-compositor
 First, install build dependencies. You can install GCC, Expat and Boost directly from the Arch Linux official repositories, like so:
 
 ```
-sudo pacman -S expat boost gcc
+sudo pacman -S expat boost-libs gcc
 ```
 
-You will also need additional Boost libraries, cairo, and Qt4 (provided by PySide). They can be installed with the following command:
+You will also need additional Boost libraries, cairo, and Qt5 (provided by PySide2). They can be installed with the following command:
 
 ```
-yay -S boost-libs cairo glfw-x11 python2-pyside
+sudo pacman -S boost cairo pyside2 python-pyqt
 ```
 
 Then, clone Natron's repo:
@@ -292,13 +304,21 @@ And make a build folder:
 mkdir build && cd build
 ```
 
-At this point, you need a special configuration file called a `config.pri`. On every operating system and distro this will be different, including for Arch Linux. First, make it by running this command:
+At this point, you might need the `config.pri` in case you have to pass some options to the build via the config file. On every operating system and distro this will be different, including for Arch Linux. First, make it by running this command:
 
 ```
 touch ../config.pri
 ```
 
-Now, open `../config.pri` with Vim or Emacs (or whatever editor you prefer), and paste in these lines to the empty file. **A template `config.pri` is available [here](./build-configs/arch-linux/config.pri)**. Here are some recommended instructions to do so:
+Now, open `../config.pri` with any editor and modify it to your preference. For example you can pass options like this:
+
+```
+CONFIG += custombuild
+CONFIG += openmp
+DEFINES += QT_NO_DEBUG_OUTPUT
+```
+
+In case of a Qt4 you should paste in these lines to the empty file. **A template `config.pri` is available [here](./build-configs/arch-linux/config.pri)**. Here are some recommended instructions to do so:
 
 ```
 # These are the lines you should paste into your empty `config.pri`
@@ -327,7 +347,11 @@ shiboken {
 You're now all set to compile. Use `qmake` to generate a Makefile for final compiling, like this:
 
 ```
-qmake-qt4 -r ../Project.pro PREFIX=/usr BUILD_USER_NAME="Arch_Linux" CONFIG+=custombuild CONFIG+=openmp DEFINES+=QT_NO_DEBUG_OUTPUT QMAKE_CFLAGS_RELEASE="${CFLAGS}" QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" QMAKE_LFLAGS_RELEASE="${LDFLAGS}"
+qmake -r ../Project.pro PREFIX=/usr BUILD_USER_NAME="Arch Linux" CONFIG+=custombuild CONFIG+=openmp DEFINES+=QT_NO_DEBUG_OUTPUT QMAKE_CFLAGS_RELEASE="${CFLAGS}" QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" QMAKE_LFLAGS_RELEASE="${LDFLAGS}"
+
+# or in case you want to use Clang
+
+qmake -r ../Project.pro -spec linux-clang PREFIX=/usr BUILD_USER_NAME="Arch Linux" CONFIG+=custombuild CONFIG+=openmp DEFINES+=QT_NO_DEBUG_OUTPUT QMAKE_CFLAGS_RELEASE="${CFLAGS}" QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" QMAKE_LFLAGS_RELEASE="${LDFLAGS}"
 ```
 
 Last, compile with `make`:
@@ -336,7 +360,7 @@ Last, compile with `make`:
 make
 ```
 
-Compiling should take approximately 10 minutes. The binaries will be found in the `build/App` folder. In order to launch Natron after compiling, simply do `./App/Natron`, and you can then start using Natron!
+The binaries will be found in the `build/App` folder. In order to launch Natron after compiling, simply do `./App/Natron`, and you can then start using Natron!
 
 
 ## Debian-based
@@ -344,20 +368,20 @@ Compiling should take approximately 10 minutes. The binaries will be found in th
 Installing dependencies using `apt-get` should work on
 any Debian-based distribution (e.g. Ubuntu).
 
-If your version of Ubuntu does not provide cairo 1.12 (required for rotoscoping), use the xorg-edger PPA:
+If your version of Ubuntu does not provide cairo >=1.12 (required for rotoscoping), use the xorg-edger PPA:
 ```
 sudo add-apt-repository -y ppa:xorg-edgers/ppa
 ```
-If your version of Ubuntu does not provide boost 1.49, the irie PPA can be used:
+If your version of Ubuntu does not provide boost >=1.49, the irie PPA can be used:
 ```
 sudo add-apt-repository -y ppa:irie/boost
 ```
 Install the required packages:
 ```
-sudo apt-get install libqt4-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
+sudo apt-get install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
-For the config.pri use:
+For the Qt4 config.pri use:
 
 ```
 boost-serialization-lib: LIBS += -lboost_serialization
@@ -383,11 +407,11 @@ pyside {
 }
 ```
 
-## CentOS7
+## Fedora/RHEL-based
 
-Instructions for CentOS and Fedora.
+Instructions for Fedora, Red Hat Enterprise Linux and derivatives.
 
-On CentOS you need the EPEL repository:
+On RHEL and derivative distributions you need the EPEL repository:
 
 ```
 yum install epel-release
@@ -396,10 +420,10 @@ yum install epel-release
 Install required packages:
 
 ```
-yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-devel qt-devel boost-devel pixman-devel cairo-devel
+yum install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 
-config.pri:
+Qt4 config.pri:
 ```pri
 boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
@@ -427,24 +451,10 @@ shiboken {
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
 
-```Shell
-SDK_PREFIX=/opt/Natron-sdk
-PYSIDE_PREFIX=/opt/Natron-sdk/qt4
-rm Engine/NatronEngine/* Gui/NatronGui/*
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine/Qt4 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt4 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken.sh
-```
-
-If using PySide2 for Qt5, the command-line would be:
-
-```Shell
-SDK_PREFIX=/opt/Natron-sdk
-PYSIDE_PREFIX=/opt/Natron-sdk
-PYV=3.9
+```sh
+SDK_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
+PYSIDE_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
+PYV=3.10
 QT=5
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
@@ -455,5 +465,19 @@ shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-prot
 tools/utils/runPostShiboken2.sh
 ```
 
+If using PySide for Qt4, the command-line would be:
+
+```sh
+SDK_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
+PYSIDE_PREFIX=/usr # /opt/Natron-sdk/qt4 if using the Natron SDK
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine/Qt4 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt4 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
 **Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
+Shiboken has a few glitches which needs fixing with some sed commands, run `tools/utils/runPostShiboken2.sh` for Qt5 or `tools/utils/runPostShiboken.sh` for Qt4 once shiboken is called.
