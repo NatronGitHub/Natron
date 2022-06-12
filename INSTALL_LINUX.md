@@ -6,7 +6,8 @@ This file is supposed to guide you step by step to have working (compiling) vers
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
 * If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
-* If you are on a Debian-based Linux (such as Ubuntu, KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
+* If you are on a Debian-based Linux (such as KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
+* If you are on a Ubuntu see [here](#ubuntu) for details
 * If you are willing to try the complete installation process, the instructions are below
 
 0. [Using Docker](#using-docker)
@@ -33,6 +34,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
+    - [Ubuntu](#ubuntu)
     - [Fedora/RHEL-based](#fedorarhel-based)
 5. [Generating Python bindings](#generating-python-bindings)
 
@@ -366,16 +368,8 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 ## Debian-based
 
 Installing dependencies using `apt-get` should work on
-any Debian-based distribution (e.g. Ubuntu).
+any Debian-based distribution.
 
-If your version of Ubuntu does not provide cairo >=1.12 (required for rotoscoping), use the xorg-edger PPA:
-```
-sudo add-apt-repository -y ppa:xorg-edgers/ppa
-```
-If your version of Ubuntu does not provide boost >=1.49, the irie PPA can be used:
-```
-sudo add-apt-repository -y ppa:irie/boost
-```
 Install the required packages:
 ```
 sudo apt-get install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
@@ -405,6 +399,46 @@ pyside {
         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
+```
+
+## Ubuntu
+
+Instructions for Ubuntu 22.04 using Python 3.10 and Qt 5.15.
+
+Install the required dependencies:
+
+```
+apt install \
+build-essential \
+libboost-serialization-dev \
+libboost-system-dev \
+libexpat1-dev \
+libcairo2-dev \
+qt5-qmake \
+qtbase5-dev \
+python3-dev \
+libshiboken2-dev \
+libpyside2-dev \
+python3-pyside2.qtwidgets
+```
+
+Get Natron:
+
+```
+git clone https://github.com/NatronGitHub/Natron && cd Natron
+git submodule update -i --recursive
+wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
+tar xzf Natron-v2.5.tar.gz
+mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
+```
+
+Build:
+
+```
+echo "boost-serialization-lib: LIBS += -lboost_serialization" > config.pri
+mkdir build && cd build
+qmake -r ../Project.pro CONFIG+=python3
+make -j8
 ```
 
 ## Fedora/RHEL-based
