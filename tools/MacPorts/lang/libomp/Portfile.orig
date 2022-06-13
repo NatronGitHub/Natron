@@ -30,20 +30,20 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     if { ${subport} eq "libomp-devel" } {
-        version         13.0.1
-        checksums       rmd160  ca94e49b654082edf4444b9fc089dfb8c6facb1a \
-                        sha256  6b79261371616c31fea18cd3ee1797c79ee38bcaf8417676d4fa366a24c96b4f \
-                        size    1139440
+        version         14.0.4
+        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
+                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
+                        size    1205512
         livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
     } else {
-        version         13.0.1
-        checksums       rmd160  ca94e49b654082edf4444b9fc089dfb8c6facb1a \
-                        sha256  6b79261371616c31fea18cd3ee1797c79ee38bcaf8417676d4fa366a24c96b4f \
-                        size    1139440
+        version         14.0.4
+        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
+                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
+                        size    1205512
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
 
-    revision            1
+    revision            0
 
     if {${os.major} <= 12} {
         # kmp_alloc.c includes <atomic> but libc++ is not the default on
@@ -153,7 +153,7 @@ post-destroot {
 
     set fpath ${worksrcpath}/${rtpath}
     file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
-        ${fpath}/../www ${instdest}/share/doc/libomp/
+        ${instdest}/share/doc/libomp/
 
 }
 

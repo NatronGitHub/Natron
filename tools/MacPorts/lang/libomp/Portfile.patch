@@ -1,5 +1,5 @@
---- Portfile.orig	2022-04-05 16:09:10.000000000 -0700
-+++ Portfile	2022-04-05 16:14:29.000000000 -0700
+--- Portfile.orig	2022-06-13 13:19:08.000000000 -0700
++++ Portfile	2022-06-13 13:21:21.000000000 -0700
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -13,10 +13,10 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
--        version         13.0.1
--        checksums       rmd160  ca94e49b654082edf4444b9fc089dfb8c6facb1a \
--                        sha256  6b79261371616c31fea18cd3ee1797c79ee38bcaf8417676d4fa366a24c96b4f \
--                        size    1139440
+-        version         14.0.4
+-        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
+-                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
+-                        size    1205512
 -        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
 +        version                 11.1.0
 +        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
@@ -24,10 +24,10 @@
 +                                size    971628
 +        livecheck.regex         {"llvmorg-([0-9.rc-]+)".*}
      } else {
--        version         13.0.1
--        checksums       rmd160  ca94e49b654082edf4444b9fc089dfb8c6facb1a \
--                        sha256  6b79261371616c31fea18cd3ee1797c79ee38bcaf8417676d4fa366a24c96b4f \
--                        size    1139440
+-        version         14.0.4
+-        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
+-                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
+-                        size    1205512
 -        livecheck.regex {"llvmorg-([0-9.]+)".*}
 +        version                 11.1.0
 +        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
@@ -36,7 +36,7 @@
 +        livecheck.regex         {"llvmorg-([0-9.]+)".*}
      }
  
--    revision            1
+-    revision            0
 -
      if {${os.major} <= 12} {
          # kmp_alloc.c includes <atomic> but libc++ is not the default on
@@ -145,12 +145,14 @@
          foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
              system -W ${instdest}/lib/ \
                "ln -s libomp/${p}"
-@@ -152,7 +143,7 @@
+@@ -152,8 +143,8 @@
      }
  
      set fpath ${worksrcpath}/${rtpath}
 -    file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
+-        ${instdest}/share/doc/libomp/
 +    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
-         ${fpath}/../www ${instdest}/share/doc/libomp/
++        ${fpath}/../www ${instdest}/share/doc/libomp/
  
  }
+ 
