@@ -2,7 +2,7 @@
 
 # Install libzip (requires cmake)
 # see https://libzip.org/download/
-ZIP_VERSION=1.8.0
+ZIP_VERSION=1.9.0
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
 ZIP_SITE="https://libzip.org/download"
 if download_step; then

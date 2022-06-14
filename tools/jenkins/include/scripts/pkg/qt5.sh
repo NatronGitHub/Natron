@@ -4,9 +4,9 @@
 # see https://www.linuxfromscratch.org/blfs/view/svn/x/qt5.html
 # Note: This is excluding qtwebengine, which is available separately (for security reasons):
 # https://www.linuxfromscratch.org/blfs/view/svn/x/qtwebengine.html
-QT5_VERSION=5.15.2
+QT5_VERSION=5.15.4
 QT5_VERSION_SHORT=${QT5_VERSION%.*}
-QT5_TAR="qt-everywhere-src-${QT5_VERSION}.tar.xz"
+QT5_TAR="qt-everywhere-opensource-src-${QT5_VERSION}.tar.xz"
 QT5_SITE=" https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}/single"
 #  Now that Qt5 updates are restricted to commercial customers, upstream patches for the
 # various modules are being curated at kde. Patches for the modules required by packages
@@ -14,7 +14,7 @@ QT5_SITE=" https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}
 # Required patch: https://www.linuxfromscratch.org/patches/blfs/svn/qt-everywhere-src-5.15.2-kf5.15-2.patch
 # Details of the kde curation can be found at https://dot.kde.org/2021/04/06/announcing-kdes-qt-5-patch-collection
 # and https://community.kde.org/Qt5PatchCollection.
-QT5_PATCH="qt-everywhere-src-5.15.2-kf5.15-2.patch"
+QT5_PATCH="qt-everywhere-opensource-src-5.15.4-kf5-1.patch"
 QT5_PATCH_SITE="https://www.linuxfromscratch.org/patches/blfs/svn"
 
 if download_step; then

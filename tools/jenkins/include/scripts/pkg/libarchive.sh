@@ -3,7 +3,7 @@
 # Install libarchive (for cmake)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libarchive.html
 LIBARCHIVE_VERSION=3.6.1
-LIBARCHIVE_TAR="libarchive-${LIBARCHIVE_VERSION}.tar.gz"
+LIBARCHIVE_TAR="libarchive-${LIBARCHIVE_VERSION}.tar.xz"
 #LIBARCHIVE_SITE="http://www.libarchive.org/downloads" # up to 3.3.3
 LIBARCHIVE_SITE="https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}"
 if download_step; then
