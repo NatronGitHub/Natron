@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
 version             4.4.1
-revision            4
+revision            6
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} {mascguy @mascguy} openmaintainer
@@ -98,11 +98,17 @@ depends_lib         port:lame \
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
 
-# fix an upstream bug that overrides the max_b_frames setting
+# Fix an upstream bug that overrides the max_b_frames setting
 # https://trac.ffmpeg.org/ticket/9231
-# this bug is fixed upstream in commit 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
+# This bug is fixed upstream in commit 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
 # and should therefore be available in the next release version.
 patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
+
+# Patch for upstream bug related to non-B-frame encoding
+# https://trac.ffmpeg.org/ticket/9439
+# Fixed via upstream commit: b786bc7433dfe082441a57c1ba9ae9ea47904b78
+# Will be available in the next release version
+patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
@@ -172,7 +178,6 @@ configure.args      --enable-swscale \
                     --enable-pthreads \
                     --cxx=${configure.cxx} \
                     --cc=${configure.cc}
-
 
 # zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
 if { ${os.platform} eq "darwin" && ${os.major} > 11 } {
@@ -308,9 +313,6 @@ platform darwin 8 {
 
 configure.universal_args-delete --disable-dependency-tracking
 
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
-}
 if {${universal_possible} && [variant_isset universal]} {
     # the following is inspired by the icu Portfile
     # if we can't run executables for the target arch, mark it as a cross-compile
@@ -461,9 +463,11 @@ variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     configure.args-append   --enable-gpl \
                             --enable-postproc \
                             --enable-libx264 \
-                            --enable-libxvid
+                            --enable-libxvid \
+                            --enable-libvidstab
     depends_lib-append      port:XviD \
-                            port:x264
+                            port:x264 \
+                            port:libvidstab
 
     license                 GPL-2+
 }
@@ -514,6 +518,7 @@ This build of ${name} includes GPLed code and is therefore licensed under GPL v3
 The following modules are GPLed:
   postproc
   libsambaclient
+  libvidstab
   libx264
   libx265
   libxvid
@@ -525,6 +530,7 @@ notes "
 This build of ${name} includes GPLed code and is therefore licensed under GPL v2 or later.
 The following modules are GPLed:
   postproc
+  libvidstab
   libx264
   libx265
   libxvid

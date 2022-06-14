@@ -11,8 +11,6 @@ PortGroup       muniversal 1.0
 name            gnutls
 version         3.6.16
 revision        3
-set branch      [join [lrange [split ${version} .] 0 1] .]
-set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
@@ -24,12 +22,66 @@ long_description \
                 not include any patented algorithms and is available under the GNU \
                 Lesser General Public License (LGPL).
 homepage        http://www.gnutls.org/
-master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
-                https://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
 checksums       rmd160  d6bc8751c569db6033234c810b45eb661f77b4b4 \
                 sha256  1b79b381ac283d8b054368b335c408fedcb9b7144e0c07f531e3537d4328f3b3 \
                 size    5639992
+
+subport ${name} {
+    conflicts   ${name}-devel
+
+    if {${os.platform} eq "darwin" && ${os.major} > 19 && ${os.arch} eq "arm"} {
+        depends_build-append    port:libtool
+
+        # See: https://gitlab.com/gnutls/gnutls/-/issues/1317
+        patchfiles-append       patch-lib-accelerated-aarch64-Makefile.am.diff
+
+        use_autoreconf          yes
+        autoreconf.args         --install --verbose --force
+
+        pre-configure {
+            xinstall -m 644 -W ${prefix}/share/libtool/build-aux config.guess config.sub ${worksrcpath}
+        }
+    }
+}
+
+subport ${name}-devel {
+    conflicts   ${name}
+    
+    version     3.7.6
+    revision    0
+
+    checksums   rmd160  5722a10bd1d03ad3d44391ea82254f75e371b259 \
+                sha256  77065719a345bfb18faa250134be4c53bef70c1bd61f6c0c23ceb8b44f0262ff \
+                size    6338276
+
+    # Note: configure script detects zstd, but flags it as missing anyway
+    configure.args-append \
+                --disable-dependency-tracking \
+                --disable-heartbeat-support \
+                --without-brotli \
+                --without-zstd
+
+    variant brotli description {Build brotli support} {
+        depends_lib-append \
+                port:brotli
+                
+        configure.args-delete \
+                --without-brotli 
+    }
+}
+
+if {${build_arch} ne "ppc" || ${build_arch} ne "ppc64"} {
+    # see: https://gitlab.com/gnutls/gnutls/-/issues/1370
+    # and https://github.com/macports/macports-ports/pull/14613
+    configure.args-append   --disable-hardware-acceleration
+}
+
+set branch      [join [lrange [split ${version} .] 0 1] .]
+set major       [join [lrange [split ${version} .] 0 2] .]
+
+master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
+                https://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
 use_xz          yes
 
@@ -55,17 +107,19 @@ depends_lib-append \
                 port:nettle \
                 port:zlib
 
-patchfiles      patch-lib-system-certs.c.diff
-patchfiles-append implicit.patch
+patchfiles      patch-lib-system-certs.c.diff \
+                implicit.patch
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
     reinplace {/^#/d} {*}[glob ${worksrcpath}/lib/accelerated/x86/macosx/*.s]
 }
 
-configure.args  --disable-guile \
-                --disable-silent-rules \
+configure.args-append \
+                --disable-guile \
                 --disable-libdane \
+                --disable-silent-rules \
+                --disable-static \
                 --enable-local-libopts \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
@@ -95,20 +149,6 @@ variant dane description {Build libdane using unbound libraries} {
     configure.args-delete   --disable-libdane
 }
 
-if {${os.platform} eq "darwin" && ${os.major} > 19 && ${os.arch} eq "arm"} {
-    depends_build-append    port:libtool
-
-    # See: https://gitlab.com/gnutls/gnutls/-/issues/1317
-    patchfiles-append       patch-lib-accelerated-aarch64-Makefile.am.diff
-
-    use_autoreconf          yes
-    autoreconf.args         --install --verbose --force
-
-    pre-configure {
-        xinstall -m 644 -W ${prefix}/share/libtool/build-aux config.guess config.sub ${worksrcpath}
-    }
-}
-
 # as of r120660 (#43881) unbound installs its root key file at ${prefix}/var/run/unbound/root.key
 # the following may be superfluous
 
@@ -132,18 +172,27 @@ variant guile description {Build guile bindings} {
     configure.args-replace  --disable-guile --enable-guile
 }
 
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
-}
 if {${universal_possible} && [variant_isset universal]} {
     set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
     set merger_host(i386) i686-apple-${os.platform}${os.major}
     set merger_configure_args(x86_64) --build=x86_64-apple-${os.platform}${os.major}
     set merger_configure_args(i386) --build=i686-apple-${os.platform}${os.major}
+    set merger_host(ppc) powerpc-apple-${os.platform}${os.major}
+    set merger_host(ppc64) powerpc64-apple-${os.platform}${os.major}
+    set merger_configure_args(ppc) --build=powerpc-apple-${os.platform}${os.major}
+    set merger_configure_args(ppc64) --build=powerpc64-apple-${os.platform}${os.major}
 } elseif {${build_arch} eq "i386"} {
     configure.args-append \
         --host=i686-apple-${os.platform}${os.major} \
         --build=i686-apple-${os.platform}${os.major}
+} elseif {${build_arch} eq "ppc"} {
+    configure.args-append \
+        --host=powerpc-apple-${os.platform}${os.major} \
+        --build=powerpc-apple-${os.platform}${os.major}
+} elseif {${build_arch} eq "ppc64"} {
+    configure.args-append \
+        --host=powerpc64-apple-${os.platform}${os.major} \
+        --build=powerpc64-apple-${os.platform}${os.major}
 } else {
     configure.args-append \
         --host=${build_arch}-apple-${os.platform}${os.major} \

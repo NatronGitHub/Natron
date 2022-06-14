@@ -43,8 +43,10 @@ supported_archs     x86_64 i386 arm64 ppc ppc64
 patchfiles          patch-Makefile.diff \
                     patch-configure.sh.diff
 
-# uses newer assembly features on Intel
-compiler.blacklist-append  {*gcc-[3-4].*} {clang < 800} {macports-clang-3.*}
+# Uses newer assembly features on Intel.
+# Also blacklist clang 8, due to issues like:
+#   error: use of undeclared identifier 'abs'
+compiler.blacklist-append  {*gcc-[3-4].*} {clang < 900} {macports-clang-3.*}
 
 # As of 1.7.0: builds both static and shared libraries
 # doesn't install docs or examples correctly, so disable them.
@@ -86,10 +88,6 @@ destroot.args       verbose=1
 
 if {"${configure.sdkroot}" eq ""} {
     configure.sdkroot "/"
-}
-
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
 }
 
 if {${universal_possible} && [variant_isset universal]} {
