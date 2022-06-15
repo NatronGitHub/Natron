@@ -19,6 +19,7 @@
 
 #ifndef TASKBARMAC_H
 #define TASKBARMAC_H
+#ifdef __APPLE__
 
 #include "Global/Macros.h"
 
@@ -50,4 +51,5 @@ private:
 
 NATRON_NAMESPACE_EXIT
 
+#endif // __APPLE__
 #endif // TASKBARMAC_H
