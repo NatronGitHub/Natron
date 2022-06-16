@@ -70,3 +70,7 @@ configure.args-append \
     -DOCIO_BUILD_PYGLUE=OFF \
     -DOCIO_BUILD_APPS=OFF \
     -DOCIO_BUILD_TESTS=OFF
+
+foreach uarch {arm64 i386 ppc ppc64} {
+    set merger_configure_args(${uarch}) -DOCIO_USE_SSE=OFF
+}
