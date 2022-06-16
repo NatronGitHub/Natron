@@ -78,3 +78,10 @@ if {${universal_possible} && [variant_isset universal]} {
 } elseif {${build_arch} eq "arm64" || ${build_arch} eq "i386" || ${build_arch} eq "ppc" || ${build_arch} eq "ppc64"} {
     configure.args-append -DOCIO_USE_SSE=OFF
 }
+
+post-destroot {
+    system "install_name_tool -id ${prefix}/lib/libOpenColorIO.1.dylib ${destroot}${my_prefix}/lib/libOpenColorIO.1.dylib"
+    system "install_name_tool -change libOpenColorIO.1.dylib ${prefix}/lib/libOpenColorIO.1.dylib ${destroot}${my_prefix}/bin/ociobakelut"
+    system "install_name_tool -change libOpenColorIO.1.dylib ${prefix}/lib/libOpenColorIO.1.dylib ${destroot}${my_prefix}/bin/ociocheck"
+    ln -s ${my_prefix}/lib/libOpenColorIO.1.dylib ${destroot}/${prefix}/lib/libOpenColorIO.1.dylib
+}
