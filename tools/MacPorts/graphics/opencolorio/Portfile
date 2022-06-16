@@ -75,7 +75,7 @@ depends_lib-append  \
 # OpenColorIO intentially installs Python module in lib
 # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
 
-variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 python38 python39 {
+variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 python38 python39 python310 {
     depends_lib-append port:python27 port:py27-pybind11
     configure.args-append \
         -DPYTHON=${prefix}/bin/python2.7 \
@@ -89,7 +89,7 @@ variant python27 description {Build the Python 2.7 bindings} conflicts python36 
     }
 }
 
-variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 python38 python39 {
+variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 python38 python39 python310 {
     depends_lib-append port:python36 port:py36-pybind11
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.6\
@@ -103,7 +103,7 @@ variant python36 description {Build the Python 3.6 bindings} conflicts python27 
     }
 }
 
-variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 python38 python39 {
+variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 python38 python39 python310 {
     depends_lib-append port:python37 port:py37-pybind11
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.7\
@@ -117,7 +117,7 @@ variant python37 description {Build the Python 3.7 bindings} conflicts python27 
     }
 }
 
-variant python38 description {Build the Python 3.8 bindings} conflicts python27 python36 python37 python39 {
+variant python38 description {Build the Python 3.8 bindings} conflicts python27 python36 python37 python39 python310 {
     depends_lib-append port:python38 port:py38-pybind11
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.8\
@@ -131,7 +131,7 @@ variant python38 description {Build the Python 3.8 bindings} conflicts python27 
     }
 }
 
-variant python39 description {Build the Python 3.9 bindings} conflicts python27 python36 python37 python38 {
+variant python39 description {Build the Python 3.9 bindings} conflicts python27 python36 python37 python38 python310 {
     depends_lib-append port:python39 port:py39-pybind11
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.9\
@@ -145,11 +145,25 @@ variant python39 description {Build the Python 3.9 bindings} conflicts python27 
     }
 }
 
-if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39]} {
-    default_variants +python39
+variant python310 description {Build the Python 3.10 bindings} conflicts python27 python36 python37 python38 python39 {
+    depends_lib-append port:python310 port:py310-pybind11
+    configure.args-append \
+        -DPYTHON=${prefix}/bin/python3.10\
+        -DOCIO_PYTHON_VERSION=3.10
+    post-destroot {
+        xinstall -d -m 0755 \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages
+        ln -s \
+            ${prefix}/lib/python3.10/site-packages/PyOpenColorIO.so \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages/
+    }
 }
 
-if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39]} {
+if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310]} {
+    default_variants +python310
+}
+
+if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310]} {
     configure.args-append \
         -DOCIO_BUILD_PYGLUE=OFF \
         -DOCIO_BUILD_PYTHON=OFF

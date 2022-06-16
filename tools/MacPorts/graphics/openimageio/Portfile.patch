@@ -1,5 +1,5 @@
---- Portfile.orig	2022-06-13 13:26:15.000000000 -0700
-+++ Portfile	2022-06-13 13:54:02.000000000 -0700
+--- Portfile.orig	2022-06-16 13:58:30.000000000 -0700
++++ Portfile	2022-06-16 14:02:15.000000000 -0700
 @@ -2,18 +2,14 @@
  
  PortSystem              1.0
@@ -50,7 +50,7 @@
  
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
-@@ -49,16 +53,84 @@
+@@ -49,20 +53,88 @@
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -139,6 +139,11 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
+-set pythons_suffixes    {27 36 37 38 39}
++set pythons_suffixes    {27 36 37 38 39 310}
+ 
+ set pythons_ports       {}
+ foreach s ${pythons_suffixes} {
 @@ -95,34 +167,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
@@ -147,7 +152,7 @@
 -    default_variants        +python39
 -}
 +#if {${set_python_default}} {
-+#    default_variants        +python39
++#    default_variants        +python310
 +#}
  
  #configure.args-append       -DUSE_FIELD3D=OFF

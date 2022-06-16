@@ -134,7 +134,7 @@ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolori
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38 39}
+set pythons_suffixes    {27 36 37 38 39 310}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -168,7 +168,7 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 #if {${set_python_default}} {
-#    default_variants        +python39
+#    default_variants        +python310
 #}
 
 #configure.args-append       -DUSE_FIELD3D=OFF

@@ -71,14 +71,14 @@ Install the required packages:
 ```Shell
 sudo port -v -N install pkgconfig -universal gsed -universal gawk -universal coreutils -universal findutils -universal
 sudo port -v -N install cmake -universal keychain -universal
-sudo port -v -N install opencolorio -quartz -python27 -python39
+sudo port -v -N install opencolorio -quartz -python27 -python310
 sudo port -v -N install cairo -x11
 sudo port -v -N install qt4-mac boost expat
-sudo port -v -N install py27-pyside py39-sphinx py39-sphinx_rtd_theme
+sudo port -v -N install py27-pyside py310-sphinx py310-sphinx_rtd_theme
 sudo port select --set python python27
 sudo port select --set python2 python27
-sudo port select --set python3 python39
-sudo port select --set sphinx py39-sphinx
+sudo port select --set python3 python310
+sudo port select --set sphinx py310-sphinx
 ```
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -110,7 +110,7 @@ sudo port -v -N install libvpx +highbitdepth
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
 sudo port -v -N install libraw +gpl2
 sudo port -v -N install openexr
-sudo port -v -N install opencolorio -quartz -python27 -python39
+sudo port -v -N install opencolorio -quartz -python27 -python310
 sudo port -v -N install openimageio +natron
 sudo port -v -N install seexpr211 seexpr
 ```
@@ -613,9 +613,9 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
-On MacPorts with qt4-mac, py39-pyside, py39-shiboken:
+On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
 ```Shell
-PYV=3.9 # Set to the python version
+PYV=3.10 # Set to the python version
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
 shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems --output-directory=Engine/Qt4 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
@@ -627,7 +627,7 @@ tools/utils/runPostShiboken.sh
 
 on HomeBrew with Qt5/PySide2/Shiboken2:
 ```Shell
-PYV=3.9 # Set to the python version
+PYV=3.10 # Set to the python version
 export PATH="/usr/local/opt/pyside@2/bin:$PATH"
 
 rm Engine/NatronEngine/Qt5/* Gui/NatronGui/Qt5/*
