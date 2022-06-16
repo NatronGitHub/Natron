@@ -71,6 +71,10 @@ configure.args-append \
     -DOCIO_BUILD_APPS=OFF \
     -DOCIO_BUILD_TESTS=OFF
 
-foreach uarch {arm64 i386 ppc ppc64} {
-    set merger_configure_args(${uarch}) -DOCIO_USE_SSE=OFF
+if {${universal_possible} && [variant_isset universal]} {
+    foreach uarch {arm64 i386 ppc ppc64} {
+        set merger_configure_args(${uarch}) -DOCIO_USE_SSE=OFF
+    }
+} elseif {${build_arch} eq "arm64" || ${build_arch} eq "i386" || ${build_arch} eq "ppc" || ${build_arch} eq "ppc64"} {
+    configure.args-append -DOCIO_USE_SSE=OFF
 }
