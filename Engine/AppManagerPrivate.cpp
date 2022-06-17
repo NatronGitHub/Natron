@@ -324,7 +324,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 
     Q_UNUSED(breakpad_client_fd);
     try {
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
         Q_UNUSED(breakpad_client_fd);
         breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),

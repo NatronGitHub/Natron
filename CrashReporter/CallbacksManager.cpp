@@ -66,7 +66,7 @@
 #endif
 
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 #include "client/mac/crash_generation/crash_generation_server.h"
 #include <execinfo.h>
 #include <cstdio>
@@ -183,7 +183,7 @@ setChildDeadSignal()
     }
 }
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 /* from http://svn.python.org/projects/python/trunk/Mac/Tools/pythonw.c */
 static bool
 setup_spawnattr(posix_spawnattr_t* spawnattr)
@@ -1111,7 +1111,7 @@ utf8_to_utf16(const std::string & s)
 #endif
 
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 void
 OnClientDumpRequest(void */*context*/,
                     const ClientInfo & /*client_info*/,
@@ -1148,7 +1148,7 @@ CallbacksManager::createCrashGenerationServer()
     /*
      * We initialize the CrashGenerationServer now that the connection is made between Natron & the Crash reporter
      */
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
     _crashServer = new CrashGenerationServer( _pipePath.toStdString().c_str(),
                                               0, // filter cb
                                               0, // filter ctx

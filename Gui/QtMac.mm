@@ -20,7 +20,7 @@
 #include "Gui/Gui.h"
 
 #include <QtCore/QtGlobal> // for Q_OS_*
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 
 #include <AppKit/NSView.h>
 #include <AppKit/NSWindow.h>

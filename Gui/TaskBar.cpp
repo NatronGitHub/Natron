@@ -30,7 +30,7 @@ TaskBar::TaskBar(QWidget *parent)
     : QObject(parent)
 #ifdef Q_OS_WIN
     , _wtask(0)
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
     , _mtask(0)
 #endif
     , _min(0.0)
@@ -52,7 +52,7 @@ TaskBar::TaskBar(QWidget *parent)
     } else {
         _wtask->HrInit();
     }
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
     _mtask = new TaskBarMac(this);
 #endif
 }
@@ -115,7 +115,7 @@ TaskBar::setProgressValue(double value)
     if (_wtask->SetProgressValue(_wid, currentVal, totalVal) == S_OK) {
         _val = value;
     }
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
     if (!_mtask) {
         return;
     }
@@ -156,7 +156,7 @@ TaskBar::setProgressState(TaskBar::ProgressState state)
     if (_wtask->SetProgressState(_wid, flag) == S_OK) {
         _state = state;
     }
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
     if (!_mtask) {
         return;
     }

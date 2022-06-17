@@ -49,7 +49,7 @@
 #include "Engine/OSGLContext_x11.h"
 #elif defined(Q_OS_WIN32)
 #include "Engine/OSGLContext_win.h"
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
 #include "Engine/OSGLContext_mac.h"
 #endif
 
@@ -63,7 +63,7 @@
 
 // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 #ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 GCC_DIAG_OFF(deprecated)
 #include "client/mac/handler/exception_handler.h"
 GCC_DIAG_ON(deprecated)

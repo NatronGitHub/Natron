@@ -30,7 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #ifdef Q_OS_WIN
 #include <shobjidl.h>
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
 #include "TaskBarMac.h"
 #endif
 
@@ -72,7 +72,7 @@ private:
 #ifdef Q_OS_WIN
     ITaskbarList3 *_wtask;
     WId _wid;
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
     TaskBarMac *_mtask;
 #endif
     double _min;

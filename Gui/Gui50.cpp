@@ -108,7 +108,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
-#if defined(Q_WS_WIN32)
+#if defined(Q_OS_WIN)
 #include <winuser.h>
 #include <wingdi.h>
 #endif
@@ -370,7 +370,7 @@ Gui::handleNativeKeys(int key,
         return key;
     }
 
-#ifdef Q_WS_MACX
+#ifdef Q_OS_DARWIN
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
     // kVK_ANSI_1                    = 0x12,
@@ -417,7 +417,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_0;
     }
 #endif
-#ifdef Q_WS_WIN32
+#ifdef Q_OS_WIN
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
     //  48   0x30   (VK_0)              | 0 key
     //  49   0x31   (VK_1)              | 1 key
@@ -464,7 +464,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_9;
     }
 #endif
-#if defined(Q_WS_X11) && defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX)
     // probably only possible on Linux, since scancodes are OS-dependent
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);
@@ -1073,13 +1073,13 @@ Gui::ddeOpenFile(const QString& filePath)
  **/
 qreal Gui::devicePixelRatio() const
 {
-#if defined(Q_WS_WIN32)
+#if defined(Q_OS_WIN)
     HDC screen = GetDC(winId());
     FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
     ReleaseDC(0, screen);
 
     return static_cast<qreal>(horizontalDPI) / 96.;
-#elif defined(Q_WS_MACX)
+#elif defined(Q_OS_DARWIN)
     return QtMac::devicePixelRatioInternal(this);
 #elif defined(Q_WS_X11)
     // Use the Xft.dpi X resource, as described there:

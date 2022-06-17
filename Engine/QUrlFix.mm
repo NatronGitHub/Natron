@@ -20,7 +20,7 @@
 #include "Global/QtCompat.h"
 
 #include <QtCore/QtGlobal> // for Q_OS_*
-#if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#if defined(Q_OS_DARWIN) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 
 // in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files
 // See https://bugreports.qt.io/browse/QTBUG-40449
@@ -70,4 +70,4 @@ QUrl NATRON_NAMESPACE::QtCompat::toLocalFileUrlFixed(const QUrl& url)
     return ret;
 }
 
-#endif // #if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#endif // #if defined(Q_OS_DARWIN) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)

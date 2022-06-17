@@ -65,7 +65,7 @@ AboutWindow::AboutWindow(QWidget* parent)
 {
     _scale = 1.;
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#if defined(Q_WS_WIN32)
+#if defined(Q_OS_WIN)
     // code from Gui::devicePixelRatio()
     HDC wscreen = GetDC(winId());
     FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);

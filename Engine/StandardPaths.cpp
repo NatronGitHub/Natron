@@ -60,7 +60,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QVarLengthArray>
 CLANG_DIAG_ON(deprecated)
 
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
 #include <CoreServices/CoreServices.h>
 
 #endif
@@ -215,7 +215,7 @@ resolveUserName(uint userId)
 
 #endif // defined(Q_OS_LINUX)
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 CLANG_DIAG_OFF(deprecated)
 
 static
@@ -309,7 +309,7 @@ macLocation(NATRON_NAMESPACE::StandardPaths::StandardLocationEnum type, short do
 }
 
 CLANG_DIAG_ON(deprecated)
-#endif // defined(Q_OS_MAC)
+#endif // defined(Q_OS_DARWIN)
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -318,7 +318,7 @@ QString
 StandardPaths::writableLocation(StandardLocationEnum type)
 {
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
     switch (type) {
         case eStandardLocationHome:
 
