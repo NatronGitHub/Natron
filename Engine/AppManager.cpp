@@ -68,7 +68,7 @@
 #ifdef Q_OS_UNIX
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
 #endif

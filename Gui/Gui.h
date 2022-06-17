@@ -688,7 +688,7 @@ public Q_SLOTS:
     void openHelpIssues();
     void openHelpDocumentation();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
     void dockClicked();
 #endif
     

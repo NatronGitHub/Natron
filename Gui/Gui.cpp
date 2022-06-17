@@ -108,7 +108,7 @@ Gui::Gui(const GuiAppInstancePtr& app,
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
      QObject::connect( appPTR, SIGNAL(dockClicked()), this, SLOT(dockClicked()) );
 #endif
 #ifdef DEBUG
@@ -779,7 +779,7 @@ Gui::openHelpDocumentation()
 #endif
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 void
 Gui::dockClicked()
 {

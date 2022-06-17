@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DocumentationManager.h"
 
 //All fixed sizes were calculated for a 96 dpi screen
-#ifndef Q_OS_MAC
+#ifndef Q_OS_DARWIN
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
 #else
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
@@ -904,7 +904,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
             qDebug() << "Not an exact match, got: " << fi.family() << fi.pointSize();
         }
         QApplication::setFont(font);
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
         // https://bugreports.qt.io/browse/QTBUG-32789
         QFont::insertSubstitution(QString::fromUtf8(".Lucida Grande UI"), fontFamily /*"Lucida Grande"*/);
         // https://bugreports.qt.io/browse/QTBUG-40833

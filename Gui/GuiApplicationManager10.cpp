@@ -30,7 +30,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 // for Application::Application()
 #include <objc/message.h>
 #endif
@@ -173,7 +173,7 @@ GuiApplicationManager::registerGuiMetaTypes() const
     qRegisterMetaType<CurveWidget*>();
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 static bool
 dockClickHandler(id self,SEL _cmd,...)
 {
@@ -211,7 +211,7 @@ public:
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
         
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
         // see http://stackoverflow.com/questions/15143369/qt-on-os-x-how-to-detect-clicking-the-app-dock-icon
 
         // Starting from Qt5.4.0 you can handle QEvent, that related to click on dock: QEvent::ApplicationActivate.
@@ -255,7 +255,7 @@ bool
 Application::event(QEvent* e)
 {
     switch ( e->type() ) {
-#if defined(Q_OS_MAC) || defined(Q_OS_SYMBIAN)
+#if defined(Q_OS_DARWIN) || defined(Q_OS_SYMBIAN)
     case QEvent::FileOpen: {
         // This class is currently supported for Mac OS X and Symbian only
         // http://doc.qt.io/qt-4.8/qfileopenevent.html

@@ -251,7 +251,7 @@ setup_spawnattr(posix_spawnattr_t* spawnattr)
     }
     return true;
 }
-#endif // Q_OS_MAC
+#endif // Q_OS_DARWIN
 
 #endif // NATRON_CRASH_REPORTER_USE_FORK
 } // anon namespace
@@ -615,7 +615,7 @@ CallbacksManager::initInternal()
            We are the child process (i.e: Natron)
          */
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
         // on OSX, try to execute in 32-bit mode if this is executed in 32-bit mode
         
         /* We're weak-linking to posix-spawnv to ensure that

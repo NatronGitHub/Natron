@@ -194,7 +194,7 @@ public:
 
     int getDocumentationServerPort();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
     void onClickOnDock();
 #endif
 
@@ -208,7 +208,7 @@ public Q_SLOTS:
     void onFontconfigCacheUpdateFinished();
     void onFontconfigTimerTriggered();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 Q_SIGNALS:
     void dockClicked();
 #endif
