@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
-    assert(boost_adaptbx::floating_point::is_invalid_trapped());
 #endif
 
 #ifdef Q_OS_WIN
