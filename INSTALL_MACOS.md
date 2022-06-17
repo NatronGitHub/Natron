@@ -323,12 +323,12 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz).
 Place it at the root of Natron source tree:
 
 ```Shell
-curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz | tar zxf -
-mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
+curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz | tar zxf -
+mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
 
