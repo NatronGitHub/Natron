@@ -61,7 +61,6 @@ extern "C" {
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
-    assert(boost_adaptbx::floating_point::is_invalid_trapped());
 #endif
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
