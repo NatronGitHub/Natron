@@ -31,8 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #ifdef Q_OS_MAC
-// for dockClickHandler and Application::Application()
-#include <objc/objc.h>
+// for Application::Application()
 #include <objc/message.h>
 #endif
 

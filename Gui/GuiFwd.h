@@ -30,6 +30,11 @@
 
 #include "Engine/EngineFwd.h"
 
+#ifdef Q_OS_DARWIN
+// for dockClickHandler
+#include <objc/objc.h> // defines OBJC_OLD_DISPATCH_PROTOTYPES
+#endif
+
 // Qt
 #include <QtCore/QtGlobal>
 
@@ -233,7 +238,7 @@ class ViewerTab;
 class ViewerToolButton;
 class KnobPageGui;
 
-#ifdef Q_WS_MACX
+#ifdef Q_OS_DARWIN
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
