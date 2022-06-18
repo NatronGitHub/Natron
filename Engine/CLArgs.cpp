@@ -324,6 +324,12 @@ CLArgs::printUsage(const std::string& programName)
         "    the settings and prior to executing Python commands or loading the project.\n"
         "    For choice settings, the value may be an integer index for the option, or\n"
         "    a quoted string, as in: --setting enableOpenGLRendering=\\\"enabled\\\"\n"
+        "  --opengl <choice>\n"
+        "    Select whether to activate OpenGL rendering or not. If disabled, even\n"
+        "    though a Project enable GPU rendering, it will not be activated.\n"
+        "    Choice can be one of enabled (enables OpenGL rendering if available)\n"
+        "    disabled (disables it otherwise) and foreground (uses OpenGL only\n"
+        "    if it's not running at background)\"\n"
         "  -c [ --cmd ] \"PythonCommand\"\n"
         "    Execute custom Python code passed as a script prior to executing the Python\n"
         "    script or loading the project passed as parameter. This option may be used\n"
@@ -1004,6 +1010,33 @@ CLArgsPrivate::parse()
             }
         }
     }
+
+    {
+        QStringList::iterator it = hasToken( QString::fromUtf8("opengl"), QString() );
+        if ( it != args.end() ) {
+            it = args.erase(it);
+
+            if ( it == args.end() || it->startsWith( QChar::fromLatin1('-') ) ) {
+                std::cout << tr("You must specify a choice when using the --opengl option").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+
+            QString choice = *it;
+            it = args.erase(it);
+
+            if (choice != QString::fromUtf8("enabled") && choice != QString::fromUtf8("disabled") && choice != QString::fromUtf8("foreground")) {
+                std::cout << tr("Valid options for --opengl are enabled, disabled and foreground").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+
+            settingCommands.push_back( "NatronEngine.natron.getSettings().getParam(\"enableOpenGLRendering\").setValue(\"" + choice.toStdString() + "\")");
+        }
+    }
+
     //Parse settings
     for (;;) {
         QStringList::iterator it = hasToken( QString::fromUtf8("setting"), QString() );
