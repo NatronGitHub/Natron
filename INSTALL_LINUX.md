@@ -492,11 +492,13 @@ PYV=3.10
 QT=5
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems --output-directory=Engine/Qt5 Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt5 Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Gui:Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python${PYV}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken2.sh
+#tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
+#tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
 ```
 
 If using PySide for Qt4, the command-line would be:
@@ -504,13 +506,16 @@ If using PySide for Qt4, the command-line would be:
 ```sh
 SDK_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
 PYSIDE_PREFIX=/usr # /opt/Natron-sdk/qt4 if using the Natron SDK
+QT=4
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine/Qt4 Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt4 Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
+#tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
+#tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
 ```
 
 **Note**

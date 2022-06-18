@@ -43,7 +43,7 @@
 #include <QtCore/QString>
 #include <QtCore/QCoreApplication>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-#include <QRecursiveMutex>
+#include <QtCore/QRecursiveMutex>
 #endif
 
 #include "Engine/Variant.h"

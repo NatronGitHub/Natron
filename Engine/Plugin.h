@@ -35,7 +35,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-#include <QRecursiveMutex>
+#include <QtCore/QRecursiveMutex>
 #endif
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
