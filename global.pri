@@ -43,8 +43,8 @@ run-without-python {
     CONFIG += python
     python3 {
       PYV=3
-      PY_PKG_SUFFIX=-embed
-      PYTHON_CONFIG_FLAGS=--embed
+      PY_PKG_SUFFIX=
+      PYTHON_CONFIG_FLAGS=
     } else {
       PYV=2
       PY_PKG_SUFFIX=
