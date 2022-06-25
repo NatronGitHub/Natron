@@ -17,11 +17,15 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-add_subdirectory(gflags)
-add_subdirectory(glog)
+if(NOT glog_FOUND)
+    add_subdirectory(gflags)
+    add_subdirectory(glog)
+endif()
 add_subdirectory(hoedown)
 add_subdirectory(libtess)
-add_subdirectory(ceres)
+if(NOT Ceres_FOUND)
+    add_subdirectory(ceres)
+endif()
 add_subdirectory(libmv)
 add_subdirectory(openMVG)
 add_subdirectory(qhttpserver)

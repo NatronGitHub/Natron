@@ -258,5 +258,6 @@ target_compile_definitions(ceres
         CERES_STD_UNORDERED_MAP
         CERES_STD_SHARED_PTR
 )
-target_link_libraries(ceres PUBLIC glog)
+target_link_libraries(ceres PUBLIC glog::glog)
 set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(Ceres::ceres ALIAS ceres)
