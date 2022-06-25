@@ -28,6 +28,7 @@ project(Natron
 
 set(CMAKE_CXX_STANDARD 11)
 
+option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
 find_package(Boost COMPONENTS headers serialization)
@@ -43,6 +44,11 @@ set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
 set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
 
 find_package(expat REQUIRED)
+
+if(NATRON_SYSTEM_LIBS)
+    find_package(glog)
+    find_package(Ceres)
+endif()
 
 if(UNIX AND NOT APPLE)
     find_package(ECM NO_MODULE)

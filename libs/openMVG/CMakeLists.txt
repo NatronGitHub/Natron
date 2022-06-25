@@ -172,5 +172,5 @@ target_compile_definitions(openMVG
         OPENMVG_STD_UNORDERED_MAP
         OPENMVG_STD_SHARED_PTR
 )
-target_link_libraries(openMVG PUBLIC ceres)
+target_link_libraries(openMVG PUBLIC Ceres::ceres)
 set_target_properties(openMVG PROPERTIES POSITION_INDEPENDENT_CODE ON)
