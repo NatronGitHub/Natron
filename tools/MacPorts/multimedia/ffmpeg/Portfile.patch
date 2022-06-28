@@ -1,15 +1,15 @@
---- Portfile.orig	2021-09-13 14:21:06.000000000 -0700
-+++ Portfile	2021-09-13 14:21:07.000000000 -0700
-@@ -81,6 +81,8 @@
+--- Portfile.orig	2022-06-28 10:22:44.000000000 -0700
++++ Portfile	2022-06-28 10:25:25.000000000 -0700
+@@ -84,6 +84,8 @@
                      port:libbluray \
-                     port:libvpx \
+                     path:lib/pkgconfig/vpx.pc:libvpx \
                      port:gnutls \
 +                    port:openh264 \
 +                    port:snappy \
                      port:openjpeg \
+                     port:zvbi \
                      port:fontconfig \
-                     port:freetype \
-@@ -117,6 +119,11 @@
+@@ -122,6 +124,11 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 800}
  
@@ -21,7 +21,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -131,6 +138,8 @@
+@@ -136,6 +143,8 @@
                      --enable-librsvg \
                      --enable-libtheora \
                      --enable-libopenjpeg \
@@ -30,7 +30,7 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -143,12 +152,14 @@
+@@ -149,12 +158,14 @@
                      --enable-libfreetype \
                      --enable-libfribidi \
                      --enable-zlib \
@@ -45,15 +45,15 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -159,6 +170,7 @@
+@@ -165,6 +176,7 @@
                      --mandir=${prefix}/share/man \
                      --enable-shared \
                      --enable-pthreads \
 +                    --cxx=${configure.cxx} \
                      --cc=${configure.cc}
  
- 
-@@ -243,6 +255,24 @@
+ # zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
+@@ -248,6 +260,24 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -79,8 +79,8 @@
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
 @@ -282,6 +312,15 @@
-     set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
- }
+ configure.universal_args-delete --disable-dependency-tracking
+ 
  if {${universal_possible} && [variant_isset universal]} {
 +    # the following is inspired by the icu Portfile
 +    # if we can't run executables for the target arch, mark it as a cross-compile
@@ -94,21 +94,10 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -307,11 +346,55 @@
- #
-     depends_lib-append      port:xorg-libxcb \
-                             port:xorg-libXext \
-+                            port:xorg-libX11 \
-                             port:xorg-libXfixes
+@@ -313,12 +352,53 @@
+                             --disable-libxcb-xfixes
+ }
  
-     configure.args-delete   --disable-libxcb \
-                             --disable-libxcb-shm \
-                             --disable-libxcb-xfixes \
-+                            --disable-xlib \
-+
-+    configure.args-append   --enable-xlib
-+}
-+
 +variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 +
 +    depends_lib-delete \
@@ -147,10 +136,19 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
++}
++
+ if {[variant_isset x11]} {
+     require_active_variants libsdl2 x11
+ } else {
+     require_active_variants libsdl2 "" x11
  }
  
- if {[variant_isset x11]} {
-@@ -360,6 +443,20 @@
++
+ variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
+     depends_lib-append port:libdc1394
+     configure.args-append --enable-libdc1394
+@@ -358,6 +438,20 @@
      depends_lib-delete      port:gnutls
  }
  
@@ -171,9 +169,9 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -378,6 +475,12 @@
-     depends_lib-append      port:samba3
- 
+@@ -377,6 +471,12 @@
+     depends_lib-append      path:lib/pkgconfig/smbclient.pc:samba3 \
+                             port:libaribb24
      license                 GPL-3+
 +
 +    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)

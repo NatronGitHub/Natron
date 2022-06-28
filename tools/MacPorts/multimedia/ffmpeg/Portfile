@@ -15,14 +15,16 @@ PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
 set my_name         ffmpeg
-conflicts           ffmpeg-devel
+conflicts           ffmpeg-devel ffmpeg-upstream
+
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
-epoch               1
 version             4.4.1
 revision            6
+epoch               1
+
 license             LGPL-2.1+
 categories          multimedia
-maintainers         {devans @dbevans} {jeremyhu @jeremyhu} {mascguy @mascguy} openmaintainer
+maintainers         {mascguy @mascguy} {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
 
 description         FFmpeg is a complete solution to play, record, convert and \
                     stream audio and video.
@@ -55,7 +57,6 @@ long_description    FFmpeg is a complete solution to record, convert and \
                     libavformat is a library containing parsers and \
                     generators for all common audio/video formats.
 
-platforms           darwin
 homepage            https://ffmpeg.org/
 master_sites        ${homepage}releases/
 distname            ${my_name}-${version}
@@ -112,7 +113,6 @@ patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
-#
 minimum_xcodeversions {9 3.1}
 
 # requires a C11 compiler
@@ -301,8 +301,6 @@ platform powerpc {
     #  "___atomic_fetch_sub_8", referenced from:
     #      _fifo_thread_dispatch_message.part.4 in fifo.o
     configure.ldflags-append -latomic
-
-
 }
 
 platform darwin 8 {
@@ -348,15 +346,10 @@ variant x11 {
 #
     depends_lib-append      port:xorg-libxcb \
                             port:xorg-libXext \
-                            port:xorg-libX11 \
                             port:xorg-libXfixes
-
     configure.args-delete   --disable-libxcb \
                             --disable-libxcb-shm \
-                            --disable-libxcb-xfixes \
-                            --disable-xlib \
-
-    configure.args-append   --enable-xlib
+                            --disable-libxcb-xfixes
 }
 
 variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
@@ -405,6 +398,7 @@ if {[variant_isset x11]} {
     require_active_variants libsdl2 "" x11
 }
 
+
 variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
     depends_lib-append port:libdc1394
     configure.args-append --enable-libdc1394
@@ -418,7 +412,6 @@ variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (
 
 variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// protocol handler} {
     configure.args-append   --enable-librtmp
-
     depends_lib-append      port:rtmpdump
 }
 
@@ -468,7 +461,6 @@ variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     depends_lib-append      port:XviD \
                             port:x264 \
                             port:libvidstab
-
     license                 GPL-2+
 }
 
@@ -476,10 +468,8 @@ variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+}
     configure.args-append   --enable-version3 \
                             --enable-libsmbclient \
                             --enable-libaribb24
-
     depends_lib-append      path:lib/pkgconfig/smbclient.pc:samba3 \
                             port:libaribb24
-
     license                 GPL-3+
 
     # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)

@@ -6,7 +6,21 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         7.83.1
+version                         7.84.0
+checksums                       rmd160  6a3c2c80393e01423de2db4b47c37f42c44306f9 \
+                                sha256  2d118b43f547bfe5bae806d8d47b4e596ea5b25a6c1f080aef49fbcd817c5db8 \
+                                size    2477944
+
+if {${subport} eq ${name} && ${os.platform} eq "darwin" && ${os.major} < 15} {
+    # Temporarily use older version while some build failures are investigated.
+    # https://github.com/curl/curl/issues/9058
+    # https://github.com/curl/curl/issues/9059
+    version                     7.83.1
+    checksums                   rmd160  ac59faa4f713bcf13004f7c6663e0ac31031c5d1 \
+                                sha256  2cb9c2356e7263a1272fd1435ef7cdebf2cd21400ec287b068396deb705c22c4 \
+                                size    2474940
+}
+
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,11 +40,7 @@ master_sites                    ${homepage}/download/:curl \
 use_xz                          yes
 set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
-
-checksums                       ${curl_distfile} \
-                                rmd160  ac59faa4f713bcf13004f7c6663e0ac31031c5d1 \
-                                sha256  2cb9c2356e7263a1272fd1435ef7cdebf2cd21400ec287b068396deb705c22c4 \
-                                size    2474940
+checksums-prepend               ${curl_distfile}
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -51,7 +61,6 @@ if {${name} eq ${subport}} {
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
-                                --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
                                 --without-libgsasl \
@@ -62,6 +71,7 @@ if {${name} eq ${subport}} {
                                 --without-nss \
                                 --without-ssl \
                                 --without-secure-transport \
+                                --without-wolfssl \
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
@@ -175,7 +185,7 @@ if {${name} eq ${subport}} {
     variant wolfssl conflicts darwinssl mbedtls gnutls ssl description {Allow secure connections using wolfSSL (formerly CyaSSL)} {
         depends_lib-append      port:wolfssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
-        configure.args-replace  --without-cyassl --with-cyassl
+        configure.args-replace  --without-wolfssl --with-wolfssl
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 
@@ -241,6 +251,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
+    # Also increase the revision of privoxy-pki-bundle whenever curl-ca-bundle contents change.
     revision                    0
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
@@ -266,11 +277,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1650691528
+    set certdata_updated        1655586968
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         8cf7b945601fd5ba55e9bb596ad37e59b04f37c2
+    set certdata_commit         8a140b71769579902156914a69ba4849c5598db3
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20220325
+    set certdata_date           20220614
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -291,9 +302,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  e1119533ee468881d723ea48585aa2e4384c69fb \
-                                sha256  284d41c132a84c0c1a2f4d3de6a040c980c1ae6e230c45720268f8e8565f1636 \
-                                size    264178
+                                rmd160  abf6ebcd142af00430e5603742968da5183caccb \
+                                sha256  6321e67bee7568217fb2e44833558e5d020edde6d6dd9a8eac3b1a85e09ca003 \
+                                size    274838
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \
