@@ -114,7 +114,9 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                 const std::string& newScriptName = node->getNode()->getScriptName();
                 oldNewScriptNamesMapping[oldScriptName] = newScriptName;
             }
-            assert( internalNodesClipBoard.size() == newNodes->size() );
+            if (newNodes->size() == 0) {
+                return;
+            }
 
             ///Now that all nodes have been duplicated, try to restore nodes connections
             restoreConnections(internalNodesClipBoard, *newNodes, oldNewScriptNamesMapping);
