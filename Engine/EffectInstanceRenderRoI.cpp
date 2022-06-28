@@ -882,6 +882,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
         }
+    } else if ( appPTR->isOpenGLLoaded() && !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() && openGLSupport == ePluginOpenGLRenderSupportNeeded ) {
+        QString message = tr("OpenGL render is required for a plugin but it's currently disabled, please consider passing `--opengl enabled` to %1").arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+        setPersistentMessage(eMessageTypeError, message.toStdString());
+        return eRenderRoIRetCodeFailed;
     }
 
 
