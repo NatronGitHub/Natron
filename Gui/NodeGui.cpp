@@ -2275,6 +2275,13 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 void
 NodeGui::copyFrom(const NodeGuiSerialization & obj)
 {
+    float r, g, b;
+    double overlayR, overlayB, overlayG;
+    obj.getColor(&r, &g, &b);
+    setCurrentColor( QColor::fromRgbF(r, g, b) );
+    if (obj.getOverlayColor(&overlayR, &overlayG, &overlayB)) {
+        setOverlayColor( QColor::fromRgbF(overlayR, overlayB, overlayG) );
+    }
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
     NodePtr node = getNode();
     assert(node);
