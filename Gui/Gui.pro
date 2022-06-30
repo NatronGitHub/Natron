@@ -227,7 +227,6 @@ SOURCES += \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     ticks.cpp \
-    $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -384,7 +383,9 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
-    $${GUI_WRAPPER_DIR}/natrongui_python.h \
+
+GENERATED_SOURCES += $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp
+GENERATED_HEADERS += $${GUI_WRAPPER_DIR}/natrongui_python.h
 
 GUI_GENERATED_SOURCES = \
     guiapp_wrapper \
@@ -395,8 +396,8 @@ GUI_GENERATED_SOURCES = \
     pyviewer_wrapper
 
 for(name, GUI_GENERATED_SOURCES) {
-    SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
-    HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
+    GENERATED_SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
+    GENERATED_HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
 }
 
 RESOURCES += \
@@ -419,6 +420,48 @@ OTHER_FILES += \
     Resources/Images/prevUserKey.png \
     Resources/Images/searchSize.png \
     Resources/Images/splashscreen.svg
+
+defineReplace(shibokenGui) {
+    SOURCES += $$GENERATED_SOURCES
+    HEADERS += $$GENERATED_HEADERS
+    return("%_wrapper.cpp")
+}
+
+QT_INCLUDEPATH = $$PYTHON_INCLUDEPATH $$PYSIDE_INCLUDEDIR
+for(dep, QT) {
+    QT_INCLUDEPATH += $$eval(QT.$${dep}.includes)
+    QT_INCLUDEPATH += $$absolute_path($$eval(QT.$${dep}.name), $$PYSIDE_INCLUDEDIR)
+}
+
+equals(QT_MAJOR_VERSION, 5) {
+    PYGUI_HEADER = PySide2_Gui_Python.h
+    POST_SHIBOKEN = bash $$shell_path($$PWD/../tools/utils/runPostShiboken2.sh)
+} else:equals(QT_MAJOR_VERSION, 4) {
+    PYGUI_HEADER = Pyside_Gui_Python.h
+    POST_SHIBOKEN = bash $$shell_path($$PWD/../tools/utils/runPostShiboken.sh)
+}
+
+
+SRC_PATH = $$relative_path($$PWD, $$OUT_PWD)/
+DEP_GROUP = $$PYGUI_HEADER typesystem_natronGui.xml $$HEADERS
+guisbk.input = $$PYGUI_HEADER typesystem_natronGui.xml
+guisbk.depends = $$eval($$list($$join(DEP_GROUP, " "$$SRC_PATH, $$SRC_PATH)))
+guisbk.target = guisbk
+guisbk.commands = cd $$PWD && $$SHIBOKEN \
+    --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero \
+    --avoid-protected-hack --enable-pyside-extensions \
+    -I.:..:../Global:../Engine:../libs/OpenFX/include:$$PYTHON_SITE_PACKAGES/PySide2/include:$$[QT_INSTALL_PREFIX]/include \
+    $$join(INCLUDEPATH, ":", "-I") \
+    $$join(QT_INCLUDEPATH, ":", "-I") \
+    -T../Engine:$$TYPESYSTEMPATH --output-directory=$$OUT_PWD/Qt$$QT_MAJOR_VERSION \
+    $$PYGUI_HEADER typesystem_natronGui.xml && \
+    $$POST_SHIBOKEN $$OUT_PWD/Qt$$QT_MAJOR_VERSION/NatronGui natrongui
+pygui.depends = guisbk
+pygui.target = $$shell_path($$GUI_WRAPPER_DIR/%_wrapper.cpp)
+pygui.output_function = shibokenGui
+pygui.commands = bash -c 'true'
+
+QMAKE_EXTRA_TARGETS += guisbk pygui
 
 macx {
 HEADERS += TaskBarMac.h

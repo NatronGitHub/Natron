@@ -1,19 +1,21 @@
-boost: INCLUDEPATH += /usr/local/include
-boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
-# libdir is buggy in pyside@2's pkg-config
-pyside: LIBS += -L/usr/local/opt/pyside@2/lib
+# Edit the following if the homebrew prefix is different.
+# Older homebrew installations use /usr/local instead of /opt/homebrew
+HOMEBREW = /usr/local
+
+boost: INCLUDEPATH += $$HOMEBREW/include
+boost: LIBS += -L$$HOMEBREW/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 
 openmp {
   # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
   # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
-  LIBS += -L/usr/local/opt/llvm@11/lib -lomp
-  QMAKE_CC = /usr/local/opt/llvm@11/bin/clang
-  QMAKE_CXX = /usr/local/opt/llvm@11/bin/clang++
+  LIBS += -L$$HOMEBREW/opt/llvm@11/lib -lomp
+  QMAKE_CC = $$HOMEBREW/opt/llvm@11/bin/clang
+  QMAKE_CXX = $$HOMEBREW/opt/llvm@11/bin/clang++
   # Recent clang cannot compile QtMac.mm
   QMAKE_OBJECTIVE_CC = clang
   QMAKE_OBJECTIVE_CXX = clang++
   QMAKE_LINK = $$QMAKE_CXX
-  INCLUDEPATH += /usr/local/include
+  INCLUDEPATH += $HOMEBREW/include
   cc_setting.name = CC
   cc_setting.value = $$QMAKE_CC
   cxx_setting.name = CXX

@@ -138,6 +138,22 @@ sudo port -v -N install fftw-3
 
 Install Homebrew from <http://brew.sh/>
 
+#### Qt5
+
+Install Qt5
+
+```Shell
+brew install qt@5 pyside@2
+# compilation doesn't work with Qt6 linked)
+brew unlink qt
+# Fix the pkg-config files
+brew install gnu-sed
+gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/pyside2.pc
+gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/shiboken2.pc
+```
+
+#### Python2 (optional)
+
 Install Python 2.7 (yes, we know it's deprecated).
 ```Shell
 brew uninstall python@2 || true
@@ -145,6 +161,8 @@ cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
 git checkout 3a877e3525d93cfeb076fc57579bdd589defc585 Formula/python@2.rb;
 brew install python@2
 ```
+
+#### Qt4 (optional)
 
 Qt 4 is not supported in Homebrew. Please enable the community-maintained recipe using:
 
@@ -177,6 +195,8 @@ and before the line that starts with `head`, add the following code:
     sha256 "470c8bf6fbcf01bd15210aad961a476abc73470e201ccb4d62a7c579452de371"
   end
 ```
+
+#### Other dependencies
 
 Install libraries:
 
@@ -352,79 +372,19 @@ If you installed libraries using MacPorts, use the following
 config.pri:
 
 ```Shell
- # copy and paste the following in a terminal
-cat > config.pri << EOF
-boost {
-  LIBS += -lboost_serialization-mt
-}
-macx:openmp {
-  QMAKE_CC = /opt/local/bin/clang-mp-12
-  QMAKE_CXX = /opt/local/bin/clang++-mp-12
-  QMAKE_OBJECTIVE_CC = \$\$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK = \$\$QMAKE_CXX
-
-  INCLUDEPATH += /opt/local/include /opt/local/include/libomp
-  LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
-  cc_setting.name = CC
-  cc_setting.value = \$\$QMAKE_CC
-  cxx_setting.name = CXX
-  cxx_setting.value = \$\$QMAKE_CXX
-  ld_setting.name = LD
-  ld_setting.value = \$\$QMAKE_CC
-  ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = \$\$QMAKE_CXX
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
-  QMAKE_FLAGS = "-B /usr/bin"
-
-  # clang (as of 12.0.1) does not yet support index-while-building functionality
-  # present in Xcode 9 and later, and Xcode's clang (as of 13.0) does not yet support OpenMP
-  compiler_index_store_enable_setting.name = COMPILER_INDEX_STORE_ENABLE
-  compiler_index_store_enable_setting.value = NO
-  QMAKE_MAC_XCODE_SETTINGS += compiler_index_store_enable_setting
-}
-EOF
+# copy and paste the following in a terminal
+cp config-macports.pri config.pri
 ```
 
 If you installed libraries using Homebrew, use the following
 config.pri:
 
 ```Shell
- # copy and paste the following in a terminal
- # Get the LLVM version corresponding to your Xcode version, from
- # the table at https://en.wikipedia.org/wiki/Xcode#Toolchain_versions
- # Here it is LLVM 11 for Xcode 12.5.1
-cat > config.pri << EOF
-boost: INCLUDEPATH += /usr/local/include
-boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
-expat: PKGCONFIG -= expat
-expat: INCLUDEPATH += /usr/local/opt/expat/include
-expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
-macx:openmp {
-  QMAKE_CC = /usr/local/opt/llvm@11/bin/clang
-  QMAKE_CXX = /usr/local/opt/llvm@11/bin/clang++
-  QMAKE_OBJECTIVE_CC = \$\$QMAKE_CC -stdlib=libc++
-  QMAKE_LINK = \$\$QMAKE_CXX
-
-  LIBS += -L/usr/local/opt/llvm@11/lib -lomp
-  cc_setting.name = CC
-  cc_setting.value = \$\$QMAKE_CC
-  cxx_setting.name = CXX
-  cxx_setting.value = \$\$QMAKE_CXX
-  ld_setting.name = LD
-  ld_setting.value = \$\$QMAKE_CC
-  ldplusplus_setting.name = LDPLUSPLUS
-  ldplusplus_setting.value = \$\$QMAKE_CXX
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
-  QMAKE_FLAGS = "-B /usr/bin"
-
-  # clang (as of 5.0) does not yet support index-while-building functionality
-  # present in Xcode 9, and Xcode 9's clang does not yet support OpenMP
-  compiler_index_store_enable_setting.name = COMPILER_INDEX_STORE_ENABLE
-  compiler_index_store_enable_setting.value = NO
-  QMAKE_MAC_XCODE_SETTINGS += compiler_index_store_enable_setting
-}
-EOF
+# copy and paste the following in a terminal
+cp config-homebrew.pri config.pri
 ```
+
+Then check at the top of the `config.pri` file that the `HOMEBREW` variable is set to the homebrew installation prefix (usually `/opt/homebrew`).
 
 ## Build with Makefile
 
@@ -610,23 +570,25 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 
 ## Generating Python bindings
 
-This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+This is not required as file generation occurs during build with Qt5 and generated files are already in the repository for Qt4. You would need to run it if you were both under Qt4 and either extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
 On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
 ```Shell
 PYV=3.10 # Set to the python version
 QT=4
-rm Engine/Qt4/NatronEngine/* Gui/Qt4/NatronGui/*
+rm Engine/Qt${QT}/NatronEngine/* Gui/Qt${QT}/NatronGui/*
 
 shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
 shiboken-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-${PYV}  --typesystem-paths=/opt/local/share/PySide-${PYV}/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
-tools/utils/runPostShiboken.sh
-#tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
-#tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
+tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
+tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
 ```
+
+Building Natron with Qt5 should generate the Python bindings automatically, but in case it does not,
+here are the commands to recreate the Python bindings:
 
 On MacPorts with qt5, py310-pyside2:
 ```Shell
@@ -636,15 +598,14 @@ QT=5
 # Fix a missing link in the MacPorts package
 [ ! -f ${PYTHON_PREFIX}/lib/python${PYV}/site-packages/shiboken2_generator/shiboken2-${PYV} ] && sudo ln -s shiboken2 ${PYTHON_PREFIX}/lib/python${PYV}/site-packages/shiboken2_generator/shiboken2-${PYV}
 
-rm Engine/Qt5/NatronEngine/* Gui/Qt5/NatronGui/*
+rm Engine/Qt${QT}/NatronEngine/* Gui/Qt${QT}/NatronGui/*
 # ${PYTHON_PREFIX}/lib/python${PYV}/site-packages/PySide2/include
 shiboken2-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT}/include:${PYTHON_PREFIX}/include/python${PYV}:${PYTHON_PREFIX}/lib/python${PYV}/site-packages/PySide2/include --typesystem-paths=${PYTHON_PREFIX}/lib/python${PYV}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
 
 shiboken2-${PYV} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT}/include:/opt/local/libexec/qt${QT}/include/QtWidgets:${PYTHON_PREFIX}/include/python${PYV}:${PYTHON_PREFIX}/lib/python${PYV}/site-packages/PySide2/include --typesystem-paths=${PYTHON_PREFIX}/lib/python${PYV}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
 
-tools/utils/runPostShiboken2.sh
-#tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
-#tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
+tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
+tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
 ```
 
 on HomeBrew with Qt5/PySide2/Shiboken2:
@@ -652,15 +613,14 @@ on HomeBrew with Qt5/PySide2/Shiboken2:
 PYV=3.10 # Set to the python version
 export PATH="/usr/local/opt/pyside@2/bin:$PATH"
 QT=5
-rm Engine/Qt${QT}/NatronEngine/* Gui/Qt5/NatronGui/*
+rm Engine/Qt${QT}/NatronEngine/* Gui/Qt${QT}/NatronGui/*
 
 shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@${QT}/include  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt${QT} Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
 
 shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:Gui:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYV}/include/python${PYV}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@${QT}/include:/usr/local/opt/qt@5/include/QtWidgets  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine --output-directory=Gui/Qt${QT} Gui/PySide2_Gui_Python.h  Gui/typesystem_natronGui.xml
 
-tools/utils/runPostShiboken2.sh
-#tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
-#tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
+tools/utils/runPostShiboken2.sh Engine/Qt${QT}/NatronEngine natronengine
+tools/utils/runPostShiboken2.sh Gui/Qt${QT}/NatronGui natrongui
 ```
 
 **Note**

@@ -33,6 +33,8 @@ DEFINES += OFX_SUPPORTS_DIALOG
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 DEFINES += QT_NO_CAST_FROM_ASCII
 
+greaterThan(QT_MAJOR_VERSION, 4): CONFIG += python3
+
 # To run Natron without Python functionnalities (for debug purposes)
 run-without-python {
     message("Natron will run (not build) without Python")
@@ -402,17 +404,21 @@ win32-g++ {
     cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
       shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken2
+      shiboken:  SHIBOKEN = $$system(pkg-config --variable=generator_location shiboken2)
     	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
       pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
       pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtGui
       pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtWidgets
+      pyside:    TYPESYSTEMPATH *= $$system(pkg-config --variable=typesystemdir pyside2)
     }
     equals(QT_MAJOR_VERSION, 4) {
       shiboken:  PKGCONFIG += shiboken-py$$PYV
+      shiboken:  SHIBOKEN = $$system(pkg-config --variable=generator_location shiboken)
     	pyside:    PKGCONFIG += pyside-py$$PYV
       PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside-py$$PYV)
    	  pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
       pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+      pyside:    TYPESYSTEMPATH *= $$system(pkg-config --variable=typesystemdir pyside)
     }
     python:    PKGCONFIG += python-$$PYVER$$PY_PKG_SUFFIX
     boost:     LIBS += -lboost_serialization-mt
@@ -454,12 +460,14 @@ unix {
     equals(QT_MAJOR_VERSION, 5) {
         system(pkg-config --exists pyside2) {
             shiboken: PKGCONFIG += shiboken2
+            shiboken: SHIBOKEN = $$system(pkg-config --variable=generator_location shiboken2)
             pyside:   PKGCONFIG += pyside2
             # add QtCore to includes
             PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+            pyside:   TYPESYSTEMPATH *= $$system(pkg-config --variable=typesystemdir pyside2)
         }
     }
 
@@ -469,7 +477,9 @@ unix {
          # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
          # using a custom config.pri
          shiboken: PKGCONFIG += shiboken
+         shiboken: SHIBOKEN = $$system(pkg-config --variable=generator_location shiboken)
          pyside:   PKGCONFIG += pyside
+         pyside:   TYPESYSTEMPATH *= $$system(pkg-config --variable=typesystemdir pyside)
          # The following hack also works with Homebrew if pyside is installed with option --with-python3
          macx {
            QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
