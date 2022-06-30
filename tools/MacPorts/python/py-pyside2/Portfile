@@ -1,0 +1,123 @@
+#-*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem              1.0
+PortGroup               python 1.0
+
+name                    py-pyside2
+version                 5.15.3
+revision                0
+categories-append       devel aqua
+platforms               darwin
+maintainers             {pmetzger @pmetzger} {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+description             Python bindings for the Qt cross-platform application and UI framework
+long_description        ${description}
+homepage                https://wiki.qt.io/Qt_for_Python
+# see ${worksrcdir}/sources/pyside2/PySide2/licensecomment.txt
+license                 {GPL-2 GPL-3+ LGPL-3}
+master_sites            https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${version}-src
+distname                pyside-setup-opensource-src-${version}
+use_xz                  yes
+
+checksums               rmd160  e47a57c7d372862a286c7f1fa362896bff2e3b41 \
+                        sha256  7ff5f1cc4291fffb6d5a3098b3090abe4d415da2adec740b4e901893d95d7137 \
+                        size    3572248
+
+
+python.versions         36 37 38 39 310
+
+set llvm_version        13
+
+if {${name} ne ${subport}} {
+    PortGroup           qt5 1.0
+
+    # fix error related to _Py_Mangle, which was half-patched in this version
+    # see: https://bugzilla.redhat.com/show_bug.cgi?id=1990768#c9
+    patchfiles-append   patch-py-mangle.diff
+
+    # fix error with shiboken2 doc building
+    patchfiles-append   patch-shiboken2-docs.diff
+
+    # fix build with numpy 1.23+
+    patchfiles-append shiboken2-5.15.2-numpy-1.23.patch
+
+    # see https://trac.macports.org/ticket/62135#comment:4
+    qt5.min_version     5.12
+
+    # Needed for generating shiboken2 documentation
+    qt5.depends_build_component sqlite-plugin
+
+    depends_build-append \
+        path:bin/cmake:cmake \
+        port:py${python.version}-setuptools \
+        port:py${python.version}-sphinx \
+        port:py${python.version}-wheel
+
+    build.args-append \
+        --verbose-build \
+        --qmake=${qt_qmake_cmd} \
+        --cmake=${prefix}/bin/cmake \
+        --parallel=${build.jobs} \
+        --macos-deployment-target=${macosx_deployment_target}
+
+    if {${configure.sdkroot} != ""} {
+        build.args-append \
+            --macos-sysroot=${configure.sdkroot}
+        # see https://trac.macports.org/ticket/57355
+        build.env-append \
+            SDKROOT=${configure.sdkroot}
+    }
+
+    destroot.args-append \
+        --qmake=${qt_qmake_cmd} \
+        --cmake=${prefix}/bin/cmake \
+        --skip-cmake \
+        --reuse-build
+
+    depends_lib-append \
+        port:libxml2 \
+        port:libxslt \
+        port:clang-${llvm_version} \
+        port:llvm-${llvm_version} \
+        port:py${python.version}-numpy
+
+    # only find the llvm-config from the version we intend to
+    patchfiles-append   patch-find-llvm-config.diff
+    build.env-append    PATH=${prefix}/libexec/llvm-${llvm_version}/bin:$env(PATH)
+
+    qt5.depends_component \
+        qtxmlpatterns \
+        qt3d \
+        qtcharts \
+        qtdatavis3d \
+        qtdeclarative \
+        qtgamepad \
+        qtlocation \
+        qtmacextras \
+        qtmultimedia \
+        qtscript \
+        qtscxml \
+        qtsensors \
+        qtserialport \
+        qtspeech \
+        qtsvg \
+        qttools \
+        qtwebchannel \
+        qtwebengine \
+        qtwebsockets
+
+    if {[vercmp ${qt5.version} 5.6] >=0 } {
+        qt5.depends_component \
+            qtquickcontrols2
+    }
+
+    if {[vercmp ${qt5.version} 5.9] >=0 } {
+        qt5.depends_component \
+            qtremoteobjects
+    }
+
+    livecheck.type      none
+} else {
+    livecheck.type      regex
+    livecheck.url       https://download.qt.io/official_releases/QtForPython/pyside2/
+    livecheck.regex     (\\d+(\\.\\d+)+)
+}

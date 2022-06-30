@@ -1,0 +1,10 @@
+--- Portfile.orig	2022-06-29 15:54:53.000000000 -0700
++++ Portfile	2022-06-29 15:55:07.000000000 -0700
+@@ -67,7 +67,6 @@
+     destroot.args-append \
+         --qmake=${qt_qmake_cmd} \
+         --cmake=${prefix}/bin/cmake \
+-        --skip-cmake \
+         --reuse-build
+ 
+     depends_lib-append \
