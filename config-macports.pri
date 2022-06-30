@@ -2,6 +2,7 @@ boost {
   LIBS += -lboost_serialization-mt
 }
 equals(QT_MAJOR_VERSION, 5) {
+  shiboken:  SHIBOKEN=shiboken2-$$PYVER
   shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/shiboken2_generator/include
   shiboken:  LIBS += -L$$PYTHON_SITE_PACKAGES/shiboken2 -lshiboken2.cpython-$$PYVERNODOT-darwin.$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}
   shiboken:  QMAKE_RPATHDIR += $$PYTHON_SITE_PACKAGES/shiboken2
