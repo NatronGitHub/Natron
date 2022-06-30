@@ -1,4 +1,5 @@
 boost {
+  INCLUDEPATH += /opt/local/include
   LIBS += -lboost_serialization-mt
 }
 equals(QT_MAJOR_VERSION, 5) {
@@ -12,6 +13,7 @@ equals(QT_MAJOR_VERSION, 5) {
   pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/QtWidgets
   pyside:    LIBS += -L$$PYTHON_SITE_PACKAGES/PySide2 -lpyside2.cpython-$$PYVERNODOT-darwin.$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}
   pyside:    QMAKE_RPATHDIR += $$PYTHON_SITE_PACKAGES/PySide2
+  pyside:    TYPESYSTEMPATH *= $$PYTHON_SITE_PACKAGES/PySide2/typesystems
 }
 
 macx:openmp {

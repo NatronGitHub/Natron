@@ -450,7 +450,9 @@ guisbk.target = guisbk
 guisbk.commands = cd $$PWD && $$SHIBOKEN \
     --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero \
     --avoid-protected-hack --enable-pyside-extensions \
-    -I.:..:../Global:../Engine:../libs/OpenFX/include $$join(QT_INCLUDEPATH, ":", "-I") \
+    -I.:..:../Global:../Engine:../libs/OpenFX/include:$$PYTHON_SITE_PACKAGES/PySide2/include:$$[QT_INSTALL_PREFIX]/include \
+    $$join(INCLUDEPATH, ":", "-I") \
+    $$join(QT_INCLUDEPATH, ":", "-I") \
     -T../Engine:$$TYPESYSTEMPATH --output-directory=$$OUT_PWD/Qt$$QT_MAJOR_VERSION \
     $$PYGUI_HEADER typesystem_natronGui.xml && \
     $$POST_SHIBOKEN $$OUT_PWD/Qt$$QT_MAJOR_VERSION/NatronGui natrongui

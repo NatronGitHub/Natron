@@ -517,7 +517,9 @@ enginesbk.target = enginesbk
 enginesbk.commands = cd $$PWD && $$SHIBOKEN \
     --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero \
     --avoid-protected-hack --enable-pyside-extensions \
-    -I.:..:../Global:../libs/OpenFX/include $$join(QT_INCLUDEPATH, ":", "-I") \
+    -I.:..:../Global:../libs/OpenFX/include:$$PYTHON_SITE_PACKAGES/PySide2/include:$$[QT_INSTALL_PREFIX]/include \
+    $$join(INCLUDEPATH, ":", "-I") \
+    $$join(QT_INCLUDEPATH, ":", "-I") \
     -T$$TYPESYSTEMPATH --output-directory=$$OUT_PWD/Qt$$QT_MAJOR_VERSION \
     $$PYENGINE_HEADER typesystem_engine.xml && \
     $$POST_SHIBOKEN $$OUT_PWD/Qt$$QT_MAJOR_VERSION/NatronEngine natronengine
