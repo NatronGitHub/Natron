@@ -157,9 +157,16 @@ gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgc
 Install Python 2.7 (yes, we know it's deprecated).
 ```Shell
 brew uninstall python@2 || true
-cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
-git checkout 3a877e3525d93cfeb076fc57579bdd589defc585 Formula/python@2.rb;
-brew install python@2
+cp tools/homebrew/python@2.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/python@2.rb
+brew install -s python@2
+```
+
+Do do the following if the `homebrew.pth` file does not exist:
+
+```Shell
+mkdir -p ~/Library/Python/2.7/lib/python/site-packages
+echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
+sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
 ```
 
 #### Qt4 (optional)
@@ -168,15 +175,15 @@ Qt 4 is not supported in Homebrew. Please enable the community-maintained recipe
 
 ```Shell
 brew tap cartr/qt4
-brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2
 ```
 
-Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
+Optional: Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
 
 Patching a Homebrew recipe is explained in the [Homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
 ```Shell
 brew edit cartr/qt4/qt@4
+brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2 cartr/qt4/pyside-tools@1.2
 ```
 
 and before the line that starts with `head`, add the following code:
@@ -196,6 +203,11 @@ and before the line that starts with `head`, add the following code:
   end
 ```
 
+Reinstall Qt4 from source (takes a while):
+```Shell
+brew reinstall -s cartr/qt4/qt@4
+```
+
 #### Other dependencies
 
 Install libraries:
@@ -205,28 +217,10 @@ brew install cairo expat
 brew install gnu-sed gawk coreutils findutils
 brew install cmake keychain sphinx-doc
 /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
-brew install --build-from-source qt --with-mysql
-```
-
-On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
-
-```Shell
-brew install --build-from-source cartr/qt4/qt --with-mysql
-```
-
-Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the Homebrew core):
-
-```Shell
+brew install qt@5
 brew install pyside@1.2 pyside-tools@1.2
 ```
 
-The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
-
-```Shell
-mkdir -p ~/Library/Python/2.7/lib/python/site-packages
-echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
-sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
-```
 
  To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
 
@@ -235,28 +229,13 @@ brew install ilmbase openexr freetype fontconfig ffmpeg
 brew unlink openimageio || true;
 brew unlink opencolorio || true;
 brew unlink seexpr || true;
-cd $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core
-# fetch OCIO 1.1.1 instead of 2.x (and corresponding OIIO version, which builds against it)
-# 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Sun Nov 15 07:35:00 2020 +0000
-git checkout 5f40d55f0ebf04ad15d244cc8edf597afc971bc8 Formula/opencolorio.rb;
-# f772cb9a399726fd5f3ba859c8f315988afb3d60 Sun Nov 15 19:32:25 2020 +0000
-git checkout f772cb9a399726fd5f3ba859c8f315988afb3d60 Formula/openimageio.rb;
-# openfx-io still requires SeExpr 2.11, but Homebrew updated it to 3.0.1 on July 6, 2020
-git checkout 4abcbc52a544c293f548b0373867d90d4587fd73 Formula/seexpr.rb
-brew install opencolorio;
-brew link opencolorio;
-brew install openimageio;
-brew link openimageio;
-brew install seexpr
-brew link seexpr
-git checkout master Formula/seexpr.rb
-```
-
-If you ever need to get back to using the latest version of seexpr:
-
-```Shell
-rm -rf /usr/local/Cellar/seexpr/2.11
-brew link seexpr
+cp tools/homebrew/opencolorio@1.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
+cp tools/homebrew/seexpr@2.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
+brew install -s opencolorio@1
+brew unlink qt@4
+brew install -s seexpr@2
+brew link qt@4
+brew install opencolorio openimageio seexpr
 ```
 
 To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
