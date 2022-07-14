@@ -569,6 +569,11 @@ TrackerNode::knobChanged(KnobI* k,
     }
 
     ctx->onKnobsLoaded();
+
+    OverlaySupport* overlay = getCurrentViewportForOverlays();
+    if (!overlay || !overlay->getInternalViewerNode()) {
+        return false;
+    }
     
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
@@ -593,7 +598,6 @@ TrackerNode::knobChanged(KnobI* k,
             return false;
         }
 
-        OverlaySupport* overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock().get() ) {
