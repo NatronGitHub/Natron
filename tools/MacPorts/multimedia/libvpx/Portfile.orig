@@ -7,12 +7,12 @@ PortGroup           muniversal 1.0
 name                libvpx
 conflicts           libvpx-devel
 set my_name         libvpx
-version             1.11.0
-revision            2
+version             1.12.0
+revision            0
+
 categories          multimedia
-maintainers         {mascguy @mascguy} openmaintainer
-platforms           darwin
 license             Permissive
+maintainers         {mascguy @mascguy} openmaintainer
 
 description         WebM VP8/VP9 Codec SDK
 long_description    The WebM VP8/VP9 codecs are being developed \
@@ -40,8 +40,8 @@ git.branch          v${version}
 # upstream support for non-intel archs removed in version 1.5.0
 supported_archs     x86_64 i386 arm64 ppc ppc64
 
-patchfiles          patch-Makefile.diff \
-                    patch-configure.sh.diff
+patchfiles-append   patch-Makefile.diff
+patchfiles-append   patch-configure.sh.diff
 
 # Uses newer assembly features on Intel.
 # Also blacklist clang 8, due to issues like:
@@ -52,14 +52,15 @@ compiler.blacklist-append  {*gcc-[3-4].*} {clang < 900} {macports-clang-3.*}
 # doesn't install docs or examples correctly, so disable them.
 configure.args      --enable-vp8 \
                     --enable-vp9 \
+                    --enable-vp9-highbitdepth \
                     --enable-internal-stats \
                     --enable-pic \
                     --enable-postproc \
                     --enable-multithread \
                     --enable-experimental \
+                    --enable-examples \
                     --disable-install-docs \
                     --disable-debug-libs \
-                    --disable-examples \
                     --enable-unit-tests
 
 platform darwin {
@@ -159,6 +160,11 @@ if {${universal_possible} && [variant_isset universal]} {
 post-destroot {
     foreach f [glob ${destroot}${prefix}/lib/${my_name}.*.dylib] {
         system "install_name_tool -id [string map [list ${destroot} ""] ${f}] ${f}"
+    }
+    foreach f [glob ${destroot}${prefix}/bin/*] {
+        system "install_name_tool -change \
+        [lindex [split [glob ${destroot}${prefix}/lib/${my_name}.*.dylib] "/"] end] \
+        [string map [list ${destroot} ""] [glob ${destroot}${prefix}/lib/${my_name}.*.dylib]] ${f}"
     }
 }
 

@@ -18,8 +18,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
-version             4.4.1
-revision            6
+version             4.4.2
+revision            0
 epoch               1
 
 license             LGPL-2.1+
@@ -63,9 +63,9 @@ distname            ${my_name}-${version}
 dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  ebb1f042b2ba4f13be86339d30522cd73eb6da3e \
-                    sha256  eadbad9e9ab30b25f5520fbfde99fae4a92a1ae3c0257a8d68569a4651e30e02 \
-                    size    9557516
+checksums           rmd160  22a690edfad74f25de0d24557f8edf4b2366b1a0 \
+                    sha256  af419a7f88adbc56c758ab19b4c708afbcae15ef09606b82b855291f6a6faa93 \
+                    size    9562968
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -246,6 +246,18 @@ platform darwin {
     # libavdevice/avfoundation.m:207:14: error: expected method to read dictionary element not found on object of type 'NSDictionary *'
     if {${os.major} < 12} {
         configure.args-append --disable-indev=avfoundation
+    }
+
+    # av1 codecs, available on 10.7+
+    if {${os.major} >= 11} {
+        configure.args-append \
+                        --enable-libaom \
+                        --enable-librav1e \
+                        --enable-libsvtav1
+        depends_lib-append \
+                        port:aom \
+                        port:rav1e \
+                        port:svt-av1
     }
 }
 
