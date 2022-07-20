@@ -920,8 +920,10 @@ Project::initializeKnobs()
                                         "special frame rates.") );
     _imp->frameRate->setAnimationEnabled(false);
     _imp->frameRate->setDefaultValue(24);
+    _imp->frameRate->setMinimum(0.);
+    _imp->frameRate->setMaximum(INT_MAX);
     _imp->frameRate->setDisplayMinimum(0.);
-    _imp->frameRate->setDisplayMaximum(50.);
+    _imp->frameRate->setDisplayMaximum(120.);
     page->addKnob(_imp->frameRate);
 
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
