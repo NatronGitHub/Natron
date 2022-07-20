@@ -1,4 +1,4 @@
-# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Maintainer: ole.andre.rodlie@gmail.com
 
 # Please keep this file exactly the same (except _variant=)
 # as {mingw-w64-qt4/PKGBUILD,mingw-w64-qt4-static/PKGBUILD}
@@ -24,13 +24,14 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=12
+pkgrel=13
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
 license=('GPL3' 'LGPL' 'FDL' 'custom')
 conflicts=("${MINGW_PACKAGE_PREFIX}-qt5")
-depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+depends=(
+         "${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-dbus"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-freetype"
@@ -46,8 +47,10 @@ depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-pcre"
          "${MINGW_PACKAGE_PREFIX}-qtbinpatcher"
          "${MINGW_PACKAGE_PREFIX}-sqlite3"
-         "${MINGW_PACKAGE_PREFIX}-zlib")
-makedepends=("bison"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         )
+makedepends=(
+             "bison"
              "flex"
              "gperf"
              "lndir"
@@ -57,14 +60,16 @@ makedepends=("bison"
              "${MINGW_PACKAGE_PREFIX}-firebird2"
              "${MINGW_PACKAGE_PREFIX}-libmariadbclient"
              "${MINGW_PACKAGE_PREFIX}-postgresql"
-              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-python"
              "${MINGW_PACKAGE_PREFIX}-ruby"
              "${MINGW_PACKAGE_PREFIX}-sqlite3"
              #"${MINGW_PACKAGE_PREFIX}-perl"
              #"${MINGW_PACKAGE_PREFIX}-gperf"
             )
-optdepends=($([[ "$_variant" == "-shared" ]] && echo \
+optdepends=(
+            $([[ "$_variant" == "-shared" ]] && echo \
             "${MINGW_PACKAGE_PREFIX}-libmariadbclient" \
             "${MINGW_PACKAGE_PREFIX}-libfbclient" \
             "${MINGW_PACKAGE_PREFIX}-postgresql")
@@ -104,7 +109,13 @@ source=("https://download.qt.io/archive/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar
         0001-Enable-building-with-C-11-and-C-14.patch
         qt4-selection-flags-static_cast.patch
         qt-CVE-2020-17507.patch
-        qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch)
+        qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch
+        qt-everywhere-opensource-src-4.8.7-openssl-1.1.patch
+        qt-everywhere-opensource-src-4.8.7-gcc8_qtscript.patch
+        qt-everywhere-opensource-src-4.8.7-gcc11.patch
+        qt-everywhere-opensource-src-4.8.7-qforeach.patch
+        force-cpp98-and-win7.diff
+        )
 sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
             '5e6a61ced784d7d24c65d81e769b67b8f6066a33581c8b17cdf374a4c723cd23'
@@ -137,7 +148,13 @@ sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             '7a25e1f42e7a689a4bb3d71f412d03e1c3c45676767ce5c3a2dce9835a9e4fae'
             '3c35b393b3c4397d4e69e949cd5a77df590938c0f95731c771bf6be6565deaba'
             'e5f8db55f33352034e55a98ff035192b7ccb87a5f54ae44ccbb2982fd43afa90'
-            'b59135832f6e72dc38e26fc742f5160aa5246b31cddf26948da7237784c5d9bb')
+            'b59135832f6e72dc38e26fc742f5160aa5246b31cddf26948da7237784c5d9bb'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            )
 
 prepare() {
   cd ${srcdir}/${_pkgfqn}
@@ -172,6 +189,11 @@ prepare() {
   patch -p1 -i ${srcdir}/qt4-selection-flags-static_cast.patch
   patch -p1 -i ${srcdir}/qt-CVE-2020-17507.patch
   patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-clamp-parsed-doubles-to-float-representtable-values.patch
+  patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-openssl-1.1.patch
+  patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-gcc8_qtscript.patch
+  patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-gcc11.patch
+  patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-qforeach.patch
+  patch -p0 -i ${srcdir}/force-cpp98-and-win7.diff
 
   if check_option "debug" "y"; then
     patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch

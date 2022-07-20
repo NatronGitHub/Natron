@@ -1,3 +1,4 @@
+*.pkg.tar.*
 *.tar.xz
 *.tar.gz
 *.tar.bz2

@@ -3,16 +3,18 @@
 _realname=shiboken
 pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
 pkgver=1.2.4
-pkgrel=6
+pkgrel=7
 arch=('any')
 url="https://github.com/PySide"
 license=("LGPL")
 source=(https://mirrors.dotsrc.org/qtproject/official_releases/pyside/PySide-${pkgver}.tar.gz
         shiboken.patch
-        python3.patch)
+        python3.patch
+        cmake.patch)
 sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
             '603b3ac935a60494cc9cb52c3e0847f61353df546dfea88544025e9ddea5e7c0'
-            '28cdb804c0bc8e79f5d01df95c5288b01576bd30a01935f2feb92766e3df35e4')
+            '28cdb804c0bc8e79f5d01df95c5288b01576bd30a01935f2feb92766e3df35e4'
+            'SKIP')
 makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
              "${MINGW_PACKAGE_PREFIX}-libxslt"
              "${MINGW_PACKAGE_PREFIX}-python2"
@@ -27,6 +29,7 @@ prepare() {
   cd ${srcdir}/PySide-${pkgver}
   patch -p1 -i ${srcdir}/shiboken.patch
   patch -p1 -i ${srcdir}/python3.patch
+  patch -p0 -i ${srcdir}/cmake.patch
 }
 
 build() {
@@ -45,6 +48,7 @@ build() {
       -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
       ${_conf} \
       -DCMAKE_BUILD_TYPE=RELEASE \
+      -DCMAKE_CXX_STANDARD=98 \
       -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
       ${srcdir}/PySide-${pkgver}/sources/shiboken
     make -j${MKJOBS}
@@ -69,7 +73,7 @@ package() {
     local _minor=$(${pyv} -c "import platform; print(platform.python_version_tuple()[1])")
     local _pyprefix=
     if [ "${_major}" = "3" ]; then
-      _pyprefix=".cpython-${_major}${_minor}m"
+      _pyprefix="" #".cpython-${_major}${_minor}m"
     else
       _pyprefix="-python${_major}.${_minor}"
     fi

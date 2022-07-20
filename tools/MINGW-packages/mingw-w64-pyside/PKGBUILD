@@ -3,7 +3,7 @@
 _realname=pyside
 pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
 pkgver=1.2.4
-pkgrel=6
+pkgrel=7
 arch=('any')
 url="http://pyside.github.io/docs/pyside/"
 license=("LGPL")
@@ -69,7 +69,7 @@ package() {
     local _minor=$(${pyv} -c "import platform; print(platform.python_version_tuple()[1])")
     local _pyprefix=
     if [ "${_major}" = "3" ]; then
-      _pyprefix=".cpython-${_major}${_minor}m"
+      _pyprefix="" #".cpython-${_major}${_minor}m"
     else
       _pyprefix="-python${_major}.${_minor}"
     fi
@@ -88,7 +88,7 @@ package() {
     mkdir -p ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}
     mv ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig${_pyprefix}.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}/PySideConfig.cmake
     mv ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfigVersion.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/py${_major}/
-    rm  ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig.cmake
+    #rm  ${pkgdir}${MINGW_PREFIX}/lib/cmake/PySide-${pkgver}/PySideConfig.cmake
   done
   fix_paths
 }
