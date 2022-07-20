@@ -1,5 +1,0 @@
-MINGW_INSTALL=mingw32
-
-pre_remove() {
-  rm -f ${MINGW_INSTALL}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
-}
