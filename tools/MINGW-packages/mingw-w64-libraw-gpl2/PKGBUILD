@@ -7,7 +7,7 @@ provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 pkgver=0.18.13
-pkgrel=4
+pkgrel=5
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
 url="https://www.libraw.org/"
@@ -37,6 +37,7 @@ prepare() {
   patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
   patch -Np1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
 
+  export ACLOCAL_PATH="/msys64/usr/share/aclocal/"
   autoreconf -ifv
 }
 

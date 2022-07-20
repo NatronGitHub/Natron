@@ -6,8 +6,8 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-ilmbase"
          "${MINGW_PACKAGE_PREFIX}-${_realname}"
          #"${MINGW_PACKAGE_PREFIX}-pyilmbase"
 	 )
-pkgver=2.5.7
-pkgrel=1
+pkgver=2.5.8
+pkgrel=3.1
 pkgdesc="Openexr library for EXR images (mingw-w64)"
 arch=('any')
 url="https://www.openexr.com/"
@@ -29,7 +29,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/openexr/openexr/archiv
         0009-win-dwalookups.patch
         0012-exports.patch
         0013-no-py2.patch)
-sha256sums=('36ecb2290cba6fc92b2ec9357f8dc0e364b4f9a90d727bf9a57c84760695272d'
+sha256sums=('db261a7fcc046ec6634e4c5696a2fc2ce8b55f50aac6abe034308f54c8495f55'
             '68bedb3a4acc6f62b1486c7c47c9025f5ce4131468e17445f0c716545ddd00c1'
             '460dcfd86b407241382ed4ba5a003ae251c9fdce68e7cfdea021b09898ad2705'
             'fba4e95d6921bcd253c8c644063b4c1334c84761a2a2232590d442ca81f8d7cd'
