@@ -1,42 +1,49 @@
 # Maintainer: Alexey Pavlov <alexpux@gmail.com>
 
 _realname=x264
-pkgbase=mingw-w64-${_realname}-git
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=r2991.1771b556
-pkgrel=2
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+pkgver=0.164.r3094.bfc87b7
+pkgrel=1.1
 pkgdesc="Library for encoding H264/AVC video streams (mingw-w64)"
 arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
 url="https://www.videolan.org/developers/x264.html"
 license=("custom")
-makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
-             "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-nasm"
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-autotools"
+              $( [[ "${CARCH}" != "i686" \
+                && "${CARCH}" != "x86_64" ]] \
+                || echo "${MINGW_PACKAGE_PREFIX}-nasm" )
              "git")
 depends=("${MINGW_PACKAGE_PREFIX}-libwinpthread"
          "${MINGW_PACKAGE_PREFIX}-l-smash"
-         #"${MINGW_PACKAGE_PREFIX}-ffms2"
-	 )
+         )
 options=('strip' 'staticlibs')
-source=("${_realname}"::"git+https://code.videolan.org/videolan/${_realname}.git"
+_commit="bfc87b7a330f75f5c9a21e56081e4b20344f139e"
+source=("${_realname}"::"git+https://code.videolan.org/videolan/${_realname}.git#commit=${_commit}"
         0001-beautify-pc.all.patch
-        0002-install-avisynth_c.h.mingw.patch)
+        0002-install-avisynth_c.h.mingw.patch
+        0003-pkgconfig-add-Cflags-private.patch)
 sha256sums=('SKIP'
-            '0eba3b41ef0c01f33280ce61bdd47cb966d765c0cb02db239fc6c89d601a2596'
-            '51d7efd8eb504d42767c04cfe8abb9c7ccbe84d76e7150c5c46535507763d1b8')
+            '8e92f4d6c1924664e7c9f5b797070a35f8eabbfce431f996167fe426fc833dda'
+            '611d427742347e0dfbcea8d45c8c9b0fd15e29ab0b22207000f8bf5f3ba1a3a9'
+            '0cbf016c01291f1b8b97ffabdf7e52a8a8593ddf8d88c782245b60462a18bd60')
 
 pkgver() {
   cd ${srcdir}/${_realname}
-  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+
+  ./version.sh | grep X264_POINTVER | sed -r 's/^#define X264_POINTVER "([0-9]+\.[0-9]+)\.([0-9]+)M? (.*)"$/\1.r\2.\3/'
 }
 
 prepare() {
   cd ${_realname}
-#  patch -p1 -i ${srcdir}/0001-beautify-pc.all.patch
+  patch -p1 -i ${srcdir}/0001-beautify-pc.all.patch
   patch -p1 -i ${srcdir}/0002-install-avisynth_c.h.mingw.patch
+  patch -p1 -i ${srcdir}/0003-pkgconfig-add-Cflags-private.patch
 }
 
 build() {

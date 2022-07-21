@@ -3,45 +3,58 @@
 _realname=poppler
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.83.0
-pkgrel=5
+pkgver=22.01.0
+pkgrel=99.1
 pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
 arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32')
 url="https://poppler.freedesktop.org/"
 license=("GPL")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-             "${MINGW_PACKAGE_PREFIX}-gcc"
+makedepends=("${MINGW_PACKAGE_PREFIX}-boost"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
              "${MINGW_PACKAGE_PREFIX}-glib2"
              #"${MINGW_PACKAGE_PREFIX}-gobject-introspection"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             #"${MINGW_PACKAGE_PREFIX}-qt5-base"
+             "${MINGW_PACKAGE_PREFIX}-cc"
              'git')
 depends=("${MINGW_PACKAGE_PREFIX}-cairo"
+         #"${MINGW_PACKAGE_PREFIX}-curl"
          "${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-icu"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
+         #"${MINGW_PACKAGE_PREFIX}-nss"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-poppler-data"
          "${MINGW_PACKAGE_PREFIX}-zlib")
-optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libpoppler-glib"
-            "${MINGW_PACKAGE_PREFIX}-qt5: libpoppler-qt5")
+#optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libpoppler-glib"
+#            "${MINGW_PACKAGE_PREFIX}-qt5-base: libpoppler-qt5")
 options=('strip' 'staticlibs')
-source=("https://poppler.freedesktop.org/${_realname}-${pkgver}.tar.xz")
-sha256sums=('SKIP')
+#test::git+https://gitlab.freedesktop.org/poppler/test.git#commit=03a4b9eb854a06a83c465e82de601796c458bbe9
+source=(https://ftp.osuosl.org/pub/blfs/conglomeration/poppler/${_realname}-${pkgver}.tar.xz)
+sha256sums=('7d3493056b5b86413e5c693c2cae02c5c06cd8e618d14c2c31e2c84b67b2313e'
+            )
+#validpgpkeys=('CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7') # "Albert Astals Cid <aacid@kde.org>"
 
 prepare() {
   cd ${_realname}-${pkgver}
+
 }
 
 build() {
   [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
   mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
 
+  CXXFLAGS+=" -Wno-deprecated-declarations -Wno-ignored-attributes" \
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
-  "${MINGW_PREFIX}/bin/cmake.exe" -Wno-dev \
-    -G"MSYS Makefiles" \
+  "${MINGW_PREFIX}/bin/cmake.exe" \
+    -Wno-dev \
+    -G"Ninja" \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
     -DSPLASH_CMYK=ON \
@@ -51,23 +64,30 @@ build() {
     -DENABLE_DCTDECODER=libjpeg \
     -DENABLE_LIBOPENJPEG=openjpeg2 \
     -DENABLE_CMS=lcms2 \
-    -DWITH_NSS3=OFF \
-    -DNSS3_FOUND=OFF \
     -DENABLE_NSS3=OFF \
-    -DENABLE_QT5=OFF \
     -DENABLE_UTILS=OFF \
     -DENABLE_LIBCURL=OFF \
     -DENABLE_ZLIB=ON \
     -DENABLE_ZLIB_UNCOMPRESS=OFF \
     -DENABLE_GTK_DOC=OFF \
+    -DENABLE_QT5=OFF \
+    -DENABLE_QT6=OFF \
+    -DENABLE_RELOCATABLE=ON \
     ../${_realname}-${pkgver}
 
-  CC="${MINGW_PREFIX}/bin/gcc.exe" \
-  PKG_CONFIG_PATH=${MINGW_PREFIX}/lib/pkgconfig \
-  make
+  ${MINGW_PREFIX}/bin/cmake.exe --build ./
 }
+
+#check() {
+#  cd ${srcdir}/build-${MINGW_CHOST}
+#  cp -v libpoppler*.dll qt5/tests
+#  cp -v cpp/libpoppler-cpp-0.dll qt5/tests
+#  cp -v qt5/src/libpoppler-qt5-1.dll qt5/tests
+#
+#  ${MINGW_PREFIX}/bin/cmake.exe --build ./ --target test || true
+#}
 
 package() {
   cd "${srcdir}/build-${MINGW_CHOST}"
-  make DESTDIR="${pkgdir}" install
+  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/cmake.exe --build ./ --target install
 }

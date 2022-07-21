@@ -1,0 +1,10 @@
+--- a/configure
++++ b/configure
+@@ -1611,6 +1611,7 @@ Version: $(grep POINTVER < x264_config.h | sed -e 's/.* "//; s/".*//; s/ .*//')
+ Libs: -L\${libdir} -lx264 $([ "$shared" = "yes" ] || echo $libpthread $libm $libdl)
+ Libs.private: $([ "$shared" = "yes" ] && echo $libpthread $libm $libdl)
+ Cflags: -I\${includedir} $([ "$shared" = "yes" ] && echo "-DX264_API_IMPORTS")
++Cflags.private: -UX264_API_IMPORTS
+ EOF
+ 
+ filters="crop select_every"
