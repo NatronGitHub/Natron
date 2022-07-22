@@ -3,7 +3,7 @@
 _realname=shiboken
 pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
 pkgver=1.2.4
-pkgrel=7
+pkgrel=8
 arch=('any')
 url="https://github.com/PySide"
 license=("LGPL")
@@ -13,16 +13,15 @@ source=(https://mirrors.dotsrc.org/qtproject/official_releases/pyside/PySide-${p
         cmake.patch)
 sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
             '603b3ac935a60494cc9cb52c3e0847f61353df546dfea88544025e9ddea5e7c0'
-            '28cdb804c0bc8e79f5d01df95c5288b01576bd30a01935f2feb92766e3df35e4'
-            'SKIP')
+            '7073df687703e8e403b78e9dac903d43128d44e426d2c386fb8ff5445ba58e4d'
+            '840baf2e182c9fa40affc5cc2de4b8f2af920ecb2d1e2559fbe2b8657d919fbf')
 makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
              "${MINGW_PACKAGE_PREFIX}-libxslt"
              "${MINGW_PACKAGE_PREFIX}-python2"
-             "${MINGW_PACKAGE_PREFIX}-python3"
+             "${MINGW_PACKAGE_PREFIX}-python"
              "${MINGW_PACKAGE_PREFIX}-qt4"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-cmake")
-conflicts=("${MINGW_PACKAGE_PREFIX}-python2-${_realname}-qt4")
 options=('strip')
 
 prepare() {

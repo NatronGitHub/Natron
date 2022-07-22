@@ -3,7 +3,7 @@
 _realname=pyside
 pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
 pkgver=1.2.4
-pkgrel=7
+pkgrel=8
 arch=('any')
 url="http://pyside.github.io/docs/pyside/"
 license=("LGPL")
@@ -13,10 +13,9 @@ sha256sums=('1421bc1bf612c396070de9e1ffe227c07c1f3129278bc7d30c754b5146be2433'
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-python2"
-             "${MINGW_PACKAGE_PREFIX}-python3"
+             "${MINGW_PACKAGE_PREFIX}-python"
              "${MINGW_PACKAGE_PREFIX}-shiboken"
              "${MINGW_PACKAGE_PREFIX}-qt4")
-conflicts=("${MINGW_PACKAGE_PREFIX}-python2-${_realname}-qt4")
 options=('strip')
 
 prepare() {

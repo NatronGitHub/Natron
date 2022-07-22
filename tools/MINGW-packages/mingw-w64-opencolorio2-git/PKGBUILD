@@ -5,7 +5,7 @@ pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
 gitcommit=32b01f6 # 2.1.1
 pkgver=1343.32b01f64
-pkgrel=3
+pkgrel=4
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
 url="http://opencolorio.org"
@@ -26,8 +26,8 @@ source=("${_realname}"::"git+https://github.com/imageworks/OpenColorIO.git#commi
         OpenColorIO.pc
         ocio-2.1.1.patch)
 sha256sums=('SKIP'
-            'SKIP'
-            'SKIP')
+            '1e825196e03f26f30d426f84c01ad408ab6cbaaae5b7a06faa7571c2733d6936'
+            '8047d94b5b940c9686b2df34f441ff53947877bcdaae82072180d68c9d547138')
 
 pkgver() {
   cd "${srcdir}/${_realname}"

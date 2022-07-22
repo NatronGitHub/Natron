@@ -7,7 +7,7 @@ provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 pkgver=0.164.r3094.bfc87b7
-pkgrel=1.1
+pkgrel=99.1
 pkgdesc="Library for encoding H264/AVC video streams (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
@@ -54,7 +54,8 @@ build() {
     --prefix=${MINGW_PREFIX} \
     --host=${MINGW_CHOST} \
     --enable-static \
-    --enable-shared
+    --enable-shared \
+    --disable-opencl
 
   make
 }
