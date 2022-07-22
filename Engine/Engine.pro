@@ -210,6 +210,7 @@ SOURCES += \
     ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
+    $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp \
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -426,9 +427,7 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
-
-GENERATED_SOURCES += $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp
-GENERATED_HEADERS += $${ENGINE_WRAPPER_DIR}/natronengine_python.h
+    $${ENGINE_WRAPPER_DIR}/natronengine_python.h \
 
 ENGINE_GENERATED_SOURCES = \
     animatedparam_wrapper \
@@ -481,55 +480,67 @@ ENGINE_GENERATED_SOURCES = \
     userparamholder_wrapper \
 
 for(name, ENGINE_GENERATED_SOURCES) {
-    GENERATED_SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
-    GENERATED_HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
+    SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
+    HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
 }
 
 
 OTHER_FILES += \
     typesystem_engine.xml
 
-defineReplace(shibokenEngine) {
-    SOURCES += $$GENERATED_SOURCES
-    HEADERS += $$GENERATED_HEADERS
-    return("%_wrapper.cpp")
-}
+# GENERATED_SOURCES =				\
+# NatronEngine/animatedparam_wrapper.cpp		\
+# NatronEngine/app_wrapper.cpp			\
+# NatronEngine/beziercurve_wrapper.cpp		\
+# NatronEngine/booleanparam_wrapper.cpp		\
+# NatronEngine/buttonparam_wrapper.cpp		\
+# NatronEngine/choiceparam_wrapper.cpp		\
+# NatronEngine/colorparam_wrapper.cpp		\
+# NatronEngine/colortuple_wrapper.cpp		\
+# NatronEngine/double2dparam_wrapper.cpp		\
+# NatronEngine/double2dtuple_wrapper.cpp		\
+# NatronEngine/double3dparam_wrapper.cpp		\
+# NatronEngine/double3dtuple_wrapper.cpp		\
+# NatronEngine/doubleparam_wrapper.cpp		\
+# NatronEngine/effect_wrapper.cpp			\
+# NatronEngine/fileparam_wrapper.cpp		\
+# NatronEngine/group_wrapper.cpp			\
+# NatronEngine/groupparam_wrapper.cpp		\
+# NatronEngine/int2dparam_wrapper.cpp		\
+# NatronEngine/int2dtuple_wrapper.cpp		\
+# NatronEngine/int3dparam_wrapper.cpp		\
+# NatronEngine/int3dtuple_wrapper.cpp		\
+# NatronEngine/intparam_wrapper.cpp		\
+# NatronEngine/itembase_wrapper.cpp		\
+# NatronEngine/layer_wrapper.cpp			\
+# NatronEngine/natron_wrapper.cpp			\
+# NatronEngine/natronengine_module_wrapper.cpp	\
+# NatronEngine/outputfileparam_wrapper.cpp	\
+# NatronEngine/pageparam_wrapper.cpp		\
+# NatronEngine/param_wrapper.cpp			\
+# NatronEngine/parametricparam_wrapper.cpp	\
+# NatronEngine/pathparam_wrapper.cpp		\
+# NatronEngine/roto_wrapper.cpp			\
+# NatronEngine/stringparam_wrapper.cpp		\
+# NatronEngine/stringparambase_wrapper.cpp
 
-QT_INCLUDEPATH = $$PYTHON_INCLUDEPATH $$PYSIDE_INCLUDEDIR
-for(dep, QT) {
-    QT_INCLUDEPATH += $$eval(QT.$${dep}.includes)
-    QT_INCLUDEPATH += $$absolute_path($$eval(QT.$${dep}.name), $$PYSIDE_INCLUDEDIR)
-}
+# defineReplace(shibokenWorkaround) {
+#     SOURCES += $$GENERATED_SOURCES
+#     return("%_wrapper.cpp")
+# }
 
-equals(QT_MAJOR_VERSION, 5) {
-    PYENGINE_HEADER = PySide2_Engine_Python.h
-    POST_SHIBOKEN = bash $$shell_path(../tools/utils/runPostShiboken2.sh)
-} else:equals(QT_MAJOR_VERSION, 4) {
-    PYENGINE_HEADER = Pyside_Engine_Python.h
-    POST_SHIBOKEN = bash $$shell_path(../tools/utils/runPostShiboken.sh)
-}
+# isEmpty(SHIBOKEN) {
+#    SHIBOKEN = shiboken
+# }
 
-SRC_PATH = $$relative_path($$PWD, $$OUT_PWD)/
-DEP_GROUP = $$PYENGINE_HEADER typesystem_engine.xml $$HEADERS
-enginesbk.input = $$PYENGINE_HEADER typesystem_engine.xml
-enginesbk.depends = $$eval($$list($$join(DEP_GROUP, " "$$SRC_PATH, $$SRC_PATH)))
-enginesbk.target = enginesbk
-enginesbk.commands = cd $$PWD && $$SHIBOKEN \
-    --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero \
-    --avoid-protected-hack --enable-pyside-extensions \
-    -I.:..:../Global:../libs/OpenFX/include:$$PYTHON_SITE_PACKAGES/PySide2/include:$$[QT_INSTALL_PREFIX]/include \
-    $$join(INCLUDEPATH, ":", "-I") \
-    $$join(QT_INCLUDEPATH, ":", "-I") \
-    -T$$TYPESYSTEMPATH --output-directory=$$OUT_PWD/Qt$$QT_MAJOR_VERSION \
-    $$PYENGINE_HEADER typesystem_engine.xml && \
-    $$POST_SHIBOKEN $$OUT_PWD/Qt$$QT_MAJOR_VERSION/NatronEngine natronengine
-pyengine.depends = enginesbk
-pyengine.target = $$shell_path($$ENGINE_WRAPPER_DIR/%_wrapper.cpp)
-pyengine.output_function = shibokenEngine
-pyengine.commands = bash -c 'true'
+# SHIBOKEN_FILE  = . # Need to give some bogus input
+# SHIBOKEN.input = SHIBOKEN_FILE
+# SHIBOKEN.output_function = shibokenWorkaround
+# SHIBOKEN.commands = $$SHIBOKEN --include-paths=..:$$system(pkg-config --variable=includedir pyside)  --typesystem-paths=$$system(pkg-config --variable=typesystemdir pyside) Pyside_Engine_Python.h typesystem_engine.xml
+# SHIBOKEN.CONFIG = no_link # don't add the .cpp target file to OBJECTS
+# SHIBOKEN.clean = dummy # don't remove the %_wrapper.cpp file by "make clean"
 
-QMAKE_EXTRA_TARGETS += enginesbk pyengine
-
+# QMAKE_EXTRA_COMPILERS += SHIBOKEN
 macx {
 
 OBJECTIVE_SOURCES += \
