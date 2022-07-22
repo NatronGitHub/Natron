@@ -22,6 +22,11 @@ CONFIG -= warn_on
   QMAKE_CXXFLAGS += -Wp,-w
 }
 
+win32-g++ {
+    # Needed for localtime_r
+    DEFINES += _POSIX_C_SOURCE
+}
+
 win32 {
 SOURCES += \
 	src/logging.cc \
