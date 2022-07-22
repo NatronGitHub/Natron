@@ -50,9 +50,11 @@ if [ "$PKGOS" = "Linux" ]; then
     fi
     export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
-elif [ "$PKGOS" = "Windows" ]; then
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
-    export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
+# https://github.com/msys2/MINGW-packages/issues/10761
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70129
+#elif [ "$PKGOS" = "Windows" ]; then
+#    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
+#    export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 fi
 QMAKE="$QTDIR/bin/qmake"
 

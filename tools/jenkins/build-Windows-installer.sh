@@ -41,7 +41,7 @@ popd () {
 }
 
 # Generate dll versions with dlls on the system
-env BITS="$BITS" PYVER="$PYVER" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
+env BITS="$BITS" PYVER="$PYVER" PYV="${PYV}" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
 
 source dllVersions.sh
 

@@ -81,10 +81,12 @@ elif [ "$PKGOS" = "Windows" ]; then
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export GIT_SSL_NO_VERIFY="true"
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    # https://github.com/msys2/MINGW-packages/issues/10761
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70129
+    # export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    export C_INCLUDE_PATH="${FFMPEG_PATH}/include:${LIBRAW_PATH}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
     BUILDID="-Wl,--build-id"
-
 elif [ "$PKGOS" = "OSX" ]; then
     # see https://github.com/Homebrew/homebrew-core/issues/32765
     CXXFLAGS_EXTRA="-isysroot `xcodebuild -version -sdk macosx Path 2>/dev/null`"

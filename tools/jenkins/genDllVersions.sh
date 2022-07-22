@@ -166,6 +166,7 @@ catDll libogg-
 catDll libopenal-
 catDll libOpenColorIO
 catDll libOpenImageIO
+catDll libOpenImageIO_Util
 catDll libopenjp2-
 catDll libopus-
 catDll libp11-kit-
@@ -177,11 +178,8 @@ catDll libpcre-
 catDll libpixman-
 catDll libpng16-
 catDll libPtex
-catDll libpyside-python${PYVER}
-catDll libpython${PYVER}
 catDll librsvg-
 catDll librtmp-
-catDll libshiboken-python${PYVER}
 catDll libspeex-
 catDll libsqlite3-
 catDll libsrt
@@ -220,6 +218,17 @@ catDll libx265
 catDll libdav1d
 catDll libaom
 
+# python
+catDll libpython${PYVER}
+if [ "$PYV" = 2 ]; then
+    catDll libpyside-python${PYVER}
+    catDll libshiboken-python${PYVER}
+else
+    catDll libpyside
+    catDll libshiboken
+fi
+
+# gcc
 if [ "$BITS" = "32" ]; then
     catDll libgcc_s_dw2-
 else
