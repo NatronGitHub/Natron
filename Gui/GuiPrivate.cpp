@@ -612,7 +612,7 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
+            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), lockPID) ) {
                 StandardButtonEnum rep = Dialogs::questionDialog( tr("Project").toStdString(),
                                                                   tr("This project may be open in another instance of Natron "
                                                                      "running on %1 as process ID %2, "
