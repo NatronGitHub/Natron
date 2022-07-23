@@ -141,6 +141,7 @@ SOURCES += \
     NonKeyParamsSerialization.cpp \
     OSGLContext.cpp \
     OSGLContext_mac.cpp \
+    OSGLContext_wayland.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
