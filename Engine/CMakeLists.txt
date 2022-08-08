@@ -19,14 +19,14 @@
 
 include(FindPkgConfig)
 
-pkg_check_modules(Cairo REQUIRED cairo fontconfig)
+pkg_check_modules(Cairo REQUIRED IMPORTED_TARGET cairo fontconfig)
 
 file(GLOB NatronEngine_HEADERS *.h)
 file(GLOB NatronEngine_SOURCES *.cpp)
 
 set(PYENGINE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
 set(PYENGINE_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore)
-list(APPEND PYENGINE_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS})
+list(APPEND PYENGINE_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 list(JOIN PYENGINE_INCLUDE_DIRS ":" PYENGINE_INCS)
 set(PYENGINE_HEADER PySide2_Engine_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
@@ -37,7 +37,10 @@ set(shiboken_args
     "-I.:..:../Global:../libs/OpenFX/include:${PYENGINE_INCS}"
     "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYENGINE_OUT}"
     "${PYENGINE_HEADER}" "typesystem_engine.xml")
-
+if(APPLE)
+    list(PREPEND shiboken_args -I${Qt5_DIR}/../../../include)
+ endif()
+ 
 execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py typesystem_engine.xml ${PYENGINE_OUT}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     OUTPUT_VARIABLE PyEngine_SOURCES)
@@ -57,7 +60,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
-    list(APPEND NatronEngine_SOURCES QtUrlFix.mm)
+    list(APPEND NatronEngine_SOURCES QUrlFix.mm)
 endif()
 
 list(APPEND NatronEngine_SOURCES
@@ -76,7 +79,7 @@ target_link_libraries(NatronEngine
         HostSupport
         Boost::headers
         Boost::serialization
-        ${Cairo_LIBRARIES}
+        PkgConfig::Cairo
     PRIVATE
         Shiboken2::libshiboken
         PySide2::pyside2
@@ -100,7 +103,6 @@ target_include_directories(NatronEngine
         ..
         ../Global
         ../libs/SequenceParsing
-        ${Cairo_INCLUDE_DIRS}
         ${X11_INCLUDE_DIR}
 )
 target_compile_definitions(NatronEngine

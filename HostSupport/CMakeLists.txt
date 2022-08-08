@@ -43,7 +43,7 @@ set(HostSupport_SOURCES
 add_library(HostSupport STATIC ${HostSupport_SOURCES})
 target_link_libraries(HostSupport
     PRIVATE
-        expat::expat
+        expat
 )
 target_include_directories(HostSupport
     PUBLIC

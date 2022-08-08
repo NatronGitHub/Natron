@@ -24,3 +24,16 @@ diff -ur /Users/devernay/Development/blender/extern/glog/src/windows/port.h ./sr
  
  inline char* strerror_r(int errnum, char* buf, size_t buflen) {
  #ifdef FREE_WINDOWS
+--- CMakeLists.txt.orig	2022-08-08 10:34:58.000000000 -0400
++++ CMakeLists.txt	2022-08-08 10:34:54.000000000 -0400
+@@ -72,8 +72,8 @@
+     )
+ endif()
+ add_library(glog STATIC ${glog_HEADERS} ${glog_SOURCES})
+-target_include_directories(glog src)
+-target_compile_definitions(glog GOOGLE_GLOG_DLL_DECL=)
++target_include_directories(glog PRIVATE src)
++target_compile_definitions(glog PRIVATE GOOGLE_GLOG_DLL_DECL=)
+ if(WINDOWS)
+     target_include_directories(APPEND glog src/windows)
+     target_compile_definitions(APPEND glog GLOG_NO_ABBREVIATED_SEVERITIES)

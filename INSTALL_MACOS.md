@@ -217,8 +217,13 @@ brew install cairo expat
 brew install gnu-sed gawk coreutils findutils
 brew install cmake keychain sphinx-doc
 /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
-brew install qt@5
 brew install pyside@1.2 pyside-tools@1.2
+```
+
+If compiling with Qt5:
+
+```Shell
+brew install pyside@2
 ```
 
 
@@ -330,8 +335,9 @@ curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
+## Building with qmake (for Qt4 and Qt5)
 
-## Add the config.pri file
+### Add the config.pri file
 
 You have to define the locations of the required libraries.
 This is done by creating a .pri file that will tell the .pro where to find those libraries.
@@ -365,7 +371,7 @@ cp config-homebrew.pri config.pri
 
 Then check at the top of the `config.pri` file that the `HOMEBREW` variable is set to the homebrew installation prefix (usually `/opt/homebrew`).
 
-## Build with Makefile
+### Build with Makefile
 
 You can generate a makefile by opening a Terminal, setting the current
 directory to the toplevel source directory, and typing
@@ -392,7 +398,7 @@ qmake -r CONFIG+=debug
 
 * You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
-### Building with OpenMP support using clang
+#### Building with OpenMP support using clang
 
 It is possible to build Natron using clang (version 3.8 is required,
 version 9.0 is recommended) with OpenMP support on
@@ -451,7 +457,7 @@ LLVM_PATH=/opt/llvm
 make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 ```
 
-## Build on Xcode
+### Build on Xcode
 
 Follow the instruction of build but
 add -spec macx-xcode to the qmake call command:
@@ -462,7 +468,7 @@ qmake -r -spec macx-xcode
 
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
-### Compiling plugins with Xcode
+#### Compiling plugins with Xcode
 
 The source distributions of the plugin sets `openfx-io` and
 `openfx-misc` contain Xcode projects, but these require setting a few
@@ -486,7 +492,7 @@ It is also recommended in Xcode Preferences, select "Locations", then
 the advanced settings to set the build location to Legacy (if not,
 build files are somewhere under `~/Library/Developer/Xcode`.
 
-### Build on Xcode with openmp clang
+#### Build on Xcode with openmp clang
 
 See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
 
@@ -524,7 +530,7 @@ qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llv
 
 Then you can just build and run using Xcode
 
-### Xcode caveats
+#### Xcode caveats
 
 Whenever the .pro files change, Xcode will try to launch qmake and
 probably fail because it doesn't find the necessary binaries (qmake,
@@ -539,6 +545,17 @@ On MacPorts, this would look like:
 
 ```Shell
 launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+```
+
+## Building with cmake (Qt5 only)
+
+### On homebrew
+
+```Shell
+mkdir build
+cd build
+cmake .. -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/expat;/opt/homebrew/opt/qt@5;/opt/homebrew/opt/pyside@2" -DPYTHON_FRAMEWORK_LIBRARIES=/opt/homebrew/Frameworks/Python.framework/Versions/3.9/lib
+make -j
 ```
 
 ## Testing

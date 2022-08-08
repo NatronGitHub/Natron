@@ -35,5 +35,8 @@ target_include_directories(NatronPython
         ..
         ../Global
 )
-
+if(APPLE)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+    target_link_libraries(NatronPython PRIVATE ${COREFOUNDATION_LIBRARY})
+endif()
 install(TARGETS NatronPython DESTINATION "${CMAKE_INSTALL_BINDIR}")

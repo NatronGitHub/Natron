@@ -246,7 +246,7 @@ set(ceres_SOURCES
     internal/ceres/wall_time.cc
 )
 add_library(ceres STATIC ${ceres_HEADERS} ${ceres_SOURCES})
-target_include_directories(ceres PUBLIC ../Eigen3 config include internal)
+target_include_directories(ceres PUBLIC ../Eigen3 ../glog/src config include internal)
 target_compile_definitions(ceres
     PUBLIC
         CERES_HAVE_PTHREAD
