@@ -1,5 +1,5 @@
---- Portfile.orig	2022-06-13 13:19:08.000000000 -0700
-+++ Portfile	2022-06-13 13:21:21.000000000 -0700
+--- Portfile.orig	2022-08-08 08:55:09.000000000 -0400
++++ Portfile	2022-08-08 08:57:23.000000000 -0400
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -9,39 +9,32 @@
  if {${os.major} <= 17} {
      PortGroup           muniversal 1.0
  }
-@@ -30,21 +30,19 @@
+@@ -30,16 +30,16 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
--        version         14.0.4
--        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
--                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
--                        size    1205512
--        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
-+        version                 11.1.0
-+        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
-+                                sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
-+                                size    971628
-+        livecheck.regex         {"llvmorg-([0-9.rc-]+)".*}
+-        version         14.0.6
+-        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
+-                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
+-                        size    1205476
++       version          11.1.0
++       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
++                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
++                        size    971628
+         livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
      } else {
--        version         14.0.4
--        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
--                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
--                        size    1205512
--        livecheck.regex {"llvmorg-([0-9.]+)".*}
-+        version                 11.1.0
-+        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
-+                                sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
-+                                size    971628
-+        livecheck.regex         {"llvmorg-([0-9.]+)".*}
+-        version         14.0.6
+-        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
+-                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
+-                        size    1205476
++       version          11.1.0
++       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
++                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
++                        size    971628
+         livecheck.regex {"llvmorg-([0-9.]+)".*}
      }
  
--    revision            0
--
-     if {${os.major} <= 12} {
-         # kmp_alloc.c includes <atomic> but libc++ is not the default on
-         # these systems. https://trac.macports.org/ticket/52554
-@@ -55,34 +53,38 @@
+@@ -55,34 +55,38 @@
      configure.cxxflags-append -std=c++11
      compiler.cxx_standard   2011
  
@@ -52,8 +45,6 @@
 -    dist_subdir         openmp-release
 -    worksrcdir          ${distname}
 -    set rtpath          "runtime/"
--
--    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 +    master_sites \
 +        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 +        https://releases.llvm.org/${version}
@@ -67,6 +58,8 @@
 +    patchfiles-append       patch-libomp-use-gettid-on-Leopard.diff \
 +                            reviews.llvm.org_D88252.diff
  
+-    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
+-
 -    livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
 +    livecheck.url           https://api.github.com/repos/llvm/llvm-project/tags
  } else {
@@ -101,7 +94,7 @@
  }
  
  depends_build-append    port:perl5
-@@ -108,14 +110,8 @@
+@@ -108,14 +112,8 @@
  # With this, cmake sets the correct library name in the dylibs for the
  # final destination we move them to
  configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
@@ -118,7 +111,7 @@
  
  variant top_level description \
      "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
-@@ -129,22 +125,17 @@
+@@ -129,22 +127,17 @@
  post-destroot {
      set instdest ${destroot}${prefix}
      xinstall -d ${instdest}/share/doc/libomp
@@ -145,7 +138,7 @@
          foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
              system -W ${instdest}/lib/ \
                "ln -s libomp/${p}"
-@@ -152,8 +143,8 @@
+@@ -152,8 +145,8 @@
      }
  
      set fpath ${worksrcpath}/${rtpath}

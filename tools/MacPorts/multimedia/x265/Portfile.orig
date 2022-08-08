@@ -20,7 +20,6 @@ checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
                     size    1530200
 
 categories          multimedia
-platforms           darwin
 license             GPL-2+
 maintainers         nomaintainer
 
@@ -39,12 +38,22 @@ worksrcdir          ${name}-${version}/source
 # allow overriding system processor detection
 patchfiles          patch-cmakelists-override-processor.diff
 
+# Altivec uses instructions unsupported on Darwin: https://trac.macports.org/ticket/64781
+patchfiles-append   patch-ppc.diff
+
 depends_build-append port:gmake
 
 compiler.blacklist-append *llvm-gcc-4.2
 
 # https://trac.macports.org/ticket/59246
 xcode_workaround.fixed_xcode_version 11.2
+
+platform darwin 10 {
+    # Rosetta build has to override CMAKE_SYSTEM_PROCESSOR: https://trac.macports.org/ticket/64528
+    if {${build_arch} eq "ppc"} {
+        configure.args-append -DOVERRIDE_SYSTEM_PROCESSOR="ppc"
+    }
+}
 
 if {${universal_possible} && [variant_isset universal] && ![variant_isset highdepth]} {
 

@@ -1,15 +1,15 @@
---- Portfile.orig	2022-06-28 10:22:44.000000000 -0700
-+++ Portfile	2022-06-28 10:25:25.000000000 -0700
+--- Portfile.orig	2022-08-08 09:01:39.000000000 -0400
++++ Portfile	2022-08-08 09:02:37.000000000 -0400
 @@ -84,6 +84,8 @@
                      port:libbluray \
                      path:lib/pkgconfig/vpx.pc:libvpx \
-                     port:gnutls \
+                     path:lib/pkgconfig/gnutls.pc:gnutls \
 +                    port:openh264 \
 +                    port:snappy \
                      port:openjpeg \
                      port:zvbi \
                      port:fontconfig \
-@@ -122,6 +124,11 @@
+@@ -123,6 +125,11 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 800}
  
@@ -21,7 +21,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -136,6 +143,8 @@
+@@ -137,6 +144,8 @@
                      --enable-librsvg \
                      --enable-libtheora \
                      --enable-libopenjpeg \
@@ -30,7 +30,7 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -149,12 +158,14 @@
+@@ -151,12 +160,14 @@
                      --enable-libfreetype \
                      --enable-libfribidi \
                      --enable-zlib \
@@ -45,15 +45,15 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -165,6 +176,7 @@
+@@ -167,6 +178,7 @@
                      --mandir=${prefix}/share/man \
                      --enable-shared \
                      --enable-pthreads \
 +                    --cxx=${configure.cxx} \
                      --cc=${configure.cc}
  
- # zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
-@@ -248,6 +260,24 @@
+ platform darwin {
+@@ -256,6 +268,24 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -78,7 +78,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -282,6 +312,15 @@
+@@ -290,6 +320,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
@@ -94,7 +94,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -313,12 +352,53 @@
+@@ -321,12 +360,53 @@
                              --disable-libxcb-xfixes
  }
  
@@ -148,8 +148,8 @@
  variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
      depends_lib-append port:libdc1394
      configure.args-append --enable-libdc1394
-@@ -358,6 +438,20 @@
-     depends_lib-delete      port:gnutls
+@@ -356,6 +436,20 @@
+     depends_lib-delete      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
 +variant aom description {Enable Alliance for Open Media AV1 Codec} {

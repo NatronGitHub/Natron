@@ -1,6 +1,6 @@
---- Portfile.orig	2022-06-16 13:58:30.000000000 -0700
-+++ Portfile	2022-06-16 14:02:15.000000000 -0700
-@@ -2,18 +2,14 @@
+--- Portfile.orig	2022-08-08 08:57:45.000000000 -0400
++++ Portfile	2022-08-08 09:11:31.000000000 -0400
+@@ -2,17 +2,17 @@
  
  PortSystem              1.0
  PortGroup               github 1.0
@@ -12,30 +12,28 @@
  PortGroup               boost 1.0
  
 -github.setup            OpenImageIO oiio 2.1.20.0 v
--revision                2
+-revision                3
 -checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
 -                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
 -                        size    29115990
--
-+github.setup            OpenImageIO oiio 2.3.16.0 v
++github.setup            OpenImageIO oiio 2.3.18.0 v
 +revision                100
++checksums           rmd160  e5ec8940476560dbed3978794065f7039b8fe1ba \
++                    sha256  f3e8b353caea51b76c1d983f014292f6f9c4ed3f77bfb97ebab40465d9a81dce \
++                    size    32641263
+ 
  name                    openimageio
  categories              graphics
- license                 BSD
-@@ -21,7 +17,12 @@
+@@ -21,7 +21,7 @@
  description             a library for reading and writing images
  long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                          related classes, utilities, and applications.
-+platforms               darwin
- 
-+checksums           rmd160  a04bb91c05bc2712a71aa4d59d82cba60d90d2bb \
-+                    sha256  fae06b2302f0717a0a5ebd245489dea941f45679df2facbdec4a768677c45a25 \
-+                    size    32633747
-+                    
+-
++         
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
  # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
-@@ -32,9 +33,12 @@
+@@ -32,9 +32,12 @@
  
  compiler.thread_local_storage yes
  
@@ -50,7 +48,7 @@
  
  # avoid
  #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
-@@ -49,20 +53,88 @@
+@@ -49,20 +52,88 @@
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -144,7 +142,7 @@
  
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -95,34 +167,58 @@
+@@ -95,34 +166,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -206,7 +204,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -131,21 +227,35 @@
+@@ -131,21 +226,35 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

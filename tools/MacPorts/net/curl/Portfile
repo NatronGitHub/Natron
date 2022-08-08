@@ -45,7 +45,7 @@ checksums-prepend               ${curl_distfile}
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               port:pkgconfig
 
@@ -169,7 +169,7 @@ if {${name} eq ${subport}} {
     }
 
     variant gnutls conflicts darwinssl mbedtls ssl wolfssl description {Allow secure connections using GNU TLS} {
-        depends_lib-append      port:gnutls \
+        depends_lib-append      path:lib/pkgconfig/gnutls.pc:gnutls \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-replace  --without-gnutls --with-gnutls
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt

@@ -30,16 +30,16 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     if { ${subport} eq "libomp-devel" } {
-        version         14.0.4
-        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
-                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
-                        size    1205512
+        version         14.0.6
+        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
+                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
+                        size    1205476
         livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
     } else {
-        version         14.0.4
-        checksums       rmd160  75ad369911d553c6770420b9e6910ca5aad26f72 \
-                        sha256  d4b627e2668c3c1001b6c772297273dc67b42f2deec934a59650a55731f8d411 \
-                        size    1205512
+        version         14.0.6
+        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
+                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
+                        size    1205476
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
 

@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            0
+revision            1
 epoch               1
 
 license             LGPL-2.1+
@@ -83,7 +83,7 @@ depends_lib         port:lame \
                     port:libass \
                     port:libbluray \
                     path:lib/pkgconfig/vpx.pc:libvpx \
-                    port:gnutls \
+                    path:lib/pkgconfig/gnutls.pc:gnutls \
                     port:openjpeg \
                     port:zvbi \
                     port:fontconfig \
@@ -93,6 +93,7 @@ depends_lib         port:lame \
                     port:soxr \
                     port:bzip2 \
                     port:xz \
+                    port:zimg \
                     port:zlib
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
@@ -142,6 +143,7 @@ configure.args      --enable-swscale \
                     --enable-libspeex \
                     --enable-libass \
                     --enable-libbluray \
+                    --enable-libzimg \
                     --enable-libzvbi \
                     --enable-lzma \
                     --enable-gnutls \
@@ -166,12 +168,6 @@ configure.args      --enable-swscale \
                     --enable-shared \
                     --enable-pthreads \
                     --cc=${configure.cc}
-
-# zimg doesn't currently build on 10.7 and below, so only enable it on supported systems
-if { ${os.platform} eq "darwin" && ${os.major} > 11 } {
-    configure.args-append   --enable-libzimg
-    depends_lib-append      port:zimg
-}
 
 platform darwin {
     # disable asm on Tiger
@@ -347,16 +343,6 @@ variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// proto
     depends_lib-append      port:rtmpdump
 }
 
-# x265 currently does not support OS X < 10.6 (#48336, #48338)
-# only enable libx265 support on 10.6 or greater
-
-platform darwin {
-    if {${os.major} > 9 && [variant_isset gpl2]} {
-        configure.args-append   --enable-libx265
-        depends_lib-append      port:x265
-    }
-}
-
 variant jack description {Enable jack library and indev support} {
 # jack will autoconfigure if not disabled
     depends_lib-append      port:jack
@@ -367,17 +353,19 @@ variant jack description {Enable jack library and indev support} {
 variant darwinssl description {Enable https support using Apple built-in TLS library instead of GNU TLS} {
     configure.args-delete   --disable-securetransport
     configure.args-delete   --enable-gnutls
-    depends_lib-delete      port:gnutls
+    depends_lib-delete      path:lib/pkgconfig/gnutls.pc:gnutls
 }
 
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     configure.args-append   --enable-gpl \
                             --enable-postproc \
                             --enable-libx264 \
+                            --enable-libx265 \
                             --enable-libxvid \
                             --enable-libvidstab
     depends_lib-append      port:XviD \
                             port:x264 \
+                            port:x265 \
                             port:libvidstab
     license                 GPL-2+
 }
