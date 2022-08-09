@@ -22,6 +22,9 @@ if(WINDOWS)
     list(APPEND Natron_SOURCES ../Natron.rc)
 endif()
 add_executable(Natron ${Natron_SOURCES})
+set_target_properties(Natron PROPERTIES
+    MACOSX_BUNDLE TRUE
+)
 target_link_libraries(Natron
     PRIVATE
         NatronGui
