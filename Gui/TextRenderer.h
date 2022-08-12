@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Gui/GuiFwd.h"
 
 
@@ -56,7 +52,7 @@ public:
 
 private:
     struct Implementation;
-    boost::scoped_ptr<Implementation> _imp;
+    std::unique_ptr<Implementation> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

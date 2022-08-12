@@ -43,7 +43,7 @@ class OSGLContext_egl_data
 
 public:
 
-    boost::scoped_ptr<OSGLContext_egl_dataPrivate> _imp;
+    std::unique_ptr<OSGLContext_egl_dataPrivate> _imp;
 
     GLADloadproc getProcAddress;
 
@@ -78,7 +78,7 @@ public:
 private:
 
     friend struct OSGLContext_waylandPrivate;
-    boost::scoped_ptr<OSGLContext_waylandPrivate> _imp;
+    std::unique_ptr<OSGLContext_waylandPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -29,8 +29,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/weak_ptr.hpp>
-
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
@@ -51,7 +49,7 @@ KnobGui::KnobGui(const KnobIPtr& /*knob*/,
                  KnobGuiContainerI* container)
     : QObject()
     , KnobGuiI()
-    , boost::enable_shared_from_this<KnobGui>()
+    , std::enable_shared_from_this<KnobGui>()
     , _imp( new KnobGuiPrivate(container) )
 {
 }

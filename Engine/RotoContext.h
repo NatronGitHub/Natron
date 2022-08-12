@@ -92,13 +92,13 @@ struct RotoContextPrivate;
 
 class RotoContext
     : public QObject
-    , public boost::enable_shared_from_this<RotoContext>
+    , public std::enable_shared_from_this<RotoContext>
 {
     Q_OBJECT
 
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     RotoContext(const NodePtr& node);
 
@@ -465,7 +465,7 @@ private:
     void removeItemRecursively(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason);
 
 
-    boost::scoped_ptr<RotoContextPrivate> _imp;
+    std::unique_ptr<RotoContextPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

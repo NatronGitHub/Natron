@@ -505,7 +505,7 @@ enum RotoToolEnum
 };
 
 class RotoPaintInteract
-    : public boost::enable_shared_from_this<RotoPaintInteract>
+    : public std::enable_shared_from_this<RotoPaintInteract>
 {
 public:
     RotoPaintPrivate* p;
@@ -626,7 +626,7 @@ public:
 private:
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     RotoPaintInteract(RotoPaintPrivate* p);
 

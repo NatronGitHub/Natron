@@ -103,7 +103,7 @@ moveGroupNode(DopeSheetEditor* model,
     group->getNodes_recursive(nodes, true);
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+        NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
         assert(nodeGui);
         std::string pluginID = (*it)->getPluginID();
         NodeGroup* isChildGroup = (*it)->isEffectGroup();

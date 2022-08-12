@@ -317,7 +317,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
+    std::unique_ptr<OfxEffectInstancePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

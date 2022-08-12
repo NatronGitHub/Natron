@@ -321,7 +321,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {
                     NodeGuiIPtr output_i = firstOutput->getNodeGui();
-                    NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
+                    NodeGuiPtr output = std::dynamic_pointer_cast<NodeGui>(output_i);
                     if (output) {
                         if ( output->getIsSelected() && modCASIsShift(e) ) {
                             NodesGuiList::iterator found = std::find(_imp->_selection.begin(),

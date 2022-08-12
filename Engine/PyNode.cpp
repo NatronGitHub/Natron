@@ -203,8 +203,8 @@ Effect::Effect(const NodePtr& node)
     if (node) {
         NodeGroupPtr grp;
         if ( node->getEffectInstance() ) {
-            grp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
-            init( boost::dynamic_pointer_cast<NodeCollection>(grp) );
+            grp = std::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            init( std::dynamic_pointer_cast<NodeCollection>(grp) );
         }
     }
 }
@@ -387,20 +387,20 @@ Param*
 Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
     int dims = knob->getDimension();
-    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
-    KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
-    KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(knob);
-    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-    KnobOutputFilePtr isOutputFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
-    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
-    KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobIntPtr isInt = std::dynamic_pointer_cast<KnobInt>(knob);
+    KnobDoublePtr isDouble = std::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobBoolPtr isBool = std::dynamic_pointer_cast<KnobBool>(knob);
+    KnobChoicePtr isChoice = std::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobColorPtr isColor = std::dynamic_pointer_cast<KnobColor>(knob);
+    KnobStringPtr isString = std::dynamic_pointer_cast<KnobString>(knob);
+    KnobFilePtr isFile = std::dynamic_pointer_cast<KnobFile>(knob);
+    KnobOutputFilePtr isOutputFile = std::dynamic_pointer_cast<KnobOutputFile>(knob);
+    KnobPathPtr isPath = std::dynamic_pointer_cast<KnobPath>(knob);
+    KnobButtonPtr isButton = std::dynamic_pointer_cast<KnobButton>(knob);
+    KnobGroupPtr isGroup = std::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(knob);
+    KnobParametricPtr isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobSeparatorPtr isSep = std::dynamic_pointer_cast<KnobSeparator>(knob);
 
     if (isInt) {
         switch (dims) {

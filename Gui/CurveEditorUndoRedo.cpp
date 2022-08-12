@@ -100,7 +100,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         }
         KnobParametricPtr isParametric;
         if (knob) {
-            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+            isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
         }
 
         if (add && isSetKeyCommand) {
@@ -159,7 +159,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             }
                         }
                     } else {
-                        KnobParametricPtr parametricKnob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr parametricKnob = std::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
 
                         if (parametricKnob) {
                             StatusEnum st = parametricKnob->deleteControlPoint( eValueChangedReasonUserEdited, it->dimension,
@@ -228,7 +228,7 @@ SetKeysCommand::undo()
 
     if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+        KnobParametricPtr isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
         if (!isParametric) {
             knob->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *_oldCurve);
         } else {
@@ -282,7 +282,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 knob->beginChanges();
                 knob->blockValueChanges();
             }
-            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+            isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
         }
 
         if (guiKnob && isKnobCurve && !isParametric) {
@@ -317,7 +317,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             }
                         }
                     } else {
-                        KnobParametricPtr knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr knob = std::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
 
                         if (knob) {
                             StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),

@@ -1173,7 +1173,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
 
-        QueuedSetValuePtr qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
+        QueuedSetValuePtr qv = std::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1544,7 +1544,7 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
 
-        QueuedSetValueAtTimePtr qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
+        QueuedSetValueAtTimePtr qv = std::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1770,7 +1770,7 @@ Knob<T>::unSlaveInternal(int dimension,
         return;
     }
     std::pair<int, KnobIPtr> master = getMaster(dimension);
-    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    KnobHelperPtr masterHelper = std::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),

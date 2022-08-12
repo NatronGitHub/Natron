@@ -35,8 +35,6 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -300,7 +298,7 @@ private:
 
     void wheelEventInternal(bool ctrlDown, double delta);
 
-    boost::scoped_ptr<NodeGraphPrivate> _imp;
+    std::unique_ptr<NodeGraphPrivate> _imp;
 };
 
 
@@ -335,7 +333,7 @@ private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<FindNodeDialogPrivate> _imp;
+    std::unique_ptr<FindNodeDialogPrivate> _imp;
 };
 
 struct EditNodeNameDialogPrivate;
@@ -361,7 +359,7 @@ private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
+    std::unique_ptr<EditNodeNameDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

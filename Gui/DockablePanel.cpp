@@ -1079,7 +1079,7 @@ DockablePanel::setClosedInternal(bool c)
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
                     NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
-                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    NodeGuiPtr childGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
                     gui->addNodeGuiToCurveEditor(childGui);
                     gui->addNodeGuiToDopeSheetEditor(childGui);
@@ -1093,7 +1093,7 @@ DockablePanel::setClosedInternal(bool c)
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
                     NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
-                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    NodeGuiPtr childGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
                     gui->removeNodeGuiFromCurveEditor(childGui);
                     gui->removeNodeGuiFromDopeSheetEditor(childGui);
@@ -1871,7 +1871,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             (*it)->hide();
         }
     } else {
-        for (std::map<KnobGuiWPtr, bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
+        for (DockablePanelPrivate::KnobGuisMap::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
              it != _imp->_knobsVisibilityBeforeHideModif.end(); ++it) {
             KnobGuiPtr knobGui = it->first.lock();
             if (!it->second && knobGui) {

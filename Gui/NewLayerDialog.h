@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
@@ -62,7 +58,7 @@ public Q_SLOTS:
     void onRGBAButtonClicked();
 
 private:
-    boost::scoped_ptr<NewLayerDialogPrivate> _imp;
+    std::unique_ptr<NewLayerDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

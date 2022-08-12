@@ -45,7 +45,7 @@ template<typename EntryType>
 class LockManagerI
 {
 public:
-    typedef boost::shared_ptr<EntryType> EntryTypePtr;
+    typedef std::shared_ptr<EntryType> EntryTypePtr;
 
     LockManagerI() {}
 
@@ -67,7 +67,7 @@ template<typename EntryType>
 class ImageLockerHelper
 {
 public:
-    typedef boost::shared_ptr<EntryType> EntryTypePtr;
+    typedef std::shared_ptr<EntryType> EntryTypePtr;
 
     ImageLockerHelper(LockManagerI<EntryType>* manager)
         : _manager(manager), _entries() {}

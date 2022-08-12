@@ -104,7 +104,7 @@ struct FinishedHistogram
     }
 };
 
-typedef boost::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
+typedef std::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
 
 struct HistogramCPUPrivate
 {
@@ -412,7 +412,7 @@ HistogramCPU::run()
                 return;
             }
         }
-        FinishedHistogramPtr ret = boost::make_shared<FinishedHistogram>();
+        FinishedHistogramPtr ret = std::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

@@ -73,7 +73,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         if (!nodegui_i) {
             continue;
         }
-        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        NodeGuiPtr nodegui = std::dynamic_pointer_cast<NodeGui>(nodegui_i);
 
         if ( nodegui->isVisible() ) {
             NodeCollectionPtr isInCollection = (*it)->getGroup();
@@ -174,7 +174,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
     for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
+        PythonPanelSerializationPtr s = std::make_shared<PythonPanelSerialization>();
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
     }

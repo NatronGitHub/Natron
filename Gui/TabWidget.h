@@ -31,10 +31,6 @@
 #include <map>
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
@@ -367,7 +363,7 @@ private:
     void closeSplitterAndMoveOtherSplitToParent(Splitter* container);
 
 
-    boost::scoped_ptr<TabWidgetPrivate> _imp;
+    std::unique_ptr<TabWidgetPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

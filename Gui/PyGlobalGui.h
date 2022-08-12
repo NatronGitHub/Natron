@@ -75,7 +75,7 @@ public:
         if (!app) {
             return 0;
         }
-        GuiAppInstancePtr guiApp = boost::dynamic_pointer_cast<GuiAppInstance>(app);
+        GuiAppInstancePtr guiApp = std::dynamic_pointer_cast<GuiAppInstance>(app);
         if (!guiApp) {
             return 0;
         }

@@ -30,8 +30,6 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -80,7 +78,7 @@ public:
     friend class PanelWidget;
 
     explicit Gui(const GuiAppInstancePtr& app,
-                 QWidget* parent = 0);
+                 QWidget* parent = nullptr);
 
     virtual ~Gui() OVERRIDE;
 
@@ -535,6 +533,7 @@ public:
     void updateAboutWindowLibrariesVersion();
 
 protected:
+
     // Reimplemented Protected Functions
 
     //bool event(QEvent* event) OVERRIDE;
@@ -715,7 +714,7 @@ private:
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<GuiPrivate> _imp;
+    std::unique_ptr<GuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

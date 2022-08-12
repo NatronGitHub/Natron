@@ -369,7 +369,7 @@ ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
         n->ensurePanelCreated();
         MultiInstancePanelPtr multiPanel = n->getMultiInstancePanel();
         if (multiPanel) {
-            TrackerPanelV1Ptr trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            TrackerPanelV1Ptr trackPanel = std::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
             assert(trackPanel);
             tracker = new TrackerGui(trackPanel, this);
         }
@@ -507,7 +507,7 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
     if (!n) {
         return;
     }
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(n);
     if ( found != _imp->nodesContext.end() ) {
         // Already exists
         return;
@@ -540,7 +540,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     if (!n) {
         return;
     }
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator it = _imp->nodesContext.find(n);
     if ( it == _imp->nodesContext.end() ) {
         return;
     }
@@ -662,7 +662,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
                                      bool permanently,
                                      bool setAnotherFromSamePlugin)
 {
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(n);
 
     if ( found == _imp->nodesContext.end() ) {
         return;
@@ -710,8 +710,8 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
 
     if (setAnotherFromSamePlugin && activeNodeForPlugin == n) {
         ///If there's another roto node, set it as the current roto interface
-        std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator newInterface = _imp->nodesContext.end();
-        for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
+        ViewerTabPrivate::NodeViewerContextsMap::iterator newInterface = _imp->nodesContext.end();
+        for (ViewerTabPrivate::NodeViewerContextsMap::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
             NodeGuiPtr otherNode = it2->first.lock();
             if (!otherNode) {
                 continue;
@@ -748,7 +748,7 @@ void
 ViewerTab::getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
                                    std::list<NodeGuiPtr>* perPluginActiveUI) const
 {
-    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::const_iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
+    for (ViewerTabPrivate::NodeViewerContextsMap::const_iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
         NodeGuiPtr n = it->first.lock();
         if (n) {
             nodesWithUI->push_back(n);
@@ -766,7 +766,7 @@ void
 ViewerTab::updateSelectedToolForNode(const QString& toolID,
                                      const NodeGuiPtr& node)
 {
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(node);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(node);
 
     if ( found == _imp->nodesContext.end() ) {
         // Already exists
@@ -779,7 +779,7 @@ void
 ViewerTab::notifyGuiClosing()
 {
     _imp->timeLineGui->discardGuiPointer();
-    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
+    for (ViewerTabPrivate::NodeViewerContextsMap::iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
         it->second->notifyGuiClosing();
     }
 }

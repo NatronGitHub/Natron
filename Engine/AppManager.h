@@ -45,8 +45,6 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMap>
 
 #if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #endif
 
@@ -250,7 +248,7 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -260,7 +258,7 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const QString &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -705,7 +703,7 @@ private:
     void tearDownPython();
 
     static AppManager *_instance;
-    boost::scoped_ptr<AppManagerPrivate> _imp;
+    std::unique_ptr<AppManagerPrivate> _imp;
 };
 
 // AppManager

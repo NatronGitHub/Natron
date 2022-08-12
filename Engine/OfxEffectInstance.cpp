@@ -185,9 +185,9 @@ private:
 
 struct OfxEffectInstancePrivate
 {
-    boost::scoped_ptr<OfxImageEffectInstance> effect;
+    std::unique_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    std::unique_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
     KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
@@ -382,7 +382,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
         assert(_imp->effect);
 
-        OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+        OfxEffectInstancePtr thisShared = std::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
         _imp->effect->setOfxEffectInstance(thisShared);
 
         _imp->natronPluginID = plugin->getIdentifier();
@@ -470,7 +470,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             {
                 KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
                 if (foundCursorKnob) {
-                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
+                    KnobStringPtr isStringKnob = std::dynamic_pointer_cast<KnobString>(foundCursorKnob);
                     _imp->cursorKnob = isStringKnob;
                 }
             }
@@ -479,21 +479,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
                 KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
                 if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
+                    KnobIntPtr isIntKnob = std::dynamic_pointer_cast<KnobInt>(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
                 }
             }
             {
                 KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
                 if (foundTextKnob) {
-                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
+                    KnobStringPtr isStringKnob = std::dynamic_pointer_cast<KnobString>(foundTextKnob);
                     _imp->undoRedoTextKnob = isStringKnob;
                 }
             }
             {
                 KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
                 if (foundUndoRedoKnob) {
-                    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
+                    KnobBoolPtr isBool = std::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
                     _imp->undoRedoStateKnob = isBool;
                 }
             }
@@ -1927,7 +1927,7 @@ public:
     virtual ~OfxGLContextEffectData() {}
 };
 
-typedef boost::shared_ptr<OfxGLContextEffectData> OfxGLContextEffectDataPtr;
+typedef std::shared_ptr<OfxGLContextEffectData> OfxGLContextEffectDataPtr;
 
 StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
@@ -2589,7 +2589,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
             assert(undoRedoState);
 
             if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
-                UndoCommandPtr cmd = boost::make_shared<OfxUndoCommand>(undoRedoText, undoRedoState);
+                UndoCommandPtr cmd = std::make_shared<OfxUndoCommand>(undoRedoText, undoRedoState);
                 pushUndoCommand(cmd);
                 return true;
             }

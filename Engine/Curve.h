@@ -400,7 +400,7 @@ private:
     void onCurveChanged();
 
 private:
-    boost::scoped_ptr<CurvePrivate> _imp;
+    std::unique_ptr<CurvePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

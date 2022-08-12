@@ -60,7 +60,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
     ThreadData data;
     //Copy constructor
-    data.value = boost::make_shared<EffectInstance::EffectTLSData>( *(found->second.value) );
+    data.value = std::make_shared<EffectInstance::EffectTLSData>( *(found->second.value) );
     perThreadData[toThread] = data;
 
     return data.value;
@@ -86,14 +86,14 @@ TLSHolder<T>::copyTLS(const QThread* fromThread,
 }
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 TLSHolder<T>::copyAndReturnNewTLS(const QThread* fromThread,
                                   const QThread* toThread) const
 {
     Q_UNUSED(fromThread);
     Q_UNUSED(toThread);
 
-    return boost::shared_ptr<T>();
+    return std::shared_ptr<T>();
 }
 
 template <typename T>
@@ -128,13 +128,13 @@ TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 }
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 TLSHolder<T>::getTLSData() const
 {
     QThread* curThread  = QThread::currentThread();
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    std::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
 
     if (ret) {
         return ret;
@@ -155,13 +155,13 @@ TLSHolder<T>::getTLSData() const
 }
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 TLSHolder<T>::getOrCreateTLSData() const
 {
     QThread* curThread  = QThread::currentThread();
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    std::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
 
     if (ret) {
         return ret;
@@ -184,7 +184,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     ThreadData data;
     TLSHolderBaseConstPtr thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
-    data.value = boost::make_shared<T>();
+    data.value = std::make_shared<T>();
     {
         QWriteLocker k(&perThreadDataMutex);
         perThreadData.insert( std::make_pair(curThread, data) );
@@ -195,7 +195,7 @@ TLSHolder<T>::getOrCreateTLSData() const
 }
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                  const QThread* curThread)
 {
@@ -210,30 +210,30 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     {
         QReadLocker k(&_spawnsMutex);
         const ThreadSpawnMap& spawnsCRef = _spawns; // take a const ref, since it's a read lock
-        ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(curThread);
+        ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(uintptr_t(curThread));
         if ( foundSpawned == spawnsCRef.end() ) {
             //This is not a spawned thread and it did not have TLS already
-            return boost::shared_ptr<T>();
+            return std::shared_ptr<T>();
         }
     }
     const QThread* foundThread = 0;
     // Find first under a read lock to enable better concurrency
     {
         QReadLocker k(&_spawnsMutex);
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
-            return boost::shared_ptr<T>();
+            return std::shared_ptr<T>();
         }
         foundThread = foundSpawned->second;
     }
 
     if (foundThread) {
         QWriteLocker k(&_spawnsMutex);
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
-            return boost::shared_ptr<T>();
+            return std::shared_ptr<T>();
         }
         foundThread = foundSpawned->second;
         //Erase the thread from the spawn map
@@ -241,7 +241,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     }
     {
         QWriteLocker k(&_objectMutex);
-        boost::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
+        std::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
 
 
         return retval;
@@ -249,7 +249,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 } // AppTLS::copyTLSFromSpawnerThread
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* curThread,
                                          const QThread* spawnerThread)
@@ -257,7 +257,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
     //Private - should be locked
     assert( !_objectMutex.tryLockForWrite() );
 
-    boost::shared_ptr<T> tls;
+    std::shared_ptr<T> tls;
 
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
     for (TLSObjects::iterator it = _object->objects.begin();

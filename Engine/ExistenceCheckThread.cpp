@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER
 
 struct ExistenceCheckerThreadPrivate
 {
-    boost::shared_ptr<QLocalSocket> socket;
+    std::shared_ptr<QLocalSocket> socket;
     QString comServerPipePath;
     QString checkMessage;
     QString acknowledgementMessage;

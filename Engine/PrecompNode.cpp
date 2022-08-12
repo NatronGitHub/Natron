@@ -454,7 +454,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     app.lock()->getProject()->getNodes_recursive(nodes, true);
     PrecompNodePtr precomp;
     if (setPartOfPrecomp) {
-        precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+        precomp = std::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
         assert(precomp);
 
         //extract all inputs of the tree
@@ -586,7 +586,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    PrecompNodePtr precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+    PrecompNodePtr precomp = std::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
     assert(precomp);
     read->setPrecompNode(precomp);
 

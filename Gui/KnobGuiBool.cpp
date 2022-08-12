@@ -206,7 +206,7 @@ KnobGuiBool::KnobGuiBool(KnobIPtr knob,
     : KnobGui(knob, container)
     , _checkBox(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobBool>(knob);
+    _knob = std::dynamic_pointer_cast<KnobBool>(knob);
 }
 
 void

@@ -30,6 +30,7 @@
 
 #include <cstddef>
 #include <list>
+#include <memory>
 
 NATRON_NAMESPACE_ENTER
 
@@ -60,7 +61,7 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
-typedef boost::shared_ptr<BufferableObject> BufferableObjectPtr;
+typedef std::shared_ptr<BufferableObject> BufferableObjectPtr;
 
 typedef std::list<BufferableObjectPtr> BufferableObjectPtrList;
 

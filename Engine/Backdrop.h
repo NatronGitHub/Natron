@@ -92,7 +92,7 @@ private:
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    boost::scoped_ptr<BackdropPrivate> _imp;
+    std::unique_ptr<BackdropPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

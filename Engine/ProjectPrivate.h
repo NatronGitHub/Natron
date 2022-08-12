@@ -108,11 +108,11 @@ public:
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
-    boost::shared_ptr<QTimer> autoSaveTimer;
-    std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
+    std::shared_ptr<QTimer> autoSaveTimer;
+    std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;
     bool projectClosing;
-    boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
 
     // only used on the main-thread
     struct RenderWatcher

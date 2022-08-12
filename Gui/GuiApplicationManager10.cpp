@@ -28,8 +28,6 @@
 
 #include <stdexcept> // runtime_error
 
-#include <boost/scoped_ptr.hpp>
-
 #ifdef Q_OS_DARWIN
 // for Application::Application()
 #include <objc/message.h>
@@ -476,7 +474,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
     std::list<GuiAppInstancePtr> guiApps;
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+        GuiAppInstancePtr app = std::dynamic_pointer_cast<GuiAppInstance>(*it);
         if (app) {
             guiApps.push_back(app);
         }
@@ -494,7 +492,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         instances = getAppInstances();
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstancePtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+            GuiAppInstancePtr ga = std::dynamic_pointer_cast<GuiAppInstance>(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }

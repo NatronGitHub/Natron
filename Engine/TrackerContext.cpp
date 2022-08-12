@@ -81,7 +81,7 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
 }
 
 TrackerContext::TrackerContext(const NodePtr &node)
-    : boost::enable_shared_from_this<TrackerContext>()
+    : std::enable_shared_from_this<TrackerContext>()
     , _imp( new TrackerContextPrivate(this, node) )
 {
 }
@@ -99,7 +99,7 @@ struct TrackerContext::MakeSharedEnabler: public TrackerContext
 TrackerContextPtr
 TrackerContext::create(const NodePtr &node)
 {
-    return boost::make_shared<TrackerContext::MakeSharedEnabler>(node);
+    return std::make_shared<TrackerContext::MakeSharedEnabler>(node);
 }
 
 
@@ -777,7 +777,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;
@@ -795,7 +795,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;
@@ -1844,7 +1844,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 GenericSchedulerThread::ThreadStateEnum
 TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    TrackArgsPtr args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
+    TrackArgsPtr args = std::dynamic_pointer_cast<TrackArgs>(inArgs);
 
     assert(args);
 

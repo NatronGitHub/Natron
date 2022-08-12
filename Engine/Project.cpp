@@ -158,14 +158,14 @@ struct Project::MakeSharedEnabler: public Project
 ProjectPtr
 Project::create(const AppInstancePtr& appInstance)
 {
-    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
+    return std::make_shared<Project::MakeSharedEnabler>(appInstance);
 }
 
 
 Project::~Project()
 {
     ///wait for all autosaves to finish
-    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         (*it)->waitForFinished();
     }
 
@@ -759,7 +759,7 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
+        std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);
@@ -776,7 +776,7 @@ Project::onAutoSaveFutureFinished()
     QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>( sender() );
 
     assert(future);
-    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         if (it->get() == future) {
             _imp->autoSaveFutures.erase(it);
             break;
@@ -1978,7 +1978,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+typedef std::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
 
 void
 Project::reset(bool aboutToQuit, bool blocking)
@@ -1990,7 +1990,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        ResetWatcherArgsPtr args = boost::make_shared<ResetWatcherArgs>();
+        ResetWatcherArgsPtr args = std::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -2098,7 +2098,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    NodeRenderWatcherPtr renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
+    NodeRenderWatcherPtr renderWatcher = std::make_shared<NodeRenderWatcher>(nodesToWatch);
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,GenericWatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;

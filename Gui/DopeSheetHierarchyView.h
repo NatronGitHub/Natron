@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 CLANG_DIAG_OFF(deprecated)
@@ -261,7 +256,7 @@ private Q_SLOTS:
 private:
 
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
+    std::unique_ptr<HierarchyViewPrivate> _imp;
 };
 
 

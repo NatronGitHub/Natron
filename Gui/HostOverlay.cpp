@@ -29,8 +29,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <boost/weak_ptr.hpp>
-
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/GuiApplicationManager.h"
@@ -339,7 +337,7 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
-typedef boost::shared_ptr<PositionInteract> PositionInteractPtr;
+typedef std::shared_ptr<PositionInteract> PositionInteractPtr;
 
 class TransformInteract
     : public DefaultInteractI
@@ -625,7 +623,7 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
-typedef boost::shared_ptr<TransformInteract> TransformInteractPtr;
+typedef std::shared_ptr<TransformInteract> TransformInteractPtr;
 
 class CornerPinInteract
     : public DefaultInteractI
@@ -823,7 +821,7 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
-typedef boost::shared_ptr<CornerPinInteract> CornerPinInteractPtr;
+typedef std::shared_ptr<CornerPinInteract> CornerPinInteractPtr;
 
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier

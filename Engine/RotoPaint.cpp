@@ -187,7 +187,7 @@ void
 RotoPaint::initializeKnobs()
 {
     //This page is created in the RotoContext, before initializeKnobs() is called.
-    KnobPagePtr generalPage = boost::dynamic_pointer_cast<KnobPage>( getKnobByName("General") );
+    KnobPagePtr generalPage = std::dynamic_pointer_cast<KnobPage>( getKnobByName("General") );
 
     assert(generalPage);
 
@@ -1197,8 +1197,8 @@ RotoPaint::knobChanged(KnobI* k,
     }
     bool ret = true;
     KnobIPtr kShared = k->shared_from_this();
-    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
-    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
+    KnobButtonPtr isBtn = std::dynamic_pointer_cast<KnobButton>(kShared);
+    KnobGroupPtr isGrp = std::dynamic_pointer_cast<KnobGroup>(kShared);
     if ( isBtn && _imp->ui->onToolChangedInternal(isBtn) ) {
         return true;
     } else if ( isGrp && _imp->ui->onRoleChangedInternal(isGrp) ) {
@@ -2169,7 +2169,7 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
     assert(ctx);
     std::list<RotoDrawableItemPtr> curves = ctx->getCurvesByRenderOrder();
     for (std::list<RotoDrawableItemPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
         if ( (*it)->isLockedRecursive() ) {
             continue;
         }

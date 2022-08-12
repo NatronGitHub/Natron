@@ -250,7 +250,7 @@ private:
 
 
     RotoDrawableItem* findPreviousInHierarchy();
-    boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
+    std::unique_ptr<RotoDrawableItemPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

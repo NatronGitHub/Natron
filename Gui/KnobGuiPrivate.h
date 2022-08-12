@@ -35,8 +35,6 @@
 #include <cfloat>
 #include <stdexcept>
 #include <map>
-#include <boost/weak_ptr.hpp>
-
 
 #include <QtCore/QString>
 #include <QHBoxLayout>
@@ -113,7 +111,7 @@ struct KnobGuiPrivate
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
     ////A vector of all other knobs on the same line.
-    std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
+    std::vector< std::weak_ptr< KnobI > > knobsOnSameLine;
     QWidget* field;
     QWidget* labelContainer;
     KnobClickableLabel* descriptionLabel;
@@ -121,7 +119,7 @@ struct KnobGuiPrivate
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
-    std::vector< boost::shared_ptr<Curve> > guiCurves;
+    std::vector< std::shared_ptr<Curve> > guiCurves;
     bool guiRemoved;
 
     // True if this KnobGui is used in the viewer
@@ -129,7 +127,7 @@ struct KnobGuiPrivate
 
     KnobGuiPrivate(KnobGuiContainerI* container);
 
-    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
+    void removeFromKnobsOnSameLineVector(const std::shared_ptr<KnobI>& knob);
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -745,7 +745,7 @@ Image::Image(const ImagePlaneDesc& components,
                                                                   storage,
                                                                   textureTarget) ),
 #else
-                  boost::make_shared<ImageParams>(regionOfDefinition,
+                  std::make_shared<ImageParams>(regionOfDefinition,
                                                   par,
                                                   mipMapLevel,
                                                   bounds,
@@ -845,7 +845,7 @@ Image::makeParams(const RectD & rod,
                                                            storage,
                                                            textureTarget) );
 #else
-    return boost::make_shared<ImageParams>(rod,
+    return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipMapLevel,
                                            bounds,
@@ -892,7 +892,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                                            storage,
                                                            textureTarget) );
 #else
-    return boost::make_shared<ImageParams>(rod,
+    return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipMapLevel,
                                            bounds,
@@ -921,7 +921,7 @@ Image::pasteFromForDepth(const Image & srcImg,
     // NOTE: before removing the following asserts, please explain why an empty image may happen
 
     QWriteLocker k(&_entryLock);
-    boost::scoped_ptr<QReadLocker> k2;
+    std::unique_ptr<QReadLocker> k2;
     if (takeSrcLock && &srcImg != this) {
         k2.reset( new QReadLocker(&srcImg._entryLock) );
     }
@@ -993,7 +993,7 @@ Image::resizeInternal(const Image* srcImg,
 {
     ///Allocate to resized image
     if (!createInCache) {
-        *outputImage = boost::make_shared<Image>( srcImg->getComponents(),
+        *outputImage = std::make_shared<Image>( srcImg->getComponents(),
                                        srcImg->getRoD(),
                                        merge,
                                        srcImg->getMipMapLevel(),
@@ -1003,9 +1003,9 @@ Image::resizeInternal(const Image* srcImg,
                                        srcImg->getFieldingOrder(),
                                        srcImg->usesBitMap() );
     } else {
-        ImageParamsPtr params = boost::make_shared<ImageParams>( *srcImg->getParams() );
+        ImageParamsPtr params = std::make_shared<ImageParams>( *srcImg->getParams() );
         params->setBounds(merge);
-        *outputImage = boost::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
+        *outputImage = std::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1300,7 +1300,7 @@ Image::pasteFrom(const Image & src,
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
 #else
-            ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
+            ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
 #endif
             tmpImg->pasteFrom(src, roi);
 
@@ -1367,7 +1367,7 @@ Image::pasteFrom(const Image & src,
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 #else
-        ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
+        ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
 #endif
 
         {
@@ -2123,7 +2123,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     assert( !copyBitMap || _bitmap.getBitmap() );
 
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg = boost::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
+    ImagePtr tmpImg = std::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 

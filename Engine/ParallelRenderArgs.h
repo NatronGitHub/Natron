@@ -54,7 +54,7 @@ NATRON_NAMESPACE_ENTER
 typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
 typedef std::map<int, FrameRangesMap> FramesNeededMap;
-typedef boost::shared_ptr<FramesNeededMap> FramesNeededMapPtr;
+typedef std::shared_ptr<FramesNeededMap> FramesNeededMapPtr;
 
 struct InputMatrix
 {
@@ -64,7 +64,7 @@ struct InputMatrix
 };
 
 typedef std::map<int, InputMatrix> InputMatrixMap;
-typedef boost::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
+typedef std::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
 
 
 class NodeFrameRequest;
@@ -168,7 +168,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     InputMatrixMapPtr transforms;
-    boost::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
+    std::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
 
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -248,7 +248,7 @@ typedef std::map<NodePtr, NodeFrameRequestPtr> FrameRequestMap;
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
+    std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
     NodesList nodes;
 
 protected:
@@ -277,7 +277,7 @@ public:
                              bool draftMode,
                              const RenderStatsPtr& stats);
 
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
+    ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 
     void updateNodesRequest(const FrameRequestMap& request);
 

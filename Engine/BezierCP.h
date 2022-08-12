@@ -179,7 +179,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<BezierCPPrivate> _imp;
+    std::unique_ptr<BezierCPPrivate> _imp;
 };
 
 typedef std::list<BezierCPPtr> BezierCPs;

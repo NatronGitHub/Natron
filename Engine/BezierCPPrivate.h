@@ -90,18 +90,18 @@ struct BezierCPPrivate
         , guiLeftY(0)
         , guiRightY(0)
     {
-        curveX= boost::make_shared<Curve>();
-        curveY= boost::make_shared<Curve>();
-        guiCurveX= boost::make_shared<Curve>();
-        guiCurveY= boost::make_shared<Curve>();
-        curveLeftBezierX= boost::make_shared<Curve>();
-        curveRightBezierX= boost::make_shared<Curve>();
-        curveLeftBezierY= boost::make_shared<Curve>();
-        curveRightBezierY= boost::make_shared<Curve>();
-        guiCurveLeftBezierX= boost::make_shared<Curve>();
-        guiCurveRightBezierX= boost::make_shared<Curve>();
-        guiCurveLeftBezierY= boost::make_shared<Curve>();
-        guiCurveRightBezierY= boost::make_shared<Curve>();
+        curveX= std::make_shared<Curve>();
+        curveY= std::make_shared<Curve>();
+        guiCurveX= std::make_shared<Curve>();
+        guiCurveY= std::make_shared<Curve>();
+        curveLeftBezierX= std::make_shared<Curve>();
+        curveRightBezierX= std::make_shared<Curve>();
+        curveLeftBezierY= std::make_shared<Curve>();
+        curveRightBezierY= std::make_shared<Curve>();
+        guiCurveLeftBezierX= std::make_shared<Curve>();
+        guiCurveRightBezierX= std::make_shared<Curve>();
+        guiCurveLeftBezierY= std::make_shared<Curve>();
+        guiCurveRightBezierY= std::make_shared<Curve>();
     }
 };
 

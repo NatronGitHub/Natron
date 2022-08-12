@@ -212,7 +212,7 @@ RotoSmear::render(const RenderActionArgs& args)
 {
     NodePtr node = getNode();
     RotoDrawableItemPtr item = node->getAttachedRotoItem();
-    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoStrokeItemPtr stroke = std::dynamic_pointer_cast<RotoStrokeItem>(item);
     RotoContextPtr context = stroke->getContext();
 
     assert(context);

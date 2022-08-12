@@ -114,8 +114,8 @@ public:
     bool canCancel;
     bool updatedProgressOnce;
     int firstFrame, lastFrame, frameStep, lastRenderedFrame, nFramesRendered;
-    boost::scoped_ptr<TimeLapse> timer;
-    boost::scoped_ptr<QTimer> refreshLabelTimer;
+    std::unique_ptr<TimeLapse> timer;
+    std::unique_ptr<QTimer> refreshLabelTimer;
     QString message;
     ProcessHandlerPtr process;
 

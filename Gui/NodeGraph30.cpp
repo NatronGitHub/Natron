@@ -86,7 +86,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 
     InspectorNodePtr v;
     if (lastUsedViewer) {
-        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
+        v = std::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                         getInternalNode()->getNode() );
     } else {
         CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
@@ -96,7 +96,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
         if (!viewerNode) {
             return;
         }
-        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
+        v = std::dynamic_pointer_cast<InspectorNode>(viewerNode);
     }
 
     if (!v) {
@@ -110,7 +110,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 
     ///get a ptr to the NodeGui
     NodeGuiIPtr gui_i = v->getNodeGui();
-    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();

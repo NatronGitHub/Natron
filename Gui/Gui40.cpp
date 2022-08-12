@@ -547,6 +547,9 @@ Gui::isDraggingPanel() const
 NodeGraph*
 Gui::getNodeGraph() const
 {
+    if (!_imp) {
+        return nullptr;
+    }
     return _imp->_nodeGraphArea;
 }
 

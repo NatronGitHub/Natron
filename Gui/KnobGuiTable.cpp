@@ -205,7 +205,7 @@ KnobTableItemDelegate::paint(QPainter * painter,
 void
 KnobGuiTable::createWidget(QHBoxLayout* layout)
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
 
@@ -352,7 +352,7 @@ KnobGuiTablePrivate::createItem(const KnobTablePtr& knob,
 void
 KnobGuiTable::onAddButtonClicked()
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
 
@@ -389,7 +389,7 @@ KnobGuiTable::onAddButtonClicked()
 void
 KnobGuiTable::onEditButtonClicked()
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
     std::string oldTable = knob->getValue();
@@ -421,7 +421,7 @@ KnobGuiTable::onEditButtonClicked()
 void
 KnobGuiTable::onRemoveButtonClicked()
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
     QModelIndexList selection = _imp->table->selectionModel()->selectedRows();
@@ -455,7 +455,7 @@ KnobGuiTable::onRemoveButtonClicked()
 void
 KnobGuiTable::updateGUI(int /*dimension*/)
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
 
@@ -559,7 +559,7 @@ KnobGuiTable::onItemDoubleClicked(TableItem* item)
         }
     }
     assert(row >= 0 && col >= 0);
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
     assert(knob);
     if ( !knob || (row < 0) || (col < 0) ) {
         return;
@@ -616,7 +616,7 @@ KnobGuiTable::onItemDataChanged(TableItem* item)
     }
 
     if (row != -1) {
-        KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+        KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
         assert(knob);
 
         std::string oldValue = knob->getValue();
@@ -641,7 +641,7 @@ KnobGuiLayers::KnobGuiLayers(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
 {
-    _knob = boost::dynamic_pointer_cast<KnobLayers>(knob);
+    _knob = std::dynamic_pointer_cast<KnobLayers>(knob);
 }
 
 KnobGuiLayers::~KnobGuiLayers()
@@ -754,7 +754,7 @@ KnobGuiLayers::tableChanged(int row,
     if (col != 0) {
         return;
     }
-    KnobLayersPtr knob = boost::dynamic_pointer_cast<KnobLayers>( getKnob() );
+    KnobLayersPtr knob = std::dynamic_pointer_cast<KnobLayers>( getKnob() );
     assert(knob);
     std::list<std::vector<std::string> > table;
     knob->decodeFromKnobTableFormat(*newEncodedValue, &table);

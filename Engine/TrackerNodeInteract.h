@@ -248,7 +248,7 @@ enum TrackerDrawStateEnum
 };
 
 typedef QFutureWatcher<std::pair<ImagePtr, RectI> > TrackWatcher;
-typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
+typedef std::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey
 {
@@ -364,7 +364,7 @@ public:
     TrackMarkerPtr interactMarker, hoverMarker;
 
     typedef std::map<int, GLTexturePtr> KeyFrameTexIDs;
-    typedef std::map<TrackMarkerWPtr, KeyFrameTexIDs> TrackKeysMap;
+    typedef std::map<TrackMarkerWPtr, KeyFrameTexIDs, std::owner_less<TrackMarkerWPtr>> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     GLTexturePtr selectedMarkerTexture;

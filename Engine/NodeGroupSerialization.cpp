@@ -54,7 +54,7 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
-            NodeSerializationPtr state = boost::make_shared<NodeSerialization>(*it);
+            NodeSerializationPtr state = std::make_shared<NodeSerialization>(*it);
             _serializedNodes.push_back(state);
         }
     }
@@ -299,7 +299,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
-                NodeGroupPtr sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
+                NodeGroupPtr sharedGrp = std::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.

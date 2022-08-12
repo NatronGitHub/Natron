@@ -29,11 +29,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QTreeWidget>
@@ -131,7 +126,7 @@ struct CurveEditorPrivate
     LineEdit* filterEdit;
     QWidget* leftPaneContainer;
     QVBoxLayout* leftPaneLayout;
-    boost::scoped_ptr<QUndoStack> undoStack;
+    std::unique_ptr<QUndoStack> undoStack;
     QAction* undoAction, *redoAction;
     QWidget* expressionContainer;
     QHBoxLayout* expressionLayout;
@@ -442,9 +437,9 @@ createElementsForKnob(QTreeWidgetItem* parent,
 
     if (k->getDimension() == 1) {
         if (kgui) {
-            knobCurve = boost::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), 0), kgui, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) ;
+            knobCurve = std::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), 0), kgui, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) ;
         } else {
-            knobCurve = boost::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), 0, true), k, rotoctx, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.);
+            knobCurve = std::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), 0, true), k, rotoctx, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.);
         }
         curveWidget->addCurveAndSetColor(knobCurve);
 
@@ -465,10 +460,10 @@ createElementsForKnob(QTreeWidgetItem* parent,
             NodeCurveEditorElement* elem;
             KnobCurveGuiPtr dimCurve;
             if (kgui) {
-                dimCurve = boost::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), j), kgui, j, curveName, QColor(255, 255, 255), 1.);
+                dimCurve = std::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), j), kgui, j, curveName, QColor(255, 255, 255), 1.);
                 elem = new NodeCurveEditorElement(tree, curveEditor, kgui, j, dimItem, dimCurve);
             } else {
-                dimCurve = boost::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), j, true), k, rotoctx, j, curveName, QColor(255, 255, 255), 1.);
+                dimCurve = std::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), j, true), k, rotoctx, j, curveName, QColor(255, 255, 255), 1.);
                 elem = new NodeCurveEditorElement(tree, curveEditor, k, j, dimItem, dimCurve);
             }
             curveWidget->addCurveAndSetColor(dimCurve);
@@ -1269,7 +1264,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
                                          CurveEditor* widget,
                                          const BezierPtr& curve,
                                          RotoCurveEditorContext* context)
-    : RotoItemEditorContext(tree, widget, boost::dynamic_pointer_cast<RotoDrawableItem>(curve), context)
+    : RotoItemEditorContext(tree, widget, std::dynamic_pointer_cast<RotoDrawableItem>(curve), context)
     , _imp( new BezierEditorContextPrivate() )
 {
     _imp->curveItem = new QTreeWidgetItem( getItem() );
@@ -1364,8 +1359,8 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
     std::list<RotoDrawableItemPtr> curves = rotoCtx->getCurvesByRenderOrder();
 
     for (std::list<RotoDrawableItemPtr>::iterator it = curves.begin(); it != curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
+        RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>(*it);
         if (isBezier) {
             BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezier, this);
             _imp->curves.push_back(c);
@@ -1464,8 +1459,8 @@ RotoCurveEditorContext::itemInserted(int,
 
     assert(roto);
     RotoItemPtr item = roto->getLastInsertedItem();
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(item);
+    RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>(item);
     if (isBezier) {
         BezierEditorContext* b = new BezierEditorContext(_imp->tree, _imp->widget, isBezier, this);
         _imp->curves.push_back(b);
@@ -1592,7 +1587,7 @@ CurveEditor::getSelectedCurve() const
 void
 CurveEditor::setSelectedCurve(const CurveGuiPtr& curve)
 {
-    KnobCurveGuiPtr knobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(curve);
+    KnobCurveGuiPtr knobCurve = std::dynamic_pointer_cast<KnobCurveGui>(curve);
 
     if (curve && !knobCurve) {
         return;

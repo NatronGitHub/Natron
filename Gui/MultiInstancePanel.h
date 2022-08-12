@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QThread>
@@ -168,7 +163,7 @@ private:
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
-    boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
+    std::unique_ptr<MultiInstancePanelPrivate> _imp;
 };
 
 struct TrackerPanelPrivateV1;
@@ -220,7 +215,7 @@ private:
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
     virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
-    boost::scoped_ptr<TrackerPanelPrivateV1> _imp;
+    std::unique_ptr<TrackerPanelPrivateV1> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

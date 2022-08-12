@@ -476,7 +476,7 @@ makeBezierCPFromPoint(const Point& p,
                       const Point& left,
                       const Point& right)
 {
-    BezierCPPtr ret = boost::make_shared<BezierCP>();
+    BezierCPPtr ret = std::make_shared<BezierCP>();
 
     ret->setStaticPosition(false, p.x, p.y);
     ret->setLeftBezierStaticPosition(false, left.x, left.y);

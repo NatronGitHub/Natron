@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
@@ -87,7 +83,7 @@ private:
 
     void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
 
-    boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
+    std::unique_ptr<ManageUserParamsDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

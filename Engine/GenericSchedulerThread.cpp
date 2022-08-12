@@ -96,7 +96,7 @@ struct GenericSchedulerThreadPrivate
     QMutex executingOnMainThreadMutex;
 
     // Only used on the main-thread
-    boost::scoped_ptr<GenericSchedulerThreadWatcher> blockingOperationWatcher;
+    std::unique_ptr<GenericSchedulerThreadWatcher> blockingOperationWatcher;
 
     GenericSchedulerThreadPrivate(GenericSchedulerThread* p)
         : _p(p)
@@ -184,7 +184,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        GenericThreadStartArgsPtr stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
+        GenericThreadStartArgsPtr stubArgs = std::make_shared<GenericThreadStartArgs>(true);
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 

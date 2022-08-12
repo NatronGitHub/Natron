@@ -312,7 +312,7 @@ struct RenderStatsPrivate
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
 
-    typedef std::map<NodeWPtr, NodeRenderStats > NodeInfosMap;
+    typedef std::map<NodeWPtr, NodeRenderStats, std::owner_less<NodeWPtr>> NodeInfosMap;
     NodeInfosMap nodeInfos;
 
 

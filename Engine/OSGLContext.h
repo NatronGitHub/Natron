@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 //========================================================================
 // GLFW 3.2 - www.glfw.org
 //------------------------------------------------------------------------
@@ -221,7 +216,7 @@ private:
 
 
     friend class OSGLContextAttacher;
-    boost::scoped_ptr<OSGLContextPrivate> _imp;
+    std::unique_ptr<OSGLContextPrivate> _imp;
 };
 
 

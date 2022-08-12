@@ -50,11 +50,11 @@ NATRON_NAMESPACE_ENTER
 class FileSystemModel;
 struct FileSystemItemPrivate;
 class FileSystemItem
-    : public boost::enable_shared_from_this<FileSystemItem>
+    : public std::enable_shared_from_this<FileSystemItem>
 {
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
     FileSystemItem( const FileSystemModelPtr& model,
                     bool isDir,
                     const QString& filename,
@@ -69,7 +69,7 @@ public:
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
     //static FileSystemItemPtr create( T&& ... all ) {
-    //    return boost::make_shared<FileSystemItem>( std::forward<T>(all)... );
+    //    return std::make_shared<FileSystemItem>( std::forward<T>(all)... );
     //}
     static FileSystemItemPtr create( const FileSystemModelPtr& model,
                                                      bool isDir,
@@ -137,7 +137,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<FileSystemItemPrivate> _imp;
+    std::unique_ptr<FileSystemItemPrivate> _imp;
 };
 
 class FileSystemModel;
@@ -172,7 +172,7 @@ private:
 
     void gatheringKernel(const FileSystemItemPtr& item);
 
-    boost::scoped_ptr<FileGathererThreadPrivate> _imp;
+    std::unique_ptr<FileGathererThreadPrivate> _imp;
 };
 
 
@@ -204,7 +204,7 @@ public:
 struct FileSystemModelPrivate;
 class FileSystemModel
     : public QAbstractItemModel
-    , public boost::enable_shared_from_this<FileSystemModel>
+    , public std::enable_shared_from_this<FileSystemModel>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -357,7 +357,7 @@ private:
 
     friend class FileSystemItem;
 
-    boost::scoped_ptr<FileSystemModelPrivate> _imp;
+    std::unique_ptr<FileSystemModelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

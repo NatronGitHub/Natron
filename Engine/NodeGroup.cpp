@@ -2364,8 +2364,8 @@ exportRotoLayer(int indentLevel,
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
     for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
 
         if (isBezier) {
             double time;

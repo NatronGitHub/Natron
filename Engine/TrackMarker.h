@@ -103,7 +103,7 @@ NATRON_NAMESPACE_ENTER
 struct TrackMarkerPrivate;
 class TrackMarker
     : public NamedKnobHolder
-    , public boost::enable_shared_from_this<TrackMarker>
+    , public std::enable_shared_from_this<TrackMarker>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -112,7 +112,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 protected:
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     TrackMarker(const TrackerContextPtr& context);
 
@@ -241,7 +241,7 @@ Q_SIGNALS:
 private:
 
 
-    boost::scoped_ptr<TrackMarkerPrivate> _imp;
+    std::unique_ptr<TrackMarkerPrivate> _imp;
 };
 
 
@@ -266,7 +266,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private:
     struct MakeSharedEnabler;
     
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     TrackMarkerPM(const TrackerContextPtr& context);
 

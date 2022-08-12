@@ -152,7 +152,7 @@ private:
 
     RectD computeBoundingBoxInternal(double time) const;
 
-    boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
+    std::unique_ptr<RotoStrokeItemPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

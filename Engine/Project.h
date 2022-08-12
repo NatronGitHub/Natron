@@ -32,10 +32,6 @@
 #include <vector>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -61,11 +57,11 @@ NATRON_NAMESPACE_ENTER
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder
+    : public KnobHolder
     , public NodeCollection
     , public AfterQuitProcessingI
     , public boost::noncopyable
-    , public boost::enable_shared_from_this<Project>
+    , public std::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -73,7 +69,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
     Project(const AppInstancePtr& appInstance);
 
 public:
@@ -87,7 +83,7 @@ public:
         std::vector<std::string> viewNames;
     };
 
-    typedef boost::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
+    typedef std::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
 
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
@@ -428,7 +424,7 @@ private:
     bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
 
 
-    boost::scoped_ptr<ProjectPrivate> _imp;
+    std::unique_ptr<ProjectPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

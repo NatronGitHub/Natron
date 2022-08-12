@@ -33,7 +33,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtAlgorithms>
 CLANG_DIAG_ON(deprecated)
 
-#include <boost/weak_ptr.hpp>
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Engine/CreateNodeArgs.h"

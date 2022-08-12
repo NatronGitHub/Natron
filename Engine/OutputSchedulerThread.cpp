@@ -33,7 +33,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/clamp.hpp>
 
 #include <QtCore/QMetaType>
@@ -170,7 +169,7 @@ public:
     virtual ~OutputSchedulerThreadExecMTArgs() {}
 };
 
-typedef boost::shared_ptr<OutputSchedulerThreadExecMTArgs> OutputSchedulerThreadExecMTArgsPtr;
+typedef std::shared_ptr<OutputSchedulerThreadExecMTArgs> OutputSchedulerThreadExecMTArgsPtr;
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 static bool
@@ -191,7 +190,7 @@ struct OutputSchedulerThreadPrivate
     //doesn't need any protection since it never changes and is set in the constructor
     OutputSchedulerThread::ProcessFrameModeEnum mode; //is the frame to be processed on the main-thread (i.e OpenGL rendering) or on the scheduler thread
     Timer timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
-    boost::scoped_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
+    std::unique_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
 
     ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
     ///but to count the number of frames rendered via notifyFrameRended which is called by the render thread.
@@ -1215,7 +1214,7 @@ OutputSchedulerThread::stopRender()
 GenericSchedulerThread::ThreadStateEnum
 OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 {
-    OutputSchedulerThreadStartArgsPtr args = boost::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
+    OutputSchedulerThreadStartArgsPtr args = std::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
 
     assert(args);
     _imp->runArgs = args;
@@ -1281,7 +1280,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             } else {
                 nbIterationsWithoutProcessing = 0;
             }
-            OutputSchedulerThreadExecMTArgsPtr framesToRender = boost::make_shared<OutputSchedulerThreadExecMTArgs>();
+            OutputSchedulerThreadExecMTArgsPtr framesToRender = std::make_shared<OutputSchedulerThreadExecMTArgs>();
             {
                 QMutexLocker l(&_imp->bufMutex);
                 _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender->frames);
@@ -1834,7 +1833,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         timelineGoTo(lastFrame);
     }
 
-    OutputSchedulerThreadStartArgsPtr args = boost::make_shared<OutputSchedulerThreadStartArgs>(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction);
+    OutputSchedulerThreadStartArgsPtr args = std::make_shared<OutputSchedulerThreadStartArgs>(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction);
 
     {
         QMutexLocker k(&_imp->renderFinishedMutex);
@@ -1862,7 +1861,7 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
     ///Make sure current frame is in the frame range
     int currentTime = timelineGetTime();
     OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
-    OutputSchedulerThreadStartArgsPtr args = boost::make_shared<OutputSchedulerThreadStartArgs>(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection);
+    OutputSchedulerThreadStartArgsPtr args = std::make_shared<OutputSchedulerThreadStartArgs>(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection);
     startTask(args);
 }
 
@@ -2200,7 +2199,7 @@ private:
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
-        RenderStatsPtr stats = boost::make_shared<RenderStats>(enableRenderStats);
+        RenderStatsPtr stats = std::make_shared<RenderStats>(enableRenderStats);
         NodePtr outputNode = output->getNode();
         std::string cb = outputNode->getBeforeFrameRenderCallback();
         if ( !cb.empty() ) {
@@ -2336,7 +2335,7 @@ private:
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImagePlaneDesc, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                                                scale, //< the scale at which to render
                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                                                viewsToRender[view], //< the view to render
@@ -2364,7 +2363,7 @@ private:
                 ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                 /*if (!renderDirectly) {
                     for (std::map<ImagePlaneDesc,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
-                        _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(it->second));
+                        _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, std::dynamic_pointer_cast<BufferableObject>(it->second));
                     }
                    } else {*/
                 _imp->scheduler->notifyFrameRendered(time, viewsToRender[view], viewsToRender, stats, eSchedulingPolicyFFA);
@@ -2454,12 +2453,12 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
 
 
         RenderingFlagSetter flagIsRendering( effect->getNode() );
-        ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
+        ImagePtr inputImage = std::dynamic_pointer_cast<Image>(it->frame);
         assert(inputImage);
 
         EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
-        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(frame.time,
+        std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(frame.time,
                                                                                                        scale, 0,
                                                                                                        it->view,
                                                                                                        true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
@@ -2711,7 +2710,7 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
     }
     if ( !frames.empty() ) {
         for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-            UpdateViewerParamsPtr params = boost::dynamic_pointer_cast<UpdateViewerParams>(it->frame);
+            UpdateViewerParamsPtr params = std::dynamic_pointer_cast<UpdateViewerParams>(it->frame);
             assert(params);
             viewer->updateViewer(params);
         }
@@ -2801,7 +2800,7 @@ private:
         RenderStatsPtr stats;
 
         if (enableRenderStats) {
-            stats = boost::make_shared<RenderStats>(enableRenderStats);
+            stats = std::make_shared<RenderStats>(enableRenderStats);
         }
         ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
         ///it calls appendToBuffer by itself
@@ -2820,7 +2819,7 @@ private:
         BufferableObjectPtrList toAppend;
 
         for (int i = 0; i < 2; ++i) {
-            args[i] = boost::make_shared<ViewerArgs>();
+            args[i] = std::make_shared<ViewerArgs>();
             status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), stats, args[i].get() );
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
@@ -2948,7 +2947,7 @@ struct RenderEnginePrivate
     ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
 
     // Only used on the main-thread
-    boost::scoped_ptr<RenderEngineWatcher> engineWatcher;
+    std::unique_ptr<RenderEngineWatcher> engineWatcher;
     struct RefreshRequest
     {
         bool enableStats;
@@ -3370,7 +3369,7 @@ RenderEngine::notifyFrameProduced(const BufferableObjectPtrList& frames,
 OutputSchedulerThread*
 ViewerRenderEngine::createScheduler(const OutputEffectInstancePtr& effect)
 {
-    return new ViewerDisplayScheduler( this, boost::dynamic_pointer_cast<ViewerInstance>(effect) );
+    return new ViewerDisplayScheduler( this, std::dynamic_pointer_cast<ViewerInstance>(effect) );
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
@@ -3446,7 +3445,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<CurrentFrameFunctorArgs> CurrentFrameFunctorArgsPtr;
+typedef std::shared_ptr<CurrentFrameFunctorArgs> CurrentFrameFunctorArgsPtr;
 
 class RenderCurrentFrameFunctorRunnable;
 struct ViewerCurrentFrameRequestSchedulerPrivate
@@ -3631,7 +3630,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> ViewerCurrentFrameRequestSchedulerExecOnMTPtr;
+typedef std::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> ViewerCurrentFrameRequestSchedulerExecOnMTPtr;
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
     : GenericSchedulerThread()
@@ -3658,7 +3657,7 @@ GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 {
     ThreadStateEnum state = eThreadStateActive;
-    ViewerCurrentFrameRequestSchedulerStartArgsPtr args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
+    ViewerCurrentFrameRequestSchedulerStartArgsPtr args = std::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
 
     assert(args);
 
@@ -3667,7 +3666,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsP
 #endif
 
     ///Wait for the work to be done
-    ViewerCurrentFrameRequestSchedulerExecOnMTPtr mtArgs = boost::make_shared<ViewerCurrentFrameRequestSchedulerExecOnMT>();
+    ViewerCurrentFrameRequestSchedulerExecOnMTPtr mtArgs = std::make_shared<ViewerCurrentFrameRequestSchedulerExecOnMT>();
     {
         QMutexLocker k(&_imp->producedFramesMutex);
         ProducedFrameSet::iterator found = _imp->producedFrames.end();
@@ -3761,7 +3760,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
     //bool hasDoneSomething = false;
     for (BufferableObjectPtrList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
         assert(*it2);
-        UpdateViewerParamsPtr params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
+        UpdateViewerParamsPtr params = std::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
         if ( params && (params->tiles.size() >= 1) ) {
             if (stats) {
@@ -3868,7 +3867,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         bool clearTexture[2] = {false, false};
 
         for (int i = 0; i < 2; ++i) {
-            args[i] = boost::make_shared<ViewerArgs>();
+            args[i] = std::make_shared<ViewerArgs>();
             status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, stats, args[i].get() );
 
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
@@ -3945,7 +3944,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         curStroke,
                                                                                         isRotoNeatRender) );
 #else
-    CurrentFrameFunctorArgsPtr functorArgs = boost::make_shared<CurrentFrameFunctorArgs>(view,
+    CurrentFrameFunctorArgsPtr functorArgs = std::make_shared<CurrentFrameFunctorArgs>(view,
                                                                                                          frame,
                                                                                                          stats,
                                                                                                          _imp->viewer,
@@ -3964,7 +3963,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         task.run();
     } else {
         // Identify this render request with an age
-        ViewerCurrentFrameRequestSchedulerStartArgsPtr request = boost::make_shared<ViewerCurrentFrameRequestSchedulerStartArgs>();
+        ViewerCurrentFrameRequestSchedulerStartArgsPtr request = std::make_shared<ViewerCurrentFrameRequestSchedulerStartArgs>();
         request->age = _imp->ageCounter;
 
         // If we reached the max amount of age, reset to 0... should never happen anyway
@@ -4009,7 +4008,7 @@ ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBacku
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    CurrentFrameFunctorArgsPtr args = boost::dynamic_pointer_cast<CurrentFrameFunctorArgs>(inArgs);
+    CurrentFrameFunctorArgsPtr args = std::dynamic_pointer_cast<CurrentFrameFunctorArgs>(inArgs);
 
     assert(args);
     RenderCurrentFrameFunctorRunnable task(args);

@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Gui/NodeGui.h"
 #include "Gui/GuiFwd.h"
 
@@ -82,7 +78,7 @@ private:
     virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
 
 private:
-    boost::scoped_ptr<BackdropGuiPrivate> _imp;
+    std::unique_ptr<BackdropGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

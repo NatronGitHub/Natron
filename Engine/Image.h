@@ -420,7 +420,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<ReadAccess> ReadAccessPtr;
+    typedef std::shared_ptr<ReadAccess> ReadAccessPtr;
 
     /**
      * @brief Lock the image for writing, while this object is living, the image buffer can't be read.
@@ -472,7 +472,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<WriteAccess> WriteAccessPtr;
+    typedef std::shared_ptr<WriteAccess> WriteAccessPtr;
 
     ReadAccess getReadRights() const
     {

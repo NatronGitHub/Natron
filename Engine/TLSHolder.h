@@ -36,12 +36,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QThread>
 
@@ -51,13 +45,13 @@ NATRON_NAMESPACE_ENTER
 
 ///This must be stored as a shared_ptr
 class TLSHolderBase
-    : public boost::enable_shared_from_this<TLSHolderBase>
+    : public std::enable_shared_from_this<TLSHolderBase>
 {
     friend class AppTLS;
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     TLSHolderBase() {}
 
@@ -95,16 +89,16 @@ class AppTLS
 {
     //This is the object in the QThreadStorage, it is duplicated on every thread
 
-    typedef std::set<TLSHolderBaseConstWPtr> TLSObjects;
-    struct GLobalTLSObject
+    typedef std::set<TLSHolderBaseConstWPtr, std::owner_less<TLSHolderBaseConstWPtr>> TLSObjects;
+    struct GlobalTLSObject
     {
         TLSObjects objects;
     };
 
-    typedef boost::shared_ptr<GLobalTLSObject> GLobalTLSObjectPtr;
+    typedef std::shared_ptr<GlobalTLSObject> GlobalTLSObjectPtr;
 
     //<spawned thread, spawner thread>
-    typedef std::map<const QThread*, const QThread*> ThreadSpawnMap;
+    typedef std::map<uintptr_t, const QThread*> ThreadSpawnMap;
 
 public:
 
@@ -141,7 +135,7 @@ public:
      * This function also returns the TLS for the given holder for convenience.
      **/
     template <typename T>
-    boost::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
+    std::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                                   const QThread* curThread);
 
 
@@ -153,14 +147,14 @@ public:
 private:
 
     template <typename T>
-    boost::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
+    std::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                                           const QThread* curThread,
                                                           const QThread* spawnerThread);
 
 
     //This is the "TLS" object: it stores a set of all TLSHolder's who used the TLS to clean it up afterwards
     mutable QReadWriteLock _objectMutex;
-    GLobalTLSObjectPtr _object;
+    GlobalTLSObjectPtr _object;
 
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
@@ -184,7 +178,7 @@ class TLSHolder
 
     struct ThreadData
     {
-        boost::shared_ptr<T> value;
+        std::shared_ptr<T> value;
     };
 
     typedef std::map<const QThread*, ThreadData> ThreadDataMap;
@@ -196,15 +190,15 @@ public:
 
     virtual ~TLSHolder() {}
 
-    boost::shared_ptr<T> getTLSData() const;
-    boost::shared_ptr<T> getOrCreateTLSData() const;
+    std::shared_ptr<T> getTLSData() const;
+    std::shared_ptr<T> getOrCreateTLSData() const;
 
 private:
 
     virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
-    boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
+    std::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
 
     //Store a cache on the object to be faster than using the getOrCreate... function from AppTLS
     mutable QReadWriteLock perThreadDataMutex;

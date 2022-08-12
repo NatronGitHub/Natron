@@ -83,7 +83,7 @@
 #define kCreateNodeArgsPropParamValue "CreateNodeArgsPropParamValue"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeSerialization> A pointer to a node serialization object.
+ * @brief optional x1 std::shared_ptr<NodeSerialization> A pointer to a node serialization object.
  * Default value - NULL
  * If non null, Natron will load the node state from this object.
  **/
@@ -173,7 +173,7 @@
 #define kCreateNodeArgsPropGroupContainer "CreateNodeArgsPropGroupContainer"
 
 /**
- * @brief optional x1 boost::shared_ptr<Node> A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
+ * @brief optional x1 std::shared_ptr<Node> A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
  * which are meta-bundles to the internal decoders/encoders.
  * Default value - null
  **/
@@ -234,26 +234,26 @@ class CreateNodeArgs
     };
     
     template <typename T>
-    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
+    std::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
     {
-        const boost::shared_ptr<PropertyBase>* propPtr = 0;
+        const std::shared_ptr<PropertyBase>* propPtr = 0;
 
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
+        std::map<std::string, std::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         if (found == _properties.end()) {
             if (throwOnFailure) {
                 throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
             }
-            return boost::shared_ptr<Property<T> >();
+            return std::shared_ptr<Property<T> >();
         }
         propPtr = &(found->second);
-        boost::shared_ptr<Property<T> > propTemplate;
-        propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
+        std::shared_ptr<Property<T> > propTemplate;
+        propTemplate = std::dynamic_pointer_cast<Property<T> >(*propPtr);
         assert(propPtr);
         if (!propTemplate) {
             if (throwOnFailure) {
                 throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
             }
-            return boost::shared_ptr<Property<T> >();
+            return std::shared_ptr<Property<T> >();
         }
 
         assert(propTemplate);
@@ -262,43 +262,43 @@ class CreateNodeArgs
 
 
     template <typename T>
-    boost::shared_ptr<Property<T> > createPropertyInternal(const std::string& name)
+    std::shared_ptr<Property<T> > createPropertyInternal(const std::string& name)
     {
-        boost::shared_ptr<PropertyBase>* propPtr = 0;
+        std::shared_ptr<PropertyBase>* propPtr = 0;
         propPtr = &_properties[name];
         
-        boost::shared_ptr<Property<T> > propTemplate;
+        std::shared_ptr<Property<T> > propTemplate;
         if (!*propPtr) {
-            propTemplate = boost::make_shared<Property<T> >();
+            propTemplate = std::make_shared<Property<T> >();
             *propPtr = propTemplate;
         } else {
-            propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
+            propTemplate = std::dynamic_pointer_cast<Property<T> >(*propPtr);
         }
         assert(propTemplate);
         return propTemplate;
     }
 
     template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue)
+    std::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue)
     {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
+        std::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue);
         return p;
     }
 
     template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue1, const T& defaultValue2)
+    std::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue1, const T& defaultValue2)
     {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
+        std::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value.push_back(defaultValue1);
         p->value.push_back(defaultValue2);
         return p;
     }
 
     template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const std::vector<T>& defaultValue)
+    std::shared_ptr<Property<T> > createProperty(const std::string& name, const std::vector<T>& defaultValue)
     {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
+        std::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
         p->value = defaultValue;
         return p;
     }
@@ -310,7 +310,7 @@ class CreateNodeArgs
         createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
+        createProperty<std::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, std::shared_ptr<NodeSerialization>());
         createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
@@ -343,7 +343,7 @@ public:
     template <typename T>
     void setProperty(const std::string& name, const T& value, int index = 0, bool failIfNotExisting = true)
     {
-        boost::shared_ptr<Property<T> > propTemplate;
+        std::shared_ptr<Property<T> > propTemplate;
         propTemplate = getProp<T>(name, failIfNotExisting);
         if (!propTemplate) {
             propTemplate = createProperty<T>(name, value);
@@ -358,7 +358,7 @@ public:
     template <typename T>
     void setPropertyN(const std::string& name, const std::vector<T>& values, bool failIfNotExisting = true)
     {
-        boost::shared_ptr<Property<T> > propTemplate;
+        std::shared_ptr<Property<T> > propTemplate;
         propTemplate = getProp<T>(name, failIfNotExisting);
         if (!propTemplate) {
             propTemplate = createProperty<T>(name, values);
@@ -368,7 +368,7 @@ public:
 
     int getPropertyDimension(const std::string& name, bool throwIfFailed = true) const
     {
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
+        std::map<std::string, std::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
         if (found == _properties.end()) {
             if (throwIfFailed) {
                 throw std::invalid_argument("Invalid property " + name);
@@ -407,7 +407,7 @@ public:
     template<typename T>
     T getProperty(const std::string& name, int index = 0) const
     {
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
+        std::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
         if (index < 0 || index >= (int)propTemplate->value.size()) {
             throw std::invalid_argument("CreateNodeArgs::getProperty(): index out of range for " + name);
         }
@@ -418,13 +418,13 @@ public:
     template<typename T>
     std::vector<T> getPropertyN(const std::string& name) const
     {
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
+        std::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
         return propTemplate->value;
 
     }
 private:
 
-    std::map<std::string, boost::shared_ptr<PropertyBase> > _properties;
+    std::map<std::string, std::shared_ptr<PropertyBase> > _properties;
 };
 
 NATRON_NAMESPACE_EXIT

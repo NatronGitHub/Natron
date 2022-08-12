@@ -31,12 +31,6 @@
 #include <cfloat> // DBL_MAX
 #include <climits> // INT_MAX
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -69,7 +63,7 @@ struct KnobGuiPrivate;
 class KnobGui
     : public QObject
     , public KnobGuiI
-    , public boost::enable_shared_from_this<KnobGui>
+    , public std::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -85,7 +79,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     KnobGui(const KnobIPtr& knob,
             KnobGuiContainerI* container);
@@ -513,7 +507,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<KnobGuiPrivate> _imp;
+    std::unique_ptr<KnobGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

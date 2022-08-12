@@ -125,7 +125,7 @@ private:
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    boost::scoped_ptr<PrecompNodePrivate> _imp;
+    std::unique_ptr<PrecompNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

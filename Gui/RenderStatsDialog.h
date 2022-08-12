@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -77,7 +72,7 @@ public Q_SLOTS:
 private:
 
     virtual void closeEvent(QCloseEvent * event) OVERRIDE FINAL;
-    boost::scoped_ptr<RenderStatsDialogPrivate> _imp;
+    std::unique_ptr<RenderStatsDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

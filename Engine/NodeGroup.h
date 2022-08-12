@@ -289,7 +289,7 @@ public:
 private:
     void quitAnyProcessingInternal(bool blocking);
 
-    boost::scoped_ptr<NodeCollectionPrivate> _imp;
+    std::unique_ptr<NodeCollectionPrivate> _imp;
 };
 
 
@@ -406,7 +406,7 @@ private:
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE;
-    boost::scoped_ptr<NodeGroupPrivate> _imp;
+    std::unique_ptr<NodeGroupPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

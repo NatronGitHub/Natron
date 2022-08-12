@@ -530,7 +530,7 @@ ViewerTab::~ViewerTab()
 {
     Gui* gui = getGui();
     if (gui) {
-        NodeGraph* graph = 0;
+        NodeGraph* graph = nullptr;
         if (_imp->viewerNode) {
             NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
@@ -963,7 +963,7 @@ ViewerTab::eventFilter(QObject *target,
             if (app) {
                 NodeGuiIPtr nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
                 assert(nodegui_i);
-                NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+                NodeGuiPtr nodegui = std::dynamic_pointer_cast<NodeGui>(nodegui_i);
                 if (nodegui) {
                     gui->selectNode(nodegui);
                 }

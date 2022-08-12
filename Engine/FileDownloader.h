@@ -88,9 +88,9 @@ public Q_SLOTS:
 private:
 
     QNetworkReply* m_reply;
-    boost::scoped_ptr<QNetworkAccessManager> m_WebCtrl;
-    boost::scoped_ptr<QByteArray> m_DownloadedData;
-    boost::scoped_ptr<QTimer> m_timer;
+    std::unique_ptr<QNetworkAccessManager> m_WebCtrl;
+    std::unique_ptr<QByteArray> m_DownloadedData;
+    std::unique_ptr<QTimer> m_timer;
 };
 
 NATRON_NAMESPACE_EXIT

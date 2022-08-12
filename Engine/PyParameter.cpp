@@ -641,7 +641,7 @@ AnimatedParam::getExpression(int dimension,
 ///////////// IntParam
 
 IntParam::IntParam(const KnobIntPtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _intKnob(knob)
 {
 }
@@ -987,7 +987,7 @@ IntParam::addAsDependencyOf(int fromExprDimension,
 //////////// DoubleParam
 
 DoubleParam::DoubleParam(const KnobDoublePtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _doubleKnob(knob)
 {
 }
@@ -1151,7 +1151,7 @@ Double2DParam::setUsePointInteract(bool use)
 void
 Double2DParam::setCanAutoFoldDimensions(bool can)
 {
-    boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
+    std::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
     if (!knob) {
         return;
     }
@@ -1349,7 +1349,7 @@ DoubleParam::addAsDependencyOf(int fromExprDimension,
 ////////ColorParam
 
 ColorParam::ColorParam(const KnobColorPtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _colorKnob(knob)
 {
 }
@@ -1607,7 +1607,7 @@ ColorParam::addAsDependencyOf(int fromExprDimension,
 
 //////////////// ChoiceParam
 ChoiceParam::ChoiceParam(const KnobChoicePtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _choiceKnob(knob)
 {
 }
@@ -1855,7 +1855,7 @@ ChoiceParam::addAsDependencyOf(int fromExprDimension,
 
 
 BooleanParam::BooleanParam(const KnobBoolPtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _boolKnob(knob)
 {
 }
@@ -2006,7 +2006,7 @@ BooleanParam::addAsDependencyOf(int fromExprDimension,
 
 
 StringParamBase::StringParamBase(const KnobStringBasePtr& knob)
-    : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : AnimatedParam( std::dynamic_pointer_cast<KnobI>(knob) )
     , _stringKnob(knob)
 {
 }
@@ -2156,7 +2156,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 ////////////////////StringParam
 
 StringParam::StringParam(const KnobStringPtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( std::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2196,7 +2196,7 @@ StringParam::setType(StringParam::TypeEnum type)
 /////////////////////FileParam
 
 FileParam::FileParam(const KnobFilePtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( std::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2241,7 +2241,7 @@ FileParam::reloadFile()
 /////////////////////OutputFileParam
 
 OutputFileParam::OutputFileParam(const KnobOutputFilePtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( std::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2279,7 +2279,7 @@ OutputFileParam::openFile()
 ////////////////////PathParam
 
 PathParam::PathParam(const KnobPathPtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( std::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2338,7 +2338,7 @@ PathParam::getTable(std::list<std::vector<std::string> >* table) const
 
 ButtonParam::ButtonParam(const KnobButtonPtr& knob)
     : Param(knob)
-    , _buttonKnob( boost::dynamic_pointer_cast<KnobButton>(knob) )
+    , _buttonKnob( std::dynamic_pointer_cast<KnobButton>(knob) )
 {
 }
 
@@ -2360,7 +2360,7 @@ ButtonParam::trigger()
 
 SeparatorParam::SeparatorParam(const KnobSeparatorPtr& knob)
     : Param(knob)
-    , _separatorKnob( boost::dynamic_pointer_cast<KnobSeparator>(knob) )
+    , _separatorKnob( std::dynamic_pointer_cast<KnobSeparator>(knob) )
 {
 }
 
@@ -2372,7 +2372,7 @@ SeparatorParam::~SeparatorParam()
 
 GroupParam::GroupParam(const KnobGroupPtr& knob)
     : Param(knob)
-    , _groupKnob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
+    , _groupKnob( std::dynamic_pointer_cast<KnobGroup>(knob) )
 {
 }
 
@@ -2432,7 +2432,7 @@ GroupParam::getIsOpened() const
 
 PageParam::PageParam(const KnobPagePtr& knob)
     : Param(knob)
-    , _pageKnob( boost::dynamic_pointer_cast<KnobPage>(knob) )
+    , _pageKnob( std::dynamic_pointer_cast<KnobPage>(knob) )
 {
 }
 
@@ -2461,7 +2461,7 @@ PageParam::addParam(const Param* param)
 
 ////////////////////ParametricParam
 ParametricParam::ParametricParam(const KnobParametricPtr& knob)
-    : Param( boost::dynamic_pointer_cast<KnobI>(knob) )
+    : Param( std::dynamic_pointer_cast<KnobI>(knob) )
     , _parametricKnob(knob)
 {
 }

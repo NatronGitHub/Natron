@@ -444,7 +444,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<ViewerInstancePrivate> _imp;
+    std::unique_ptr<ViewerInstancePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

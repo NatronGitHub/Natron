@@ -347,7 +347,7 @@ KnobI::getTopLevelPage() const
     }
 
     ////find in which page the knob should be
-    KnobPagePtr isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
+    KnobPagePtr isTopLevelParentAPage = std::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
 
     return isTopLevelParentAPage;
 }
@@ -461,7 +461,7 @@ struct KnobHelperPrivate
     mutable U32 lastRandomHash;
 
     ///Used to prevent recursive calls for expressions
-    boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
     mutable QMutex valueChangedBlockedMutex;
@@ -535,7 +535,7 @@ struct KnobHelperPrivate
         , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
-        tlsData = boost::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
+        tlsData = std::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
         if ( holder && !holder->canKnobsAnimate() ) {
             isAnimationEnabled = false;
         }
@@ -754,7 +754,7 @@ void
 KnobHelper::populate()
 {
     KnobIPtr thisKnob = shared_from_this();
-    KnobSignalSlotHandlerPtr handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
+    KnobSignalSlotHandlerPtr handler = std::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 
@@ -771,7 +771,7 @@ KnobHelper::populate()
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         if ( canAnimate() ) {
-            _imp->curves[i] = boost::make_shared<Curve>(this, i);
+            _imp->curves[i] = std::make_shared<Curve>(this, i);
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
 
@@ -2793,7 +2793,7 @@ KnobHelper::setExpressionInvalid(int dimension,
     }
     if ( getHolder() && getHolder()->getApp() ) {
         if (wasValid && !valid) {
-            getHolder()->getApp()->addInvalidExpressionKnob( boost::const_pointer_cast<KnobI>( shared_from_this() ) );
+            getHolder()->getApp()->addInvalidExpressionKnob( std::const_pointer_cast<KnobI>( shared_from_this() ) );
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_expressionChanged(dimension);
             }
@@ -4566,7 +4566,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
             if (userPages.empty()) {
                 destPage = otherIsEffect->getOrCreateUserPageKnob();
             } else {
-                destPage = boost::dynamic_pointer_cast<KnobPage>(userPages.front()->shared_from_this());
+                destPage = std::dynamic_pointer_cast<KnobPage>(userPages.front()->shared_from_this());
             }
 
         }
@@ -5315,7 +5315,7 @@ KnobHolder::getUserPageKnob() const
             if (!(*it)->isUserKnob()) {
                 continue;
             }
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 return isPage;
             }
@@ -5355,7 +5355,7 @@ KnobHolder::createIntKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
+        return std::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
     KnobIntPtr ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
     ret->setName(name);
@@ -5379,7 +5379,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
+        return std::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
     KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
     ret->setName(name);
@@ -5403,7 +5403,7 @@ KnobHolder::createColorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
+        return std::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
     KnobColorPtr ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
     ret->setName(name);
@@ -5426,7 +5426,7 @@ KnobHolder::createBoolKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
+        return std::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
     KnobBoolPtr ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
     ret->setName(name);
@@ -5449,7 +5449,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
+        return std::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
     KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
     ret->setName(name);
@@ -5472,7 +5472,7 @@ KnobHolder::createButtonKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
+        return std::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
     KnobButtonPtr ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
     ret->setName(name);
@@ -5495,7 +5495,7 @@ KnobHolder::createSeparatorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
+        return std::dynamic_pointer_cast<KnobSeparator>(existingKnob);
     }
     KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
     ret->setName(name);
@@ -5519,7 +5519,7 @@ KnobHolder::createStringKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobString>(existingKnob);
+        return std::dynamic_pointer_cast<KnobString>(existingKnob);
     }
     KnobStringPtr ret = AppManager::createKnob<KnobString>(this, label, 1, false);
     ret->setName(name);
@@ -5542,7 +5542,7 @@ KnobHolder::createFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
+        return std::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
     KnobFilePtr ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
     ret->setName(name);
@@ -5565,7 +5565,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
+        return std::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
     KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
     ret->setName(name);
@@ -5588,7 +5588,7 @@ KnobHolder::createPathKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
+        return std::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
     KnobPathPtr ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
     ret->setName(name);
@@ -5611,7 +5611,7 @@ KnobHolder::createGroupKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
+        return std::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
     KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
     ret->setName(name);
@@ -5634,7 +5634,7 @@ KnobHolder::createPageKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
+        return std::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
     KnobPagePtr ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
     ret->setName(name);
@@ -5658,7 +5658,7 @@ KnobHolder::createParametricKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
+        return std::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
     KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
     ret->setName(name);

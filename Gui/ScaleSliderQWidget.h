@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSize>
@@ -129,7 +125,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
+    std::unique_ptr<ScaleSliderQWidgetPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

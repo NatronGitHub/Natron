@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
@@ -80,7 +76,7 @@ private:
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
-    boost::scoped_ptr<DialogParamHolderPrivate> _imp;
+    std::unique_ptr<DialogParamHolderPrivate> _imp;
 };
 
 
@@ -115,7 +111,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<PyModalDialogPrivate> _imp;
+    std::unique_ptr<PyModalDialogPrivate> _imp;
 };
 
 
@@ -166,7 +162,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
 private:
-    boost::scoped_ptr<PyPanelPrivate> _imp;
+    std::unique_ptr<PyPanelPrivate> _imp;
 };
 
 

@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h" // Key
 
@@ -476,7 +471,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    boost::scoped_ptr<ViewerTabPrivate> _imp;
+    std::unique_ptr<ViewerTabPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

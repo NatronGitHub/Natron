@@ -507,7 +507,7 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
-typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+typedef std::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
 
 void
 AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
@@ -547,7 +547,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -555,7 +555,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -730,7 +730,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    _imp->_settings = boost::make_shared<Settings>();
+    _imp->_settings = std::make_shared<Settings>();
     _imp->_settings->initializeKnobsPublic();
 
     bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
@@ -964,9 +964,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache = boost::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
-        _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
-        _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
+        _imp->_nodeCache = std::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
+        _imp->_diskCache = std::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
+        _imp->_viewerCache = std::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error&) {
         // ignore
@@ -1127,7 +1127,7 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance = boost::make_shared<AppInstance>(_imp->_availableID);
+        instance = std::make_shared<AppInstance>(_imp->_availableID);
     }
 
     {
@@ -2511,7 +2511,7 @@ AppManager::setLoadingStatus(const QString & str)
 AppInstancePtr
 AppManager::makeNewInstance(int appID) const
 {
-    return boost::make_shared<AppInstance>(appID);
+    return std::make_shared<AppInstance>(appID);
 }
 
 void

@@ -41,9 +41,6 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/scoped_ptr.hpp>
 #endif
 
 #include "Global/GlobalDefines.h"
@@ -92,7 +89,7 @@ public:
 class AppInstance
     : public QObject
     , public boost::noncopyable
-    , public boost::enable_shared_from_this<AppInstance>
+    , public std::enable_shared_from_this<AppInstance>
     , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -101,7 +98,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     AppInstance(int appID);
 
@@ -474,7 +471,7 @@ private:
     NodePtr createNodeFromPythonModule(Plugin* plugin,
                                        const CreateNodeArgs& args);
 
-    boost::scoped_ptr<AppInstancePrivate> _imp;
+    std::unique_ptr<AppInstancePrivate> _imp;
 };
 
 class CreatingNodeTreeFlag_RAII

@@ -27,8 +27,6 @@
 
 #include <stdexcept>
 
-#include <boost/shared_ptr.hpp>
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
@@ -93,7 +91,7 @@ struct TextRendererPrivate
     GLint _yOffset;
 };
 
-typedef boost::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
+typedef std::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
 typedef std::map<QFont, TextRendererPrivatePtr> FontRenderers;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT

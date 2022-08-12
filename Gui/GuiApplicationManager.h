@@ -31,11 +31,6 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include <QtCore/QtGlobal> // for Q_OS_*
 
 #include "Engine/AppManager.h"
@@ -238,7 +233,7 @@ private:
 
     void populateShortcuts();
 
-    boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
+    std::unique_ptr<GuiApplicationManagerPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

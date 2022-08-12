@@ -104,7 +104,7 @@ protected:
 private:
 
     virtual void run() OVERRIDE FINAL;
-    boost::scoped_ptr<GenericWatcherPrivate> _imp;
+    std::unique_ptr<GenericWatcherPrivate> _imp;
 };
 
 

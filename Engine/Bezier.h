@@ -668,7 +668,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<BezierPrivate> _imp;
+    std::unique_ptr<BezierPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

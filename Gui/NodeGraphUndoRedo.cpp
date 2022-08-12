@@ -777,7 +777,7 @@ private:
                            NodeGui* currentNode, const QPointF & currentNodeScenePos, std::list<NodeGui*> & usedNodes);
 };
 
-typedef boost::shared_ptr<Tree> TreePtr;
+typedef std::shared_ptr<Tree> TreePtr;
 typedef std::list<TreePtr> TreePtrList;
 
 void
@@ -999,7 +999,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
 
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
-            TreePtr newTree = boost::make_shared<Tree>();
+            TreePtr newTree = std::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
@@ -1561,7 +1561,7 @@ GroupFromSelectionCommand::redo()
 
     NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
+        isGrp = std::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
@@ -1577,14 +1577,14 @@ GroupFromSelectionCommand::redo()
 
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
+        isGrp = std::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
         }
         NodeGuiIPtr container_i = containerNode->getNodeGui();
         assert(container_i);
-        _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
+        _group = std::dynamic_pointer_cast<NodeGui>(container_i);
         assert( _group.lock() );
 
         // Set the position of the group
@@ -1822,7 +1822,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             if ( !inp && !output && !(*it2)->getParentMultiInstance() ) {
                 NodeGuiIPtr gui_i = (*it2)->getNodeGui();
                 assert(gui_i);
-                NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(nodeGui);
                 nodesToCopy.push_back(nodeGui);
             }
@@ -1844,7 +1844,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
-        NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
+        NodeGuiPtr groupGui = std::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
         expandedGroup.group = groupGui;
 
@@ -1883,7 +1883,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
                 NodeGuiIPtr inputGui_i = input->getNodeGui();
                 assert(inputGui_i);
-                NodeGuiPtr inputGui = boost::dynamic_pointer_cast<NodeGui>(inputGui_i);
+                NodeGuiPtr inputGui = std::dynamic_pointer_cast<NodeGui>(inputGui_i);
                 assert(inputGui);
                 ntc.input = inputGui;
 
@@ -1938,7 +1938,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
-                    NodeGuiPtr outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
+                    NodeGuiPtr outputGui = std::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);
                     outputsConnectedToGroup.push_back(outputGui);
 
@@ -2051,7 +2051,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (std::map<NodeGuiWPtr, int>::iterator it3 = it2->second.outputs.begin();
+                for (NodeGuisMap::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

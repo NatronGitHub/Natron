@@ -608,7 +608,7 @@ OSGLContext_wayland::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         return;
     }
 
-    boost::scoped_ptr<OSGLContext_wayland> context;
+    std::unique_ptr<OSGLContext_wayland> context;
     try {
         context.reset(new OSGLContext_wayland(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), nullptr));
     } catch (const std::exception& e) {

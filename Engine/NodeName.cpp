@@ -167,7 +167,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }

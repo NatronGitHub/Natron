@@ -183,7 +183,7 @@ public:
     EffectInstance* _publicInterface;
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
@@ -214,7 +214,7 @@ public:
     };
 
     QMutex imagesBeingRenderedMutex;
-    typedef boost::shared_ptr<ImageBeingRendered> ImageBeingRenderedPtr;
+    typedef std::shared_ptr<ImageBeingRendered> ImageBeingRenderedPtr;
     typedef std::map<ImagePtr, ImageBeingRenderedPtr> ImageBeingRenderedMap;
     ImageBeingRenderedMap imagesBeingRendered;
 #endif
@@ -235,7 +235,7 @@ public:
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+    EffectInstance::OpenGLContextEffectsMap attachedContexts;
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower

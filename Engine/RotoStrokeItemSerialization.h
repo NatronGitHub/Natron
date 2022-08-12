@@ -136,9 +136,9 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
-            CurvePtr x = boost::make_shared<Curve>();
-            CurvePtr y = boost::make_shared<Curve>();
-            CurvePtr p = boost::make_shared<Curve>();
+            CurvePtr x = std::make_shared<Curve>();
+            CurvePtr y = std::make_shared<Curve>();
+            CurvePtr p = std::make_shared<Curve>();
             ar & ::boost::serialization::make_nvp("CurveX", *x);
             ar & ::boost::serialization::make_nvp("CurveY", *y);
             ar & ::boost::serialization::make_nvp("CurveP", *p);
@@ -150,9 +150,9 @@ private:
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
             ar & ::boost::serialization::make_nvp("NbItems", nb);
             for (int i = 0; i < nb; ++i) {
-                CurvePtr x = boost::make_shared<Curve>();
-                CurvePtr y = boost::make_shared<Curve>();
-                CurvePtr p = boost::make_shared<Curve>();
+                CurvePtr x = std::make_shared<Curve>();
+                CurvePtr y = std::make_shared<Curve>();
+                CurvePtr p = std::make_shared<Curve>();
                 ar & ::boost::serialization::make_nvp("CurveX", *x);
                 ar & ::boost::serialization::make_nvp("CurveY", *y);
                 ar & ::boost::serialization::make_nvp("CurveP", *p);

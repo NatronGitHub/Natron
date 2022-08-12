@@ -52,12 +52,12 @@ public:
     ~KnobFactory();
 
     template <typename K>
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true) const
     {
-        return boost::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
+        return std::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
     }
 
 private:

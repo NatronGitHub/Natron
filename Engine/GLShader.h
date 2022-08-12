@@ -85,7 +85,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<GLShaderPrivate> _imp;
+    std::unique_ptr<GLShaderPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT
