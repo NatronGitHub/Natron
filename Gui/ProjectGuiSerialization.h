@@ -275,7 +275,7 @@ public:
         ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
         for (int i = 0; i < nKnobs; ++i) {
-            KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr k = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *k);
             knobs.push_back(k);
         }
@@ -723,7 +723,7 @@ class ProjectGuiSerialization
             int numPyPanels;
             ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
-                PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
+                PythonPanelSerializationPtr s = std::make_shared<PythonPanelSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _pythonPanels.push_back(s);
             }

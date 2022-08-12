@@ -291,7 +291,7 @@ loadNodeGuiSerialization(Gui* gui,
 
     NodeGuiIPtr nGui_i = internalNode->getNodeGui();
     assert(nGui_i);
-    NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
+    NodeGuiPtr nGui = std::dynamic_pointer_cast<NodeGui>(nGui_i);
 
     nGui->refreshPosition( serialization.getX(), serialization.getY(), true );
 

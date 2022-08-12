@@ -233,7 +233,7 @@ private:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                NodeGuiSerializationPtr s = boost::make_shared<NodeGuiSerialization>();
+                NodeGuiSerializationPtr s = std::make_shared<NodeGuiSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

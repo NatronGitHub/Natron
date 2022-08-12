@@ -173,7 +173,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<KnobGuiValuePrivate> _imp;
+    std::unique_ptr<KnobGuiValuePrivate> _imp;
 };
 
 class KnobGuiDouble

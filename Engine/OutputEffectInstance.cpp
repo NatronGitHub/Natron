@@ -387,7 +387,7 @@ OutputEffectInstance::initializeData()
 RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
-    OutputEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OutputEffectInstance>( shared_from_this() );
+    OutputEffectInstancePtr thisShared = std::dynamic_pointer_cast<OutputEffectInstance>( shared_from_this() );
 
     assert(thisShared);
 

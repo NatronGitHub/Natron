@@ -30,12 +30,6 @@
 
 #include <QtCore/QObject>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 #include "Gui/GuiFwd.h"
 
 #include "Gui/TaskBar.h"
@@ -45,7 +39,7 @@ NATRON_NAMESPACE_ENTER
 struct ProgressTaskInfoPrivate;
 class ProgressTaskInfo
     : public QObject
-    , public boost::enable_shared_from_this<ProgressTaskInfo>
+    , public std::enable_shared_from_this<ProgressTaskInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -65,7 +59,7 @@ public:
     };
 
 private:
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
@@ -176,7 +170,7 @@ private:
 
     void clearItems();
 
-    boost::scoped_ptr<ProgressTaskInfoPrivate> _imp;
+    std::unique_ptr<ProgressTaskInfoPrivate> _imp;
     TaskBar *_taskbar;
 };
 

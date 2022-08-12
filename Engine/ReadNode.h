@@ -161,7 +161,7 @@ private:
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
     virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    boost::scoped_ptr<ReadNodePrivate> _imp;
+    std::unique_ptr<ReadNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

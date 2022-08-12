@@ -77,7 +77,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<NodeWPtr, ProgressTaskInfoPtr> TasksMap;
+typedef std::map<NodeWPtr, ProgressTaskInfoPtr, std::owner_less<NodeWPtr>> TasksMap;
 typedef std::vector<ProgressTaskInfoPtr> TasksOrdered;
 struct ProgressPanelPrivate
 {

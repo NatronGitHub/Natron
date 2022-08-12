@@ -106,10 +106,10 @@ struct FileSystemModelPrivate
     SortableViewI* view;
 
     ///A background thread that fetches info about the file-system and reports when done
-    boost::scoped_ptr<FileGathererThread> gatherer;
+    std::unique_ptr<FileGathererThread> gatherer;
 
     ///The watcher watches the current root path
-    boost::scoped_ptr<QFileSystemWatcher> watcher;
+    std::unique_ptr<QFileSystemWatcher> watcher;
 
     ///The root of the file-system: "MyComputer" for Windows or '/' for Unix
     FileSystemItemPtr rootItem;
@@ -276,7 +276,7 @@ FileSystemItem::create( const FileSystemModelPtr& model,
                                          quint64 size,
                                          const FileSystemItemPtr& parent)
 {
-    return boost::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
+    return std::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
 }
 FileSystemItem::~FileSystemItem()
 {
@@ -436,7 +436,7 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
 
 
     ///Create the child
-    FileSystemItemPtr child = boost::make_shared<FileSystemItem::MakeSharedEnabler>( model,
+    FileSystemItemPtr child = std::make_shared<FileSystemItem::MakeSharedEnabler>( model,
                                                                                                     isDir,
                                                                                                     filename,
                                                                                                     userFriendlyFilename,
@@ -1686,7 +1686,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             }
 
             if (!foundMatchingSequence) {
-                SequenceParsing::SequenceFromFilesPtr newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
+                SequenceParsing::SequenceFromFilesPtr newSequence = std::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }

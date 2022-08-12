@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
@@ -158,7 +153,7 @@ protected:
 
 private:
 
-    boost::scoped_ptr<SpinBoxPrivate> _imp;
+    std::unique_ptr<SpinBoxPrivate> _imp;
 };
 
 class KnobSpinBox

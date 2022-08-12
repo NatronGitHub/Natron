@@ -114,7 +114,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<RotoLayerPrivate> _imp;
+    std::unique_ptr<RotoLayerPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

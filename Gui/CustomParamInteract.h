@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/GlobalDefines.h"
 
@@ -127,7 +122,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<CustomParamInteractPrivate> _imp;
+    std::unique_ptr<CustomParamInteractPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -74,22 +74,22 @@ App::getCollectionFromGroup(Group* group) const
         App* isApp = dynamic_cast<App*>(group);
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isApp) {
-            collection = boost::dynamic_pointer_cast<NodeCollection>( isApp->getInternalApp()->getProject() );
+            collection = std::dynamic_pointer_cast<NodeCollection>( isApp->getInternalApp()->getProject() );
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
-                collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+                collection = std::dynamic_pointer_cast<NodeCollection>(isGrp);
                 assert(collection);
             }
         }
     }
 
     if (!collection) {
-        collection = boost::dynamic_pointer_cast<NodeCollection>( getInternalApp()->getProject() );
+        collection = std::dynamic_pointer_cast<NodeCollection>( getInternalApp()->getProject() );
     }
 
     return collection;

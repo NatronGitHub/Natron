@@ -92,7 +92,7 @@ public:
 private:
 
 
-    boost::scoped_ptr<GPUContextPoolPrivate> _imp;
+    std::unique_ptr<GPUContextPoolPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

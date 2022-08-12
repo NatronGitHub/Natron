@@ -71,7 +71,7 @@ public:
 
 private:
     struct Implementation;
-    boost::scoped_ptr<Implementation> _imp; //!< PImpl
+    std::unique_ptr<Implementation> _imp; //!< PImpl
 };
 
 NATRON_NAMESPACE_EXIT

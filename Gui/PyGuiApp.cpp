@@ -333,7 +333,7 @@ GuiApp::selectNode(Effect* effect,
         return;
     }
 
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
     if (!nodeUi) {
         return;
     }
@@ -361,7 +361,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     NodeCollectionPtr collection;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
+        NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
         if (!nodeUi) {
             continue;
         }
@@ -497,7 +497,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
 
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
     if (!nodeUi) {
         return;
     }

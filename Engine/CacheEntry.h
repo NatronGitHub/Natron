@@ -722,11 +722,11 @@ public:
 private:
 
     std::string _path;
-    boost::scoped_ptr<RamBuffer<DataType> > _buffer;
+    std::unique_ptr<RamBuffer<DataType> > _buffer;
 
     /*mutable so the reOpenFileMapping function can reopen the mapped file. It doesn't
        change the underlying data*/
-    mutable boost::scoped_ptr<MemoryFile> _backingFile;
+    mutable std::unique_ptr<MemoryFile> _backingFile;
 
     // Set if the cache is a tile cache
     AbstractCacheEntryBase* _entry;
@@ -734,7 +734,7 @@ private:
     std::size_t _cacheFileDataOffset;
 
     // Used when we store images as OpenGL textures
-    boost::scoped_ptr<Texture> _glTexture;
+    std::unique_ptr<Texture> _glTexture;
     StorageModeEnum _storageMode;
 };
 
@@ -758,7 +758,7 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
-    typedef boost::shared_ptr<ParamsType> ParamsTypePtr;
+    typedef std::shared_ptr<ParamsType> ParamsTypePtr;
 
     /**
      * @brief Ctor

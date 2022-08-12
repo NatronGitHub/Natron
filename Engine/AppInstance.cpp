@@ -1245,9 +1245,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node = boost::make_shared<Node>(shared_from_this(), argsGroup, plugin);
+        node = std::make_shared<Node>(shared_from_this(), argsGroup, plugin);
     } else {
-        node = boost::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
+        node = std::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
     }
 
 
@@ -1342,7 +1342,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1794,7 +1794,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
         item.savePath = savePath;
 
         if (renderInSeparateProcess) {
-            item.process = boost::make_shared<ProcessHandler>(savePath, item.work.writer);
+            item.process = std::make_shared<ProcessHandler>(savePath, item.work.writer);
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
             QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);

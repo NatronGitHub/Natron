@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
@@ -85,7 +80,7 @@ Q_SIGNALS:
 private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<CompleterLineEditPrivate> _imp;
+    std::unique_ptr<CompleterLineEditPrivate> _imp;
 };
 
 struct NodeCreationDialogPrivate;
@@ -119,7 +114,7 @@ private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<NodeCreationDialogPrivate> _imp;
+    std::unique_ptr<NodeCreationDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

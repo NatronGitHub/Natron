@@ -227,11 +227,11 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired,
 struct OSGLContextPrivate
 {
 #ifdef __NATRON_WIN32__
-    boost::scoped_ptr<OSGLContext_win> _platformContext;
+    std::unique_ptr<OSGLContext_win> _platformContext;
 #elif defined(__NATRON_OSX__)
-    boost::scoped_ptr<OSGLContext_mac> _platformContext;
+    std::unique_ptr<OSGLContext_mac> _platformContext;
 #elif defined(__NATRON_LINUX__)
-    boost::scoped_ptr<OSGLContext_xdg> _platformContext;
+    std::unique_ptr<OSGLContext_xdg> _platformContext;
 #endif
 
 #ifdef NATRON_RENDER_SHARED_CONTEXT
@@ -479,7 +479,7 @@ OSGLContext::getOrCreateFillShader()
     if (_imp->fillImageShader) {
         return _imp->fillImageShader;
     }
-    _imp->fillImageShader = boost::make_shared<GLShader>();
+    _imp->fillImageShader = std::make_shared<GLShader>();
 #ifdef DEBUG
     std::string error;
     bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
@@ -513,7 +513,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
     if (_imp->applyMaskMixShader[shader_i]) {
         return _imp->applyMaskMixShader[shader_i];
     }
-    _imp->applyMaskMixShader[shader_i] = boost::make_shared<GLShader>();
+    _imp->applyMaskMixShader[shader_i] = std::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -569,7 +569,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
     if (_imp->copyUnprocessedChannelsShader[index]) {
         return _imp->copyUnprocessedChannelsShader[index];
     }
-    _imp->copyUnprocessedChannelsShader[index] = boost::make_shared<GLShader>();
+    _imp->copyUnprocessedChannelsShader[index] = std::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (!doR) {

@@ -168,7 +168,7 @@ void
 Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 {
     NodesList redirections;
-    NodePtr thisShared = boost::const_pointer_cast<Node>( shared_from_this() );
+    NodePtr thisShared = std::const_pointer_cast<Node>( shared_from_this() );
 
     applyNodeRedirectionsDownstream(0, thisShared, false, redirections);
     if ( !redirections.empty() ) {

@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -247,7 +243,7 @@ protected:
 
 private:
 
-    boost::scoped_ptr<RotoItemEditorContextPrivate> _imp;
+    std::unique_ptr<RotoItemEditorContextPrivate> _imp;
 };
 
 struct BezierEditorContextPrivate;
@@ -271,7 +267,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<BezierEditorContextPrivate> _imp;
+    std::unique_ptr<BezierEditorContextPrivate> _imp;
 };
 
 
@@ -315,7 +311,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<RotoCurveEditorContextPrivate> _imp;
+    std::unique_ptr<RotoCurveEditorContextPrivate> _imp;
 };
 
 struct CurveEditorPrivate;
@@ -392,7 +388,7 @@ private:
 
     void recursiveSelect(QTreeWidgetItem* cur, std::vector<CurveGuiPtr> *curves, bool inspectRotos = true);
 
-    boost::scoped_ptr<CurveEditorPrivate> _imp;
+    std::unique_ptr<CurveEditorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

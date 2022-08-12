@@ -31,11 +31,6 @@
 #include <list>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -72,7 +67,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
+    std::unique_ptr<LinkToKnobDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

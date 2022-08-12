@@ -57,7 +57,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<ScriptObjectPrivate> _imp;
+    std::unique_ptr<ScriptObjectPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

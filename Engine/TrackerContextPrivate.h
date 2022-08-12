@@ -478,8 +478,8 @@ public:
         double rms;
     };
 
-    typedef boost::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
-    typedef boost::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
+    typedef std::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
+    typedef std::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
 
     struct SolveRequest
     {

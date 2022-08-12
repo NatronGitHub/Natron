@@ -31,10 +31,6 @@
 #include <cfloat> // DBL_MAX
 #include <climits> // INT_MAX
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -95,7 +91,7 @@ private:
     void compileAndSetResult(const QString& script);
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<EditScriptDialogPrivate> _imp;
+    std::unique_ptr<EditScriptDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

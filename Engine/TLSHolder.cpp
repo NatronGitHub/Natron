@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER
 
 AppTLS::AppTLS()
     : _objectMutex()
-    , _object( new GLobalTLSObject() )
+    , _object( new GlobalTLSObject() )
     , _spawnsMutex()
     , _spawns()
 {
@@ -114,7 +114,7 @@ AppTLS::softCopy(QThread* fromThread,
     copyAbortInfo(fromThread, toThread);
 
     QWriteLocker k(&_spawnsMutex);
-    _spawns[toThread] = fromThread;
+    _spawns[uintptr_t(toThread)] = fromThread;
 }
 
 void
@@ -132,7 +132,7 @@ AppTLS::cleanupTLSForThread()
         QWriteLocker l(&_spawnsMutex);
 
         //This thread was spawned, but TLS not used, do not bother to clean-up
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned != _spawns.end() ) {
             _spawns.erase(foundSpawned);
 

@@ -131,7 +131,7 @@ struct TrackMarkerPrivate
 
 TrackMarker::TrackMarker(const TrackerContextPtr& context)
     : NamedKnobHolder( context->getNode()->getApp() )
-    , boost::enable_shared_from_this<TrackMarker>()
+    , std::enable_shared_from_this<TrackMarker>()
     , _imp( new TrackMarkerPrivate(this, context) )
 {
 }
@@ -149,7 +149,7 @@ struct TrackMarker::MakeSharedEnabler: public TrackMarker
 TrackMarkerPtr
 TrackMarker::create(const TrackerContextPtr& context)
 {
-    return boost::make_shared<TrackMarker::MakeSharedEnabler>(context);
+    return std::make_shared<TrackMarker::MakeSharedEnabler>(context);
 }
 
 TrackMarker::~TrackMarker()
@@ -366,7 +366,7 @@ TrackMarker::save(TrackSerialization* serialization) const
     serialization->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
+        KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
         serialization->_knobs.push_back(s);
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
@@ -439,7 +439,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }
@@ -1257,7 +1257,7 @@ struct TrackMarkerPM::MakeSharedEnabler: public TrackMarkerPM
 TrackMarkerPtr
 TrackMarkerPM::create(const TrackerContextPtr& context)
 {
-    return boost::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
+    return std::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
 }
 
 
@@ -1372,7 +1372,7 @@ TrackMarkerPM::trackMarker(bool forward,
 } // TrackMarkerPM::trackMarker
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 getNodeKnob(const NodePtr& node,
             const std::string& scriptName)
 {
@@ -1380,9 +1380,9 @@ getNodeKnob(const NodePtr& node,
 
     assert(knob);
     if (!knob) {
-        return boost::shared_ptr<T>();
+        return std::shared_ptr<T>();
     }
-    boost::shared_ptr<T> ret = boost::dynamic_pointer_cast<T>(knob);
+    std::shared_ptr<T> ret = std::dynamic_pointer_cast<T>(knob);
     assert(ret);
 
     return ret;

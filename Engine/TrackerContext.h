@@ -111,7 +111,7 @@ public:
 class TrackerContextPrivate;
 class TrackerContext
     : public QObject
-    , public boost::enable_shared_from_this<TrackerContext>
+    , public std::enable_shared_from_this<TrackerContext>
 , public TrackerParamsProvider
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -130,7 +130,7 @@ public:
 private:
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     TrackerContext(const NodePtr &node);
 
@@ -430,7 +430,7 @@ private:
 
     void endSelection(TrackSelectionReason reason);
 
-    boost::scoped_ptr<TrackerContextPrivate> _imp;
+    std::unique_ptr<TrackerContextPrivate> _imp;
 };
 
 struct TrackArgsPrivate;
@@ -483,7 +483,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<TrackArgsPrivate> _imp;
+    std::unique_ptr<TrackArgsPrivate> _imp;
 };
 
 struct TrackSchedulerPrivate;
@@ -546,7 +546,7 @@ private:
     }
 
     virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<TrackSchedulerPrivate> _imp;
+    std::unique_ptr<TrackSchedulerPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

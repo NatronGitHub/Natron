@@ -107,7 +107,7 @@ ViewerTab::drawOverlays(double time,
 
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+        NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (!nodeUi) {
             continue;

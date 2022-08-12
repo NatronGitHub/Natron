@@ -60,7 +60,7 @@ public:
 
 private:
     class Implementation;
-    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+    std::unique_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
 NATRON_NAMESPACE_EXIT

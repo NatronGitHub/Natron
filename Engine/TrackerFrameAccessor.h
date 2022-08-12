@@ -101,7 +101,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<TrackerFrameAccessorPrivate> _imp;
+    std::unique_ptr<TrackerFrameAccessorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

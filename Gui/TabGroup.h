@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
@@ -75,7 +71,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<TabGroupPrivate> _imp;
+    std::unique_ptr<TabGroupPrivate> _imp;
 };
 
 

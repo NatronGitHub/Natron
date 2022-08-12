@@ -252,7 +252,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<RenderActionData> RenderActionDataPtr;
+    typedef std::shared_ptr<RenderActionData> RenderActionDataPtr;
 
     //These are per-clip thread-local data
     struct ClipTLSData
@@ -297,13 +297,13 @@ public:
         {
             for (std::list<RenderActionDataPtr>::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
-                RenderActionDataPtr d = boost::make_shared<RenderActionData>(**it);
+                RenderActionDataPtr d = std::make_shared<RenderActionData>(**it);
                 renderData.push_back(d);
             }
         }
     };
 
-    typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
+    typedef std::shared_ptr<ClipTLSData> ClipDataTLSPtr;
 
 private:
     EffectInstancePtr getEffectHolder() const;
@@ -317,7 +317,7 @@ private:
 
 private:
     friend struct OfxClipInstancePrivate;
-    boost::scoped_ptr<OfxClipInstancePrivate> _imp;
+    std::unique_ptr<OfxClipInstancePrivate> _imp;
 };
 
 struct OfxImageCommonPrivate;
@@ -341,7 +341,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<OfxImageCommonPrivate> _imp;
+    std::unique_ptr<OfxImageCommonPrivate> _imp;
 };
 
 class OfxImage

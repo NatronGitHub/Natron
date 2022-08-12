@@ -122,7 +122,7 @@ NATRON_NAMESPACE_ENTER
 class EffectInstance
     : public NamedKnobHolder
       , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<EffectInstance>
+      , public std::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -131,7 +131,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
     typedef std::map<int, std::list<ImagePtr> > InputImagesMap;
     typedef std::map<int, std::list<ImagePlaneDesc> > ComponentsNeededMap;
-    typedef boost::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
+    typedef std::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
 
     struct RenderRoIArgs
     {
@@ -224,7 +224,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -632,7 +632,7 @@ public:
 
         ~NotifyRenderingStarted_RAII();
     };
-    typedef boost::shared_ptr<NotifyRenderingStarted_RAII> NotifyRenderingStarted_RAIIPtr;
+    typedef std::shared_ptr<NotifyRenderingStarted_RAII> NotifyRenderingStarted_RAIIPtr;
 
     class NotifyInputNRenderingStarted_RAII
     {
@@ -647,7 +647,7 @@ public:
 
         ~NotifyInputNRenderingStarted_RAII();
     };
-    typedef boost::shared_ptr<NotifyInputNRenderingStarted_RAII> NotifyInputNRenderingStarted_RAIIPtr;
+    typedef std::shared_ptr<NotifyInputNRenderingStarted_RAII> NotifyInputNRenderingStarted_RAIIPtr;
 
 
 
@@ -855,9 +855,9 @@ public:
     ///////////////////////End Metadatas related////////////////////////
 
 
-    virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void lock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual bool tryLock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void unlock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
@@ -950,7 +950,8 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+    typedef std::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+    typedef std::map<OSGLContextWPtr, OpenGLContextEffectDataPtr, std::owner_less<OSGLContextWPtr>> OpenGLContextEffectsMap;
 
 
     struct RenderActionArgs
@@ -1445,7 +1446,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
+    typedef std::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
 
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
@@ -1937,7 +1938,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<EffectTLSData> EffectTLSDataPtr;
+    typedef std::shared_ptr<EffectTLSData> EffectTLSDataPtr;
 
 protected:
 
@@ -2106,7 +2107,7 @@ protected:
 private:
 
     class Implementation;
-    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+    std::unique_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;
     friend class WriteNode;

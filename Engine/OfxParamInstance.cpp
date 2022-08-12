@@ -25,6 +25,7 @@
 
 #include "OfxParamInstance.h"
 
+#include <array>
 #include <iostream>
 #include <cassert>
 #include <cfloat>
@@ -2766,10 +2767,10 @@ OfxInteger2DInstance::OfxInteger2DInstance(const OfxEffectInstancePtr& node,
         iKnob->setAsRectangle();
     }
 
-    std::vector<int> increment(ofxDims);
-    boost::scoped_array<int> def(new int[ofxDims]);
+    std::array<int, 2> increment;
+    std::array<int, 2> def;
 
-    properties.getIntPropertyN(kOfxParamPropDefault, &def[0], ofxDims);
+    properties.getIntPropertyN(kOfxParamPropDefault, def.data(), ofxDims);
     for (int i = 0; i < ofxDims; ++i) {
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
@@ -3771,7 +3772,7 @@ struct OfxStringInstancePrivate
     KnobOutputFileWPtr outputFileKnob;
     KnobStringWPtr stringKnob;
     KnobPathWPtr pathKnob;
-    boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxStringInstancePrivate()
         : fileKnob()
@@ -4213,9 +4214,9 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return nKeys = 0;
     }
@@ -4230,9 +4231,9 @@ OfxStringInstance::getKeyTime(int nth,
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -4248,9 +4249,9 @@ OfxStringInstance::getKeyIndex(OfxTime time,
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatFailed;
     }
@@ -4264,9 +4265,9 @@ OfxStringInstance::deleteKey(OfxTime time)
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -4280,9 +4281,9 @@ OfxStringInstance::deleteAllKeys()
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatOK;
     }
@@ -4322,7 +4323,7 @@ struct OfxCustomInstancePrivate
 {
     KnobStringWPtr knob;
     OfxCustomInstance::customParamInterpolationV1Entry_t customParamInterpolationV1Entry;
-    boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxCustomInstancePrivate()
         : knob()

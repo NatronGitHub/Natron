@@ -106,7 +106,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<NodeMetadataPrivate> _imp;
+    std::unique_ptr<NodeMetadataPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

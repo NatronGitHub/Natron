@@ -27,10 +27,6 @@
 
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 
@@ -81,7 +77,7 @@ static std::pair<std::string, LibraryBinary *>
 knobGuiFactoryEntry()
 {
     std::string stub;
-    boost::scoped_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    std::unique_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
 
     functions.insert( make_pair("BuildKnobGui", ( void (*)() ) & KG::BuildKnobGui) );

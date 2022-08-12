@@ -91,7 +91,7 @@ Q_SIGNALS:
 private:
 
     virtual void run() OVERRIDE FINAL;
-    boost::scoped_ptr<HistogramCPUPrivate> _imp;
+    std::unique_ptr<HistogramCPUPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

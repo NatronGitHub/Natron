@@ -31,10 +31,6 @@
 #include <list>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include <QtCore/QString>
 
 #include "Gui/EditScriptDialog.h"

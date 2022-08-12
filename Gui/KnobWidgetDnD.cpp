@@ -107,7 +107,7 @@ KnobWidgetDnDPtr KnobWidgetDnD::create(const KnobGuiPtr& knob,
                                                        int dimension,
                                                        QWidget* widget)
 {
-    return boost::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
+    return std::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
 }
 
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,

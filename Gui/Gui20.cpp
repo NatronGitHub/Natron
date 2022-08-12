@@ -564,7 +564,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
         NodeGuiIPtr guiI = internalNode->getNodeGui();
-        NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
+        NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
         assert(graph_i);

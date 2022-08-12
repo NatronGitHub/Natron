@@ -28,12 +28,6 @@
 
 #include <set>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -156,7 +150,7 @@ private:
     void selectInternal(const std::list<TrackMarkerPtr>& markers, int reason);
     TrackMarkerPtr makeTrackInternal();
 
-    boost::scoped_ptr<TrackerPanelPrivate> _imp;
+    std::unique_ptr<TrackerPanelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -81,7 +81,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<StringAnimationManagerPrivate> _imp;
+    std::unique_ptr<StringAnimationManagerPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -2882,7 +2882,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
     NodeGuiIPtr viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
-    _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
+    _preview->viewerNode = std::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
 

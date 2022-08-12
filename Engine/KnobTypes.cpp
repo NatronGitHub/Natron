@@ -249,7 +249,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if ( !effect->getNode() ) {
             return;
         }
-        KnobDoublePtr thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
+        KnobDoublePtr thisSharedDouble = std::dynamic_pointer_cast<KnobDouble>(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
@@ -1807,8 +1807,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::make_shared<Curve>(this, i);
-        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
+        _curves[i] = std::make_shared<Curve>(this, i);
+        _defaultCurves[i] = std::make_shared<Curve>(this, i);
     }
 }
 
@@ -1826,8 +1826,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::make_shared<Curve>(this, i);
-        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
+        _curves[i] = std::make_shared<Curve>(this, i);
+        _defaultCurves[i] = std::make_shared<Curve>(this, i);
     }
 }
 
@@ -2333,7 +2333,7 @@ KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
         _curvesColor.resize( isParametric->_curvesColor.size() );
         assert( _curvesColor.size() == _defaultCurves.size() );
         for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
-            _defaultCurves[i] = boost::make_shared<Curve>(this, i);
+            _defaultCurves[i] = std::make_shared<Curve>(this, i);
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }

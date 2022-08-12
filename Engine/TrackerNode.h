@@ -164,7 +164,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<TrackerNodePrivate> _imp;
+    std::unique_ptr<TrackerNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

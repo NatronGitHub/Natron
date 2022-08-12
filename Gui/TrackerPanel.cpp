@@ -228,7 +228,7 @@ struct TrackKeys
         : userKeys(), centerKeys(), visible(false) {}
 };
 
-typedef std::map<TrackMarkerWPtr, TrackKeys  > TrackKeysMap;
+typedef std::map<TrackMarkerWPtr, TrackKeys, std::owner_less<TrackMarkerWPtr>> TrackKeysMap;
 
 struct TrackerPanelPrivate
 {
@@ -242,7 +242,7 @@ public:
     QVBoxLayout* mainLayout;
     TableView* view;
     TableModel* model;
-    boost::scoped_ptr<TableItemEditorFactory> itemEditorFactory;
+    std::unique_ptr<TableItemEditorFactory> itemEditorFactory;
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
     Button* addButton;
@@ -1388,7 +1388,7 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                 case COL_OFFSET_X:
                 case COL_OFFSET_Y:
                 case COL_ERROR: {
-                    KnobDoublePtr knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
+                    KnobDoublePtr knob = std::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
                     assert(knob);
                     int dim = _imp->items[it].items[i].dimension;
                     double value = item->data(Qt::DisplayRole).toDouble();

@@ -511,7 +511,7 @@ ReadNodePrivate::destroyReadNode()
                      (*it)->setSecret(false);
                      }*/
                     
-                    KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
+                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
                     serialized.push_back(s);
                 }
                 if (!isGeneric) {
@@ -541,7 +541,7 @@ ReadNodePrivate::destroyReadNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr s = std::make_shared<KnobSerialization>();
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 
@@ -751,7 +751,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         // Set the filename value
         if (node) {
-            KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            KnobFilePtr fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
                 fileKnob->setValue(filename);
             }
@@ -801,7 +801,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
+        inputFileKnob = std::dynamic_pointer_cast<KnobFile>(knob);
     }
 } // ReadNodePrivate::createReadNode
 

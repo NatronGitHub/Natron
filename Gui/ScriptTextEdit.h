@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSize>
@@ -64,7 +59,7 @@ private:
     virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
     bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
 
-    boost::scoped_ptr<PySyntaxHighlighterPrivate> _imp;
+    std::unique_ptr<PySyntaxHighlighterPrivate> _imp;
 };
 
 class LineNumberWidget;

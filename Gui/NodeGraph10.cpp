@@ -246,7 +246,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 isGroup->getNode()->setPyPlugEdited(true);
                 NodesList nodes = isGroup->getNodes();
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+                    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
                     if (nodeUi) {
                         NodeSettingsPanel* panel = nodeUi->getSettingPanel();
                         if (panel) {
@@ -334,7 +334,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         NodeGuiIPtr dotNodeGui_i = dotNode->getNodeGui();
-        NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
+        NodeGuiPtr dotNodeGui = std::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 
         NodesGuiList nodesList;

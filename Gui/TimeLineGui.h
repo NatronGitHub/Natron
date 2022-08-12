@@ -30,11 +30,6 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
@@ -185,7 +180,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<TimelineGuiPrivate> _imp;
+    std::unique_ptr<TimelineGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

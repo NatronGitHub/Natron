@@ -30,11 +30,6 @@
 
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 GCC_ONLY_DIAG_OFF(class-memaccess)
@@ -380,7 +375,7 @@ private:
 
     void rebuildDraggedItemsFromSelection();
 
-    boost::scoped_ptr<TableViewPrivate> _imp;
+    std::unique_ptr<TableViewPrivate> _imp;
 };
 
 struct TableModelPrivate;
@@ -467,7 +462,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<TableModelPrivate> _imp;
+    std::unique_ptr<TableModelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

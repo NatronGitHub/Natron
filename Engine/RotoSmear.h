@@ -138,7 +138,7 @@ private:
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    boost::scoped_ptr<RotoSmearPrivate> _imp;
+    std::unique_ptr<RotoSmearPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

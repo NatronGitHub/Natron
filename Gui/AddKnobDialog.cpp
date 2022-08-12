@@ -944,7 +944,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
@@ -1044,7 +1044,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     onTypeCurrentIndexChanged( (int)t );
 
     if (knob) {
-        _imp->originalKnobSerialization = boost::make_shared<KnobSerialization>(knob);
+        _imp->originalKnobSerialization = std::make_shared<KnobSerialization>(knob);
     }
 }
 
@@ -1712,7 +1712,7 @@ AddKnobDialog::onOkClicked()
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
-        oldKnobIsPage = boost::dynamic_pointer_cast<KnobPage>(_imp->knob);
+        oldKnobIsPage = std::dynamic_pointer_cast<KnobPage>(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
         effect = dynamic_cast<EffectInstance*>( _imp->knob->getHolder() );
         oldParentPage = _imp->knob->getTopLevelPage();
@@ -1827,7 +1827,7 @@ AddKnobDialog::onOkClicked()
         KnobGroup* group = _imp->getSelectedGroup();
         KnobGroupPtr shrdGrp;
         if (group) {
-            shrdGrp = boost::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
+            shrdGrp = std::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
         }
 
         try {

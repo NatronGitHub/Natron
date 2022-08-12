@@ -59,6 +59,8 @@
 
 NATRON_NAMESPACE_ENTER
 
+typedef std::map<KnobIWPtr, KnobGuiPtr, std::owner_less<KnobIWPtr>> KnobIsMap;
+
 struct NodeViewerContextPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(NodeViewerContext)
@@ -68,7 +70,7 @@ public:
     NodeGuiWPtr node;
     ViewerGL* viewer;
     ViewerTab* viewerTab;
-    std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
+    KnobIsMap knobsMapping;
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
@@ -476,7 +478,7 @@ NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 KnobGuiPtr
 NodeViewerContext::getKnobGui(const KnobIPtr& knob) const
 {
-    std::map<KnobIWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
+    KnobIsMap::const_iterator found =  _imp->knobsMapping.find(knob);
 
     if ( found == _imp->knobsMapping.end() ) {
         return KnobGuiPtr();

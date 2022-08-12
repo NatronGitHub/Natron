@@ -992,7 +992,7 @@ Bezier::dequeueGuiActions()
     QMutexLocker k(&itemMutex);
 
     if (mustCopy) {
-        BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+        BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
         assert(this_shared);
         BezierCPs::iterator fit = _imp->featherPoints.begin();
         for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1012,7 +1012,7 @@ void
 Bezier::copyInternalPointsToGuiPoints()
 {
     assert( !itemMutex.tryLock() );
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     BezierCPs::iterator fit = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1043,7 +1043,7 @@ Bezier::clearAllPoints()
 void
 Bezier::clone(const RotoItem* other)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -1067,11 +1067,11 @@ Bezier::clone(const RotoItem* other)
         _imp->points.clear();
         BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it) {
-            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = std::make_shared<BezierCP>(this_shared);
             cp->clone(**it);
             _imp->points.push_back(cp);
             if (useFeather) {
-                BezierCPPtr fp = boost::make_shared<BezierCP>(this_shared);
+                BezierCPPtr fp = std::make_shared<BezierCP>(this_shared);
                 fp->clone(**itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
@@ -1116,7 +1116,7 @@ Bezier::addControlPoint(double x,
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     BezierCPPtr p;
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
@@ -1131,7 +1131,7 @@ Bezier::addControlPoint(double x,
             }
         }
 
-        p = boost::make_shared<BezierCP>(this_shared);
+        p = std::make_shared<BezierCP>(this_shared);
         if (autoKeying) {
             p->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
             p->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1144,7 +1144,7 @@ Bezier::addControlPoint(double x,
         _imp->points.insert(_imp->points.end(), p);
 
         if ( useFeatherPoints() ) {
-            BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
+            BezierCPPtr fp = std::make_shared<FeatherPoint>(this_shared);
             if (autoKeying) {
                 fp->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
                 fp->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1174,10 +1174,10 @@ Bezier::addControlPointAfterIndex(int index,
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
 
-    BezierCPPtr p = boost::make_shared<BezierCP>(this_shared);
+    BezierCPPtr p = std::make_shared<BezierCP>(this_shared);
     BezierCPPtr fp;
     bool useGuiCurve = !canSetInternalPoints();
     if (useGuiCurve) {
@@ -1185,7 +1185,7 @@ Bezier::addControlPointAfterIndex(int index,
     }
 
     if ( useFeatherPoints() ) {
-        fp = boost::make_shared<FeatherPoint>(this_shared);
+        fp = std::make_shared<FeatherPoint>(this_shared);
     }
     {
         QMutexLocker l(&itemMutex);
@@ -3335,7 +3335,7 @@ Bezier::save(RotoItemSerialization* obj) const
 void
 Bezier::load(const RotoItemSerialization & obj)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -3348,12 +3348,12 @@ Bezier::load(const RotoItemSerialization & obj)
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
         for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
-            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = std::make_shared<BezierCP>(this_shared);
             cp->clone(*it);
             _imp->points.push_back(cp);
 
             if (useFeather) {
-                BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
+                BezierCPPtr fp = std::make_shared<FeatherPoint>(this_shared);
                 fp->clone(*itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;

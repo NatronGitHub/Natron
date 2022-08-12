@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(uninitialized)
@@ -103,7 +98,7 @@ private:
 
     static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob);
 
-    boost::scoped_ptr<AddKnobDialogPrivate> _imp;
+    std::unique_ptr<AddKnobDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

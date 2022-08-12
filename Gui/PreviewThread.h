@@ -30,12 +30,6 @@
 
 #include <QtCore/QThread>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Engine/GenericSchedulerThread.h"
 
 #include "Gui/GuiFwd.h"
@@ -61,7 +55,7 @@ private:
     }
 
     virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<PreviewThreadPrivate> _imp;
+    std::unique_ptr<PreviewThreadPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

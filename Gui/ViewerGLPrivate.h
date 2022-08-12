@@ -163,8 +163,8 @@ struct ViewerGL::Implementation
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
-    boost::scoped_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
-    boost::scoped_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
+    std::unique_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
+    std::unique_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
@@ -177,7 +177,7 @@ struct ViewerGL::Implementation
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
     double _screenPixelRatio;
-    boost::scoped_ptr<QFont> _textFont;
+    std::unique_ptr<QFont> _textFont;
     bool overlay; /*!< True if the user enabled overlay display*/
     bool updatingTexture;
     QColor clearColor;

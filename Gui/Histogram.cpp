@@ -204,7 +204,7 @@ public:
     QColor _baseAxisColor;
     QColor _scaleColor;
     double _screenPixelRatio;
-    boost::scoped_ptr<QFont> _textFont;
+    std::unique_ptr<QFont> _textFont;
     TextRenderer textRenderer;
     bool drawCoordinates;
     QString xCoordinateStr;

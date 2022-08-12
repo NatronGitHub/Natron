@@ -770,7 +770,7 @@ RotoPanel::onSelectionChangedInternal()
     std::list<std::set<double> > toRemove;
 
     for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             QObject::disconnect( isBezier.get(), SIGNAL(keyframeSet(double)), this, SLOT(onSelectedBezierKeyframeSet(double)) );
             QObject::disconnect( isBezier.get(), SIGNAL(keyframeRemoved(double)), this, SLOT(onSelectedBezierKeyframeRemoved(double)) );
@@ -807,7 +807,7 @@ RotoPanel::onSelectionChangedInternal()
     const std::list<RotoItemPtr> & items = _imp->context->getSelectedItems();
     for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
         _imp->selectedItems.push_back(*it);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
         const RotoLayer* isLayer = dynamic_cast<const RotoLayer*>( it->get() );
         if (isBezier) {
             QObject::connect( isBezier.get(), SIGNAL(keyframeSet(double)), this, SLOT(onSelectedBezierKeyframeSet(double)) );
@@ -889,7 +889,7 @@ RotoPanel::onSelectedBezierKeyframeSet(double time)
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
     _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
@@ -904,7 +904,7 @@ RotoPanel::onSelectedBezierKeyframeRemoved(double time)
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
     _imp->updateSplinesInfoGUI(time);
     if (isBezier) {
@@ -919,7 +919,7 @@ RotoPanel::onSelectedBezierAnimationRemoved()
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
 
     _imp->updateSplinesInfoGUI( _imp->context->getTimelineCurrentTime() );
@@ -935,7 +935,7 @@ RotoPanel::onSelectedBezierAboutToClone()
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
 
     if (isBezier) {
@@ -957,7 +957,7 @@ RotoPanel::onSelectedBezierCloned()
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
 
     if (isBezier) {
@@ -1030,7 +1030,7 @@ RotoPanelPrivate::updateSplinesInfoGUI(double time)
     std::set<double> keyframes;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             isBezier->getKeyframeTimes(&keyframes);
         }
@@ -1145,8 +1145,8 @@ RotoPanelPrivate::insertItemRecursively(double time,
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
     treeItem->setToolTip( COL_LOCKED, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoLockedHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
-    RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
-    RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoDrawableItemPtr drawable = std::dynamic_pointer_cast<RotoDrawableItem>(item);
+    RotoLayerPtr layer = std::dynamic_pointer_cast<RotoLayer>(item);
 
     if (drawable) {
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( drawable.get() );
@@ -1210,7 +1210,7 @@ RotoPanelPrivate::insertItemRecursively(double time,
                           SIGNAL(compositingOperatorChanged(ViewSpec,int,int)),
                           publicInterface,
                           SLOT(onRotoItemCompOperatorChanged(ViewSpec,int,int)) );
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(item);
         if (isBezier) {
             ItemKeys::iterator it = keyframes.find(isBezier);
             if ( it == keyframes.end() ) {
@@ -1308,7 +1308,7 @@ RotoPanelPrivate::insertItemInternal(int reason,
                                      const RotoItemPtr & item,
                                      int indexInParentLayer)
 {
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+    BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(item);
 
     if (isBezier) {
         ItemKeys::iterator it = keyframes.find(isBezier);
@@ -1320,7 +1320,7 @@ RotoPanelPrivate::insertItemInternal(int reason,
         }
     }
     if ( (RotoItem::SelectionReasonEnum)reason == RotoItem::eSelectionReasonSettingsPanel ) {
-        RotoDrawableItemPtr drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
+        RotoDrawableItemPtr drawable = std::dynamic_pointer_cast<RotoDrawableItem>(item);
         if (drawable) {
             publicInterface->makeCustomWidgetsForItem(drawable);
         }
@@ -1339,7 +1339,7 @@ RotoPanel::onItemRemoved(const RotoItemPtr& item,
     BezierPtr isBezier;
 
     if (b) {
-        isBezier = boost::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
+        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
     }
 
     if (isBezier) {
@@ -1401,7 +1401,7 @@ RotoPanel::onRotoItemInvertedStateChanged()
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
     RotoDrawableItemPtr item;
     if (i) {
-        item = boost::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
+        item = std::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
     }
     if (item) {
         double time = _imp->context->getTimelineCurrentTime();
@@ -1420,7 +1420,7 @@ RotoPanel::onRotoItemShapeColorChanged()
     RotoDrawableItemPtr item;
 
     if (i) {
-        item = boost::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
+        item = std::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
     }
 
     if (item) {
@@ -1451,7 +1451,7 @@ RotoPanel::onRotoItemCompOperatorChanged(ViewSpec /*view*/,
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
     RotoDrawableItemPtr item;
     if (i) {
-        item = boost::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
+        item = std::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
     }
 
     if (item) {
@@ -1792,7 +1792,7 @@ RotoPanelPrivate::insertSelectionRecursively(const RotoLayerPtr & layer)
     const std::list<RotoItemPtr> & children = layer->getItems();
 
     for (std::list<RotoItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
-        RotoLayerPtr l = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr l = std::dynamic_pointer_cast<RotoLayer>(*it);
         SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
         if ( found == selectedItems.end() ) {
             context->selectFromLayer(*it, RotoItem::eSelectionReasonSettingsPanel);
@@ -1811,7 +1811,7 @@ RotoPanel::onItemSelectionChanged()
     std::list<std::set<double> > toRemove;
 
     for (SelectedItems::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             QObject::disconnect( isBezier.get(),
                                  SIGNAL(keyframeSet(double)),
@@ -1861,9 +1861,9 @@ RotoPanel::onItemSelectionChanged()
     for (int i = 0; i < selectedItems.size(); ++i) {
         TreeItems::iterator it = _imp->findItem(selectedItems[i]);
         assert( it != _imp->items.end() );
-        BezierPtr bezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
-        RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
-        RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
+        BezierPtr bezier = std::dynamic_pointer_cast<Bezier>(it->rotoItem);
+        RotoStrokeItemPtr stroke = std::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
+        RotoLayerPtr layer = std::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
         if (bezier) {
             SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), bezier);
             if ( found == _imp->selectedItems.end() ) {
@@ -2012,7 +2012,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
             QMap<int, QVariant>::Iterator it = roleDataMap.find(0);
 
             if ( it != roleDataMap.end() ) {
-                DroppedTreeItemPtr ret = boost::make_shared<DroppedTreeItem>();
+                DroppedTreeItemPtr ret = std::make_shared<DroppedTreeItem>();
 
                 ///The target item
                 QTreeWidgetItem* into = itemAt(pos);
@@ -2047,7 +2047,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                 assert(into && ret->dropped && intoRotoItem && ret->droppedRotoItem);
 
                 ///Is the target item a layer ?
-                RotoLayerPtr isIntoALayer = boost::dynamic_pointer_cast<RotoLayer>(intoRotoItem);
+                RotoLayerPtr isIntoALayer = std::dynamic_pointer_cast<RotoLayer>(intoRotoItem);
 
                 ///Determine into which layer the item should be inserted.
                 switch (position) {
@@ -2299,7 +2299,7 @@ RotoPanel::onPasteItemActionTriggered()
         if ( it == _imp->items.end() ) {
             return;
         }
-        drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(it->rotoItem);
+        drawable = std::dynamic_pointer_cast<RotoDrawableItem>(it->rotoItem);
     }
 
 
@@ -2322,7 +2322,7 @@ RotoPanel::onPasteItemActionTriggered()
 
         ///cannot paste a non-drawable to a drawable
         TreeItems::iterator clip = _imp->findItem( _imp->clipBoard.front() );
-        RotoDrawableItemPtr isClipBoardDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(clip->rotoItem);
+        RotoDrawableItemPtr isClipBoardDrawable = std::dynamic_pointer_cast<RotoDrawableItem>(clip->rotoItem);
         if (!isClipBoardDrawable) {
             return;
         }
@@ -2452,7 +2452,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
         std::set< std::set<double> > toRemove;
 
         for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
+            BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(it->rotoItem);
             if (isBezier) {
                 ItemKeys::iterator it2 = _imp->keyframes.find(isBezier);
                 if ( ( it2 != _imp->keyframes.end() ) && it2->second.visible ) {
@@ -2477,7 +2477,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
         ///rebuild all the keyframe structure
         std::set< std::set<double> > toAdd;
         for (TreeItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-            BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
+            BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(it->rotoItem);
             if (isBezier) {
                 assert ( _imp->keyframes.find(isBezier) == _imp->keyframes.end() );
                 TimeLineKeys keys;
@@ -2558,7 +2558,7 @@ RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
         r.item = _roto->getRotoItemForTreeItem(r.treeItem);
         assert(r.item);
         if (r.parentTreeItem) {
-            r.parentLayer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getRotoItemForTreeItem(r.parentTreeItem) );
+            r.parentLayer = std::dynamic_pointer_cast<RotoLayer>( _roto->getRotoItemForTreeItem(r.parentTreeItem) );
             assert(r.parentLayer);
             r.indexInLayer = r.parentLayer->getChildIndex(r.item);
         }
@@ -2698,12 +2698,12 @@ static void
 createCustomWidgetRecursively(RotoPanel* panel,
                               const RotoItemPtr& item)
 {
-    const RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
+    const RotoDrawableItemPtr isDrawable = std::dynamic_pointer_cast<RotoDrawableItem>(item);
 
     if (isDrawable) {
         panel->makeCustomWidgetsForItem(isDrawable);
     }
-    const RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    const RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(item);
     if (isLayer) {
         const std::list<RotoItemPtr> & children = isLayer->getItems();
         for (std::list<RotoItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -2785,7 +2785,7 @@ setItemCopyNameRecursive(RotoPanel* panel,
                          const RotoItemPtr& item)
 {
     item->setScriptName( getItemCopyName(panel, item) );
-    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(item);
 
     if (isLayer) {
         for (std::list<RotoItemPtr>::const_iterator it = isLayer->getItems().begin(); it != isLayer->getItems().end(); ++it) {
@@ -2815,7 +2815,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
         _pastedItems.push_back(item);
     }
 
-    RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(_targetItem);
+    RotoDrawableItemPtr isDrawable = std::dynamic_pointer_cast<RotoDrawableItem>(_targetItem);
 
     if (isDrawable) {
         _mode = ePasteModeCopyToItem;
@@ -2824,9 +2824,9 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
     } else {
         _mode = ePasteModeCopyToLayer;
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
-            BezierPtr srcBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
-            RotoLayerPtr srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
-            RotoStrokeItemPtr srcStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
+            BezierPtr srcBezier = std::dynamic_pointer_cast<Bezier>(it->rotoItem);
+            RotoLayerPtr srcLayer = std::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
+            RotoStrokeItemPtr srcStroke = std::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
             if (srcBezier) {
                 std::string name = getItemCopyName(roto, it->rotoItem);
                 BezierPtr copy( new Bezier(srcBezier->getContext(), name,
@@ -2919,7 +2919,7 @@ PasteItemUndoCommand::redo()
         _roto->updateItemGui(_targetTreeItem);
         _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
     } else {
-        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(_targetItem);
+        RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(_targetItem);
         assert(isLayer);
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
             assert(it->itemCopy);
@@ -2944,9 +2944,9 @@ DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
     _item.treeItem = items;
     _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
     assert( _item.item->getParentLayer() );
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>( _item.item );
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( _item.item);
-    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
+    BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>( _item.item );
+    RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>( _item.item);
+    RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>( _item.item);
     if (isBezier) {
         std::string name = getItemCopyName(roto, isBezier);
         BezierPtr bezierCopy( new Bezier(isBezier->getContext(), name, isBezier->getParentLayer(), false) );

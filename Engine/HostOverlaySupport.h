@@ -60,15 +60,15 @@ public:
     KnobIPtr getKnob(int enumID) const;
 
     template <typename T>
-    boost::shared_ptr<T> getKnob(int enumID) const
+    std::shared_ptr<T> getKnob(int enumID) const
     {
         KnobIPtr knob = getKnob(enumID);
 
         if (!knob) {
-            return boost::shared_ptr<T>();
+            return std::shared_ptr<T>();
         }
 
-        return boost::dynamic_pointer_cast<T>(knob);
+        return std::dynamic_pointer_cast<T>(knob);
     }
 
     /**
@@ -85,7 +85,7 @@ protected:
 private:
 
 
-    boost::scoped_ptr<HostOverlayKnobsPrivate> _imp;
+    std::unique_ptr<HostOverlayKnobsPrivate> _imp;
 };
 
 class HostOverlayKnobsTransform

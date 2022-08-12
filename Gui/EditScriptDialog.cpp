@@ -30,9 +30,6 @@
 #include <cfloat>
 #include <stdexcept>
 
-#include <boost/weak_ptr.hpp>
-
-
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>

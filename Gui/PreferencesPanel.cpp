@@ -28,10 +28,6 @@
 #include <map>
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/make_shared.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
@@ -716,7 +712,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutButtonsLayout->addWidget(_imp->restoreShortcutsDefaultsButton);
     _imp->shortcutButtonsLayout->addStretch();
 
-    KnobPageGuiPtr page = boost::make_shared<KnobPageGui>();
+    KnobPageGuiPtr page = std::make_shared<KnobPageGui>();
     page->gridLayout = 0;
     page->tab = _imp->shortcutsFrame;
     PreferenceTab tab;
@@ -1063,7 +1059,7 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
         KnobIPtr hasParent = pageKnob->getParentKnob();
         KnobPagePtr parentPage;
         if (hasParent) {
-            parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
+            parentPage = std::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {
                 // look in the tabs if it is created
                 for (std::size_t i = 0; i < tabs.size(); ++i) {

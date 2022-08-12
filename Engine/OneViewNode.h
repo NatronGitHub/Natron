@@ -135,7 +135,7 @@ private:
                             double* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<OneViewNodePrivate> _imp;
+    std::unique_ptr<OneViewNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

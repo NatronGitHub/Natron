@@ -276,7 +276,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     if (mergeNode) {
                         NodeGuiIPtr nodeUI = mergeNode->getNodeGui();
                         assert(nodeUI);
-                        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeUI);
+                        NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>(nodeUI);
                         assert(nodeGui);
 
                         double nodeW, nodeH;

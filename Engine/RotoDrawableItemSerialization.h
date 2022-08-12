@@ -112,28 +112,28 @@ private:
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         if (version < ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST) {
-            KnobSerializationPtr activated = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr activated = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Activated", *activated);
             _knobs.push_back(activated);
-            KnobSerializationPtr opacity = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr opacity = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Opacity", *opacity);
             _knobs.push_back(opacity);
-            KnobSerializationPtr feather = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr feather = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Feather", *feather);
             _knobs.push_back(feather);
-            KnobSerializationPtr falloff = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr falloff = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("FallOff", *falloff);
             _knobs.push_back(falloff);
             if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
-                KnobSerializationPtr inverted = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr inverted = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Inverted", *inverted);
                 _knobs.push_back(inverted);
             }
             if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
-                KnobSerializationPtr color = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr color = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Color", *color);
                 _knobs.push_back(color);
-                KnobSerializationPtr comp = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr comp = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("CompOP", *comp);
                 _knobs.push_back(comp);
             }
@@ -141,7 +141,7 @@ private:
             int nKnobs;
             ar & ::boost::serialization::make_nvp("NbItems", nKnobs);
             for (int i = 0; i < nKnobs; ++i) {
-                KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr k = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *k);
                 _knobs.push_back(k);
             }

@@ -753,7 +753,7 @@ struct PageOrdered
     std::list<OfxParamToKnob*> paramsOrdered;
 };
 
-typedef boost::shared_ptr<PageOrdered> PageOrderedPtr;
+typedef std::shared_ptr<PageOrdered> PageOrderedPtr;
 typedef std::list<PageOrderedPtr> PageOrderedPtrList;
 
 void
@@ -779,8 +779,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
-            pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
+            PageOrderedPtr pageData = std::make_shared<PageOrdered>();
+            pageData->page = std::dynamic_pointer_cast<KnobPage>(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
             for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
@@ -836,7 +836,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         mainPage = finalPages.begin();
     } else {
         KnobPagePtr page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
-        PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
+        PageOrderedPtr pageData = std::make_shared<PageOrdered>();
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();

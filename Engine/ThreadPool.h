@@ -103,7 +103,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<AbortableThreadPrivate> _imp;
+    std::unique_ptr<AbortableThreadPrivate> _imp;
 };
 
 #define REPORT_CURRENT_THREAD_ACTION(actionName, node) \

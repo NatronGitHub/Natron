@@ -57,8 +57,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include <boost/weak_ptr.hpp>
-
 #include <ofxNatron.h>
 
 #include "Engine/Curve.h"
@@ -109,7 +107,7 @@ getCenterKnobForTracker(Node* node)
     KnobIPtr knob = node->getKnobByName(kTrackCenterName);
 
     assert(knob);
-    KnobDoublePtr dblKnob = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr dblKnob = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(dblKnob);
 
     return dblKnob;
@@ -2326,7 +2324,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;

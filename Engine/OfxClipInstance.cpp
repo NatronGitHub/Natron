@@ -75,7 +75,7 @@ public:
     double aspectRatio;
     bool optional;
     bool mask;
-    boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
 
 public:
     OfxClipInstancePrivate(OfxClipInstance* publicInterface,
@@ -1332,7 +1332,7 @@ struct OfxImageCommonPrivate
     GenericAccessPtr access;
     OfxClipInstance::RenderActionDataPtr tls;
     std::string components;
-    boost::scoped_ptr<RamBuffer<unsigned char> > localBuffer;
+    std::unique_ptr<RamBuffer<unsigned char> > localBuffer;
 
     OfxImageCommonPrivate(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                           const ImagePtr& image,

@@ -102,7 +102,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<NodeRenderStatsPrivate> _imp;
+    std::unique_ptr<NodeRenderStatsPrivate> _imp;
 };
 
 /**
@@ -147,7 +147,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<RenderStatsPrivate> _imp;
+    std::unique_ptr<RenderStatsPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

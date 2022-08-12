@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
@@ -49,14 +44,14 @@ struct NodeViewerContextPrivate;
 class NodeViewerContext
     : public QObject
     , public KnobGuiContainerI
-    , public boost::enable_shared_from_this<NodeViewerContext>
+    , public std::enable_shared_from_this<NodeViewerContext>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     NodeViewerContext(const NodeGuiPtr& node,
                       ViewerTab* viewer);
@@ -144,7 +139,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<NodeViewerContextPrivate> _imp;
+    std::unique_ptr<NodeViewerContextPrivate> _imp;
 };
 
 

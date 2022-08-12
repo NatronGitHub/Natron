@@ -287,7 +287,7 @@ public:
 
     // for rendering
     double _screenPixelRatio;
-    boost::scoped_ptr<QFont> _textFont;
+    std::unique_ptr<QFont> _textFont;
     TextRenderer textRenderer;
 
     // for textures
@@ -2136,7 +2136,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             continue;
         }
 
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+        NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
 
         if ( !nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible() ) {
             continue;

@@ -67,7 +67,7 @@ Q_SIGNALS:
 private:
 
     virtual void run() OVERRIDE FINAL;
-    boost::scoped_ptr<ExistenceCheckerThreadPrivate> _imp;
+    std::unique_ptr<ExistenceCheckerThreadPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

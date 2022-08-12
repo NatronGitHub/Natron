@@ -152,7 +152,7 @@ string_format(const std::string fmt,
 struct OfxHostPrivate
 {
     OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
-    boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     std::list<QMutex*> pluginsMutexes;
@@ -179,7 +179,7 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
-    _imp->imageEffectPluginCache = boost::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
+    _imp->imageEffectPluginCache = std::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
 OfxHost::~OfxHost()

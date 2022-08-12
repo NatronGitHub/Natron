@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -120,7 +115,7 @@ private:
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<ScriptEditorPrivate> _imp;
+    std::unique_ptr<ScriptEditorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

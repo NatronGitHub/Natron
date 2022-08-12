@@ -152,7 +152,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<CLArgsPrivate> _imp;
+    std::unique_ptr<CLArgsPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

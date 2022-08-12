@@ -28,12 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
@@ -244,7 +238,7 @@ private:
 
     void requestRedraw();
 
-    boost::scoped_ptr<HostOverlayPrivate> _imp;
+    std::unique_ptr<HostOverlayPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

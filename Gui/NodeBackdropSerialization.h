@@ -147,7 +147,7 @@ private:
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("MasterName", masterBackdropName);
 
-        label = boost::make_shared<KnobSerialization>();
+        label = std::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("Label", *label);
         ar & ::boost::serialization::make_nvp("r", r);
         ar & ::boost::serialization::make_nvp("g", g);

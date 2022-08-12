@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include "Gui/CurveEditorUndoRedo.h" // MoveTangentCommand
@@ -162,7 +157,7 @@ public:
     QColor _nextCurveAddedColor;
     TextRenderer textRenderer;
     double _screenPixelRatio;
-    boost::scoped_ptr<QFont> _textFont;
+    std::unique_ptr<QFont> _textFont;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
     bool _mustSetDragOrientation;
@@ -180,7 +175,7 @@ public:
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
-    boost::scoped_ptr<QUndoStack> _undoStack;
+    std::unique_ptr<QUndoStack> _undoStack;
     Gui* _gui;
     GLuint savedTexture;
     QSize sizeH;

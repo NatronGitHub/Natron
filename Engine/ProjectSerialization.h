@@ -266,7 +266,7 @@ public:
             int nodesCount;
             ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
-                NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
+                NodeSerializationPtr ns = std::make_shared<NodeSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.addNodeSerialization(ns);
             }
@@ -278,7 +278,7 @@ public:
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
         for (int i = 0; i < knobsCount; ++i) {
-            KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }

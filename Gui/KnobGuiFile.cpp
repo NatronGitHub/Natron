@@ -73,7 +73,7 @@ KnobGuiFile::KnobGuiFile(KnobIPtr knob,
     , _lastOpened()
     , _lastModificationDates()
 {
-    KnobFilePtr k = boost::dynamic_pointer_cast<KnobFile>(knob);
+    KnobFilePtr k = std::dynamic_pointer_cast<KnobFile>(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
@@ -481,7 +481,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobIPtr knob,
     , _openFileButton(0)
     , _rewriteButton(0)
 {
-    KnobOutputFilePtr k = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+    KnobOutputFilePtr k = std::dynamic_pointer_cast<KnobOutputFile>(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
@@ -774,7 +774,7 @@ KnobGuiPath::KnobGuiPath(KnobIPtr knob,
     , _lineEdit(0)
     , _openFileButton(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
+    _knob = std::dynamic_pointer_cast<KnobPath>(knob);
     assert( _knob.lock() );
 }
 
@@ -904,7 +904,7 @@ KnobGuiPath::tableChanged(int row,
                           int col,
                           std::string* newEncodedValue)
 {
-    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = std::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
 

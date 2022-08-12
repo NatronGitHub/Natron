@@ -162,7 +162,7 @@ struct TimelineGuiPrivate
     TimeLineZoomContext tlZoomCtx;
     TextRenderer textRenderer;
     double _screenPixelRatio;
-    boost::scoped_ptr<QFont> _textFont;
+    std::unique_ptr<QFont> _textFont;
     bool firstPaint;
     CachedFrames cachedFrames;
     mutable QMutex boundariesMutex;

@@ -28,12 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -185,7 +179,7 @@ private:
     ///Called when the selection changes from another reason than settings panel interaction
     void onSelectionChangedInternal();
 
-    boost::scoped_ptr<RotoPanelPrivate> _imp;
+    std::unique_ptr<RotoPanelPrivate> _imp;
 };
 
 
@@ -208,7 +202,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
+typedef std::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
 
 NATRON_NAMESPACE_EXIT
 

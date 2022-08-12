@@ -30,10 +30,6 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Gui/GuiFwd.h"
 
 #include "Engine/NodeSerialization.h"
@@ -84,10 +80,10 @@ public:
         int nNodes;
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
         for (int i = 0; i < nNodes; ++i) {
-            NodeSerializationPtr nS = boost::make_shared<NodeSerialization>();
+            NodeSerializationPtr nS = std::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("Node", *nS);
             nodes.push_back(nS);
-            NodeGuiSerializationPtr nGui = boost::make_shared<NodeGuiSerialization>();
+            NodeGuiSerializationPtr nGui = std::make_shared<NodeGuiSerialization>();
             ar & ::boost::serialization::make_nvp("NodeUI", *nGui);
             nodesUI.push_back(nGui);
         }

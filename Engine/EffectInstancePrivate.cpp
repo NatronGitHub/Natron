@@ -435,8 +435,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , renderClonesPool()
     , mustSyncPrivateData(false)
 {
-    tlsData = boost::make_shared<TLSHolder<EffectTLSData> >();
-    actionsCache = boost::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
+    tlsData = std::make_shared<TLSHolder<EffectTLSData> >();
+    actionsCache = std::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
 }
 
 EffectInstance::Implementation::Implementation(const Implementation& other)
@@ -597,7 +597,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img, c
             img->markForRendering(*it);
         }
     } else {
-        ImageBeingRenderedPtr ibr = boost::make_shared<Implementation::ImageBeingRendered>();
+        ImageBeingRenderedPtr ibr = std::make_shared<Implementation::ImageBeingRendered>();
         ++ibr->refCount;
         std::pair<ImageBeingRenderedMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);

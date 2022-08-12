@@ -315,7 +315,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
        We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
        the Natron process to terminate
      */
-    breakpadAliveThread = boost::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+    breakpadAliveThread = std::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
                                                                      QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                                      breakpadComPipePath);
     QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
@@ -332,7 +332,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
     try {
 #if defined(Q_OS_DARWIN)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
                                                                                  (void*)NULL,
@@ -340,7 +340,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  breakpadPipePath.toStdString().c_str() );
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
         Q_UNUSED(breakpadPipePath);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpCb*/,
                                                                                  (void*)NULL,
@@ -348,7 +348,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  breakpad_client_fd);
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL), //filter callback
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
                                                                                  (void*)NULL, //context

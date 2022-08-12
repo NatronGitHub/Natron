@@ -59,7 +59,7 @@ PanelWidget::getGui() const
 void
 PanelWidget::notifyGuiClosingPublic()
 {
-    _gui = 0;
+    _gui = nullptr;
     notifyGuiClosing();
 }
 

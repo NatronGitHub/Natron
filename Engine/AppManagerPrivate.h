@@ -87,9 +87,9 @@ struct AppManagerPrivate
 
 public:
     typedef Cache<Image> ImageCache;
-    typedef boost::shared_ptr<ImageCache> ImageCachePtr;
+    typedef std::shared_ptr<ImageCache> ImageCachePtr;
     typedef Cache<FrameEntry> FrameEntryCache;
-    typedef boost::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
+    typedef std::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
@@ -102,14 +102,14 @@ public:
     PluginsMap _plugins; //< list of the plugins
     IOPluginsMap readerPlugins; // for all reader plug-ins which are best suited for each format
     IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
-    boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
-    boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
+    std::unique_ptr<OfxHost> ofxHost; //< OpenFX host
+    std::unique_ptr<KnobFactory> _knobFactory; //< knob maker
     ImageCachePtr _nodeCache; //< Images cache
     ImageCachePtr _diskCache; //< Images disk cache (used by DiskCache nodes)
     FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
-    boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
+    std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
     QString _binaryPath; //< the path to the application's binary
@@ -161,7 +161,7 @@ public:
 #ifdef NATRON_USE_BREAKPAD
     QString breakpadProcessExecutableFilePath;
     Q_PID breakpadProcessPID;
-    boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
+    std::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     ExistenceCheckerThreadPtr breakpadAliveThread;
 #endif
 
@@ -199,17 +199,17 @@ public:
     bool onWayland;
 
 #ifdef Q_OS_WIN32
-    boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+    std::unique_ptr<OSGLContext_wgl_data> wglInfo;
 #endif
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-    boost::scoped_ptr<OSGLContext_egl_data> eglInfo;
+    std::unique_ptr<OSGLContext_egl_data> eglInfo;
 
-    boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
+    std::unique_ptr<OSGLContext_glx_data> glxInfo;
 #endif
 
-    boost::scoped_ptr<GPUContextPool> renderingContextPool;
+    std::unique_ptr<GPUContextPool> renderingContextPool;
     std::list<OpenGLRendererInfo> openGLRenderers;
-    boost::scoped_ptr<QCoreApplication> _qApp;
+    std::unique_ptr<QCoreApplication> _qApp;
 
 public:
     AppManagerPrivate();

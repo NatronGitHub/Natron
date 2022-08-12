@@ -176,7 +176,7 @@ public:
         }
 
         QColor c;
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+        NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
         if (nodeUi) {
             double r, g, b;
             nodeUi->getColor(&r, &g, &b);
@@ -195,7 +195,7 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+            NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
             if (nodeUi) {
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
@@ -940,7 +940,7 @@ RenderStatsDialog::onSelectionChanged(const QItemSelection &selected,
     if (!node) {
         return;
     }
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
     if (!nodeUi) {
         return;
     }

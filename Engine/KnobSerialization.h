@@ -1008,12 +1008,12 @@ createDefaultValueForParam(const std::string& paramName,
                            const T& value0,
                            const T& value1)
 {
-    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 2, false);
+    std::shared_ptr< Knob<T> > knob = std::make_shared<Knob<T> >(NULL, paramName, 2, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValues(value0, value1, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    KnobSerializationPtr ret = boost::make_shared<KnobSerialization>(knob);
+    KnobSerializationPtr ret = std::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1023,12 +1023,12 @@ KnobSerializationPtr
 createDefaultValueForParam(const std::string& paramName,
                            const T& value)
 {
-    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 1, false);
+    std::shared_ptr< Knob<T> > knob = std::make_shared<Knob<T> >(NULL, paramName, 1, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValue(value);
-    KnobSerializationPtr ret = boost::make_shared<KnobSerialization>(knob);
+    KnobSerializationPtr ret = std::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1085,14 +1085,14 @@ public:
                     continue;
                 }
             }
-            KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
+            KnobGroupPtr isGrp = std::dynamic_pointer_cast<KnobGroup>(children[i]);
             if (isGrp) {
-                GroupKnobSerializationPtr serialisation = boost::make_shared<GroupKnobSerialization>(isGrp);
+                GroupKnobSerializationPtr serialisation = std::make_shared<GroupKnobSerialization>(isGrp);
                 _children.push_back(serialisation);
             } else {
                 //KnobChoice* isChoice = dynamic_cast<KnobChoice*>(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                KnobSerializationPtr serialisation = boost::make_shared<KnobSerialization>(children[i]);
+                KnobSerializationPtr serialisation = std::make_shared<KnobSerialization>(children[i]);
                 _children.push_back(serialisation);
             }
         }
@@ -1201,11 +1201,11 @@ private:
             ar & ::boost::serialization::make_nvp("Type", type);
 
             if (type == "Group") {
-                GroupKnobSerializationPtr knob = boost::make_shared<GroupKnobSerialization>();
+                GroupKnobSerializationPtr knob = std::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             } else {
-                KnobSerializationPtr knob = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr knob = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             }

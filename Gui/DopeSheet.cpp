@@ -28,11 +28,6 @@
 #include <algorithm>
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 // Qt includes
 #include <QtCore/QDebug>
 #include <QtCore/QSize>
@@ -163,7 +158,7 @@ public:
     DopeSheet *q_ptr;
     DSTreeItemNodeMap treeItemNodeMap;
     DopeSheetSelectionModel *selectionModel;
-    boost::scoped_ptr<QUndoStack> undoStack;
+    std::unique_ptr<QUndoStack> undoStack;
     std::vector<DopeSheetKey> keyframesClipboard;
     TimeLinePtr timeline;
     DopeSheetEditor* editor;
@@ -504,14 +499,14 @@ DSKnobPtr DopeSheet::findDSKnob(const KnobGui* knobGui) const
 bool
 DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = std::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
 
     return bool(parentGroup);
 }
 
 DSNodePtr DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = std::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
     DSNodePtr parentGroupDSNode;
 
     if (parentGroup) {
@@ -1463,7 +1458,7 @@ DSNodePrivate::initGroupNode()
 
        for (NodesList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
          NodePtr subNode = (*it);
-         NodeGuiPtr subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
+         NodeGuiPtr subNodeGui = std::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
 
          if (!subNodeGui || !subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
              continue;
