@@ -22,9 +22,19 @@ if(WINDOWS)
     list(APPEND Natron_SOURCES ../Natron.rc)
 endif()
 add_executable(Natron ${Natron_SOURCES})
-set_target_properties(Natron PROPERTIES
-    MACOSX_BUNDLE TRUE
-)
+if(APPLE)
+    set_target_properties(Natron PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+        MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME} Copyright (c) 2019 Example@Example.com"
+        MACOSX_BUNDLE_ICON_FILE Icon.icns
+        MACOSX_BUNDLE_GUI_IDENTIFIER "${PROJECT_NAME}"
+        MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_COPYRIGHT "Copyright (c) 2022 The Natron Developers"
+    )
+endif()
 target_link_libraries(Natron
     PRIVATE
         NatronGui
