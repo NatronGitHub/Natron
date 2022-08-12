@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # see https://cmake.org/cmake/help/latest/module/FindEXPAT.html
-FIND_PACKAGE( EXPAT REQUIRED )
+find_package(EXPAT REQUIRED)
 
 file(GLOB HostSupport_HEADERS
     ../libs/OpenFX/HostSupport/include/*.h
