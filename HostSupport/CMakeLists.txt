@@ -17,6 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# see https://cmake.org/cmake/help/latest/module/FindEXPAT.html
+find_package(EXPAT REQUIRED)
+
 file(GLOB HostSupport_HEADERS
     ../libs/OpenFX/HostSupport/include/*.h
     ../libs/OpenFX/include/*.h
@@ -43,7 +46,7 @@ set(HostSupport_SOURCES
 add_library(HostSupport STATIC ${HostSupport_SOURCES})
 target_link_libraries(HostSupport
     PRIVATE
-        expat::expat
+        EXPAT::EXPAT
 )
 target_include_directories(HostSupport
     PUBLIC

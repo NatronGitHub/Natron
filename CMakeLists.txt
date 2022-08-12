@@ -43,8 +43,6 @@ set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
 set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
 set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
 
-find_package(expat REQUIRED)
-
 if(NATRON_SYSTEM_LIBS)
     find_package(glog)
     find_package(Ceres)

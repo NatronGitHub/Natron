@@ -25,7 +25,7 @@ set(PYGUI_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
 set(PYGUI_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore
     ${PYSIDE_INCLUDE_DIRS}/QtGui ${PYSIDE_INCLUDE_DIRS}/QtWidgets)
 list(APPEND PYGUI_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${QTGUI_INCLUDE_DIRS}
-    ${QTWIDGETS_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS})
+    ${QTWIDGETS_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 list(JOIN PYGUI_INCLUDE_DIRS ":" PYGUI_INCS)
 set(PYGUI_HEADER PySide2_Gui_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
@@ -36,6 +36,9 @@ set(shiboken_args
     "-I.:..:../Engine:../Global:../libs/OpenFX/include:${PYGUI_INCS}"
     "-T../Engine:${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"
     "${PYGUI_HEADER}" "typesystem_natronGui.xml")
+if(APPLE)
+   list(APPEND shiboken_args -I${Qt5_DIR}/../../../include)
+endif()
 
 execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py typesystem_natronGui.xml ${PYGUI_OUT}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -48,7 +51,7 @@ add_custom_command(OUTPUT ${PyGui_SOURCES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(APPLE)
-    list(APPEND NatronGui_SOURCES QtMac.mm TaskBar.mm)
+    list(APPEND NatronGui_SOURCES QtMac.mm TaskBarMac.mm)
 endif()
 
 list(APPEND NatronGui_SOURCES
