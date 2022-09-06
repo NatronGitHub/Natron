@@ -48,12 +48,12 @@ subport ${name} {
 subport ${name}-devel {
     conflicts   ${name}
     
-    version     3.7.6
+    version     3.7.7
     revision    0
 
-    checksums   rmd160  5722a10bd1d03ad3d44391ea82254f75e371b259 \
-                sha256  77065719a345bfb18faa250134be4c53bef70c1bd61f6c0c23ceb8b44f0262ff \
-                size    6338276
+    checksums   rmd160  7ca22742f093e970a59a445b3f02a163a2010f79 \
+                sha256  be9143d0d58eab64dba9b77114aaafac529b6c0d7e81de6bdf1c9b59027d2106 \
+                size    6351664
 
     # Note: configure script detects zstd, but flags it as missing anyway
     configure.args-append \

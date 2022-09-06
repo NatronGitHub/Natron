@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            1
+revision            3
 epoch               1
 
 license             LGPL-2.1+
@@ -67,12 +67,14 @@ checksums           rmd160  22a690edfad74f25de0d24557f8edf4b2366b1a0 \
                     sha256  af419a7f88adbc56c758ab19b4c708afbcae15ef09606b82b855291f6a6faa93 \
                     size    9562968
 
-depends_build       port:pkgconfig \
+depends_build-append \
+                    port:pkgconfig \
                     port:gmake \
                     port:cctools \
                     port:texinfo
 
-depends_lib         port:lame \
+depends_lib-append \
+                    port:lame \
                     port:libiconv \
                     port:libvorbis \
                     port:libopus \
@@ -98,19 +100,22 @@ depends_lib         port:lame \
                     port:zimg \
                     port:zlib
 
-patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
+patchfiles-append   patch-libavcodec-audiotoolboxenc.c.diff
 
 # Fix an upstream bug that overrides the max_b_frames setting
 # https://trac.ffmpeg.org/ticket/9231
-# This bug is fixed upstream in commit 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
-# and should therefore be available in the next release version.
+# Fixed via upstream commit: 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
 patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
 
 # Patch for upstream bug related to non-B-frame encoding
 # https://trac.ffmpeg.org/ticket/9439
 # Fixed via upstream commit: b786bc7433dfe082441a57c1ba9ae9ea47904b78
-# Will be available in the next release version
 patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
+
+# Patch for libsdl2; support newer versions
+# https://trac.macports.org/ticket/65703
+# Fixed via upstream commit: e5163b1d34381a3319214a902ef1df923dd2eeba
+patchfiles-append   patch-libsdl2-version.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
@@ -134,8 +139,11 @@ compiler.blacklist-append \
 # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
 default_variants-append +gpl2
 
-configure.cflags-append -DHAVE_LRINTF ${configure.cppflags}
-configure.args      --enable-swscale \
+configure.cflags-append \
+                    -DHAVE_LRINTF ${configure.cppflags}
+
+configure.args-append \
+                    --enable-swscale \
                     --enable-avfilter \
                     --enable-avresample \
                     --enable-libmp3lame \
@@ -264,9 +272,11 @@ test.run            yes
 
 destroot.env-append V=1
 
-#
-# configure isn't autoconf and they do use a dep cache
-#
+post-extract {
+    # fix file perms; tarball contents deny group and world read
+    system "find ${worksrcpath} -type d -print0 | xargs -0 chmod a+rx"
+    system "find ${worksrcpath} -type f -print0 | xargs -0 chmod a+r"
+}
 
 post-extract {
     if {${configure.cxx_stdlib} eq "libc++"} {
@@ -317,6 +327,7 @@ platform darwin 8 {
     }
 }
 
+# configure isn't autoconf and they do use a dep cache
 configure.universal_args-delete --disable-dependency-tracking
 
 if {${universal_possible} && [variant_isset universal]} {
@@ -349,9 +360,7 @@ if {${universal_possible} && [variant_isset universal]} {
 }
 
 variant x11 {
-#
-# enable x11grab_xcb input device
-#
+    # enable x11grab_xcb input device
     depends_lib-append      port:xorg-libxcb \
                             port:xorg-libXext \
                             port:xorg-libXfixes
@@ -424,10 +433,10 @@ variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// proto
 }
 
 variant jack description {Enable jack library and indev support} {
-# jack will autoconfigure if not disabled
+    # jack will autoconfigure if not disabled
     depends_lib-append      port:jack
-    configure.args-delete   --disable-libjack \
-                            --disable-indev=jack
+    configure.args-replace  --disable-libjack    --enable-libjack
+    configure.args-replace  --disable-indev=jack --enable-indev=jack
 }
 
 variant darwinssl description {Enable https support using Apple built-in TLS library instead of GNU TLS} {

@@ -1,6 +1,6 @@
---- Portfile.orig	2022-08-08 09:01:39.000000000 -0400
-+++ Portfile	2022-08-08 09:02:37.000000000 -0400
-@@ -84,6 +84,8 @@
+--- Portfile.orig	2022-09-05 21:21:47.000000000 -0700
++++ Portfile	2022-09-05 21:22:33.000000000 -0700
+@@ -86,6 +86,8 @@
                      port:libbluray \
                      path:lib/pkgconfig/vpx.pc:libvpx \
                      path:lib/pkgconfig/gnutls.pc:gnutls \
@@ -9,7 +9,7 @@
                      port:openjpeg \
                      port:zvbi \
                      port:fontconfig \
-@@ -123,6 +125,11 @@
+@@ -128,6 +130,11 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 800}
  
@@ -21,7 +21,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -137,6 +144,8 @@
+@@ -145,6 +152,8 @@
                      --enable-librsvg \
                      --enable-libtheora \
                      --enable-libopenjpeg \
@@ -30,7 +30,7 @@
                      --enable-libmodplug \
                      --enable-libvpx \
                      --enable-libsoxr \
-@@ -151,12 +160,14 @@
+@@ -159,12 +168,14 @@
                      --enable-libfreetype \
                      --enable-libfribidi \
                      --enable-zlib \
@@ -45,7 +45,7 @@
                      --disable-indev=jack \
                      --disable-opencl \
                      --disable-outdev=xv \
-@@ -167,6 +178,7 @@
+@@ -175,6 +186,7 @@
                      --mandir=${prefix}/share/man \
                      --enable-shared \
                      --enable-pthreads \
@@ -53,10 +53,10 @@
                      --cc=${configure.cc}
  
  platform darwin {
-@@ -256,6 +268,24 @@
- # configure isn't autoconf and they do use a dep cache
- #
- 
+@@ -266,6 +278,24 @@
+     system "find ${worksrcpath} -type f -print0 | xargs -0 chmod a+r"
+ }
+
 +post-extract {
 +    if {${configure.cxx_stdlib} eq "libc++"} {
 +        # fix configure, which contains many references to libstdc++
@@ -78,7 +78,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -290,6 +320,15 @@
+@@ -301,6 +331,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
@@ -94,7 +94,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -321,12 +360,53 @@
+@@ -330,12 +369,53 @@
                              --disable-libxcb-xfixes
  }
  
@@ -148,7 +148,7 @@
  variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
      depends_lib-append port:libdc1394
      configure.args-append --enable-libdc1394
-@@ -356,6 +436,20 @@
+@@ -365,6 +445,20 @@
      depends_lib-delete      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -169,7 +169,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -377,6 +471,12 @@
+@@ -386,6 +480,12 @@
      depends_lib-append      path:lib/pkgconfig/smbclient.pc:samba3 \
                              port:libaribb24
      license                 GPL-3+
