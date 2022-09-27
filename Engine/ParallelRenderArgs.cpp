@@ -28,8 +28,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"

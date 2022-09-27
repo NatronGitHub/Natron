@@ -30,12 +30,6 @@
 
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include <QtCore/QThread>
 #include <QtCore/QMutex>
 

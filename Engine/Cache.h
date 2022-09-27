@@ -52,10 +52,6 @@ GCC_DIAG_OFF(deprecated)
 #include <QtCore/QBuffer>
 #include <QtCore/QRunnable>
 GCC_DIAG_ON(deprecated)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#endif
 
 #include "Engine/AppManager.h" //for access to settings
 #include "Engine/CacheEntry.h"

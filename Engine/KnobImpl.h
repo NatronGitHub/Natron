@@ -35,12 +35,6 @@
 #include <string>
 #include <algorithm> // min, max
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #include <QtCore/QString>
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>

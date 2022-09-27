@@ -28,8 +28,6 @@
 
 #include "Global/Macros.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <string>
 #include <list>
 #include <cstddef>

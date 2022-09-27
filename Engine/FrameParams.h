@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Engine/RectI.h"
 #include "Engine/NonKeyParams.h"
 #include "Engine/EngineFwd.h"

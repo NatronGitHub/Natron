@@ -28,8 +28,6 @@
 #include <set>
 #include <stdexcept>
 
-#include <boost/make_shared.hpp>
-
 #include <QMutex>
 #include <QWaitCondition>
 

@@ -29,8 +29,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/make_shared.hpp>
-
 #ifdef __NATRON_WIN32__
 #include <windows.h>
 #endif

@@ -35,11 +35,6 @@
 
 #include "Global/Macros.h"
 
-#include <boost/scoped_ptr.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/case_conv.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>

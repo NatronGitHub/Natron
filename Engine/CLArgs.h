@@ -40,9 +40,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER

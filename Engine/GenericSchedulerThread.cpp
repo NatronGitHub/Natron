@@ -25,8 +25,6 @@
 
 #include "GenericSchedulerThread.h"
 
-#include <boost/make_shared.hpp>
-
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
