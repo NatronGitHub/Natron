@@ -29,12 +29,6 @@
 
 #include "Global/QtCompat.h"
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -186,18 +180,18 @@ ReadNode::isBundledReader(const std::string& pluginID,
 {
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
-        return ( boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPDF) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READBRAW) );
+        return ( StrUtils::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READORA) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READCDR) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPNG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPDF) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READBRAW) );
     }
 
     return (pluginID == PLUGINID_OFX_READOIIO ||

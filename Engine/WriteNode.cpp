@@ -29,12 +29,6 @@
 
 #include "Global/QtCompat.h"
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -174,10 +168,10 @@ WriteNode::isBundledWriter(const std::string& pluginID,
 {
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
-        return ( boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG) );
+        return ( StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEPNG) );
     }
 
     return (pluginID == PLUGINID_OFX_WRITEOIIO ||

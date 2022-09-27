@@ -26,6 +26,7 @@
 #include "KnobTypes.h"
 
 #include <cfloat>
+#include <cmath>
 #include <locale>
 #include <sstream>
 #include <algorithm> // min, max
@@ -36,10 +37,6 @@
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/replace.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -635,7 +632,7 @@ KnobChoice::onInternalValueChanged(int dimension,
 }
 
 #if 0 // dead code
-// replaced by boost::iequals(a, b)
+// replaced by StrUtils::iequals(a, b)
 static bool
 caseInsensitiveCompare(const std::string& a,
                        const std::string& b)
@@ -834,7 +831,7 @@ KnobChoice::getActiveEntry()
 }
 
 #if 0 // dead code
-// replaced by boost::trim_copy(str)
+// replaced by StrUtils::trim_copy(str)
 static std::string
 trim(std::string const & str)
 {
@@ -889,7 +886,7 @@ KnobChoice::getHintToolTipFull() const
     }
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
-        ss << boost::trim_copy( getHintToolTip() );
+        ss << StrUtils::trim_copy( getHintToolTip() );
         if (gothelp) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
@@ -899,12 +896,12 @@ KnobChoice::getHintToolTipFull() const
     if (gothelp) {
         for (U32 i = 0; i < _entries.size(); ++i) {
             if ( !_entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = boost::trim_copy(_entries[i].label);
+                std::string entry = StrUtils::trim_copy(_entries[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
                 if (_entries[i].label != _entries[i].id) {
                     entry += "  (" + _entries[i].id + ")";
                 }
-                std::string help = boost::trim_copy(_entries[i].tooltip);
+                std::string help = StrUtils::trim_copy(_entries[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -1042,7 +1039,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
         // 4- case-insensitive match
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if ( boost::iequals(entryStr(entries[i], s), choice) ) {
+            if ( StrUtils::iequals(entryStr(entries[i], s), choice) ) {
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
@@ -1074,7 +1071,7 @@ KnobChoice::choiceMatch(const std::string& choice,
         // Note: the parameter name is "outputFormat" in project serialization
         {
             bool choiceformatfound = false;
-            std::string choiceformat = boost::trim_copy(choice); // trim leading and trailing whitespace
+            std::string choiceformat = StrUtils::trim_copy(choice); // trim leading and trailing whitespace
             if (choiceformat != choice) {
                 choiceformatfound = true;
             }
@@ -1083,12 +1080,12 @@ KnobChoice::choiceMatch(const std::string& choice,
                 choiceformat.erase(new_end, choiceformat.end());
                 choiceformatfound = true;
             }
-            if ( boost::algorithm::ends_with(choiceformat, " 1") ) { // remove " 1" at the end
-                choiceformat.resize(choiceformat.size()-2);
+            if (choiceformat.find(" 1", choiceformat.size() - 2) != std::string::npos) { // remove " 1" at the end
+                choiceformat.resize(choiceformat.size() - 2);
                 choiceformatfound = true;
             }
             if (choiceformat.find(" x ") != std::string::npos) { // remove spaces around 'x'
-                boost::replace_first(choiceformat, " x ", "x");
+                StrUtils::replace_first(choiceformat, " x ", "x");
                 choiceformatfound = true;
             }
             if (choiceformatfound) {

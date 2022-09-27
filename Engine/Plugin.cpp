@@ -25,12 +25,10 @@
 
 #include "Plugin.h"
 
+#include <algorithm>
 #include <cassert>
+#include <locale>
 #include <stdexcept>
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QtCore/QMutex>
 
@@ -364,11 +362,16 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     }
 }
 
+static bool
+iless(char l, char r) {
+    return std::tolower(l, std::locale()) < std::tolower(r, std::locale());
+}
+
 bool
 FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs,
                                                    const std::string& rhs) const
 {
-    return boost::algorithm::lexicographical_compare( lhs, rhs, boost::algorithm::is_iless() );
+    return std::lexicographical_compare( lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), iless );
 }
 
 NATRON_NAMESPACE_EXIT

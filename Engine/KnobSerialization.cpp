@@ -48,6 +48,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include "Global/StrUtils.h"
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
@@ -292,7 +293,7 @@ equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
 static bool
 equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
 {
-    return boost::iequals(str1, str2);
+    return StrUtils::iequals(str1, str2);
 }
 
 typedef bool (*stringFuncPtr)(const std::string&,const std::string&);
