@@ -31,9 +31,6 @@
 #include <limits>
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"

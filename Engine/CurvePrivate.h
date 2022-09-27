@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include <QtCore/QMutex>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 #include <QtCore/QRecursiveMutex>

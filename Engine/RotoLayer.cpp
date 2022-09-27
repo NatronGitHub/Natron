@@ -35,11 +35,6 @@
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/shared_ptr.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierSerialization.h"

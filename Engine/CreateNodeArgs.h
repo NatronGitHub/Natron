@@ -32,11 +32,6 @@
 #include <stdexcept>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#endif
-
 #include "Engine/EngineFwd.h"
 
 /**

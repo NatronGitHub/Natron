@@ -56,9 +56,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/make_shared.hpp>
-
-
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Interpolation.h"

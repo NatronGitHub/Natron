@@ -30,10 +30,6 @@
 
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 

@@ -30,17 +30,9 @@
 
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
 #include <QtCore/QThread>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>
-
-
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"

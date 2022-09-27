@@ -29,8 +29,6 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <boost/scoped_array.hpp>
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTextStream>

@@ -29,8 +29,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <boost/make_shared.hpp>
-
 #include <QtCore/QDebug>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>

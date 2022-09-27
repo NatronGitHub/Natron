@@ -33,14 +33,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-#endif
-
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
 

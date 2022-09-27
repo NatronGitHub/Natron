@@ -30,11 +30,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 #include <QtCore/QObject>
 
 #include "Engine/EngineFwd.h"

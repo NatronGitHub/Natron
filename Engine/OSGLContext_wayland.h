@@ -26,10 +26,6 @@
 #include "Engine/OSGLContext_xdg.h"
 #include "Global/GLIncludes.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #ifdef __NATRON_LINUX__
 
 #include "Global/GlobalDefines.h"
