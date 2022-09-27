@@ -35,12 +35,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -2948,7 +2942,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
 
     const EffectInstance::PlaneToRender & firstPlane = tls->currentRenderArgs.outputPlanes.begin()->second;
     bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
-    if ( boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace") ) {
+    if ( getNode()->getPluginID().rfind("uk.co.thefoundry.furnace", 0) != std::string::npos ) {
         //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
         useCache = false;
     }
@@ -4577,7 +4571,7 @@ bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
     return ( !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNodePlugin() &&
-             !boost::starts_with(getPluginID(), "uk.co.thefoundry.furnace") );
+             getPluginID().rfind("uk.co.thefoundry.furnace", 0) == std::string::npos );
 }
 
 int

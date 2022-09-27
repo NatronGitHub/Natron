@@ -1258,7 +1258,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     {
         ///Furnace plug-ins don't handle using the thread pool
         SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
+        if ( !isSilentCreation && foundPluginID.rfind("uk.co.thefoundry.furnace", 0) != std::string::npos &&
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                tr("The settings of the application are currently set to use "

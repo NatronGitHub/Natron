@@ -20,6 +20,7 @@
 #ifndef NATRON_GLOBAL_STRUTILS_H
 #define NATRON_GLOBAL_STRUTILS_H
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -84,6 +85,12 @@ std::string fromNativeSeparators(const std::string &pathName);
 std::vector<std::string> split(const std::string &text, char sep);
 
 std::string join(const std::vector<std::string> &text, char sep);
+
+bool iequals(const std::string& lhs, const std::string& rhs);
+
+void replace_first(std::string& inout, const std::string& search, const std::string& fmt);
+
+std::string trim_copy(const std::string& input);
 
 } // namespace StrUtils
 

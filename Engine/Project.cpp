@@ -33,12 +33,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #ifdef __NATRON_WIN32__
 #include <stdio.h> //for _snprintf
 #include <windows.h> //for GetUserName
@@ -1506,7 +1500,7 @@ toLowerString(const std::string& str)
     return ret;
 }
 
-// replaced by boost::iequals(lhs, rhs)
+// replaced by StrUtils::iequals(lhs, rhs)
 static bool
 caseInsensitiveCompare(const std::string& lhs,
                        const std::string& rhs)
@@ -1529,7 +1523,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
     for (std::size_t i = 0; i < views.size(); ++i) {
         bool found = false;
         for (std::list<std::string>::iterator it = pairs.begin(); it != pairs.end(); ++it) {
-            if ( boost::iequals(*it, views[i]) ) {
+            if ( StrUtils::iequals(*it, views[i]) ) {
                 found = true;
                 break;
             }
