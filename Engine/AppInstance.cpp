@@ -42,14 +42,6 @@
 #include <QtCore/QSettings>
 #include <QtNetwork/QNetworkReply>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
@@ -75,8 +67,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
-
-using namespace boost::placeholders;
 
 NATRON_NAMESPACE_ENTER
 
@@ -1815,7 +1805,9 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 
     if (appPTR->isBackground() || doBlockingRender) {
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( itemsToQueue, boost::bind(&AppInstancePrivate::startRenderingFullSequence, _imp.get(), true, _1) );
+        QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
+            _imp->startRenderingFullSequence(true, item);
+        });
     } else {
         bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
         if (isQueuingEnabled) {

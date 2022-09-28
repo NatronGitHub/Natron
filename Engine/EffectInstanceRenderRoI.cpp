@@ -40,13 +40,6 @@
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"
@@ -79,8 +72,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-
-using namespace boost::placeholders;
 
 NATRON_NAMESPACE_ENTER
 
@@ -1998,13 +1989,11 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
 #else
 
+            std::function<RenderingFunctorRetEnum(const RectToRender&)> render = [&](const RectToRender& rect) {
+                return self->_imp->tiledRenderingFunctor(*tiledArgs, rect, currentThread);
+            };
 
-            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped( planesToRender->rectsToRender,
-                                                                         boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
-                                                                                     self->_imp.get(),
-                                                                                     *tiledArgs,
-                                                                                     _1,
-                                                                                     currentThread) );
+            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped(planesToRender->rectsToRender, render);
             ret.waitForFinished();
             QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
