@@ -44,10 +44,6 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QProcess>
 #include <QtCore/QMap>
 
-#if (!defined(Q_MOC_RUN) && !defined(SBK_RUN)) || defined(SBK2_RUN)
-#include <boost/noncopyable.hpp>
-#endif
-
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
@@ -92,7 +88,7 @@ typedef std::vector<AppInstancePtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
-    : public QObject, public AfterQuitProcessingI, public boost::noncopyable
+    : public QObject, public AfterQuitProcessingI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -130,6 +126,10 @@ public:
     bool loadW( int argc, wchar_t **argv, const CLArgs& cl);
 
 private:
+
+    AppManager(const AppManager&) = delete;
+
+    AppManager& operator=(const AppManager&) = delete;
 
     bool loadFromArgs(const CLArgs& cl);
 

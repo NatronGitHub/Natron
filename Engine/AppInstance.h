@@ -39,10 +39,6 @@
 #include <QtCore/QObject>  // for Q_OBJECT, Q_SIGNALS, Q_SLOTS
 #include <QtCore/QMutex>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
 #include "Engine/TimeLineKeyFrames.h"
@@ -88,7 +84,6 @@ public:
 
 class AppInstance
     : public QObject
-    , public boost::noncopyable
     , public std::enable_shared_from_this<AppInstance>
     , public TimeLineKeyFrames
 {
@@ -147,6 +142,10 @@ public:
     void load(const CLArgs& cl, bool makeEmptyInstance);
 
 protected:
+
+    AppInstance(const AppInstance&) = delete;
+
+    AppInstance& operator=(const AppInstance&) = delete;
 
     virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance);
 

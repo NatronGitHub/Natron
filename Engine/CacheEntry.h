@@ -313,7 +313,7 @@ public:
     }
 };
 
-class AbstractCacheEntryBase : boost::noncopyable
+class AbstractCacheEntryBase
 {
 public:
 
@@ -337,6 +337,12 @@ public:
     virtual U64 getElementsCountFromParams() const = 0;
 
     virtual void syncBackingFile() const = 0;
+
+protected:
+
+    AbstractCacheEntryBase(const AbstractCacheEntryBase&) = delete;
+
+    AbstractCacheEntryBase& operator=(const AbstractCacheEntryBase&) = delete;
 };
 
 
