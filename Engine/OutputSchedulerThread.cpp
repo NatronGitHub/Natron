@@ -33,8 +33,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <boost/algorithm/clamp.hpp>
-
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -45,6 +43,7 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QRunnable>
 
+#include "Global/MathUtils.h"
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
 #endif
@@ -933,7 +932,7 @@ OutputSchedulerThread::startTasks(int startingFrame)
 #else
     //Start one more thread until we use all the thread pool.
     //We leave some CPU available so that the multi-thread suite can take advantage of it
-    nFrames = boost::algorithm::clamp(maxThreads - activeThreads, 1, 1);
+    nFrames = MathUtils::clamp(maxThreads - activeThreads, 1, 1);
 #endif
 
 

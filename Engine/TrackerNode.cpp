@@ -23,9 +23,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <boost/algorithm/clamp.hpp>
-
 #include "TrackerNode.h"
+
+#include "Global/MathUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
@@ -1036,7 +1036,7 @@ TrackerNode::drawOverlay(double time,
                                    Also clamp to the interval if the correlation is higher, and reverse.
                                  */
 
-                                double error = boost::algorithm::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
+                                double error = MathUtils::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
@@ -1890,8 +1890,8 @@ TrackerNode::onOverlayPenMotion(double time,
             searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
             searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
 
-            cur.x = boost::algorithm::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
-            cur.y = boost::algorithm::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
+            cur.x = MathUtils::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
+            cur.y = MathUtils::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
 
             cur.x -= (center.x + offset.x);
             cur.y -= (center.y + offset.y);
@@ -2218,7 +2218,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                 double ratio = dist / prevDist;
                 _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
+                _imp->ui->selectedMarkerScale.x = MathUtils::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
                 _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
                 didSomething = true;
             }

@@ -31,8 +31,6 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <boost/algorithm/clamp.hpp>
-
 #include <QApplication> // qApp
 #if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
@@ -41,6 +39,7 @@
 #endif
 
 #include "Global/FStreamsSupport.h"
+#include "Global/MathUtils.h"
 
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
@@ -255,8 +254,8 @@ Gui::restoreLayout(bool wipePrevious,
             int h = std::min( (*it)->h, screen.height() );
             window->resize(w, h);
             // If the screen size changed, make sure at least 50x50 pixels of the window are visible
-            int x = boost::algorithm::clamp( (*it)->x, screen.left(), screen.right() - 50 );
-            int y = boost::algorithm::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
+            int x = MathUtils::clamp( (*it)->x, screen.left(), screen.right() - 50 );
+            int y = MathUtils::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
             window->move( QPoint(x, y) );
         }
 

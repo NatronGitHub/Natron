@@ -25,11 +25,6 @@
 
 #include "ProgressTaskInfo.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/algorithm/clamp.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTimer>
@@ -40,6 +35,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Global/MathUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
@@ -572,8 +569,8 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,
                                     double subTaskProgress)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    totalProgress = boost::algorithm::clamp(totalProgress, 0., 1.);
-    subTaskProgress = boost::algorithm::clamp(subTaskProgress, 0., 1.);
+    totalProgress = MathUtils::clamp(totalProgress, 0., 1.);
+    subTaskProgress = MathUtils::clamp(subTaskProgress, 0., 1.);
 
     _imp->progressPercent = totalProgress * 100.;
     if (_imp->progressBar) {

@@ -34,10 +34,6 @@
 #include <cstring> // for std::memcpy, std::memset
 #include <sstream> // stringstream
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>
 
@@ -2188,9 +2184,9 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
     double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
     double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
 #ifdef DEBUG_NAN
-    assert( !(boost::math::isnan)(r) ); // check for NaN
-    assert( !(boost::math::isnan)(g) ); // check for NaN
-    assert( !(boost::math::isnan)(b) ); // check for NaN
+    assert( !std::isnan(r) ); // check for NaN
+    assert( !std::isnan(g) ); // check for NaN
+    assert( !std::isnan(b) ); // check for NaN
 #endif
     int width = pixelRod.width();
     int srcNElements = width * srcNComps;
@@ -2205,7 +2201,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
              srcPix += srcNComps) {
             float cairoPixel = !inverted ? ( (float)*srcPix * (maxValue / 255.f) ) : 1. - ( (float)*srcPix * (maxValue / 255.f) );
 #         ifdef DEBUG_NAN
-            assert( !(boost::math::isnan)(cairoPixel) ); // check for NaN
+            assert( !std::isnan(cairoPixel) ); // check for NaN
 #         endif
             switch (dstNComps) {
             case 4:
@@ -2232,7 +2228,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG_NAN
             for (int c = 0; c < dstNComps; ++c) {
-                assert( !(boost::math::isnan)(dstPix[c]) ); // check for NaN
+                assert( !std::isnan(dstPix[c]) ); // check for NaN
             }
 #         endif
         }
@@ -2370,7 +2366,7 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG_NAN
             for (int c = 0; c < dstNComps; ++c) {
-                assert( !(boost::math::isnan)(dstPix[x * dstNComps + c]) ); // check for NaN
+                assert( !std::isnan(dstPix[x * dstNComps + c]) ); // check for NaN
             }
 #         endif
         }
@@ -2453,7 +2449,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
         for (int x = 0; x < roi.width(); ++x) {
 #         ifdef DEBUG_NAN
             for (int c = 0; c < srcNComps; ++c) {
-                assert( !(boost::math::isnan)(srcPix[x * srcNComps + c]) ); // check for NaN
+                assert( !std::isnan(srcPix[x * srcNComps + c]) ); // check for NaN
             }
 #         endif
             if (dstNComps == 1) {

@@ -28,12 +28,6 @@
 
 #include "Global/Macros.h"
 
-#ifndef NDEBUG
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QPointF>
@@ -190,7 +184,7 @@ public:
                  double zoomFactor,
                  double zoomAspectRatio)
     {
-        assert(boost::math::isfinite(zoomLeft) && boost::math::isfinite(zoomBottom) && boost::math::isfinite(zoomFactor) && boost::math::isfinite(zoomAspectRatio) && zoomFactor > 0 && zoomAspectRatio > 0);
+        assert(std::isfinite(zoomLeft) && std::isfinite(zoomBottom) && std::isfinite(zoomFactor) && std::isfinite(zoomAspectRatio) && zoomFactor > 0 && zoomAspectRatio > 0);
         _zoomLeft = zoomLeft;
         _zoomBottom = zoomBottom;
         if (zoomFactor <= _zoomMin) {
@@ -211,7 +205,7 @@ public:
     void translate(double dx,
                    double dy)
     {
-        assert( boost::math::isfinite(dx) && boost::math::isfinite(dy) );
+        assert( std::isfinite(dx) && std::isfinite(dy) );
         _zoomLeft += dx;
         _zoomBottom += dy;
         check();
@@ -221,7 +215,7 @@ public:
               double centerY,
               double scale)
     {
-        assert(boost::math::isfinite(centerX) && boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
+        assert(std::isfinite(centerX) && std::isfinite(centerY) && std::isfinite(scale) && scale > 0);
         double zoomFactor = _zoomFactor * scale;
         if (zoomFactor <= _zoomMin) {
             zoomFactor = _zoomMin;
@@ -245,7 +239,7 @@ public:
                double /*centerY*/,
                double scale)
     {
-        assert(boost::math::isfinite(centerX) && /*boost::math::isfinite(centerY) &&*/ boost::math::isfinite(scale) && scale > 0);
+        assert(std::isfinite(centerX) && /*std::isfinite(centerY) &&*/ std::isfinite(scale) && scale > 0);
         double zoomAspectRatio = _zoomAspectRatio * scale;
         if (_zoomFactor * zoomAspectRatio <= _zoomMin) {
             zoomAspectRatio = _zoomMin / _zoomFactor;
@@ -263,7 +257,7 @@ public:
                double centerY,
                double scale)
     {
-        assert(/*boost::math::isfinite(centerX) &&*/ boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
+        assert(/*std::isfinite(centerX) &&*/ std::isfinite(centerY) && std::isfinite(scale) && scale > 0);
         double zoomFactor = _zoomFactor * scale;
         double zoomAspectRatio = _zoomAspectRatio / scale;
         if (zoomFactor <= _zoomMin) {
@@ -289,7 +283,7 @@ public:
              double ymin,
              double ymax)
     {
-        assert(boost::math::isfinite(xmin) && boost::math::isfinite(xmax) && boost::math::isfinite(ymin) && boost::math::isfinite(ymax) && xmin < xmax && ymin < ymax);
+        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax) && xmin < xmax && ymin < ymax);
         double width = xmax - xmin;
         double height = ymax - ymin;
 
@@ -313,7 +307,7 @@ public:
               double ymin,
               double ymax)
     {
-        assert(boost::math::isfinite(xmin) && boost::math::isfinite(xmax) && boost::math::isfinite(ymin) && boost::math::isfinite(ymax) && xmin < xmax && ymin < ymax);
+        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax) && xmin < xmax && ymin < ymax);
         double width = xmax - xmin;
         double height = ymax - ymin;
 
@@ -331,7 +325,7 @@ public:
                        bool alignTop = false,
                        bool alignRight = false)
     {
-        assert(boost::math::isfinite(screenWidth) && boost::math::isfinite(screenHeight) && screenWidth > 0 && screenHeight > 0);
+        assert(std::isfinite(screenWidth) && std::isfinite(screenHeight) && screenWidth > 0 && screenHeight > 0);
         if ( (screenWidth <= 0) || (screenHeight <= 0) ) {
             _screenWidth = 0;
             _screenHeight = 0;
@@ -366,7 +360,7 @@ public:
     QPointF toZoomCoordinates(double widgetX,
                               double widgetY) const
     {
-        assert(boost::math::isfinite(widgetX) && boost::math::isfinite(widgetY) && _screenWidth > 0 && _screenHeight > 0);
+        assert(std::isfinite(widgetX) && std::isfinite(widgetY) && _screenWidth > 0 && _screenHeight > 0);
         if ( (_screenWidth <= 0) || (_screenHeight <= 0) ) {
             return QPointF( left(), top() );
         }
@@ -385,7 +379,7 @@ public:
     QPointF toWidgetCoordinates(double zoomX,
                                 double zoomY) const
     {
-        assert( boost::math::isfinite(zoomX) && boost::math::isfinite(zoomY) );
+        assert( std::isfinite(zoomX) && std::isfinite(zoomY) );
 
         return QPointF( ( ( zoomX - left() ) / ( right() - left() ) ) * screenWidth(),
                         ( ( zoomY - top() ) / ( bottom() - top() ) ) * screenHeight() );
@@ -394,7 +388,7 @@ public:
 private:
     void check()
     {
-        assert( boost::math::isfinite(_zoomLeft) && boost::math::isfinite(_zoomBottom) && boost::math::isfinite(_zoomFactor) && boost::math::isfinite(_zoomAspectRatio) && boost::math::isfinite(_screenWidth) && boost::math::isfinite(_screenHeight) );
+        assert( std::isfinite(_zoomLeft) && std::isfinite(_zoomBottom) && std::isfinite(_zoomFactor) && std::isfinite(_zoomAspectRatio) && std::isfinite(_screenWidth) && std::isfinite(_screenHeight) );
     }
 
 private:

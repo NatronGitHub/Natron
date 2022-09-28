@@ -34,12 +34,6 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
@@ -1958,10 +1952,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         (boost::math::isnan)(key) || // check for NaN
-         (boost::math::isinf)(key) ||
-         (boost::math::isnan)(value) || // check for NaN
-         (boost::math::isinf)(value) ) {
+         std::isnan(key) || // check for NaN
+         std::isinf(key) ||
+         std::isnan(value) || // check for NaN
+         std::isinf(value) ) {
         return eStatusFailed;
     }
 
@@ -1985,10 +1979,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         (boost::math::isnan)(key) || // check for NaN
-         (boost::math::isinf)(key) ||
-         (boost::math::isnan)(value) || // check for NaN
-         (boost::math::isinf)(value) ) {
+         std::isnan(key) || // check for NaN
+         std::isinf(key) ||
+         std::isnan(value) || // check for NaN
+         std::isinf(value) ) {
         return eStatusFailed;
     }
 
