@@ -30,9 +30,6 @@
 
 #include <map>
 #include <vector>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#endif
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -60,7 +57,6 @@ class Project
     : public KnobHolder
     , public NodeCollection
     , public AfterQuitProcessingI
-    , public boost::noncopyable
     , public std::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -308,6 +304,10 @@ public:
     void refreshOpenGLRenderingFlagOnNodes();
 
 private:
+
+    Project(const Project&) = delete;
+
+    Project& operator=(const Project&) = delete;
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 

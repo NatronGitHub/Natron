@@ -33,10 +33,6 @@
 #include <set>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
@@ -57,7 +53,7 @@ NATRON_NAMESPACE_ENTER
 class NodeGraphPrivate;
 
 class NodeGraph
-    : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
+    : public QGraphicsView, public NodeGraphI, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -247,6 +243,10 @@ public Q_SLOTS:
     void onAutoScrollTimerTriggered();
 
 private:
+
+    NodeGraph(const NodeGraph&) = delete;
+
+    NodeGraph& operator=(const NodeGraph&) = delete;
 
     void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
 

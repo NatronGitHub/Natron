@@ -60,11 +60,6 @@
 #include <vector>
 #include <list>
 
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#endif
-
 #include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
 
@@ -138,7 +133,6 @@ public:
  **/
 struct OSGLContextPrivate;
 class OSGLContext
-    : public boost::noncopyable
 {
 public:
 
@@ -217,6 +211,12 @@ private:
 
     friend class OSGLContextAttacher;
     std::unique_ptr<OSGLContextPrivate> _imp;
+
+protected:
+
+    OSGLContext(const OSGLContext&) = delete;
+
+    OSGLContext& operator=(const OSGLContext&) = delete;
 };
 
 

@@ -28,10 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QtGlobal> // for Q_OS_*
@@ -67,7 +63,6 @@ class Gui
     : public DocumentWindow
 #endif
       , public SerializableWindow
-      , public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -79,6 +74,10 @@ public:
 
     explicit Gui(const GuiAppInstancePtr& app,
                  QWidget* parent = nullptr);
+
+    Gui(const Gui&) = delete;
+
+    Gui& operator=(const Gui&) = delete;
 
     virtual ~Gui() OVERRIDE;
 
