@@ -45,7 +45,7 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER
 
-using boost::math::cbrt;
+using std::cbrt;
 using std::sqrt;
 using std::cos;
 using std::acos;
@@ -1109,7 +1109,7 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
 
     *vcurDerivRight = P0pr / (tnext - tcur); // denormalize for t \in [tcur,tnext]
     *vcurDerivLeft = Q3pl / (tcur - tprev); // denormalize for t \in [tprev,tcur]
-    assert( !(boost::math::isnan)(*vcurDerivRight) && !(boost::math::isnan)(*vcurDerivLeft) );
+    assert( !std::isnan(*vcurDerivRight) && !(std::isnan)(*vcurDerivLeft) );
 } // autoComputeDerivatives
 
 NATRON_NAMESPACE_EXIT

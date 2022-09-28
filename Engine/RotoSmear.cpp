@@ -29,10 +29,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/algorithm/clamp.hpp>
-
 #include <cairo/cairo.h>
 
+#include "Global/MathUtils.h"
 
 #include "Engine/Node.h"
 #include "Engine/Image.h"
@@ -405,8 +404,8 @@ RotoSmear::render(const RenderActionArgs& args)
                 Point v;
                 v.x = renderPoint.first.x - prev.first.x;
                 v.y = renderPoint.first.y - prev.first.y;
-                double vx = boost::algorithm::clamp(std::abs(v.x / halfSize), 0., .7);
-                double vy = boost::algorithm::clamp(std::abs(v.y / halfSize), 0., .7);
+                double vx = MathUtils::clamp(std::abs(v.x / halfSize), 0., .7);
+                double vy = MathUtils::clamp(std::abs(v.y / halfSize), 0., .7);
 
                 prevPoint.x = prev.first.x + vx * v.x;
                 prevPoint.y = prev.first.y + vy * v.y;

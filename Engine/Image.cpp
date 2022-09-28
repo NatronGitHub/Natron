@@ -966,8 +966,8 @@ Image::pasteFromForDepth(const Image & srcImg,
         std::memcpy(dst, src, roi.width() * sizeof(PIX) * _nbComponents);
 #ifdef DEBUG_NAN
         for (int i = 0; i < roi.width() * _nbComponents; ++i) {
-            assert( !(boost::math::isnan)(src[i]) ); // check for NaN
-            assert( !(boost::math::isnan)(dst[i]) ); // check for NaN
+            assert( !std::isnan(src[i]) ); // check for NaN
+            assert( !std::isnan(dst[i]) ); // check for NaN
         }
 #endif
     }
@@ -1439,7 +1439,7 @@ Image::fillForDepthForComponents(const RectI & roi_,
             for (int k = 0; k < nComps; ++k) {
                 dst[k] = fillValue[k];
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(dst[k]) ); // check for NaN
+                assert( !std::isnan(dst[k]) ); // check for NaN
 #endif
             }
         }
@@ -1934,10 +1934,10 @@ Image::halveRoIForDepth(const RectI & roi,
                 const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize) : 0;
                 const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + _nbComponents)  : 0;
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(a) ); // check for NaN
-                assert( !(boost::math::isnan)(b) ); // check for NaN
-                assert( !(boost::math::isnan)(c) ); // check for NaN
-                assert( !(boost::math::isnan)(d) ); // check for NaN
+                assert( !std::isnan(a) ); // check for NaN
+                assert( !std::isnan(b) ); // check for NaN
+                assert( !std::isnan(c) ); // check for NaN
+                assert( !std::isnan(d) ); // check for NaN
 #endif
                 assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
                 assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
@@ -2039,12 +2039,12 @@ Image::halve1DImageForDepth(const RectI & roi,
         for (int x = 0; x < halfWidth; ++x) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(*src) ); // check for NaN
-                assert( !(boost::math::isnan)(*(src + _nbComponents)) ); // check for NaN
+                assert( !std::isnan(*src) ); // check for NaN
+                assert( !std::isnan(*(src + _nbComponents)) ); // check for NaN
 #endif
                 *dst = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(*dst) ); // check for NaN
+                assert( !std::isnan(*dst) ); // check for NaN
 #endif
                 ++dst;
                 ++src;
@@ -2059,12 +2059,12 @@ Image::halve1DImageForDepth(const RectI & roi,
         for (int y = 0; y < halfHeight; ++y) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(*src) ); // check for NaN
-                assert( !(boost::math::isnan)(*(src + rowSize)) ); // check for NaN
+                assert( !std::isnan(*src) ); // check for NaN
+                assert( !std::isnan(*(src + rowSize)) ); // check for NaN
 #endif
                 *dst = PIX( (float)( *src + (*src + rowSize) ) / 2. );
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(*dst) ); // check for NaN
+                assert( !std::isnan(*dst) ); // check for NaN
 #endif
                 ++dst;
                 ++src;
@@ -2158,9 +2158,9 @@ Image::checkForNaNsAndFix(const RectI& roi)
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
 #ifdef DEBUG_NAN
-            assert( !(boost::math::isnan)(*pix) ); // check for NaN
+            assert( !std::isnan(*pix) ); // check for NaN
 #endif
-            if ( (boost::math::isnan)(*pix) ) { // check for NaN ((boost::math::isnan)(x) is not slower than x != x and works with -Ofast)
+            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
                 *pix = 1.;
                 hasnan = true;
             }
@@ -2191,9 +2191,9 @@ Image::checkForNaNsNoLock(const RectI& roi) const
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
 #ifdef DEBUG_NAN
-            assert( !(boost::math::isnan)(*pix) ); // check for NaN
+            assert( !std::isnan(*pix) ); // check for NaN
 #endif
-            if ( (boost::math::isnan)(*pix) ) { // check for NaN ((boost::math::isnan)(x) is not slower than x != x and works with -Ofast)
+            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
                 hasnan = true;
             }
         }
@@ -2271,7 +2271,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
                 assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * _nbComponents);
                 for (int c = 0; c < _nbComponents; ++c) {
 #ifdef DEBUG_NAN
-                    assert( !(boost::math::isnan)(srcPix[c]) ); // check for NaN
+                    assert( !std::isnan(srcPix[c]) ); // check for NaN
 #endif
                     dstPix[c] = srcPix[c];
                 }
@@ -2473,11 +2473,11 @@ Image::premultInternal(const RectI& roi)
     for ( int y = renderWindow.y1; y < renderWindow.y2; ++y, dstPix += (srcRowElements - (renderWindow.x2 - renderWindow.x1) * 4) ) {
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x, dstPix += 4) {
 #ifdef DEBUG_NAN
-            assert( !(boost::math::isnan)(dstPix[3]) ); // check for NaN
+            assert( !std::isnan(dstPix[3]) ); // check for NaN
 #endif
             for (int c = 0; c < 3; ++c) {
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(dstPix[c]) ); // check for NaN
+                assert( !std::isnan(dstPix[c]) ); // check for NaN
 #endif
                 if (doPremult) {
                     dstPix[c] = PIX(float(dstPix[c]) * dstPix[3]);
@@ -2487,7 +2487,7 @@ Image::premultInternal(const RectI& roi)
                     }
                 }
 #ifdef DEBUG_NAN
-                assert( !(boost::math::isnan)(dstPix[c]) ); // check for NaN
+                assert( !std::isnan(dstPix[c]) ); // check for NaN
 #endif
             }
         }

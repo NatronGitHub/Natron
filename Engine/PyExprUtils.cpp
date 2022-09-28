@@ -26,17 +26,11 @@
 
 #include "PyExprUtils.h"
 
+#include <limits>
 #include <cmath>
-#include <boost/cstdint.hpp>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Noise.h"
-
-using boost::uint32_t;
-
-#ifndef UINT32_MAX
-#define UINT32_MAX  ((uint32_t)-1)
-#endif
 
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
@@ -111,15 +105,15 @@ double
 ExprUtils::hash(const std::vector<double>& args)
 {
     // combine args into a single seed
-    U32 seed = 0;
+    uint32_t seed = 0;
     for (int i = 0; i < (int)args.size(); i++) {
         // make irrational to generate fraction and combine xor into 32 bits
         int exp = 0;
         double frac = frexp(args[i] * double(M_E * M_PI), &exp);
-        U32 s = (U32)(frac * UINT32_MAX) ^ (U32)exp;
+        uint32_t s = uint32_t(frac * std::numeric_limits<uint32_t>::max()) ^ uint32_t(exp);
 
         // blend with seed (constants from Numerical Recipes, attrib. from Knuth)
-        static const U32 M = 1664525, C = 1013904223;
+        static const uint32_t M = 1664525, C = 1013904223;
         seed = seed * M + s + C;
     }
 
@@ -154,7 +148,7 @@ ExprUtils::hash(const std::vector<double>& args)
     u2.c[0] = p[(u1.c[3] + u2.c[1]) & 0xff];
 
     // scale to [0.0 .. 1.0]
-    return u2.i * (1.0 / UINT32_MAX);
+    return u2.i * (1.0 / std::numeric_limits<uint32_t>::max());
 }
 
 double
