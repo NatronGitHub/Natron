@@ -32,11 +32,6 @@
 #include <cstring> // for std::memcpy
 #include <cfloat> // DBL_MAX
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -70,8 +65,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
-
-using namespace boost::placeholders;
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -1896,11 +1889,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     vmax = vMinMax.max;
                 } else {
                     std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getMaxThreadCount() );
-                    QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects,
-                                                                                       boost::bind(findAutoContrastVminVmax,
-                                                                                                   colorImage,
-                                                                                                   inArgs.channels,
-                                                                                                   _1) );
+                    std::function<MinMaxVal (const RectI&)> findAutoContrast = [&](const RectI &rect) {
+                        return findAutoContrastVminVmax(colorImage, inArgs.channels, rect);
+                    };
+                    QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects, findAutoContrast );
                     future.waitForFinished();
                     QList<MinMaxVal> results = future.results();
                     Q_FOREACH (const MinMaxVal &vMinMax, results) {
@@ -1949,11 +1941,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( unCachedTiles,
-                                   boost::bind(&renderFunctor,
-                                               viewerRenderRoI,
-                                               args,
-                                               this,
-                                               _1) ).waitForFinished();
+                                   [&](const UpdateViewerParams::CachedTile &tile) {
+                                    renderFunctor(viewerRenderRoI, args, this, tile);
+                                   } ).waitForFinished();
             }
 
             if (inArgs.isDoingPartialUpdates) {

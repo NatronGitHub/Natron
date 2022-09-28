@@ -51,10 +51,6 @@ CLANG_DIAG_ON(deprecated-register)
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -110,8 +106,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ThreadPool.h"
-
-using namespace boost::placeholders;
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -1362,14 +1356,17 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     bool useThreadPool = appPTR->getUseThreadPool();
 
     if (useThreadPool) {
-        std::vector<unsigned int> threadIndexes(nThreads);
-        for (unsigned int i = 0; i < nThreads; ++i) {
+        std::vector<uint32_t> threadIndexes(nThreads);
+        for (uint32_t i = 0; i < nThreads; ++i) {
             threadIndexes[i] = i;
         }
 
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, func, _1, nThreads, spawnerThread, customArg) );
+        std::function<OfxStatus (const uint32_t&)> process = [&](const uint32_t tid) {
+            return threadFunctionWrapper(func, tid, nThreads, spawnerThread, customArg);
+        };
+        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, process );
         future.waitForFinished();
         ///DON'T reset back to the original value the maximum thread count
         //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());

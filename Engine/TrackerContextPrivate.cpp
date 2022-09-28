@@ -31,13 +31,6 @@
 #include <omp.h>
 #endif
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #include <QtCore/QThreadPool>
 
 #include "Engine/AppInstance.h"
@@ -51,8 +44,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
-
-using namespace boost::placeholders;
 
 
 #ifdef DEBUG
@@ -2395,10 +2386,18 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.tWatcher.reset();
-    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<TrackerContextPrivate::CornerPinData>() );
+    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+    std::function<CornerPinData (const double&)> compute = [=](const double &keyframe) {
+        return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                      keyframe,
+                                                      lastSolveRequest.jitterPeriod,
+                                                      lastSolveRequest.jitterAdd,
+                                                      lastSolveRequest.robustModel,
+                                                      lastSolveRequest.allMarkers);
+    };
+    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
 #else
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
@@ -2597,10 +2596,18 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.cpWatcher.reset();
-    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TrackerContextPrivate::TransformData>() );
+    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+    std::function<TransformData (const double&)> compute = [=](const double &keyframe) {
+        return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                      keyframe,
+                                                      lastSolveRequest.jitterPeriod,
+                                                      lastSolveRequest.jitterAdd,
+                                                      lastSolveRequest.robustModel,
+                                                      lastSolveRequest.allMarkers);
+    };
+    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
 #else
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;

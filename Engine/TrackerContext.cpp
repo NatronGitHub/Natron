@@ -59,8 +59,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
-using namespace boost::placeholders;
-
 #define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 200
 
 NATRON_NAMESPACE_ENTER
@@ -1863,7 +1861,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 
     const std::vector<TrackMarkerAndOptionsPtr>& tracks = args->getTracks();
     const int numTracks = (int)tracks.size();
-    std::vector<int> trackIndexes( tracks.size() );
+    std::vector<std::size_t> trackIndexes( tracks.size() );
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         trackIndexes[i] = i;
         tracks[i]->natronMarker->notifyTrackingStarted();
@@ -1892,13 +1890,13 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         }
 
 
+        std::function<bool (const std::size_t&)> track = [&](const std::size_t &i) {
+            return TrackSchedulerPrivate::trackStepFunctor(i, *args, cur);
+        };
         while (cur != end) {
             ///Launch parallel thread for each track using the global thread pool
             QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                         boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
-                                                                     _1,
-                                                                     *args,
-                                                                     cur) );
+                                                         track );
             future.waitForFinished();
 
             allTrackFailed = true;
