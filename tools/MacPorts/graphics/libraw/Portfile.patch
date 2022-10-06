@@ -1,21 +1,21 @@
---- Portfile.orig	2022-04-05 16:10:13.000000000 -0700
+--- Portfile.orig	2022-10-06 08:13:23.000000000 -0700
 +++ Portfile	2021-04-08 19:00:55.000000000 -0700
-@@ -3,8 +3,8 @@
+@@ -3,46 +3,67 @@
  PortSystem          1.0
  
  name                libraw
 -version             0.20.2
--revision            1
+-revision            2
 +version             0.18.13
 +set demosaicversion 0.18.8
  
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
-@@ -12,38 +12,58 @@
+                     cameras (CRW/CR2, NEF, RAF, DNG, and others).
  
  categories          graphics
- platforms           darwin
 -license             {LGPL-2.1 CDDL}
++platforms           darwin
 +license             LGPL-2.1 CDDL GPL-2+ GPL-3+
  maintainers         nomaintainer
  

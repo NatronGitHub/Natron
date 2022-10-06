@@ -8,7 +8,7 @@ PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
 
-github.setup            OpenImageIO oiio 2.3.18.0 v
+github.setup            OpenImageIO oiio 2.3.20.0 v
 revision                100
 checksums           rmd160  e5ec8940476560dbed3978794065f7039b8fe1ba \
                     sha256  f3e8b353caea51b76c1d983f014292f6f9c4ed3f77bfb97ebab40465d9a81dce \
@@ -21,7 +21,12 @@ maintainers             {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                         related classes, utilities, and applications.
-         
+platforms               darwin
+
+checksums           rmd160  fdb40f499089abc20d5fa42ffa0efa44b97fc222 \
+                    sha256  688a0634a69161568b39a6cb958980b495f16ff7fe0ecd4671a2c2c2a40d0d7d \
+                    size    32643615
+
 compiler.cxx_standard   2014
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
@@ -39,6 +44,11 @@ patchfiles \
     oiio-2.0.8-invalidatespec.patch \
     oiio-2.0.8-atomic-load.patch
 
+set port_libfmt         libfmt9
+cmake.module_path-append \
+                        ${prefix}/lib/${port_libfmt}/cmake
+configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
+
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
 configure.args-append   -DUSE_CCACHE=OFF
@@ -54,7 +64,7 @@ depends_lib-append      port:robin-map \
                         port:tiff \
                         port:openexr \
                         port:squish \
-                        port:libfmt
+                        port:${port_libfmt}
 
 # optional components
 

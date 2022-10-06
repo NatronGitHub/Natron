@@ -6,20 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         7.84.0
-checksums                       rmd160  6a3c2c80393e01423de2db4b47c37f42c44306f9 \
-                                sha256  2d118b43f547bfe5bae806d8d47b4e596ea5b25a6c1f080aef49fbcd817c5db8 \
-                                size    2477944
-
-if {${subport} eq ${name} && ${os.platform} eq "darwin" && ${os.major} < 15} {
-    # Temporarily use older version while some build failures are investigated.
-    # https://github.com/curl/curl/issues/9058
-    # https://github.com/curl/curl/issues/9059
-    version                     7.83.1
-    checksums                   rmd160  ac59faa4f713bcf13004f7c6663e0ac31031c5d1 \
-                                sha256  2cb9c2356e7263a1272fd1435ef7cdebf2cd21400ec287b068396deb705c22c4 \
-                                size    2474940
-}
+version                         7.85.0
+checksums                       rmd160  04a0040528a6029580d09f2d318384ef59c60861 \
+                                sha256  88b54a6d4b9a48cb4d873c7056dcba997ddd5b7be5a2d537a4acb55c20b04be6 \
+                                size    2480648
 
 categories                      net www
 platforms                       darwin freebsd

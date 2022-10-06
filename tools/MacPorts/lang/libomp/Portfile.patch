@@ -1,8 +1,8 @@
---- Portfile.orig	2022-09-05 21:17:19.000000000 -0700
-+++ Portfile	2022-09-05 21:19:43.000000000 -0700
+--- Portfile.orig	2022-10-06 08:08:00.000000000 -0700
++++ Portfile	2022-10-06 08:08:28.000000000 -0700
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
- 
+
  PortSystem              1.0
 -PortGroup               cmake 1.1
 +PortGroup               cmake 1.0
@@ -10,7 +10,7 @@
      PortGroup           muniversal 1.0
  }
 @@ -30,16 +30,16 @@
- 
+
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
 -        version         14.0.6
@@ -35,11 +35,11 @@
 +                                size    971628
 +        livecheck.regex         {"llvmorg-([0-9.]+)".*}
      }
- 
+
 @@ -55,34 +55,38 @@
      configure.cxxflags-append -std=c++11
      compiler.cxx_standard   2011
- 
+
 -    master_sites        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 -                        https://releases.llvm.org/${version}
 -    distname            openmp-[strsed ${version} {s/-//}].src
@@ -55,11 +55,11 @@
 +    dist_subdir             openmp-release
 +    worksrcdir              ${distname}
 +    set rtpath              "runtime/"
-+    
++
 +    # D88252 is to enable arm64 support
 +    patchfiles-append       patch-libomp-use-gettid-on-Leopard.diff \
 +                            reviews.llvm.org_D88252.diff
- 
+
 -    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 -
 -    livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
@@ -78,7 +78,7 @@
 -        name            libomp
 +        github.setup            llvm-mirror openmp 381 svn-tags/RELEASE_
 +        name                    libomp
- 
+
 -        worksrcdir      openmp-${version}/final/runtime
 -        version         3.8.1
 -        checksums       rmd160  a41054068a127ef84610afef8090109078cb6c46 \
@@ -94,7 +94,7 @@
 -    livecheck.type      none
 +    livecheck.type          none
  }
- 
+
  depends_build-append    port:perl5
 @@ -108,14 +112,8 @@
  # With this, cmake sets the correct library name in the dylibs for the
@@ -110,7 +110,7 @@
 -}
 +                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
 +                        -DLIBOMP_OMPT_SUPPORT=FALSE
- 
+
  variant top_level description \
      "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
 @@ -129,22 +127,17 @@
@@ -129,7 +129,7 @@
      foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
          move ${instdest}/tmp/lib/${p} ${instdest}/lib/libomp/
      }
- 
+
      if {[variant_isset top_level]} {
 -        foreach h ${hnames} {
 -            system -W ${instdest}/include \
@@ -142,12 +142,11 @@
                "ln -s libomp/${p}"
 @@ -152,8 +145,8 @@
      }
- 
+
      set fpath ${worksrcpath}/${rtpath}
 -    file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
 -        ${instdest}/share/doc/libomp/
 +    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
 +        ${fpath}/../www ${instdest}/share/doc/libomp/
- 
+
  }
- 
