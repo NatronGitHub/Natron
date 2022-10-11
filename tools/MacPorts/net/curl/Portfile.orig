@@ -35,7 +35,7 @@ checksums-prepend               ${curl_distfile}
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    0
 
     depends_build               port:pkgconfig
 

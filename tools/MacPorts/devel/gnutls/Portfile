@@ -47,7 +47,7 @@ subport ${name} {
 
 subport ${name}-devel {
     conflicts   ${name}
-
+    
     version     3.7.8
     revision    0
 
@@ -65,9 +65,9 @@ subport ${name}-devel {
     variant brotli description {Build brotli support} {
         depends_lib-append \
                 port:brotli
-
+                
         configure.args-delete \
-                --without-brotli
+                --without-brotli 
     }
 }
 
