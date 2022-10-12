@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install jasper
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/jasper.html
-JASPER_VERSION=2.0.28
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/jasper.html
+JASPER_VERSION=3.0.6
 JASPER_TAR="jasper-${JASPER_VERSION}.tar.gz"
 JASPER_SITE="https://github.com/jasper-software/jasper/archive/version-${JASPER_VERSION}"
 if download_step; then
@@ -18,7 +18,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libjasper.so" ]; }; };
     #env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static
     mkdir build-natron
     pushd build-natron
-    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DJAS_ENABLE_DOC=NO
     make -j${MKJOBS}
     make install
     popd

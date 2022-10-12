@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install gnutls (for ffmpeg)
-# see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.7.1
+# see http://www.linuxfromscratch.org/blfs/view/svn/postlfs/gnutls.html
+GNUTLS_VERSION=3.7.8
 GNUTLS_VERSION_MICRO= #.1
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     GNUTLS_VERSION=3.6.8
@@ -15,7 +15,7 @@ if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
 fi
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}${GNUTLS_VERSION_MICRO}.tar.xz"
-GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
+GNUTLS_SITE="https://www.gnupg.org/ftp/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
 if download_step; then
     download "$GNUTLS_SITE" "$GNUTLS_TAR"
 fi

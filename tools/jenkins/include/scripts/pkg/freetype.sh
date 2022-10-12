@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Install FreeType2
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FREETYPE_VERSION=2.10.4
-FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.gz"
-FREETYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/freetype2.html
+FREETYPE_VERSION=2.12.1
+FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.xz"
+FREETYPE_SITE="https://downloads.sourceforge.net/freetype"
 if download_step; then
     download "$FREETYPE_SITE" "$FREETYPE_TAR"
 fi

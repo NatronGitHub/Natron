@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # install ImageMagick7
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.1.0-37
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/imagemagick.html
+MAGICK7_VERSION=7.1.0-49
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 fi
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 #MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
-MAGICK7_SITE="https://www.imagemagick.org/download/releases"
+MAGICK7_SITE="https://imagemagick.org/archive/releases"
 if download_step; then
     download "$MAGICK7_SITE" "$MAGICK7_TAR"
 fi

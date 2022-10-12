@@ -5,7 +5,7 @@
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
 #X265_VERSION=3.4
 #X265_TAR="x265_${X265_VERSION}.tar.gz"
-X265_VERSION=20220219
+X265_VERSION=20220819
 X265_MODVERSION=3.5
 X265_TAR="x265-${X265_VERSION}.tar.xz"
 X265_SITE="http://anduin.linuxfromscratch.org/BLFS/x265"

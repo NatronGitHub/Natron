@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install lcms2
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/lcms2.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/lcms2.html
 LCMS_VERSION=2.13.1
 LCMS_VERSION_SHORT=${LCMS_VERSION%.*}
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install valgrind
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/valgrind.html
-VALGRIND_VERSION=3.17.0
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/valgrind.html
+VALGRIND_VERSION=3.19.0
 VALGRIND_TAR="valgrind-${VALGRIND_VERSION}.tar.bz2"
 VALGRIND_SITE="https://sourceware.org/ftp/valgrind"
 if download_step; then

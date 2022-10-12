@@ -2,7 +2,7 @@
 
 # Install libxml2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
-LIBXML2_VERSION=2.9.14
+LIBXML2_VERSION=2.10.2
 LIBXML2_VERSION_SHORT=${LIBXML2_VERSION%.*}
 
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.xz"
@@ -35,8 +35,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     if [ "${ICU_VERSION:-}" = 68.1 ] || [ "${ICU_VERSION:-}" = 68.2 ]; then
         $GSED -i 's/ TRUE/ true/' encoding.c
     fi
-    # note: python module is necessary for itstool
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --with-python="$SDK_HOME/bin/python3" --with-lzma --with-threads
+    # note: python3 module is necessary for itstool
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag PYTHON="$SDK_HOME/bin/python3" --with-lzma --with-threads
     make -j${MKJOBS}
     make install
     popd

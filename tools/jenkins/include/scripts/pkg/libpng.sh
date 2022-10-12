@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install libpng
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/libpng.html
-LIBPNG_VERSION=1.6.37
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/libpng.html
+LIBPNG_VERSION=1.6.38
 LIBPNG_TAR="libpng-${LIBPNG_VERSION}.tar.gz"
 LIBPNG_SITE="https://download.sourceforge.net/libpng"
 if download_step; then

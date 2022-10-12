@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install libvorbis
-# http://www.linuxfromscratch.org/blfs/view/cvs/multimedia/libvorbis.html
+# http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libvorbis.html
 LIBVORBIS_VERSION=1.3.7
 LIBVORBIS_TAR="libvorbis-${LIBVORBIS_VERSION}.tar.gz"
 LIBVORBIS_SITE="http://downloads.xiph.org/releases/vorbis"

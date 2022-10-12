@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install libraw
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/libraw.html
 LIBRAW_VERSION=0.18.13 # DO NOT INSTALL 0.19.x or 0.20.x, which dropped support for the demosaic packs
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8

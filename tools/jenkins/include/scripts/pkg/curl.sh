@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install curl
-# see http://www.linuxfromscratch.org/blfs/view/cvs/basicnet/curl.html
-CURL_VERSION=7.76.0
+# see http://www.linuxfromscratch.org/blfs/view/svn/basicnet/curl.html
+CURL_VERSION=7.85.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
 if download_step; then

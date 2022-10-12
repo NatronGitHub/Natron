@@ -2,7 +2,7 @@
 
 # Install speex (EOL, use opus)
 # see http://www.linuxfromscratch.org/blfs/view/stable/multimedia/speex.html
-SPEEX_VERSION=1.2.0
+SPEEX_VERSION=1.2.1
 SPEEX_TAR="speex-${SPEEX_VERSION}.tar.gz"
 SPEEX_SITE="http://downloads.us.xiph.org/releases/speex"
 if download_step; then

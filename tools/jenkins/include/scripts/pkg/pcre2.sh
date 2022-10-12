@@ -8,7 +8,7 @@ PCRE2_SITE="https://github.com/PhilipHazel/pcre2/releases/download/pcre2-${PCRE2
 if download_step; then
     download "$PCRE2_SITE" "$PCRE2_TAR"
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre.pc" ] || [ "$(pkg-config --modversion libpcre)" != "$PCRE_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre2-8.pc" ] || [ "$(pkg-config --modversion libpcre2-8)" != "$PCRE2_VERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$PCRE2_TAR"
     pushd "pcre2-${PCRE2_VERSION}"

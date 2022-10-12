@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install icu
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/icu.html
-ICU_VERSION=68.2
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/icu.html
+ICU_VERSION=71.1
 ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
 #ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
 ICU_SITE="http://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION//./-}"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install lame
-# see http://www.linuxfromscratch.org/blfs/view/cvs/multimedia/lame.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/lame.html
 LAME_VERSION=3.100
 #LAME_VERSION_SHORT=${LAME_VERSION%.*}
 LAME_TAR="lame-${LAME_VERSION}.tar.gz"

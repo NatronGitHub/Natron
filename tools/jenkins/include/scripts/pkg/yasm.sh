@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install yasm
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/yasm.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/yasm.html
 YASM_VERSION=1.3.0
 YASM_TAR="yasm-${YASM_VERSION}.tar.gz"
 YASM_SITE="http://www.tortall.net/projects/yasm/releases"

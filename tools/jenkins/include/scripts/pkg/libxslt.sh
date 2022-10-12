@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # Install libxslt
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/libxslt.html
-LIBXSLT_VERSION=1.1.34
-LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.gz"
-LIBXSLT_SITE="ftp://xmlsoft.org/libxslt"
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/libxslt.html
+LIBXSLT_VERSION=1.1.37
+LIBXSLT_VERSION_SHORT=${LIBXSLT_VERSION%.*}
+
+LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.xz"
+LIBXSLT_SITE="https://download.gnome.org/sources/libxslt/${LIBXSLT_VERSION_SHORT}"
 if download_step; then
     download "$LIBXSLT_SITE" "$LIBXSLT_TAR"
 fi

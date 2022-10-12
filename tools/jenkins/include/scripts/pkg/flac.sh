@@ -1,7 +1,7 @@
 #!/bin/bash
 # install flac (for libsndfile, sox)
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/flac.html
-FLAC_VERSION=1.3.4
+FLAC_VERSION=1.4.1
 FLAC_TAR="flac-${FLAC_VERSION}.tar.xz"
 FLAC_SITE="https://downloads.xiph.org/releases/flac"
 if download_step; then

@@ -3,7 +3,7 @@
 # Install gdk-pixbuf
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/gdk-pixbuf.html
 #GDKPIXBUF_VERSION=2.36.12 # last version to compile without meson
-GDKPIXBUF_VERSION=2.42.8 # requires meson
+GDKPIXBUF_VERSION=2.42.9 # requires meson
 GDKPIXBUF_VERSION_SHORT=${GDKPIXBUF_VERSION%.*}
 GDKPIXBUF_TAR="gdk-pixbuf-${GDKPIXBUF_VERSION}.tar.xz"
 GDKPIXBUF_SITE="https://download.gnome.org/sources/gdk-pixbuf/${GDKPIXBUF_VERSION_SHORT}"
