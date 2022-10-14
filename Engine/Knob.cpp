@@ -2412,21 +2412,21 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
-    }
-
-    NodePtr node = effect->getNode();
-    assert(node);
-
-    NodeCollectionPtr collection = node->getGroup();
-    if (!collection) {
-        throw std::runtime_error("This parameter cannot have an expression");
-    }
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
-    std::string appID = node->getApp()->getAppIDString();
+    std::string appID = holder->getApp()->getAppIDString();
     std::string tabStr = addTab ? "    " : "";
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    NodeCollectionPtr collection;
+    NodeGroup* isParentGrp = nullptr;
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+
+        collection = node->getGroup();
+        if (!collection) {
+            throw std::runtime_error("This parameter cannot have an expression");
+        }
+        isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
+    }
     std::stringstream ss;
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
@@ -2437,27 +2437,29 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
 
 
     //Define all nodes in the same group reachable by their bare script-name
-    NodesList siblings = collection->getNodes();
     std::string collectionScriptName;
     if (isParentGrp) {
         collectionScriptName = isParentGrp->getNode()->getFullyQualifiedName();
     } else {
         collectionScriptName = appID;
     }
-    for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
-            std::string scriptName = (*it)->getScriptName_mt_safe();
-            if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
-                throw std::runtime_error(scriptName + " is a Python keyword");
-            }
-            std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
-            ss << tabStr << "if hasattr(";
-            if (isParentGrp) {
-                ss << appID << ".";
-            }
-            ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
+    if (collection) {
+        NodesList siblings = collection->getNodes();
+        for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
+                std::string scriptName = (*it)->getScriptName_mt_safe();
+                if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
+                    throw std::runtime_error(scriptName + " is a Python keyword");
+                }
+                std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
+                ss << tabStr << "if hasattr(";
+                if (isParentGrp) {
+                    ss << appID << ".";
+                }
+                ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
 
-            ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
+                ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
+            }
         }
     }
 
@@ -2466,13 +2468,17 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     } else {
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
-    ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+        ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
+        ss << tabStr << "thisParam = thisNode." << name << "\n";
+        ///Now define the variables in the scope
+        ss << tabStr << "random = thisParam.random\n";
+        ss << tabStr << "randomInt = thisParam.randomInt\n";
+        ss << tabStr << "curve = thisParam.curve\n";
+    }
 
-    ///Now define the variables in the scope
-    ss << tabStr << "thisParam = thisNode." << name << "\n";
-    ss << tabStr << "random = thisParam.random\n";
-    ss << tabStr << "randomInt = thisParam.randomInt\n";
-    ss << tabStr << "curve = thisParam.curve\n";
     if (dimension != -1) {
         ss << tabStr << "dimension = " << dim << "\n";
     }
@@ -2622,17 +2628,19 @@ KnobHelper::validateExpression(const std::string& expression,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
+    std::string appID = getHolder()->getApp()->getAppIDString();
+    std::string exprFuncPrefix;
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+        std::string nodeName = node->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        exprFuncPrefix = nodeFullName + "." + getName() + ".";
+    } else {
+        exprFuncPrefix = appID + "." + getName() + ".";
     }
 
-    NodePtr node = effect->getNode();
-    assert(node);
-    std::string appID = getHolder()->getApp()->getAppIDString();
-    std::string nodeName = node->getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string exprFuncPrefix = nodeFullName + "." + getName() + ".";
     std::string exprFuncName;
     {
         std::stringstream tmpSs;

@@ -31,6 +31,7 @@
 ### Changes
 
 - Rework the right-click nodegraph menu. #836
+- Allow simple expressions in project settings (e.g., frame range). #837
 
 
 ## Version 2.4.3
