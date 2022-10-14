@@ -296,8 +296,8 @@ GuiApplicationManager::initializeQApp(int &argc,
     QApplication* app;
     {
 #ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
-                                                               boost_adaptbx::floating_point::exception_trapping::overflow);
+        // division_by_zero happens here - don't trap it
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
         app = new Application(this, argc, argv);
     }
