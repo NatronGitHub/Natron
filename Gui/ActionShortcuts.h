@@ -491,6 +491,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionGraphFindNode "findNode"
 #define kShortcutDescActionGraphFindNode "Find"
 
+#define kShortcutIDActionGraphCreateNode "createNode"
+#define kShortcutDescActionGraphCreateNode "Create Node"
+
 #define kShortcutIDActionGraphRenameNode "renameNode"
 #define kShortcutDescActionGraphRenameNode "Rename Node"
 
