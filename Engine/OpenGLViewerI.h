@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <limits>
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -144,7 +145,7 @@ public:
      * @brief This function should update the color picker values (as a label or numbers) right away.
      * If x and y are INT_MAX then the viewer should just use the current position of the cursor.
      **/
-    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) = 0;
+    virtual void updateColorPicker(int textureIndex, int x = std::numeric_limits<int>::max(), int y = std::numeric_limits<int>::max()) = 0;
 
     /**
      * @brief Must use OpenGL to query the texture color at the given image coordinates

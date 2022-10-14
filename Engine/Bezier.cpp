@@ -1126,7 +1126,7 @@ Bezier::addControlPoint(double x,
             keyframeTime = time;
         } else {
             keyframeTime = _imp->points.front()->getKeyframeTime(useGuiCurve, 0);
-            if (keyframeTime == INT_MAX) {
+            if (keyframeTime == std::numeric_limits<int>::max()) {
                 keyframeTime = getContext()->getTimelineCurrentTime();
             }
         }
@@ -3397,7 +3397,7 @@ Bezier::getPreviousKeyframeTime(double time) const
         }
     }
 
-    return INT_MIN;
+    return std::numeric_limits<int>::min();
 }
 
 int
@@ -3413,7 +3413,7 @@ Bezier::getNextKeyframeTime(double time) const
         }
     }
 
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
 }
 
 int

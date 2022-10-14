@@ -26,6 +26,7 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
+#include <limits>
 #include <sstream> // stringstream
 #include <stdexcept>
 
@@ -235,10 +236,10 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         return;
     }
 
-    double xmax = INT_MIN;
-    double xmin = INT_MAX;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
+    double xmax = std::numeric_limits<int>::min();
+    double xmin = std::numeric_limits<int>::max();
+    double ymin = std::numeric_limits<int>::max();
+    double ymax = std::numeric_limits<int>::min();
     NodesGuiList nodesToCopy = _imp->_selection;
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         if ( (*it)->getNode()->getMasterNode() ) {
@@ -426,10 +427,10 @@ void
 NodeGraph::centerOnAllNodes()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    double xmin = INT_MAX;
-    double xmax = INT_MIN;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
+    double xmin = std::numeric_limits<int>::max();
+    double xmax = std::numeric_limits<int>::min();
+    double ymin = std::numeric_limits<int>::max();
+    double ymax = std::numeric_limits<int>::min();
     //_imp->_root->setPos(0,0);
 
     if ( _imp->_selection.empty() ) {

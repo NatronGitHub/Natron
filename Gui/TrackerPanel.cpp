@@ -27,6 +27,8 @@
 
 #include "TrackerPanel.h"
 
+#include <limits>
+
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QStyledItemDelegate>
@@ -1006,8 +1008,8 @@ TrackerPanel::onAverageButtonClicked()
 #endif
 
     RangeD keyframesRange;
-    keyframesRange.min = INT_MAX;
-    keyframesRange.max = INT_MIN;
+    keyframesRange.min = std::numeric_limits<int>::max();
+    keyframesRange.max = std::numeric_limits<int>::min();
     for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr markCenter = (*it)->getCenterKnob();
         double mini, maxi;
@@ -1027,7 +1029,7 @@ TrackerPanel::onAverageButtonClicked()
         }
     }
 
-    bool hasKeyFrame = keyframesRange.min != INT_MIN && keyframesRange.max != INT_MAX;
+    bool hasKeyFrame = keyframesRange.min != std::numeric_limits<int>::min() && keyframesRange.max != std::numeric_limits<int>::max();
     for (double t = keyframesRange.min; t <= keyframesRange.max; t += 1) {
         Point avgCenter;
         avgCenter.x = avgCenter.y = 0.;

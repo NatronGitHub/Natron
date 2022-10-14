@@ -54,7 +54,7 @@ struct RotoSmearPrivate
         , lastCur()
         , lastDistToNext(0)
     {
-        lastCur.first.x = lastCur.first.y = INT_MIN;
+        lastCur.first.x = lastCur.first.y = std::numeric_limits<int>::min();
     }
 };
 
@@ -226,12 +226,12 @@ RotoSmear::render(const RenderActionArgs& args)
     std::pair<Point, double> lastCur;
     if (!duringPainting) {
         QMutexLocker k(&_imp->smearDataMutex);
-        _imp->lastCur.first.x = INT_MIN;
-        _imp->lastCur.first.y = INT_MIN;
+        _imp->lastCur.first.x = std::numeric_limits<int>::min();
+        _imp->lastCur.first.y = std::numeric_limits<int>::min();
         lastCur = _imp->lastCur;
     } else {
         QMutexLocker k(&_imp->smearDataMutex);
-        isFirstStrokeTick = _imp->lastCur.first.x == INT_MIN && _imp->lastCur.first.y == INT_MIN;
+        isFirstStrokeTick = _imp->lastCur.first.x == std::numeric_limits<int>::min() && _imp->lastCur.first.y == std::numeric_limits<int>::min();
         lastCur = _imp->lastCur;
     }
 

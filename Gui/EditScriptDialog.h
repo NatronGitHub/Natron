@@ -28,8 +28,7 @@
 
 #include "Global/Macros.h"
 
-#include <cfloat> // DBL_MAX
-#include <climits> // INT_MAX
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

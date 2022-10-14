@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <algorithm> // min, max
+#include <limits>
 #include <stdexcept>
 
 #include <QtCore/QThread>
@@ -385,9 +386,9 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
-            if (curveYRange.min != INT_MIN &&
+            if (curveYRange.min != std::numeric_limits<int>::min() &&
                 curveYRange.min != -std::numeric_limits<double>::infinity() &&
-                curveYRange.max != INT_MAX &&
+                curveYRange.max != std::numeric_limits<int>::max() &&
                 curveYRange.max != std::numeric_limits<double>::infinity() ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);

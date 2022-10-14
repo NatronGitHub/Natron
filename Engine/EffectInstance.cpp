@@ -32,6 +32,7 @@
 #include <fstream>
 #include <bitset>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -1398,8 +1399,8 @@ EffectInstance::getFrameRange(double *first,
                               double *last)
 {
     // default is infinite if there are no non optional input clips
-    *first = INT_MIN;
-    *last = INT_MAX;
+    *first = std::numeric_limits<int>::min();
+    *last = std::numeric_limits<int>::max();
     for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {

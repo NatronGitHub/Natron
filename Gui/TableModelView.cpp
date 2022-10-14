@@ -29,8 +29,7 @@
 #include <algorithm> // min, max
 #include <vector>
 #include <stdexcept>
-#include <climits>
-#include <cfloat>
+#include <limits>
 
 #include <QApplication>
 #include <QHeaderView>
@@ -982,15 +981,15 @@ TableItemEditorFactory::createEditor(int userType,
     case QVariant::UInt: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
-        sb->setMaximum(INT_MAX);
+        sb->setMaximum(std::numeric_limits<int>::max());
 
         return sb;
     }
     case QVariant::Int: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
-        sb->setMinimum(INT_MIN);
-        sb->setMaximum(INT_MAX);
+        sb->setMinimum(std::numeric_limits<int>::min());
+        sb->setMaximum(std::numeric_limits<int>::max());
 
         return sb;
     }
@@ -1000,8 +999,8 @@ TableItemEditorFactory::createEditor(int userType,
     case QVariant::Double: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeDouble);
         sb->setFrame(false);
-        sb->setMinimum(-DBL_MAX);
-        sb->setMaximum(DBL_MAX);
+        sb->setMinimum(std::numeric_limits<double>::lowest());
+        sb->setMaximum(std::numeric_limits<double>::max());
 
         return sb;
     }

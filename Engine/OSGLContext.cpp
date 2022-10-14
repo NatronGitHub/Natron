@@ -25,6 +25,7 @@
 
 #include "OSGLContext.h"
 
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -80,9 +81,9 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired,
     if ( alternatives.empty() || ( count > (int)alternatives.size() ) ) {
         throw std::logic_error("alternatives empty");
     }
-    unsigned int missing, leastMissing = UINT_MAX;
-    unsigned int colorDiff, leastColorDiff = UINT_MAX;
-    unsigned int extraDiff, leastExtraDiff = UINT_MAX;
+    unsigned int missing, leastMissing = std::numeric_limits<unsigned int>::max();
+    unsigned int colorDiff, leastColorDiff = std::numeric_limits<unsigned int>::max();
+    unsigned int extraDiff, leastExtraDiff = std::numeric_limits<unsigned int>::max();
     int closest = -1;
 
     for (int i = 0; i < count; ++i) {

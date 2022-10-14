@@ -25,6 +25,7 @@
 
 #include "TrackerContext.h"
 
+#include <limits>
 #include <set>
 #include <sstream> // stringstream
 
@@ -149,14 +150,14 @@ TrackerContext::goToPreviousKeyFrame(int time)
 
     getSelectedMarkers(&markers);
 
-    int minimum = INT_MIN;
+    int minimum = std::numeric_limits<int>::min();
     for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getPreviousKeyframe(time);
-        if ( (t != INT_MIN) && (t > minimum) ) {
+        if ( (t != std::numeric_limits<int>::min()) && (t > minimum) ) {
             minimum = t;
         }
     }
-    if (minimum != INT_MIN) {
+    if (minimum != std::numeric_limits<int>::min()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
@@ -169,14 +170,14 @@ TrackerContext::goToNextKeyFrame(int time)
 
     getSelectedMarkers(&markers);
 
-    int maximum = INT_MAX;
+    int maximum = std::numeric_limits<int>::max();
     for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getNextKeyframe(time);
-        if ( (t != INT_MAX) && (t < maximum) ) {
+        if ( (t != std::numeric_limits<int>::max()) && (t < maximum) ) {
             maximum = t;
         }
     }
-    if (maximum != INT_MAX) {
+    if (maximum != std::numeric_limits<int>::max()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }

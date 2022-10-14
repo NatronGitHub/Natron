@@ -25,6 +25,7 @@
 
 #include "ProgressPanel.h"
 
+#include <limits>
 #include <map>
 
 CLANG_DIAG_OFF(deprecated)
@@ -411,7 +412,7 @@ ProgressPanel::doProgressStartOnMainThread(const NodePtr& node,
                                            const QString & /*messageid*/,
                                            bool canCancel)
 {
-    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+    startTask(node, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 1, false, canCancel, message);
 }
 
 void
@@ -445,7 +446,7 @@ ProgressPanel::startTask(const NodePtr& node,
     if (!node) {
         return;
     }
-    assert( (canPause && firstFrame != INT_MIN && lastFrame != INT_MAX) || !canPause );
+    assert( (canPause && firstFrame != std::numeric_limits<int>::min() && lastFrame != std::numeric_limits<int>::max()) || !canPause );
 
     ProgressTaskInfoPtr task;
     {

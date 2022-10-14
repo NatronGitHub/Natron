@@ -25,7 +25,6 @@
 
 #include "SpinBox.h"
 
-#include <cfloat>
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
@@ -156,19 +155,19 @@ SpinBox::setType(SpinBoxTypeEnum type)
     _imp->intValidator = 0;
     switch (_imp->type) {
     case eSpinBoxTypeDouble:
-        _imp->mini.setValue<double>(-DBL_MAX);
-        _imp->maxi.setValue<double>(DBL_MAX);
+        _imp->mini.setValue<double>(std::numeric_limits<double>::lowest());
+        _imp->maxi.setValue<double>(std::numeric_limits<double>::max());
         _imp->doubleValidator = new QDoubleValidator;
-        _imp->doubleValidator->setTop(DBL_MAX);
-        _imp->doubleValidator->setBottom(-DBL_MAX);
+        _imp->doubleValidator->setTop(std::numeric_limits<double>::max());
+        _imp->doubleValidator->setBottom(std::numeric_limits<double>::lowest());
         setValue_internal(value(), true);
         break;
     case eSpinBoxTypeInt:
         _imp->intValidator = new QIntValidator;
-        _imp->mini.setValue<int>(INT_MIN);
-        _imp->maxi.setValue<int>(INT_MAX);
-        _imp->intValidator->setTop(INT_MAX);
-        _imp->intValidator->setBottom(INT_MIN);
+        _imp->mini.setValue<int>(std::numeric_limits<int>::min());
+        _imp->maxi.setValue<int>(std::numeric_limits<int>::max());
+        _imp->intValidator->setTop(std::numeric_limits<int>::max());
+        _imp->intValidator->setBottom(std::numeric_limits<int>::min());
         setValue_internal( (int)std::floor(value() + 0.5), true );
 
         break;

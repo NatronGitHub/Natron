@@ -4481,10 +4481,10 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
-            double leftBound = INT_MIN, rightBound = INT_MAX;
+            double leftBound = std::numeric_limits<int>::min(), rightBound = std::numeric_limits<int>::max();
             _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
 
-            if ( (leftBound != INT_MIN) && (rightBound != INT_MAX) ) {
+            if ( (leftBound != std::numeric_limits<int>::min()) && (rightBound != std::numeric_limits<int>::max()) ) {
                 if ( getGroup() || getIOContainer() ) {
                     getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
                 }
@@ -4539,8 +4539,8 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
 {
     if ( ReadNode::isVideoReader(pluginID) ) {
         ///If the plug-in is a video, only ffmpeg may know how many frames there are
-        *firstFrame = INT_MIN;
-        *lastFrame = INT_MAX;
+        *firstFrame = std::numeric_limits<int>::min();
+        *lastFrame = std::numeric_limits<int>::max();
     } else {
         SequenceParsing::SequenceFromPattern seq;
         FileSystemModel::filesListFromPattern(canonicalFileName, &seq);
@@ -4575,8 +4575,8 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
         pluginID = getPluginID();
     }
 
-    int leftBound = INT_MIN;
-    int rightBound = INT_MAX;
+    int leftBound = std::numeric_limits<int>::min();
+    int rightBound = std::numeric_limits<int>::max();
     ///Set the originalFrameRange parameter of the reader if it has one.
     KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
@@ -4590,7 +4590,7 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
 
             if ( ReadNode::isVideoReader(pluginID) ) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValues(std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -4904,9 +4904,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
             /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
             AppInstance::RenderWork w;
             w.writer = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
-            w.firstFrame = INT_MIN;
-            w.lastFrame = INT_MAX;
-            w.frameStep = INT_MIN;
+            w.firstFrame = std::numeric_limits<int>::min();
+            w.lastFrame = std::numeric_limits<int>::max();
+            w.frameStep = std::numeric_limits<int>::min();
             w.useRenderStats = getApp()->isRenderStatsActionChecked();
             std::list<AppInstance::RenderWork> works;
             works.push_back(w);

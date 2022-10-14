@@ -26,11 +26,7 @@
 
 #include "TrackerNodeInteract.h"
 
-#ifndef NDEBUG
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+#include <limits>
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
@@ -128,13 +124,13 @@ TrackerNodeInteract::onTrackRangeClicked()
     int first = trackRangeDialogFirstFrame.lock()->getValue();
     int last = trackRangeDialogLastFrame.lock()->getValue();
     int step = trackRangeDialogStep.lock()->getValue();
-    if (first == INT_MIN) {
+    if (first == std::numeric_limits<int>::min()) {
         trackRangeDialogFirstFrame.lock()->setValue(viewerFirst);
     }
-    if (last == INT_MIN) {
+    if (last == std::numeric_limits<int>::min()) {
         trackRangeDialogLastFrame.lock()->setValue(viewerLast);
     }
-    if (step == INT_MIN) {
+    if (step == std::numeric_limits<int>::min()) {
         trackRangeDialogStep.lock()->setValue(1);
     }
     KnobGroupPtr k = trackRangeDialogGroup.lock();
@@ -428,7 +424,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
                                              const QPointF& viewportPos) const
 {
     if (!showMarkerTexture) {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
 
 
@@ -438,15 +434,15 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
     }
 
     if ( (pos.y() < textureRectCanonical.y1) || (pos.y() > textureRectCanonical.y2) ) {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
     if (pos.x() < textureRectCanonical.x2) {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
 
     TrackMarkerPtr marker = selectedMarker.lock();
     if (!marker) {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
 
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
@@ -466,7 +462,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
             ///Render at most MAX_TRACK_KEYS_TO_DISPLAY keyframes
             KeyFrameTexIDs keysToRender = getKeysToRenderForMarker(currentTime, it->second);
             if ( (texIndex < 0) || ( texIndex >= (int)keysToRender.size() ) ) {
-                return INT_MAX;
+                return std::numeric_limits<int>::max();
             }
             KeyFrameTexIDs::iterator found = keysToRender.begin();
             std::advance(found, texIndex);
@@ -481,7 +477,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
         }
     }
 
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
 } // isInsideKeyFrameTexture
 
 bool

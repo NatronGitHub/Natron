@@ -26,6 +26,7 @@
 #include "NodeGraphUndoRedo.h"
 
 #include <algorithm> // min, max
+#include <limits>
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -731,7 +732,7 @@ public:
 
     Tree()
         : nodes()
-        , topLevelNodeCenter(0, INT_MAX)
+        , topLevelNodeCenter(0, std::numeric_limits<int>::max())
     {
     }
 
@@ -1006,7 +1007,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     }
 
     ///For all trees find out which one has the top most level node
-    QPointF topLevelPos(0, INT_MAX);
+    QPointF topLevelPos(0, std::numeric_limits<int>::max());
     for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         const QPointF & treeTop = (*it)->getTopLevelNodeCenter();
         if ( treeTop.y() < topLevelPos.y() ) {
@@ -1017,7 +1018,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     ///now offset all trees to be top aligned at the same level
     for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         QPointF treeTop = (*it)->getTopLevelNodeCenter();
-        if (treeTop.y() == INT_MAX) {
+        if (treeTop.y() == std::numeric_limits<int>::max()) {
             treeTop.setY( topLevelPos.y() );
         }
         QPointF delta( 0, topLevelPos.y() - treeTop.y() );
@@ -1869,7 +1870,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         // Remember the links from the Group node we are expending to its inputs and outputs
 
         // This is the y coord. of the bottom-most input
-        double inputY = INT_MIN;
+        double inputY = std::numeric_limits<int>::min();
         int maxInputs = group->getNode()->getNInputs();
         assert( maxInputs == (int)groupInputs.size() );
         for (int i = 0; i < maxInputs; ++i) {
@@ -1913,7 +1914,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         QPointF firstInputPos;
 
         // This is the y coord of the top most output
-        double outputY = INT_MAX;
+        double outputY = std::numeric_limits<int>::max();
         if (groupOutput) {
             NodePtr groupOutputInput = groupOutput->getInput(0);
             if (groupOutputInput) {
@@ -1953,8 +1954,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         }
 
         // If there is no output to the group, the output is considered to be infinite (so we don't move any node)
-        if (outputY == INT_MIN) {
-            outputY = INT_MAX;
+        if (outputY == std::numeric_limits<int>::min()) {
+            outputY = std::numeric_limits<int>::max();
         }
 
         const double ySpaceAvailable = outputY  - inputY;

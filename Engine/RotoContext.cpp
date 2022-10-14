@@ -1669,12 +1669,12 @@ findOutNearestKeyframeRecursively(const RotoLayerPtr& layer,
         if (isBezier) {
             if (previous) {
                 int t = isBezier->getPreviousKeyframeTime(time);
-                if ( (t != INT_MIN) && (t > *nearest) ) {
+                if ( (t != std::numeric_limits<int>::min()) && (t > *nearest) ) {
                     *nearest = t;
                 }
             } else if (layer) {
                 int t = isBezier->getNextKeyframeTime(time);
-                if ( (t != INT_MAX) && (t < *nearest) ) {
+                if ( (t != std::numeric_limits<int>::max()) && (t < *nearest) ) {
                     *nearest = t;
                 }
             }
@@ -1694,7 +1694,7 @@ RotoContext::goToPreviousKeyframe()
     assert( QThread::currentThread() == qApp->thread() );
 
     double time = getTimelineCurrentTime();
-    int minimum = INT_MIN;
+    int minimum = std::numeric_limits<int>::min();
 
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -1703,7 +1703,7 @@ RotoContext::goToPreviousKeyframe()
             BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (isBezier) {
                 int t = isBezier->getPreviousKeyframeTime(time);
-                if ( (t != INT_MIN) && (t > minimum) ) {
+                if ( (t != std::numeric_limits<int>::min()) && (t > minimum) ) {
                     minimum = t;
                 }
             } else {
@@ -1715,7 +1715,7 @@ RotoContext::goToPreviousKeyframe()
         }
     }
 
-    if (minimum != INT_MIN) {
+    if (minimum != std::numeric_limits<int>::min()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonOtherSeek);
     }
@@ -1728,7 +1728,7 @@ RotoContext::goToNextKeyframe()
     assert( QThread::currentThread() == qApp->thread() );
 
     double time = getTimelineCurrentTime();
-    int maximum = INT_MAX;
+    int maximum = std::numeric_limits<int>::max();
 
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -1737,7 +1737,7 @@ RotoContext::goToNextKeyframe()
             BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (isBezier) {
                 int t = isBezier->getNextKeyframeTime(time);
-                if ( (t != INT_MAX) && (t < maximum) ) {
+                if ( (t != std::numeric_limits<int>::max()) && (t < maximum) ) {
                     maximum = t;
                 }
             } else {
@@ -1748,7 +1748,7 @@ RotoContext::goToNextKeyframe()
             }
         }
     }
-    if (maximum != INT_MAX) {
+    if (maximum != std::numeric_limits<int>::max()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL, eTimelineChangeReasonOtherSeek);
     }
@@ -3925,8 +3925,8 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
                 fprev = fIt->begin();
             }
 
-            double inner_t = (double)INT_MAX;
-            double outter_t = (double)INT_MAX;
+            double inner_t = std::numeric_limits<int>::max();
+            double outter_t = std::numeric_limits<int>::max();
             bool gotOne = false;
             if (bSegmentIt != it->end()) {
                 inner_t = bSegmentIt->t;

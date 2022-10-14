@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <set>
+#include <limits>
 #include <list>
 #include <algorithm> // min, max
 #include <cassert>
@@ -1219,7 +1220,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
     _imp->runArgs = args;
 
     ThreadStateEnum state = eThreadStateActive;
-    int expectedTimeToRenderPreviousIteration = INT_MIN;
+    int expectedTimeToRenderPreviousIteration = std::numeric_limits<int>::min();
 
     // This is the number of time this thread was woken up by a render thread because a frame was available for processing,
     // but this is not the frame this thread expects to render. If it reaches a certain amount, we detected a stall and abort.
@@ -1262,7 +1263,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             }
 
 #ifdef TRACE_SCHEDULER
-            if ( (expectedTimeToRenderPreviousIteration == INT_MIN) || (expectedTimeToRenderPreviousIteration != expectedTimeToRender) ) {
+            if ( (expectedTimeToRenderPreviousIteration == std::numeric_limits<int>::min()) || (expectedTimeToRenderPreviousIteration != expectedTimeToRender) ) {
                 qDebug() << "Scheduler Thread: waiting for " << expectedTimeToRender << " to be rendered...";
             }
 #endif

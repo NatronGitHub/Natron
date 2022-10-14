@@ -509,7 +509,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
     trackRangeDialogFirstFrame->setIsPersistent(false);
-    trackRangeDialogFirstFrame->setDefaultValue(INT_MIN);
+    trackRangeDialogFirstFrame->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
 
@@ -520,7 +520,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
     trackRangeDialogLastFrame->setIsPersistent(false);
-    trackRangeDialogLastFrame->setDefaultValue(INT_MIN);
+    trackRangeDialogLastFrame->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
 
@@ -531,7 +531,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
     trackRangeDialogFrameStep->setIsPersistent(false);
-    trackRangeDialogFrameStep->setDefaultValue(INT_MIN);
+    trackRangeDialogFrameStep->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
 
@@ -1517,7 +1517,7 @@ TrackerNode::onOverlayPenDown(double time,
 
     if (!didSomething) {
         int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
-        if (keyTime != INT_MAX) {
+        if (keyTime != std::numeric_limits<int>::max()) {
             ViewerInstance* viewer = overlay->getInternalViewerNode();
             if (viewer) {
                 viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
@@ -1730,7 +1730,7 @@ TrackerNode::onOverlayPenMotion(double time,
     } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
+    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != std::numeric_limits<int>::max()) ) {
         setCurrentCursor(eCursorPointingHand);
         hoverProcess = true;
     } else {

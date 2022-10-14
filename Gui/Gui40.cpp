@@ -28,6 +28,7 @@
 #include <cassert>
 #include <algorithm> // min, max
 #include <map>
+#include <limits>
 #include <list>
 #include <utility>
 #include <stdexcept>
@@ -875,9 +876,9 @@ Gui::renderSelectedNode()
                 AppInstance::RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>( effect.get() );
                 assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                w.frameStep = INT_MIN;
+                w.firstFrame = std::numeric_limits<int>::min();
+                w.lastFrame = std::numeric_limits<int>::max();
+                w.frameStep = std::numeric_limits<int>::min();
                 w.useRenderStats = useStats;
                 workList.push_back(w);
             }
@@ -898,9 +899,9 @@ Gui::renderSelectedNode()
                     AppInstance::RenderWork w;
                     w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
                     assert(w.writer);
-                    w.firstFrame = INT_MIN;
-                    w.lastFrame = INT_MAX;
-                    w.frameStep = INT_MIN;
+                    w.firstFrame = std::numeric_limits<int>::min();
+                    w.lastFrame = std::numeric_limits<int>::max();
+                    w.frameStep = std::numeric_limits<int>::min();
                     w.useRenderStats = useStats;
                     workList.push_back(w);
                 }

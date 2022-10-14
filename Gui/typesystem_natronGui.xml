@@ -29,6 +29,9 @@
 
 
     <object-type name="GuiApp">
+        <inject-code class="native" position="beginning">
+        #include &lt;limits&gt;
+        </inject-code>
         <modify-function signature="getTabWidget(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -110,7 +113,7 @@
                 if (tupleSize == 4) {
                 frameStep = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 3));
                 } else {
-                frameStep = INT_MIN;
+                frameStep = std::numeric_limits&lt;int&gt;::min();
                 }
                 effects.push_back(writeNode);
                 firstFrames.push_back(firstFrame);

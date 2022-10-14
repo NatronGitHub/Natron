@@ -32,7 +32,7 @@
 #include <list>
 #include <string>
 #include <utility>
-#include <climits>              // for INT_MAX, INT_MIN
+#include <limits>
 #include <cstddef>              // for NULL
 
 #include <QtCore/QtGlobal>      // for Q_UNUSED
@@ -167,7 +167,7 @@ public:
 
     NodePtr createWriter(const std::string& filename,
                          CreateNodeArgs& args,
-                         int firstFrame = INT_MIN, int lastFrame = INT_MAX);
+                         int firstFrame = std::numeric_limits<int>::min(), int lastFrame = std::numeric_limits<int>::max());
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
 

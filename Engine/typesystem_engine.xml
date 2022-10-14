@@ -810,6 +810,9 @@
     <object-type name="StringNodeCreationProperty">
     </object-type>
     <object-type name="App" copyable="false">
+        <inject-code class="native" position="beginning">
+        #include &lt;limits&gt;
+        </inject-code>
         <modify-function signature="createNode(QString,int,Group*, std::map&lt; QString, NodeCreationProperty* &gt;)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -890,7 +893,7 @@
                     if (tupleSize == 4) {
                         frameStep = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 3));
                     } else {
-                        frameStep = INT_MIN;
+                        frameStep = std::numeric_limits&lt;int&gt;::min();
                     }
                     effects.push_back(writeNode);
                     firstFrames.push_back(firstFrame);

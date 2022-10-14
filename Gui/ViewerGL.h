@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <limits>
 #include <vector>
 #include <utility>
 
@@ -244,7 +245,7 @@ public Q_SLOTS:
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
     void setFormat(const std::string& formatName, const RectD& format, double par, int textureIndex);
 
-    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) OVERRIDE FINAL;
+    virtual void updateColorPicker(int textureIndex, int x = std::numeric_limits<int>::max(), int y = std::numeric_limits<int>::max()) OVERRIDE FINAL;
 
     void clearColorBuffer(double r = 0., double g = 0., double b = 0., double a = 1.);
 

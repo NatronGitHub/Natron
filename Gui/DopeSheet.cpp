@@ -26,6 +26,7 @@
 #include "DopeSheet.h"
 
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 
 // Qt includes
@@ -641,8 +642,8 @@ DopeSheet::moveSelectedKeysAndNodes(double dt)
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
 
     ///Constraint dt according to keyframe positions
-    double maxLeft = INT_MIN;
-    double maxRight = INT_MAX;
+    double maxLeft = std::numeric_limits<int>::min();
+    double maxRight = std::numeric_limits<int>::max();
     std::vector<DopeSheetKeyPtr> vect;
     for (DopeSheetKeyPtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
         DSKnobPtr knobDs = (*it)->getContext();

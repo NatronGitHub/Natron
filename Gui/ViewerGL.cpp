@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <limits>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
@@ -2639,11 +2640,11 @@ ViewerGL::updateColorPicker(int textureIndex,
     QPoint pos;
     bool xInitialized = false;
     bool yInitialized = false;
-    if (x != INT_MAX) {
+    if (x != std::numeric_limits<int>::max()) {
         xInitialized = true;
         pos.setX(x);
     }
-    if (y != INT_MAX) {
+    if (y != std::numeric_limits<int>::max()) {
         yInitialized = true;
         pos.setY(y);
     }

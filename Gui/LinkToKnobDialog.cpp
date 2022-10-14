@@ -26,7 +26,6 @@
 #include "LinkToKnobDialog.h"
 
 #include <cassert>
-#include <climits>
 #include <cfloat>
 #include <stdexcept>
 
