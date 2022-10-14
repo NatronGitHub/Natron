@@ -226,7 +226,9 @@ public Q_SLOTS:
 
     void toggleHideInputs();
 
-    void onNodeCreationDialogFinished(bool accepted);
+    void popCreateNodeDialog();
+
+    void onCreateNodeDialogFinished(bool accepted);
 
     void popFindDialog( const QPoint& pos = QPoint(0, 0) );
 

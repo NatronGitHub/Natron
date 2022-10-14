@@ -176,13 +176,7 @@ NodeGraph::event(QEvent* e)
         QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
         assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
-
-            ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
-            ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onNodeCreationDialogFinished(bool)) );
-            nodeCreation->show();
-
+            popCreateNodeDialog();
             takeClickFocus();
             ke->accept();
 
@@ -194,7 +188,18 @@ NodeGraph::event(QEvent* e)
 }
 
 void
-NodeGraph::onNodeCreationDialogFinished(bool accepted)
+NodeGraph::popCreateNodeDialog()
+{
+    NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
+
+    ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
+    ///it closes it.
+    QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onCreateNodeDialogFinished(bool)) );
+    nodeCreation->show();
+}
+
+void
+NodeGraph::onCreateNodeDialogFinished(bool accepted)
 {
     NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>( sender() );
 
@@ -376,6 +381,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         toggleAutoHideInputs(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog( QCursor::pos() );
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateNode, modifiers, key) ) {
+        assert(false && "Should never be reached (caught in NodeGraph::event())");
+        popCreateNodeDialog();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         renameNode();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
