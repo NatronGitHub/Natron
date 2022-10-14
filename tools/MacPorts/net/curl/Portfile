@@ -82,7 +82,7 @@ if {${name} eq ${subport}} {
     }
 
     post-configure {
-        if {[variant_exists universal] && [variant_isset universal]} {
+        if {${universal_possible} && [variant_isset universal]} {
             set dirs {}
             foreach arch ${universal_archs_to_use} {
                 lappend dirs ${worksrcpath}-${arch}

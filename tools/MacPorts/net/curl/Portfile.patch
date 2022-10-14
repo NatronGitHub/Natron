@@ -1,6 +1,15 @@
---- Portfile.orig	2019-03-10 23:34:35.000000000 +0100
-+++ Portfile	2019-03-10 23:35:56.000000000 +0100
-@@ -85,6 +85,10 @@
+--- Portfile.orig	2022-10-11 08:31:35.000000000 -0700
++++ Portfile	2022-10-13 18:30:30.000000000 -0700
+@@ -82,7 +82,7 @@
+     }
+ 
+     post-configure {
+-        if {[variant_exists universal] && [variant_isset universal]} {
++        if {${universal_possible} && [variant_isset universal]} {
+             set dirs {}
+             foreach arch ${universal_archs_to_use} {
+                 lappend dirs ${worksrcpath}-${arch}
+@@ -96,6 +96,10 @@
              # when "cross compiling" a universal binary.
              # See https://trac.macports.org/ticket/24001
              reinplace -E -q {s/ '(host_alias|--host)=[^']+'//g} ${dir}/curl-config
