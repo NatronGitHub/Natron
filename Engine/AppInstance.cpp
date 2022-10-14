@@ -27,6 +27,7 @@
 #include "AppInstance.h"
 
 #include <fstream>
+#include <limits>
 #include <list>
 #include <cassert>
 #include <stdexcept>
@@ -511,7 +512,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderWork r( effect, INT_MIN, INT_MAX, INT_MIN, cl.areRenderStatsEnabled() );
+            AppInstance::RenderWork r( effect, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), cl.areRenderStatsEnabled() );
             requests.push_back(r);
         }
     }
@@ -1030,7 +1031,7 @@ AppInstance::createWriter(const std::string& filename,
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
 #endif
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
-    if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
+    if ( (firstFrame != std::numeric_limits<int>::min()) && (lastFrame != std::numeric_limits<int>::max()) ) {
         args.addParamDefaultValue<int>("frameRange", 2);
         args.addParamDefaultValue<int>("firstFrame", firstFrame);
         args.addParamDefaultValue<int>("lastFrame", lastFrame);
@@ -1716,7 +1717,7 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                 }
 
                 if ( frameRanges.empty() ) {
-                    RenderWork r(effect, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
+                    RenderWork r(effect, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1740,7 +1741,7 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                 }
 
                 if ( frameRanges.empty() ) {
-                    RenderWork r(*it2, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
+                    RenderWork r(*it2, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1867,10 +1868,10 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
                                           int* frameStep)
 {
     ///validate the frame range to render
-    if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
+    if ( (w.firstFrame == std::numeric_limits<int>::min()) || (w.lastFrame == std::numeric_limits<int>::max()) ) {
         double firstFrameD, lastFrameD;
         w.writer->getFrameRange_public(w.writer->getHash(), &firstFrameD, &lastFrameD, true);
-        if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
+        if ( (firstFrameD == std::numeric_limits<int>::min()) || (lastFrameD == std::numeric_limits<int>::max()) ) {
             _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
         }
 
@@ -1887,7 +1888,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
         *lastFrame = w.lastFrame;
     }
 
-    if ( (w.frameStep == INT_MAX) || (w.frameStep == INT_MIN) ) {
+    if ( (w.frameStep == std::numeric_limits<int>::max()) || (w.frameStep == std::numeric_limits<int>::min()) ) {
         ///Get the frame step from the frame step parameter of the Writer
         *frameStep = w.writer->getNode()->getFrameStepKnobValue();
     } else {

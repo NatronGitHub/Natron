@@ -29,6 +29,7 @@
 #include <map>
 #include <sstream>
 #include <algorithm> // min, max
+#include <limits>
 #include <fstream>
 #include <cassert>
 #include <stdexcept>
@@ -94,10 +95,10 @@ optimizeRectsToRender(EffectInstance* self,
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
         nonIdentityRect.identityTime = 0;
-        nonIdentityRect.rect.x1 = INT_MAX;
-        nonIdentityRect.rect.x2 = INT_MIN;
-        nonIdentityRect.rect.y1 = INT_MAX;
-        nonIdentityRect.rect.y2 = INT_MIN;
+        nonIdentityRect.rect.x1 = std::numeric_limits<int>::max();
+        nonIdentityRect.rect.x2 = std::numeric_limits<int>::min();
+        nonIdentityRect.rect.y1 = std::numeric_limits<int>::max();
+        nonIdentityRect.rect.y2 = std::numeric_limits<int>::min();
 
         bool nonIdentityRectSet = false;
         for (std::size_t i = 0; i < splits.size(); ++i) {

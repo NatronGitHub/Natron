@@ -28,8 +28,7 @@
 
 #include "Global/Macros.h"
 
-#include <cfloat> // DBL_MAX
-#include <climits> // INT_MAX
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -295,13 +294,13 @@ public:
     static bool shouldSliderBeVisible(int sliderMin,
                                       int sliderMax)
     {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<int>::max()) && (sliderMin > std::numeric_limits<int>::min());
     }
 
     static bool shouldSliderBeVisible(double sliderMin,
                                       double sliderMax)
     {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<double>::max()) && (sliderMin > std::numeric_limits<double>::lowest());
     }
 
     virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }

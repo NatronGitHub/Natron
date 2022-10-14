@@ -25,7 +25,7 @@
 
 #include "KnobGuiValue.h"
 
-#include <cfloat>
+#include <limits>
 #include <algorithm> // min, max
 #include <stdexcept>
 
@@ -384,10 +384,10 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     if (!isSliderDisabled() && !isRectangleParam) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
-        if (dispmin == -DBL_MAX) {
+        if (dispmin == std::numeric_limits<double>::lowest()) {
             dispmin = mins[0];
         }
-        if (dispmax == DBL_MAX) {
+        if (dispmax == std::numeric_limits<double>::max()) {
             dispmax = maxs[0];
         }
 
@@ -1054,7 +1054,7 @@ KnobGuiValue::_show()
     if ( _imp->slider && ( ( !_imp->dimensionSwitchButton && (_imp->spinBoxes.size() == 1) ) || ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) ) ) {
         double sliderMax = _imp->slider->maximum();
         double sliderMin = _imp->slider->minimum();
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<int>::max()) && (sliderMin > std::numeric_limits<int>::min()) ) {
             _imp->slider->show();
         }
     }

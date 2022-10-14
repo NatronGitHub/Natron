@@ -26,7 +26,6 @@
 #include "EditExpressionDialog.h"
 
 #include <cassert>
-#include <climits>
 #include <cfloat>
 #include <stdexcept>
 

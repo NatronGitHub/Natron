@@ -26,6 +26,7 @@
 #include "Settings.h"
 
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
 #include <QtCore/QDebug>
@@ -1975,7 +1976,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                         }
                     } else {
                         int newValue = isInt->getValue(j);
-                        int oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toInt();
+                        int oldValue = settings.value( dimensionName, QVariant(std::numeric_limits<int>::min()) ).toInt();
                         if (newValue != oldValue) {
                             changedKnobs.push_back(knobs[i]);
                         }
@@ -1983,7 +1984,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                     }
                 } else if (isDouble) {
                     double newValue = isDouble->getValue(j);
-                    double oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toDouble();
+                    double oldValue = settings.value( dimensionName, QVariant(std::numeric_limits<int>::min()) ).toDouble();
                     if (newValue != oldValue) {
                         changedKnobs.push_back(knobs[i]);
                     }

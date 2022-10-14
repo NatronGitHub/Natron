@@ -542,9 +542,9 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         if ( selectedNodes.empty() || serialization) {
             autoConnect = false;
         }
-        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
+        double xPosHint = serialization ? std::numeric_limits<int>::min() : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = serialization ? std::numeric_limits<int>::min() : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+        if ( (xPosHint != std::numeric_limits<int>::min()) && (yPosHint != std::numeric_limits<int>::min()) && (!autoConnect) ) {
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {

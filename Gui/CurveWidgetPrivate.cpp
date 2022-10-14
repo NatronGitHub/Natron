@@ -27,6 +27,7 @@
 
 #include <cmath> // floor
 #include <algorithm> // min, max
+#include <limits>
 #include <stdexcept>
 
 #include <QtCore/QThread>
@@ -1220,8 +1221,8 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     }
 
     // clamp dt so keyframes do not overlap
-    double maxLeft = INT_MIN;
-    double maxRight = INT_MAX;
+    double maxLeft = std::numeric_limits<int>::min();
+    double maxRight = std::numeric_limits<int>::max();
     double epsilon = clampToIntegers ? 1 : 1e-4;
     bool canMoveY = true;
     std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;

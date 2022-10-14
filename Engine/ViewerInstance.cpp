@@ -30,7 +30,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <cstring> // for std::memcpy
-#include <cfloat> // DBL_MAX
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
@@ -86,8 +86,8 @@ struct MinMaxVal {
     {
     }
     MinMaxVal()
-    : min(DBL_MAX)
-    , max(-DBL_MAX)
+    : min(std::numeric_limits<double>::max())
+    , max(std::numeric_limits<double>::lowest())
     {
     }
 

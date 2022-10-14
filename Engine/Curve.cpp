@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
@@ -1166,11 +1167,11 @@ Curve::getCurveDisplayYRange() const
     KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
+        if (min <= std::numeric_limits<double>::lowest()) {
             min = -std::numeric_limits<double>::infinity();
         }
         double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
+        if (max >= std::numeric_limits<double>::max()) {
             max = std::numeric_limits<double>::infinity();
         }
 
@@ -1200,11 +1201,11 @@ Curve::YRange Curve::getCurveYRange() const
     KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
+        if (min <= std::numeric_limits<double>::lowest()) {
             min = -std::numeric_limits<double>::infinity();
         }
         double max = isDouble->getMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
+        if (max >= std::numeric_limits<double>::max()) {
             max = std::numeric_limits<double>::infinity();
         }
 

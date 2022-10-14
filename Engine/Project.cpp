@@ -28,6 +28,7 @@
 #include <fstream>
 #include <algorithm> // min, max
 #include <ios>
+#include <limits>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
@@ -915,7 +916,7 @@ Project::initializeKnobs()
     _imp->frameRate->setAnimationEnabled(false);
     _imp->frameRate->setDefaultValue(24);
     _imp->frameRate->setMinimum(0.);
-    _imp->frameRate->setMaximum(INT_MAX);
+    _imp->frameRate->setMaximum(std::numeric_limits<int>::max());
     _imp->frameRate->setDisplayMinimum(0.);
     _imp->frameRate->setDisplayMaximum(120.);
     page->addKnob(_imp->frameRate);

@@ -27,7 +27,7 @@
 #include "BezierCP.h"
 
 #include <algorithm> // min, max
-#include <limits> // INT_MAX
+#include <limits>
 #include <set>
 #include <list>
 #include <utility>
@@ -556,7 +556,7 @@ BezierCP::getKeyframeTime(bool useGuiCurves,
     if (ok) {
         return k.getTime();
     } else {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
 }
 

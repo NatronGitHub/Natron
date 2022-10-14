@@ -26,6 +26,7 @@
 #include "CurveWidget.h"
 
 #include <cmath> // floor
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -246,13 +247,13 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
 
 
             if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
-                thisCurveRange.min == INT_MIN ||
+                thisCurveRange.min == std::numeric_limits<int>::min() ||
                 thisCurveRange.max == std::numeric_limits<double>::infinity() ||
-                thisCurveRange.max == INT_MAX ||
+                thisCurveRange.max == std::numeric_limits<int>::max() ||
                 thisXRange.first == -std::numeric_limits<double>::infinity() ||
-                thisXRange.first == INT_MIN ||
+                thisXRange.first == std::numeric_limits<int>::min() ||
                 thisXRange.second == std::numeric_limits<double>::infinity() ||
-                thisXRange.second == INT_MAX) {
+                thisXRange.second == std::numeric_limits<int>::max()) {
                 continue;
             }
 
@@ -291,8 +292,8 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
         doCenter = true;
         double xmin = keys.begin()->getTime();
         double xmax = keys.rbegin()->getTime();
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
+        double ymin = std::numeric_limits<int>::max();
+        double ymax = std::numeric_limits<int>::min();
         //find out ymin,ymax
         for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
             double value = it2->getValue();

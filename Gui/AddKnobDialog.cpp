@@ -26,6 +26,7 @@
 #include "AddKnobDialog.h"
 
 #include <cfloat> // floor
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -1967,13 +1968,13 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
 
         if ( (t == AddKnobDialog::eParamDataTypeColorRGB) || (t == AddKnobDialog::eParamDataTypeColorRGBA) ) {
             // color range to 0-1
-            minBox->setValue(INT_MIN);
-            maxBox->setValue(INT_MAX);
+            minBox->setValue(std::numeric_limits<int>::min());
+            maxBox->setValue(std::numeric_limits<int>::max());
             dminBox->setValue(0.);
             dmaxBox->setValue(1.);
         } else {
-            minBox->setValue(INT_MIN);
-            maxBox->setValue(INT_MAX);
+            minBox->setValue(std::numeric_limits<int>::min());
+            maxBox->setValue(std::numeric_limits<int>::max());
             dminBox->setValue(0);
             dmaxBox->setValue(100);
         }

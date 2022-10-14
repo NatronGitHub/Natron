@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 #include <algorithm> // min, max
@@ -768,11 +769,11 @@ Interpolation::integrate_clamp(double tcur,
     // solve cubic = vmax
     double tmax[3];
     int omax[3];
-    int nmax = (vmax < DBL_MAX) ? Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax) : 0;
+    int nmax = (vmax < std::numeric_limits<double>::max()) ? Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax) : 0;
     // solve cubic = vmin
     double tmin[3];
     int omin[3];
-    int nmin = (vmin > -DBL_MAX) ? Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin) : 0;
+    int nmin = (vmin > std::numeric_limits<double>::lowest()) ? Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin) : 0;
 
     // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
     // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)

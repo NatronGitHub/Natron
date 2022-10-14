@@ -26,6 +26,8 @@
 
 #include "RotoPaintInteract.h"
 
+#include <limits>
+
 #include <QtCore/QLineF>
 
 #include "Global/GLIncludes.h"
@@ -840,7 +842,8 @@ RotoPaintInteract::computeSelectedCpsBBOX()
 
     double time = p->publicInterface->getCurrentTime();
 
-    double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
+    double l = std::numeric_limits<int>::max(), r = std::numeric_limits<int>::min();
+    double b = std::numeric_limits<int>::max(), t = std::numeric_limits<int>::min();
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
         handleControlPointMaximum(time, *(it->first), &l, &b, &r, &t);
         if (it->second) {

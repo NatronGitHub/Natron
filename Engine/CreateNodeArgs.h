@@ -28,6 +28,7 @@
 
 #include <map>
 #include <vector>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -307,7 +308,7 @@ class CreateNodeArgs
     {
         createProperty<std::string>(kCreateNodeArgsPropPluginID, std::string());
         createProperty<int>(kCreateNodeArgsPropPluginVersion, -1, -1);
-        createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
+        createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
         createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
         createProperty<std::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, std::shared_ptr<NodeSerialization>());

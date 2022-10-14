@@ -30,7 +30,7 @@
 
 #include "Knob.h"
 
-#include <cfloat>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <algorithm> // min, max
@@ -80,10 +80,10 @@ void
 KnobDoubleBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
-        _displayMins[i] = -DBL_MAX;
-        _displayMaxs[i] = DBL_MAX;
+        _minimums[i] = std::numeric_limits<double>::lowest();
+        _maximums[i] = std::numeric_limits<double>::max();
+        _displayMins[i] = std::numeric_limits<double>::lowest();
+        _displayMaxs[i] = std::numeric_limits<double>::max();
     }
 }
 
@@ -92,10 +92,10 @@ void
 KnobIntBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
-        _minimums[i] = INT_MIN;
-        _maximums[i] = INT_MAX;
-        _displayMins[i] = INT_MIN;
-        _displayMaxs[i] = INT_MAX;
+        _minimums[i] = std::numeric_limits<int>::min();
+        _maximums[i] = std::numeric_limits<int>::max();
+        _displayMins[i] = std::numeric_limits<int>::min();
+        _displayMaxs[i] = std::numeric_limits<int>::max();
     }
 }
 

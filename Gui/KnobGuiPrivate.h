@@ -31,7 +31,6 @@
 //#include "Gui/KnobUndoCommand.h"
 
 #include <cassert>
-#include <climits>
 #include <cfloat>
 #include <stdexcept>
 #include <map>

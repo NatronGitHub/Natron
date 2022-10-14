@@ -26,6 +26,7 @@
 #include "DiskCacheNode.h"
 
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
 #include "Engine/Node.h"
@@ -160,8 +161,8 @@ DiskCacheNode::knobChanged(KnobI* k,
     } else if (_imp->preRender.lock().get() == k) {
         AppInstance::RenderWork w;
         w.writer = this;
-        w.firstFrame = INT_MIN;
-        w.lastFrame = INT_MAX;
+        w.firstFrame = std::numeric_limits<int>::min();
+        w.lastFrame = std::numeric_limits<int>::max();
         w.frameStep = 1;
         w.useRenderStats = false;
         std::list<AppInstance::RenderWork> works;

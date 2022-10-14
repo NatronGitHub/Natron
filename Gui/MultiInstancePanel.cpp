@@ -1942,8 +1942,8 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
     std::list<KnobDoublePtr> centers;
     RangeD keyframesRange;
-    keyframesRange.min = INT_MAX;
-    keyframesRange.max = INT_MIN;
+    keyframesRange.min = std::numeric_limits<int>::max();
+    keyframesRange.max = std::numeric_limits<int>::min();
 
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobDoublePtr dblKnob = getCenterKnobForTracker(*it);
@@ -1965,10 +1965,10 @@ TrackerPanelV1::onAverageTracksButtonClicked()
             keyframesRange.max = maxi;
         }
     }
-    if (keyframesRange.min == INT_MIN) {
+    if (keyframesRange.min == std::numeric_limits<int>::min()) {
         keyframesRange.min = 0;
     }
-    if (keyframesRange.max == INT_MAX) {
+    if (keyframesRange.max == std::numeric_limits<int>::max()) {
         keyframesRange.max = 0;
     }
 

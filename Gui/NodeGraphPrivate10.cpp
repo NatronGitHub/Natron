@@ -26,6 +26,7 @@
 #include "NodeGraphPrivate.h"
 #include "NodeGraph.h"
 
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -58,10 +59,10 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                                      std::list<std::pair<std::string, NodeGuiPtr> > *newNodes)
 {
     if ( !clipboard.isEmpty() ) {
-        double xmax = INT_MIN;
-        double xmin = INT_MAX;
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
+        double xmax = std::numeric_limits<int>::min();
+        double xmin = std::numeric_limits<int>::max();
+        double ymin = std::numeric_limits<int>::max();
+        double ymax = std::numeric_limits<int>::min();
 
         for (std::list<NodeGuiSerializationPtr>::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it) {

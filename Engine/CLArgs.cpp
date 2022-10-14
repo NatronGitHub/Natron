@@ -27,6 +27,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <limits>
 #include <cassert>
 #include <stdexcept>
 
@@ -702,7 +703,7 @@ tryParseFrameRange(const QString& arg,
     if (ok) {
         //this is a single frame
         range.first = range.second = singleNumber;
-        frameStep = INT_MIN;
+        frameStep = std::numeric_limits<int>::min();
 
         return true;
     }
@@ -733,7 +734,7 @@ tryParseFrameRange(const QString& arg,
             return false;
         }
     } else {
-        frameStep = INT_MIN;
+        frameStep = std::numeric_limits<int>::min();
         ///Frame range without frame-step specified
         range.second = strRange.at(1).toInt(&ok);
         if (!ok) {

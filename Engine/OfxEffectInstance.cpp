@@ -566,9 +566,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // This is not always possible (e.g. if a param has a wrong value).
         if (supportsRenderScaleMaybe() == eSupportsMaybe) {
             // does the effect support renderscale?
-            double first = INT_MIN, last = INT_MAX;
+            double first = std::numeric_limits<int>::min(), last = std::numeric_limits<int>::max();
             getFrameRange(&first, &last);
-            if ( (first == INT_MIN) || (last == INT_MAX) ) {
+            if ( (first == std::numeric_limits<int>::min()) || (last == std::numeric_limits<int>::max()) ) {
                 first = last = getApp()->getTimeLine()->currentFrame();
             }
             ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -1762,13 +1762,13 @@ OfxEffectInstance::getFrameRange(double *first,
         int nthClip = _imp->effect->getNClips();
         if (nthClip == 0) {
             //infinite if there are no non optional input clips.
-            *first = INT_MIN;
-            *last = INT_MAX;
+            *first = std::numeric_limits<int>::min();
+            *last = std::numeric_limits<int>::max();
         } else {
             //the union of all the frame ranges of the non optional input clips.
             bool firstValidInput = true;
-            *first = INT_MIN;
-            *last = INT_MAX;
+            *first = std::numeric_limits<int>::min();
+            *last = std::numeric_limits<int>::max();
 
             int inputsCount = getNInputs();
 
@@ -1782,10 +1782,10 @@ OfxEffectInstance::getFrameRange(double *first,
                     double f, l;
                     inputEffect->getFrameRange_public(inputEffect->getRenderHash(), &f, &l);
                     if (!firstValidInput) {
-                        if ( (f < *first) && (f != INT_MIN) ) {
+                        if ( (f < *first) && (f != std::numeric_limits<int>::min()) ) {
                             *first = f;
                         }
-                        if ( (l > *last) && (l != INT_MAX) ) {
+                        if ( (l > *last) && (l != std::numeric_limits<int>::max()) ) {
                             *last = l;
                         }
                     } else {

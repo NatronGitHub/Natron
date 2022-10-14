@@ -27,7 +27,7 @@
 
 #include <set>
 #include <locale>
-#include <cfloat>
+#include <limits>
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
@@ -960,10 +960,10 @@ recomputeFrameRangeForAllReadersInternal(NodeCollection* group,
             if ( (*it)->getEffectInstance()->isReader() ) {
                 double thisFirst, thislast;
                 (*it)->getEffectInstance()->getFrameRange_public( (*it)->getHashValue(), &thisFirst, &thislast );
-                if (thisFirst != INT_MIN) {
+                if (thisFirst != std::numeric_limits<int>::min()) {
                     *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
                 }
-                if (thislast != INT_MAX) {
+                if (thislast != std::numeric_limits<int>::max()) {
                     *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
                 }
             } else {
@@ -2022,19 +2022,19 @@ exportUserKnob(int indentLevel,
             int max = isInt->getMaximum(i);
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
-            if (min != INT_MIN) {
+            if (min != std::numeric_limits<int>::min()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_INT(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != INT_MAX) {
+            if (max != std::numeric_limits<int>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_INT(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != INT_MIN) {
+            if (dMin != std::numeric_limits<int>::min()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_INT(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != INT_MAX) {
+            if (dMax != std::numeric_limits<int>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_INT(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
@@ -2068,19 +2068,19 @@ exportUserKnob(int indentLevel,
             double max = isDouble->getMaximum(i);
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
+            if (min != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != DBL_MAX) {
+            if (max != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != -DBL_MAX) {
+            if (dMin != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != DBL_MAX) {
+            if (dMax != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
@@ -2149,19 +2149,19 @@ exportUserKnob(int indentLevel,
             double max = isColor->getMaximum(i);
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
+            if (min != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != DBL_MAX) {
+            if (max != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != -DBL_MAX) {
+            if (dMin != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != DBL_MAX) {
+            if (dMax != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }

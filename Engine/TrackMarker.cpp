@@ -582,7 +582,7 @@ TrackMarker::getPreviousKeyframe(int time) const
         }
     }
 
-    return INT_MIN;
+    return std::numeric_limits<int>::min();
 }
 
 int
@@ -596,7 +596,7 @@ TrackMarker::getNextKeyframe( int time) const
         }
     }
 
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
 }
 
 void
