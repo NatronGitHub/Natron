@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                openh264
-version             2.2.0
+version             2.3.1
 categories          multimedia
 maintainers         openmaintainer
 platforms           darwin
@@ -16,9 +16,9 @@ long_description    H.264 codec from Cisco
 homepage            http://www.openh264.org
 master_sites        https://github.com/cisco/openh264/archive/
 distfiles           v${version}${extract.suffix}
-checksums           rmd160  dad7f299dbe66e8d18a91b6333678bb47085065d \
-                    sha256  e4e5c8ba48e64ba6ce61e8b6e2b76b2d870c74c270147649082feabb40f25905 \
-                    size    60275282
+checksums           rmd160  ca3955061495282417abefb07b7d95530fed1d94 \
+                    sha256  453afa66dacb560bc5fd0468aabee90c483741571bca820a39a1c07f0362dc32 \
+                    size    60290897
 
 depends_build-append port:nasm
 
@@ -29,7 +29,7 @@ patchfiles          0001-openh264-1.7.0-leopardinstall.patch
 # AVX2 is only supported from Kaby Lake on
 # see https://en.wikipedia.org/wiki/Intel_Core
 
-if {[variant_exists universal] && [variant_isset universal]} {
+if {${universal_possible} && [variant_isset universal]} {
     foreach arch ${configure.universal_archs} {
         lappend merger_build_args(${arch}) ARCH=${arch} CXX='${configure.cxx} -arch ${arch}' {*}"LDFLAGS='${configure.cxxflags} ${configure.ldflags}'"
         if {${arch} eq "i386"} {
