@@ -5,7 +5,7 @@
 # History
 
 
-## Version 2.4.3
+## Version 2.4.4
 
 ### Known issues
 
@@ -13,6 +13,13 @@
 - Rendering sometimes silently stalls after X frames. #248
 - Some image formats may have issues (PCX, PSB). #602
 - MTS video files are sometimes not read correctly. #186
+
+### Changes
+
+- Rework the right-click nodegraph menu. #836
+
+
+## Version 2.4.3
 
 ### Changes
 
