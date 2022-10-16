@@ -122,8 +122,8 @@ catDll libbz2-
 catDll libcaca-
 catDll libcairo-2
 catDll libcelt0-
-catDll libcroco-
-catDll LIBEAY32
+#catDll libcroco-
+#catDll LIBEAY32
 catDll libexpat-
 catDll libffi-
 catDll libfontconfig-
@@ -135,7 +135,7 @@ catDll libgio-
 catDll libglib-
 catDll libgmodule-
 catDll libgmp-
-catDll libgnutls-
+catDll libgnutls-30
 catDll libgobject-
 catDll libgomp-
 catDll libgraphite
@@ -152,7 +152,7 @@ catDll libIlmImf-
 catDll libIlmThread-
 catDll libImath-
 catDll libintl-
-catDll libjasper-
+catDll libjasper
 catDll libjpeg-
 catDll liblcms2-
 catDll liblzma-
@@ -177,7 +177,7 @@ catDll libpangowin32-
 catDll libpcre-
 catDll libpixman-
 catDll libpng16-
-catDll libPtex
+#catDll libPtex
 catDll librsvg-
 catDll librtmp-
 catDll libspeex-
@@ -202,8 +202,13 @@ catDll libwinpthread-
 catDll libxml2-
 catDll phonon4
 #catDll SDL2
-catDll SSLEAY32
+#catDll SSLEAY32
 catDll zlib1
+catDll libbrotlicommon
+catDll libbrotlidec
+catDll libssl-1_1-
+catDll libcrypto-1_1-
+catDll libzstd
 
 catDll libSeExpr
 catDll yaml-cpp
@@ -211,12 +216,18 @@ catDll libopenh264
 catDll libthai
 catDll libdatrie-
 catDll libsnappy
-catDll libpugixml
-catDll libheif-
+#catDll libpugixml
+catDll libheif
+catDll rav1e
 catDll libde265-
 catDll libx265
 catDll libdav1d
 catDll libaom
+catDll libdeflate
+catDll libjbig-
+catDll liblerc
+catDll libpsl-5
+catDll libcairo-gobject-
 
 # python
 catDll libpython${PYVER}
@@ -264,9 +275,9 @@ INIT_VAR=1
 DLL_VAR_PREFIX="ARENA"
 BIN_PATH="$SDK_HOME_BIN"
 catDll libcdr-
-catDll libcroco-
+#catDll libcroco-
 catDll libicuin
-catDll libpoppler-9
+catDll libpoppler-117
 catDll libpoppler-glib-
 catDll librevenge-0
 catDll librevenge-stream-
@@ -280,8 +291,8 @@ BIN_PATH="$SDK_HOME_BIN"
 catDll libfftw3-
 catDll libcurl-
 catDll libnghttp2-
-catDll libbrotlidec
-catDll libbrotlicommon
+#catDll libbrotlidec
+#catDll libbrotlicommon
 
 # Local variables:
 # mode: shell-script
