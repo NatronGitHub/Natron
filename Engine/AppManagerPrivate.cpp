@@ -957,8 +957,10 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 
 #ifdef GLAD_DEBUG
     if (glLoaded) {
+#ifdef GL_TRACE_CALLS
         glad_set_pre_callback(pre_gl_call);
         glad_set_post_callback(post_gl_call);
+#endif
 
         // disablepost_gl_call for glBegin and commands that are authorized between glBegin and glEnd
         // (because glGetError isn't authorized there)
