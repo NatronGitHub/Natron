@@ -3,12 +3,8 @@
 PortSystem              1.0
 PortGroup               github 1.0
 PortGroup               cmake 1.0
-PortGroup               legacysupport 1.1
 
-# O_CLOEXEC
-legacysupport.newest_darwin_requires_legacy 10
-
-github.setup            AcademySoftwareFoundation openexr 3.1.3 v
+github.setup            AcademySoftwareFoundation openexr 3.1.5 v
 # please set revision in subports
 categories              graphics
 license                 BSD
@@ -24,9 +20,9 @@ compiler.cxx_standard   2014
 # Only allow numbers, to avoid pre-release versions
 github.livecheck.regex  {([0-9.]+)}
 
-checksums           rmd160  202502b307b54d362161773bbca406fdd5fe2622 \
-                    sha256  d4495acae7b1755a22ec309519da2a824a16010d096df2bc6319d234f250b72b \
-                    size    20323809
+checksums           rmd160  6543890821ab7cf240f5431dda2ff04c35c73352 \
+                    sha256  0008f8f56251c81f3bedd04145df703b9bbebf84878f976688310d30eb952b99 \
+                    size    20328194
 
 depends_build-append    port:pkgconfig
 

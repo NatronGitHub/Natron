@@ -1,7 +1,7 @@
---- Portfile.orig	2022-10-06 08:10:41.000000000 -0700
-+++ Portfile	2022-10-06 08:47:42.000000000 -0700
-@@ -2,18 +2,14 @@
-
+--- Portfile.orig	2022-11-07 09:08:17.000000000 -0800
++++ Portfile	2022-11-07 09:26:10.000000000 -0800
+@@ -2,17 +2,17 @@
+ 
  PortSystem              1.0
  PortGroup               github 1.0
 -PortGroup               qt5 1.0
@@ -16,44 +16,43 @@
 -checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
 -                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
 -                        size    29115990
--
-+github.setup            OpenImageIO oiio 2.3.20.0 v
++github.setup            OpenImageIO oiio 2.3.21.0 v
 +revision                100
 +checksums           rmd160  e5ec8940476560dbed3978794065f7039b8fe1ba \
 +                    sha256  f3e8b353caea51b76c1d983f014292f6f9c4ed3f77bfb97ebab40465d9a81dce \
 +                    size    32641263
-
+ 
  name                    openimageio
  categories              graphics
-@@ -21,7 +21,7 @@
+@@ -21,6 +21,11 @@
  description             a library for reading and writing images
  long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                          related classes, utilities, and applications.
 +platforms               darwin
-
-+checksums           rmd160  fdb40f499089abc20d5fa42ffa0efa44b97fc222 \
-+                    sha256  688a0634a69161568b39a6cb958980b495f16ff7fe0ecd4671a2c2c2a40d0d7d \
-+                    size    32643615
 +
++checksums           rmd160  d261b1789d5ed2fc89fcf74724a941d681dcb1ba \
++                    sha256  fde69b4652024bfaebf40b8f234d4e4814fafa925ea2e73434453e96eb45bf61 \
++                    size    32651639
+ 
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
- # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
-@@ -32,9 +32,12 @@
-
+@@ -32,9 +37,13 @@
+ 
  compiler.thread_local_storage yes
-
+ 
 -github.tarball_from     archive
 +worksrcdir              oiio-Release-${version}
-
+ 
 -patchfiles-append       patch-FindOpenJpeg.cmake.diff
 +patch.pre_args  -p1
 +patchfiles \
 +    oiio-2.0.8-invalidatespec.patch \
-+    oiio-2.0.8-atomic-load.patch
-
++    oiio-2.0.8-atomic-load.patch \
++    oiio-2.3.20-strnlen.patch
+ 
  set port_libfmt         libfmt9
  cmake.module_path-append \
-@@ -54,20 +58,88 @@
+@@ -54,20 +63,88 @@
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -61,9 +60,9 @@
                          port:openexr \
                          port:squish \
                          port:${port_libfmt}
-
+ 
  # optional components
-
+ 
 -#configure.args-append   -DUSE_OPENGL=OFF \
 -#                        -DUSE_QT=OFF
 -qt5.min_version         5.6
@@ -139,15 +138,15 @@
 +    if {${configure.cxx_stdlib} eq "libstdc++"} {
 +    }
 +}
-
+ 
  configure.args-append   -DUSE_PYTHON=OFF
-
+ 
 -set pythons_suffixes    {27 36 37 38 39}
 +set pythons_suffixes    {27 36 37 38 39 310}
-
+ 
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -100,34 +172,58 @@
+@@ -100,34 +177,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -157,24 +156,24 @@
 +#if {${set_python_default}} {
 +#    default_variants        +python310
 +#}
-
+ 
  #configure.args-append       -DUSE_FIELD3D=OFF
 +variant field3d description {Use Field3D.} {
  depends_lib-append          port:field3d
 +    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
 +    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_FFMPEG=OFF
 +variant ffmpeg description {Add FFmpeg support.} {
  depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
 +    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
 +    configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_JPEGTURBO=OFF
  depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
-
+ 
  #configure.args-append       -DUSE_OPENJPEG=OFF
 +variant openjpeg description {Add OpenJPEG support.} {
  depends_lib-append          port:openjpeg
@@ -182,14 +181,14 @@
 +    configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
 +    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
 +}
-
+ 
  #configure.args-append       -DUSE_OCIO=OFF
 +variant opencolorio description {Add OpenColorIO support.} {
  depends_lib-append          port:opencolorio
 +    configure.args-delete       -DUSE_OCIO:BOOL=FALSE
 +    configure.args-append       -DUSE_OCIO:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_OPENCV=OFF
 +variant opencv description {Use OpenCV.} {
  set opencv_ver 4
@@ -199,29 +198,29 @@
 +    configure.args-delete -DUSE_OPENCV:BOOL=FALSE
 +    configure.args-append -DUSE_OPENCV:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_FREETYPE=OFF
 +variant freetype description {Use FreeType.} {
  depends_lib-append          port:freetype
 +    configure.args-delete -DUSE_FREETYPE:BOOL=FALSE
 +    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
 +}
-
+ 
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -136,21 +232,35 @@
+@@ -136,21 +237,35 @@
  depends_lib-append          port:libheif
-
+ 
  #configure.args-append       -DUSE_PTEX=OFF
 +variant ptex description {Use PTex.} {
  depends_lib-append          port:ptex
 +    configure.args-delete -DUSE_PTEX:BOOL=FALSE
 +    configure.args-append -DUSE_PTEX:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_LIBRAW=OFF
  depends_lib-append          port:libraw
-
+ 
  #configure.args-append       -DUSE_TBB=OFF \
  #                            -DUSE_OPENVDB=OFF
 +variant openvdb description {Use OpenVDB.} {
@@ -232,16 +231,16 @@
 +    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
 +    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
 +}
-
+ 
  # not in MacPorts
  configure.args-append       -DUSE_NUKE=OFF
-
+ 
  #configure.args-append       -DUSE_DICOM=OFF
 +variant dicom description {Use DICOM from dcmtk.} {
  depends_lib-append          port:dcmtk
 +    configure.args-delete -DUSE_DICOM:BOOL=FALSE
 +    configure.args-append -DUSE_DICOM:BOOL=TRUE
 +}
-
+ 
  #configure.args-append       -DUSE_WEBP=OFF
  depends_lib-append          port:webp

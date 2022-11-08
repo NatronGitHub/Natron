@@ -30,18 +30,27 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     if { ${subport} eq "libomp-devel" } {
-        version         14.0.6
-        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
-                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
-                        size    1205476
-        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
+        # Marked obsolete 10/25/2022
+        PortGroup       obsolete 1.0
+        replaced_by     libomp
+        version         15.0.3
     } else {
-        version         14.0.6
-        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
-                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
-                        size    1205476
+        version         15.0.3
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
+
+    distname        openmp-${version}.src
+    distfiles       ${distname}.tar.xz cmake-${version}.src.tar.xz
+
+    checksums \
+        openmp-${version}.src.tar.xz \
+        rmd160  b680eace750b2e8f99950b3c69c7d6c882d08b9d \
+        sha256  ec7bd70a341bd8d33f2b4be7d9961d609cf2596d7042ae7d288975462b694b5e \
+        size    1184424 \
+        cmake-${version}.src.tar.xz \
+        rmd160  4499e760a7ac0069f4fc6055659539c3853402d4 \
+        sha256  21cf3f52c53dc8b8972122ae35a5c18de09c7df693b48b5cd8553c3e3fed090d \
+        size    6980
 
     revision            0
 
@@ -57,12 +66,10 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
     master_sites        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
                         https://releases.llvm.org/${version}
-    distname            openmp-[strsed ${version} {s/-//}].src
     use_xz              yes
     dist_subdir         openmp-release
     worksrcdir          ${distname}
     set rtpath          "runtime/"
-
     patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 
     livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
@@ -124,6 +131,9 @@ post-extract {
     # Patch tool for build with CMAKE_INSTALL_PREFIX
     reinplace "/bulk.*compatibility/s/s\+/s+.*/" \
         ${rtpath}tools/check-depends.pl
+    if {[vercmp ${version} 15.0.0] >= 0} {
+        system -W ${workpath} "mv cmake*.src/Modules/* openmp*/cmake/"
+    }
 }
 
 post-destroot {

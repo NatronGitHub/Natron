@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                libraw
 version             0.20.2
-revision            2
+revision            5
 
 description         Library for RAW image manipulation
 long_description    A library for reading RAW files obtained from digital photo \
@@ -24,7 +24,7 @@ checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
 
 depends_build       port:pkgconfig
 
-depends_lib         path:lib/pkgconfig/jasper.pc:jasper \
+depends_lib         port:jasper \
                     path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
 
@@ -35,6 +35,7 @@ compiler.cxx_standard 2011
 
 # disable openmp as it is not consistently applicable in MacPorts at present
 configure.args-append --disable-openmp
+configure.cppflags-append -DUSE_X3FTOOLS
 
 # don't hardcode a link against libstc++
 patchfiles-append   patch-libraw-no-libstdcxx.diff

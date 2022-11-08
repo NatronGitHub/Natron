@@ -43,6 +43,12 @@ if {${name} ne ${subport}} {
     # Needed for generating shiboken2 documentation
     qt5.depends_build_component sqlite-plugin
 
+    post-patch {
+        # undeclared identifier NPY_ARRAY_UPDATEIFCOPY
+        reinplace "s|NPY_ARRAY_UPDATEIFCOPY|NPY_ARRAY_WRITEBACKIFCOPY|g" \
+            ${worksrcpath}/sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp
+    }
+
     depends_build-append \
         path:bin/cmake:cmake \
         port:py${python.version}-setuptools \

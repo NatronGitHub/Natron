@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         7.85.0
-checksums                       rmd160  04a0040528a6029580d09f2d318384ef59c60861 \
-                                sha256  88b54a6d4b9a48cb4d873c7056dcba997ddd5b7be5a2d537a4acb55c20b04be6 \
-                                size    2480648
+version                         7.86.0
+checksums                       rmd160  697bb97c58ad1d03e279a903a85faccdd5784049 \
+                                sha256  2d61116e5f485581f6d59865377df4463f2e788677ac43222b496d4e49fb627b \
+                                size    2518356
 
 categories                      net www
 platforms                       darwin freebsd
@@ -59,6 +59,7 @@ if {${name} eq ${subport}} {
                                 --without-mbedtls \
                                 --without-nghttp2 \
                                 --without-nss \
+                                --without-openssl \
                                 --without-ssl \
                                 --without-secure-transport \
                                 --without-wolfssl \
@@ -72,6 +73,8 @@ if {${name} eq ${subport}} {
                                 ac_cv_prog_AWK=/usr/bin/awk
 
     configure.cflags-append     -mmacosx-version-min=${macosx_deployment_target}
+
+    configure.checks.implicit_function_declaration.whitelist-append strchr
 
     configure.env               PKG_CONFIG_PATH=${prefix}
 
@@ -154,6 +157,7 @@ if {${name} eq ${subport}} {
     }
 
     variant darwinssl conflicts gnutls mbedtls ssl wolfssl description {Allow secure connections using Apple OS native TLS} {
+        configure.args-delete   --without-ssl
         configure.args-replace  --without-secure-transport --with-secure-transport
         configure.args-append   --without-ca-bundle
     }
@@ -161,6 +165,7 @@ if {${name} eq ${subport}} {
     variant gnutls conflicts darwinssl mbedtls ssl wolfssl description {Allow secure connections using GNU TLS} {
         depends_lib-append      path:lib/pkgconfig/gnutls.pc:gnutls \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
+        configure.args-delete   --without-ssl
         configure.args-replace  --without-gnutls --with-gnutls
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
@@ -168,6 +173,7 @@ if {${name} eq ${subport}} {
     variant mbedtls conflicts darwinssl gnutls ssl wolfssl description {Allow secure connections using mbed TLS (formerly PolarSSL)} {
         depends_lib-append      port:mbedtls \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
+        configure.args-delete   --without-ssl
         configure.args-replace  --without-mbedtls --with-mbedtls
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
@@ -175,6 +181,7 @@ if {${name} eq ${subport}} {
     variant wolfssl conflicts darwinssl mbedtls gnutls ssl description {Allow secure connections using wolfSSL (formerly CyaSSL)} {
         depends_lib-append      port:wolfssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
+        configure.args-delete   --without-ssl
         configure.args-replace  --without-wolfssl --with-wolfssl
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
@@ -225,7 +232,8 @@ if {${name} eq ${subport}} {
     variant ssl conflicts darwinssl gnutls mbedtls wolfssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
-        configure.args-replace  --without-ssl --with-openssl
+        configure.args-delete   --without-ssl
+        configure.args-replace  --without-openssl --with-openssl
         configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
     }
 

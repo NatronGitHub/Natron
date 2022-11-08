@@ -37,14 +37,17 @@ if {${name} ne ${subport}} {
     # fix error with shiboken2 doc building
     patchfiles-append   patch-shiboken2-docs.diff
 
-    # fix build with numpy 1.23+
-    patchfiles-append shiboken2-5.15.2-numpy-1.23.patch
-
     # see https://trac.macports.org/ticket/62135#comment:4
     qt5.min_version     5.12
 
     # Needed for generating shiboken2 documentation
     qt5.depends_build_component sqlite-plugin
+
+    post-patch {
+        # undeclared identifier NPY_ARRAY_UPDATEIFCOPY
+        reinplace "s|NPY_ARRAY_UPDATEIFCOPY|NPY_ARRAY_WRITEBACKIFCOPY|g" \
+            ${worksrcpath}/sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp
+    }
 
     depends_build-append \
         path:bin/cmake:cmake \
@@ -70,7 +73,6 @@ if {${name} ne ${subport}} {
     destroot.args-append \
         --qmake=${qt_qmake_cmd} \
         --cmake=${prefix}/bin/cmake \
-        --skip-cmake \
         --reuse-build
 
     depends_lib-append \

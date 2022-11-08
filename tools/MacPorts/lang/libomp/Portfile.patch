@@ -1,52 +1,63 @@
---- Portfile.orig	2022-10-06 08:08:00.000000000 -0700
-+++ Portfile	2022-10-06 08:08:28.000000000 -0700
+--- Portfile.orig	2022-11-07 09:02:52.000000000 -0800
++++ Portfile	2022-10-06 09:47:33.000000000 -0700
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-
+ 
  PortSystem              1.0
 -PortGroup               cmake 1.1
 +PortGroup               cmake 1.0
  if {${os.major} <= 17} {
      PortGroup           muniversal 1.0
  }
-@@ -30,16 +30,16 @@
-
+@@ -30,28 +30,19 @@
+ 
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
      if { ${subport} eq "libomp-devel" } {
--        version         14.0.6
--        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
--                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
--                        size    1205476
--        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
-+        version                 11.1.0
-+        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
-+                                sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
-+                                size    971628
-+        livecheck.regex         {"llvmorg-([0-9.rc-]+)".*}
+-        # Marked obsolete 10/25/2022
+-        PortGroup       obsolete 1.0
+-        replaced_by     libomp
+-        version         15.0.3
++       version          11.1.0
++       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
++                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
++                        size    971628
++        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
      } else {
--        version         14.0.6
--        checksums       rmd160  adfbff4d86630cd4713ff9ae1e115d9ecd4f51d2 \
--                        sha256  4f731ff202add030d9d68d4c6daabd91d3aeed9812e6a5b4968815cfdff0eb1f \
--                        size    1205476
--        livecheck.regex {"llvmorg-([0-9.]+)".*}
-+        version                 11.1.0
-+        checksums               rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
-+                                sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
-+                                size    971628
-+        livecheck.regex         {"llvmorg-([0-9.]+)".*}
+-        version         15.0.3
++       version          11.1.0
++       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
++                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
++                        size    971628
+         livecheck.regex {"llvmorg-([0-9.]+)".*}
      }
-
-@@ -55,34 +55,38 @@
+ 
+-    distname        openmp-${version}.src
+-    distfiles       ${distname}.tar.xz cmake-${version}.src.tar.xz
+-
+-    checksums \
+-        openmp-${version}.src.tar.xz \
+-        rmd160  b680eace750b2e8f99950b3c69c7d6c882d08b9d \
+-        sha256  ec7bd70a341bd8d33f2b4be7d9961d609cf2596d7042ae7d288975462b694b5e \
+-        size    1184424 \
+-        cmake-${version}.src.tar.xz \
+-        rmd160  4499e760a7ac0069f4fc6055659539c3853402d4 \
+-        sha256  21cf3f52c53dc8b8972122ae35a5c18de09c7df693b48b5cd8553c3e3fed090d \
+-        size    6980
+-
+     revision            0
+ 
+     if {${os.major} <= 12} {
+@@ -64,32 +55,38 @@
      configure.cxxflags-append -std=c++11
      compiler.cxx_standard   2011
-
+ 
 -    master_sites        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 -                        https://releases.llvm.org/${version}
--    distname            openmp-[strsed ${version} {s/-//}].src
 -    use_xz              yes
 -    dist_subdir         openmp-release
 -    worksrcdir          ${distname}
 -    set rtpath          "runtime/"
+-    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
 +    master_sites \
 +        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 +        https://releases.llvm.org/${version}
@@ -55,13 +66,11 @@
 +    dist_subdir             openmp-release
 +    worksrcdir              ${distname}
 +    set rtpath              "runtime/"
-+
++    
 +    # D88252 is to enable arm64 support
 +    patchfiles-append       patch-libomp-use-gettid-on-Leopard.diff \
 +                            reviews.llvm.org_D88252.diff
-
--    patchfiles-append   patch-libomp-use-gettid-on-Leopard.diff
--
+ 
 -    livecheck.url       https://api.github.com/repos/llvm/llvm-project/tags
 +    livecheck.url           https://api.github.com/repos/llvm/llvm-project/tags
  } else {
@@ -78,7 +87,7 @@
 -        name            libomp
 +        github.setup            llvm-mirror openmp 381 svn-tags/RELEASE_
 +        name                    libomp
-
+ 
 -        worksrcdir      openmp-${version}/final/runtime
 -        version         3.8.1
 -        checksums       rmd160  a41054068a127ef84610afef8090109078cb6c46 \
@@ -94,9 +103,9 @@
 -    livecheck.type      none
 +    livecheck.type          none
  }
-
+ 
  depends_build-append    port:perl5
-@@ -108,14 +112,8 @@
+@@ -115,14 +112,8 @@
  # With this, cmake sets the correct library name in the dylibs for the
  # final destination we move them to
  configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
@@ -110,10 +119,18 @@
 -}
 +                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
 +                        -DLIBOMP_OMPT_SUPPORT=FALSE
-
+ 
  variant top_level description \
      "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
-@@ -129,22 +127,17 @@
+@@ -131,30 +122,22 @@
+     # Patch tool for build with CMAKE_INSTALL_PREFIX
+     reinplace "/bulk.*compatibility/s/s\+/s+.*/" \
+         ${rtpath}tools/check-depends.pl
+-    if {[vercmp ${version} 15.0.0] >= 0} {
+-        system -W ${workpath} "mv cmake*.src/Modules/* openmp*/cmake/"
+-    }
+ }
+ 
  post-destroot {
      set instdest ${destroot}${prefix}
      xinstall -d ${instdest}/share/doc/libomp
@@ -129,7 +146,7 @@
      foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
          move ${instdest}/tmp/lib/${p} ${instdest}/lib/libomp/
      }
-
+ 
      if {[variant_isset top_level]} {
 -        foreach h ${hnames} {
 -            system -W ${instdest}/include \
@@ -140,13 +157,14 @@
          foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
              system -W ${instdest}/lib/ \
                "ln -s libomp/${p}"
-@@ -152,8 +145,8 @@
+@@ -162,8 +145,8 @@
      }
-
+ 
      set fpath ${worksrcpath}/${rtpath}
 -    file copy ${fpath}/README.txt ${fpath}/../LICENSE.TXT \
 -        ${instdest}/share/doc/libomp/
 +    file copy ${fpath}/README.txt ${fpath}/../LICENSE.txt \
 +        ${fpath}/../www ${instdest}/share/doc/libomp/
-
+ 
  }
+ 

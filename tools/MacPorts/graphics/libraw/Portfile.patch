@@ -1,11 +1,11 @@
---- Portfile.orig	2022-10-06 08:13:23.000000000 -0700
+--- Portfile.orig	2022-11-07 09:01:57.000000000 -0800
 +++ Portfile	2021-04-08 19:00:55.000000000 -0700
-@@ -3,46 +3,67 @@
+@@ -3,24 +3,37 @@
  PortSystem          1.0
  
  name                libraw
 -version             0.20.2
--revision            2
+-revision            5
 +version             0.18.13
 +set demosaicversion 0.18.8
  
@@ -44,8 +44,7 @@
  
  depends_build       port:pkgconfig
  
--depends_lib         path:lib/pkgconfig/jasper.pc:jasper \
-+depends_lib         port:jasper \
+@@ -28,22 +41,29 @@
                      path:include/turbojpeg.h:libjpeg-turbo \
                      port:lcms2
  
@@ -56,6 +55,7 @@
 -
 -# disable openmp as it is not consistently applicable in MacPorts at present
 -configure.args-append --disable-openmp
+-configure.cppflags-append -DUSE_X3FTOOLS
 -
 -# don't hardcode a link against libstc++
 -patchfiles-append   patch-libraw-no-libstdcxx.diff
