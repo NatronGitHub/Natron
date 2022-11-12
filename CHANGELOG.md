@@ -18,6 +18,11 @@
 
 - Rework the right-click nodegraph menu. #836
 - Allow simple expressions in project settings (e.g., frame range). #837
+- Allow dot in writer name on the command-line. #840
+
+### Plugins
+
+- Fix issues with Transform viewer interaction and undo support. #839
 
 
 ## Version 2.4.3
