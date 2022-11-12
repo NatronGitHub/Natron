@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sebastian Pipping <sebastian@pipping.org>
+Date: Mon, 21 Feb 2022 15:48:32 +0100
+Subject: [PATCH] 00378-support-expat-2-4-5.patch
+
+00378 #
+Support expat 2.4.5
+
+Curly brackets were never allowed in namespace URIs
+according to RFC 3986, and so-called namespace-validating
+XML parsers have the right to reject them a invalid URIs.
+
+libexpat >=2.4.5 has become strcter in that regard due to
+related security issues; with ET.XML instantiating a
+namespace-aware parser under the hood, this test has no
+future in CPython.
+
+References:
+- https://datatracker.ietf.org/doc/html/rfc3968
+- https://www.w3.org/TR/xml-names/
+
+Also, test_minidom.py: Support Expat >=2.4.5
+
+Upstream: https://bugs.python.org/issue46811
+
+Backported from Python 3.
+
+Co-authored-by: Sebastian Pipping <sebastian@pipping.org>
+---
+ Lib/test/test_minidom.py                               | 10 +++++++++-
+ Lib/test/test_xml_etree.py                             |  6 ------
+ .../Library/2022-02-20-21-03-31.bpo-46811.8BxgdQ.rst   |  1 +
+ 3 files changed, 10 insertions(+), 7 deletions(-)
+ create mode 100644 Misc/NEWS.d/next/Library/2022-02-20-21-03-31.bpo-46811.8BxgdQ.rst
+
+diff --git a/Lib/test/test_minidom.py b/Lib/test/test_minidom.py
+index 2eb642395bb..ca8959f16ab 100644
+--- a/Lib/test/test_minidom.py
++++ b/Lib/test/test_minidom.py
+@@ -6,12 +6,14 @@ from StringIO import StringIO
+ from test import support
+ import unittest
+ 
++import pyexpat
+ import xml.dom
+ import xml.dom.minidom
+ import xml.parsers.expat
+ 
+ from xml.dom.minidom import parse, Node, Document, parseString
+ from xml.dom.minidom import getDOMImplementation
++from xml.parsers.expat import ExpatError
+ 
+ 
+ tstfile = support.findfile("test.xml", subdir="xmltestdata")
+@@ -1051,7 +1053,13 @@ class MinidomTest(unittest.TestCase):
+ 
+         # Verify that character decoding errors raise exceptions instead
+         # of crashing
+-        self.assertRaises(UnicodeDecodeError, parseString,
++        if pyexpat.version_info >= (2, 4, 5):
++            self.assertRaises(ExpatError, parseString,
++                    '<fran\xe7ais></fran\xe7ais>')
++            self.assertRaises(ExpatError, parseString,
++                    '<franais>Comment \xe7a va ? Tr\xe8s bien ?</franais>')
++        else:
++            self.assertRaises(UnicodeDecodeError, parseString,
+                 '<fran\xe7ais>Comment \xe7a va ? Tr\xe8s bien ?</fran\xe7ais>')
+ 
+         doc.unlink()
+diff --git a/Lib/test/test_xml_etree.py b/Lib/test/test_xml_etree.py
+index c75d55f05c1..0855bc07ca1 100644
+--- a/Lib/test/test_xml_etree.py
++++ b/Lib/test/test_xml_etree.py
+@@ -1482,12 +1482,6 @@ class BugsTest(unittest.TestCase):
+                 b"<?xml version='1.0' encoding='ascii'?>\n"
+                 b'<body>t&#227;g</body>')
+ 
+-    def test_issue3151(self):
+-        e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
+-        self.assertEqual(e.tag, '{${stuff}}localname')
+-        t = ET.ElementTree(e)
+-        self.assertEqual(ET.tostring(e), b'<ns0:localname xmlns:ns0="${stuff}" />')
+-
+     def test_issue6565(self):
+         elem = ET.XML("<body><tag/></body>")
+         self.assertEqual(summarize_list(elem), ['tag'])
+diff --git a/Misc/NEWS.d/next/Library/2022-02-20-21-03-31.bpo-46811.8BxgdQ.rst b/Misc/NEWS.d/next/Library/2022-02-20-21-03-31.bpo-46811.8BxgdQ.rst
+new file mode 100644
+index 00000000000..6969bd1898f
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2022-02-20-21-03-31.bpo-46811.8BxgdQ.rst
+@@ -0,0 +1 @@
++Make test suite support Expat >=2.4.5
