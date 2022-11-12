@@ -36,6 +36,7 @@
 #include <map>
 #include <vector>
 
+#include <QDebug>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand>
@@ -161,7 +162,12 @@ private:
 
             if ( knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
-                    knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
+                    try {
+                        knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
+                    } catch (std::exception&) {
+                        qDebug() << "KnobUndoCommand::undo: could not remove keyframe from knob" << knob->getName().c_str() << "at time" << _newKeys[i].getTime() << "dimension" << dimension;
+                        // ignore
+                    }
                     modifiedKeyFrame = true;
                 } else if (_valueChangedReturnCode[i] == 2) {
                     //the value change moved a keyframe
