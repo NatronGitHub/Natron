@@ -38,6 +38,7 @@ subport ${name} {
 
         use_autoreconf          yes
         autoreconf.args         --install --verbose --force
+        configure.checks.implicit_function_declaration.whitelist-append strchr
 
         pre-configure {
             xinstall -m 644 -W ${prefix}/share/libtool/build-aux config.guess config.sub ${worksrcpath}
