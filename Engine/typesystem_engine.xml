@@ -238,7 +238,6 @@
        <modify-function signature="downscalePowerOfTwoSmallestEnclosing(unsigned int)const" remove="all"/>
        <modify-function signature="toCanonical(unsigned int,double,RectD,RectD*)const" remove="all"/>
        <modify-function signature="toCanonical_noClipping(unsigned int,double,RectD*)const" remove="all"/>
-       <modify-function signature="debug()const" remove="all"/>
        <modify-function signature="splitIntoSmallerRects(int)const" remove="all"/>
        <modify-function signature="intersect(RectI,RectI*)const">
            <modify-argument index="2">
@@ -738,7 +737,6 @@
    </object-type>
    <object-type name="RectD">
        <modify-function signature="operator=(RectD)" remove="all"/>
-       <modify-function signature="debug()const" remove="all"/>
        <modify-function signature="toPixelEnclosing(unsigned int,double,RectI*)const" remove="all"/>
        <modify-function signature="intersect(RectD,RectD*)const">
            <modify-argument index="2">
