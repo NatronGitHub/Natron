@@ -83,6 +83,8 @@ NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT@g' -i'.bak' "$wrapper_dir"/*.
 # replace NATRON_NAMESPACE::NATRON_NAMESPACE with NATRON_NAMESPACE in the enums wrappers
 $SED -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAMESPACE@g' -i'.bak' "$wrapper_dir/$wrapper_header"
 $SED -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_ENUM@NATRON_ENUM@g' -i'.bak' "$wrapper_dir/$wrapper_header"
+$SED -e 's@"NATRON_ENUM@"Natron@g' -e 's@\.NATRON_ENUM@.Natron@g' -e 's@NATRON_ENUM\.@Natron.@g' -i'.bak' "$wrapper_dir"/*_wrapper.cpp
+
 
 $SED -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\
 #include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2@' -i'.bak' "$wrapper_dir"/*.cpp

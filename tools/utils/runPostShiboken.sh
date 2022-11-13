@@ -73,6 +73,7 @@ NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT@g'  -i'.bak' "$wrapper_dir"/*
 # replace NATRON_NAMESPACE::NATRON_NAMESPACE with NATRON_NAMESPACE in the enums wrappers
 sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_NAMESPACE@NATRON_NAMESPACE@g' -i'.bak' "$wrapper_dir/$wrapper_header"
 sed -e 's@NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::NATRON_ENUM@NATRON_ENUM@g' -i'.bak' "$wrapper_dir/$wrapper_header"
+sed -e 's@"NATRON_ENUM@"Natron@g' -e 's@\.NATRON_ENUM@.Natron@g' -e 's@NATRON_ENUM\.@Natron.@g' -i'.bak' "$wrapper_dir"/*_wrapper.cpp
 
 perl -pe 'BEGIN{undef $/;} s/    \{\n.*SnakeOil(.*\n)*.*SnakeOil.*\n    }//g;' -i'.bak' "$wrapper_dir/$wrapper_source"
 sed -e '/SnakeOil/d' -i'.bak' "$wrapper_dir/$wrapper_source"
