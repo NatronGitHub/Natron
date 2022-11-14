@@ -20,12 +20,14 @@ macx:openmp {
   # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
   # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
-  QMAKE_CC = /opt/local/bin/clang-mp-13
-  QMAKE_CXX = /opt/local/bin/clang++-mp-13
+  # These are set on the command-line, do not try to override it
+  # search for 'printStatusMessage "Building Natron..."' in build-natron.sh
+  #QMAKE_CC = /opt/local/bin/clang-mp-14
+  #QMAKE_CXX = /opt/local/bin/clang++-mp-14
   # Recent clang cannot compile QtMac.mm
-  QMAKE_OBJECTIVE_CC = clang
-  QMAKE_OBJECTIVE_CXX = clang++
-  QMAKE_LINK = $$QMAKE_CXX
+  #QMAKE_OBJECTIVE_CC = clang
+  #QMAKE_OBJECTIVE_CXX = clang++
+  #QMAKE_LINK = $$QMAKE_CXX
   INCLUDEPATH += /opt/local/include /opt/local/include/libomp
   cc_setting.name = CC
   cc_setting.value = $$QMAKE_CC
