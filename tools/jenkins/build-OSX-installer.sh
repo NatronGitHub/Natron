@@ -581,12 +581,21 @@ LOCALRAND=${RANDSTR:0:${#LOCAL}}
 for bin in $natronbins $otherbins; do
     binary="$package/Contents/MacOS/$bin"
     if [ -f "$binary" ]; then
-        rpath="$(otool -l "$binary" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }')"
-        if [ "$rpath" != "@loader_path/../$libdir" ]; then
+        # check if rpath does not contains some path, see https://stackoverflow.com/a/15394738
+        rpath=( $(otool -l "$binary" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }') )
+        if [[! " ${rpath[*]} " =~ " @loader_path/../$libdir " ]]; then
             echo "Warning: The runtime search path in $binary does not contain \"@loader_path/../$libdir\". Please set it in your Xcode project, or link the binary with the flags -Xlinker -rpath -Xlinker \"@loader_path/../$libdir\" . Fixing it!"
             #exit 1
-	    install_name_tool -add_rpath "@loader_path/../$libdir" "$binary"
+            install_name_tool -add_rpath "@loader_path/../$libdir" "$binary"
         fi
+        # remove remnants of llvm path (libraries were copied already)
+        for r in "${rpath[@]}"; do
+            case "$r" in
+                /opt/local/libexec/llvm-*/lib)
+                    install_name_tool -delete_rpath "$r" "$binary"
+                    ;;
+            esac
+        done
         # Test dirs
         if [ ! -d "$pkglib" ]; then
             mkdir "$pkglib"
@@ -594,69 +603,69 @@ for bin in $natronbins $otherbins; do
 
         ### FIX FRAMEWORKS (must be done before dylibs)
         
-	# maydeployqt only fixes the main binary, fix others too
+        # maydeployqt only fixes the main binary, fix others too
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
-	done
+        done
 
-	# Copy and change exec_path of the whole Python framework with libraries
+        # Copy and change exec_path of the whole Python framework with libraries
         # shellcheck disable=SC2043
-	for f in Python; do
+        for f in Python; do
             install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
-	done
+        done
 
 
         ### FIX DYLIBS
         
-	if [ "$LIBGCC" = "1" ]; then
+        if [ "$LIBGCC" = "1" ]; then
             for l in $gcclibs; do
-		lib="lib${l}.dylib"
-		install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+                lib="lib${l}.dylib"
+                install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
             done
-	fi
+        fi
 
-	if [ "$LIBGCC" = "1" ]; then
+        if [ "$LIBGCC" = "1" ]; then
             for l in $gcclibs; do
-		lib="lib${l}.dylib"
-		cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
-		install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
+                lib="lib${l}.dylib"
+                cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
+                install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
             done
             for l in $gcclibs; do
-		lib="lib${l}.dylib"
-		install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-		install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-		for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+                lib="lib${l}.dylib"
+                install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+                install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+                for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
                     if [ -f "$deplib" ]; then
                         install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                     fi
-		done
+                done
             done
             # use gcc's libraries everywhere
             for l in $gcclibs; do
-		lib="lib${l}.dylib"
-		for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
+                lib="lib${l}.dylib"
+                for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
                     if [ -f "$deplib" ]; then
                         install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                     fi
-		done
+                done
             done
-	fi
-	if [ "$COMPILER" = "clang-omp" ]; then
+        fi
+        if [ "$COMPILER" = "clang-omp" ]; then
             for l in $omplibs; do
-		lib="lib${l}.dylib"
-		cp "${MACPORTS}/lib/libomp/$lib" "$pkglib/$lib"
-		install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
+                lib="lib${l}.dylib"
+                cp "${MACPORTS}/lib/libomp/$lib" "$pkglib/$lib"
+                install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
             done
             for l in $omplibs; do
-		lib="lib${l}.dylib"
-		install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-		for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+                lib="lib${l}.dylib"
+                install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+                for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
                     if [ -f "$deplib" ]; then
                         install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                     fi
-		done
+                done
             done
-	fi
+        fi
 
         LIBADD=()
 
@@ -749,27 +758,27 @@ for bin in $natronbins $otherbins; do
             fi
         fi
 
-	# extra steps (maybe not really necessary)
-	#Change @executable_path for binary deps
-	for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER} intl.8; do
-            lib="lib${l}.dylib"
+        # extra steps (maybe not really necessary)
+        #Change @executable_path for binary deps
+        for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER} intl.8; do
+                lib="lib${l}.dylib"
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-	done
+        done
 
-	# NOT NECESSARY?
-	if false; then
-	    # Fix any remaining MacPorts libs
-	    alllibs=( "${package}/Contents/Frameworks/"lib*.dylib )
-	    for l in "${alllibs[@]+${alllibs[@]}}"; do
-		lib="$(basename "$l")"
-		install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-	    done
-	fi
-	
-	if otool -L "$binary" | grep -F "${MACPORTS}"; then
+        # NOT NECESSARY?
+        if false; then
+            # Fix any remaining MacPorts libs
+            alllibs=( "${package}/Contents/Frameworks/"lib*.dylib )
+            for l in "${alllibs[@]+${alllibs[@]}}"; do
+                lib="$(basename "$l")"
+                install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+	        done
+	    fi
+
+        if otool -L "$binary" | grep -F "${MACPORTS}"; then
             echo "Error: MacPorts libraries remaining in $binary, please check"
             exit 1
-	fi
+        fi
 
         $GSED -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" --in-place "$binary"
     fi
