@@ -329,11 +329,13 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         make -C Bundle lodepng.h
     fi
 
+    # poppler >= 21.12 requires C++17
+    # https://github.com/NatronGitHub/openfx-arena/issues/23
     env \
         MINGW="${ISWIN:-}" \
         LICENSE="$NATRON_LICENSE" \
         ${ARENA_FLAGS:-} \
-        CXX="$CXX" \
+        CXX="$CXX17" \
         CONFIG="${COMPILE_TYPE}" \
         OPTFLAG="${OPTFLAG}" \
         BITS="${BITS}" \
