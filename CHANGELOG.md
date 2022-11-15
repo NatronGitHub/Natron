@@ -23,6 +23,7 @@
 ### Plugins
 
 - Fix issues with Transform viewer interaction and undo support. #839
+- SeNoise: Fix handling of the YRotate parameter. #805
 
 
 ## Version 2.4.3
