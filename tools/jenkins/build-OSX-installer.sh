@@ -583,7 +583,7 @@ for bin in $natronbins $otherbins; do
     if [ -f "$binary" ]; then
         # check if rpath does not contains some path, see https://stackoverflow.com/a/15394738
         rpath=( $(otool -l "$binary" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }') )
-        if [[! " ${rpath[*]} " =~ " @loader_path/../$libdir " ]]; then
+        if [[ ! " ${rpath[*]} " =~ " @loader_path/../$libdir " ]]; then
             echo "Warning: The runtime search path in $binary does not contain \"@loader_path/../$libdir\". Please set it in your Xcode project, or link the binary with the flags -Xlinker -rpath -Xlinker \"@loader_path/../$libdir\" . Fixing it!"
             #exit 1
             install_name_tool -add_rpath "@loader_path/../$libdir" "$binary"
@@ -591,7 +591,10 @@ for bin in $natronbins $otherbins; do
         # remove remnants of llvm path (libraries were copied already)
         for r in "${rpath[@]}"; do
             case "$r" in
-                /opt/local/libexec/llvm-*/lib)
+                ${MACPORTS}/libexec/llvm-*/lib)
+                ${MACPORTS}/libexec/llvm-*/lib)
+                    install_name_tool -delete_rpath "$r" "$binary"
+                    ;;
                     install_name_tool -delete_rpath "$r" "$binary"
                     ;;
             esac
