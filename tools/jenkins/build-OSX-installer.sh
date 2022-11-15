@@ -591,10 +591,7 @@ for bin in $natronbins $otherbins; do
         # remove remnants of llvm path (libraries were copied already)
         for r in "${rpath[@]}"; do
             case "$r" in
-                ${MACPORTS}/libexec/llvm-*/lib)
-                ${MACPORTS}/libexec/llvm-*/lib)
-                    install_name_tool -delete_rpath "$r" "$binary"
-                    ;;
+                ${MACPORTS}/libexec/llvm-*/lib|${MACPORTS}/lib)
                     install_name_tool -delete_rpath "$r" "$binary"
                     ;;
             esac
