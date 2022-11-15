@@ -59,7 +59,7 @@ To launch a release, the Natron and plugins repositories must have the appropria
 When launching the build, `RELEASE_TAG` must be set to the version number (eg "2.4.1") and `NATRON_BUILD_NUMBER` must be set to an integer value (typically 1 for the first build, and increment for each new build after fixing issues). See [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh#L340) for more details.
 
 ```
-docker run -it --rm --env RELEASE_TAG=2.4.1 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+docker run -it --rm --env RELEASE_TAG=2.4.4 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
 
 
