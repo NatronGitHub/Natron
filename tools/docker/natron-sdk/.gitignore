@@ -23,6 +23,7 @@ push.sh
 runUnitTests.sh
 uploadArtifactsMain.sh
 zip-python.sh
+zip-python-mingw.sh
 include
 pkg
 builds

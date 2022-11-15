@@ -40,7 +40,8 @@ if [ "$PKGOS" = "OSX" ]; then
 
                 # older version, using clang-3.4
                 CC=clang-mp-3.4
-                CXX="clang++-mp-3.4 -std=c++1z"
+                CXX="clang++-mp-3.4 -std=c++14"
+                CXX17="clang++-mp-3.4 -std=c++1z"
                 GXX=g++-mp-4.9
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
@@ -48,7 +49,8 @@ if [ "$PKGOS" = "OSX" ]; then
             *)
                 # newer OS X / macOS version link with libc++ and can use the system clang
                 CC=clang
-                CXX="clang++ -std=c++1z"
+                CXX="clang++ -std=c++14"
+                CXX17="clang++ -std=c++1z"
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
                 ;;

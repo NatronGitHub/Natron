@@ -17,6 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# see https://stackoverflow.com/a/24067243
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
 # common.sh is sourced multiple times across scripts so it may already have set CWD
 if [ -z "${CWD:-}" ]; then
     CWD="$(pwd)"
