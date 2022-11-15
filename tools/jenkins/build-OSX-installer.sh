@@ -394,7 +394,7 @@ for qtlib in "${qt_libs[@]}"; do
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
-        for lib in libcrypto.1.0.0.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.1.0.0.dylib libz.1.dylib; do
+        for lib in libcrypto.3.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.3.dylib libz.1.dylib; do
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
     fi
