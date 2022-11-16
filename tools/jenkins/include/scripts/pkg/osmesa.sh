@@ -32,7 +32,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc
         LLVM_BUILD=1
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
-    git clone https://github.com/devernay/osmesa-install
+    git clone --depth 1 https://github.com/devernay/osmesa-install
     pushd osmesa-install
     mkdir build
     pushd build

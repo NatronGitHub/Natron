@@ -461,7 +461,7 @@ if [ ! -s "$prefix/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$pr
         download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
         mkdir -p "${prefix}/llvm" || true
     fi
-    git clone https://github.com/devernay/osmesa-install
+    git clone --depth 1 https://github.com/devernay/osmesa-install
     pushd osmesa-install
     mkdir build
     pushd build

@@ -501,12 +501,7 @@ function git_clone_commit() {
     if dobuild; then
         local repo=${1##*/}
         repo=${repo%.git}
-        git clone -n "$1" && ( cd "$repo" && git checkout "$2" )
-        ## the following requires git 2.5.0 with uploadpack.allowReachableSHA1InWant=true
-        #git init
-        #git remote add origin "$1"
-        #git fetch --depth 1 origin "$2"
-        #git checkout FETCH_HEAD
+        git clone --depth 1 -b "$2" "$1"
     fi
 }
 
