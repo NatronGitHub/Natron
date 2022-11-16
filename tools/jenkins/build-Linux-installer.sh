@@ -592,6 +592,8 @@ if [ -x "${NATRON_PYTHON}" ]; then
     if [ "${USE_QT5:-}" != 1 ]; then
         # Qt4 support was dropped after QtPy 1.11.2
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
+        # qtpy bug fix for Qt4
+        $GSED -i "s/^except ImportError:/except (ImportError, PythonQtError):/" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages/qtpy/__init__.py"
     else
         "${NATRON_PYTHON}" -m pip install qtpy
     fi
