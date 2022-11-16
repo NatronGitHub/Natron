@@ -441,16 +441,16 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     fi
 
     if [ "$FAIL" != "1" ]; then
-    NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
-    NATRON_MINOR=$(echo "NATRON_VERSION_MINOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
-    NATRON_REVISION=$(echo "NATRON_VERSION_REVISION" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_MINOR=$(echo "NATRON_VERSION_MINOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_REVISION=$(echo "NATRON_VERSION_REVISION" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
 
-    setBuildOption "NATRON_VERSION_MAJOR" "$NATRON_MAJOR"
-    setBuildOption "NATRON_VERSION_MINOR" "$NATRON_MINOR"
-    setBuildOption "NATRON_VERSION_REVISION" "$NATRON_REVISION"
+        setBuildOption "NATRON_VERSION_MAJOR" "$NATRON_MAJOR"
+        setBuildOption "NATRON_VERSION_MINOR" "$NATRON_MINOR"
+        setBuildOption "NATRON_VERSION_REVISION" "$NATRON_REVISION"
 
-    setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
-    setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
+        setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
+        setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
     fi
     cd "$CWD"
     if [ -z "${NOUPDATE:+x}" ]; then
