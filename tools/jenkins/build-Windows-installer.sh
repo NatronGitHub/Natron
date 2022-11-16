@@ -445,6 +445,9 @@ if [ -x "${NATRON_PYTHON}" ]; then
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
         # bug fix for Qt4
         $GSED -i "s/^except ImportError:/except (ImportError, PythonQtError):/" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages/qtpy/__init__.py"
+        # rebuild the pyc
+        rm "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages/qtpy/__init__.pyc"
+        "${NATRON_PYTHON}" -c "import qtpy"
     else
         "${NATRON_PYTHON}" -m pip install qtpy
     fi
