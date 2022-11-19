@@ -535,12 +535,12 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
                 KnobGuiPtr thisItKey = thisIt->first.lock();
                 KnobGuiPtr otherItKey = otherIt->first.lock();
 
-                if (otherIt->first < thisIt->first) {
+                if (otherIt->first.lock() < thisIt->first.lock()) {
                     //qDebug() << thisItKey->getKnob()->getName().c_str() << "!=" << otherItKey->getKnob()->getName().c_str();
                     
                     oneDifferent = true;
                     break;
-                } else if (!(thisIt->first < otherIt->first)) {
+                } else if (!(thisIt->first.lock() < otherIt->first.lock())) {
                     //qDebug() << thisItKey->getKnob()->getName().c_str() << "==" << otherItKey->getKnob()->getName().c_str();
                     ++otherIt;
                 }
