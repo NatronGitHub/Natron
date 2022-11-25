@@ -356,7 +356,14 @@ template <>
 int
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    return (int)PyInt_AsLong(o);
+    if (PyInt_Check(o)) {
+        return (int)PyInt_AsLong(o);
+    } else if (PyLong_Check(o)) {
+        return (int)PyLong_AsLong(o);
+    } else if (PyFloat_Check(o)) {
+        return (int)PyFloat_AsDouble(o);
+    }
+    return 0;
 }
 
 template <>
@@ -374,7 +381,14 @@ template <>
 double
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    return (double)PyFloat_AsDouble(o);
+    if (PyInt_Check(o)) {
+        return (double)PyInt_AsLong(o);
+    } else if (PyLong_Check(o)) {
+        return (double)PyLong_AsLong(o);
+    } else if (PyFloat_Check(o)) {
+        return PyFloat_AsDouble(o);
+    }
+    return 0.;
 }
 
 template <>
@@ -457,11 +471,11 @@ Knob<T>::evaluateExpression_pod(double time,
     }
 
     if ( PyFloat_Check(ret) ) {
-        *value =  (double)PyFloat_AsDouble(ret);
+        *value =  PyFloat_AsDouble(ret);
     } else if ( PyInt_Check(ret) ) {
-        *value = (int)PyInt_AsLong(ret);
+        *value = (double)PyInt_AsLong(ret);
     } else if ( PyLong_Check(ret) ) {
-        *value = (int)PyLong_AsLong(ret);
+        *value = (double)PyLong_AsLong(ret);
     } else if (PyObject_IsTrue(ret) == 1) {
         *value = 1;
     } else {
