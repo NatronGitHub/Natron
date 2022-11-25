@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-CONFIG += c++11
+CONFIG += c++11 c++14
 
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
