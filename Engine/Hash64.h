@@ -29,9 +29,6 @@
 #include "Global/Macros.h"
 
 #include <vector>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/static_assert.hpp>
-#endif
 
 #include "Global/GlobalDefines.h"
 
@@ -74,9 +71,7 @@ public:
     template<typename T>
     static U64 toU64(T value)
     {
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-            BOOST_STATIC_ASSERT(sizeof(T) <= 8);
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+        static_assert(sizeof(T) <= 8, "Type too large");
         alias_cast_t<T> ac;
 
         ac.data = value;
