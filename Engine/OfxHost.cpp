@@ -38,6 +38,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
@@ -47,6 +48,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QDebug>
 #include <QtCore/QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
@@ -66,11 +68,13 @@ CLANG_DIAG_ON(uninitialized)
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>

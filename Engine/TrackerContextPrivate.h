@@ -32,6 +32,7 @@
 
 #include <list>
 
+// clang-format off
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
@@ -49,6 +50,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
+// clang-format on
 
 #include <QFuture>
 #include <QFutureWatcher>

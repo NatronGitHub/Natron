@@ -31,6 +31,7 @@
 
 #include <gtest/gtest.h>
 
+// clang-format off
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_OFF(maybe-uninitialized)
 #endif
@@ -40,6 +41,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
+// clang-format on
 
 #include "Engine/EngineFwd.h"
 #include "Engine/Transform.h"

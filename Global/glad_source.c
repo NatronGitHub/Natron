@@ -2,9 +2,11 @@
 
 #include "Global/Macros.h"
 
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-prototypes)
 GCC_DIAG_OFF(unused-variable)
+// clang-format on
 
 #ifdef GLAD_DEBUG
 #include "gladDeb/src/glad.c"

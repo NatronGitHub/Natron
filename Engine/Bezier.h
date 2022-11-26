@@ -33,9 +33,11 @@
 #include <string>
 #include <utility>
 
+// clang-format off
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 #include "Global/GlobalDefines.h"
 

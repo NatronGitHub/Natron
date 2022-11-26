@@ -40,11 +40,13 @@
 #include <sstream> // stringstream
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>

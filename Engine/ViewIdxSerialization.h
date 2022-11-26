@@ -29,6 +29,7 @@
 #include "Engine/ViewIdx.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
@@ -37,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 

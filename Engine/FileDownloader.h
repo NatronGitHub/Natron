@@ -28,9 +28,11 @@
 
 #include "Global/Macros.h"
 
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 
 #include "Engine/EngineFwd.h"
 

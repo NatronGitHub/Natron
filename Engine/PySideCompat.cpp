@@ -35,6 +35,7 @@
 
 #include "Global/Macros.h"
 
+// clang-format off
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
@@ -53,6 +54,7 @@ GCC_DIAG_OFF(missing-field-initializers)
 CLANG_DIAG_ON(mismatched-tags)
 GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_ON(missing-field-initializers)
+// clang-format on
 
 #include <algorithm>
 #include <cstring>

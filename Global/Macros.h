@@ -446,7 +446,9 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 
 // silence warnings from the COMPILER() COMPILER_SUPPORTS() and COMPILER_QUIRK() macros below
 #if __has_warning("-Wexpansion-to-defined")
+// clang-format off
 CLANG_DIAG_OFF(expansion-to-defined)
+// clang-format on
 #endif
 
 
@@ -890,8 +892,10 @@ ignore_result(T x)
 
 #if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
 // we want to use override & final, and get no warnings even if not compiling in c++11 mode
+// clang-format off
 CLANG_DIAG_OFF(c++11-extensions)
 //GCC_DIAG_OFF(c++11-extensions) // no corresponding GCC warning option?
+// clang-format on
 #endif
 
 

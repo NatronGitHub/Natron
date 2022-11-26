@@ -33,6 +33,7 @@
 #include <string>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -45,6 +46,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/serialization/version.hpp>
 GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_ON(sign-compare)
+// clang-format on
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 

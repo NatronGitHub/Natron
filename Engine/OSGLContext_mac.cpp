@@ -473,7 +473,9 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
 #endif // if 0
 }
 
+// clang-format off
 GCC_DIAG_OFF(deprecated-declarations)
+// clang-format on
 static const char *RendererIDString(GLint ID)
 {
     static char holder[256] = {0};
@@ -514,7 +516,9 @@ static const char *RendererIDString(GLint ID)
         }
     }
 }
+// clang-format off
 GCC_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 void
 OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)

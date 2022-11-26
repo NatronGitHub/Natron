@@ -40,11 +40,13 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 
+// clang-format off
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 #include <shiboken.h>
 CLANG_DIAG_ON(mismatched-tags)
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 
 #include "Global/PythonUtils.h"
 

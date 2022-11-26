@@ -35,10 +35,12 @@
 
 
 // disable some warnings due to unused parameters
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 # if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 406
 GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 #endif
+// clang-format on
 
 // NATRON_COPY_CHANNELS_UNPREMULT:
 // Repremult R G and B if output is premult and alpha was modified.

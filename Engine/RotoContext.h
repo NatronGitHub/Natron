@@ -32,11 +32,13 @@
 #include <set>
 #include <string>
 
+// clang-format off
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 
 #include "Global/GlobalDefines.h"

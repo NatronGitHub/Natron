@@ -25,6 +25,7 @@
 
 #include "TrackerFrameAccessor.h"
 
+// clang-format off
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #include <libmv/image/array_nd.h>
@@ -32,6 +33,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 
 #include <QtCore/QDebug>
 
