@@ -59,7 +59,7 @@ extern "C" {
 {
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
-                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           //boost_adaptbx::floating_point::exception_trapping::invalid | // crashes on macOS
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
