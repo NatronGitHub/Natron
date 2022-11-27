@@ -2,7 +2,7 @@
 
 # Install expat
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/expat.html
-EXPAT_VERSION=2.4.9
+EXPAT_VERSION=2.5.0
 EXPAT_TAR="expat-${EXPAT_VERSION}.tar.xz"
 EXPAT_SITE="https://sourceforge.net/projects/expat/files/expat/${EXPAT_VERSION}"
 if download_step; then

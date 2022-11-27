@@ -501,6 +501,14 @@ function git_clone_commit() {
     if dobuild; then
         local repo=${1##*/}
         repo=${repo%.git}
+        git clone -n "$1" && ( cd "$repo" && git checkout "$2" )
+    fi
+}
+
+function git_clone_branch_or_tag() {
+    if dobuild; then
+        local repo=${1##*/}
+        repo=${repo%.git}
         git clone --depth 1 -b "$2" "$1"
     fi
 }

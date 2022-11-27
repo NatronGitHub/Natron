@@ -2,7 +2,15 @@
 
 # Install Python3
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python3.html
-PY3_VERSION=3.9.15
+
+# Note:
+# - Python 3.11.0 breaks the Shiboken 1.2.4 build, so
+#   so 3.10 may be the last one to work with Qt4.
+# /home/tmp/Shiboken-1.2.4/libshiboken/sbkenum.cpp: In function 'PyTypeObject* Shiboken::Enum::newTypeWithName(const char*, const char*)':
+# /opt/Natron-sdk/include/python3.11/object.h:136:30: error: lvalue required as left operand of assignment
+#   136 | #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
+#       |                       ~~~~~~~^~~~~~~~~~~~~~~~~~~~
+PY3_VERSION=3.10.8 # 3.11.0 breaks Shiboken 1.2.4
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"

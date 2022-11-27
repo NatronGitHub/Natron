@@ -2,7 +2,7 @@
 
 # Install libxml2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
-LIBXML2_VERSION=2.10.2
+LIBXML2_VERSION=2.10.3
 LIBXML2_VERSION_SHORT=${LIBXML2_VERSION%.*}
 
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.xz"

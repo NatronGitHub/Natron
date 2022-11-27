@@ -2,7 +2,7 @@
 
 # Install libde265
 # see https://github.com/strukturag/libde265/releases
-LIBDE265_VERSION=1.0.8
+LIBDE265_VERSION=1.0.9
 LIBDE265_TAR="libde265-${LIBDE265_VERSION}.tar.gz"
 LIBDE265_SITE="https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}"
 if download_step; then

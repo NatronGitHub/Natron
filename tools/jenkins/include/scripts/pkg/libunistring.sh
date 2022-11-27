@@ -2,10 +2,10 @@
 
 # Install libunistring (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libunistring.html
-LIBUNISTRING_VERSION=1.0
-LIBUNISTRING_VERSION_HEX=0x010000
+LIBUNISTRING_VERSION=1.1
+LIBUNISTRING_VERSION_HEX=0x010100
 #LIBUNISTRING_VERSION_SHORT=${LIBUNISTRING_VERSION%.*}
-LIBUNISTRING_TAR="libunistring-${LIBUNISTRING_VERSION}.tar.gz"
+LIBUNISTRING_TAR="libunistring-${LIBUNISTRING_VERSION}.tar.xz"
 LIBUNISTRING_SITE="https://ftp.gnu.org/gnu/libunistring"
 if download_step; then
     download "$LIBUNISTRING_SITE" "$LIBUNISTRING_TAR"

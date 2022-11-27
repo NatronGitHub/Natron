@@ -6,7 +6,7 @@ AOM_VERSION=3.5.0
 #AOM_TAR="aom-${AOM_VERSION}.tar.gz"
 #AOM_SITE=""
 AOM_GIT="https://aomedia.googlesource.com/aom.git"
-AOM_COMMIT="v${AOM_VERSION}"
+AOM_TAG="v${AOM_VERSION}"
 # if download_step; then
 #     download "$AOM_SITE" "$AOM_TAR"
 # fi
@@ -14,7 +14,7 @@ if build_step && { force_build  || { [ ! -s "$SDK_HOME/lib/pkgconfig/aom.pc" ] |
     start_build
     # untar "$SRC_PATH/$AOM_TAR"
     # pushd "aom-${AOM_VERSION}"
-    git_clone_commit "$AOM_GIT" "$AOM_COMMIT"
+    git_clone_branch_or_tag "$AOM_GIT" "$AOM_TAG"
     pushd aom
     mkdir _build
     pushd _build
