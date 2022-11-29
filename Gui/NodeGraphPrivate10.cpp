@@ -92,6 +92,8 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         NodesGuiList newNodesList;
         std::list<std::pair<NodeSerializationPtr, NodePtr> > newNodesMap;
 
+        std::set<std::string> missingNodePlugins;
+
         ///The script-name of the copy node is different than the one of the original one
         ///We store the mapping so we can restore node links correctly
         std::map<std::string, std::string> oldNewScriptNamesMapping;
@@ -105,6 +107,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                 NodeGuiPtr node = pasteNode( *itOther, *it, offset, group.lock(), std::string(), false, &oldNewScriptNamesMapping);
 
                 if (!node) {
+                    missingNodePlugins.insert((*itOther)->getPluginID());
                     continue;
                 }
                 newNodes->push_back( std::make_pair(oldScriptName, node) );
@@ -114,7 +117,18 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                 const std::string& newScriptName = node->getNode()->getScriptName();
                 oldNewScriptNamesMapping[oldScriptName] = newScriptName;
             }
-            if (newNodes->size() == 0) {
+            if (internalNodesClipBoard.size() != newNodes->size()) {
+                std::ostringstream message;
+                if (!missingNodePlugins.empty()) {
+                    message << QObject::tr("Following plugins are missing:").toStdString() << std::endl << std::endl << "<ul>";
+                    for (std::set<std::string>::const_iterator it = missingNodePlugins.begin(); it != missingNodePlugins.end(); ++it) {
+                        message << "<li>" << *it << "</li>";
+                    }
+                    message << "</ul>";
+                } else {
+                    message << QObject::tr("Unknown error").toStdString() << std::endl;
+                }
+                _publicInterface->getGui()->informationDialog(QObject::tr("Paste error").toStdString(), message.str(), true);
                 return;
             }
 
