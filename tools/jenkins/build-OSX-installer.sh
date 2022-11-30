@@ -946,7 +946,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
         "${NATRON_PYTHON}" -m pip install qtpy
     fi
     # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install six
+    "${NATRON_PYTHON}" -m pip install future six
     # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
     case "$(uname -r)" in
     9.*|10.*|11.*|12.*)
