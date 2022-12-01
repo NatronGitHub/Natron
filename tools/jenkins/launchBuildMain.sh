@@ -170,6 +170,10 @@ echo "PYVERNODOT=${PYVERNODOT}"
 echo "PYTHON_ABIFLAGS=${PYTHON_ABIFLAGS}"
 echo "PYTHON_HOME=${PYTHON_HOME}"
 
+echo "Qt config:"
+echo "QT_VERSION_MAJOR=${QT_VERSION_MAJOR}"
+echo "QTDIR=${QTDIR}"
+
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
 #check that SED works

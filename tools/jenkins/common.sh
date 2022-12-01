@@ -59,6 +59,10 @@ Msys|MINGW64_NT-*|MINGW32_NT-*)
     ;;
 Darwin)
     PKGOS=${PKGOS:-OSX}
+    if [ "$(uname -m)" = "arm64" ]; then
+        # No Qt4 on apple Silicon
+        QT_VERSION_MAJOR=${QT_MAJOR_VERSION:-5}
+    fi
     ;;
 *)
     (>&2 echo "$system not supported!")
@@ -111,7 +115,7 @@ elif [ "$PKGOS" = "OSX" ]; then
             ;;
         *)
             BITS=64
-            ARCH=x86_64
+            ARCH=$(uname -m)
             ;;
     esac;
     # always deploy for the same version as the build system, since we use macports (for now)
@@ -219,7 +223,8 @@ if [ "${PYV:-}" = 2 ]; then
     PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
 fi
 
-QT_VERSION_MAJOR=4
+
+QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
 
 unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
 # save the default PATH to avoid growing it each time we source this file

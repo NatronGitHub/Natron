@@ -152,6 +152,34 @@ echo "========================================================================"
 cat config.pri
 echo "========================================================================"
 
+# Generate pyside bindings (cmake can generate these, qmake can't)
+if [ "$QT_VERSION_MAJOR" = 5 ]; then
+    case "$system" in
+    Linux)
+
+        ;;
+    Msys|MINGW64_NT-*|MINGW32_NT-*)
+
+        ;;
+    Darwin)
+        # Check for a missing link in the MacPorts package
+        [ ! -f ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER} ] && (echo "Error: broken MacPort install"; echo "Please execute:"; echo "sudo ln -s shiboken2 ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER}"; echo "and relaunch.")
+        ;;
+    *)
+        ;;
+    esac
+
+    rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/* || true
+    # ${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include
+    shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:${SDK_HOME}/include:${QTDIR}/include:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
+
+    shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:${SDK_HOME}/include:${QTDIR}/include:${QTDIR}/include/QtWidgets:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+    tools/utils/runPostShiboken2.sh Engine/Qt${QT_VERSION_MAJOR}/NatronEngine natronengine
+    tools/utils/runPostShiboken2.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
+
+fi
+
 # setup build dir
 if [ "${QMAKE_BUILD_SUBDIR:-}" = "1" ]; then
     # disabled by default, because it does not always work right, eg for Info.plist creation on macOS
@@ -235,7 +263,11 @@ QMAKE_FLAGS_EXTRA+=(CONFIG+=enable-osmesa OSMESA_PATH="$OSMESA_PATH" LLVM_PATH="
 # mac compiler
 if [ "$PKGOS" = "OSX" ]; then
     if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
-        SPEC=unsupported/macx-clang
+        if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+            SPEC=unsupported/macx-clang
+        else
+            SPEC=macx-clang
+        fi
     else
         SPEC=macx-g++
     fi
