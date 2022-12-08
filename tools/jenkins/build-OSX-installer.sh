@@ -347,9 +347,9 @@ STRIP=1
 # ERROR: Could not find bundle binary for "/Users/devernay/Development/workspace/tmp/tmp_deploy/Natron-RB-2.3-201909281526-05aaefe-64-no-installer.app"
 # ERROR: "error: otool: can't open file:  (No such file or directory)
 app_for_macdeployqt="$(dirname "${package}")/Natron.app"
-[ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+[ -e  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
 # make a temporary link to Natron.app
-ln -s "${package}" "${app_for_macdeployqt}"
+ln -sf "${package}" "${app_for_macdeployqt}"
 MACDEPLOYQT_OPTS=(-no-strip)
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
@@ -370,53 +370,6 @@ if [ "${QT_VERSION_MAJOR}" = 5 ]; then
 fi
 echo Executing: "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
 "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    echo "*** Repairing Qt4 frameworks"
-    # macdeployqt forgets the Info.plist (necessary for code signing)
-    # For the correct Framework Bundle structure, see https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/FrameworkAnatomy.html
-    for f in "${qt_libs[@]}"; do
-        if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework" ]; then
-            echo "${f}.framework is missing"
-        else
-            echo "fixing ${f}.framework"
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current" ]; then
-                echo "fixing ${f}.framework/Versions/Current"
-                (cd "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions"; ln -s "${QT_VERSION_MAJOR}" Current)
-            fi
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources" ]; then
-                echo "adding ${f}.framework/Versions/Current/Resources"
-                mkdir "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources"
-            fi
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-                echo "adding ${f}.framework/Versions/Current/Resources/Info.plist"
-                if [ -e "${QTDIR}/Library/Frameworks/${f}.framework/Contents/Info.plist" ]; then
-                    echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${QTDIR}/Library/Frameworks/${f}.framework/Contents/Info.plist"
-                    cp "${QTDIR}/Library/Frameworks/${f}.framework/Contents/Info.plist" "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
-                fi
-                if [ -e "${QTDIR}/Library/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-                    echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${QTDIR}/Library/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
-                    cp "${QTDIR}/Library/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
-                fi
-                if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-                    echo "Error: couldn't find Info.plist for ${QTDIR}/Library/Frameworks/${f}.framework"
-                    exit 1
-                fi
-            fi
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/${f}" ]; then
-                echo "creating link ${f}.framework/${f}"
-                (cd "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/${f}" .)
-            fi
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Resources" ]; then
-                echo "creating link ${f}.framework/Resources"
-                (cd "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/Resources" .)
-            fi
-            if [ ! -e "${app_for_macdeployqt}/Contents/Frameworks/${f}.framework/Resources/Info.plist" ]; then
-                echo "Error: ${f}.framework/Resources/Info.plist is missing"
-                exit 1
-            fi
-        fi
-    done
-fi
 # remove temp link
 rm  "${app_for_macdeployqt}"
 
@@ -532,18 +485,19 @@ fi
 # Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
 # Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
+echo "*** Installing Qt plugins dependencies"
 for qtlib in "${qt_libs[@]}"; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ] && [ -f "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/${qtlib}" ]; then
         fw="${package}/Contents/Frameworks/${qtlib}.framework"
         binary="${fw}/Versions/${QT_VERSION_MAJOR}/${qtlib}"
         mkdir -p "$(dirname "${binary}")"
         cp "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/${qtlib}" "${binary}"
-        (cd "${fw}/Versions"; ln -s "${QT_VERSION_MAJOR}" Current)
-        (cd "${fw}"; ln -s "Versions/Current/${qtlib}" .)
+        (cd "${fw}/Versions"; ln -sf "${QT_VERSION_MAJOR}" Current)
+        (cd "${fw}"; ln -sf "Versions/Current/${qtlib}" .)
         # copy resources
         if [ -e "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/Resources" ]; then
             cp -a "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/Resources" "${fw}/Versions/${QT_VERSION_MAJOR}/"
-            (cd "${fw}"; ln -s "Versions/Current/Resources" .)
+            (cd "${fw}"; ln -sf "Versions/Current/Resources" .)
         fi
 
         chmod +w "${binary}"
@@ -557,7 +511,63 @@ for qtlib in "${qt_libs[@]}"; do
     fi
 done
 
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    echo "*** Repairing Qt4 frameworks"
+    # macdeployqt from Qt4 forgets the Info.plist (necessary for code signing)
+    # For the correct Framework Bundle structure, see https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/FrameworkAnatomy.html
+    for f in "${qt_libs[@]}"; do
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework" ]; then
+            echo "Error: ${f}.framework is missing"
+            exit 1
+            #continue
+        fi
+        echo "fixing ${f}.framework"
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current" ]; then
+            echo "fixing ${f}.framework/Versions/Current"
+            (cd "${package}/Contents/Frameworks/${f}.framework/Versions"; ln -sf "${QT_VERSION_MAJOR}" Current)
+        fi
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources" ]; then
+            echo "adding ${f}.framework/Versions/Current/Resources"
+            if [ -d "${package}/Contents/Frameworks/${f}.framework/Resources" ]; then
+                echo "moving  ${f}.framework/Resources to ${f}.framework/Versions/Current/Resources"
+                mv "${package}/Contents/Frameworks/${f}.framework/Resources" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources"
+            else
+                echo "creating ${f}.framework/Versions/Current/Resources"
+                mkdir "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources"
+            fi
+        fi
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
+            echo "adding ${f}.framework/Versions/Current/Resources/Info.plist"
+            if [ -e "${qt_frameworks_dir}/${f}.framework/Contents/Info.plist" ]; then
+                echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${qt_frameworks_dir}/${f}.framework/Contents/Info.plist"
+                cp "${qt_frameworks_dir}/${f}.framework/Contents/Info.plist" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
+            fi
+            if [ -e "${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
+                echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist"
+                cp "${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
+            fi
+            if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
+                echo "Error: couldn't find Info.plist for ${qt_frameworks_dir}/${f}.framework"
+                exit 1
+            fi
+        fi
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/${f}" ]; then
+            echo "creating link ${f}.framework/${f}"
+            (cd "${package}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/${f}" .)
+        fi
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Resources" ]; then
+            echo "creating link ${f}.framework/Resources"
+            (cd "${package}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/Resources" .)
+        fi
+        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Resources/Info.plist" ]; then
+            echo "Error: ${f}.framework/Resources/Info.plist is missing"
+            exit 1
+        fi
+    done
+fi
+
 if [ "${LIBGCC}" = "1" ]; then
+    echo "*** Copying and fixing GCC libs"
     for l in ${gcclibs}; do
         lib="lib${l}.dylib"
         cp "${SDK_HOME}/lib/libgcc/${lib}" "${pkglib}/${lib}"
@@ -583,6 +593,7 @@ if [ "${LIBGCC}" = "1" ]; then
     done
 fi
 if [ "${COMPILER}" = "clang-omp" ]; then
+    echo "*** Copying and fixing OpenMP support lib"
     for l in ${omplibs}; do
         lib="lib${l}.dylib"
         cp "${SDK_HOME}/lib/libomp/${lib}" "${pkglib}/${lib}"
@@ -604,6 +615,7 @@ fi
 #done
 
 # fix library ids
+echo "*** Fixing library IDs"
 pushd "${pkglib}"
 for deplib in *.framework/Versions/*/* lib*.dylib; do
     if [ -f "${deplib}" ]; then
@@ -613,7 +625,7 @@ done
 popd # pushd "${pkglib}"
 
 
-
+echo "*** Copying poppler resources"
 #cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/"
 cp -a "${MACPORTS}/share/poppler" "${package}/Contents/Resources/"
 
@@ -625,7 +637,7 @@ else
     PYSIDE_PKG=PySide2
 fi
 
-echo "* installing ${PYSIDE_PKG}..."
+echo "*** Installing ${PYSIDE_PKG}..."
 
 # the python "system"
 pysys="darwin"
@@ -668,9 +680,9 @@ else
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
     cp -a "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
-    (cd "${package}/Contents/Frameworks" && ln -s "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
+    (cd "${package}/Contents/Frameworks" && ln -sf "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
     #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
-    (cd "${package}/Contents/Frameworks" && ln -s "${PYSIDE}/libpyside2"*.dylib .)
+    (cd "${package}/Contents/Frameworks" && ln -sf "${PYSIDE}/libpyside2"*.dylib .)
     #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
     for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
         for f in "${qt_libs[@]}"; do
@@ -685,7 +697,7 @@ fi
 
 
 
-echo "* Cleaning Python..."
+echo "*** Cleaning Python..."
 # remove pyo files
 #find "${package}/Contents/Frameworks/${PYLIB}" -type f -name '*.pyo' -exec rm {} \;
 # prune large python files
@@ -700,13 +712,13 @@ pushd "${pycfg}"
 chmod -x Makefile Setup Setup.config Setup.local config.c config.c.in python.o || true
 rm -f "libpython${PYVER}.a" "libpython${PYVER}.dylib"
 # yes, the static library is actually a link to the dynamic library on OS X (check before doing this on other archs)
-ln -s ../../../Python "libpython${PYVER}.a"
-ln -s ../../../Python "libpython${PYVER}.dylib"
+ln -sf ../../../Python "libpython${PYVER}.a"
+ln -sf ../../../Python "libpython${PYVER}.dylib"
 popd # pushd "${package}/Contents/Frameworks/${PYLIB}/config"
 
-(cd "${package}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"; ln -s ../Python "libpython${PYVER}.dylib")
+(cd "${package}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"; ln -sf ../Python "libpython${PYVER}.dylib")
 
-echo "* Fixing sonames in ${PYSIDE_PKG}..."
+echo "*** Fixing sonames in ${PYSIDE_PKG}..."
 pushd "${package}/Contents/Frameworks/${PYSIDE}"
 for qtlib in "${qt_libs[@]}" ;do
     for binary in "${qtlib}.so" "${qtlib}${pypart}.so"; do
@@ -788,7 +800,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     fi
 done
 
-echo "* Obfuscate the MacPorts paths..."
+echo "*** Obfuscate the MacPorts paths..."
 
 # generate a pseudo-random string which has the same length as ${MACPORTS}
 RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
@@ -1015,6 +1027,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
 done
 
 # One last check for MacPorts libs
+echo "*** Checking for remaining MacPorts depends"
 alllibs=( "${package}/Contents/Frameworks/"lib*.dylib )
 for l in "${alllibs[@]+${alllibs[@]}}"; do
     lib="$(basename "$l")"
@@ -1079,7 +1092,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
 fi
 
 if [ "${STRIP}" = 1 ]; then
-    echo "* Strip executables..."
+    echo "*** Strip executables..."
     for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         binary="${package}/Contents/MacOS/${bin}";
 
@@ -1118,7 +1131,7 @@ if [ "${LIBGCC}" = 1 ]; then
     for l in ${gcclibs}; do
         lib="lib${l}.dylib"
         if [ -f "${package}/Contents/Frameworks/${lib}" ]; then
-            ln -s "../${lib}" "${package}/Contents/Frameworks/libgcc/${lib}"
+            ln -sf "../${lib}" "${package}/Contents/Frameworks/libgcc/${lib}"
         fi
     done
     mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
@@ -1156,7 +1169,7 @@ export PYDIR="${pkglib}/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 . "${CWD}/zip-python.sh"
 NATRON_PYTHON="${package}/Contents/MacOS/natron-python"
 
-echo "Signing frameworks"
+echo "*** Signing frameworks"
 pushd "${package}/Contents/Frameworks"
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
     for f in "${qt_libs[@]}"; do
@@ -1171,7 +1184,7 @@ else
     "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
 fi
 popd
-echo "Signing libraries"
+echo "*** Signing libraries"
 (cd "${package}/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.dylib)
 echo "Signing OFX plugins"
 (cd "${package}/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.bundle)
@@ -1184,16 +1197,16 @@ if [ -x "${NATRON_PYTHON}" ]; then
         (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*/*.so ./*/*.dylib)
     fi
 fi
-echo "Signing extra binaries"
+echo "*** Signing extra binaries"
 (cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
-echo "Signing app"
+echo "*** Signing app"
 "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
 
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${NATRON_PYTHON}"
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${package}/Contents/Frameworks/Python.framework" "${DYNLOAD}/"*.so
-    echo "Installing pip"
+    echo "*** Installing pip"
     pushd "${PYDIR}/../.."
     if [ "${PYV}" = "2" ]; then
         ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py"
@@ -1240,7 +1253,7 @@ fi
 #     app_for_macdeployqt="$(dirname "${package}")/Natron.app"
 #     [ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
 #     # make a temporary link to Natron.app
-#     ln -s "${package}" "${app_for_macdeployqt}"
+#     ln -sf "${package}" "${app_for_macdeployqt}"
 #     echo Executing: "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
 #     "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
 #     # remove temp link
@@ -1257,12 +1270,14 @@ fi
 
 # Generate documentation
 cd "${CWD}"
+echo "*** Generating doc"
 bash gen-natron-doc.sh
 
 cd "${TMP_BINARIES_PATH}"
 
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
+echo "*** Run basic unit tests"
 # Check manually that the Tests file is there, because gtimeout crashes if binary is not present
 if [ ! -e "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests" ]; then
     echo "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests is not present! This is a bug"
@@ -1272,7 +1287,7 @@ fi
 ${TIMEOUT} -s KILL 1800 "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests" || [ "${QT_VERSION_MAJOR}" = 5 ] 
 rm "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
 
-echo "* Creating the disk image"
+echo "*** Creating the disk image"
 # Make the dmg
 APP_NAME=Natron
 
