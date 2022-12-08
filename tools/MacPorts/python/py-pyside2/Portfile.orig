@@ -23,7 +23,7 @@ checksums               rmd160  e47a57c7d372862a286c7f1fa362896bff2e3b41 \
                         size    3572248
 
 
-python.versions         36 37 38 39 310
+python.versions         37 38 39 310
 
 set llvm_version        13
 

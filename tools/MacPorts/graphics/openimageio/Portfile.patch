@@ -1,5 +1,5 @@
---- Portfile.orig	2022-11-07 09:08:17.000000000 -0800
-+++ Portfile	2022-11-07 09:26:10.000000000 -0800
+--- Portfile.orig	2022-11-30 15:52:36.000000000 -0800
++++ Portfile	2022-12-07 16:53:30.000000000 -0800
 @@ -2,17 +2,17 @@
  
  PortSystem              1.0
@@ -16,7 +16,7 @@
 -checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
 -                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
 -                        size    29115990
-+github.setup            OpenImageIO oiio 2.3.21.0 v
++github.setup            OpenImageIO oiio 2.4.6.0 v
 +revision                100
 +checksums           rmd160  e5ec8940476560dbed3978794065f7039b8fe1ba \
 +                    sha256  f3e8b353caea51b76c1d983f014292f6f9c4ed3f77bfb97ebab40465d9a81dce \
@@ -30,9 +30,9 @@
                          related classes, utilities, and applications.
 +platforms               darwin
 +
-+checksums           rmd160  d261b1789d5ed2fc89fcf74724a941d681dcb1ba \
-+                    sha256  fde69b4652024bfaebf40b8f234d4e4814fafa925ea2e73434453e96eb45bf61 \
-+                    size    32651639
++checksums           rmd160  f7c4cfe9a3221e3768622049e9199fe56bfea51e \
++                    sha256  0754c555853ae06511d67c80bf1355f3dbf5091ed1920fbecbce82ba7d7089f2 \
++                    size    31950420
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
