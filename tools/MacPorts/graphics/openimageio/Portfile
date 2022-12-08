@@ -43,7 +43,9 @@ patch.pre_args  -p1
 patchfiles \
     oiio-2.0.8-invalidatespec.patch \
     oiio-2.0.8-atomic-load.patch \
-    oiio-2.3.20-strnlen.patch
+    oiio-2.3.20-strnlen.patch \
+    oiio-2.4.6-sysutil.patch \
+    oiio-2.4.6-filesystem.patch
 
 set port_libfmt         libfmt9
 cmake.module_path-append \

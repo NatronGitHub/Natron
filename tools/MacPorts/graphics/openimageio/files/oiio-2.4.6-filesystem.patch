@@ -1,0 +1,227 @@
+--- oiio-Release-2.4.6.0/src/libutil/filesystem.cpp.orig	2022-12-07 22:42:34.000000000 -0800
++++ oiio-Release-2.4.6.0/src/libutil/filesystem.cpp	2022-12-07 23:07:36.000000000 -0800
+@@ -45,6 +45,224 @@
+ 
+ 
+ 
++/* ** utimensat, futimens, UTIME_NOW, UTIME_OMIT */
++#define __MP_LEGACY_SUPPORT_UTIMENSAT__       (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101300)
++#define __MP_LEGACY_SUPPORT_SETATTRLISTAT__   (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101300)
++#define __MP_LEGACY_SUPPORT_ATCALLS__         (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101000)
++#define __MP_LEGACY_SUPPORT_NEED_ATCALL_MACROS__  (__MP_LEGACY_SUPPORT_ATCALLS__ || __MP_LEGACY_SUPPORT_SETATTRLISTAT__)
++#define __MP_LEGACY_SUPPORT_NEED_BEST_FCHDIR__    (__MP_LEGACY_SUPPORT_FDOPENDIR__ || __MP_LEGACY_SUPPORT_ATCALLS__ || __MP_LEGACY_SUPPORT_SETATTRLISTAT__)
++
++#if __MP_LEGACY_SUPPORT_UTIMENSAT__
++
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/attr.h>
++#include <sys/time.h>
++#include <sys/fcntl.h>
++#include <unistd.h>
++#include <strings.h>
++
++#if !defined(UTIME_NOW)
++#define UTIME_NOW -1
++#endif
++
++#if !defined(UTIME_OMIT)
++#define UTIME_OMIT -2
++#endif
++
++#ifndef AT_FDCWD
++#define AT_FDCWD                -2
++#endif
++#ifndef AT_EACCESS
++#define AT_EACCESS              0x0010  /* Use effective ids in access check */
++#endif
++#ifndef AT_SYMLINK_NOFOLLOW
++#define AT_SYMLINK_NOFOLLOW     0x0020  /* Act on the symlink itself not the target */
++#endif
++#ifndef AT_SYMLINK_FOLLOW
++#define AT_SYMLINK_FOLLOW       0x0040  /* Act on target of symlink */
++#endif
++#ifndef AT_REMOVEDIR
++#define AT_REMOVEDIR            0x0080  /* Path refers to directory */
++#endif
++
++#if __MP_LEGACY_SUPPORT_NEED_ATCALL_MACROS__
++
++#define PROTECT_ERRNO(what)  ({ int __err = (errno); what; errno = __err; })
++
++#define _ATCALL(fd, p, onerr, what)                             \
++    ({  decltype(what) __result;                                  \
++        int oldCWD = -1;                                        \
++        if (fd != AT_FDCWD && p[0] != '/') {                    \
++            oldCWD = open(".", O_RDONLY);                       \
++            if (best_fchdir(-1) < 0 && oldCWD != -1) {          \
++                close(oldCWD); oldCWD = -1;                     \
++            }                                                   \
++            if (best_fchdir(fd) < 0) {                          \
++                PROTECT_ERRNO(best_fchdir(oldCWD));             \
++                if (oldCWD != -1) PROTECT_ERRNO(close(oldCWD)); \
++                return onerr;                                   \
++            }                                                   \
++        }                                                       \
++        __result = (what);                                      \
++        if (fd != AT_FDCWD && p[0] != '/') {                    \
++            PROTECT_ERRNO(best_fchdir(oldCWD));                 \
++            if (oldCWD != -1) PROTECT_ERRNO(close(oldCWD));     \
++        }                                                       \
++        __result;                                               \
++    })
++
++#define ATCALL(fd, p, what)  _ATCALL(fd, p, -1, what)
++
++#endif /* __MP_LEGACY_SUPPORT_NEED_ATCALL_MACROS__ */
++
++#if __MP_LEGACY_SUPPORT_NEED_BEST_FCHDIR__
++
++#include <unistd.h>
++#include <sys/syscall.h>
++
++static int best_fchdir(int dirfd)
++{
++#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1050
++  return syscall(SYS___pthread_fchdir, dirfd);
++#else
++/* Tiger does not have kernel support for __pthread_fchdir, so we have to fall back to fchdir */
++/* unless we can come up with a per-thread compatible implementation that works on Tiger */
++  return syscall(SYS_fchdir, dirfd);
++#endif
++}
++
++#endif /* __MP_LEGACY_SUPPORT_NEED_BEST_FCHDIR__ */
++
++
++#if __MP_LEGACY_SUPPORT_SETATTRLISTAT__
++
++#include <assert.h>
++#include <stdint.h>
++
++
++static int setattrlistat(int dirfd, const char *pathname, void *a,
++                  void *buf, size_t size, uint32_t flags)
++{
++  int cont = 1,
++    ret = 0;
++
++#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1080
++  /*
++   * Older systems don't correctly check if no attributes are to be set, which usually
++   * means a buffer size of zero and return an error since they malloc a block of
++   * memory with size zero, leading to ENOMEM.
++   *
++   * Emulate the fix from 10.8 for those.
++   */
++  const struct attrlist *al = (const struct attrlist *)a;
++  if (al->commonattr == 0 &&
++      (al->volattr & ~ATTR_VOL_INFO) == 0 &&
++        al->dirattr == 0 &&
++        al->fileattr == 0 &&
++      al->forkattr == 0) {
++    cont = 0;
++  }
++#endif
++
++  if (cont) {
++    ret = ATCALL(dirfd, pathname, setattrlist(pathname, a, buf, size, flags));
++  }
++
++  return ret;
++}
++
++#endif  // __MP_LEGACY_SUPPORT_SETATTRLISTAT__
++
++static struct timespec times_now[2] = {
++	{ .tv_nsec = UTIME_NOW },
++	{ .tv_nsec = UTIME_NOW }
++};
++
++/*
++ * Resolve any UTIME_NOW or UTIME_OMIT and return the attributes buffer and
++ * attributes to pass.  Assumes times_in is writable.
++ */
++static int
++prepare_times_array_and_attrs(struct timespec times_in[2],
++		struct timespec times_out[2], size_t *times_out_size)
++{
++	if (times_in[0].tv_nsec == UTIME_OMIT &&
++			times_in[1].tv_nsec == UTIME_OMIT) {
++		return 0;
++	}
++
++	if (times_in[0].tv_nsec == UTIME_NOW ||
++			times_in[1].tv_nsec == UTIME_NOW) {
++		struct timespec now = {};
++		{
++			/*
++			 * TODO: Replace with nanosecond time when available
++			 */
++			struct timeval tv;
++			/*
++			 * The original code uses __commpage_gettimeofday() with a
++			 * fallback to __gettimeofday() here, but that's only relevant
++			 * in its XNU kernel context.
++			 * Userspace code can comfortably use gettimeofday(), which
++			 * wraps this stuff nicely.
++			 */
++			gettimeofday(&tv, NULL);
++			TIMEVAL_TO_TIMESPEC(&tv, &now);
++		}
++
++		if (times_in[0].tv_nsec == UTIME_NOW) {
++			times_in[0] = now;
++		}
++		if (times_in[1].tv_nsec == UTIME_NOW) {
++			times_in[1] = now;
++		}
++	}
++
++	int attrs = 0;
++	*times_out_size = 0;
++	struct timespec *times_cursor = times_out;
++	if (times_in[1].tv_nsec != UTIME_OMIT) {
++		attrs |= ATTR_CMN_MODTIME;
++		*times_cursor++ = times_in[1];
++		*times_out_size += sizeof(struct timespec);
++	}
++	if (times_in[0].tv_nsec != UTIME_OMIT) {
++		attrs |= ATTR_CMN_ACCTIME;
++		*times_cursor = times_in[0];
++		*times_out_size += sizeof(struct timespec);
++	}
++	return attrs;
++}
++
++static int
++utimensat(int fd, const char *path, const struct timespec _times_in[2], int flags)
++{
++	struct timespec times_in[2];
++	if (_times_in != NULL) {
++		memcpy(&times_in, _times_in, sizeof(times_in));
++	} else {
++		memcpy(&times_in, times_now, sizeof(times_in));
++	}
++
++	size_t attrbuf_size = 0;
++	struct timespec times_out[2] = {};
++	struct attrlist a = {
++		.bitmapcount = ATTR_BIT_MAP_COUNT
++	};
++	a.commonattr = prepare_times_array_and_attrs(times_in, times_out, &attrbuf_size);
++
++	int flags_out = 0;
++	if (flags & AT_SYMLINK_NOFOLLOW) {
++		flags_out |= FSOPT_NOFOLLOW;
++	}
++
++	return setattrlistat(fd, path, &a, &times_out, attrbuf_size, flags_out);
++}
++
++#endif  /*  __MP_LEGACY_SUPPORT_UTIMENSAT__ */
++
++
+ OIIO_NAMESPACE_BEGIN
+ 
+ 

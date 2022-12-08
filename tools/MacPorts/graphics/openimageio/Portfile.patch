@@ -1,5 +1,5 @@
---- Portfile.orig	2022-11-30 15:52:36.000000000 -0800
-+++ Portfile	2022-12-07 16:53:30.000000000 -0800
+--- Portfile.orig	2022-11-25 15:30:35.000000000 -0800
++++ Portfile	2022-12-07 23:09:06.000000000 -0800
 @@ -2,17 +2,17 @@
  
  PortSystem              1.0
@@ -36,7 +36,7 @@
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -32,9 +37,13 @@
+@@ -32,9 +37,15 @@
  
  compiler.thread_local_storage yes
  
@@ -48,11 +48,13 @@
 +patchfiles \
 +    oiio-2.0.8-invalidatespec.patch \
 +    oiio-2.0.8-atomic-load.patch \
-+    oiio-2.3.20-strnlen.patch
++    oiio-2.3.20-strnlen.patch \
++    oiio-2.4.6-sysutil.patch \
++    oiio-2.4.6-filesystem.patch
  
  set port_libfmt         libfmt9
  cmake.module_path-append \
-@@ -54,20 +63,88 @@
+@@ -54,20 +65,88 @@
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -146,7 +148,7 @@
  
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -100,34 +177,58 @@
+@@ -100,34 +179,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -208,7 +210,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -136,21 +237,35 @@
+@@ -136,21 +239,35 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
