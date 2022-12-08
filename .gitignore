@@ -297,3 +297,7 @@ xcshareddata/
 # QTCreator
 *QtCreator.*
 moc_predefs.h
+
+# shiboken-generated files
+Engine/Qt5
+Gui/Qt5

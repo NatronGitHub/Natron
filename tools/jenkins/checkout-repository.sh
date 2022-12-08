@@ -43,18 +43,22 @@ function checkoutRepository() {
         branch="$REPO_COMMIT"
     fi
     echo branch=$branch BRANCH=$REPO_BRANCH COMMIT=$REPO_COMMIT
+    deep=false
     if [ ! -d "$REPO_LOCAL_DIRNAME" ]; then
         # slow version:
-        #$TIMEOUT 1800 $GIT clone "$REPO_URL" "$REPO_LOCAL_DIRNAME"
-        # fast version (depth=1):
-        $TIMEOUT 1800 $GIT clone --depth 1 -b "${branch#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+        if "$deep" && [ -z "$REPO_COMMIT" ]; then
+            $TIMEOUT 1800 $GIT clone "$REPO_URL" -b "${REPO_BRANCH}" "$REPO_LOCAL_DIRNAME"
+        else
+            # fast version (depth=1):
+            $TIMEOUT 1800 $GIT clone --depth 1 -b "${branch#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+        fi
     fi
 
     cd "$REPO_LOCAL_DIRNAME"
 
     if [ -z "$REPO_COMMIT" ]; then
-        $GIT checkout "$REPO_BRANCH"
         REPO_COMMIT=$(git rev-parse HEAD)
+        echo "done, got commit $REPO_COMMIT"
     else
         $GIT checkout "$REPO_COMMIT"
     fi

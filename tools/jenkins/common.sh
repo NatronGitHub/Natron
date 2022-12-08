@@ -225,6 +225,13 @@ fi
 
 
 QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
+if version_gt "${RELEASE_TAG:-0}" 2.5; then
+    QT_VERSION_MAJOR=5
+fi
+case "${GIT_BRANCH:-}" in
+RB-2.[6789])
+    QT_VERSION_MAJOR=5
+esac
 
 unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
 # save the default PATH to avoid growing it each time we source this file

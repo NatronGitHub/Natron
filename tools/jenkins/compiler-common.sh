@@ -34,8 +34,8 @@ if [ "$PKGOS" = "OSX" ]; then
         exit 1
     fi
     if [ "$COMPILER" = "clang" ]; then
-        case "$osxver" in
-            9.*|10.*|11.*|12.*)
+        case "$macosx" in
+            9|10|11|12)
                 # GXX should be an openmp-capable compiler (to compile CImg.ofx)
 
                 # older version, using clang-3.4

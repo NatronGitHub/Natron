@@ -38,6 +38,80 @@ popd () {
 
 updateBuildOptions
 
+macosx=$(uname -r | sed 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|')
+case "$macosx" in
+22) echo "macOS 13.x    Ventura";;
+21) echo "macOS 12.x    Monterey";;
+20) echo "macOS 11.x    Big Sur";;
+19) echo "macOS 10.15.x Catalina";;
+18) echo "macOS 10.14.x Mojave";;
+17) echo "macOS 10.13.x High Sierra";;
+16) echo "macOS 10.12.x Sierra";;
+15) echo "OS X  10.11.x El Capitan";;
+14) echo "OS X  10.10.x Yosemite";;
+13) echo "OS X  10.9.x  Mavericks";;
+12) echo "OS X  10.8.x  Mountain Lion";;
+11) echo "OS X  10.7.x  Lion";;
+10) echo "OS X  10.6.x  Snow Leopard";;
+9) echo "OS X  10.5.x  Leopard";;
+8) echo "OS X  10.4.x  Tiger";;
+7) echo "OS X  10.3.x  Panther";;
+6) echo "OS X  10.2.x  Jaguar";;
+5) echo "OS X  10.1.x  Puma";;
+*) echo "unknown macOS version: $macosx";;
+esac
+
+if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    natronbins=(Natron NatronRenderer NatronProjectConverter natron-python NatronCrashReporter NatronRendererCrashReporter Tests)
+else
+    natronbins=(Natron NatronRenderer NatronProjectConverter natron-python Tests)
+fi
+otherbins=(ffmpeg ffprobe iconvert idiff igrep iinfo exrheader tiffinfo) # iv maybe?
+
+
+## Code signing
+###############
+CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:-8ZN4B9KT99}
+BUNDLE_ID=fr.inria.Natron
+if [ "$CODE_SIGN_IDENTITY" = "-" ]; then
+    # If identity is the single letter "-" (dash), ad-hoc signing is performed. Ad-hoc signing does not use
+    # an identity at all, and identifies exactly one instance of code. Significant restrictions apply to the
+    # use of ad-hoc signed code; consult documentation before using this.
+    echo "code signing with ad-hoc signing."
+    CODESIGN=codesign
+elif (security find-identity -v -p codesigning | grep -F -q "$CODE_SIGN_IDENTITY"); then
+    echo "code signing identity $CODE_SIGN_IDENTITY found"
+    CODESIGN=codesign
+else
+    echo "code signing identity $CODE_SIGN_IDENTITY not found: Disabling code signing."
+    CODESIGN=true
+    CODE_SIGN_IDENTITY=""
+fi
+CODE_SIGN_OPTS=(--force --sign "$CODE_SIGN_IDENTITY")
+CODE_SIGN_MAIN_OPTS=()
+# entitlements for hardened runtime, see https://kb.froglogic.com/squish/mac/troubleshoot/hardened-runtime/
+if [ "$macosx" -ge 18 ]; then # Started with 10.14
+    cat > "${TMP_BINARIES_PATH}/natron.entitlements" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.cs.allow-dyld-environment-variables</key>
+	<true/>
+</dict>
+</plist>
+EOF
+    CODE_SIGN_MAIN_OPTS=(--options runtime)
+    CODE_SIGN_OPTS+=(--timestamp)
+    CODE_SIGN_MAIN_OPTS+=(--entitlements "${TMP_BINARIES_PATH}/natron.entitlements")
+fi
+#if [ "$macosx" -ge 13 ]; then
+#    CODE_SIGN_OPTS+=(--deep)
+#fi
+
+
 DUMP_SYMS=/usr/local/bin/dump_syms
 DSYMUTIL=dsymutil
 if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
@@ -61,6 +135,15 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     fi
     if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
         DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-11 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-11
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-14 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-14
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-15 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-15
     fi
 fi
 
@@ -88,53 +171,39 @@ if [ ! -d "$TMP_BINARIES_PATH" ]; then
     exit 1
 fi
 
-if [ "${DEBUG_SCRIPTS:-}" = "0" ]; then
 if [ -d "${TMP_PORTABLE_DIR}.app" ]; then
     echo "${TMP_PORTABLE_DIR}.app already exists, removing it"
     rm -rf "${TMP_PORTABLE_DIR}.app"
 fi
-fi
+
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
-if [ ! -d "${TMP_PORTABLE_DIR}.app" ]; then
-	mkdir -p "${TMP_PORTABLE_DIR}.app"
-	mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"
-	mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Plugins"
-	mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/MacOS"
-	mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron"
-fi
+mkdir -p "${TMP_PORTABLE_DIR}.app"
+mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"
+mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Plugins"
+mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/MacOS"
+mkdir -p "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron"
 
-#mv "$TMP_BINARIES_PATH/Plugins/"*.ofx.bundle "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron/" || true
-if [ "${DEBUG_SCRIPTS:-}" = "1" ]; then
-   if [ -d "$TMP_BINARIES_PATH/bin" ]; then
-   	cp -r "$TMP_BINARIES_PATH/bin/"* "${TMP_PORTABLE_DIR}.app/Contents/MacOS/"
-   fi
-   if [ -d "$TMP_BINARIES_PATH/OFX/Plugins" ]; then
-   	cp -r "$TMP_BINARIES_PATH/OFX/Plugins/"*.ofx.bundle "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron/" || true
-   fi
-else
-    mv "$TMP_BINARIES_PATH/bin/"* "${TMP_PORTABLE_DIR}.app/Contents/MacOS/"
-    mv "$TMP_BINARIES_PATH/OFX/Plugins/"*.ofx.bundle "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron/" || true
-fi
+cp -a "$TMP_BINARIES_PATH/bin/"* "${TMP_PORTABLE_DIR}.app/Contents/MacOS/"
+cp -a "$TMP_BINARIES_PATH/OFX/Plugins/"*.ofx.bundle "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron/" || true
 
 
-if [ -d "$TMP_BINARIES_PATH/PyPlugs" ] && [ ! -d "${TMP_PORTABLE_DIR}.app/Contents/Plugins/PyPlugs" ]; then
-	mv "$TMP_BINARIES_PATH/PyPlugs" "${TMP_PORTABLE_DIR}.app/Contents/Plugins/"
-fi
-if [ -d "$TMP_BINARIES_PATH/Resources" ] && [ ! -d "${TMP_PORTABLE_DIR}.app/Contents/Resources" ]; then
-	mv "$TMP_BINARIES_PATH/Resources" "${TMP_PORTABLE_DIR}.app/Contents/"
-fi
-NATRON_BIN_VERSION=$NATRON_VERSION_SHORT
+cp -a "$TMP_BINARIES_PATH/PyPlugs" "${TMP_PORTABLE_DIR}.app/Contents/Plugins/"
+cp -a "$TMP_BINARIES_PATH/Resources" "${TMP_PORTABLE_DIR}.app/Contents/"
+
+NATRON_BIN_VERSION="$NATRON_VERSION_SHORT"
 if [ "$NATRON_BIN_VERSION" = "" ]; then
     NATRON_BIN_VERSION="2.0"
 fi
 
 # move Info.plist and PkgInfo, see "copy Info.plist and PkgInfo" in build-natron.sh
-if [ -f "${TMP_PORTABLE_DIR}.app/Contents/MacOS/Info.plist" ]; then
-    mv "${TMP_PORTABLE_DIR}.app/Contents/MacOS/Info.plist" "${TMP_PORTABLE_DIR}.app/Contents/Info.plist"
-else
-    $GSED "s/_REPLACE_VERSION_/${NATRON_BIN_VERSION:-}/" < "$INC_PATH/natron/Info.plist" > "${TMP_PORTABLE_DIR}.app/Contents/Info.plist"
+if [ ! -f "${TMP_PORTABLE_DIR}.app/Contents/Info.plist" ]; then
+    if [ -f "${TMP_PORTABLE_DIR}.app/Contents/MacOS/Info.plist" ]; then
+        mv "${TMP_PORTABLE_DIR}.app/Contents/MacOS/Info.plist" "${TMP_PORTABLE_DIR}.app/Contents/Info.plist"
+    elif [ -f "$INC_PATH/natron/Info.plist" ]; then
+        $GSED "s/_REPLACE_VERSION_/${NATRON_BIN_VERSION:-}/" < "$INC_PATH/natron/Info.plist" > "${TMP_PORTABLE_DIR}.app/Contents/Info.plist"
+    fi
 fi
 if [ -f "${TMP_PORTABLE_DIR}.app/Contents/MacOS/PkgInfo" ]; then
     mv "${TMP_PORTABLE_DIR}.app/Contents/MacOS/PkgInfo" "${TMP_PORTABLE_DIR}.app/Contents/PkgInfo"
@@ -225,7 +294,7 @@ for plugin in "$PLUGINDIR/OFX/Natron"/*.ofx.bundle; do
             for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
                 if [ -f "$deplib" ]; then
                     install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
-		    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+                    install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                 fi
             done
         done
@@ -234,7 +303,7 @@ for plugin in "$PLUGINDIR/OFX/Natron"/*.ofx.bundle; do
         for l in $omplibs; do
             lib="lib${l}.dylib"
             for deplib in "$plugin"/Contents/MacOS/*.ofx "$plugin"/Contents/Libraries/lib*dylib ; do
-		if [ -f "$deplib" ]; then
+                if [ -f "$deplib" ]; then
                     install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                 fi
             done
@@ -252,15 +321,31 @@ if [ ! -d "$package" ]; then
     exit 1
 fi
 
-MACPORTS="/opt/local"
-HOMEBREW="/brew2/local"
+SDK_HOME="${SDK_HOME:-/opt/local}"
 LOCAL="/usr/local"
+HOMEBREW="${LOCAL}"
+if [ -e "/brew2/local" ]; then
+    HOMEBREW="/brew2/local"
+elif [ -e "/opt/homebrew" ]; then
+    HOMEBREW="/opt/homebrew"
+fi
 SBKVER="1.2"
-QTDIR="${MACPORTS}/libexec/qt4"
+QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
+QTDIR=${QTDIR:-${SDK_HOME}/libexec/qt${QT_VERSION_MAJOR}}
+PYTHON_HOME=${PYTHON_HOME:-${SDK_HOME}/Library/Frameworks/Python.framework/Versions/${PYVER}}
 ## all Qt frameworks:
-qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
-## Qt frameworks used by Natron + PySide + Qt plugins:
-#qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
+case "$QT_VERSION_MAJOR" in
+4)
+    qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
+    ## Qt frameworks used by Natron + PySide + Qt plugins:
+    #qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
+    qt_frameworks_dir="${QTDIR}/Library/Frameworks"
+    ;;
+5)
+    qt_libs=(Qt3DAnimation Qt3DCore Qt3DExtras Qt3DInput Qt3DLogic Qt3DQuick Qt3DQuickAnimation Qt3DQuickExtras Qt3DQuickInput Qt3DQuickRender Qt3DQuickScene2D Qt3DRender QtBluetooth QtCharts QtConcurrent QtCore QtDBus QtDataVisualization QtDesigner QtDesignerComponents QtGamepad QtGui QtHelp QtLocation QtMacExtras QtMultimedia QtMultimediaQuick QtMultimediaWidgets QtNetwork QtNetworkAuth QtNfc QtOpenGL QtPdf QtPdfWidgets QtPositioning QtPositioningQuick QtPrintSupport QtQml QtQmlModels QtQmlWorkerScript QtQuick QtQuickControls2 QtQuickParticles QtQuickShapes QtQuickTemplates2 QtQuickTest QtQuickWidgets QtRemoteObjects QtRepParser QtScript QtScriptTools QtScxml QtSensors QtSerialBus QtSerialPort QtSql QtSvg QtTest QtTextToSpeech QtUiPlugin QtWebChannel QtWebEngine QtWebEngineCore QtWebEngineWidgets QtWebSockets QtWidgets QtXml QtXmlPatterns)
+    qt_frameworks_dir="${QTDIR}/lib"
+    ;;
+esac
 STRIP=1
 
 # macdeployqt only works if the package name has the same name as the executable inside:
@@ -268,30 +353,49 @@ STRIP=1
 # ERROR: "error: otool: can't open file:  (No such file or directory)
 app_for_macdeployqt="$(dirname "${package}")/Natron.app"
 [ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+# make a temporary link to Natron.app
 ln -s "${package}" "${app_for_macdeployqt}"
-echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
-"$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" -no-strip
+MACDEPLOYQT_OPTS=(-no-strip)
+for bin in "${natronbins[@]}" "${otherbins[@]}"; do
+    binary="$app_for_macdeployqt/Contents/MacOS/$bin"
+    if [ ! -e "$binary" ] && [ -e "${MACPORTS}/bin/$bin" ]; then
+        cp "${MACPORTS}/bin/$bin" "$binary"
+    fi
+    if [ -e "$binary" ]; then
+        MACDEPLOYQT_OPTS+=(-executable="$binary")
+    fi
+done
+if [ "$QT_VERSION_MAJOR" = 5 ]; then
+    if [ -n "${CODE_SIGN_IDENTITY}" ]; then
+        MACDEPLOYQT_OPTS+=(-codesign="${CODE_SIGN_IDENTITY}")
+    fi
+    #if [ "$macosx" -ge 18 ]; then
+    #    MACDEPLOYQT_OPTS+=(-hardened-runtime)
+    #fi
+fi
+echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
+"$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
+# remove temp link
 rm  "${app_for_macdeployqt}"
 
-binary="$package/Contents/MacOS/Natron"
+natron_binary="$package/Contents/MacOS/Natron"
 libdir="Frameworks"
 pkglib="$package/Contents/$libdir"
 
-if [ ! -x "$binary" ]; then
-    echo "Error: $binary does not exist or is not an executable"
+if [ ! -x "${natron_binary}" ]; then
+    echo "Error: ${natron_binary} does not exist or is not an executable"
     exit 1
 fi
 
-# macdeployqt doesn't deal correctly with libs in ${MACPORTS}/lib/libgcc : handle them manually
+# macdeployqt does not deal correctly with libs in ${SDK_HOME}/lib/libgcc : handle them manually
 LIBGCC=0
-if otool -L "$binary" | grep -F -q "${MACPORTS}/lib/libgcc"; then
+if otool -L "${natron_binary}" | grep -F -q "${SDK_HOME}/lib/libgcc"; then
     LIBGCC=1
 fi
 COPY_LIBCXX=0
-if otool -L "$binary" | grep -F -q "/usr/lib/libc++"; then
-    osmajor=$(uname -r | $GSED 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|')
+if otool -L "${natron_binary}" | grep -F -q "/usr/lib/libc++"; then
     # libc++ appeared in on Lion 10.7 (osmajor=11)
-    if [ "$osmajor" -lt 11 ]; then
+    if [ "$macosx" -lt 11 ]; then
         COPY_LIBCXX=1
     fi
 fi
@@ -299,37 +403,38 @@ fi
 #Copy and change exec_path of the whole Python framework with libraries
 rm -rf "$pkglib/Python.framework"
 mkdir -p "$pkglib/Python.framework/Versions/${PYVER}/lib"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}" "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
-rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Resources"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Resources" "$pkglib/Python.framework/Versions/${PYVER}/Resources"
-rm -rf "$pkglib/Python.framework/Versions/${PYVER}/Python"
-cp "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
-cp -r "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/include" "$pkglib/Python.framework/Versions/${PYVER}/"
-chmod -R u+w "$pkglib/Python.framework" # fixes ERROR: "error: install_name_tool: can't open input file: /Users/devernay/Development/workspace/tmp/tmp_deploy/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config/libpython2.7.dylib for writing (Permission denied)
-chmod 755 "$pkglib/Python.framework/Versions/${PYVER}/Python"
-install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/${PYVER}/Python"
-ln -sf "Versions/${PYVER}/Python" "$pkglib/Python.framework/Python"
+ln -sf "${PYVER}" "$pkglib/Python.framework/Versions/Current"
+cp -r "${PYTHON_HOME}/lib/python${PYVER}" "$pkglib/Python.framework/Versions/Current/lib/python${PYVER}"
+rm -rf "$pkglib/Python.framework/Versions/Current/Resources"
+cp -r "${PYTHON_HOME}/Resources" "$pkglib/Python.framework/Versions/Current/Resources"
+rm -rf "$pkglib/Python.framework/Versions/Current/Python"
+cp "${PYTHON_HOME}/Python" "$pkglib/Python.framework/Versions/Current/Python"
+cp -r "${PYTHON_HOME}/include" "$pkglib/Python.framework/Versions/Current/"
+chmod -R u+w "$pkglib/Python.framework"
+chmod 755 "$pkglib/Python.framework/Versions/Current/Python"
+install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/${PYVER}/Python" "$pkglib/Python.framework/Versions/Current/Python"
+ln -sf "Versions/Current/Python" "$pkglib/Python.framework/Python"
 
-rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/site-packages/"*
-#rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/__pycache__"
-#rm -rf "$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/*/__pycache__"
-#FILES=`ls -l "${MACPORTS}/Library/Frameworks/Python.framework/Versions/${PYVER}/lib|awk" '{print $9}'`
+rm -rf "$pkglib/Python.framework/Versions/Current/lib/python${PYVER}/site-packages/"*
+#rm -rf "$pkglib/Python.framework/Versions/Current/lib/python${PYVER}/__pycache__"
+#rm -rf "$pkglib/Python.framework/Versions/Current/lib/python${PYVER}/*/__pycache__"
+#FILES=`ls -l "${PYTHON_HOME}/lib|awk" '{print $9}'`
 #for f in FILES; do
 #    #FILE=echo "{$f}" | $GSED "s/cpython-34.//g"
-#    cp -r "$f" "$pkglib/Python.framework/Versions/${PYVER}/lib/$FILE"
+#    cp -r "$f" "$pkglib/Python.framework/Versions/Current/lib/$FILE"
 #done
 
 # a few elements of ${TMP_PORTABLE_DIR}.app/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}/lib-dynload may load other libraries
-DYNLOAD="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}/lib-dynload"
+DYNLOAD="$pkglib/Python.framework/Versions/Current/lib/python${PYVER}/lib-dynload"
 if [ ! -d "${DYNLOAD}" ]; then
     echo "lib-dynload not present"
     exit 1
 fi
 
-MPLIBS0="$(for i in "$pkglib/Python.framework/Versions/${PYVER}/Python" "${DYNLOAD}"/*.so; do otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+MPLIBS0="$(for i in "$pkglib/Python.framework/Versions/Current/Python" "${DYNLOAD}"/*.so; do otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
 # also add first-level and second-level dependencies 
-MPLIBS1="$(for i in $MPLIBS0; do echo "$i"; otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
-MPLIBS="$(for i in $MPLIBS1; do echo "$i"; otool -L "$i" | grep -F "${MACPORTS}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+MPLIBS1="$(for i in $MPLIBS0; do echo "$i"; otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+MPLIBS="$(for i in $MPLIBS1; do echo "$i"; otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
 for mplib in $MPLIBS; do
     if [ ! -f "$mplib" ]; then
         echo "missing python lib-dynload depend $mplib"
@@ -341,7 +446,7 @@ for mplib in $MPLIBS; do
         chmod +w "$pkglib/${lib}"
     fi
     install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
-    for deplib in "$pkglib/Python.framework/Versions/${PYVER}/Python" "${DYNLOAD}"/*.so; do
+    for deplib in "$pkglib/Python.framework/Versions/Current/Python" "${DYNLOAD}"/*.so; do
 	if [ -f "$deplib" ]; then
             install_name_tool -change "${mplib}" "@executable_path/../Frameworks/$lib" "$deplib"
         fi
@@ -358,7 +463,7 @@ for mplib in $MPLIBS; do
 done
 
 # qt4-mac@4.8.7_2 doesn't deploy plugins correctly. macdeployqt ${TMP_PORTABLE_DIR}.app -verbose=2 gives:
-# Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Framew/plugins" 
+# Log: Deploying plugins from "/opt/local/libexec/qt4/Library/Frameworks/plugins" 
 # see https://trac.macports.org/ticket/49344
 if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
     echo "Warning: Qt plugins not copied by macdeployqt, see https://trac.macports.org/ticket/49344. Copying them now."
@@ -369,12 +474,12 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
         if [ -f "$binary" ]; then
             chmod +w "$binary"
             for lib in libjpeg.8.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
-                install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+                install_name_tool -change "${SDK_HOME}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
             done
             for f in "${qt_libs[@]}"; do
-                install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+                install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
             done
-            if otool -L "$binary" | grep -F "${MACPORTS}"; then
+            if otool -L "$binary" | grep -F "${SDK_HOME}"; then
                 echo "Error: MacPorts libraries remaining in $binary, please check"
                 exit 1
             fi
@@ -385,17 +490,26 @@ fi
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
 # Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
 for qtlib in "${qt_libs[@]}"; do
-    if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
-        binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
+    if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ] && [ -f "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/${qtlib}" ]; then
+        fw="${package}/Contents/Frameworks/${qtlib}.framework"
+        binary="${fw}/Versions/${QT_VERSION_MAJOR}/${qtlib}"
         mkdir -p "$(dirname "${binary}")"
-        cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
+        cp "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/${qtlib}" "${binary}"
+        (cd "${fw}/Versions"; ln -s "${QT_VERSION_MAJOR}" Current)
+        (cd "${fw}"; ln -s "Versions/Current/${qtlib}" .)
+        # copy resources
+        if [ -e "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/Resources" ]; then
+            cp -a "${qt_frameworks_dir}/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/Resources" "${fw}/Versions/${QT_VERSION_MAJOR}/"
+            (cd "${fw}"; ln -s "Versions/Current/Resources" .)
+        fi
+
         chmod +w "${binary}"
-        install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "$binary"
+        install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/${QT_VERSION_MAJOR}/${qtlib}" "$binary"
         for f in "${qt_libs[@]}"; do
-            install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
         done
         for lib in libcrypto.3.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.3.dylib libz.1.dylib; do
-            install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
+            install_name_tool -change "${SDK_HOME}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
     fi
 done
@@ -403,15 +517,15 @@ done
 if [ "$LIBGCC" = "1" ]; then
     for l in $gcclibs; do
         lib="lib${l}.dylib"
-        cp "${MACPORTS}/lib/libgcc/$lib" "$pkglib/$lib"
+        cp "${SDK_HOME}/lib/libgcc/$lib" "$pkglib/$lib"
         install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     done
     for l in $gcclibs; do
         lib="lib${l}.dylib"
-        install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-        for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+        #install_name_tool -change "${SDK_HOME}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "${natron_binary}"
+        for deplib in "$pkglib/"*.dylib "$pkglib/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
             if [ -f "$deplib" ]; then
-                install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
+                install_name_tool -change "${SDK_HOME}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
             fi
         done
     done
@@ -428,13 +542,13 @@ fi
 if [ "$COMPILER" = "clang-omp" ]; then
     for l in $omplibs; do
         lib="lib${l}.dylib"
-        cp "${MACPORTS}/lib/libomp/$lib" "$pkglib/$lib"
+        cp "${SDK_HOME}/lib/libomp/$lib" "$pkglib/$lib"
         install_name_tool -id "@executable_path/../Frameworks/$lib" "$pkglib/$lib"
     done
     for l in $omplibs; do
         lib="lib${l}.dylib"
-        install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-        for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+        #install_name_tool -change "${SDK_HOME}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "${natron_binary}"
+        for deplib in "$pkglib/"*.dylib "$pkglib/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
             if [ -f "$deplib" ]; then
                 install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
             fi
@@ -442,9 +556,9 @@ if [ "$COMPILER" = "clang-omp" ]; then
     done
 fi
 # shellcheck disable=SC2043
-for f in Python; do
-    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "$binary"
-done
+#for f in Python; do
+#    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${natron_binary}"
+#done
 
 # fix library ids
 pushd "$pkglib"
@@ -455,16 +569,6 @@ for deplib in *.framework/Versions/*/* lib*.dylib; do
 done
 popd # pushd "$pkglib"
 
-if otool -L "$binary" | grep -F "${MACPORTS}"; then
-    echo "Error: MacPorts libraries remaining in $binary, please check"
-    exit 1
-fi
-for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
-    if otool -L "$deplib" | grep -F "${MACPORTS}"; then
-        echo "Error: MacPorts libraries remaining in $deplib, please check"
-        exit 1
-    fi
-done
 
 
 #cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/"
@@ -472,7 +576,13 @@ cp -a "${MACPORTS}/share/poppler" "${package}/Contents/Resources/"
 
 
 # install PySide in site-packages
-echo "* installing PySide..."
+if [ "$QT_VERSION_MAJOR" = 4 ]; then
+    PYSIDE_PKG=PySide
+else
+    PYSIDE_PKG=PySide2
+fi
+
+echo "* installing ${PYSIDE_PKG}..."
 
 # the python "system"
 pysys="darwin"
@@ -483,40 +593,56 @@ else
     pypart="-python${PYVER}"
 fi
 
-PYLIB="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
-PYSIDE="${PYLIB}/site-packages/PySide"
-rm -rf "${package}/Contents/${PYSIDE}"
-cp -pPR "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}"
-pyshiboken="${PYLIB}/site-packages/shiboken.so"
-rm -rf "${package}/Contents/${pyshiboken}"
-cp "${MACPORTS}/Library/${pyshiboken}" "${package}/Contents/${pyshiboken}"
-# fix shiboken.so
-l="shiboken${pypart}.${SBKVER}"
-dylib="lib${l}.dylib"
-binary="${package}/Contents/${pyshiboken}"
-install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$binary"
-
-# install pyside and shiboken libs, and fix deps from Qt
-for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
+PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
+PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
+rm -rf "${package}/Contents/Frameworks/${PYSIDE}"
+cp -a "${MACPORTS}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
+if [ "$QT_VERSION_MAJOR" = 4 ]; then
+    PYSHIBOKEN="${PYLIB}/site-packages/shiboken.so"
+    rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    cp "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    # fix shiboken.so
+    l="shiboken${pypart}.${SBKVER}"
     dylib="lib${l}.dylib"
-    binary="${package}/Contents/Frameworks/$dylib"
-    cp "${MACPORTS}/lib/$dylib" "$binary"
-    for f in "${qt_libs[@]}"; do
-        install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+    binary="${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "${binary}"
+    # install pyside and shiboken libs, and fix deps from Qt
+    for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
+        dylib="lib${l}.dylib"
+        binary="${package}/Contents/Frameworks/$dylib"
+        cp "${MACPORTS}/lib/$dylib" "$binary"
+        for f in "${qt_libs[@]}"; do
+            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
+        done
     done
-done
+else
+    PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
+    cp -a "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
+    (cd "${package}/Contents/Frameworks" && ln -s "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
+    #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
+    (cd "${package}/Contents/Frameworks" && ln -s "${PYSIDE}/libpyside2"*.dylib .)
+    #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
+    for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
+        for f in "${qt_libs[@]}"; do
+            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
+        done
+    done
+
+fi
+
 
 
 echo "* Cleaning Python..."
 # remove pyo files
-#find "${package}/Contents/${PYLIB}" -type f -name '*.pyo' -exec rm {} \;
+#find "${package}/Contents/Frameworks/${PYLIB}" -type f -name '*.pyo' -exec rm {} \;
 # prune large python files
-(cd "${package}/Contents/${PYLIB}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
+(cd "${package}/Contents/Frameworks/${PYLIB}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
 if [ "$PYV" = 3 ]; then
-    pycfg="${package}/Contents/${PYLIB}/config-${PYVER}-${pysys}"
+    pycfg="${package}/Contents/Frameworks/${PYLIB}/config-${PYVER}-${pysys}"
 else
-    pycfg="${package}/Contents/${PYLIB}/config"
+    pycfg="${package}/Contents/Frameworks/${PYLIB}/config"
 fi
 pushd "${pycfg}"
 chmod -x Makefile Setup Setup.config Setup.local config.c config.c.in python.o || true
@@ -524,17 +650,20 @@ rm -f "libpython${PYVER}.a" "libpython${PYVER}.dylib"
 # yes, the static library is actually a link to the dynamic library on OS X (check before doing this on other archs)
 ln -s ../../../Python "libpython${PYVER}.a"
 ln -s ../../../Python "libpython${PYVER}.dylib"
-popd # pushd "${package}/Contents/${PYLIB}/config"
+popd # pushd "${package}/Contents/Frameworks/${PYLIB}/config"
 
 (cd "${package}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"; ln -s ../Python "libpython${PYVER}.dylib")
 
-echo "* Fixing sonames in PySide..."
+echo "* Fixing sonames in ${PYSIDE_PKG} (may be only necessary for Qt4)..."
+pushd "${package}/Contents/Frameworks/${PYSIDE}"
 for qtlib in "${qt_libs[@]}" ;do
-    binary="${package}/Contents/${PYSIDE}/${qtlib}.so"
-    if [ -f "$binary" ]; then
-        install_name_tool -id "@executable_path/../${PYSIDE}/${qtlib}.so" "$binary"
+    for binary in "${qtlib}.so" "${qtlib}${pypart}.so"; do
+        if [ ! -e "$binary" ]; then
+            continue
+        fi
+        install_name_tool -id "@executable_path/../Frameworks/${PYSIDE}/${qtlib}.so" "$binary"
         for f in "${qt_libs[@]}"; do
-            install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
         done
 
         for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
@@ -552,21 +681,59 @@ for qtlib in "${qt_libs[@]}" ;do
             echo "Error: MacPorts libraries remaining in $binary, please check"
             exit 1
         fi
-    fi
+    done
 done
+popd
 
 #############################################################################
 # Other binaries
 
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    natronbins="Natron NatronRenderer NatronProjectConverter natron-python NatronCrashReporter NatronRendererCrashReporter Tests"
-else
-    natronbins="Natron NatronRenderer NatronProjectConverter natron-python Tests"
-fi
+for bin in "${otherbins[@]}"; do
+    # fix macports libs
+    MPLIBS0="$(otool -L "$package/Contents/MacOS/$bin" | grep -F "${SDK_HOME}/lib" | grep -F -v ':' |sort|uniq |awk '{print $1}')"
+    # also add first-level and second-level dependencies 
+    MPLIBS1="$(for i in $MPLIBS0; do echo "$i"; otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+    MPLIBS="$(for i in $MPLIBS1; do echo "$i"; otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
+    for mplib in $MPLIBS; do
+        if [ ! -f "$mplib" ]; then
+            echo "missing $bin depend $mplib"
+            exit 1
+        fi
+        lib="$(echo "$mplib" | awk -F / '{print $NF}')"
+        if [ ! -f "$pkglib/${lib}" ]; then
+            echo "copying missing lib ${lib}"
+            cp "$mplib" "$pkglib/${lib}"
+            chmod +w "$pkglib/${lib}"
+        fi
+        install_name_tool -change "$mplib" "@executable_path/../Frameworks/$lib" "$package/Contents/MacOS/$bin"
+    done
+done
 
-otherbins="ffmpeg ffprobe iconvert idiff igrep iinfo exrheader tiffinfo" # iv maybe?
-for bin in $otherbins; do
-    cp "${MACPORTS}/bin/$bin" "$package/Contents/MacOS/"
+# Fix rpath
+for bin in "${natronbins[@]}" "${otherbins[@]}"; do
+    binary="$package/Contents/MacOS/$bin"
+    if [ ! -x "$binary" ]; then
+        continue
+    fi
+    if [ "$LIBGCC" = "1" ]; then
+        for l in $gcclibs; do
+            lib="lib${l}.dylib"
+            install_name_tool -change "${SDK_HOME}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "${binary}" || true
+        done
+    fi
+    if [ "$COMPILER" = "clang-omp" ]; then
+        for l in $omplibs; do
+            lib="lib${l}.dylib"
+            install_name_tool -change "${SDK_HOME}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "${binary}" || true
+        done
+    fi
+    for f in Python; do
+        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${binary}" || true
+    done
+    if [ "$QT_VERSION_MAJOR" = 5 ]; then
+        install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${binary}" || true
+        install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${binary}" || true
+    fi
 done
 
 echo "* Obfuscate the MacPorts paths..."
@@ -574,28 +741,40 @@ echo "* Obfuscate the MacPorts paths..."
 # generate a pseudo-random string which has the same length as $MACPORTS
 RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
 MACRAND=${RANDSTR:0:${#MACPORTS}}
-HOMEBREWRAND=${RANDSTR:0:${#HOMEBREW}}
-LOCALRAND=${RANDSTR:0:${#LOCAL}}
+HOMEBREWRAND=${RANDSTR:1:${#HOMEBREW}}
+LOCALRAND=${RANDSTR:2:${#LOCAL}}
 
+for deplib in "$pkglib/"*.framework/Versions/*/* "$pkglib/"lib*.dylib; do
+    if otool -L "$deplib" | grep -F "${MACPORTS}"; then
+        echo "Error: MacPorts libraries remaining in $deplib, please check"
+        exit 1
+    fi
+done
 
-for bin in $natronbins $otherbins; do
+for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$package/Contents/MacOS/$bin"
     if [ -f "$binary" ]; then
+        if otool -L "${binary}" | grep -F "${MACPORTS}"; then
+            echo "Error: MacPorts libraries remaining in ${binary}, please check"
+            exit 1
+        fi
         # check if rpath does not contains some path, see https://stackoverflow.com/a/15394738
         rpath=( $(otool -l "$binary" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }') )
-        if [[ ! " ${rpath[*]} " =~ " @loader_path/../$libdir " ]]; then
+        if [ ${#rpath[@]} -eq 0 ] || [[ ! " ${rpath[*]} " =~ " @loader_path/../$libdir " ]]; then
             echo "Warning: The runtime search path in $binary does not contain \"@loader_path/../$libdir\". Please set it in your Xcode project, or link the binary with the flags -Xlinker -rpath -Xlinker \"@loader_path/../$libdir\" . Fixing it!"
             #exit 1
             install_name_tool -add_rpath "@loader_path/../$libdir" "$binary"
         fi
         # remove remnants of llvm path (libraries were copied already)
-        for r in "${rpath[@]}"; do
-            case "$r" in
-                ${MACPORTS}/libexec/llvm-*/lib|${MACPORTS}/lib)
-                    install_name_tool -delete_rpath "$r" "$binary"
-                    ;;
-            esac
-        done
+        if [ ${#rpath[@]} -gt 0 ]; then
+            for r in "${rpath[@]}"; do
+                case "$r" in
+                    "${MACPORTS}"/libexec/llvm-*/lib|"${MACPORTS}"/lib)
+                        install_name_tool -delete_rpath "$r" "$binary"
+                        ;;
+                esac
+            done
+        fi
         # Test dirs
         if [ ! -d "$pkglib" ]; then
             mkdir "$pkglib"
@@ -605,7 +784,7 @@ for bin in $natronbins $otherbins; do
         
         # maydeployqt only fixes the main binary, fix others too
         for f in "${qt_libs[@]}"; do
-            install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
+            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "$binary"
         done
 
         # Copy and change exec_path of the whole Python framework with libraries
@@ -634,7 +813,7 @@ for bin in $natronbins $otherbins; do
                 lib="lib${l}.dylib"
                 install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$binary"
                 install_name_tool -change "/usr/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-                for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+                for deplib in "$pkglib/"*".dylib" "$pkglib/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
                     if [ -f "$deplib" ]; then
                         install_name_tool -change "${MACPORTS}/lib/libgcc/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                     fi
@@ -659,7 +838,7 @@ for bin in $natronbins $otherbins; do
             for l in $omplibs; do
                 lib="lib${l}.dylib"
                 install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$binary"
-                for deplib in "$pkglib/"*.dylib "$pkglib/"*.framework/Versions/4/*; do
+                for deplib in "$pkglib/"*.dylib "$pkglib/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
                     if [ -f "$deplib" ]; then
                         install_name_tool -change "${MACPORTS}/lib/libomp/$lib" "@executable_path/../Frameworks/$lib" "$deplib"
                     fi
@@ -705,7 +884,6 @@ for bin in $natronbins $otherbins; do
 
         # Find out the library dependencies
         # (i.e. $LOCAL or $MACPORTS), then loop until no changes.
-        a=1
         nfiles=0
         alllibs=()
         endl=true
@@ -815,7 +993,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     mv "$package/Contents/MacOS/NatronCrashReporter" "$package/Contents/MacOS/Natron"
     mv "$package/Contents/MacOS/NatronRenderer" "$package/Contents/MacOS/NatronRenderer-bin"
     mv "$package/Contents/MacOS/NatronRendererCrashReporter" "$package/Contents/MacOS/NatronRenderer"
-    natronbins="$natronbins Natron-bin NatronRenderer-bin"
+    natronbins+=(Natron-bin NatronRenderer-bin)
 
     echo "* Extract symbols from executables..."
 
@@ -850,7 +1028,7 @@ fi
 
 if [ "$STRIP" = 1 ]; then
     echo "* Strip executables..."
-    for bin in $natronbins $otherbins; do
+    for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         binary="$package/Contents/MacOS/$bin";
 
         if [ -x "$binary" ] && [ "$COMPILE_TYPE" != "debug" ]; then
@@ -924,20 +1102,40 @@ fi
 export PY_BIN="${MACPORTS}/bin/python${PYVER:-}"
 export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 . "$CWD/zip-python.sh"
-
 NATRON_PYTHON="${TMP_PORTABLE_DIR}.app/Contents/MacOS/natron-python"
+
+echo "Signing frameworks"
+(cd "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" *.framework)
+echo "Signing libraries"
+(cd "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" *.dylib)
+echo "Signing OFX plugins"
+(cd "${TMP_PORTABLE_DIR}.app/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" *.bundle)
+if [ -x "${NATRON_PYTHON}" ]; then
+    echo "Signing python shared objects"
+    (cd "${DYNLOAD}"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" *.so)
+    (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" */*.so */*.dylib)
+fi
+echo "Signing app"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${TMP_PORTABLE_DIR}.app"
+echo "Signing extra binaries"
+(cd "${TMP_PORTABLE_DIR}.app/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" *)
+
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
+    #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${NATRON_PYTHON}"
+    #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${TMP_PORTABLE_DIR}.app/Contents/Frameworks/Python.framework" "${DYNLOAD}/"*.so
+    echo "Installing pip"
     pushd "$PYDIR/../.."
     if [ "$PYV" = "2" ]; then
-        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+        $CURL --remote-name --insecure "https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py"
     else
-        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+        $CURL --remote-name --insecure "https://bootstrap.pypa.io/get-pip.py"
     fi
+    #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" get-pip.py
     "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
     # Install qtpy
-    if [ "${USE_QT5:-}" != 1 ]; then
+    if [ "$QT_VERSION_MAJOR" = 4 ]; then
         # Qt4 support was dropped after QtPy 1.11.2
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
         # qtpy bug fix for Qt4
@@ -948,8 +1146,8 @@ if [ -x "${NATRON_PYTHON}" ]; then
     # Useful Python packages
     "${NATRON_PYTHON}" -m pip install future six
     # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
-    case "$(uname -r)" in
-    9.*|10.*|11.*|12.*)
+    case "$macosx" in
+    9|10|11|12)
         # 10.5-10.8
         true
         ;;
@@ -957,6 +1155,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
         "${NATRON_PYTHON}" -m pip install psutil
         ;;
     esac
+    (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" */*.so)
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
@@ -965,6 +1164,27 @@ if [ -x "${NATRON_PYTHON}" ]; then
     popd
 fi
 
+# # "${CODESIGN}" again for safety
+# if [ "$QT_VERSION_MAJOR" = 5 ]; then
+#     # extra "${CODESIGN}" using macdeployqt
+#     # macdeployqt only works if the package name has the same name as the executable inside:
+#     app_for_macdeployqt="$(dirname "${package}")/Natron.app"
+#     [ -f  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+#     # make a temporary link to Natron.app
+#     ln -s "${package}" "${app_for_macdeployqt}"
+#     echo Executing: "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
+#     "$QTDIR"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
+#     # remove temp link
+#     rm  "${app_for_macdeployqt}"
+# fi
+# "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" \
+#  "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"/*.framework \
+#  "${TMP_PORTABLE_DIR}.app/Contents/Frameworks"/*.dylib \
+#  "${DYNLOAD}/"*.so \
+#  "${PYDIR}/site-packages/"*/*.so
+# "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" \
+#  "${TMP_PORTABLE_DIR}.app" \
+#  "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/*
 
 # Generate documentation
 cd "$CWD"
@@ -979,7 +1199,8 @@ if [ ! -e "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests" ]; then
     echo "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests is not present! This is a bug"
     exit 1
 fi
-$TIMEOUT -s KILL 1800 "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
+# Tests segfault on exit on Qt5
+$TIMEOUT -s KILL 1800 "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests" || [ "$QT_VERSION_MAJOR" = 5 ] 
 rm "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
 
 echo "* Creating the disk image"
@@ -1081,6 +1302,8 @@ rm tmpScript
 # convert to compressed image, delete temp image
 # UDBZ (bzip2) is supported on OS X >= 10.4
 hdiutil convert "${DMG_TMP}" -format UDBZ -o "${DMG_FINAL}"
+
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" -i "${BUNDLE_ID}" "${DMG_FINAL}"
 
 # Rename to the original portable dir name so that the unit tests script can be the same
 # than the one used for other platforms

@@ -88,6 +88,10 @@ else
     BUILD_6=false
 fi
 
+if [ -n "${BUILD_FROM:+z}" ] || [ -n "${BUILD_TO:+z}" ]; then
+    DEBUG_SCRIPTS=${DEBUG_SCRIPTS:-1}
+fi
+
 echo "-----------------------------------------------------------------------"
 echo "NATRON JENKINS BUILDMASTER"
 echo "-----------------------------------------------------------------------"
