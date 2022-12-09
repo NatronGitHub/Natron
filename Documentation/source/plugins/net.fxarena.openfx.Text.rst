@@ -9,7 +9,7 @@ Text node
 
 |pluginIcon| 
 
-*This documentation is for version 6.13 of Text (net.fxarena.openfx.Text).*
+*This documentation is for version 6.14 of Text (net.fxarena.openfx.Text).*
 
 Description
 -----------

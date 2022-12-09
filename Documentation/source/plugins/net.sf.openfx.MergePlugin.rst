@@ -134,9 +134,9 @@ See also:
 -  “Compositing and Blending Level 1” https://www.w3.org/TR/compositing-1/
 -  “SVG Compositing Specification” https://www.w3.org/TR/SVGCompositing/
 -  “ISO 32000-1:2008: Portable Document Format (July 2008)”, Sec. 11.3 “Basic Compositing Operations” http://www.adobe.com/devnet/pdf/pdf_reference.html
--  “Merge” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Merge
--  “Merge Blend Modes” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Merge_Blend_Modes
--  “Primacy of the B Feed” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Primacy_of_the_B_Feed
+-  “Merge” by Martin Constable https://web.archive.org/web/20220627015903/http://www.opticalenquiry.com/nuke/index.php?title=Merge
+-  “Merge Blend Modes” by Martin Constable https://web.archive.org/web/20220807185657/http://www.opticalenquiry.com/nuke/index.php?title=Merge_Blend_Modes
+-  “Primacy of the B Feed” by Martin Constable https://web.archive.org/web/20220807185551/http://www.opticalenquiry.com/nuke/index.php?title=Primacy_of_the_B_Feed
 -  grain-extract and grain-merge are described in http://docs.gimp.org/en/gimp-concepts-layer-modes.html
 
 Inputs

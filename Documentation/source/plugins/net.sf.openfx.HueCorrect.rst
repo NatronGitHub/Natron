@@ -40,7 +40,7 @@ sat_thrsh: if source saturation is below this value, do not apply the lum, red, 
 
 The ‘Luminance Mix’ parameter may be used to restore partially or fully the original luminance (luminance is computed using the ‘Luminance Math’ parameter).
 
-See also: http://opticalenquiry.com/nuke/index.php?title=HueCorrect
+See also: https://web.archive.org/web/20220627022150/http://www.opticalenquiry.com/nuke/index.php?title=HueCorrect
 
 Inputs
 ------

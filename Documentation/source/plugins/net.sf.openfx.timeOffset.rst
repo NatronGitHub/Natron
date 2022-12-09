@@ -16,7 +16,7 @@ Description
 
 Move the input clip forward or backward in time. This can also reverse the order of the input frames so that last one is first.
 
-See also http://opticalenquiry.com/nuke/index.php?title=TimeOffset
+See also https://web.archive.org/web/20220627025738/http://www.opticalenquiry.com/nuke/index.php?title=TimeOffset
 
 Inputs
 ------

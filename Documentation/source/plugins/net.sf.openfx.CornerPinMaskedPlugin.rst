@@ -30,7 +30,7 @@ Note that if only the CornerPin effect is used instead of combining CornerPin an
 
 This plugin concatenates transforms.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=CornerPin
+See also: https://web.archive.org/web/20220627032200/http://www.opticalenquiry.com/nuke/index.php?title=CornerPin
 
 Inputs
 ------

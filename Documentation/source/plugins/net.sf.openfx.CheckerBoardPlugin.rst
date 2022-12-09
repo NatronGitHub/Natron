@@ -18,7 +18,7 @@ Generate an image with a checkerboard.
 
 A frame range may be specified for operators that need it.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
+See also: https://web.archive.org/web/20220807183203/http://www.opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
 
 Inputs
 ------

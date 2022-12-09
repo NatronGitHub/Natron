@@ -16,7 +16,7 @@ Description
 
 Add a constant to the selected channels.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Add
+See also: https://web.archive.org/web/20220627013304/http://www.opticalenquiry.com/nuke/index.php?title=Add
 
 Inputs
 ------

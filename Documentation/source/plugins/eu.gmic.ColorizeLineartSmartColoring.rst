@@ -14,7 +14,7 @@ Description
 
 Global geometry parameters:
 
-Add strokes with a saturated color having value 255 (e.g. pure red) on your lineart allows one to guide the colorization algorithm with virtual contours.
+Add strokes with a saturated color having value 255 (e.g. pure red) on your lineart allows to guide the colorization algorithm with virtual contours.
 
 For Random colors mode only:
 

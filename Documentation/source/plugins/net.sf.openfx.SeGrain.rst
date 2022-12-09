@@ -16,9 +16,11 @@ Adds synthetic grain.
 
 Push “presets” to get predefined types of grain, these are the correct size for 2K scans.
 
+Note that some presets require applying per-channel Blur to the output (see the Presets documentation).
+
 You can also adjust the sliders to match a sample piece of grain. Find a sample with a rather constant background, blur it to remove the grain, and use as input to this. View with a wipe in the viewer so you can make a match. It helps to view and match each of the red, green, blue separately.
 
-See also http://opticalenquiry.com/nuke/index.php?title=Integration#Matching_grain
+See also https://web.archive.org/web/20210728000722/opticalenquiry.com/nuke/index.php?title=Integration
 
 Inputs
 ------
@@ -52,6 +54,11 @@ Controls
 |                                    |         |                | | **Kodak GT5274**                                                                                                                                                                                                                                                                                                        |
 |                                    |         |                | | **Kodak 5217**                                                                                                                                                                                                                                                                                                          |
 |                                    |         |                | | **Kodak 5218**                                                                                                                                                                                                                                                                                                          |
+|                                    |         |                | | **Kodak 5219**                                                                                                                                                                                                                                                                                                          |
+|                                    |         |                | | **Kodak 5201**                                                                                                                                                                                                                                                                                                          |
+|                                    |         |                | | **Kodak 5213**: Combine with Blur(R,size=1), Blur(G,size=1), Blur(B,size=1.1)                                                                                                                                                                                                                                           |
+|                                    |         |                | | **Kodak 5245**: Combine with Blur(G,size=1.2), Blur(B,size=1.15)                                                                                                                                                                                                                                                        |
+|                                    |         |                | | **Digital Noise**                                                                                                                                                                                                                                                                                                       |
 |                                    |         |                | | **Other**                                                                                                                                                                                                                                                                                                               |
 +------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | All / ``grainSizeAll``             | Double  | 1              | Global factor on grain size. Useful if working with scans which are not 2K (the preset sizes are computed for 2K scans).                                                                                                                                                                                                  |

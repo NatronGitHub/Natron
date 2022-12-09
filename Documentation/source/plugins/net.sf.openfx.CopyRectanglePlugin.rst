@@ -16,7 +16,7 @@ Copies a rectangle from the input A to the input B in output.
 
 It can be used to limit an effect to a rectangle of the original image by plugging the original image into the input B.
 
-See also http://opticalenquiry.com/nuke/index.php?title=CopyRectange
+See also https://web.archive.org/web/20220807200909/http://www.opticalenquiry.com/nuke/index.php?title=CopyRectange
 
 Inputs
 ------

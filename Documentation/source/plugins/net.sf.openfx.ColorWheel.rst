@@ -18,7 +18,7 @@ Generate an image with a color wheel.
 
 The color wheel occupies the full area, minus a one-pixel black and transparent border
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
+See also: https://web.archive.org/web/20220807183203/http://www.opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
 
 Inputs
 ------

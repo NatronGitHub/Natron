@@ -18,7 +18,7 @@ Translate / Rotate / Scale a 2D image.
 
 This plugin concatenates transforms.
 
-See also http://opticalenquiry.com/nuke/index.php?title=Transform
+See also https://web.archive.org/web/20220627030948/http://www.opticalenquiry.com/nuke/index.php?title=Transform
 
 Inputs
 ------
