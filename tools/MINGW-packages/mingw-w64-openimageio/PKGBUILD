@@ -3,8 +3,8 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=2.3.17.0
-pkgrel=2
+pkgver=2.4.6.0
+pkgrel=99.2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -33,7 +33,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.0.8-invalidatespec.patch
         oiio-2.2.14-libraw.diff
        )
-sha256sums=('22d38347b40659d218fcafcadc9258d3f6eda0be02029b11969361c9a6fa9f5c'
+sha256sums=('a220e2bc56812b946f7ecc22dd8139b8101b51ea97522deed84a1bb6928f51dc'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
@@ -42,7 +42,7 @@ sha256sums=('22d38347b40659d218fcafcadc9258d3f6eda0be02029b11969361c9a6fa9f5c'
 
 prepare() {
   cd ${srcdir}/oiio-${pkgver}
-  patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
+  #patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
   patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
 }
@@ -61,6 +61,7 @@ build() {
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   PKG_CONFIG_PATH="${MINGW_PREFIX}/libraw-gpl2/lib/pkgconfig:${PKG_CONFIG_PATH}" \
   ${MINGW_PREFIX}/bin/cmake.exe \
+    -Wno-dev \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
     -DUSE_FFMPEG=OFF \
@@ -84,7 +85,7 @@ build() {
     -DUSE_PTEX=OFF \
     -DUSE_EXTERNAL_PUGIXML=OFF \
     -DOIIO_BUILD_TESTS=OFF \
-    -DCMAKE_CXX_STANDARD=11 \
+    -DCMAKE_CXX_STANDARD=14 \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     ${extra_config} \
     ../oiio-${pkgver}
@@ -93,5 +94,17 @@ build() {
 
 package() {
   cd "${srcdir}"/build-${MINGW_CHOST}
-  make DESTDIR=${pkgdir} install
+  #make DESTDIR=${pkgdir} install
+  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/cmake --install .
+
+  local PREFIX_WIN=$(cygpath -wm ${MINGW_PREFIX})
+  sed -e "s|${PREFIX_WIN}|\$\{PACKAGE_PREFIX_DIR\}|g" \
+    -i "${pkgdir}${MINGW_PREFIX}"/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
+  sed -e "s|${MINGW_PREFIX}|\$\{PACKAGE_PREFIX_DIR\}|g" \
+    -i "${pkgdir}${MINGW_PREFIX}"/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
+
+  for _f in "${pkgdir}${MINGW_PREFIX}"/lib/cmake/OpenImageIO/*.cmake; do
+    sed -e "s|${PREFIX_WIN}|\$\{_IMPORT_PREFIX\}|g" -i ${_f}
+    sed -e "s|${MINGW_PREFIX}|\$\{_IMPORT_PREFIX\}|g" -i ${_f}
+  done
 }

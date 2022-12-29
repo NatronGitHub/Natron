@@ -7,7 +7,7 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-ilmbase"
          #"${MINGW_PACKAGE_PREFIX}-pyilmbase"
 	 )
 pkgver=2.5.8
-pkgrel=99.1
+pkgrel=99.2
 pkgdesc="Openexr library for EXR images (mingw-w64)"
 arch=('any')
 url="https://www.openexr.com/"
@@ -72,7 +72,7 @@ build() {
     -DBUILD_SHARED_LIBS=ON \
     -DPYILMBASE_ENABLE=OFF \
     -DOPENEXR_NAMESPACE_VERSIONING=ON \
-    -DOPENEXR_CXX_STANDARD=11 \
+    -DOPENEXR_CXX_STANDARD=14 \
     ../${_realname}-${pkgver}
 
   make

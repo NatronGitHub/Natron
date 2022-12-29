@@ -409,7 +409,9 @@ done
 PYDIR="${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"
 find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
-(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ;
+    find . -type d -name __pycache__ -exec rm -rf {} \; || true
+)
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
 for dir in "${TMP_PORTABLE_DIR}/Plugins/PySide" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
@@ -426,7 +428,8 @@ fi
 
 export PY_BIN="$SDK_HOME/bin/python.exe"
 export PYDIR="$PYDIR"
-. "$CWD"/zip-python.sh
+#. "$CWD"/zip-python.sh
+. "$CWD"/zip-python-mingw.sh
 
 NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
@@ -449,7 +452,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
         "${NATRON_PYTHON}" -m pip install qtpy
     fi
     # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install future six psutil
+    "${NATRON_PYTHON}" -m pip install future six #psutil
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true

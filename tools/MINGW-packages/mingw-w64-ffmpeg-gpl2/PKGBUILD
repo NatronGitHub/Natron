@@ -5,8 +5,8 @@
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}-gpl2"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
-pkgver=4.4.2
-pkgrel=2
+pkgver=4.4.3
+pkgrel=99.1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
@@ -48,7 +48,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
 	     "${MINGW_PACKAGE_PREFIX}-nasm")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz)
-sha256sums=('af419a7f88adbc56c758ab19b4c708afbcae15ef09606b82b855291f6a6faa93')
+sha256sums=('6c5b6c195e61534766a0b5fe16acc919170c883362612816d0a1c7f4f947006e')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"

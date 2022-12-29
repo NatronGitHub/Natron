@@ -5,7 +5,7 @@ pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
 gitcommit=32b01f6 # 2.1.1
 pkgver=1343.32b01f64
-pkgrel=4
+pkgrel=99.7
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
 url="http://opencolorio.org"
@@ -55,7 +55,7 @@ build() {
     -DOCIO_BUILD_PYTHON=OFF \
     -DOCIO_USE_OPENEXR_HALF=ON \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=11 \
+    -DCMAKE_CXX_STANDARD=14 \
     -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON \
     -DCMAKE_CXX_VISIBILITY_PRESET=hidden \
     -DOCIO_INLINES_HIDDEN=ON \

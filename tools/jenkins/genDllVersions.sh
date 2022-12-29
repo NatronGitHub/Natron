@@ -209,6 +209,7 @@ catDll libbrotlidec
 catDll libssl-1_1-
 catDll libcrypto-1_1-
 catDll libzstd
+catDll libssp-
 
 catDll libSeExpr
 catDll yaml-cpp

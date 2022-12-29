@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=13
+pkgrel=99.5
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
@@ -115,6 +115,7 @@ source=("https://download.qt.io/archive/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar
         qt-everywhere-opensource-src-4.8.7-gcc11.patch
         qt-everywhere-opensource-src-4.8.7-qforeach.patch
         force-cpp98-and-win7.diff
+        fix-win-openssl-load.diff
         )
 sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
@@ -149,11 +150,12 @@ sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             '3c35b393b3c4397d4e69e949cd5a77df590938c0f95731c771bf6be6565deaba'
             'e5f8db55f33352034e55a98ff035192b7ccb87a5f54ae44ccbb2982fd43afa90'
             'b59135832f6e72dc38e26fc742f5160aa5246b31cddf26948da7237784c5d9bb'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
+            '349c2f47ed499bacbf0e68f67bed4711783a14c6ea9276195368b4cbda81c1d6'
+            'ca1ee58b37dcd1d8af86b41f8774043d8ebfc179cf36141e297186416c079ff9'
+            '8a6c3584cc2822809567bf0194a4b937f4e6768a12c50c9405e49558ab9a5af5'
+            '9c049b66ffe4c5e5976d68c28c514c2eca89b4846d0ae53c78964944dc8b4e88'
+            'd4ebcd12ea6d3e1880d32a6f170b737b850748d0afcf0319fbe42ccc956389a8'
+            '0cb9be5382f8347ea83ebc4252c36c63bcb59af8aa06fdb562f2deffb55f937f'
             )
 
 prepare() {
@@ -194,6 +196,7 @@ prepare() {
   patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-gcc11.patch
   patch -p1 -i ${srcdir}/qt-everywhere-opensource-src-4.8.7-qforeach.patch
   patch -p0 -i ${srcdir}/force-cpp98-and-win7.diff
+  patch -p0 -i ${srcdir}/fix-win-openssl-load.diff
 
   if check_option "debug" "y"; then
     patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch
@@ -235,7 +238,8 @@ build() {
   #pkg_conf_inc=$(pkg-config --dont-define-prefix --cflags-only-I libxml-2.0 dbus-1)
   export PATH=${srcdir}/${_realname}-${pkgver}/bin:${srcdir}/${_realname}-${pkgver}/lib:${PATH}
 
-  ./configure \
+    OPENSSL_LIBS="`pkg-config --libs-only-l openssl`" \
+    ./configure \
     -prefix ${_buildpkgdir} \
     -datadir ${_buildpkgdir}/share/qt4 \
     -docdir ${_buildpkgdir}/share/qt4/doc \
@@ -419,4 +423,6 @@ package() {
   #for tool in ${pkgdir}${MINGW_PREFIX}/bin/*.exe ; do
   #  mv ${pkgdir}${MINGW_PREFIX}/bin/${tool} ${pkgdir}${MINGW_PREFIX}/bin/${tool%.exe}-qt4.exe
   #done
+
+  sed -i 's/ -std=c++98//g' ${pkgdir}/${MINGW_PREFIX}/share/qt4/mkspecs/win32-g++/qmake.conf
 }

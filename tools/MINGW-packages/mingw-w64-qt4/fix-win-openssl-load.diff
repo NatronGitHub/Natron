@@ -1,0 +1,19 @@
+--- src/network/ssl/qsslsocket_openssl_symbols.cpp.orig	2022-12-28 21:57:38.113422400 +0100
++++ src/network/ssl/qsslsocket_openssl_symbols.cpp	2022-12-28 21:59:57.432599300 +0100
+@@ -492,14 +492,14 @@
+     pair.first = 0;
+     pair.second = 0;
+ 
+-    QSystemLibrary *ssleay32 = new QSystemLibrary(QLatin1String("ssleay32"));
++    QSystemLibrary *ssleay32 = new QSystemLibrary(QLatin1String("libssl-1_1-x64"));
+     if (!ssleay32->load(false)) {
+         // Cannot find ssleay32.dll
+         delete ssleay32;
+         return pair;
+     }
+ 
+-    QSystemLibrary *libeay32 = new QSystemLibrary(QLatin1String("libeay32"));
++    QSystemLibrary *libeay32 = new QSystemLibrary(QLatin1String("libcrypto-1_1-x64"));
+     if (!libeay32->load(false)) {
+         delete ssleay32;
+         delete libeay32;
