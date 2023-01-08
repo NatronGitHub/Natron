@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# Copyright (C) 2018-2022 The Natron developers
+# Copyright (C) 2018-2023 The Natron developers
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -63,7 +63,7 @@ for folder in *; do
     fi
     git submodule update -i --recursive || exit 1
     find . -name .git -print0 | xargs -0 rm -rf || exit 1
-    cd "$TMP_DIR" || exit 1 
+    cd "$TMP_DIR" || exit 1
     tar cvvJf ${folder}-${RELEASE}.tar.xz ${folder}-${RELEASE} || exit 1
     rm -rf ${folder}-${RELEASE} || exit 1
   fi
@@ -72,4 +72,3 @@ done
 # result
 echo "Result in ${TMP_DIR}:"
 ls -lah "$TMP_DIR"
-

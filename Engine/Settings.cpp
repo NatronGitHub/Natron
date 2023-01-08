@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2022 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -2771,7 +2771,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "<hr/>\n"
         "<div role=\"contentinfo\">\n"
         "<p>\n"
-        "&copy; Copyright 2013-2022 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+        "&copy; Copyright 2013-2023 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
         "</p>\n"
         "</div>\n"
         "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"

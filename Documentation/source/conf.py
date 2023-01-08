@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Natron'
-copyright = '2013-2022 The Natron documentation authors, licensed under CC BY-SA 4.0'
+copyright = '2013-2023 The Natron documentation authors, licensed under CC BY-SA 4.0'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
