@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2022 The Natron developers
+# (C) 2018-2023 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -26,13 +26,13 @@ if(APPLE)
     set_target_properties(Natron PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
-        MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME} Copyright (c) 2022 The Natron Developers"
+        MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME} Copyright (c) 2023 The Natron Developers"
         MACOSX_BUNDLE_ICON_FILE Icon.icns
         MACOSX_BUNDLE_GUI_IDENTIFIER "${PROJECT_NAME}"
         MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_COPYRIGHT "Copyright (c) 2022 The Natron Developers"
+        MACOSX_BUNDLE_COPYRIGHT "Copyright (c) 2023 The Natron Developers"
     )
 endif()
 target_link_libraries(Natron

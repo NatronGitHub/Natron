@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2018-2022 The Natron developers
+# Copyright (C) 2018-2023 The Natron developers
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
