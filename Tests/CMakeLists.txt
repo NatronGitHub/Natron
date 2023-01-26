@@ -33,8 +33,9 @@ set(Tests_SOURCES
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
 target_link_libraries(Tests
     PRIVATE
+        NatronEngine
+        Qt5::Core
         Python3::Python
-        NatronGui
         openMVG
 )
 target_include_directories(Tests
