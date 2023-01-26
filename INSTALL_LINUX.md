@@ -408,7 +408,7 @@ Instructions for Ubuntu 22.04 using Python 3.10 and Qt 5.15.
 Install the required dependencies:
 
 ```
-apt install \
+sudo apt install \
 build-essential \
 libboost-serialization-dev \
 libboost-system-dev \
@@ -419,7 +419,8 @@ qtbase5-dev \
 python3-dev \
 libshiboken2-dev \
 libpyside2-dev \
-python3-pyside2.qtwidgets
+python3-pyside2.qtwidgets \
+python3-qtpy
 ```
 
 Get Natron:
@@ -435,10 +436,10 @@ mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 Build:
 
 ```
-echo "boost-serialization-lib: LIBS += -lboost_serialization" > config.pri
-mkdir build && cd build
-qmake -r ../Project.pro CONFIG+=python3
+mkdir ../build-Natron && cd ../build-Natron
+cmake ../Natron
 make -j8
+make test
 ```
 
 ## Fedora/RHEL-based
