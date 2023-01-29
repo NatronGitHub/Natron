@@ -72,6 +72,9 @@ otherbins=(ffmpeg ffprobe iconvert idiff igrep iinfo exrheader tiffinfo) # iv ma
 
 ## Code signing
 ###############
+# Docs about code signing:
+# - Code Signing Resources https://developer.apple.com/forums/thread/707080
+# - Resolving errSecInternalComponent errors https://developer.apple.com/forums/thread/712005 (when signing over ssh)
 CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:-8ZN4B9KT99}
 BUNDLE_ID=fr.inria.Natron
 if [ "${CODE_SIGN_IDENTITY}" = "-" ]; then
