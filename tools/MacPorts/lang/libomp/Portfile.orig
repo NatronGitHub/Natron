@@ -33,9 +33,9 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
         # Marked obsolete 10/25/2022
         PortGroup       obsolete 1.0
         replaced_by     libomp
-        version         15.0.3
+        version         15.0.6
     } else {
-        version         15.0.3
+        version         15.0.6
         livecheck.regex {"llvmorg-([0-9.]+)".*}
     }
 
@@ -44,13 +44,13 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
     checksums \
         openmp-${version}.src.tar.xz \
-        rmd160  b680eace750b2e8f99950b3c69c7d6c882d08b9d \
-        sha256  ec7bd70a341bd8d33f2b4be7d9961d609cf2596d7042ae7d288975462b694b5e \
-        size    1184424 \
+        rmd160  0565d878b5669ef165fa80e97fa75122f4ef7d06 \
+        sha256  1ac6f159d81625d852a42676ff6d8820cb744c18d825a56d56a6d7aa389f5ac9 \
+        size    1184608 \
         cmake-${version}.src.tar.xz \
-        rmd160  4499e760a7ac0069f4fc6055659539c3853402d4 \
-        sha256  21cf3f52c53dc8b8972122ae35a5c18de09c7df693b48b5cd8553c3e3fed090d \
-        size    6980
+        rmd160  220bbcbe11eb80f05a193a6b8fbe2339406d22ee \
+        sha256  7613aeeaba9b8b12b35224044bc349b5fa45525919625057fa54dc882dcb4c86 \
+        size    6972
 
     revision            0
 

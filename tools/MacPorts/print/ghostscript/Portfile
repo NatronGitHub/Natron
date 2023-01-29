@@ -5,7 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.56.1
-revision            0
+revision            1
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -66,6 +66,10 @@ depends_lib         port:fontconfig \
                     port:lcms2
 
 depends_build       port:pkgconfig
+
+# tell ghostscript it's OK to use the system pkg-config even when cross-compiling
+# see https://trac.macports.org/ticket/66627
+configure.env-append PKGCONFIG=${prefix}/bin/pkg-config
 
 depends_run         port:perl5
 

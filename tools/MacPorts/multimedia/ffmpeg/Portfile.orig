@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            3
+revision            4
 epoch               1
 
 license             LGPL-2.1+

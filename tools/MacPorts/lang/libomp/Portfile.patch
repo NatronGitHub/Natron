@@ -1,5 +1,5 @@
---- Portfile.orig	2022-11-07 09:02:52.000000000 -0800
-+++ Portfile	2022-10-06 09:47:33.000000000 -0700
+--- Portfile.orig	2023-01-28 18:12:58.000000000 -0800
++++ Portfile	2023-01-28 18:13:32.000000000 -0800
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -16,14 +16,14 @@
 -        # Marked obsolete 10/25/2022
 -        PortGroup       obsolete 1.0
 -        replaced_by     libomp
--        version         15.0.3
+-        version         15.0.6
 +       version          11.1.0
 +       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
 +                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
 +                        size    971628
 +        livecheck.regex {"llvmorg-([0-9.rc-]+)".*}
      } else {
--        version         15.0.3
+-        version         15.0.6
 +       version          11.1.0
 +       checksums        rmd160  8869b60844901466aed4e462ae8dac831bf519c3 \
 +                        sha256  d187483b75b39acb3ff8ea1b7d98524d95322e3cb148842957e9b0fbb866052e \
@@ -36,13 +36,13 @@
 -
 -    checksums \
 -        openmp-${version}.src.tar.xz \
--        rmd160  b680eace750b2e8f99950b3c69c7d6c882d08b9d \
--        sha256  ec7bd70a341bd8d33f2b4be7d9961d609cf2596d7042ae7d288975462b694b5e \
--        size    1184424 \
+-        rmd160  0565d878b5669ef165fa80e97fa75122f4ef7d06 \
+-        sha256  1ac6f159d81625d852a42676ff6d8820cb744c18d825a56d56a6d7aa389f5ac9 \
+-        size    1184608 \
 -        cmake-${version}.src.tar.xz \
--        rmd160  4499e760a7ac0069f4fc6055659539c3853402d4 \
--        sha256  21cf3f52c53dc8b8972122ae35a5c18de09c7df693b48b5cd8553c3e3fed090d \
--        size    6980
+-        rmd160  220bbcbe11eb80f05a193a6b8fbe2339406d22ee \
+-        sha256  7613aeeaba9b8b12b35224044bc349b5fa45525919625057fa54dc882dcb4c86 \
+-        size    6972
 -
      revision            0
  

@@ -13,7 +13,7 @@ PortGroup           legacysupport 1.0
 legacysupport.newest_darwin_requires_legacy 9
 
 github.setup        videolan x265 3.4
-revision            1
+revision            102
 
 checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
                     sha256  544d147bf146f8994a7bf8521ed878c93067ea1c7c6e93ab602389be3117eaaf \

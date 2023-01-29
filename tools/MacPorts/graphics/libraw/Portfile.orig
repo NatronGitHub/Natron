@@ -3,8 +3,12 @@
 PortSystem          1.0
 
 name                libraw
-version             0.20.2
-revision            5
+version             0.21.1
+revision            0
+
+checksums           rmd160  be36d8709eb2e8578f07b63ea8632eb6ed1d7775 \
+                    sha256  630a6bcf5e65d1b1b40cdb8608bdb922316759bfb981c65091fec8682d1543cd \
+                    size    1638461
 
 description         Library for RAW image manipulation
 long_description    A library for reading RAW files obtained from digital photo \
@@ -17,10 +21,6 @@ maintainers         nomaintainer
 homepage            https://www.libraw.org
 master_sites        ${homepage}/data/
 distname            LibRaw-${version}
-
-checksums           rmd160  932abbfd49432ace0a2e2b4e4fbb07f140421de3 \
-                    sha256  dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6 \
-                    size    1432141
 
 depends_build       port:pkgconfig
 

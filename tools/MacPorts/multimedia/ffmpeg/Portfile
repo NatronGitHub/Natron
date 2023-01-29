@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            3
+revision            4
 epoch               1
 
 license             LGPL-2.1+
@@ -334,7 +334,7 @@ if {${universal_possible} && [variant_isset universal]} {
     # the following is inspired by the icu Portfile
     # if we can't run executables for the target arch, mark it as a cross-compile
     foreach arch ${configure.universal_archs} {
-        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64")) 
+        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
             || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
             || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
             set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
