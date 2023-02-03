@@ -343,7 +343,7 @@ if {${universal_possible} && [variant_isset universal]} {
     foreach arch ${configure.universal_archs} {
         set merger_host($arch) ""
         lappend merger_configure_args($arch) --arch=${arch}
-        lappend merger_configure_env($arch)  ASFLAGS='-arch ${arch}'
+        lappend merger_configure_env($arch)  "ASFLAGS=-arch ${arch}"
     }
     if {[string match "*86*" ${configure.universal_archs}]} {
         depends_build-append port:nasm
