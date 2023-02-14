@@ -2,7 +2,7 @@
 
 # Install pcre (required by glib)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre2.html
-PCRE2_VERSION=10.40
+PCRE2_VERSION=10.42
 PCRE2_TAR="pcre2-${PCRE2_VERSION}.tar.bz2"
 PCRE2_SITE="https://github.com/PhilipHazel/pcre2/releases/download/pcre2-${PCRE2_VERSION}"
 if download_step; then

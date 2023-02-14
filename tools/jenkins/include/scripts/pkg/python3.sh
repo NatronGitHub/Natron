@@ -10,7 +10,7 @@
 # /opt/Natron-sdk/include/python3.11/object.h:136:30: error: lvalue required as left operand of assignment
 #   136 | #  define Py_TYPE(ob) Py_TYPE(_PyObject_CAST(ob))
 #       |                       ~~~~~~~^~~~~~~~~~~~~~~~~~~~
-PY3_VERSION=3.10.8 # 3.11.0 breaks Shiboken 1.2.4
+PY3_VERSION=3.10.9 # 3.11.0 breaks Shiboken 1.2.4
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"

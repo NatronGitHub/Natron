@@ -4,13 +4,13 @@
 # be careful if upgrading, the script applies important patches
 OSMESA_VERSION=18.3.6
 OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.xz"
-OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
-OSMESA_GLU_VERSION=9.0.1
+OSMESA_SITE="https://archive.mesa3d.org"
+OSMESA_GLU_VERSION=9.0.1 # 9.0.2 doesn't have glu_mangle.h
 OSMESA_GLU_TAR="glu-${OSMESA_GLU_VERSION}.tar.gz"
-OSMESA_GLU_SITE="ftp://ftp.freedesktop.org/pub/mesa/glu"
+OSMESA_GLU_SITE="https://archive.mesa3d.org/glu"
 OSMESA_DEMOS_VERSION=8.4.0
 OSMESA_DEMOS_TAR="mesa-demos-${OSMESA_DEMOS_VERSION}.tar.bz2"
-OSMESA_DEMOS_SITE="ftp://ftp.freedesktop.org/pub/mesa/demos/${OSMESA_DEMOS_VERSION}"
+OSMESA_DEMOS_SITE="https://archive.mesa3d.org/demos/${OSMESA_DEMOS_VERSION}"
 OSMESA_LLVM_VERSION=6.0.1
 OSMESA_LLVM_TAR="llvm-${OSMESA_LLVM_VERSION}.src.tar.xz"
 OSMESA_LLVM_SITE="http://releases.llvm.org/${OSMESA_LLVM_VERSION}"

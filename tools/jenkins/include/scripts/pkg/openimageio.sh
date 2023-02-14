@@ -2,8 +2,8 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.3.21.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
-OIIO_VERSION_SHORT=2.3 # ${OIIO_VERSION%.*}
+OIIO_VERSION=2.4.8.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
+OIIO_VERSION_SHORT=2.4 # ${OIIO_VERSION%.*}
 OIIO_TAR="oiio-${OIIO_VERSION}.tar.gz"
 if download_step; then
     download_github OpenImageIO oiio "$OIIO_VERSION" v "$OIIO_TAR"

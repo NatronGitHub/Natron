@@ -6,7 +6,7 @@
 # installed yaml-cpp 0.5.
 OCIO_BUILD_GIT=0 # set to 1 to build the git version instead of the release
 # non-GIT version:
-OCIO_VERSION=2.2.0
+OCIO_VERSION=2.2.1
 OCIO_TAR="OpenColorIO-${OCIO_VERSION}.tar.gz"
 if download_step; then
     download_github imageworks OpenColorIO "$OCIO_VERSION" v "$OCIO_TAR"

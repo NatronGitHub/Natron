@@ -14,7 +14,7 @@ fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libjasper.so" ]; }; }; then
     start_build
     untar "$SRC_PATH/$JASPER_TAR"
-    pushd "jasper-version-${JASPER_VERSION}"
+    pushd "jasper-${JASPER_VERSION}"
     #env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static
     mkdir build-natron
     pushd build-natron
@@ -23,6 +23,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libjasper.so" ]; }; };
     make install
     popd
     popd
-    rm -rf "jasper-version-${JASPER_VERSION}"
+    rm -rf "jasper-${JASPER_VERSION}"
     end_build
 fi

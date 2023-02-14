@@ -1,5 +1,5 @@
---- Portfile.orig	2023-01-29 10:07:43.000000000 -0800
-+++ Portfile	2023-01-28 19:12:51.000000000 -0800
+--- Portfile.orig	2023-01-29 10:11:55.000000000 -0800
++++ Portfile	2023-02-10 17:28:26.000000000 -0800
 @@ -2,17 +2,14 @@
  
  PortSystem              1.0
@@ -16,7 +16,7 @@
 -checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
 -                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
 -                        size    29115990
-+github.setup            OpenImageIO oiio 2.4.7.1 v
++github.setup            OpenImageIO oiio 2.4.8.0 v
 +revision                100
  
  name                    openimageio
@@ -27,9 +27,9 @@
                          related classes, utilities, and applications.
 +platforms               darwin
 +
-+checksums           rmd160  1e14c6615342ed75320a32ffc57305a21702a87a \
-+                    sha256  57d631cf7dde0fb076c264a364924140e025fb10652c959081a41df7d43f3ab0 \
-+                    size    31956900
++checksums           rmd160  856beebc7dd3d26567a4dd8efcd032038c9ee74e \
++                    sha256  cc91905f862c402ec18d3992e09c7ed34816cf48b1147465ffafda8ce9c1318c \
++                    size    32130754
  
  compiler.cxx_standard   2014
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
@@ -38,7 +38,7 @@
  compiler.thread_local_storage yes
  
 -github.tarball_from     archive
-+worksrcdir              oiio-Release-${version}
++worksrcdir              oiio-${version}
  
 -patchfiles-append       patch-FindOpenJpeg.cmake.diff
 +patch.pre_args  -p1

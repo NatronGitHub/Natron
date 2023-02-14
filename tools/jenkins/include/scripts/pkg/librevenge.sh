@@ -2,7 +2,7 @@
 
 # install librevenge
 # see https://sourceforge.net/projects/libwpd/files/librevenge/
-REVENGE_VERSION=0.0.4
+REVENGE_VERSION=0.0.5
 REVENGE_TAR="librevenge-${REVENGE_VERSION}.tar.xz"
 REVENGE_SITE="https://sourceforge.net/projects/libwpd/files/librevenge/librevenge-${REVENGE_VERSION}"
 if download_step; then
