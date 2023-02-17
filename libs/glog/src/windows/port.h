@@ -136,15 +136,16 @@ typedef int pid_t;
 #endif  // _MSC_VER
 
 // ----------------------------------- THREADS
-#ifndef __MINGW32__ // MingW
+#if defined(HAVE_PTHREAD)
+# include <pthread.h>
+#else // no PTHREAD
 typedef DWORD pthread_t;
 typedef DWORD pthread_key_t;
 typedef LONG pthread_once_t;
 enum { PTHREAD_ONCE_INIT = 0 };   // important that this be 0! for SpinLock
-#else
 #define pthread_self  GetCurrentThreadId
 #define pthread_equal(pthread_t_1, pthread_t_2)  ((pthread_t_1)==(pthread_t_2))
-#endif
+#endif // HAVE_PTHREAD
 
 #ifndef __MINGW32__ // MingW
 inline struct tm* localtime_r(const time_t* timep, struct tm* result) {
