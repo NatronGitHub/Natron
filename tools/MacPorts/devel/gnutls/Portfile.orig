@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 
 name            gnutls
 version         3.7.9
-revision        0
+revision        1
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
@@ -55,21 +55,6 @@ subport ${name}-devel {
     checksums   rmd160  927aa3762946bcb3ef825832d7895f041e66a314 \
                 sha256  0ea0d11a1660a1e63f960f157b197abe6d0c8cb3255be24e1fb3815930b9bdc5 \
                 size    6378480
-
-    # Note: configure script detects zstd, but flags it as missing anyway
-    configure.args-append \
-                --disable-dependency-tracking \
-                --disable-heartbeat-support \
-                --without-brotli \
-                --without-zstd
-
-    variant brotli description {Build brotli support} {
-        depends_lib-append \
-                port:brotli
-                
-        configure.args-delete \
-                --without-brotli 
-    }
 }
 
 if {${build_arch} ne "ppc" || ${build_arch} ne "ppc64"} {
@@ -116,8 +101,11 @@ post-patch {
     reinplace {/^#/d} {*}[glob ${worksrcpath}/lib/accelerated/x86/macosx/*.s]
 }
 
+# Note: configure script detects zstd, but flags it as missing anyway
 configure.args-append \
+                --disable-dependency-tracking \
                 --disable-guile \
+                --disable-heartbeat-support \
                 --disable-libdane \
                 --disable-silent-rules \
                 --disable-static \
@@ -126,6 +114,8 @@ configure.args-append \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
                 --with-default-trust-store-pkcs11=pkcs11: \
+                --without-brotli \
+                --without-zstd \
                 ac_cv_prog_AWK=/usr/bin/awk
 
 compiler.thread_local_storage yes
@@ -142,6 +132,14 @@ if {${os.platform} eq "darwin" && ${os.major} < 10 && [string match *clang* ${co
 platform darwin 8 {
     depends_build-append    port:texinfo
     configure.cppflags-append -D__WORDSIZE=32
+}
+
+variant brotli description {Build brotli support} {
+    depends_lib-append \
+            port:brotli
+
+    configure.args-delete \
+            --without-brotli
 }
 
 variant dane description {Build libdane using unbound libraries} {
