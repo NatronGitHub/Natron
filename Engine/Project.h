@@ -299,8 +299,6 @@ public:
      **/
     bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const GenericWatcherCallerArgsPtr& args);
 
-    bool isOpenGLRenderActivated() const;
-
     void refreshOpenGLRenderingFlagOnNodes();
 
 private:
