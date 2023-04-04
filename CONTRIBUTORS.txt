@@ -10,6 +10,7 @@ Axel Airo-Farulla  <Eaknyt@github>
 Yves Lefebvre <Ivanohe73@github>
 Jonathan Hearn <splidje@github>
 Martin Reboredo <YakoYakoYokuYoku@github>
+Aaron Colwell <acolwell@github>
 
 #Artists:
 
