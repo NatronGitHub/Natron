@@ -111,6 +111,7 @@ typedef Bool (*PFNGLXQUERYEXTENSIONPROC)(Display*, int*, int*);
 typedef Bool (*PFNGLXQUERYVERSIONPROC)(Display*, int*, int*);
 typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display*, GLXContext);
 typedef Bool (*PFNGLXMAKECURRENTPROC)(Display*, GLXDrawable, GLXContext);
+typedef GLXContext (*PFNGLXGETCURRENTCONTEXTPROC)();
 typedef void (*PFNGLXSWAPBUFFERSPROC)(Display*, GLXDrawable);
 typedef const char* (*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display*, int);
 typedef GLXFBConfig* (*PFNGLXGETFBCONFIGSPROC)(Display*, int, int*);
@@ -167,6 +168,7 @@ struct OSGLContext_glx_dataPrivate
     PFNGLXQUERYVERSIONPROC QueryVersion;
     PFNGLXDESTROYCONTEXTPROC DestroyContext;
     PFNGLXMAKECURRENTPROC MakeCurrent;
+    PFNGLXGETCURRENTCONTEXTPROC GetCurrentContext;
     PFNGLXSWAPBUFFERSPROC SwapBuffers;
     PFNGLXQUERYEXTENSIONSSTRINGPROC QueryExtensionsString;
     PFNGLXCREATENEWCONTEXTPROC CreateNewContext;
@@ -316,6 +318,7 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     glxInfo->_imp->QueryVersion = (PFNGLXQUERYVERSIONPROC)dlsym(glxInfo->_imp->handle, "glXQueryVersion");
     glxInfo->_imp->DestroyContext = (PFNGLXDESTROYCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXDestroyContext");
     glxInfo->_imp->MakeCurrent = (PFNGLXMAKECURRENTPROC)dlsym(glxInfo->_imp->handle, "glXMakeCurrent");
+    glxInfo->_imp->GetCurrentContext = (PFNGLXGETCURRENTCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentContext");
     glxInfo->_imp->SwapBuffers = (PFNGLXSWAPBUFFERSPROC)dlsym(glxInfo->_imp->handle, "glXSwapBuffers");
     glxInfo->_imp->QueryExtensionsString = (PFNGLXQUERYEXTENSIONSSTRINGPROC)dlsym(glxInfo->_imp->handle, "glXQueryExtensionsString");
     glxInfo->_imp->CreateNewContext = (PFNGLXCREATENEWCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXCreateNewContext");
@@ -810,6 +813,10 @@ OSGLContext_x11::~OSGLContext_x11()
         _imp->glxWindowHandle = 0;
     }
     if (_imp->glxContextHandle) {
+
+        if (glxInfo->_imp->GetCurrentContext() == _imp->glxContextHandle) {
+            glxInfo->_imp->MakeCurrent(glxInfo->_imp->x11.display, None, NULL);
+        }
         glxInfo->_imp->DestroyContext(glxInfo->_imp->x11.display, _imp->glxContextHandle);
         _imp->glxContextHandle = 0;
     }
