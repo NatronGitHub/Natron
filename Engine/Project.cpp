@@ -933,9 +933,7 @@ Project::initializeKnobs()
     _imp->gpuSupport->setAnimationEnabled(false);
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
-    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
-    }
+    _imp->gpuSupport->setAllDimensionsEnabled(appPTR->getCurrentSettings()->isOpenGLRenderingEnabled());
     page->addKnob(_imp->gpuSupport);
 
     KnobPagePtr viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
@@ -1208,16 +1206,6 @@ Project::getProjectFormatAtIndex(int index,
     QMutexLocker l(&_imp->formatMutex);
 
     return _imp->findFormat(index, f);
-}
-
-bool
-Project::isOpenGLRenderActivated() const
-{
-    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        return false;
-    }
-    int index =  _imp->gpuSupport->getValue();
-    return index == 0 || (index == 2 && !getApp()->isBackground());
 }
 
 int
@@ -1740,14 +1728,9 @@ Project::onKnobValueChanged(KnobI* knob,
 void
 Project::refreshOpenGLRenderingFlagOnNodes()
 {
-    bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
-    if (!activated) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
-    } else {
-        _imp->gpuSupport->setAllDimensionsEnabled(true);
-        int index =  _imp->gpuSupport->getValue();
-        activated = index == 0 || (index == 2 && !getApp()->isBackground());
-    }
+    _imp->gpuSupport->setAllDimensionsEnabled(appPTR->getCurrentSettings()->isOpenGLRenderingEnabled());
+
+    const bool activated = isGPURenderingEnabledInProject();
     NodesList allNodes;
     getNodes_recursive(allNodes, false);
     for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {

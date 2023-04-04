@@ -186,7 +186,7 @@ Node::load(const CreateNodeArgs& args)
        Set modifiable props
      */
     refreshDynamicProperties();
-    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
+    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isGPURenderingEnabledInProject());
 
     if ( isTrackerNodePlugin() ) {
         _imp->isMultiInstance = true;

@@ -5017,18 +5017,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ssinfo << "</font>";
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
     } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
-        bool enabled = true;
-        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
-        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-            enabled = false;
-        }
-        if (enabled) {
-            // Check value on project now
-            if (!getApp()->getProject()->isOpenGLRenderActivated()) {
-                enabled = false;
-            }
-        }
-        _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
+         // Do nothing. Knob value will be checked in getCurrentOpenGLRenderSupport() calls.
     } else if (what == _imp->processAllLayersKnob.lock().get() ) {
 
         std::map<int, ChannelSelector>::iterator foundOutput = _imp->channelsSelectors.find(-1);
@@ -5098,23 +5087,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
 void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
 {
-    bool enabled = activated;
     KnobChoicePtr k = _imp->openglRenderingEnabledKnob.lock();
-    if (enabled) {
-        if (k) {
-            k->setAllDimensionsEnabled(true);
-            int thisKnobIndex = k->getValue();
-            if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-                enabled = false;
-            }
-        }
-    } else {
-        if (k) {
-            k->setAllDimensionsEnabled(true);
-        }
+    if (k) {
+        // Make the enable state for the node knob match the
+        // state of the project level GPU rendering state.
+        // This makes it so you can't change node level GPU
+        // rendering state if the project has GPU rendering disabled.
+        k->setAllDimensionsEnabled(activated);
     }
-    _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
-
 }
 
 bool

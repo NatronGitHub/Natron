@@ -2756,20 +2756,6 @@ OfxEffectInstance::supportsOpenGLRender() const
     }
 }
 
-void
-OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
-{
-    const Plugin* p = getNode()->getPlugin();
-    if (p->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportYes) {
-        // The property may only change if the plug-in has the property set to yes on the descriptor
-        if (activated) {
-            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true");
-        } else {
-            effectInstance()->getProps().setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false");
-        }
-    }
-}
-
 bool
 OfxEffectInstance::supportsMultiResolution() const
 {
