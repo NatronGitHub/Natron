@@ -10,6 +10,7 @@ common.sh
 compiler-common.sh
 createBuildOptionsFile.sh
 ensure-ssh-identity.sh
+fixMacPortsDeps.sh
 gen-natron-doc.sh
 genDllVersions.sh
 gitRepositories.sh

@@ -2,7 +2,7 @@
 
 # Install libass (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libass.html
-LIBASS_VERSION=0.17.0
+LIBASS_VERSION=0.17.1
 LIBASS_TAR="libass-${LIBASS_VERSION}.tar.xz"
 LIBASS_SITE="https://github.com/libass/libass/releases/download/${LIBASS_VERSION}"
 if download_step; then

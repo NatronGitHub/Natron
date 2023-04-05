@@ -4,7 +4,7 @@
 # see https://github.com/openexr/openexr/releases/
 if [ -z ${EXR_VERSION+x} ]; then
 #EXR_VERSION=2.5.7
-EXR_VERSION=3.1.5
+EXR_VERSION=3.1.7
 EXR_CXX11_CONFIGURE_FLAGS=
 if version_gt "2.4.0" "${EXR_VERSION}"; then
     EXR_CXX11_CONFIGURE_FLAGS=--enable-cxxstd=11

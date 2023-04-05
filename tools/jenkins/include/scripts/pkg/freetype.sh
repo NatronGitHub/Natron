@@ -2,7 +2,7 @@
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/freetype2.html
-FREETYPE_VERSION=2.12.1
+FREETYPE_VERSION=2.13.0
 FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.xz"
 FREETYPE_SITE="https://downloads.sourceforge.net/freetype"
 if download_step; then

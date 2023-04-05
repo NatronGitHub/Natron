@@ -2,7 +2,7 @@
 
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/imagemagick.html
-MAGICK7_VERSION=7.1.0-49
+MAGICK7_VERSION=7.1.1-6
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 fi
