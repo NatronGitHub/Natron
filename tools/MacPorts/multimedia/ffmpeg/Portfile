@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel ffmpeg-upstream
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            4
+revision            6
 epoch               1
 
 license             LGPL-2.1+
@@ -230,7 +230,7 @@ platform darwin {
     }
 
     # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
-    # It provides support for H264, H263, MPEG1, MPEG2 and MPEG4.
+    # It provides support for H265, H264, H263, MPEG1, MPEG2 and MPEG4.
     if {${os.major} > 11} {
         configure.args-replace --disable-videotoolbox --enable-videotoolbox
     }

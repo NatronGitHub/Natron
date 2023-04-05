@@ -30,7 +30,7 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
-    version             15.0.7
+    version             16.0.0
     revision            0
 
     if { ${subport} eq "libomp-devel" } {
@@ -46,13 +46,13 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
     checksums \
         openmp-${version}.src.tar.xz \
-        rmd160  36bbb668fd2144d069ff03b167ad9dd8af45c072 \
-        sha256  3f168d38e7a37b928dcb94b33ce947f75d81eef6fa6a4f9d16b6dc5511c07358 \
-        size    1184544 \
+        rmd160  f1bddca83257a699c33c486b0e8a4200b8d70de0 \
+        sha256  e30f69c6533157ec4399193ac6b158807610815accfbed98695d72074e4bedd0 \
+        size    1278048 \
         cmake-${version}.src.tar.xz \
-        rmd160  547970bb920b88f04e35c0cbe03151d99abec97e \
-        sha256  8986f29b634fdaa9862eedda78513969fe9788301c9f2d938f4c10a3e7a3e7ea \
-        size    6972
+        rmd160  2263edb16c1aca6073ff5ca32104592ec77313be \
+        sha256  04e62ab7d0168688d9102680adf8eabe7b04275f333fe20eef8ab5a3a8ea9fcc \
+        size    9004
 
     if {${os.major} <= 12} {
         # kmp_alloc.c includes <atomic> but libc++ is not the default on

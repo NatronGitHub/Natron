@@ -4,7 +4,7 @@ PortSystem              1.0
 PortGroup               python 1.0
 
 name                    py-pyside2
-version                 5.15.3
+version                 5.15.8
 revision                0
 categories-append       devel aqua
 platforms               darwin
@@ -18,14 +18,14 @@ master_sites            https://download.qt.io/official_releases/QtForPython/pys
 distname                pyside-setup-opensource-src-${version}
 use_xz                  yes
 
-checksums               rmd160  e47a57c7d372862a286c7f1fa362896bff2e3b41 \
-                        sha256  7ff5f1cc4291fffb6d5a3098b3090abe4d415da2adec740b4e901893d95d7137 \
-                        size    3572248
+checksums               rmd160  49384ee04a5755d42dfaa89b7b11bbdbf58d012e \
+                        sha256  23436302c8deb5b4cbc769b205d09604e38ba83b40708efccb7bd8c9af6f6b5d \
+                        size    3582256
 
 
 python.versions         37 38 39 310
 
-set llvm_version        13
+set llvm_version        15
 
 if {${name} ne ${subport}} {
     PortGroup           qt5 1.0
@@ -43,11 +43,8 @@ if {${name} ne ${subport}} {
     # Needed for generating shiboken2 documentation
     qt5.depends_build_component sqlite-plugin
 
-    post-patch {
-        # undeclared identifier NPY_ARRAY_UPDATEIFCOPY
-        reinplace "s|NPY_ARRAY_UPDATEIFCOPY|NPY_ARRAY_WRITEBACKIFCOPY|g" \
-            ${worksrcpath}/sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp
-    }
+    # undeclared identifier NPY_ARRAY_UPDATEIFCOPY
+    patchfiles-append   patch-shiboken2-numpy-1.23.0.diff
 
     depends_build-append \
         path:bin/cmake:cmake \
@@ -97,6 +94,8 @@ if {${name} ne ${subport}} {
         qtlocation \
         qtmacextras \
         qtmultimedia \
+        qtquickcontrols2 \
+        qtremoteobjects \
         qtscript \
         qtscxml \
         qtsensors \
@@ -107,16 +106,6 @@ if {${name} ne ${subport}} {
         qtwebchannel \
         qtwebengine \
         qtwebsockets
-
-    if {[vercmp ${qt5.version} 5.6] >=0 } {
-        qt5.depends_component \
-            qtquickcontrols2
-    }
-
-    if {[vercmp ${qt5.version} 5.9] >=0 } {
-        qt5.depends_component \
-            qtremoteobjects
-    }
 
     livecheck.type      none
 } else {

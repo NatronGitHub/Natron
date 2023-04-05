@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 
 name            gnutls
 version         3.7.9
-revision        1
+revision        2
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
@@ -29,21 +29,6 @@ checksums       rmd160  0869a8d906afff9e3b28ceb9241cb7b53b464998 \
 
 subport ${name} {
     conflicts   ${name}-devel
-
-    if {${os.platform} eq "darwin" && ${os.major} > 19 && ${os.arch} eq "arm"} {
-        depends_build-append    port:libtool
-
-        # See: https://gitlab.com/gnutls/gnutls/-/issues/1317
-        patchfiles-append       patch-lib-accelerated-aarch64-Makefile.am.diff
-
-        use_autoreconf          yes
-        autoreconf.args         --install --verbose --force
-        configure.checks.implicit_function_declaration.whitelist-append strchr
-
-        pre-configure {
-            xinstall -m 644 -W ${prefix}/share/libtool/build-aux config.guess config.sub ${worksrcpath}
-        }
-    }
 }
 
 subport ${name}-devel {
@@ -109,7 +94,6 @@ configure.args-append \
                 --disable-libdane \
                 --disable-silent-rules \
                 --disable-static \
-                --enable-local-libopts \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \

@@ -2,9 +2,9 @@ From: Dean M Greer <Gcenx@github.com>
 
 macOS High Sierra may have MacOSX10.14.SDK and MacOSX10.13.SDK available, so due to how this detection work MacOSX10.14.SDK will be used causing an i386 build to fail.
 
---- build/make/configure.sh	2021-04-18 18:16:48.000000000 -0400
-+++ build/make/configure.sh	2021-06-30 19:31:17.000000000 -0400
-@@ -882,68 +882,9 @@ process_common_toolchain() {
+--- build/make/configure.sh.orig	2023-03-01 10:14:28.197079369 +0000
++++ build/make/configure.sh	2023-03-01 10:16:00.284193482 +0000
+@@ -882,68 +882,9 @@
          add_ldflags "-isysroot ${iphoneos_sdk_dir}"
        fi
        ;;
@@ -66,7 +66,7 @@ macOS High Sierra may have MacOSX10.14.SDK and MacOSX10.13.SDK available, so due
 -      add_cflags  "-mmacosx-version-min=10.15"
 -      add_ldflags "-mmacosx-version-min=10.15"
 -      ;;
--    *-darwin2[0-1]-*)
+-    *-darwin2[0-2]-*)
 -      add_cflags  "-arch ${toolchain%%-*}"
 -      add_ldflags "-arch ${toolchain%%-*}"
 -      ;;
