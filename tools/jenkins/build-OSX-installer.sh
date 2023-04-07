@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-#set -x # Print commands and their arguments as they are executed.
+set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 shopt -s extglob
 
@@ -300,7 +300,7 @@ for plugin in "${PLUGINDIR}/OFX/Natron"/*.ofx.bundle; do
             for deplib in "${plugin}"/Contents/MacOS/*.ofx "${plugin}"/Contents/Libraries/lib*dylib ; do
                 if [ -f "${deplib}" ]; then
                     install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-                    install_name_tool -change "${MACPORTS}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
+                    install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
                 fi
             done
         done
@@ -310,7 +310,7 @@ for plugin in "${PLUGINDIR}/OFX/Natron"/*.ofx.bundle; do
             lib="lib${l}.dylib"
             for deplib in "${plugin}"/Contents/MacOS/*.ofx "${plugin}"/Contents/Libraries/lib*dylib ; do
                 if [ -f "${deplib}" ]; then
-                    install_name_tool -change "${MACPORTS}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
+                    install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
                 fi
             done
         done
@@ -356,8 +356,8 @@ ln -sf "${package}" "${app_for_macdeployqt}"
 MACDEPLOYQT_OPTS=(-no-strip)
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
-    if [ ! -e "${binary}" ] && [ -e "${MACPORTS}/bin/${bin}" ]; then
-        cp "${MACPORTS}/bin/${bin}" "${binary}"
+    if [ ! -e "${binary}" ] && [ -e "${SDK_HOME}/bin/${bin}" ]; then
+        cp "${SDK_HOME}/bin/${bin}" "${binary}"
     fi
     if [ -e "${binary}" ]; then
         MACDEPLOYQT_OPTS+=(-executable="${binary}")
@@ -396,6 +396,10 @@ if otool -L "${natron_binary}" | grep -F -q "/usr/lib/libc++"; then
     if [ "${macosx}" -lt 11 ]; then
         COPY_LIBCXX=1
     fi
+fi
+if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
+    echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by macdeployqt"
+    exit 1
 fi
 
 #Copy and change exec_path of the whole Python framework with libraries
@@ -440,6 +444,10 @@ for mplib in ${MPLIBS}; do
         exit 1
     fi
     lib="$(echo "${mplib}" | awk -F / '{print $NF}')"
+    if [ "${lib}" = "libc++.1.dylib" ] || [ "${lib}" = "libc++abi.1.dylib" ]; then
+        echo "Error: ${lib} being copied from ${mplib}"
+        exit 1
+    fi
     if [ ! -f "${pkglib}/${lib}" ]; then
         cp "${mplib}" "${pkglib}/${lib}"
         chmod +w "${pkglib}/${lib}"
@@ -607,14 +615,14 @@ if [ "${COMPILER}" = "clang-omp" ]; then
         #install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${natron_binary}"
         for deplib in "${pkglib}/"*.dylib "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
             if [ -f "${deplib}" ]; then
-                install_name_tool -change "${MACPORTS}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
+                install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
             fi
         done
     done
 fi
 # shellcheck disable=SC2043
 #for f in Python; do
-#    install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${natron_binary}"
+#    install_name_tool -change "${SDK_HOME}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${natron_binary}"
 #done
 
 # fix library ids
@@ -630,7 +638,7 @@ popd # pushd "${pkglib}"
 
 echo "*** Copying poppler resources"
 #cp "Gui/Resources/Stylesheets/mainstyle.qss" "${package}/Contents/Resources/"
-cp -a "${MACPORTS}/share/poppler" "${package}/Contents/Resources/"
+cp -a "${SDK_HOME}/share/poppler" "${package}/Contents/Resources/"
 
 
 # install PySide in site-packages
@@ -654,46 +662,46 @@ fi
 PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
 rm -rf "${package}/Contents/Frameworks/${PYSIDE}"
-cp -a "${MACPORTS}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
+cp -a "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken.so"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}"
-    cp "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    cp "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     # fix shiboken.so
     lib_shiboken="shiboken${pypart}.${SBKVER}"
     dylib_shiboken="lib${lib_shiboken}.dylib"
     lib_pyside="pyside${pypart}.${SBKVER}"
     dylib_pyside="lib${l}.dylib"
     binary="${package}/Contents/Frameworks/${PYSHIBOKEN}"
-    install_name_tool -change "${MACPORTS}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
-    install_name_tool -change "${MACPORTS}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
+    install_name_tool -change "${SDK_HOME}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
+    install_name_tool -change "${SDK_HOME}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
     # install pyside and shiboken libs, and fix deps from Qt
     for l in  "${lib_shiboken}" "${lib_pyside}"; do
         dylib="lib${l}.dylib"
         binary="${package}/Contents/Frameworks/${dylib}"
-        cp "${MACPORTS}/lib/${dylib}" "${binary}"
+        cp "${SDK_HOME}/lib/${dylib}" "${binary}"
         install_name_tool -id "@executable_path/../Frameworks/${dylib}" "${binary}"
-        install_name_tool -change "${MACPORTS}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
-        install_name_tool -change "${MACPORTS}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
+        install_name_tool -change "${SDK_HOME}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
+        install_name_tool -change "${SDK_HOME}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"
         done
     done
 else
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
-    cp -a "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
+    cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
-    #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
+    #install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYSIDE}/libpyside2"*.dylib .)
-    #install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
+    #install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
     for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"
         done
         dylib=$(basename "${binary}")
         install_name_tool -id "@executable_path/../Frameworks/${dylib}" "${binary}"
-        install_name_tool -change "${MACPORTS}/lib/${dylib}" "@executable_path/../Frameworks/${dylib}" "${binary}"
+        install_name_tool -change "${SDK_HOME}/lib/${dylib}" "@executable_path/../Frameworks/${dylib}" "${binary}"
     done
 
 fi
@@ -735,7 +743,7 @@ for qtlib in "${qt_libs[@]}" ;do
 
         for l in  pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER}; do
             dylib="lib${l}.dylib"
-            install_name_tool -change "${MACPORTS}/lib/${dylib}" "@executable_path/../Frameworks/${dylib}" "${binary}"
+            install_name_tool -change "${SDK_HOME}/lib/${dylib}" "@executable_path/../Frameworks/${dylib}" "${binary}"
         done
         if [ "${LIBGCC}" = "1" ]; then
             for l in ${gcclibs}; do
@@ -744,7 +752,7 @@ for qtlib in "${qt_libs[@]}" ;do
             done
         fi
         
-        if otool -L "${binary}" | grep -F "${MACPORTS}"; then
+        if otool -L "${binary}" | grep -F "${SDK_HOME}"; then
             echo "Error: MacPorts libraries remaining in ${binary}, please check"
             exit 1
         fi
@@ -769,6 +777,10 @@ for bin in "${otherbins[@]}"; do
         lib="$(echo "${mplib}" | awk -F / '{print $NF}')"
         if [ ! -f "${pkglib}/${lib}" ]; then
             echo "copying missing lib ${lib}"
+            if [ "${lib}" = "libc++.1.dylib" ] || [ "${lib}" = "libc++abi.1.dylib" ]; then
+                echo "Error: ${lib} being copied from ${mplib}"
+                exit 1
+            fi
             cp "${mplib}" "${pkglib}/${lib}"
             chmod +w "${pkglib}/${lib}"
         fi
@@ -795,25 +807,34 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         done
     fi
     for f in Python; do
-        install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${binary}" || true
+        install_name_tool -change "${SDK_HOME}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${binary}" || true
     done
     if [ "${QT_VERSION_MAJOR}" = 5 ]; then
-        install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${binary}" || true
-        install_name_tool -rpath "${MACPORTS}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${binary}" || true
+        install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${binary}" || true
+        install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${binary}" || true
     fi
 done
 
 echo "*** Obfuscate the MacPorts paths..."
 
-# generate a pseudo-random string which has the same length as ${MACPORTS}
+# generate a pseudo-random string which has the same length as ${SDK_HOME}
 RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
 MACPORTSRAND=${RANDSTR:0:${#MACPORTS}}
 HOMEBREWRAND=${RANDSTR:1:${#HOMEBREW}}
 LOCALRAND=${RANDSTR:2:${#LOCAL}}
+SDKRAND=${RANDSTR:3:${#SDK_HOME}}
 
 for deplib in "${pkglib}/"*.framework/Versions/*/* "${pkglib}/"lib*.dylib; do
     if otool -L "${deplib}" | grep -F "${MACPORTS}"; then
         echo "Error: MacPorts libraries remaining in ${deplib}, please check"
+        exit 1
+    fi
+    if otool -L "${deplib}" | grep -F "${HOMEBREW}"; then
+        echo "Error: Homebrew libraries remaining in ${deplib}, please check"
+        exit 1
+    fi
+    if otool -L "${deplib}" | grep -F "${SDK_HOME}"; then
+        echo "Error: SDK libraries remaining in ${deplib}, please check"
         exit 1
     fi
 done
@@ -823,6 +844,14 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     if [ -f "${binary}" ]; then
         if otool -L "${binary}" | grep -F "${MACPORTS}"; then
             echo "Error: MacPorts libraries remaining in ${binary}, please check"
+            exit 1
+        fi
+        if otool -L "${binary}" | grep -F "${HOMEBREW}"; then
+            echo "Error: Homebrew libraries remaining in ${binary}, please check"
+            exit 1
+        fi
+        if otool -L "${binary}" | grep -F "${SDK_HOME}"; then
+            echo "Error: SDK libraries remaining in ${binary}, please check"
             exit 1
         fi
         # check if rpath does not contains some path, see https://stackoverflow.com/a/15394738
@@ -836,7 +865,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         if [ ${#rpath[@]} -gt 0 ]; then
             for r in "${rpath[@]}"; do
                 case "$r" in
-                    "${MACPORTS}"/libexec/llvm-*/lib|"${MACPORTS}"/lib)
+                    "${SDK_HOME}"/libexec/llvm-*/lib|"${SDK_HOME}"/lib)
                         install_name_tool -delete_rpath "$r" "${binary}"
                         ;;
                 esac
@@ -857,7 +886,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         # Copy and change exec_path of the whole Python framework with libraries
         # shellcheck disable=SC2043
         for f in Python; do
-            install_name_tool -change "${MACPORTS}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${binary}"
+            install_name_tool -change "${SDK_HOME}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${binary}"
         done
 
 
@@ -866,23 +895,23 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         if [ "${LIBGCC}" = "1" ]; then
             for l in ${gcclibs}; do
                 lib="lib${l}.dylib"
-                install_name_tool -change "${MACPORTS}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
             done
         fi
 
         if [ "${LIBGCC}" = "1" ]; then
             for l in ${gcclibs}; do
                 lib="lib${l}.dylib"
-                cp "${MACPORTS}/lib/libgcc/${lib}" "${pkglib}/${lib}"
+                cp "${SDK_HOME}/lib/libgcc/${lib}" "${pkglib}/${lib}"
                 install_name_tool -id "@executable_path/../Frameworks/${lib}" "${pkglib}/${lib}"
             done
             for l in ${gcclibs}; do
                 lib="lib${l}.dylib"
-                install_name_tool -change "${MACPORTS}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
                 install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
                 for deplib in "${pkglib}/"*".dylib" "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
                     if [ -f "${deplib}" ]; then
-                        install_name_tool -change "${MACPORTS}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
+                        install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
                     fi
                 done
             done
@@ -899,15 +928,15 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         if [ "${COMPILER}" = "clang-omp" ]; then
             for l in ${omplibs}; do
                 lib="lib${l}.dylib"
-                cp "${MACPORTS}/lib/libomp/${lib}" "${pkglib}/${lib}"
+                cp "${SDK_HOME}/lib/libomp/${lib}" "${pkglib}/${lib}"
                 install_name_tool -id "@executable_path/../Frameworks/${lib}" "${pkglib}/${lib}"
             done
             for l in ${omplibs}; do
                 lib="lib${l}.dylib"
-                install_name_tool -change "${MACPORTS}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+                install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
                 for deplib in "${pkglib}/"*.dylib "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
                     if [ -f "${deplib}" ]; then
-                        install_name_tool -change "${MACPORTS}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
+                        install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
                     fi
                 done
             done
@@ -957,7 +986,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         while $endl; do
             #echo -e "\033[1mLooking for dependencies.\033[0m Round" $a
             # see http://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-            libs=( $(otool -L "${pkglib}"/*.dylib "${LIBADD[@]+${LIBADD[@]}}" "${binary}" 2>/dev/null | grep -F compatibility | cut -d\( -f1 | grep -e "${LOCAL}"'\|'"${HOMEBREW}"'\|'"${MACPORTS}" | sort | uniq) )
+            libs=( $(otool -L "${pkglib}"/*.dylib "${LIBADD[@]+${LIBADD[@]}}" "${binary}" 2>/dev/null | grep -F compatibility | cut -d\( -f1 | grep -e "${LOCAL}"'\|'"${HOMEBREW}"'\|'"${MACPORTS}"'\|'"${SDK_HOME}" | sort | uniq) )
             if [ -n "${libs[*]-}" ]; then
                 # cp option '-n': do not overwrite any existing file (mainly for pyside and shiboken, which were copied before)
                 cp -n "${libs[@]}" "${pkglib}" || true
@@ -1007,7 +1036,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         #Change @executable_path for binary deps
         for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside${pypart}.${SBKVER} shiboken${pypart}.${SBKVER} intl.8; do
                 lib="lib${l}.dylib"
-            install_name_tool -change "${MACPORTS}/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+            install_name_tool -change "${SDK_HOME}/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
         done
 
         # NOT NECESSARY?
@@ -1016,7 +1045,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
             alllibs=( "${package}/Contents/Frameworks/"lib*.dylib )
             for l in "${alllibs[@]+${alllibs[@]}}"; do
                 lib="$(basename "$l")"
-                install_name_tool -change "${MACPORTS}/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+                install_name_tool -change "${SDK_HOME}/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
 	        done
 	    fi
 
@@ -1024,8 +1053,16 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
             echo "Error: MacPorts libraries remaining in ${binary}, please check"
             exit 1
         fi
+        if otool -L "${binary}" | grep -F "${HOMEBREW}"; then
+            echo "Error: Homebrew libraries remaining in ${binary}, please check"
+            exit 1
+        fi
+        if otool -L "${binary}" | grep -F "${SDK_HOME}"; then
+            echo "Error: SDK libraries remaining in ${binary}, please check"
+            exit 1
+        fi
 
-        ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@${HOMEBREW}@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" --in-place "${binary}"
+        ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@${HOMEBREW}@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" -e "s@${SDK_HOME}@${SDKRAND}@g" --in-place "${binary}"
     fi
 done
 
@@ -1039,7 +1076,7 @@ for l in "${alllibs[@]+${alllibs[@]}}"; do
     if false; then
 	for l2 in "${alllibs[@]+${alllibs[@]}}"; do
 	    lib2="$(basename "${l2}")"
-	    install_name_tool -change "${MACPORTS}/lib/${lib2}" "@executable_path/../Frameworks/${lib}" "${package}/Contents/Frameworks/${lib}"
+	    install_name_tool -change "${SDK_HOME}/lib/${lib2}" "@executable_path/../Frameworks/${lib}" "${package}/Contents/Frameworks/${lib}"
 	done
     fi
     
@@ -1047,14 +1084,22 @@ for l in "${alllibs[@]+${alllibs[@]}}"; do
         echo "Error: MacPorts libraries remaining in ${package}/Contents/Frameworks/${lib}, please check"
         exit 1
     fi
+    if otool -L "${package}/Contents/Frameworks/${lib}" | grep -F "${HOMEBREW}"; then
+        echo "Error: Homebrew libraries remaining in ${package}/Contents/Frameworks/${lib}, please check"
+        exit 1
+    fi
+    if otool -L "${package}/Contents/Frameworks/${lib}" | grep -F "${SDK_HOME}"; then
+        echo "Error: SDK libraries remaining in ${package}/Contents/Frameworks/${lib}, please check"
+        exit 1
+    fi
 
-    ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@$HOMEBREW@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" --in-place "${package}/Contents/Frameworks/${lib}"
+    ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@$HOMEBREW@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" -e "s@${SDK_HOME}@${SDKRAND}@g" --in-place "${package}/Contents/Frameworks/${lib}"
 done
 
 # and now, obfuscate all the default paths in dynamic libraries
 # and ImageMagick modules and config files
 
-find "${pkglib}" -type f -exec ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@$HOMEBREW@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" --in-place {} \;
+find "${pkglib}" -type f -exec ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@$HOMEBREW@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" -e "s@${SDK_HOME}@${SDKRAND}@g" --in-place {} \;
 
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-bin"
@@ -1167,7 +1212,7 @@ if [ "$COPY_LIBCXX" = 1 ]; then
 fi
 
 
-export PY_BIN="${MACPORTS}/bin/python${PYVER:-}"
+export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
 export PYDIR="${pkglib}/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 . "${CWD}/zip-python.sh"
 NATRON_PYTHON="${package}/Contents/MacOS/natron-python"
@@ -1204,6 +1249,11 @@ echo "*** Signing extra binaries"
 (cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
 echo "*** Signing app"
 "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
+
+if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
+    echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by mistake"
+    exit 1
+fi
 
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then

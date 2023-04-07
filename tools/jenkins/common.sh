@@ -122,7 +122,21 @@ elif [ "$PKGOS" = "OSX" ]; then
     MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
-    SDK_HOME="$MACPORTS"
+    LOCAL="/usr/local"
+    HOMEBREW="${LOCAL}"
+    if [ -e "/brew2/local" ]; then
+        HOMEBREW="/brew2/local"
+    elif [ -e "/opt/homebrew" ]; then
+        HOMEBREW="/opt/homebrew"
+    fi
+    if [ -e "${MACPORTS}" ]; then
+        SDK_HOME="${SDK_HOME:-${MACPORTS}}"
+    elif [ -e "${HOMEBREW}" ]; then
+        SDK_HOME="${SDK_HOME:-${HOMEBREW}}"
+    else
+        SDK_HOME="${SDK_HOME:-${LOCAL}}"
+    fi
+
     # Path where GPL builds are stored
     CUSTOM_BUILDS_PATH="/opt"
 
@@ -130,13 +144,13 @@ elif [ "$PKGOS" = "OSX" ]; then
     # let's use gsed in binary mode.
     # gsed is provided by the gsed package on MacPorts or the gnu-sed package on homebrew
     # when using this variable, do not double-quote it ("$GSED"), because it contains options
-    GSED="${MACPORTS}/bin/gsed -b"
-    PATH="${MACPORTS}/bin:$PATH"
+    GSED="${SDK_HOME}/bin/gsed -b"
+    PATH="${SDK_HOME}/bin:$PATH"
     # timeout is available in GNU coreutils:
     # sudo port install coreutils
     # or
     # brew install coreutils
-    TIMEOUT="${MACPORTS}/bin/gtimeout"
+    TIMEOUT="${SDK_HOME}/bin/gtimeout"
 elif [ "$PKGOS" = "Windows" ]; then
     if [ -z "${BITS:-}" ]; then
         (>&2 echo "Error: You must select a value for BITS (32 or 64)")

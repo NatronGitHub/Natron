@@ -488,7 +488,7 @@ elif [ "$PKGOS" = "OSX" ]; then
     # However, The universal build on OS X 10.6 requires this
     if [ "$MACOSX_DEPLOYMENT_TARGET" = "10.6" ]; then
         if [ "$COMPILER" = "gcc" ]; then
-            env DYLD_LIBRARY_PATH="$MACPORTS"/lib/libgcc:/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$MACPORTS"/lib $TIMEOUT -s KILL 1800 Tests/Tests
+            env DYLD_LIBRARY_PATH="$SDK_HOME"/lib/libgcc:/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$SDK_HOME"/lib $TIMEOUT -s KILL 1800 Tests/Tests
         else
             # be more tolerant to test fails on 10.6
             $TIMEOUT -s KILL 1800 Tests/Tests || true
