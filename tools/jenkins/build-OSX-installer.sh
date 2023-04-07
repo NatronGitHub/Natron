@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 shopt -s extglob
 
@@ -39,6 +39,7 @@ popd () {
 
 updateBuildOptions
 
+echo "*** macOS version:"
 macosx=$(uname -r | sed 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|')
 case "${macosx}" in
 22) echo "macOS 13.x    Ventura";;
@@ -372,6 +373,8 @@ if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     #fi
 fi
 echo Executing: "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
+#echo "********** DISABLED! press return"
+#read
 "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
 # remove temp link
 rm  "${app_for_macdeployqt}"
@@ -402,7 +405,7 @@ if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; th
     exit 1
 fi
 
-#Copy and change exec_path of the whole Python framework with libraries
+echo "*** Copy and change exec_path of the whole Python framework with libraries..."
 rm -rf "${pkglib}/Python.framework"
 mkdir -p "${pkglib}/Python.framework/Versions/${PYVER}/lib"
 ln -sf "${PYVER}" "${pkglib}/Python.framework/Versions/Current"
@@ -433,7 +436,7 @@ if [ ! -d "${DYNLOAD}" ]; then
     exit 1
 fi
 
-echo "*** Copying and fixing ${SDK_HOME} dependencies"
+echo "*** Copying and fixing ${SDK_HOME} dependencies..."
 MPLIBS0="$(for i in "${pkglib}/Python.framework/Versions/Current/Python" "${DYNLOAD}"/*.so; do otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
 # also add first-level and second-level dependencies 
 MPLIBS1="$(for i in ${MPLIBS0}; do echo "$i"; otool -L "$i" | grep -F "${SDK_HOME}/lib" | grep -F -v ':'; done |sort|uniq |awk '{print $1}')"
@@ -518,6 +521,9 @@ for qtlib in "${qt_libs[@]}"; do
         done
         for lib in libcrypto.3.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.3.dylib libz.1.dylib; do
             install_name_tool -change "${SDK_HOME}/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
+        done
+        for lib in libcrypto.3.dylib libssl.3.dylib; do
+            install_name_tool -change "${SDK_HOME}/libexec/openssl3/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
         done
     fi
 done
@@ -815,8 +821,7 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     fi
 done
 
-echo "*** Obfuscate the MacPorts paths..."
-
+echo "*** Obfuscate the MacPorts/Homebrew/SDK paths..."
 # generate a pseudo-random string which has the same length as ${SDK_HOME}
 RANDSTR="R7bUU6jiFvqrPy6zLVPwIC3b93R2b1RG2qD3567t8hC3b93R2b1RG2qD3567t8h"
 MACPORTSRAND=${RANDSTR:0:${#MACPORTS}}
@@ -825,6 +830,9 @@ LOCALRAND=${RANDSTR:2:${#LOCAL}}
 SDKRAND=${RANDSTR:3:${#SDK_HOME}}
 
 for deplib in "${pkglib}/"*.framework/Versions/*/* "${pkglib}/"lib*.dylib; do
+    if [ ! -f "${deplib}" ]; then
+        continue
+    fi
     if otool -L "${deplib}" | grep -F "${MACPORTS}"; then
         echo "Error: MacPorts libraries remaining in ${deplib}, please check"
         exit 1
@@ -1217,44 +1225,6 @@ export PYDIR="${pkglib}/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 . "${CWD}/zip-python.sh"
 NATRON_PYTHON="${package}/Contents/MacOS/natron-python"
 
-echo "*** Signing frameworks"
-pushd "${package}/Contents/Frameworks"
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    for f in "${qt_libs[@]}"; do
-        if [ -e "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" ]; then
-            "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}"
-        fi
-    done
-    for f in *.framework; do
-        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "$f" || true # fails on Qt4 frameworks
-    done
-else
-    "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
-fi
-popd
-echo "*** Signing libraries"
-(cd "${package}/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.dylib)
-echo "Signing OFX plugins"
-(cd "${package}/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.bundle)
-if [ -x "${NATRON_PYTHON}" ]; then
-    echo "Signing python shared objects"
-    (cd "${DYNLOAD}"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.so)
-    if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-        (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*/*.so)
-    else
-        (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*/*.so ./*/*.dylib)
-    fi
-fi
-echo "*** Signing extra binaries"
-(cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
-echo "*** Signing app"
-"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
-
-if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
-    echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by mistake"
-    exit 1
-fi
-
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${NATRON_PYTHON}"
@@ -1298,6 +1268,45 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${NATRON_PYTHON}" -m compileall -f "${PYDIR}/site-packages"
     popd
 fi
+
+echo "*** Signing frameworks"
+pushd "${package}/Contents/Frameworks"
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    for f in "${qt_libs[@]}"; do
+        if [ -e "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" ]; then
+            "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}"
+        fi
+    done
+    for f in *.framework; do
+        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "$f" || true # fails on Qt4 frameworks
+    done
+else
+    "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
+fi
+popd
+echo "*** Signing libraries"
+(cd "${package}/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.dylib)
+echo "* Signing OFX plugins"
+(cd "${package}/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.bundle)
+if [ -x "${NATRON_PYTHON}" ]; then
+    echo "* Signing python shared objects"
+    find "${DYNLOAD}" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
+        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
+    done
+    find "${PYDIR}/site-packages" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
+        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
+    done
+fi
+echo "*** Signing extra binaries"
+(cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
+echo "*** Signing app"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
+
+if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
+    echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by mistake"
+    exit 1
+fi
+
 
 # # "${CODESIGN}" again for safety
 # if [ "${QT_VERSION_MAJOR}" = 5 ]; then
