@@ -28,8 +28,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Engine/RectISerialization.h"
-
 NATRON_NAMESPACE_ENTER
 
 // explicit template instantiations

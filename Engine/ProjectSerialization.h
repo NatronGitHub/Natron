@@ -60,6 +60,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"
+#include "Engine/RectDSerialization.h"
+#include "Engine/RectISerialization.h"
 #include "Engine/TimeLine.h"
 
 #include "Engine/EngineFwd.h"

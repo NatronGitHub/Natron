@@ -47,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Engine/RectISerialization.h"
 
 NATRON_NAMESPACE_ENTER
 
