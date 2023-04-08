@@ -239,7 +239,7 @@ fi
 
 
 QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
-if version_gt "${RELEASE_TAG:-0}" 2.5; then
+if version_gt "${RELEASE_TAG:-0}" 2.5.99; then
     QT_VERSION_MAJOR=5
 fi
 case "${GIT_BRANCH:-}" in
