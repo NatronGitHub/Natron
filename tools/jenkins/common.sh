@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # see https://stackoverflow.com/a/24067243
-function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+function version_gt() { test "$(printf '%s\n' "$@" | $GSORT -V | head -n 1)" != "$1"; }
 
 # common.sh is sourced multiple times across scripts so it may already have set CWD
 if [ -z "${CWD:-}" ]; then
@@ -40,6 +40,7 @@ export TMPDIR
 LANG="C"
 export LANG
 GSED="sed -b"
+GSORT="sort"
 TIMEOUT="timeout"
 #WGET="wget --referer https://natron.fr/"
 
@@ -145,6 +146,7 @@ elif [ "$PKGOS" = "OSX" ]; then
     # gsed is provided by the gsed package on MacPorts or the gnu-sed package on homebrew
     # when using this variable, do not double-quote it ("$GSED"), because it contains options
     GSED="${SDK_HOME}/bin/gsed -b"
+    GSORT="${SDK_HOME}/bin/gsort"
     PATH="${SDK_HOME}/bin:$PATH"
     # timeout is available in GNU coreutils:
     # sudo port install coreutils
