@@ -1,0 +1,22 @@
+--- a/config/Imath.pc.in
++++ b/config/Imath.pc.in
+@@ -13,5 +13,5 @@
+ Version: @IMATH_VERSION@
+ Requires:
+ Conflicts:
+-Libs: -L${libdir} -lImath${libsuffix}
++Libs: -L${libdir} -lImath
+ Cflags: -I${includedir} -I${includedir}/Imath
+--- a/config/LibraryDefine.cmake
++++ b/config/LibraryDefine.cmake
+@@ -79,7 +79,9 @@
+   endif()
+ 
+   set_target_properties(${libname} PROPERTIES
+-      OUTPUT_NAME "${libname}${IMATH_LIB_SUFFIX}"
++      OUTPUT_NAME "${libname}"
++      RUNTIME_OUTPUT_NAME "${libname}${IMATH_LIB_SUFFIX}"
++      ARCHIVE_OUTPUT_NAME "${libname}"
+       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+   )
+   add_library(${PROJECT_NAME}::${libname} ALIAS ${libname})

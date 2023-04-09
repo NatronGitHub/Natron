@@ -5,7 +5,8 @@ PKGS="
 mingw-w64-qt4
 mingw-w64-shiboken
 mingw-w64-pyside
-mingw-w64-openexr25
+mingw-w64-imath
+mingw-w64-openexr
 mingw-w64-libraw-gpl2
 mingw-w64-opencolorio2-git
 mingw-w64-openimageio

@@ -3,9 +3,9 @@
 _realname=opencolorio
 pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-gitcommit=32b01f6 # 2.1.1
-pkgver=1343.32b01f64
-pkgrel=99.7
+gitcommit=66b7b7d # 2.1.3
+pkgver=1356.66b7b7d5
+pkgrel=99.1
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
 url="http://opencolorio.org"
@@ -36,7 +36,7 @@ pkgver() {
 
 prepare() {
   cd ${_realname}
-  patch -p1 -i ${srcdir}/ocio-2.1.1.patch
+  #patch -p1 -i ${srcdir}/ocio-2.1.1.patch
 }
 
 build() {
@@ -53,7 +53,7 @@ build() {
     -DOCIO_BUILD_TESTS=OFF \
     -DOCIO_BUILD_GPU_TESTS=OFF \
     -DOCIO_BUILD_PYTHON=OFF \
-    -DOCIO_USE_OPENEXR_HALF=ON \
+    -DOCIO_USE_OPENEXR_HALF=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=14 \
     -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON \

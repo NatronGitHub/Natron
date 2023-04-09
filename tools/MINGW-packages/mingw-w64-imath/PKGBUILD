@@ -1,0 +1,78 @@
+# Maintainer: Biswapriyo Nath <nathbappai@gmail.com>
+
+_realname=imath
+pkgbase=mingw-w64-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=3.1.7
+pkgrel=99.1
+pkgdesc='A C++ and python library of 2D and 3D vector, matrix, and math operations for computer graphics (mingw-w64)'
+url='https://www.openexr.com/'
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+license=('spdx:BSD-3-Clause')
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=("${MINGW_PACKAGE_PREFIX}-boost"
+             "${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-python"
+             "${MINGW_PACKAGE_PREFIX}-python-numpy")
+optdepends=("${MINGW_PACKAGE_PREFIX}-python: python bindings"
+            "${MINGW_PACKAGE_PREFIX}-boost: python bindings")
+source=("https://github.com/AcademySoftwareFoundation/Imath/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
+        0001-cmake-libs-name.patch
+        0002-fix-openexr-clang-build.patch)
+sha256sums=('bff1fa140f4af0e7f02c6cb78d41b9a7d5508e6bcdfda3a583e35460eb6d4b47'
+            '2dc2de52e2475cc9d725ff443466d3ac247a405018f1d9b0caeb03a9d5116d9b'
+            '0eea3c7b57d5b59887f963d696c2afdcfb1976a3913f161995e19b13d6a65086')
+
+prepare() {
+  cd "Imath-${pkgver}"
+  patch -p1 -i "${srcdir}/0001-cmake-libs-name.patch"
+  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+    patch -p1 -i "${srcdir}/0002-fix-openexr-clang-build.patch"
+  fi
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MSYSTEM}" ]] && rm -rf "${srcdir}/build-${MSYSTEM}"
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  # ld.lld: error: too many exported symbols (max 65535)
+  if [[ ${MINGW_PACKAGE_PREFIX} != *-clang-* ]]; then
+    _extra_config+=("-DPYTHON=ON")
+  fi
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake.exe \
+    -G "Ninja" \
+    "${_extra_config[@]}" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_TESTING=OFF \
+    -DPython_EXECUTABLE=${MINGW_PREFIX}/bin/python.exe \
+    -DPython3_EXECUTABLE=${MINGW_PREFIX}/bin/python.exe \
+    -DIMATH_INSTALL_PKG_CONFIG=ON \
+    ../Imath-${pkgver}
+
+  ${MINGW_PREFIX}/bin/cmake.exe --build .
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+  DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/cmake.exe --install ./
+
+  # Fix cmake files
+  local PREFIX_WIN=$(cygpath -am ${MINGW_PREFIX})
+  find "${pkgdir}${MINGW_PREFIX}/lib/cmake" -type f -name '*.cmake' \
+      -exec sed -i -e "s|${PREFIX_WIN}|\$\{_IMPORT_PREFIX\}|g" {} \;
+
+  install -Dm644 "${srcdir}/Imath-${pkgver}/LICENSE.md" "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE.md"
+}

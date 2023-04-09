@@ -5,11 +5,11 @@ VERSION="current"
 TMP="${CWD}/tmp-${VERSION}"
 URL="https://sourceforge.net/projects/natron/files/MINGW-packages"
 PKGS="
-mingw-w64-x86_64-openimageio-2.4.6.0-99.2-any.pkg.tar.zst
-mingw-w64-x86_64-openexr-2.5.8-99.2-any.pkg.tar.zst
+mingw-w64-x86_64-imath-3.1.7-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-openexr-3.1.7-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-opencolorio-git-1356.66b7b7d5-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-openimageio-2.4.10.0-99.1-any.pkg.tar.zst
 mingw-w64-x86_64-ffmpeg-gpl2-4.4.3-99.1-any.pkg.tar.zst
-mingw-w64-x86_64-opencolorio-git-1343.32b01f64-99.7-any.pkg.tar.zst
-mingw-w64-x86_64-ilmbase-2.5.8-99.2-any.pkg.tar.zst
 mingw-w64-x86_64-qt4-4.8.7-99.5-any.pkg.tar.zst
 mingw-w64-x86_64-imagemagick-6.9.11.16-5-any.pkg.tar.zst
 mingw-w64-x86_64-poppler-22.01.0-99.2-any.pkg.tar.zst
