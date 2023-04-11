@@ -70,13 +70,19 @@ else
 fi
 otherbins=(ffmpeg ffprobe iconvert idiff igrep iinfo exrheader tiffinfo) # iv maybe?
 
+if [ "${SDK_HOME}" = "${MACPORTS}" ] && [ ! -h "${SDK_HOME}/Library/lib" ]; then
+    echo "Error: missing link \"${SDK_HOME}/Library/lib\" to help macdeployqt find the Python framework, please execute the following and relaunch:"
+    echo "sudo ln -s Frameworks \"${SDK_HOME}/Library/lib\""
+    exit 1
+fi
 
 ## Code signing
 ###############
 # Docs about code signing:
 # - Code Signing Resources https://developer.apple.com/forums/thread/707080
 # - Resolving errSecInternalComponent errors https://developer.apple.com/forums/thread/712005 (when signing over ssh)
-CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:-8ZN4B9KT99}
+#CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:-8ZN4B9KT99}
+CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:--}
 BUNDLE_ID=fr.inria.Natron
 if [ "${CODE_SIGN_IDENTITY}" = "-" ]; then
     # If identity is the single letter "-" (dash), ad-hoc signing is performed. Ad-hoc signing does not use
@@ -84,25 +90,40 @@ if [ "${CODE_SIGN_IDENTITY}" = "-" ]; then
     # use of ad-hoc signed code; consult documentation before using this.
     echo "code signing with ad-hoc signing."
     CODESIGN=codesign
+elif [ -z "${CODE_SIGN_IDENTITY}" ]; then
+    echo "no code signing."
+    CODESIGN=true
 elif (security find-identity -v -p codesigning | grep -F -q "${CODE_SIGN_IDENTITY}"); then
     echo "code signing identity ${CODE_SIGN_IDENTITY} found"
     CODESIGN=codesign
 else
     echo "code signing identity ${CODE_SIGN_IDENTITY} not found: Disabling code signing."
     CODESIGN=true
-    CODE_SIGN_IDENTITY=""
 fi
+if [ -z "${CODE_SIGN_IDENTITY}" ] && [ "$(uname -m)" = "arm64" ]; then
+    echo "Error: Apple silicon Mac binaries must be signed to be runnable"
+    echo "see also:"
+    echo "- https://mjtsai.com/blog/2020/08/19/apple-silicon-macs-to-require-signed-code/"
+    echo "- https://eclecticlight.co/2020/08/22/apple-silicon-macs-will-require-signed-code/"
+    exit 1
+fi
+
 CODE_SIGN_OPTS=(--force --sign "${CODE_SIGN_IDENTITY}")
 CODE_SIGN_MAIN_OPTS=()
 # entitlements for hardened runtime, see https://kb.froglogic.com/squish/mac/troubleshoot/hardened-runtime/
 # We definitely need to disable library validation, because of external OpenFX plugins.
 # Some of these plugins may require setting DYLD_LIBRARY_PATH
 if [ "${macosx}" -ge 18 ]; then # Started with 10.14
+    # see https://github.com/JetBrains/compose-multiplatform/issues/2887#issuecomment-1473702563
     cat > "${TMP_BINARIES_PATH}/natron.entitlements" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
 	<key>com.apple.security.cs.disable-library-validation</key>
 	<true/>
 	<key>com.apple.security.cs.allow-dyld-environment-variables</key>
@@ -110,7 +131,7 @@ if [ "${macosx}" -ge 18 ]; then # Started with 10.14
 </dict>
 </plist>
 EOF
-    CODE_SIGN_MAIN_OPTS=(--options runtime)
+    CODE_SIGN_MAIN_OPTS+=(--options runtime)
     CODE_SIGN_OPTS+=(--timestamp)
     CODE_SIGN_MAIN_OPTS+=(--entitlements "${TMP_BINARIES_PATH}/natron.entitlements")
 fi
@@ -185,6 +206,7 @@ fi
 package="${TMP_PORTABLE_DIR}.app"
 if [ -d "${package}" ]; then
     echo "${package} already exists, removing it"
+    chmod -R u+w "${package}"
     rm -rf "${package}"
 fi
 mkdir -p "${package}/Contents/Frameworks"
@@ -351,10 +373,11 @@ STRIP=1
 # ERROR: Could not find bundle binary for "/Users/devernay/Development/workspace/tmp/tmp_deploy/Natron-RB-2.3-201909281526-05aaefe-64-no-installer.app"
 # ERROR: "error: otool: can't open file:  (No such file or directory)
 app_for_macdeployqt="$(dirname "${package}")/Natron.app"
-[ -e  "${app_for_macdeployqt}" ] && rm "${app_for_macdeployqt}"
+[ -e  "${app_for_macdeployqt}" ] && rm -rf "${app_for_macdeployqt}"
 # make a temporary link to Natron.app
 ln -sf "${package}" "${app_for_macdeployqt}"
 MACDEPLOYQT_OPTS=(-no-strip)
+MACDEPLOYQT_OPTS+=(-libpath="${SDK_HOME}/lib/nss" -libpath="${SDK_HOME}/lib/nspr")
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
     if [ ! -e "${binary}" ] && [ -e "${SDK_HOME}/bin/${bin}" ]; then
@@ -366,7 +389,8 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
 done
 if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     if [ -n "${CODE_SIGN_IDENTITY}" ]; then
-        MACDEPLOYQT_OPTS+=(-codesign="${CODE_SIGN_IDENTITY}")
+        echo "* executing macdeployqt without code signing"
+        #MACDEPLOYQT_OPTS+=(-codesign="${CODE_SIGN_IDENTITY}")
     fi
     #if [ "${macosx}" -ge 18 ]; then
     #    MACDEPLOYQT_OPTS+=(-hardened-runtime)
@@ -421,8 +445,6 @@ install_name_tool -id "@executable_path/../Frameworks/Python.framework/Versions/
 ln -sf "Versions/Current/Python" "${pkglib}/Python.framework/Python"
 
 rm -rf "${pkglib}/Python.framework/Versions/Current/lib/python${PYVER}/site-packages/"*
-#rm -rf "${pkglib}/Python.framework/Versions/Current/lib/python${PYVER}/__pycache__"
-#rm -rf "${pkglib}/Python.framework/Versions/Current/lib/python${PYVER}/*/__pycache__"
 #FILES=`ls -l "${PYTHON_HOME}/lib|awk" '{print $9}'`
 #for f in FILES; do
 #    #FILE=echo "{$f}" | ${GSED} "s/cpython-34.//g"
@@ -1236,8 +1258,9 @@ if [ -x "${NATRON_PYTHON}" ]; then
     else
         ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/get-pip.py"
     fi
+    PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" get-pip.py
-    "${NATRON_PYTHON}" get-pip.py
+    "${PY_EXE}" get-pip.py --target "${PYDIR}/site-packages"
     rm get-pip.py
     # Install qtpy
     if [ "${QT_VERSION_MAJOR}" = 4 ]; then
@@ -1246,10 +1269,10 @@ if [ -x "${NATRON_PYTHON}" ]; then
         # qtpy bug fix for Qt4
         ${GSED} -i "s/^except ImportError:/except (ImportError, PythonQtError):/" "${PYDIR}/site-packages/qtpy/__init__.py"
     else
-        "${NATRON_PYTHON}" -m pip install qtpy
+        "${PY_EXE}" -m pip install qtpy --upgrade --target "${PYDIR}/site-packages"
     fi
     # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install future six
+    "${PY_EXE}" -m pip install future six --upgrade --target "${PYDIR}/site-packages"
     # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
     case "${macosx}" in
     9|10|11|12)
@@ -1257,16 +1280,27 @@ if [ -x "${NATRON_PYTHON}" ]; then
         true
         ;;
     *)
-        "${NATRON_PYTHON}" -m pip install psutil
+        "${PY_EXE}" -m pip install psutil --upgrade --target "${PYDIR}/site-packages"
         ;;
     esac
-    (cd "${PYDIR}/site-packages"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*/*.so)
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-        "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+        "${PY_EXE}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
     fi
-    "${NATRON_PYTHON}" -m compileall -f "${PYDIR}/site-packages"
-    popd
+    # "${PY_EXE}" -m compileall -f "${PYDIR}/site-packages"
+    "${PY_EXE}" -m compileall -f -q "${PYDIR}"
+fi
+
+# Must be done before signing frameworks, because these are sealed resources
+if [ -x "${NATRON_PYTHON}" ]; then
+    echo "* Signing python shared objects"
+    find "${DYNLOAD}" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
+        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
+    done
+    find "${PYDIR}/site-packages" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
+        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
+    done
+    rm -rf "${PYDIR}/__pycache__" "${PYDIR}/*/__pycache__" || true
 fi
 
 echo "*** Signing frameworks"
@@ -1284,19 +1318,13 @@ else
     "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
 fi
 popd
+
 echo "*** Signing libraries"
 (cd "${package}/Contents/Frameworks"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.dylib)
+
 echo "* Signing OFX plugins"
 (cd "${package}/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.bundle)
-if [ -x "${NATRON_PYTHON}" ]; then
-    echo "* Signing python shared objects"
-    find "${DYNLOAD}" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
-        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
-    done
-    find "${PYDIR}/site-packages" -iname '*.so' -or -iname '*.dylib'| while read libfile; do
-        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${libfile}"
-    done
-fi
+
 echo "*** Signing extra binaries"
 (cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
 echo "*** Signing app"
@@ -1348,6 +1376,24 @@ fi
 # Tests segfault on exit on Qt5
 ${TIMEOUT} -s KILL 1800 "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests" || [ "${QT_VERSION_MAJOR}" = 5 ] 
 rm "${PORTABLE_DIRNAME}.app/Contents/MacOS/Tests"
+
+# Issue with __pycache__ being generated inside the python directories:
+# https://developer.apple.com/forums/thread/75060
+# This may prevent further runs of Natron...
+if [ -x "${NATRON_PYTHON}" ]; then
+    rm -rf "${PYDIR}/__pycache__" "${PYDIR}/*/__pycache__" || true
+    "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${package}/Contents/Frameworks/Python.framework"
+    # Make the python directories read-only so that  no __pycache__ is created,
+    # because that would break the signature.
+    chmod -R a-w "${PYDIR}"
+fi
+
+echo "*** Signing app again to seal resources"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
+
+echo "*** Checking app signature"
+"${CODESIGN}" --verify --deep --strict --verbose=2 "${package}"
+
 
 echo "*** Creating the disk image"
 # Make the dmg
@@ -1456,7 +1502,7 @@ hdiutil convert "${DMG_TMP}" -format UDBZ -o "${DMG_FINAL}"
 mv "${APP_NAME}.app" "${PORTABLE_DIRNAME}.app"
 
 rm -rf "${DMG_TMP}"
-rm -rf splashscreen.*
+#rm -rf splashscreen.*
 
 
 # echo "* Checking that the image can be mounted"
