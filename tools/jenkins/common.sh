@@ -238,6 +238,13 @@ if [ "${PYV:-}" = 2 ]; then
     PYTHON_ABIFLAGS=""
     PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
 fi
+PY_EXE="$SDK_HOME/bin/python${PYV}"
+# PY_LIB="$SDK_HOME/lib/libpython${PYVER}.so"
+# PY_INC="$SDK_HOME/include/python${PYVER}"
+# PYTHON_HOME="$SDK_HOME"
+# PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
+# PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
+# export PYTHON_PATH PYTHON_INCLUDE
 
 
 QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
