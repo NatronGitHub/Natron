@@ -1408,7 +1408,12 @@ echo "*** Signing app again to seal resources"
 "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]+"${CODE_SIGN_MAIN_OPTS[@]}"}" "${package}"
 
 echo "*** Checking app signature"
-"${CODESIGN}" --verify --deep --strict --verbose=2 "${package}"
+CODE_SIGN_VERIFY_OPTS=(  --verify --deep --verbose=2 )
+if [ "${macosx}" -ge 15 ]; then
+    # On macOS >= 10.11 El Capitan we can use --strict
+    CODE_SIGN_VERIFY_OPTS+=( --strict )
+fi
+"${CODESIGN}" "${CODE_SIGN_VERIFY_OPTS[@]}" "${package}"
 
 
 echo "*** Creating the disk image"
