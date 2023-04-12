@@ -109,7 +109,7 @@ if [ -z "${CODE_SIGN_IDENTITY}" ] && [ "$(uname -m)" = "arm64" ]; then
 fi
 
 CODE_SIGN_OPTS=( --force --sign "${CODE_SIGN_IDENTITY}" )
-CODE_SIGN_MAIN_OPTS=( )
+CODE_SIGN_MAIN_OPTS=( ) # empty by default, see https://stackoverflow.com/a/7577209 to expand it without getting "unbound variable" error
 # entitlements for hardened runtime, see https://kb.froglogic.com/squish/mac/troubleshoot/hardened-runtime/
 # We definitely need to disable library validation, because of external OpenFX plugins.
 # Some of these plugins may require setting DYLD_LIBRARY_PATH
@@ -1342,9 +1342,9 @@ echo "* Signing OFX plugins"
 (cd "${package}/Contents/Plugins/OFX/Natron"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.bundle)
 
 echo "*** Signing extra binaries"
-(cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" !(Natron))
+(cd "${package}/Contents/MacOS"; "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]+"${CODE_SIGN_MAIN_OPTS[@]}"}" !(Natron))
 echo "*** Signing app"
-"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]+"${CODE_SIGN_MAIN_OPTS[@]}"}" "${package}"
 
 if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
     echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by mistake"
@@ -1370,7 +1370,7 @@ fi
 #  "${package}/Contents/Frameworks"/*.dylib \
 #  "${DYNLOAD}/"*.so \
 #  "${PYDIR}/site-packages/"*/*.so
-# "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" \
+# "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]+"${CODE_SIGN_MAIN_OPTS[@]}"}" \
 #  "${package}" \
 #  "${package}/Contents/MacOS"/*
 
@@ -1405,7 +1405,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
 fi
 
 echo "*** Signing app again to seal resources"
-"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]}" "${package}"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${CODE_SIGN_MAIN_OPTS[@]+"${CODE_SIGN_MAIN_OPTS[@]}"}" "${package}"
 
 echo "*** Checking app signature"
 "${CODESIGN}" --verify --deep --strict --verbose=2 "${package}"
