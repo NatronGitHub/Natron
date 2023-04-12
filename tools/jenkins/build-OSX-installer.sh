@@ -643,8 +643,8 @@ if [ "${COMPILER}" = "clang-omp" ]; then
     for l in ${omplibs}; do
         lib="lib${l}.dylib"
         #install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${natron_binary}"
-        for deplib in "${pkglib}/"*.dylib "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
-            if [ -f "${deplib}" ]; then
+        for deplib in "${pkglib}/"*.dylib "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"* "${package}/Contents/MacOS/"*; do
+            if [ -f "${deplib}" ] && [ -x "${deplib}" ]; then
                 install_name_tool -change "${SDK_HOME}/lib/libomp/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
             fi
         done
