@@ -246,6 +246,7 @@ if [ ! -d "$TMP_PATH" ]; then
 else
 # Clean-up any build file
 if [ "${DEBUG_SCRIPTS:-}" != "1" ]; then
+    chmod -R u+w "${TMP_PATH:?}" || true
     rm -rf "${TMP_PATH:?}"/* || true
 fi
 fi
