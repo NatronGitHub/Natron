@@ -83,6 +83,11 @@ fi
 # - Resolving errSecInternalComponent errors https://developer.apple.com/forums/thread/712005 (when signing over ssh)
 #CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:-8ZN4B9KT99}
 CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY:--}
+if [ "${macosx}" -lt 13 ]; then
+    # Do not try to sign on anything older than 10.9, it will fail with:
+    # libbz2.1.0.dylib malformed object (unknown load command 11
+    CODE_SIGN_IDENTITY=""
+fi
 BUNDLE_ID=fr.inria.Natron
 if [ "${CODE_SIGN_IDENTITY}" = "-" ]; then
     # If identity is the single letter "-" (dash), ad-hoc signing is performed. Ad-hoc signing does not use
