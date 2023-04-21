@@ -65,6 +65,7 @@ public:
     static void initEGLData(OSGLContext_egl_data* eglInfo);
     static void destroyEGLData(OSGLContext_egl_data* eglInfo);
     static bool makeContextCurrent(const OSGLContext_wayland* context);
+    static bool threadHasACurrentContext();
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();

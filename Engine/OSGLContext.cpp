@@ -303,10 +303,13 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
         _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? static_cast<const OSGLContext_x11 *>(shareContext->_imp->_platformContext.get()) : nullptr) );
     }
 #endif
+    assert(!threadHasACurrentContext());
 }
 
 OSGLContext::~OSGLContext()
 {
+    assert(!threadHasACurrentContext());
+
     setContextCurrentNoRender();
     if (_imp->pboID) {
         glDeleteBuffers(1, &_imp->pboID);
@@ -411,6 +414,21 @@ OSGLContext::unsetCurrentContextNoRender()
     } else {
         OSGLContext_x11::makeContextCurrent( nullptr );
     }
+#endif
+}
+
+bool OSGLContext::threadHasACurrentContext() {
+#ifdef __NATRON_WIN32__
+    return OSGLContext_win::threadHasACurrentContext();
+#elif defined(__NATRON_OSX__)
+    return OSGLContext_mac::threadHasACurrentContext();
+#elif defined(__NATRON_LINUX__)
+    if (appPTR->isOnWayland()) {
+        return OSGLContext_wayland::threadHasACurrentContext();
+    }
+    return OSGLContext_x11::threadHasACurrentContext();
+#else
+#error "Unsupported platform."
 #endif
 }
 

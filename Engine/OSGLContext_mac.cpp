@@ -649,6 +649,11 @@ OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
     }
 }
 
+bool
+OSGLContext_mac::threadHasACurrentContext() {
+    return CGLGetCurrentContext() != NULL;
+}
+
 void
 OSGLContext_mac::swapBuffers()
 {

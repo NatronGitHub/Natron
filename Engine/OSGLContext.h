@@ -186,6 +186,10 @@ public:
      **/
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
+    /**
+     * @brief Returns true if a context is currently set on the current thread.
+     **/
+    static bool threadHasACurrentContext();
 private:
 
 
