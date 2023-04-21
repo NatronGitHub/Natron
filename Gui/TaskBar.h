@@ -71,7 +71,7 @@ private:
 
 #ifdef Q_OS_WIN
     ITaskbarList3 *_wtask;
-    WId _wid;
+    HWND _hwnd;
 #elif defined(Q_OS_DARWIN)
     TaskBarMac *_mtask;
 #endif

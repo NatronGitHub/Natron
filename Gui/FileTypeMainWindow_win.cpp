@@ -87,26 +87,36 @@ DocumentWindow::~DocumentWindow()
 // —— public slots ——————————————————————————
 // —— protected slots —————————————————————————
 // —— events ————————————————————————————
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 bool
-DocumentWindow::winEvent(MSG *message,
-                         long *result)
+DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
 {
-    switch (message->message) {
+    MSG* msg = static_cast<MSG*>(message);
+#else
+bool
+DocumentWindow::winEvent(MSG* msg,  long *result)
+{
+#endif
+    switch (msg->message) {
     case WM_DDE_INITIATE:
 
-        return ddeInitiate(message, result);
+        return ddeInitiate(msg, result);
         break;
     case WM_DDE_EXECUTE:
 
-        return ddeExecute(message, result);
+        return ddeExecute(msg, result);
         break;
     case WM_DDE_TERMINATE:
 
-        return ddeTerminate(message, result);
+        return ddeTerminate(msg, result);
         break;
     }
 
-    return QMainWindow::winEvent(message, result);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return QMainWindow::nativeEvent(eventType, message, result);
+#else
+    return QMainWindow::winEvent(msg, result);
+#endif
 }
 
 void

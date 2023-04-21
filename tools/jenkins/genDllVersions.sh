@@ -89,26 +89,62 @@ function catDll() {
 INIT_VAR=1
 DLL_VAR_PREFIX="NATRON"
 BIN_PATH="$SDK_HOME_BIN"
-# all Qt libraries are necessary for PySide
-catDll Qt3Support4
-catDll QtCLucene4
-catDll QtCore4
-catDll QtDBus4
-catDll QtDeclarative4
-catDll QtDesigner4
-catDll QtDesignerComponents4
-catDll QtGui4
-catDll QtHelp4
-catDll QtMultimedia4
-catDll QtNetwork4
-catDll QtOpenGL4
-catDll QtScript4
-catDll QtScriptTools4
-catDll QtSql4
-catDll QtSvg4
-catDll QtTest4
-catDll QtXml4
-catDll QtXmlPatterns4
+if [ "$QT_VERSION_MAJOR" = "4" ]; then
+    # all Qt libraries are necessary for PySide
+    catDll Qt3Support4
+    catDll QtCLucene4
+    catDll QtCore4
+    catDll QtDBus4
+    catDll QtDeclarative4
+    catDll QtDesigner4
+    catDll QtDesignerComponents4
+    catDll QtGui4
+    catDll QtHelp4
+    catDll QtMultimedia4
+    catDll QtNetwork4
+    catDll QtOpenGL4
+    catDll QtScript4
+    catDll QtScriptTools4
+    catDll QtSql4
+    catDll QtSvg4
+    catDll QtTest4
+    catDll QtXml4
+    catDll QtXmlPatterns4
+
+    catDll phonon4
+    catDll libmng-
+    catDll libpcre-
+elif [ "$QT_VERSION_MAJOR" = "5" ]; then
+    catDll Qt5Concurrent
+    catDll Qt5Core
+    catDll Qt5DBus
+    catDll Qt5Gui
+    catDll Qt5Network
+    catDll Qt5OpenGL
+    catDll Qt5PrintSupport
+    catDll Qt5Qml
+    catDll Qt5QmlModels
+    catDll Qt5QmlWorkerScript
+    catDll Qt5Quick
+    catDll Qt5QuickParticles
+    catDll Qt5QuickShapes
+    catDll Qt5QuickTest
+    catDll Qt5QuickWidgets
+    catDll Qt5Sql
+    catDll Qt5Test
+    catDll Qt5Widgets
+    catDll Qt5Xml
+    catDll Qt5XmlPatterns
+
+    catDll libdouble-conversion
+    catDll libicuin
+    catDll libpcre2-16-
+    catDll libmd4c
+else
+    echo "Unsupported QT_MAJOR_VERSION" ${QT_VERSION_MAJOR}
+    exit 1
+fi
+
 
 catDll fbclient
 catDll libass-
@@ -157,7 +193,6 @@ catDll libjpeg-
 catDll liblcms2-
 catDll liblzma-
 catDll libmfx
-catDll libmng-
 catDll libmodplug-
 catDll libmp3lame-
 catDll libnettle-
@@ -200,7 +235,6 @@ catDll libwebpdemux-
 catDll libwebpmux-
 catDll libwinpthread-
 catDll libxml2-
-catDll phonon4
 #catDll SDL2
 #catDll SSLEAY32
 catDll zlib1

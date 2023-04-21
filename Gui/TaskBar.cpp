@@ -39,7 +39,8 @@ TaskBar::TaskBar(QWidget *parent)
     , _state(NoProgress)
 {
 #ifdef Q_OS_WIN
-    _wid = parent->window()->winId();
+    // QT4 typedefs WId as an HWND, but QT5 typdefs it as a quintptr, so a cast is needed.
+    _hwnd = reinterpret_cast<HWND>(parent->window()->winId());
     CoInitialize(NULL);
     HRESULT hres = CoCreateInstance(CLSID_TaskbarList,
                                     NULL,
@@ -112,7 +113,7 @@ TaskBar::setProgressValue(double value)
     if (!_wtask) {
         return;
     }
-    if (_wtask->SetProgressValue(_wid, currentVal, totalVal) == S_OK) {
+    if (_wtask->SetProgressValue(_hwnd, currentVal, totalVal) == S_OK) {
         _val = value;
     }
 #elif defined(Q_OS_DARWIN)
@@ -153,7 +154,7 @@ TaskBar::setProgressState(TaskBar::ProgressState state)
         flag = TBPF_NORMAL;
         break;
     }
-    if (_wtask->SetProgressState(_wid, flag) == S_OK) {
+    if (_wtask->SetProgressState(_hwnd, flag) == S_OK) {
         _state = state;
     }
 #elif defined(Q_OS_DARWIN)

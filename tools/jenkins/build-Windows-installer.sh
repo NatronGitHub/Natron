@@ -41,7 +41,7 @@ popd () {
 }
 
 # Generate dll versions with dlls on the system
-env BITS="$BITS" PYVER="$PYVER" PYV="${PYV}" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
+env BITS="$BITS" PYVER="$PYVER" PYV="${PYV}" QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
 
 source dllVersions.sh
 
@@ -365,19 +365,21 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #cp -a "$SDK_HOME/etc/fonts"/* "$location/Resources/etc/fonts"
     cp -a "${TMP_BINARIES_PATH}/Resources/etc/fonts"/* "$location/Resources/etc/fonts/"
     cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
-    cp -a "$SDK_HOME/share/qt4/plugins"/* "$location/bin/"
-    rm -f "$location/bin"/*/*d4.dll || true
+    cp -a "$SDK_HOME/share/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
 
     for depend in "${NATRON_DLL[@]}"; do
         cp "$depend" "$location/bin/"
     done
 
     #Copy Qt dlls (required for all PySide modules to work correctly)
-    cp "$SDK_HOME/bin"/Qt*4.dll "$location/bin/"
+    if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+        cp "$SDK_HOME/bin"/Qt*4.dll "$location/bin/"
+        # Ignore debug dlls of Qt
+        rm "$location/bin"/*d4.dll || true
+    else
+        cp "$SDK_HOME/bin"/Qt${QT_VERSION_MAJOR}*.dll "$location/bin/"
+    fi
 
-
-    # Ignore debug dlls of Qt
-    rm "$location/bin"/*d4.dll || true
     rm "$location/bin/sqldrivers"/{*mysql*,*psql*} || true
 
     if [ "$COMPILE_TYPE" != "debug" ]; then
@@ -394,7 +396,15 @@ done
 mkdir -p "${TMP_PORTABLE_DIR}/Plugins"
 cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
+
+if [[ ${QT_VERSION_MAJOR} -ge 5 ]]; then
+    PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
+    mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+else
+    PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide"
+    mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins"
+fi
+
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
 ( cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages";
@@ -414,11 +424,15 @@ find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 )
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
-for dir in "${TMP_PORTABLE_DIR}/Plugins/PySide" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
+for dir in "${PYSIDE_PLUGIN_PATH}" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
     echo "*** stripping binaries in $dir"
     find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
     echo "*** stripping binaries in $dir... done!"
 done
+fi
+
+if [[ ${QT_VERSION_MAJOR} -ge 5 ]]; then
+    USE_QT5=1
 fi
 
 # python zip
@@ -466,7 +480,8 @@ fi
 cp -r "$PYDIR" "$DLLS_PACKAGE_PATH/data/lib/"
 cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${DLLS_PACKAGE_PATH}/data/lib/"
 mkdir -p "${DLLS_PACKAGE_PATH}/data/Plugins"
-cp -a "${TMP_PORTABLE_DIR}/Plugins/PySide" "${DLLS_PACKAGE_PATH}/data/Plugins/"
+
+cp -a "${PYSIDE_PLUGIN_PATH}" "${DLLS_PACKAGE_PATH}/data/Plugins/"
 
 # Configure the package date using the most recent DLL modification date
 CLIBS_VERSION="00000000000000"

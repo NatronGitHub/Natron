@@ -419,11 +419,14 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo fontconfig
     equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/shiboken2
-    	pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2
-      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtCore
-      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtGui
-      pyside:    INCLUDEPATH += $$PYTHON_SITE_PACKAGES/PySide2/include/PySide2/QtWidgets
+      shiboken:  INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken2)
+      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+      shiboken:  PKGCONFIG += shiboken2
+      pyside:    PKGCONFIG += pyside2
     }
     equals(QT_MAJOR_VERSION, 4) {
       shiboken:  PKGCONFIG += shiboken-py$$PYV
