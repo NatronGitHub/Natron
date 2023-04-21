@@ -92,11 +92,6 @@ bool
 DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
 {
     MSG* msg = static_cast<MSG*>(message);
-#else
-bool
-DocumentWindow::winEvent(MSG* msg,  long *result)
-{
-#endif
     switch (msg->message) {
     case WM_DDE_INITIATE:
 
@@ -112,12 +107,30 @@ DocumentWindow::winEvent(MSG* msg,  long *result)
         break;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return QMainWindow::nativeEvent(eventType, message, result);
-#else
-    return QMainWindow::winEvent(msg, result);
-#endif
 }
+#else
+bool
+DocumentWindow::winEvent(MSG* msg,  long *result)
+{
+    switch (msg->message) {
+    case WM_DDE_INITIATE:
+
+        return ddeInitiate(msg, result);
+        break;
+    case WM_DDE_EXECUTE:
+
+        return ddeExecute(msg, result);
+        break;
+    case WM_DDE_TERMINATE:
+
+        return ddeTerminate(msg, result);
+        break;
+    }
+
+    return QMainWindow::winEvent(msg, result);
+}
+#endif
 
 void
 DocumentWindow::ddeOpenFile(const QString&)
