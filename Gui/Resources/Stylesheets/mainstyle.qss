@@ -554,48 +554,60 @@ QToolButton {
     color: %5;
 }
 
-SpinBox[animation="0"] {
+SpinBox[animation="0"],
+Natron--SpinBox[animation="0"] {
     background-color: %3;
 }
-SpinBox[animation="1"] {
+SpinBox[animation="1"],
+Natron--SpinBox[animation="1"] {
     background-color: %6;
 }
-SpinBox[animation="2"] {
+SpinBox[animation="2"],
+Natron--SpinBox[animation="2"] {
     background-color: %7;
 }
 
-SpinBox[animation="3"] {
+SpinBox[animation="3"],
+Natron--SpinBox[animation="3"] {
     background-color: %9;
     color: black;
 }
-SpinBox[dirty="true"] {
+SpinBox[dirty="true"],
+Natron--SpinBox[dirty="true"] {
     background-color: black;
     color: %5;
 }
 
-SpinBox[altered="true"][dirty="false"] {
+SpinBox[altered="true"][dirty="false"],
+Natron--SpinBox[altered="true"][dirty="false"] {
     color: %10;
 }
 
 
 
-LineEdit[animation="0"] {
+LineEdit[animation="0"],
+Natron--LineEdit[animation="0"] {
     background-color: %3;
 }
-LineEdit[animation="1"] {
+LineEdit[animation="1"],
+Natron--LineEdit[animation="1"] {
     background-color: %6;
 }
-LineEdit[animation="2"] {
+LineEdit[animation="2"],
+Natron--LineEdit[animation="2"] {
     background-color: %7;
 }
-LineEdit[animation="3"] {
+LineEdit[animation="3"],
+Natron--LineEdit[animation="3"] {
     background-color: %9;
 }
-LineEdit[dirty="true"] {
+LineEdit[dirty="true"],
+Natron--LineEdit[dirty="true"] {
     background-color: black;
 }
 
-LineEdit[altered="true"] {
+LineEdit[altered="true"],
+Natron--LineEdit[altered="true"] {
     color: %10;
 }
 
@@ -617,24 +629,30 @@ QTextEdit:focus {
     padding: 2px 4px;
 }
 
-AnimatingTextEdit[animation="0"] {
+AnimatingTextEdit[animation="0"],
+Natron--AnimatingTextEdit[animation="0"] {
     background-color: %3;
 }
-AnimatingTextEdit[animation="1"] {
+AnimatingTextEdit[animation="1"],
+Natron--AnimatingTextEdit[animation="1"] {
     background-color: %6;
 }
-AnimatingTextEdit[animation="2"] {
+AnimatingTextEdit[animation="2"],
+Natron--AnimatingTextEdit[animation="2"] {
     background-color: %7;
 }
-AnimatingTextEdit[animation="3"] {
+AnimatingTextEdit[animation="3"],
+Natron--AnimatingTextEdit[animation="3"] {
     background-color: %9;
     color: black;
 }
-AnimatingTextEdit[readOnlyNatron="true"]{
+AnimatingTextEdit[readOnlyNatron="true"],
+Natron--AnimatingTextEdit[readOnlyNatron="true"] {
     color: %8;
 }
 
-AnimatingTextEdit[dirty="true"] {
+AnimatingTextEdit[dirty="true"],
+Natron--AnimatingTextEdit[dirty="true"] {
     background-color: black;
 }
 
