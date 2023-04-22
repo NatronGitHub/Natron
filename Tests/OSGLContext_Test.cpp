@@ -35,13 +35,15 @@ NATRON_NAMESPACE_USING
 
 TEST(OSGLContext, Basic)
 {
-    ASSERT_TRUE(appPTR->isOpenGLLoaded());
+    if (!appPTR->isOpenGLLoaded()) {
+        // TODO: Convert to GTEST_SKIP() when gtest updated.
+        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        return;
+    }
 
     SettingsPtr settings =  appPTR->getCurrentSettings();
-    GLRendererID rendererID;
-    if (settings) {
-        rendererID = settings->getActiveOpenGLRendererID();
-    }
+    ASSERT_NE(settings.get(), nullptr);
+    GLRendererID rendererID = settings->getActiveOpenGLRendererID();
 
     // Verify that we start without a context being set.
     EXPECT_FALSE(OSGLContext::threadHasACurrentContext());
@@ -63,7 +65,11 @@ TEST(OSGLContext, Basic)
 }
 
 TEST(GPUContextPool, Basic) {
-    ASSERT_TRUE(appPTR->isOpenGLLoaded());
+    if (!appPTR->isOpenGLLoaded()) {
+        /// TODO: Convert to GTEST_SKIP() when gtest updated.
+        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        return;
+    }
 
     // Verify that we start without a context being set.
     EXPECT_FALSE(OSGLContext::threadHasACurrentContext());
