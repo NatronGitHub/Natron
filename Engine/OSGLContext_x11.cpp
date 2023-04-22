@@ -840,6 +840,14 @@ OSGLContext_x11::makeContextCurrent(const OSGLContext_x11* context)
     }
 }
 
+bool
+OSGLContext_x11::threadHasACurrentContext() {
+    const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
+
+    assert(glxInfo);
+    return glxInfo->_imp->GetCurrentContext() != NULL;
+}
+
 void
 OSGLContext_x11::swapBuffers()
 {

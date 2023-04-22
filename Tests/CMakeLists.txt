@@ -25,9 +25,11 @@ set(Tests_SOURCES
     Hash64_Test.cpp
     Image_Test.cpp
     Lut_Test.cpp
+    OSGLContext_Test.cpp
     KnobFile_Test.cpp
     Curve_Test.cpp
     Tracker_Test.cpp
+    OSGLContext_Test.cpp
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})

@@ -89,6 +89,7 @@ typedef BOOL (WINAPI * WGLDELETECONTEXT_T)(HGLRC);
 typedef PROC (WINAPI * WGLGETPROCADDRESS_T)(LPCSTR);
 typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC, HGLRC);
 typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
+typedef HGLRC (WINAPI * WGLGETCURRENTCONTEXT_T)();
 
 ////////// https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
 
@@ -154,6 +155,7 @@ struct OSGLContext_wgl_data
     HINSTANCE instance;
     WGLCREATECONTEXT_T CreateContext;
     WGLDELETECONTEXT_T DeleteContext;
+    WGLGETCURRENTCONTEXT_T GetCurrentContext;
     WGLGETPROCADDRESS_T GetProcAddress;
     WGLMAKECURRENT_T MakeCurrent;
     WGLSHARELISTS_T ShareLists;
@@ -206,6 +208,7 @@ public:
     ~OSGLContext_win();
 
     static bool makeContextCurrent(const OSGLContext_win* context);
+    static bool threadHasACurrentContext();
 
     void swapBuffers();
 

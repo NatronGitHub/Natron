@@ -168,6 +168,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
         if (!_imp->currentOpenGLRendererMaxTexSize) {
             newContext->setContextCurrentNoRender();
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_imp->currentOpenGLRendererMaxTexSize);
+            newContext->unsetCurrentContextNoRender();
         }
     }
 

@@ -576,6 +576,15 @@ OSGLContext_wayland::makeContextCurrent(const OSGLContext_wayland* context)
     }
 }
 
+bool
+OSGLContext_wayland::threadHasACurrentContext() {
+    const OSGLContext_egl_data* eglInfo = appPTR->getEGLData();
+
+    assert(eglInfo);
+
+    return eglInfo != nullptr && eglInfo->_imp->GetCurrentContext() != nullptr;
+}
+
 void
 OSGLContext_wayland::swapBuffers()
 {

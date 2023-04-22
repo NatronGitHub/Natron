@@ -50,6 +50,7 @@ SOURCES += \
     KnobFile_Test.cpp \
     Curve_Test.cpp \
     Tracker_Test.cpp \
+    OSGLContext_Test.cpp \
     wmain.cpp
 
 HEADERS += \

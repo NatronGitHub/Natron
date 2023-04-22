@@ -94,6 +94,7 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
 
     wglInfo->CreateContext = (WGLCREATECONTEXT_T)GetProcAddress(wglInfo->instance, "wglCreateContext");
     wglInfo->DeleteContext = (WGLDELETECONTEXT_T)GetProcAddress(wglInfo->instance, "wglDeleteContext");
+    wglInfo->GetCurrentContext = (WGLGETCURRENTCONTEXT_T)GetProcAddress(wglInfo->instance, "wglGetCurrentContext");
     wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
     wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
     wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
@@ -452,6 +453,7 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs,
 
     makeContextCurrent(this);
     if ( !loadWGLExtensions(wglInfo) ) {
+        makeContextCurrent(nullptr);
         return false;
     }
 
@@ -517,6 +519,7 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs,
         }
     }
 
+    makeContextCurrent(nullptr);
     return required;
 }
 
@@ -579,7 +582,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
         // First we clear the current context (the one we just created)
         // This is usually done by glfwDestroyWindow, but as we're not doing
         // full GLFW window destruction, it's duplicated here
-        makeContextCurrent(NULL);
+        makeContextCurrent(nullptr);
 
         // Next destroy the Win32 window and WGL context (without resetting
         // or destroying the GLFW window object)
@@ -610,6 +613,13 @@ OSGLContext_win::makeContextCurrent(const OSGLContext_win* context)
     } else {
         return wglInfo->MakeCurrent(0, 0);
     }
+}
+
+bool
+OSGLContext_win::threadHasACurrentContext() {
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
+    return wglInfo->GetCurrentContext() != nullptr;
 }
 
 void
@@ -756,6 +766,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 OSGLContext::checkOpenGLVersion();
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
+                makeContextCurrent(nullptr);
                 continue;
             }
 
@@ -767,7 +778,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
             renderers.push_back(info);
 
-            makeContextCurrent(0);
+            makeContextCurrent(nullptr);
         }
     } else if (wglInfo->AMD_gpu_association && !isApplication32Bits()) {
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
@@ -834,13 +845,14 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     OSGLContext::checkOpenGLVersion();
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
+                    makeContextCurrent(nullptr);
                     continue;
                 }
 
                 glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
                 renderers.push_back(info);
                 
-                makeContextCurrent(0);
+                makeContextCurrent(nullptr);
             }
         }
     }
@@ -867,7 +879,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             OSGLContext::checkOpenGLVersion();
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
-
+            makeContextCurrent(nullptr);
             return;
         }
 
@@ -881,7 +893,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         info.maxMemBytes = nvx_get_GPU_mem_info();
         renderers.push_back(info);
 
-        makeContextCurrent(0);
+        makeContextCurrent(nullptr);
     }
 } // OSGLContext_win::getGPUInfos
 
