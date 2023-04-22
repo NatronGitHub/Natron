@@ -37,6 +37,9 @@
 #include <pyside_global.h>
 #endif
 
+#include <QSize>
+#include <QObject>
+
 #include <QtGui/qpytextobject.h>
 
 //Global

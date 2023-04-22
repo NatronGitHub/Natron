@@ -87,27 +87,50 @@ DocumentWindow::~DocumentWindow()
 // —— public slots ——————————————————————————
 // —— protected slots —————————————————————————
 // —— events ————————————————————————————
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 bool
-DocumentWindow::winEvent(MSG *message,
-                         long *result)
+DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
 {
-    switch (message->message) {
+    MSG* msg = static_cast<MSG*>(message);
+    switch (msg->message) {
     case WM_DDE_INITIATE:
 
-        return ddeInitiate(message, result);
+        return ddeInitiate(msg, result);
         break;
     case WM_DDE_EXECUTE:
 
-        return ddeExecute(message, result);
+        return ddeExecute(msg, result);
         break;
     case WM_DDE_TERMINATE:
 
-        return ddeTerminate(message, result);
+        return ddeTerminate(msg, result);
         break;
     }
 
-    return QMainWindow::winEvent(message, result);
+    return QMainWindow::nativeEvent(eventType, message, result);
 }
+#else
+bool
+DocumentWindow::winEvent(MSG* msg,  long *result)
+{
+    switch (msg->message) {
+    case WM_DDE_INITIATE:
+
+        return ddeInitiate(msg, result);
+        break;
+    case WM_DDE_EXECUTE:
+
+        return ddeExecute(msg, result);
+        break;
+    case WM_DDE_TERMINATE:
+
+        return ddeTerminate(msg, result);
+        break;
+    }
+
+    return QMainWindow::winEvent(msg, result);
+}
+#endif
 
 void
 DocumentWindow::ddeOpenFile(const QString&)
