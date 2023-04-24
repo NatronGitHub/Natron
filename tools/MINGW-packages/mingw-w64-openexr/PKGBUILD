@@ -1,8 +1,8 @@
 # Maintainer: Alexey Pavlov <alexpux@gmail.com>
 
 _realname=openexr
-pkgbase=mingw-w64-${_realname}
-pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgbase=mingw-w64-natron_${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
 pkgver=3.1.7
 pkgrel=99.1
 pkgdesc='A high dynamic-range image file format library (mingw-w64)'
@@ -10,7 +10,7 @@ arch=('any')
 mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
 url="https://www.openexr.com/"
 license=('BSD')
-depends=("${MINGW_PACKAGE_PREFIX}-imath"
+depends=("${MINGW_PACKAGE_PREFIX}-natron_imath"
          "${MINGW_PACKAGE_PREFIX}-libwinpthread-git"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
@@ -19,6 +19,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
 conflicts=(
   "${MINGW_PACKAGE_PREFIX}-ilmbase"
   "${MINGW_PACKAGE_PREFIX}-pyilmbase"
+  "${MINGW_PACKAGE_PREFIX}-${_realname}"
 )
 replaces=(
   "${MINGW_PACKAGE_PREFIX}-ilmbase"

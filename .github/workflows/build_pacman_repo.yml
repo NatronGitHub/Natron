@@ -1,0 +1,54 @@
+name: Build pacman repo
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - 'main'
+      - 'build_natron_packages'
+    paths:
+      - 'tools/MINGW-packages/**'
+      - '.github/workflows/build_pacman_repo.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_repo:
+    name: Build pacman repo
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup MinGW environment
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git base-devel
+      - name: Install Inno Setup
+        run: choco install innosetup
+        shell: pwsh
+      - name: Cache natron repo directory
+        id: cache-natron-repo
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-natron-repo
+        with:
+          path: tools/MINGW-packages/natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
+      - name: Build natron package repo
+        run: |
+          cd tools/MINGW-packages
+          ./build_natron_package_repo.sh natron_repo
+      - name: Upload natron_package_repo artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: natron_package_repo
+          path: tools/MINGW-packages/natron_repo

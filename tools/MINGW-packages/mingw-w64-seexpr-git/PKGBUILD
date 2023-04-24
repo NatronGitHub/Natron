@@ -1,8 +1,8 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=seexpr
-pkgbase=mingw-w64-${_realname}-git
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+pkgbase=mingw-w64-natron_${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-git"
 gitcommit=a5f02bb #v1-2.11
 pkgver=86.a5f02bb
 pkgrel=4
@@ -12,7 +12,7 @@ url="https://github.com/wdas/SeExpr"
 license=('Apache2')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "git")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "${MINGW_PACKAGE_PREFIX}-cc" "git")
 options=('strip')
 source=(
         "${_realname}"::"git+https://github.com/wdas/SeExpr#commit=${gitcommit}"

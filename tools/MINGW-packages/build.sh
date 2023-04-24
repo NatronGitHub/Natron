@@ -10,7 +10,6 @@ mingw-w64-openexr
 mingw-w64-libraw-gpl2
 mingw-w64-opencolorio2-git
 mingw-w64-openimageio
-mingw-w64-opencolorio2-git
 mingw-w64-seexpr-git
 mingw-w64-x264-git
 mingw-w64-ffmpeg-gpl2

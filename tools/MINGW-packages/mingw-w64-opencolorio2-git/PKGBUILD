@@ -1,8 +1,8 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=opencolorio
-pkgbase=mingw-w64-${_realname}-git
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+pkgbase=mingw-w64-natron_${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-git"
 gitcommit=66b7b7d # 2.1.3
 pkgver=1356.66b7b7d5
 pkgrel=99.1
@@ -17,9 +17,11 @@ depends=("${MINGW_PACKAGE_PREFIX}-glew"
          "${MINGW_PACKAGE_PREFIX}-tinyxml"
          "${MINGW_PACKAGE_PREFIX}-yaml-cpp"
          "${MINGW_PACKAGE_PREFIX}-expat"
-         "${MINGW_PACKAGE_PREFIX}-openexr")
+         "${MINGW_PACKAGE_PREFIX}-natron_openexr"
+         "${MINGW_PACKAGE_PREFIX}-pystring")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-cc"
              "git")
 options=('strip')
 source=("${_realname}"::"git+https://github.com/imageworks/OpenColorIO.git#commit=${gitcommit}"
@@ -66,7 +68,6 @@ build() {
 package() {
   cd build-${MINGW_CHOST}
   make DESTDIR=${pkgdir} install
-  rm -r ${pkgdir}/msys64*
-  mkdir -p ${pkgdir}/mingw64/lib/pkgconfig
-  cp ${srcdir}/OpenColorIO.pc ${pkgdir}/mingw64/lib/pkgconfig/
+  mkdir -p ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig
+  cp ${srcdir}/OpenColorIO.pc ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/
 }

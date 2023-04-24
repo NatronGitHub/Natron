@@ -157,7 +157,6 @@ catDll libboost_thread-mt
 catDll libbz2-
 catDll libcaca-
 catDll libcairo-2
-catDll libcelt0-
 #catDll libcroco-
 #catDll LIBEAY32
 catDll libexpat-
@@ -176,7 +175,6 @@ catDll libgobject-
 catDll libgomp-
 catDll libgraphite
 catDll libgsm
-catDll libHalf-
 catDll libharfbuzz-0
 catDll libhogweed-
 catDll libiconv-
@@ -184,7 +182,6 @@ catDll libicudt
 catDll libicuuc
 catDll libidn2-
 catDll libIex-
-catDll libIlmImf-
 catDll libIlmThread-
 catDll libImath-
 catDll libintl-
@@ -200,6 +197,8 @@ catDll libnghttp2-
 catDll libogg-
 catDll libopenal-
 catDll libOpenColorIO
+catDll libOpenEXR-
+catDll libOpenEXRCore
 catDll libOpenImageIO
 catDll libOpenImageIO_Util
 catDll libopenjp2-
@@ -209,23 +208,25 @@ catDll libpango-
 catDll libpangocairo-
 catDll libpangoft2-
 catDll libpangowin32-
-catDll libpcre-
+catDll libpcre2-8-
 catDll libpixman-
 catDll libpng16-
 #catDll libPtex
 catDll librsvg-
 catDll librtmp-
+catDll libsharpyuv-
 catDll libspeex-
 catDll libsqlite3-
 catDll libsrt
 catDll libssh2-
 catDll libstdc++-
+catDll libSvtAv1Enc
 catDll libtasn1-
 catDll libtheoradec-
 catDll libtheoraenc-
 catDll libtiff-
-catDll libtinyxml-
 catDll libunistring-
+catDll libunibreak-
 catDll libvorbis-
 catDll libvorbisenc-
 catDll libvpx-
@@ -240,13 +241,14 @@ catDll libxml2-
 catDll zlib1
 catDll libbrotlicommon
 catDll libbrotlidec
-catDll libssl-1_1-
-catDll libcrypto-1_1-
+catDll libbrotlienc
+catDll libssl-3-
+catDll libcrypto-3-
 catDll libzstd
 catDll libssp-
 
 catDll libSeExpr
-catDll yaml-cpp
+catDll libyaml-cpp
 catDll libopenh264
 catDll libthai
 catDll libdatrie-
@@ -317,13 +319,14 @@ catDll libpoppler-glib-
 catDll librevenge-0
 catDll librevenge-stream-
 catDll libzip
-catDll libmad-0
-catDll libsox-
+#catDll libmad-0
+#catDll libsox-
 
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
 catDll libfftw3-
+catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
 #catDll libbrotlidec

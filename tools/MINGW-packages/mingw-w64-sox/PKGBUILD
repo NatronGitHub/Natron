@@ -1,8 +1,8 @@
 # Maintainer: ole.andre.rodlie@gmil.com
 
 _realname=sox
-pkgbase=mingw-w64-${_realname}
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase=mingw-w64-natron_${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgver=14.4.2
 pkgrel=99.1
 pkgdesc="Swiss Army Knife of sound processing utilities (mingw-w64)"

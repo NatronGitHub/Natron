@@ -23,3 +23,14 @@
    assert(path != (const char *) NULL);
    length=MultiByteToWideChar(CP_UTF8,0,path,-1,file_specification,
      MaxTextExtent);
+--- ImageMagick-6.9.11-16/coders/heic.c.orig    2023-04-24 17:50:11.310531100 -0700
++++ ImageMagick-6.9.11-16/coders/heic.c 2023-04-24 17:52:45.697926300 -0700
+@@ -73,7 +73,7 @@
+ #include "magick/module.h"
+ #include "magick/utility.h"
+ #if defined(MAGICKCORE_HEIC_DELEGATE)
+-#if defined(MAGICKCORE_WINDOWS_SUPPORT)
++#if defined(MAGICKCORE_WINDOWS_SUPPORT) && !defined(__MINGW32__) && !defined(__MINGW64__)
+ #include <heif.h>
+ #else
+ #include <libheif/heif.h>
