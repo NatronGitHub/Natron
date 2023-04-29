@@ -28,6 +28,7 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-librevenge"
   "${MINGW_PACKAGE_PREFIX}-libzip"
   "${MINGW_PACKAGE_PREFIX}-libcdr"
+  "${MINGW_PACKAGE_PREFIX}-natron_sox"
   # openfx-gmic
   "${MINGW_PACKAGE_PREFIX}-curl"
   "${MINGW_PACKAGE_PREFIX}-fftw"

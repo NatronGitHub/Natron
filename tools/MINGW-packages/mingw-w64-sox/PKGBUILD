@@ -11,10 +11,9 @@ url="https://sourceforge.net/projects/sox"
 license=("LGPL")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-	     "${MINGW_PACKAGE_PREFIX}-libmad"
              #"${MINGW_PACKAGE_PREFIX}-cmake"
              )
-depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-libmad")
 source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2")
 sha256sums=('81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c')
 

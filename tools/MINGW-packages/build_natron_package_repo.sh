@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-set -x
+#set -x
 CWD=$(pwd)
 
 PKGS="
