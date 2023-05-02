@@ -12,7 +12,9 @@ url="https://github.com/NatronGitHub/breakpad"
 license=('BSD')
 provides=("${MINGW_PACKAGE_PREFIX}-dump_syms")
 conflicts=("${MINGW_PACKAGE_PREFIX}-dump_syms")
-makedepends=("git")
+makedepends=("git"
+             "${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config")
 depends=("mingw-w64-x86_64-libzip")
 options=('strip')
 source=("${_realname}"::"git+https://github.com/NatronGitHub/breakpad#commit=${gitcommit}")
@@ -25,8 +27,6 @@ pkgver() {
 
 build() {
   cd ${_realname}
-  CC=${MINGW_PREFIX}/bin/gcc \
-  CXX=${MINGW_PREFIX}/bin/g++ \
   ./configure
   make
 }
