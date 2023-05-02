@@ -17,6 +17,7 @@ mingw-w64-sox
 mingw-w64-poppler
 mingw-w64-imagemagick
 mingw-w64-osmesa
+mingw-w64-dump_syms
 mingw-w64-natron-build-deps-qt5
 "
 
@@ -50,6 +51,8 @@ for pkg_dir in ${PKGS}; do
       echo "Fetch complete."
     else
       echo "Building ${PACKAGE_NAME} ..."
+      # Remove any package files from previous builds.
+      rm mingw-w64-x86_64-*-any.pkg.tar.*
       time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCsr --needed --noconfirm
       echo "Build complete."
     fi

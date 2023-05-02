@@ -40,6 +40,7 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-python-sphinx"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"
   "${MINGW_PACKAGE_PREFIX}-natron-setup"
+  "${MINGW_PACKAGE_PREFIX}-natron_dump_syms"
 )
 
 # these should be empty, but saneman in CI complains, so we keep them here
