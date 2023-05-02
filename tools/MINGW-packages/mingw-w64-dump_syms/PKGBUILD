@@ -25,6 +25,8 @@ pkgver() {
 
 build() {
   cd ${_realname}
+  CC=${MINGW_PREFIX}/bin/gcc \
+  CXX=${MINGW_PREFIX}/bin/g++ \
   ./configure
   make
 }
