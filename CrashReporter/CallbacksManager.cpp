@@ -531,7 +531,7 @@ CallbacksManager::initInternal()
     QObject::connect( _natronProcess, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onSpawnedProcessFinished(int,QProcess::ExitStatus)) );
     QObject::connect( _natronProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(onSpawnedProcessError(QProcess::ProcessError)) );
     QStringList processArgs;
-    for (int i = 0; i < _argc; ++i) {
+    for (int i = 1; i < _argc; ++i) {
         processArgs.push_back( QString::fromUtf8(_argv[i]) );
     }
     if (enableBreakpad) {
@@ -541,8 +541,6 @@ CallbacksManager::initInternal()
         qint64 crashReporterPid = qApp->applicationPid();
         QString pidStr = QString::number(crashReporterPid);
         processArgs.push_back(pidStr);
-        processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_CLIENT_FD_ARG) );
-        processArgs.push_back( QString::number(-1) );
         processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_PIPE_ARG) );
         processArgs.push_back(_pipePath);
         processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_COM_PIPE_ARG) );
