@@ -53,7 +53,8 @@ jobs:
       - name: Save natron repo directory to cache
         id: save-natron-repo-cache
         uses: actions/cache/save@v3
-        if: always() // save even if build fails.
+        # save even if build fails.
+        if: always()
         with:
           path: tools/MINGW-packages/natron_repo
           key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
