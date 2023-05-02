@@ -35,20 +35,33 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup
         shell: pwsh
-      - name: Cache natron repo directory
-        id: cache-natron-repo
-        uses: actions/cache@v3
+      - name: Restore natron repo directory from cache
+        id: restore-natron-repo-cache
+        uses: actions/cache/restore@v3
         env:
           cache-name: cache-natron-repo
         with:
           path: tools/MINGW-packages/natron_repo
           key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
       - name: Build natron package repo
+        id: build-package-repo
+        # Allow continuing after error so cache gets updated and makes reruns faster.
+        continue-on-error: true
         run: |
           cd tools/MINGW-packages
           ./build_natron_package_repo.sh natron_repo
+      - name: Save natron repo directory to cache
+        id: save-natron-repo-cache
+        uses: actions/cache/save@v3
+        if: always() // save even if build fails.
+        with:
+          path: tools/MINGW-packages/natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
       - name: Upload natron_package_repo artifacts
         uses: actions/upload-artifact@v3
         with:
           name: natron_package_repo
           path: tools/MINGW-packages/natron_repo
+      - name: Check on failures
+        if: steps.build-package-repo.outcome != 'success'
+        run: exit 1

@@ -51,9 +51,14 @@ for pkg_dir in ${PKGS}; do
       echo "Fetch complete."
     else
       echo "Building ${PACKAGE_NAME} ..."
+
+      # Print available disk space to facilitate GitHub action debugging.
+      df -h
+
       # Remove any package files from previous builds.
       rm -f mingw-w64-x86_64-*-any.pkg.tar.*
-      time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCsr --needed --noconfirm
+      time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm
+
       echo "Build complete."
     fi
 
