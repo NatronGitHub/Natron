@@ -52,7 +52,7 @@ for pkg_dir in ${PKGS}; do
     else
       echo "Building ${PACKAGE_NAME} ..."
       # Remove any package files from previous builds.
-      rm mingw-w64-x86_64-*-any.pkg.tar.*
+      rm -f mingw-w64-x86_64-*-any.pkg.tar.*
       time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCsr --needed --noconfirm
       echo "Build complete."
     fi
