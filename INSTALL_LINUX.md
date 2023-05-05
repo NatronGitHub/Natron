@@ -367,7 +367,7 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 
 ## Debian-based
 
-Installing dependencies using `apt-get` should work on
+Installing dependencies using `apt-get` or `apt` should work on
 any Debian-based distribution.
 
 Install the required packages:
@@ -390,7 +390,7 @@ pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg
 pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 ```
 
-for linux mint you will need to add:
+for Linux Mint you will need to add:
 
 ```
 pyside {
@@ -444,18 +444,20 @@ make test
 
 ## Fedora/RHEL-based
 
-Instructions for Fedora, Red Hat Enterprise Linux and derivatives.
+Instructions for Fedora, Red Hat Enterprise Linux and derivatives. You can use either the dnf or yum package managers
 
 On RHEL and derivative distributions you need the EPEL repository:
 
-```
-yum install epel-release
-```
+``` yum install epel-release ``` or ``` dnf install epel-release ```
 
 Install required packages:
 
 ```
 yum install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+```
+or
+```
+dnf install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 
 Qt4 config.pri:
