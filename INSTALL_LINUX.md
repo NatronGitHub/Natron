@@ -6,8 +6,8 @@ This file is supposed to guide you step by step to have working (compiling) vers
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
 * If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
-* If you are on a Debian-based Linux (such as KDE Plasma, ElementaryOS etc.) see [here](#debian-based) for details
-* If you are on a Ubuntu see [here](#ubuntu) for details
+* If you are on a Debian-based Linux (such as KDE Neon, ElementaryOS etc.) see [here](#debian-based) for details
+* If you are on Ubuntu see [here](#ubuntu) for details
 * If you are willing to try the complete installation process, the instructions are below
 
 0. [Using Docker](#using-docker)
