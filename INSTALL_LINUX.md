@@ -6,8 +6,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 * It's recommended to use Docker for the easiest hands-off installation method - see [here](#using-docker) for more details
 * If you are on Arch Linux or Manjaro, see [this](#arch-linux) for relevant details
 * If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
-* If you are on Debian or a Debian/Ubuntu-based Linux (such as KDE Neon, ElementaryOS etc.) see [here](#debian-based) for details
-* If you are on Ubuntu see [here](#ubuntu) for details
+* If you are on Debian or a Debian-based system (such as Ubuntu, Linux Mint, KDE Neon, ElementaryOS etc.) see [here](#debian-based) for details
 * If you are willing to try the complete installation process, the instructions are below
 
 0. [Using Docker](#using-docker)
@@ -34,7 +33,6 @@ This file is supposed to guide you step by step to have working (compiling) vers
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
-    - [Ubuntu](#ubuntu)
     - [Fedora/RHEL-based](#fedorarhel-based)
 5. [Generating Python bindings](#generating-python-bindings)
 
@@ -370,14 +368,22 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 Installing dependencies using `apt-get` or `apt` should work on
 any Debian-based distribution.
 
-Install the required packages:
+For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
+
 ```
-sudo apt install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
+sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
 ```
 
 For Debian 12, install the following packages instead:
+
 ```
 sudo apt install qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
+```
+
+For most Debian/Ubuntu-based systems, install the required packages:
+
+```
+sudo apt install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
 For the Qt4 config.pri use:
@@ -404,16 +410,6 @@ pyside {
         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
-```
-
-## Ubuntu
-
-Instructions for Ubuntu 22.04 using Python 3.10 and Qt 5.15.
-
-Install the required dependencies:
-
-```
-sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
 ```
 
 Get Natron:
