@@ -96,6 +96,8 @@ Standalone binary distributions of Natron are available for GNU/Linux, Windows, 
 - [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
 - [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)
 
+Alternatively, on Linux systems you can install Natron through flatpak: ``` flatpak install fr.natron.Natron ```
+
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 
 ### Building and installing from source
