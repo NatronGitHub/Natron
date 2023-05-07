@@ -303,13 +303,10 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
         _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? static_cast<const OSGLContext_x11 *>(shareContext->_imp->_platformContext.get()) : nullptr) );
     }
 #endif
-    assert(!threadHasACurrentContext());
 }
 
 OSGLContext::~OSGLContext()
 {
-    assert(!threadHasACurrentContext());
-
     setContextCurrentNoRender();
     if (_imp->pboID) {
         glDeleteBuffers(1, &_imp->pboID);
