@@ -31,7 +31,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - 32-bit floating-point linear color processing pipeline.
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
-- Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
+- Dozens of video and image formats supported such as: H264, DNxHR, EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
 - Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported. Those marked with (+) are included in the binary releases.
   - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) (+)
   - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc) (+)
@@ -95,6 +95,8 @@ Standalone binary distributions of Natron are available for GNU/Linux, Windows, 
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
 - [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
 - [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)
+
+Alternatively, on Linux systems you can install Natron through flatpak: ``` flatpak install fr.natron.Natron ```
 
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 
