@@ -1,4 +1,4 @@
---- Portfile.orig	2023-04-13 10:53:45.000000000 -0700
+--- Portfile.orig	2023-05-10 16:10:39.000000000 -0700
 +++ Portfile	2023-04-04 12:02:53.000000000 -0700
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
@@ -23,7 +23,7 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 -
--    version             16.0.1
+-    version             16.0.3
 -    revision            0
 -
      if { ${subport} eq "libomp-devel" } {
@@ -48,20 +48,23 @@
 -
 -    checksums \
 -        openmp-${version}.src.tar.xz \
--        rmd160  ae49a06ba7a13582d1b811d07363541e9557636e \
--        sha256  3385718b1865c7a9ef45e8923a8e2487d23c20e1b8b4c18df6c5a2881eddf18a \
--        size    1278184 \
+-        rmd160  e62aa3e855e692554dfdf946daffe6606848241c \
+-        sha256  6ff2bb78c95d9b430203dcba50e41433e1f72696af7b2196c8056ac4bc9f2516 \
+-        size    1278080 \
 -        cmake-${version}.src.tar.xz \
--        rmd160  035fd188b7403066490761e06f8deb38d373f591 \
--        sha256  f7b070b0ea71251c81b1a3dcdc6ccd28f59615e3e386c461456c5c246406acdc \
--        size    9000
+-        rmd160  e12f24f24ed8ad6b2adb5973a2db5fd107e237f9 \
+-        sha256  b6d83c91f12757030d8361dedc5dd84357b3edb8da406b5d0850df8b6f7798b1 \
+-        size    9004
 +    revision            0
  
      if {${os.major} <= 12} {
          # kmp_alloc.c includes <atomic> but libc++ is not the default on
-@@ -64,32 +55,38 @@
+@@ -62,34 +53,40 @@
+ 
+     # Build requires std::atomic
      configure.cxxflags-append -std=c++11
-     compiler.cxx_standard   2011
+-    compiler.cxx_standard     2011
++    compiler.cxx_standard   2011
  
 -    master_sites        https://github.com/llvm/llvm-project/releases/download/llvmorg-${version} \
 -                        https://releases.llvm.org/${version}

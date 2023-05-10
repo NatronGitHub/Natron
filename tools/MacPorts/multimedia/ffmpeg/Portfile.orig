@@ -115,6 +115,14 @@ patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 # Fixed via upstream commit: e5163b1d34381a3319214a902ef1df923dd2eeba
 patchfiles-append   patch-libsdl2-version.diff
 
+# Patch for upstream issue:
+# libavcodec/libsvtav1.c:124:53: error: no member named 'compressed_ten_bit_format' in 'struct EbSvtAv1EncConfiguration'
+#         (config->encoder_bit_depth > 8) && (config->compressed_ten_bit_format == 0) ? 1 : 0;
+#                                             ~~~~~~  ^
+# https://trac.macports.org/ticket/67327
+# Fixed via upstream commit: 031f1561cd286596cdb374da32f8aa816ce3b135
+patchfiles-append   patch-libavcodec-libsvtav1-ten_bit_format.diff
+
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
 minimum_xcodeversions {9 3.1}
