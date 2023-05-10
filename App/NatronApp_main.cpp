@@ -71,17 +71,28 @@ int main(int argc, char *argv[])
 
 #ifdef Q_OS_WIN
     // Setup Windows console output
-    bool hasConsole = false;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     bool enableConsoleWindow = settings.value( QString::fromUtf8("enableConsoleWindow"), false ).toBool();
-    if (enableConsoleWindow) { // output to console window
-        hasConsole = ( AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole() );
-    } else { // output to parent console
-        hasConsole = AttachConsole(ATTACH_PARENT_PROCESS);
+    HANDLE stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (stdOutHandle == INVALID_HANDLE_VALUE) {
+        // Already having an invalid handle when starting likely means something is terribly wrong.
+        OutputDebugStringA("Invalid STD_OUTPUT_HANDLE.");
+        return 1;
     }
-    if (hasConsole) {
-        freopen("CONOUT$", "w", stdout);
-        freopen("CONOUT$", "w", stderr);
+    if (stdOutHandle == NULL) {
+        // A console is not already attached to this process. Try attaching to our parent's console.
+        bool hasConsole = AttachConsole(ATTACH_PARENT_PROCESS);
+        if (!hasConsole && enableConsoleWindow) {
+            // Failed to attach to the parent console. Try creating a console window.
+            hasConsole = AllocConsole();
+        }
+
+        if (hasConsole) {
+            // Reopen stdout & stderr streams so that writing to
+            // them will display on the attached/allocated console.
+            freopen("CONOUT$", "w", stdout);
+            freopen("CONOUT$", "w", stderr);
+        }
     }
 #endif
 
