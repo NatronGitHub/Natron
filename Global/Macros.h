@@ -444,27 +444,19 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 #endif
 #endif
 
-// silence warnings from the COMPILER() COMPILER_SUPPORTS() and COMPILER_QUIRK() macros below
-#if __has_warning("-Wexpansion-to-defined")
-// clang-format off
-CLANG_DIAG_OFF(expansion-to-defined)
-// clang-format on
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////////////////////
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by NATRON)
 // see https://trac.webkit.org/browser/webkit/trunk/Source/WTF/wtf/Compiler.h?format=txt
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 /* COMPILER() - the compiler being used to build the project */
-#define COMPILER(NATRON_FEATURE) (defined NATRON_COMPILER_ ## NATRON_FEATURE && NATRON_COMPILER_ ## NATRON_FEATURE)
+#define COMPILER(NATRON_FEATURE) (NATRON_COMPILER_ ## NATRON_FEATURE)
 
 /* COMPILER_SUPPORTS() - whether the compiler being used to build the project supports the given feature. */
-#define COMPILER_SUPPORTS(NATRON_COMPILER_FEATURE) (defined NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE && NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE)
+#define COMPILER_SUPPORTS(NATRON_COMPILER_FEATURE) (NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE)
 
 /* COMPILER_QUIRK() - whether the compiler being used to build the project requires a given quirk. */
-#define COMPILER_QUIRK(NATRON_COMPILER_QUIRK) (defined NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK && NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK)
+#define COMPILER_QUIRK(NATRON_COMPILER_QUIRK) (NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK)
 
 /* COMPILER_HAS_CLANG_HEATURE() - whether the compiler supports a particular language or library feature. */
 /* http://clang.llvm.org/docs/LanguageExtensions.html#has-feature-and-has-extension */
