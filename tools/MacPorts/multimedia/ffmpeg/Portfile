@@ -15,7 +15,7 @@ PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
 set my_name         ffmpeg
-conflicts           ffmpeg-devel ffmpeg-upstream
+conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
