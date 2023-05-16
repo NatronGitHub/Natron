@@ -851,6 +851,7 @@ build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
 build ffmpeg
+build libyaml # (for ruby)
 build ruby # (necessary for qtwebkit)
 build breakpad
 if [ -n "${CENTOS:-}" ] && [ -z "${DTS:-}" ] && [ "${CENTOS:-7}" -le 7 ]; then

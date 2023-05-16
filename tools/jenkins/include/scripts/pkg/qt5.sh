@@ -4,7 +4,7 @@
 # see https://www.linuxfromscratch.org/blfs/view/svn/x/qt5.html
 # Note: This is excluding qtwebengine, which is available separately (for security reasons):
 # https://www.linuxfromscratch.org/blfs/view/svn/x/qtwebengine.html
-QT5_VERSION=5.15.7
+QT5_VERSION=5.15.9
 QT5_VERSION_SHORT=${QT5_VERSION%.*}
 QT5_TAR="qt-everywhere-opensource-src-${QT5_VERSION}.tar.xz"
 QT5_SITE="https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}/single"
@@ -14,7 +14,7 @@ QT5_SITE="https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}/
 # Required patch: https://www.linuxfromscratch.org/patches/blfs/svn/qt-everywhere-src-5.15.2-kf5.15-2.patch
 # Details of the kde curation can be found at https://dot.kde.org/2021/04/06/announcing-kdes-qt-5-patch-collection
 # and https://community.kde.org/Qt5PatchCollection.
-QT5_PATCH="qt-everywhere-opensource-src-5.15.7-kf5-1.patch"
+QT5_PATCH="qt-everywhere-opensource-src-5.15.9-kf5-1.patch"
 QT5_PATCH_SITE="https://www.linuxfromscratch.org/patches/blfs/svn"
 
 if download_step; then
@@ -32,6 +32,7 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
     untar "$SRC_PATH/$QT5_TAR"
     pushd "qt-everywhere-src-${QT5_VERSION}"
     patch -Np1 -i "$SRC_PATH/$QT5_PATCH"
+    mkdir -pv qtbase/.git
     # Install Qt5 by running the following commands: 
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT5PREFIX" \
             -sysconfdir /etc/xdg                      \
@@ -49,6 +50,7 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
     make install
     # Remove references to the build directory from installed library dependency (prl) files by running the following command as the root user: 
     find $QT5PREFIX/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+    popd
     rm -rf "qt-everywhere-src-${QT5_VERSION}"
     end_build
 fi

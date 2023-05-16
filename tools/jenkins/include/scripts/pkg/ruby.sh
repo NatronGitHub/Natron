@@ -2,9 +2,7 @@
 
 # Install ruby (necessary for qtwebkit)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/ruby.html
-RUBY_VERSION=3.1.2  # 3.2.1 fails to build
-# building 3.2.1 fails wih:
-# <internal:/home/tmp/ruby-3.2.1/lib/rubygems/core_ext/kernel_require.rb>:88:in `require': cannot load such file -- psych (LoadError)
+RUBY_VERSION=3.2.2
 RUBY_VERSION_SHORT=${RUBY_VERSION%.*}
 RUBY_VERSION_PKG=${RUBY_VERSION_SHORT}.0
 RUBY_TAR="ruby-${RUBY_VERSION}.tar.xz"

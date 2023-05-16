@@ -4,6 +4,11 @@ This directory contains tools to build Natron using docker images (requires [Doc
 
 These docker images are based on CentOS6 for a maximum compatibility accross all Linux distributions (CentOS6 will receive maintenance updates until November 30th, 2020). This can be modified by changing the value of `DOCKER_BASE` in `tools/jenkins/insclude/scripts/build-Linux-sdk.sh`.
 
+## Debugging a docker build that fails
+
+See [this github issue comment](https://github.com/moby/buildkit/issues/1472#issuecomment-941628522): just add `FROM intermediate` before the RUN line that fails, and relaunch the build with `docker builtx build --load --target itermediate -t arch .`. Now `docker run --rm -it arch sh` gives you a shell before the fail.
+
+
 ## Downloading the pre-built Natron SDK images
 
 The `natrongithub/natron-sdk` docker image is available from [Docker Hub], and it is an alias to `natrongithub/natron-sdk-centos7` and ``natrongithub/natron-sdk-centos7-dts8`.

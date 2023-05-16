@@ -5,7 +5,7 @@
 FFMPEG_VERSION=6.0
 # see https://ffmpeg.org/download.html
 FFMPEG_VERSION_LIBAVCODEC=60.3.100
-FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"
+FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"
 if download_step; then
     download "$FFMPEG_SITE" "$FFMPEG_TAR"

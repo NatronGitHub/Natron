@@ -2,7 +2,7 @@
 
 # install patchelf
 # see https://github.com/NixOS/patchelf/releases
-PATCHELF_VERSION=0.17.2
+PATCHELF_VERSION=0.18.0
 PATCHELF_TAR="patchelf-${PATCHELF_VERSION}.tar.bz2"
 PATCHELF_DIR="patchelf-${PATCHELF_VERSION}" # .20210805.a949ff2"
 #PATCHELF_VERSION=0.11

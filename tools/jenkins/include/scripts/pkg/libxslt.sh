@@ -2,7 +2,7 @@
 
 # Install libxslt
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxslt.html
-LIBXSLT_VERSION=1.1.37
+LIBXSLT_VERSION=1.1.38
 LIBXSLT_VERSION_SHORT=${LIBXSLT_VERSION%.*}
 
 LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.xz"

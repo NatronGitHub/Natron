@@ -2,7 +2,7 @@
 
 # Install xz (required to uncompress source tarballs)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/xz.html
-XZ_VERSION=5.4.1
+XZ_VERSION=5.4.3
 XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
 XZ_SITE="https://tukaani.org/xz"
 if download_step; then
