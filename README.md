@@ -19,7 +19,7 @@ Natron is looking for developers and maintainers! You can help develop and maint
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
 - [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
-- [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [PySide support in Qt5](https://wiki.qt.io/Qt_for_Python_Development_Notes), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
+- [Qt](https://www.qt.io/) (Natron builds with Qt4 or Qt5, but does not yet support Qt6)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
 - Basic knowledge of [Python](<https://en.wikipedia.org/wiki/Python_(programming_language)>)
 
