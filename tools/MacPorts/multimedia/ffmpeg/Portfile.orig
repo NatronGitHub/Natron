@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.2
-revision            6
+revision            7
 epoch               1
 
 license             LGPL-2.1+
@@ -93,6 +93,7 @@ depends_lib-append \
                     port:fribidi \
                     path:lib/libspeex.dylib:speex \
                     port:soxr \
+                    port:dav1d \
                     port:bzip2 \
                     port:xz \
                     port:zimg \
@@ -166,6 +167,7 @@ configure.args-append \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-libdav1d \
                     --enable-zlib \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
@@ -212,17 +214,11 @@ platform darwin {
         configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
     }
 
-    if {${os.major} > 9} {
+    if {${os.major} > 9 && ${build_arch} ni [list ppc ppc64]} {
         # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
-        # but builds on Snow Leopard
+        # but builds on Snow Leopard x86. Exclude ppc until fixed.
         configure.args-replace --disable-sdl2 --enable-sdl2
         depends_lib-append     port:libsdl2
-
-        # Dav1d: 10.6+ No PowerPC or Apple Silicon (for now)
-        if {![regexp -all (arm64|ppc*) [get_canonical_archs]]} {
-            configure.args-append   --enable-libdav1d
-            depends_lib-append      port:dav1d
-        }
     }
 
     # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
@@ -248,16 +244,22 @@ platform darwin {
         configure.args-append --disable-indev=avfoundation
     }
 
-    # av1 codecs, available on 10.7+
-    if {${os.major} >= 11} {
+    # av1 codecs, available on 10.5+
+    if {${os.major} >= 9} {
         configure.args-append \
                         --enable-libaom \
-                        --enable-librav1e \
                         --enable-libsvtav1
         depends_lib-append \
                         port:aom \
-                        port:rav1e \
                         port:svt-av1
+    }
+
+    # Available on 10.7+
+    if {${os.major} >= 11} {
+        configure.args-append \
+                        --enable-librav1e
+        depends_lib-append \
+                        port:rav1e
     }
 }
 

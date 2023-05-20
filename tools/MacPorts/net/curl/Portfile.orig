@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.0.1
-checksums                       rmd160  8652368b89aec0056b799844e70128ebe4938c83 \
-                                sha256  0a381cd82f4d00a9a334438b8ca239afea5bfefcfa9a1025f2bf118e79e0b5f0 \
-                                size    2575544
+version                         8.1.0
+checksums                       rmd160  0f0da89b92975c54bb4db0e895dd541ca391b582 \
+                                sha256  6bd80ad4f07187015911216ee7185b90d285ac5162aed1bded144f9f93232a3c \
+                                size    2612568
 
 categories                      net www
 platforms                       darwin freebsd
