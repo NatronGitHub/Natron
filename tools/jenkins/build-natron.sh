@@ -154,12 +154,13 @@ echo "========================================================================"
 
 # Generate pyside bindings (cmake can generate these, qmake can't)
 if [ "$QT_VERSION_MAJOR" = 5 ]; then
+    UNIX_PYTHON_HOME="${PYTHON_HOME}"
     case "$system" in
     Linux)
 
         ;;
     Msys|MINGW64_NT-*|MINGW32_NT-*)
-
+        UNIX_PYTHON_HOME="$(cygpath -u "${PYTHON_HOME}")"
         ;;
     Darwin)
         # Check for a missing link in the MacPorts package
@@ -170,7 +171,6 @@ if [ "$QT_VERSION_MAJOR" = 5 ]; then
     esac
 
     rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/* || true
-    UNIX_PYTHON_HOME=`cygpath -u "${PYTHON_HOME}"`
     SHIBOKEN_INCLUDE_PATHS=".:./Engine:./Global:libs/OpenFX/include:${UNIX_PYTHON_HOME}/include/python${PYVER}:${UNIX_PYTHON_HOME}/include/PySide2"
     SHIBOKEN_TYPESYSTEM_PATHS="${UNIX_PYTHON_HOME}/share/PySide2/typesystems"
     shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=${SHIBOKEN_INCLUDE_PATHS} --typesystem-paths=${SHIBOKEN_TYPESYSTEM_PATHS} --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
