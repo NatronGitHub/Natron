@@ -55,7 +55,8 @@ configure.args-append   -DUSE_CCACHE=OFF
 
 # do not "Try to download and build any missing dependencies"
 configure.args-append   -DBUILD_MISSING_DEPS=OFF \
-                        -DBUILD_MISSING_FMT=OFF
+                        -DBUILD_MISSING_FMT=OFF \
+                        -DJPEG_INCLUDE_DIR=${prefix}/include \
 
 depends_lib-append      port:robin-map \
                         port:zlib \
