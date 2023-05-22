@@ -1,5 +1,5 @@
---- Portfile.orig	2023-01-29 10:11:55.000000000 -0800
-+++ Portfile	2023-02-10 17:28:26.000000000 -0800
+--- Portfile.orig	2023-05-10 16:09:40.000000000 -0700
++++ Portfile	2023-05-21 19:27:37.000000000 -0700
 @@ -2,17 +2,14 @@
  
  PortSystem              1.0
@@ -51,7 +51,16 @@
  
  set port_libfmt         libfmt9
  cmake.module_path-append \
-@@ -54,20 +62,88 @@
+@@ -47,27 +55,96 @@
+ 
+ # do not "Try to download and build any missing dependencies"
+ configure.args-append   -DBUILD_MISSING_DEPS=OFF \
+-                        -DBUILD_MISSING_FMT=OFF
++                        -DBUILD_MISSING_FMT=OFF \
++                        -DJPEG_INCLUDE_DIR=${prefix}/include \
+ 
+ depends_lib-append      port:robin-map \
+                         port:zlib \
                          port:bzip2 \
                          port:libpng \
                          port:tiff \
@@ -145,7 +154,7 @@
  
  set pythons_ports       {}
  foreach s ${pythons_suffixes} {
-@@ -100,34 +176,58 @@
+@@ -100,34 +177,58 @@
  }
  # this default version should stay synchronized with python_get_default_version
  #    in the python PortGroup
@@ -207,7 +216,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -136,21 +236,35 @@
+@@ -136,21 +237,35 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

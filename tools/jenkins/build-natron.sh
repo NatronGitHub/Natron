@@ -171,8 +171,8 @@ if [ "$QT_VERSION_MAJOR" = 5 ]; then
     esac
 
     rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/* || true
-    SHIBOKEN_INCLUDE_PATHS=".:./Engine:./Global:libs/OpenFX/include:${UNIX_PYTHON_HOME}/include/python${PYVER}:${UNIX_PYTHON_HOME}/include/PySide2"
-    SHIBOKEN_TYPESYSTEM_PATHS="${UNIX_PYTHON_HOME}/share/PySide2/typesystems"
+    SHIBOKEN_INCLUDE_PATHS=".:./Engine:./Global:libs/OpenFX/include:${SDK_HOME}/include:${QTDIR}/include:${UNIX_PYTHON_HOME}/include/python${PYVER}:${UNIX_PYTHON_HOME}/include/PySide2:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include"
+    SHIBOKEN_TYPESYSTEM_PATHS="${UNIX_PYTHON_HOME}/share/PySide2/typesystems:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems"
     shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=${SHIBOKEN_INCLUDE_PATHS} --typesystem-paths=${SHIBOKEN_TYPESYSTEM_PATHS} --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/Pyside2_Engine_Python.h  Engine/typesystem_engine.xml
 
     shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=${SHIBOKEN_INCLUDE_PATHS}:${QTDIR}/include/QtWidgets:${QTDIR}/include/QtCore --typesystem-paths=${SHIBOKEN_TYPESYSTEM_PATHS}:./Engine:./Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/Pyside2_Gui_Python.h  Gui/typesystem_natronGui.xml
