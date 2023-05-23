@@ -1,8 +1,8 @@
 # Maintainer: Biswapriyo Nath <nathbappai@gmail.com>
 
 _realname=imath
-pkgbase=mingw-w64-${_realname}
-pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgbase=mingw-w64-natron_${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
 pkgver=3.1.7
 pkgrel=99.1
 pkgdesc='A C++ and python library of 2D and 3D vector, matrix, and math operations for computer graphics (mingw-w64)'

@@ -55,7 +55,7 @@ if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     exit 1
 fi
 
-DUMP_SYMS="$SDK_HOME/bin/dump_syms.exe"
+DUMP_SYMS="$SDK_HOME/bin/natron_dump_syms_dwarf.exe"
 
 dump_syms_safe() {
     if [ $# != 2 ]; then

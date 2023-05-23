@@ -1,20 +1,23 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
-_realname=google-breakpad
-pkgbase=mingw-w64-dump_syms
-pkgname="${MINGW_PACKAGE_PREFIX}-dump_syms"
-gitcommit=9474c3f
-pkgver=29.9474c3f
-pkgrel=2
+_realname=breakpad
+pkgbase=mingw-w64-natron_dump_syms
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_dump_syms"
+gitcommit=1a92fe4a44c954577dd678e22252848e5fc714c2
+pkgver=2156.1a92fe4a
+pkgrel=1
 pkgdesc="Dump win32 dwarf symbols"
 arch=('any')
-url="https://github.com/NatronGitHub/google-breakpad"
+url="https://github.com/NatronGitHub/breakpad"
 license=('BSD')
 provides=("${MINGW_PACKAGE_PREFIX}-dump_syms")
 conflicts=("${MINGW_PACKAGE_PREFIX}-dump_syms")
-makedepends=("git")
+makedepends=("git"
+             "${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config")
+depends=("mingw-w64-x86_64-libzip")
 options=('strip')
-source=("${_realname}"::"git+https://github.com/NatronGitHub/google-breakpad#commit=${gitcommit}")
+source=("${_realname}"::"git+https://github.com/NatronGitHub/breakpad#commit=${gitcommit}")
 sha256sums=('SKIP')
 
 pkgver() {
@@ -24,14 +27,11 @@ pkgver() {
 
 build() {
   cd ${_realname}
-  CC=${MINGW_PREFIX}/bin/gcc \
-  CXX=${MINGW_PREFIX}/bin/g++ \
-  CPPFLAGS=-D__USE_MINGW_ANSI_STDIO LIBS=-lws2_32 \
   ./configure
   make
 }
 
 package() {
   mkdir -p ${pkgdir}/${MINGW_PREFIX}/bin
-  cp ${srcdir}/${_realname}/src/tools/windows/dump_syms_dwarf/dump_syms.exe ${pkgdir}/${MINGW_PREFIX}/bin/
+  cp ${srcdir}/${_realname}/src/tools/windows/dump_syms_dwarf/dump_syms.exe ${pkgdir}/${MINGW_PREFIX}/bin/natron_dump_syms_dwarf.exe
 }

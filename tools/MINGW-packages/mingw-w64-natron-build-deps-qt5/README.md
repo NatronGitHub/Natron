@@ -1,0 +1,1 @@
+This meta package depends on all packages needed for building Natron, the openfx plugins, and the Natron installer.

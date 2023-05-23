@@ -1,8 +1,8 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=openimageio
-pkgbase=mingw-w64-${_realname}
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase=mingw-w64-natron_${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgver=2.4.10.0
 pkgrel=99.1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
@@ -15,16 +15,17 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-giflib"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
          "${MINGW_PACKAGE_PREFIX}-libpng"
-         "${MINGW_PACKAGE_PREFIX}-LibRaw-gpl2"
+         "${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2"
          "${MINGW_PACKAGE_PREFIX}-libwebp"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
-         "${MINGW_PACKAGE_PREFIX}-opencolorio"
-         "${MINGW_PACKAGE_PREFIX}-openexr"
+         "${MINGW_PACKAGE_PREFIX}-natron_opencolorio-git"
+         "${MINGW_PACKAGE_PREFIX}-natron_openexr"
          "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-boost"
+             "${MINGW_PACKAGE_PREFIX}-cc"
              "git")
 options=('strip' 'buildflags' '!debug')
 source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/v${pkgver}.tar.gz

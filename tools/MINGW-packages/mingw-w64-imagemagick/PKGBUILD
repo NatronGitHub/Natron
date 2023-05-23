@@ -12,23 +12,15 @@
 pkgver=6.9.11.16
 
 _realname=imagemagick
-pkgbase="mingw-w64-${_realname}"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase="mingw-w64-natron_${_realname}"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgrel=5
 pkgdesc="An image viewing/manipulation program (mingw-w64)"
 arch=('any')
 url="https://www.imagemagick.org/"
 license=("custom")
-makedepends=(
-             "${MINGW_PACKAGE_PREFIX}-libpng"
-             "${MINGW_PACKAGE_PREFIX}-bzip2"
-             "${MINGW_PACKAGE_PREFIX}-xz"
-             "${MINGW_PACKAGE_PREFIX}-zlib"
-             "${MINGW_PACKAGE_PREFIX}-freetype"
-             "${MINGW_PACKAGE_PREFIX}-fontconfig"
-	     "${MINGW_PACKAGE_PREFIX}-lcms2"
-	     "${MINGW_PACKAGE_PREFIX}-libheif"
-            )
+makedepends=("${MINGW_PACKAGE_PREFIX}-autotools"
+             "${MINGW_PACKAGE_PREFIX}-cc")
 depends=(
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
@@ -55,7 +47,7 @@ sha256sums=(
             'ee504686d4e130e68f88ac26e0728c0a1b627f8571326435329a3e8b8a7868f5'
             '312a02bdcc2b966322ecca3e76a34a87d796335945401c661b8c4a5327281d5d'
             '90a650f92f6f77231ffbc109b12dba9acca01614d069f31886edaecc17112530'
-            '026d8ae551b643ded51f560b3f5db8829854c3ea235f45993da06ba3245219e4'
+            'c5066995e3cc5fe81cc36b194a4a70fb2bc6ff6e5808062a09d6e767e4bd23eb'
             'eb83e383f720c109b3ef7fb8c774cf108aec6ac6e71722ac5292b60feaaf3dd6'
             '98f5da106e24f49fff16020ceae375c4f46108ad9a786002c1895b1c17f3dbeb'
            )

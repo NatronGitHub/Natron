@@ -1,7 +1,7 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=shiboken
-pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
+pkgname=${MINGW_PACKAGE_PREFIX}-natron_${_realname}
 pkgver=1.2.4
 pkgrel=8
 arch=('any')
@@ -19,7 +19,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
              "${MINGW_PACKAGE_PREFIX}-libxslt"
              "${MINGW_PACKAGE_PREFIX}-python2"
              "${MINGW_PACKAGE_PREFIX}-python"
-             "${MINGW_PACKAGE_PREFIX}-qt4"
+             "${MINGW_PACKAGE_PREFIX}-natron_qt4"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-cmake")
 options=('strip')
