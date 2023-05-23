@@ -1,18 +1,20 @@
 # Maintainer: Alexey Pavlov <alexpux@gmail.com>
 
 _realname=LibRaw
-pkgbase=mingw-w64-libraw-gpl2
-pkgname="${MINGW_PACKAGE_PREFIX}-libraw-gpl2"
-provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
-replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
-conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
+pkgbase=mingw-w64-natron_libraw-gpl2
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2"
+provides=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2")
+replaces=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2")
+conflicts=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2" "${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
 pkgver=0.18.13
 pkgrel=6
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
 url="https://www.libraw.org/"
 license=("LGPL")
-makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-autotools")
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-jasper")

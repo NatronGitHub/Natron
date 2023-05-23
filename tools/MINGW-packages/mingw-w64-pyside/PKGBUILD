@@ -1,7 +1,7 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=pyside
-pkgname=${MINGW_PACKAGE_PREFIX}-${_realname}
+pkgname=${MINGW_PACKAGE_PREFIX}-natron_${_realname}
 pkgver=1.2.4
 pkgrel=8
 arch=('any')
@@ -14,8 +14,8 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-python2"
              "${MINGW_PACKAGE_PREFIX}-python"
-             "${MINGW_PACKAGE_PREFIX}-shiboken"
-             "${MINGW_PACKAGE_PREFIX}-qt4")
+             "${MINGW_PACKAGE_PREFIX}-natron_shiboken"
+             "${MINGW_PACKAGE_PREFIX}-natron_qt4")
 options=('strip')
 
 prepare() {
@@ -41,7 +41,7 @@ build() {
       -DBUILD_TESTS=FALSE \
       -DCMAKE_OBJECT_PATH_MAX=1024 \
       ${_conf} \
-      -DSITE_PACKAGE=${MINGW_PREFIX}/lib/python${_major}.${_minor}/site-packages \
+      -DSITE_PACKAGE=lib/python${_major}.${_minor}/site-packages \
       -DShiboken_DIR=${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/py${_major} \
       -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
       -DCMAKE_CXX_STANDARD=98 \
@@ -74,8 +74,6 @@ package() {
     fi
     cd ${srcdir}/build-${MINGW_CHOST}-${pyv}
     make DESTDIR=${pkgdir} install
-    (cd ${pkgdir} ; mv msys*/mingw*/lib/* ${pkgdir}${MINGW_PREFIX}/lib/)
-    rm -rf ${pkgdir}/msys* || true
     mv ${pkgdir}${MINGW_PREFIX}/include/PySide{,-py${_major}}
     mv ${pkgdir}${MINGW_PREFIX}/share/PySide{,-py${_major}}
     sed -i 's|include/PySide|include/PySide-py'${_major}'|g' ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/pyside.pc

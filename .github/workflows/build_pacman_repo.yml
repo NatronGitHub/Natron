@@ -1,0 +1,69 @@
+name: Build pacman repo
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - 'main'
+      - 'build_natron_packages'
+    paths:
+      - 'tools/MINGW-packages/**'
+      - '.github/workflows/build_pacman_repo.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  cache-name: cache-natron-repo
+
+jobs:
+  build_repo:
+    name: Build pacman repo
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup MinGW environment
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git base-devel
+      - name: Install Inno Setup
+        run: choco install innosetup
+        shell: pwsh
+      - name: Restore natron repo directory from cache
+        id: restore-natron-repo-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: tools/MINGW-packages/natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
+      - name: Build natron package repo
+        id: build-package-repo
+        # Allow continuing after error so cache gets updated and makes reruns faster.
+        continue-on-error: true
+        run: |
+          cd tools/MINGW-packages
+          ./build_natron_package_repo.sh natron_repo
+      - name: Save natron repo directory to cache
+        id: save-natron-repo-cache
+        uses: actions/cache/save@v3
+        # save even if build fails.
+        if: always()
+        with:
+          path: tools/MINGW-packages/natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
+      - name: Upload natron_package_repo artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: natron_package_repo
+          path: tools/MINGW-packages/natron_repo
+      - name: Check on failures
+        if: steps.build-package-repo.outcome != 'success'
+        run: exit 1

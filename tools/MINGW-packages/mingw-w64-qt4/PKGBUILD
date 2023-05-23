@@ -12,8 +12,8 @@ else
 fi
 
 _realname=qt4${_namesuff}
-pkgbase="mingw-w64-${_realname}"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase="mingw-w64-natron_${_realname}"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 
 # qt4-static must be kept in its own prefix hierarchy
 # as otherwise it will conflict with qt4 itself
@@ -29,7 +29,7 @@ arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
 license=('GPL3' 'LGPL' 'FDL' 'custom')
-conflicts=("${MINGW_PACKAGE_PREFIX}-qt5")
+conflicts=("${MINGW_PACKAGE_PREFIX}-qt4" "${MINGW_PACKAGE_PREFIX}-qt5")
 depends=(
          "${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-dbus"
@@ -45,7 +45,6 @@ depends=(
          "${MINGW_PACKAGE_PREFIX}-libxslt"
          "${MINGW_PACKAGE_PREFIX}-openssl"
          "${MINGW_PACKAGE_PREFIX}-pcre"
-         "${MINGW_PACKAGE_PREFIX}-qtbinpatcher"
          "${MINGW_PACKAGE_PREFIX}-sqlite3"
          "${MINGW_PACKAGE_PREFIX}-zlib"
          )

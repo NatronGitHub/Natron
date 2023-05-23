@@ -3,8 +3,8 @@
 # Contributer: wirx6 <wirx654@gmail.com>
 
 _realname=ffmpeg
-pkgbase="mingw-w64-${_realname}-gpl2"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
+pkgbase="mingw-w64-natron_${_realname}-gpl2"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2"
 pkgver=4.4.3
 pkgrel=99.1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
@@ -13,7 +13,6 @@ url="https://ffmpeg.org/"
 license=('GPL')
 options=('staticlibs' 'strip')
 depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
-         "${MINGW_PACKAGE_PREFIX}-celt"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-gnutls"
          "${MINGW_PACKAGE_PREFIX}-gsm"
@@ -38,7 +37,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-srt"
          #"${MINGW_PACKAGE_PREFIX}-wavpack"
-         "${MINGW_PACKAGE_PREFIX}-x264"
+         "${MINGW_PACKAGE_PREFIX}-natron_x264"
          "${MINGW_PACKAGE_PREFIX}-x265"
          "${MINGW_PACKAGE_PREFIX}-xvidcore"
 	 "${MINGW_PACKAGE_PREFIX}-dav1d"
@@ -81,7 +80,6 @@ build() {
     --enable-libass \
     --enable-libbluray \
     --enable-libcaca \
-    --enable-libcelt \
     --enable-libfreetype \
     --enable-libgsm \
     --enable-libmfx \

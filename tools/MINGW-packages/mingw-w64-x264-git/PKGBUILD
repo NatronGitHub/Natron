@@ -1,8 +1,8 @@
 # Maintainer: Alexey Pavlov <alexpux@gmail.com>
 
 _realname=x264
-pkgbase=mingw-w64-${_realname}
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase=mingw-w64-natron_${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
