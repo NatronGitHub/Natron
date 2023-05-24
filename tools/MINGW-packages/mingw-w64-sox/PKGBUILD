@@ -14,8 +14,18 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              #"${MINGW_PACKAGE_PREFIX}-cmake"
              )
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-libmad")
-source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2")
-sha256sums=('81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c')
+source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2"
+        "remove-libssp-detection.patch")
+sha256sums=('81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c'
+            '57d8fe423a97b554d4f34a9952a9827974ecc5f706ac602c4dd77d32bae2afd6')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  patch -Np1 -i "${srcdir}/remove-libssp-detection.patch"
+
+  autoreconf -fiv
+}
 
 build() {
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
