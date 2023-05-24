@@ -245,7 +245,6 @@ catDll libbrotlienc
 catDll libssl-3-
 catDll libcrypto-3-
 catDll libzstd
-catDll libssp-
 
 catDll libSeExpr
 catDll libyaml-cpp
