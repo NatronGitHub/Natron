@@ -1,0 +1,12 @@
+diff -ur a/configure.ac b/configure.ac
+--- a/configure.ac	2023-05-24 12:03:25.035127900 -0700
++++ b/configure.ac	2023-05-24 13:30:49.809646400 -0700
+@@ -114,7 +114,7 @@
+     # break here)
+ 
+     # Get -lssp if it exists
+-    GCC_STACK_PROTECT_LIB
++    #GCC_STACK_PROTECT_LIB
+ 
+     AC_MSG_CHECKING([whether stack-smashing protection is available])
+     ssp_old_cflags="$CFLAGS"
