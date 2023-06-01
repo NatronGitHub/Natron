@@ -12,7 +12,7 @@ name                        ImageMagick
 # 6.9.11-61 changes the major version of libMagickCore which will
 # require increasing the revision of all ports that link with it.
 version                     6.9.11-60
-revision                    7
+revision                    8
 checksums                   rmd160  1c293ba06fd43833be35efb4476e559bf137ccef \
                             sha256  ba0fa683b0721d1f22b0ccb364e4092e9a7a34ffd3bd6348c82b50fd93b1d7ba \
                             size    9167220

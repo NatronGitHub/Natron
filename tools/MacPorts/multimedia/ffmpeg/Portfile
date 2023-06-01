@@ -18,8 +18,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
-version             4.4.2
-revision            7
+version             4.4.4
+revision            1
 epoch               1
 
 license             LGPL-2.1+
@@ -63,9 +63,9 @@ distname            ${my_name}-${version}
 dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  22a690edfad74f25de0d24557f8edf4b2366b1a0 \
-                    sha256  af419a7f88adbc56c758ab19b4c708afbcae15ef09606b82b855291f6a6faa93 \
-                    size    9562968
+checksums           rmd160  ac9916e0915cfe3952993644d0a26d9e7c70e1b7 \
+                    sha256  e80b380d595c809060f66f96a5d849511ef4a76a26b76eacf5778b94c3570309 \
+                    size    9565584
 
 depends_build-append \
                     port:pkgconfig \
@@ -93,6 +93,7 @@ depends_lib-append \
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
+                    path:lib/pkgconfig/harfbuzz.pc:harfbuzz \
                     path:lib/libspeex.dylib:speex \
                     port:soxr \
                     port:dav1d \
@@ -112,11 +113,6 @@ patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
 # https://trac.ffmpeg.org/ticket/9439
 # Fixed via upstream commit: b786bc7433dfe082441a57c1ba9ae9ea47904b78
 patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
-
-# Patch for libsdl2; support newer versions
-# https://trac.macports.org/ticket/65703
-# Fixed via upstream commit: e5163b1d34381a3319214a902ef1df923dd2eeba
-patchfiles-append   patch-libsdl2-version.diff
 
 # Patch for upstream issue:
 # libavcodec/libsvtav1.c:124:53: error: no member named 'compressed_ten_bit_format' in 'struct EbSvtAv1EncConfiguration'
@@ -266,8 +262,8 @@ platform darwin {
                         port:svt-av1
     }
 
-    # Available on 10.7+
-    if {${os.major} >= 11} {
+    # Available on 10.6+
+    if {${os.major} >= 10} {
         configure.args-append \
                         --enable-librav1e
         depends_lib-append \
@@ -555,4 +551,4 @@ and is therefore licensed under LGPL v2.1 or later.
 
 livecheck.type      regex
 livecheck.url       ${master_sites}
-livecheck.regex     "${my_name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"
+livecheck.regex     "${my_name}-(4(?:\\.\\d+)*)${extract.suffix}"
