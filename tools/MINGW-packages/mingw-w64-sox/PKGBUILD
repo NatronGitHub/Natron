@@ -11,7 +11,7 @@ url="https://sourceforge.net/projects/sox"
 license=("LGPL")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             #"${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-autotools"
              )
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-libmad")
 source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2"

@@ -3,9 +3,6 @@ name: Build pacman repo
 on:
   workflow_dispatch: {}
   push:
-    branches:
-      - 'main'
-      - 'build_natron_packages'
     paths:
       - 'tools/MINGW-packages/**'
       - '.github/workflows/build_pacman_repo.yml'
