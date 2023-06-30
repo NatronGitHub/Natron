@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include "Global/GLIncludes.h"
+#include "Engine/EngineFwd.h"
 
 #ifdef __NATRON_WIN32__
 
