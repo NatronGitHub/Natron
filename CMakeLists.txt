@@ -52,9 +52,14 @@ set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
 set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
 set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
 
+#Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
+#for QString(const char*) assumes ASCII strings, we may run into troubles
+add_compile_definitions(QT_NO_CAST_FROM_ASCII)
+
 if (NOT MSVC)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes" )
     add_compile_options(-Wall -Wextra -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-                        -Wvla -Wno-missing-field-initializers -Wdate-time -Wshift-overflow=2
+                        -Wvla -Wdate-time -Wshift-overflow=2
                         -Wduplicated-cond -Wno-stringop-overflow -Wno-format-overflow
                         -Wno-deprecated-copy)
 endif()
