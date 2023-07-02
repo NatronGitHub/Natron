@@ -1,0 +1,157 @@
+diff --git a/src/include/OpenImageIO/thread.h b/src/include/OpenImageIO/thread.h
+index fa66f06de..c6f1b6c38 100644
+--- a/src/include/OpenImageIO/thread.h
++++ b/src/include/OpenImageIO/thread.h
+@@ -31,6 +31,7 @@
+ #include <OpenImageIO/platform.h>
+ 
+ 
++#define NATRON_OIIO_HAS_DEFAULT_THREAD_POOL_SHUTDOWN 1
+ 
+ // OIIO_THREAD_ALLOW_DCLP, if set to 0, prevents us from using a dodgy
+ // "double checked lock pattern" (DCLP).  We are very careful to construct
+@@ -112,11 +113,19 @@ pause(int delay) noexcept
+ 
+ #elif defined(_MSC_VER)
+     for (int i = 0; i < delay; ++i) {
+-#    if defined(_WIN64)
+-        YieldProcessor();
+-#    else
++        // A reimplementation of winnt.h YieldProcessor,
++        // to avoid including windows headers.
++        #if defined(_M_AMD64)
++        _mm_pause();
++        #elif defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64)
++        __dmb(_ARM64_BARRIER_ISHST);
++        __yield();
++        #elif defined(_M_ARM)
++        __dmb(_ARM_BARRIER_ISHST);
++        __yield();
++        #else
+         _asm pause
+-#    endif /* _WIN64 */
++        #endif
+     }
+ 
+ #else
+@@ -762,10 +771,18 @@ private:
+ 
+ 
+ /// Return a reference to the "default" shared thread pool. In almost all
+-/// ordinary circumstances, you should use this exclusively to get a
+-/// single shared thread pool, since creating multiple thread pools
+-/// could result in hilariously over-threading your application.
+-OIIO_UTIL_API thread_pool* default_thread_pool ();
++/// ordinary circumstances, you should use this exclusively to get a single
++/// shared thread pool, since creating multiple thread pools could result in
++/// hilariously over-threading your application. Note that this call may
++/// (safely, and only once) trigger creation of the thread pool and its
++/// worker threads if it has not yet been created.
++OIIO_UTIL_API thread_pool* default_thread_pool();
++
++/// If a thread pool has been created, this call will safely terminate its
++/// worker threads. This should presumably be called by an application
++/// immediately before it exists, when it is confident the thread pool will
++/// no longer be needed.
++OIIO_UTIL_API void default_thread_pool_shutdown();
+ 
+ 
+ 
+diff --git a/src/libutil/thread.cpp b/src/libutil/thread.cpp
+index 234e4ceb5..84ce66d32 100644
+--- a/src/libutil/thread.cpp
++++ b/src/libutil/thread.cpp
+@@ -35,6 +35,13 @@
+ 
+ #include <boost/container/flat_map.hpp>
+ 
++#ifdef _WIN32
++#    define WIN32_LEAN_AND_MEAN
++#    define VC_EXTRALEAN
++#    define NOMINMAX
++#    include <windows.h>
++#endif
++
+ #if 0
+ 
+ // Use boost::lockfree::queue for the task queue
+@@ -151,10 +158,10 @@ public:
+                     this->set_thread(i);
+                 }
+             } else {  // the number of threads is decreased
++                std::vector<std::unique_ptr<std::thread>> terminating_threads;
+                 for (int i = oldNThreads - 1; i >= nThreads; --i) {
+                     *this->flags[i] = true;  // this thread will finish
+-                    this->terminating_threads.push_back(
+-                        std::move(this->threads[i]));
++                    terminating_threads.push_back(std::move(this->threads[i]));
+                     this->threads.erase(this->threads.begin() + i);
+                 }
+                 {
+@@ -162,6 +169,11 @@ public:
+                     std::unique_lock<std::mutex> lock(this->mutex);
+                     this->cv.notify_all();
+                 }
++                // wait for the terminated threads to finish
++                for (auto& thread : terminating_threads) {
++                    if (thread->joinable())
++                        thread->join();
++                }
+                 this->threads.resize(
+                     nThreads);  // safe to delete because the threads are detached
+                 this->flags.resize(
+@@ -238,16 +250,10 @@ public:
+             if (thread->joinable())
+                 thread->join();
+         }
+-        // wait for the terminated threads to finish
+-        for (auto& thread : this->terminating_threads) {
+-            if (thread->joinable())
+-                thread->join();
+-        }
+         // if there were no threads in the pool but some functors in the queue, the functors are not deleted by the threads
+         // therefore delete them here
+         this->clear_queue();
+         this->threads.clear();
+-        this->terminating_threads.clear();
+         this->flags.clear();
+     }
+ 
+@@ -349,7 +355,6 @@ private:
+     }
+ 
+     std::vector<std::unique_ptr<std::thread>> threads;
+-    std::vector<std::unique_ptr<std::thread>> terminating_threads;
+     std::vector<std::shared_ptr<std::atomic<bool>>> flags;
+     mutable pvt::ThreadsafeQueue<std::function<void(int id)>*> q;
+     std::atomic<bool> isDone;
+@@ -471,15 +476,29 @@ thread_pool::very_busy() const
+ 
+ 
+ 
++static atomic_int default_thread_pool_created(0);
++
++
++
+ thread_pool*
+ default_thread_pool()
+ {
+     static std::unique_ptr<thread_pool> shared_pool(new thread_pool);
++    default_thread_pool_created = 1;
+     return shared_pool.get();
+ }
+ 
+ 
+ 
++void
++default_thread_pool_shutdown()
++{
++    if (default_thread_pool_created)
++        default_thread_pool()->resize(0);
++}
++
++
++
+ void
+ task_set::wait_for_task(size_t taskindex, bool block)
+ {
