@@ -56,6 +56,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/FloatingPointExceptions.h"
 #endif
 
+#ifdef __NATRON_WIN32__
+#include "AppManager.h" // appPTR
+#endif
+
+
 NATRON_NAMESPACE_ENTER
 
 static QStringList
