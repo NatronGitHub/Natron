@@ -81,9 +81,9 @@ TEST(FileSystemModelTest, DriveName) {
       {"c:\\somedir\\filename.txt", false, true, false, false},
       {"//", false, false, false, true},
       {"//somehost", false, false, false, true},
-      {"//somehost/", false, false, false, true},
-      {"//somehost/somedir/", false, false, false, true},
-      {"//somehost/somedir/filename.txt", false, false, false, true},
+      {"//somehost/", true, true, false, true},
+      {"//somehost/somedir/", false, true, false, true},
+      {"//somehost/somedir/filename.txt", false, true, false, true},
   });
 
   for (const auto& testCase : testCases) {
@@ -146,12 +146,12 @@ TEST(FileSystemModelTest, GetSplitPath) {
        {"", "", "somehost"},  // Not considered a network path because
                               // of missing slash after hostname.
        {"/", "", "somehost"}},
-      {"//somehost/", {"", "", "somehost"}, {"/", "", "somehost"}},
+      {"//somehost/", {"//somehost/", ""}, {"/", "", "somehost"}},
       {"//somehost/somedir/",
-       {"", "", "somehost", "somedir"},
+       {"//somehost/", "somedir"},
        {"/", "", "somehost", "somedir"}},
       {"//somehost/somedir/filename.txt",
-       {"", "", "somehost", "somedir", "filename.txt"},
+       {"//somehost/", "somedir", "filename.txt"},
        {"/", "", "somehost", "somedir", "filename.txt"}},
   });
 
@@ -202,21 +202,31 @@ TEST(FileSystemModelTest, CleanPath) {
       {"/somedir/filename.txt", nullptr, nullptr},
       {"c:", nullptr, nullptr},
       // Platform specific path behaviors.
-      {"c:/", "c:/", "c:"},
-      {"c:\\", "c:/", "c:\\"},
-      {"c:/filename.txt", "c:/filename.txt", "c:/filename.txt"},
-      {"c:\\filename.txt", "c:/filename.txt", "c:\\filename.txt"},
-      {"c:/somedir/", "c:/somedir", nullptr},
-      {"c:/somedir/filename.txt", "c:/somedir/filename.txt", nullptr},
-      {"c:\\somedir\\", "c:/somedir", "c:\\somedir\\"},
-      {"c:\\somedir\\filename.txt", "c:/somedir/filename.txt",
+      // Paths with Windows drive letters and backslashes.
+      // - Verify drive letters become capitalized on Windows
+      // - Verify drives keep their trailing slash.
+      // - Verify backslashes are converted to forward slashes on Windows.
+      // - Verify Unix platforms do not treat forward slashes and drive
+      //   letters in special way.
+      {"c:/", "C:/", "c:"},
+      {"c:\\", "C:/", "c:\\"},
+      {"c:/filename.txt", "C:/filename.txt", "c:/filename.txt"},
+      {"c:\\filename.txt", "C:/filename.txt", "c:\\filename.txt"},
+      {"c:/somedir/", "C:/somedir", "c:/somedir"},
+      {"c:/somedir/filename.txt", "C:/somedir/filename.txt", "c:/somedir/filename.txt"},
+      {"c:\\somedir\\", "C:/somedir", "c:\\somedir\\"},
+      {"c:\\somedir\\filename.txt", "C:/somedir/filename.txt",
        "c:\\somedir\\filename.txt"},
+      // Windows Network Shares
+      // - Verify that hostname is capitalized on Windows as long as it
+      //   is followed by a /.
+      // - Verify Unix just collapses the '//' to a single slash.
       {"//", "/", nullptr},
       {"//somehost", "//somehost", "/somehost"},
-      {"//somehost/", "//somehost", "/somehost"},
-      {"//somehost/somedir/", "//somehost/somedir", "/somehost/somedir"},
+      {"//somehost/", "//SOMEHOST/", "/somehost"},
+      {"//somehost/somedir/", "//SOMEHOST/somedir", "/somehost/somedir"},
       {"//somehost/somedir/filename.txt",
-        "//somehost/somedir/filename.txt",
+        "//SOMEHOST/somedir/filename.txt",
         "/somehost/somedir/filename.txt"},
   });
 

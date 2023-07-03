@@ -543,6 +543,7 @@ private:
     void getSequenceFromFilesForFole(const QString & file, SequenceParsing::SequenceFromFiles* sequence) const;
 
     void updateFileExtensionCombo(const QString& extension);
+    void updateUpButton(const QString &newPath);
 
 private:
     // FIXME: PIMPL
