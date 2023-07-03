@@ -56,15 +56,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/FloatingPointExceptions.h"
 #endif
 
-#ifdef __NATRON_WIN32__
-#include "AppManager.h" // appPTR
-#endif
+#include "AppManager.h" // appPTR & StrUtils
 
 
 NATRON_NAMESPACE_ENTER
 
-static QStringList
-getSplitPath(const QString& path)
+QStringList
+FileSystemModel::getSplitPath(const QString& path)
 {
     if ( path.isEmpty() ) {
         return QStringList();
@@ -169,9 +167,7 @@ generateChildAbsoluteName(FileSystemItem* parent,
 {
     QString childName = parent->absoluteFilePath();
 
-    if ( !childName.endsWith( QChar::fromLatin1('/') ) ) {
-        childName.append( QChar::fromLatin1('/') );
-    }
+    StrUtils::ensureLastPathSeparator(childName);
     childName.append(name);
 
     return childName;
@@ -638,6 +634,10 @@ FileSystemModel::startsWithDriveName(const QString& name)
 #endif
 }
 
+QString FileSystemModel::cleanPath(const QString& path) {
+    return QDir::cleanPath(path);
+}
+
 QVariant
 FileSystemModel::headerData(int section,
                             Qt::Orientation orientation,
@@ -898,24 +898,6 @@ QString
 FileSystemModel::rootPath() const
 {
     return _imp->currentRootPath;
-}
-
-QVariant
-FileSystemModel::myComputer(int /*role*/) const
-{
-//    switch (role) {
-//        case Qt::DisplayRole:
-#ifdef Q_OS_WIN
-
-    return tr("Computer");
-#else
-
-    return tr("Computer");
-#endif
-//        case Qt::DecorationRole:
-//            return d->fileInfoGatherer.iconProvider()->icon(QFileIconProvider::Computer);
-//    }
-//    return QVariant();
 }
 
 void
@@ -1197,7 +1179,7 @@ FileSystemModelPrivate::getItemFromPath(const QString &path) const
     if ( path.isEmpty() || !rootItem ) {
         return rootItem;
     }
-    QStringList splitPath = getSplitPath(path);
+    QStringList splitPath = FileSystemModel::getSplitPath(path);
 
     return rootItem->matchPath( splitPath, 0 );
 }
@@ -1209,11 +1191,8 @@ FileSystemModel::setRootPath(const QString& path)
 
 
     ///Check if the path exists
-    if ( !path.isEmpty() ) {
-        QDir dir(path);
-        if ( !dir.exists() ) {
-            return false;
-        }
+    if ( !path.isEmpty() && !QDir(path).exists()) {
+        return false;
     }
 
     _imp->currentRootPath = path;
@@ -1314,8 +1293,7 @@ FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
         }
     }
 
-    QDir dir(_imp->currentRootPath);
-    if ( !dir.exists() ) {
+    if ( !QDir(_imp->currentRootPath).exists() ) {
         ///The current directory has changed its name or was deleted.. just fallback the filesystem to the root-path
         setRootPath( QDir::rootPath() );
     } else {

@@ -236,6 +236,8 @@ public:
 
     static bool isDriveName(const QString& name);
     static bool startsWithDriveName(const QString& name);
+    static QStringList getSplitPath(const QString& path);
+    static QString cleanPath(const QString& path);
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int columnCount(const QModelIndex & parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -270,8 +272,6 @@ public:
      * has gathered all info.
      **/
     bool setRootPath(const QString& path);
-
-    QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
 
     void setFilter(const QDir::Filters& filters);
 
