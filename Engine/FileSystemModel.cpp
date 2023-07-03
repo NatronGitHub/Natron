@@ -61,6 +61,93 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
+static int
+getDriveNameSize(const QString& name)
+{
+#ifdef __NATRON_WIN32__
+    if (name.size() < 3) {
+        return 0;
+    }
+
+    if (name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') ) ) {
+        // Drive path. (e.g. C:/ or C:\)
+        return 3;
+    }
+
+    if (((name.at(0) == QLatin1Char('/') && name.at(1) == QLatin1Char('/')) ||
+         (name.at(0) == QLatin1Char('\\') && name.at(1) == QLatin1Char('\\'))) && name.at(2).isLetterOrNumber()) {
+        // Possible Network share. (e.g. //SomeHost/ShareName)
+
+        // Search for end of hostname.
+        int idx = name.indexOf(QLatin1Char('/'), 2);
+        if (idx == -1) {
+            idx = name.indexOf(QLatin1Char('\\'), 2);
+        }
+
+        if (idx == -1) {
+            // Hostname only without a trailing slash. (e.g. //SomeHost).
+            // Do not consider this valid, just like "C:" is not considered a valid drive.
+            return 0;
+        }
+
+        ++idx; // Move beyond slash.
+        return idx;
+    }
+#else
+    if (name.startsWith(QDir::rootPath())) {
+        return QDir::rootPath().size();
+    }
+#endif
+
+    return 0;
+}
+
+#ifdef __NATRON_WIN32__
+// Ensures that drive names and network share hostnames are always upper case.
+static QString
+ensureCanonicalDriveAndShareNames(const QString& path)
+{
+    if (path.isEmpty() || !FileSystemModel::startsWithDriveName(path)) {
+        return path;
+    }
+
+    if (path.size() < 3) {
+        return path;
+    }
+
+    // Assume that any path that reaches this point has already had backslashes converted
+    // to forward slashes.
+    assert(path.indexOf(QLatin1Char('\\')) == -1);
+
+    QString ret = path;
+    if (path[0] == QLatin1Char('/') && path[1] == QLatin1Char('/') && path[2].isLetterOrNumber()) {
+        // Network share name.
+
+        int idx = path.indexOf(QLatin1Char('/'), 2);
+        ret.truncate(2); // keep starting slashes.
+        if (idx == -1) {
+            // No trailing slash. Hostname only case.
+            // Change the hostname to upper case and add the trailing slash.
+            ret.append(path.mid(2).toUpper());
+            ret.append(QLatin1Char('/')); // Add a trailing slash.
+        } else {
+            // Hostname with slash and possible path components.
+            const QString hostname = path.mid(2, idx - 2);
+
+            // Change hostname to upper case and append any path components that may remain.
+            ret.append(hostname.toUpper());
+            ret.append(path.mid(idx));
+        }
+    } else if (path[0].isLetter() && path[1] == QLatin1Char(':') && path[2] == QLatin1Char('/')) {
+        // Drive name.
+        // Force drive letter to be upper case.
+        ret[0] = ret[0].toUpper();
+    }
+
+    return ret;
+}
+#endif // __NATRON_WIN32__
+
 QStringList
 FileSystemModel::getSplitPath(const QString& path)
 {
@@ -68,35 +155,23 @@ FileSystemModel::getSplitPath(const QString& path)
         return QStringList();
     }
     QString pathCpy = path;
-    bool isdriveOrRoot;
-#ifdef __NATRON_WIN32__
-    QString startPath = pathCpy.mid(0, 3);
-    isdriveOrRoot = FileSystemModel::isDriveName(startPath);
-    if (isdriveOrRoot) {
-        pathCpy = pathCpy.remove(0, 3);
-    }
-    if ( (pathCpy.size() > 0) && ( pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/') ) ) {
-        pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
-    }
-    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        splitPath.prepend( startPath.mid(0, 3) );
+
+    int driveNameSize = getDriveNameSize(path);
+    if (driveNameSize > 0) {
+        // Remove the drive name from pathCpy.
+        pathCpy = pathCpy.remove(0, driveNameSize);
     }
 
-#else
-    isdriveOrRoot = pathCpy.startsWith( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        pathCpy = pathCpy.remove(0, 1);
-    }
+    // Remove trailing slash.
     if ( (pathCpy.size() > 0) && ( pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/') ) ) {
-        pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
-    }
-    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        splitPath.prepend( QChar::fromLatin1('/') );
+         pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
     }
 
-#endif
+    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
+    if (driveNameSize > 0) {
+        // Put the drive name at the beginning of the list.
+        splitPath.prepend(path.mid(0, driveNameSize));
+    }
 
     return splitPath;
 }
@@ -613,29 +688,57 @@ FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
 bool
 FileSystemModel::isDriveName(const QString& name)
 {
-#ifdef __NATRON_WIN32__
-
-    return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
-#else
-
-    return name == QDir::rootPath();
-#endif
+    return !name.isEmpty() && getDriveNameSize(name) == name.size();
 }
 
 bool
 FileSystemModel::startsWithDriveName(const QString& name)
 {
-#ifdef __NATRON_WIN32__
-
-    return name.size() >= 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
-#else
-
-    return name.startsWith( QDir::rootPath() );
-#endif
+    return getDriveNameSize(name) > 0;
 }
 
 QString FileSystemModel::cleanPath(const QString& path) {
-    return QDir::cleanPath(path);
+    if (path.isEmpty()) {
+        return path;
+    }
+
+    QString newPath = path;
+
+#ifdef __NATRON_WIN32__
+    // Replace backslashes with slashes.
+    newPath.replace( QLatin1Char('\\'), QLatin1Char('/') );
+#endif
+
+    bool startedWithDriveName = startsWithDriveName(newPath);
+
+    // Resolve and remove '.' and "..".
+    newPath = QDir::cleanPath(newPath);
+
+    if (newPath.isEmpty()) {
+        return newPath;
+    }
+
+    // QDir::cleanPath() strips the trailing slash for network shares
+    // (e.g. //SomeHost/) , but not for drives (e.g. C:/). The trailing
+    // slash is required for network shares to behave the same way as
+    // drives elsewhere in the code so we need to put back the trailing
+    // slash.
+    if (startedWithDriveName && !startsWithDriveName(newPath)) {
+        // The path no longer starts with a drive name after cleaning.
+        // See if appending a trailing slash fixes it.
+        const QString newPathWithTrailingSlash = newPath + QLatin1Char('/');
+        if (startsWithDriveName(newPathWithTrailingSlash)) {
+            newPath = newPathWithTrailingSlash;
+        }
+    }
+
+#ifdef __NATRON_WIN32__
+    // Make sure drive letters and share hostnames are upper case so they get properly
+    // collapsed together in the UI and other path matching.
+    newPath = ensureCanonicalDriveAndShareNames(newPath);
+#endif
+
+    return newPath;
 }
 
 QVariant

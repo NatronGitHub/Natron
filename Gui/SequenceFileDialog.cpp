@@ -540,10 +540,12 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     if (!hasRestoredDir) {
-        // try to go up until we find a directory that exists.
+        // try to go up until we find a directory that exists or we have reached a drive name.
+        // Stopping at the drive name is important because cleanPath() does not guarantee that
+        // applying a "/.." to all drive names will return an empty string. (e.g. network shares //somehost/)
         QString dir = QString::fromUtf8( directoryArgs.c_str() );
         //qDebug() << "dir=" << dir;
-        while (!dir.isEmpty() && !hasRestoredDir) {
+        while (!dir.isEmpty() && !FileSystemModel::isDriveName(dir) && !hasRestoredDir) {
             dir = FileSystemModel::cleanPath(dir + QString::fromUtf8("/.."));
             if ( isDirectory(dir) ) {
                 hasRestoredDir = setDirectory(dir);
@@ -737,7 +739,10 @@ SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
         return;
     } else {
         int pos = str.lastIndexOf( QLatin1Char('.') );
-        if (pos != -1) {
+        if (pos == 0) {
+            // Do not modify filenames that start with a period.
+            return;
+        } else if (pos != -1) {
             if ( str.at(pos - 1) == QLatin1Char('#') ) {
                 --pos;
             }
@@ -1079,7 +1084,7 @@ SequenceDialogView::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).path();
+        path = urlToPathString( urls.at(0) );
     }
     if ( !path.isEmpty() ) {
         _fd->setDirectory(path);
@@ -1282,26 +1287,19 @@ SequenceFileDialog::parentFolder()
         QDir dir(rootPath);
         dir.cdUp();
         newDir = dir.absolutePath();
+
+        if (!FileSystemModel::startsWithDriveName(newDir)) {
+            // QDir always provides a trailing slash to drives, but
+            // leaves it off for network shares. If the new
+            // directory does not start with a drive name anymore
+            // assume it just needs a trailing slash appended.
+            StrUtils::ensureLastPathSeparator(newDir);
+        }
+
+        assert(FileSystemModel::startsWithDriveName(newDir));
     }
 
-
-#ifdef __NATRON_WIN32__
-    if ( FileSystemModel::isDriveName(newDir) ) {
-        _upButton->setEnabled(false);
-    } else {
-        _upButton->setEnabled(true);
-    }
-#else
-    if ( FileSystemModel::isDriveName(newDir) || newDir.isEmpty() ) {
-        _upButton->setEnabled(false);
-
-        return;
-    } else {
-        _upButton->setEnabled(true);
-    }
-
-#endif
-
+    updateUpButton(newDir);
 
     setDirectory(newDir);
 }
@@ -1617,11 +1615,7 @@ SequenceFileDialog::getEnvironmentVariable(const QString &string)
 void
 SequenceFileDialog::pathChanged(const QString &newPath)
 {
-    if ( newPath.isEmpty() ) {
-        _upButton->setEnabled(false);
-    } else {
-        _upButton->setEnabled(true);
-    }
+    updateUpButton(newPath);
 
     _favoriteView->selectUrl( QUrl::fromLocalFile(newPath) );
     setHistory( _lookInCombobox->history() );
@@ -1636,6 +1630,27 @@ SequenceFileDialog::pathChanged(const QString &newPath)
     }
     _nextButton->setEnabled(_history.size() - _currentHistoryLocation > 1);
     _previousButton->setEnabled(_currentHistoryLocation > 0);
+}
+
+void
+SequenceFileDialog::updateUpButton(const QString &newPath) {
+    if (newPath.isEmpty()) {
+        _upButton->setEnabled(false);
+        return;
+    }
+
+#ifndef __NATRON_WIN32__
+    // On non-Windows platforms the up button should be disabled for the rootPath (i.e. "/").
+    // On Windows we don't want to stop here because the rootPath is typically "C:/" and
+    // we want to be able to "go up one more" so that the drives and network shares can
+    // be seen.
+    if (newPath == QDir::rootPath()) {
+        _upButton->setEnabled(false);
+        return;
+    }
+#endif
+
+    _upButton->setEnabled(true);
 }
 
 void
@@ -1910,7 +1925,7 @@ UrlModel::setUrl(const QModelIndex &index,
                  const QModelIndex &dirIndex)
 {
     setData(index, url, UrlRole);
-    if ( url.path().isEmpty() ) {
+    if ( urlToPathString(url).isEmpty() ) {
         const char* myComputer = "Computer";
         setData(index, tr(myComputer));
         setData(index, tr(myComputer), Qt::DecorationRole);
@@ -2130,7 +2145,7 @@ UrlModel::changed(const QString &path)
 void
 UrlModel::removeRowIndex(const QModelIndex& index)
 {
-    QString urlPath = index.data(UrlRole).toUrl().path();
+    QString urlPath = urlToPathString(index.data(UrlRole).toUrl());
 
     if ( !urlPath.isEmpty() ) {
         removeRow( index.row() );
