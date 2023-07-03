@@ -44,13 +44,14 @@ SOURCES += \
     google-test/src/gtest-all.cc \
     google-mock/src/gmock-all.cc \
     BaseTest.cpp \
+    Curve_Test.cpp \
+    FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \
-    Lut_Test.cpp \
     KnobFile_Test.cpp \
-    Curve_Test.cpp \
-    Tracker_Test.cpp \
+    Lut_Test.cpp \
     OSGLContext_Test.cpp \
+    Tracker_Test.cpp \
     wmain.cpp
 
 HEADERS += \
