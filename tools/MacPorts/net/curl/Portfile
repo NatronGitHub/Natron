@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.1.0
-checksums                       rmd160  0f0da89b92975c54bb4db0e895dd541ca391b582 \
-                                sha256  6bd80ad4f07187015911216ee7185b90d285ac5162aed1bded144f9f93232a3c \
-                                size    2612568
+version                         8.1.2
+checksums                       rmd160  addc890756f1fb7753e841699c052741c46ca6c3 \
+                                sha256  31b1118eb8bfd43cd95d9a3f146f814ff874f6ed3999b29d94f4d1e7dbac5ef6 \
+                                size    2612652
 
 categories                      net www
 platforms                       darwin freebsd
@@ -211,6 +211,15 @@ if {${name} eq ${subport}} {
     # suitable compiler in Xcode.
     if {${os.platform} ne "darwin" || ${os.major} >= 14} {
         default_variants-append +http2
+    }
+
+    variant http3 requires gnutls description {Support HTTP/3 with nghttp3 and ngtcp2} {
+        depends_lib-append      port:nghttp3 \
+                                port:ngtcp2
+        configure.args-append   --with-nghttp3=${prefix} \
+                                --with-ngtcp2=${prefix}
+
+        patchfiles-append       patch-lib-vquic-curl_ngtcp2.c.diff
     }
 
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {

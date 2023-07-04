@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 
 name            gnutls
 version         3.7.9
-revision        2
+revision        3
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
@@ -35,7 +35,7 @@ subport ${name}-devel {
     conflicts   ${name}
     
     version     3.8.0
-    revision    0
+    revision    1
 
     checksums   rmd160  927aa3762946bcb3ef825832d7895f041e66a314 \
                 sha256  0ea0d11a1660a1e63f960f157b197abe6d0c8cb3255be24e1fb3815930b9bdc5 \
@@ -65,7 +65,6 @@ conflicts_build autogen
 
 depends_build-append \
                 port:gettext \
-                port:gtk-doc \
                 port:pkgconfig
 
 depends_lib-append \
@@ -89,11 +88,13 @@ post-patch {
 # Note: configure script detects zstd, but flags it as missing anyway
 configure.args-append \
                 --disable-dependency-tracking \
+                --disable-doc \
                 --disable-guile \
                 --disable-heartbeat-support \
                 --disable-libdane \
                 --disable-silent-rules \
                 --disable-static \
+                --enable-manpages \
                 --enable-openssl-compatibility \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
@@ -130,6 +131,14 @@ variant dane description {Build libdane using unbound libraries} {
     depends_lib-append      port:unbound
     configure.args-append   --with-unbound-root-key-file="${prefix}/var/run/unbound/root.key"
     configure.args-delete   --disable-libdane
+}
+
+variant docs description {Install supplemental developer documentation} {
+    depends_build-append \
+                port:gtk-doc
+
+    configure.args-delete \
+                --disable-doc
 }
 
 # as of r120660 (#43881) unbound installs its root key file at ${prefix}/var/run/unbound/root.key
