@@ -80,8 +80,8 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/acolwell/openfx-io/releases/download/natron_testing/IO.ofx.bundle_${MATRIX_OS}.tar.gz
-          tar xvf IO.ofx.bundle_${MATRIX_OS}.tar.gz
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
+          unzip openfx-io-build-ubuntu_22-testing.zip
           cd ..
 
           OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
@@ -149,7 +149,7 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/acolwell/openfx-io/releases/download/natron_testing/IO.ofx.bundle_${MATRIX_OS}.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
           unzip IO.ofx.bundle_${MATRIX_OS}.zip
           cd ..
 
