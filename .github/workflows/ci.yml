@@ -150,7 +150,7 @@ jobs:
 
           mkdir Plugins && cd Plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
-          unzip IO.ofx.bundle_${MATRIX_OS}.zip
+          unzip openfx-io-build-windows_latest-testing.zip
           cd ..
 
           PYTHONHOME=/mingw64 OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
