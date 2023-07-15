@@ -1,0 +1,152 @@
+name: Build Installer
+
+on:
+  workflow_dispatch: {}
+  push:
+
+jobs:
+  win-installer:
+    name: Windows Installer
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      CI: 'True'
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Windows system packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git mingw-w64-x86_64-wget unzip
+
+      - name: Install Natron pacman repository
+        run: |
+          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
+          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
+          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
+          unzip natron_package_repo.zip
+          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
+          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
+          pacman -Syl natron
+          pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Build
+        id: build
+        run: |
+          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
+          NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
+          mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
+
+          cd tools/jenkins
+
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 ./launchBuildMain.sh
+
+          ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
+          INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*Windows-x86_64.zip)
+
+          set -x
+          # Unzip installer zip for artifact upload so we don't get a zipped zip file.
+          cd ${ARCHIVE_DIR}
+          INSTALLER_DIR="${ARCHIVE_DIR}/i"
+          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
+          mkdir -p ${INSTALLER_DIR}
+          cd ${INSTALLER_DIR}
+          unzip ${INSTALLER_ZIP_UNIX}
+
+          echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
+          echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
+  win-installer-breakpad:
+    name: Windows Installer (with Breakpad crash reporting)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      CI: 'True'
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Windows system packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git mingw-w64-x86_64-wget unzip
+
+      - name: Install Natron pacman repository
+        run: |
+          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
+          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
+          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
+          unzip natron_package_repo.zip
+          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
+          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
+          pacman -Syl natron
+          pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Build
+        id: build
+        run: |
+          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
+          NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
+          mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
+
+          cd tools/jenkins
+
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 ./launchBuildMain.sh
+
+          ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
+          INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*-breakpad.zip)
+
+          set -x
+          # Unzip installer zip for artifact upload so we don't get a zipped zip file.
+          cd ${ARCHIVE_DIR}
+          INSTALLER_DIR="${ARCHIVE_DIR}/i"
+          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
+          mkdir -p ${INSTALLER_DIR}
+          cd ${INSTALLER_DIR}
+          unzip ${INSTALLER_ZIP_UNIX}
+
+          echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
+          echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+
+          SYMBOLS_NAME="${INSTALLER_NAME}-symbols"
+          SYMBOLS_DIR="${ARCHIVE_DIR}/s"
+          cd ${ARCHIVE_DIR}
+          mv symbols ${SYMBOLS_NAME}
+          mkdir ${SYMBOLS_DIR}
+          mv ${SYMBOLS_NAME} ${SYMBOLS_DIR}
+
+          echo "SYMBOLS_NAME=${SYMBOLS_NAME}" >> $GITHUB_OUTPUT
+          echo "SYMBOLS_DIR=$(cygpath -m ${SYMBOLS_DIR})" >> $GITHUB_OUTPUT
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v3
+        with:
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
+      - name: Upload symbols
+        uses: actions/upload-artifact@v3
+        with:
+          name:  ${{ steps.build.outputs.SYMBOLS_NAME }}
+          path:  ${{ steps.build.outputs.SYMBOLS_DIR }}

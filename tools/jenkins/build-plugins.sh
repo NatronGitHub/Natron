@@ -121,6 +121,22 @@ else
     OPTFLAG=-Ofast
 fi
 
+CP_OR_MV="cp -a"
+if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+    # Move large files instead of copying them to minimize disk usage.
+    CP_OR_MV=mv
+fi
+
+function maybe_cleanup_binary_files() {
+    if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+        echo "Cleaning up files to minimize disk usage..."
+
+        rm -fv `find . -name *.o`
+        rm -fv `find . -name *.ofx`
+    fi
+}
+
+
 # MISC
 if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
 
@@ -235,9 +251,12 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
                 CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
                 make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
         fi
-        cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         echo "Info: build openfx-misc using make... done!"
     fi
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-misc || true
 fi
@@ -294,9 +313,12 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
             LDFLAGS_ADD="${BUILDID:-}" \
             CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
             make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         echo "Info: build openfx-io using make... done!"
     fi
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-io  || true
 fi
@@ -347,7 +369,10 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
         make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
 
-    cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-arena || true
     echo "Info: build openfx-arena using make... done!"
@@ -399,7 +424,10 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
             make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
     fi
-    cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-gmic || true
     echo "Info: build openfx-gmic using make... done!"
@@ -424,7 +452,10 @@ if [ "$BUILD_CV" = "1" ] && [ -d "$TMP_PATH/openfx-opencv" ]; then
         LDFLAGS_ADD="${BUILDID:-}" \
         CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
         make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-    cp -a ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+
+    maybe_cleanup_binary_files
+
 fi
 
 #rm -f $KILLSCRIPT || true
