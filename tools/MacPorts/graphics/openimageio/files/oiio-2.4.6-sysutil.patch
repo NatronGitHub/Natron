@@ -1,5 +1,5 @@
---- oiio-Release-2.4.6.0/src/libutil/sysutil.cpp.orig	2022-12-07 22:37:33.000000000 -0800
-+++ oiio-Release-2.4.6.0/src/libutil/sysutil.cpp	2022-12-07 22:38:56.000000000 -0800
+--- src/libutil/sysutil.cpp.orig	2022-12-07 22:37:33.000000000 -0800
++++ src/libutil/sysutil.cpp	2022-12-07 22:38:56.000000000 -0800
 @@ -571,7 +571,7 @@
      return daemon(1, 1) == 0;
  #endif

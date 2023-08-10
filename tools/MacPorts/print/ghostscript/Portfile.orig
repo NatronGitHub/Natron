@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.56.1
+version             10.01.2
 revision            1
 categories          print
 license             AGPL-3 BSD
@@ -24,7 +24,7 @@ master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releas
 
 # Note: this needs to be manually updated for new upstream commits
 set mappingresources_commit \
-                    a709991e67196a87af053e2c16d7a65108613a41
+                    2dd5e53fb74a01718b9dfd448a0d1cce6fff2aa5
 
 distname            ghostpdl-${version}
 distfiles           ${distname}.tar.gz:source \
@@ -33,12 +33,14 @@ distfiles           ${distname}.tar.gz:source \
                     ${mappingresources_commit}.zip:misc
 
 patchfiles          patch-base_unix-dll.mak.diff \
-                    patch-base_unixinst.mak.diff
+                    patch-base_unixinst.mak.diff \
+                    patch-base_gspaint.diff \
+                    patch-psi_imainarg.c.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  babe8112b085191511fb9aec32f9162926c582d8 \
-                    sha256  6bf362286e359e31f934e5aad49db3d88a2382a3cac44b40572861ee5c536664 \
-                    size    92134638 \
+                    rmd160  1a21460fb6ec98858a723cd6570a1b98e9f2124a \
+                    sha256  ee76cb526f5b6683e2adcb65398a1f333f7972289cec960b67aaa227c0d72e88 \
+                    size    96848797 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -48,9 +50,9 @@ checksums           ${distname}.tar.gz \
                     sha256  0eb6f356119f2e49b2563210852e17f57f9dcc5755f350a69a46a0d641a0c401 \
                     size    3752871 \
                     ${mappingresources_commit}.zip \
-                    rmd160  6f327e09590d517760dafd99cc7a197e68d85c6e \
-                    sha256  03bb11a4db4b01f8509e93db469a24f904934fece3b5b9b8be932267ed7173f4 \
-                    size    1600471
+                    rmd160  a65458ab9955421cf3085cf84a6eac299e8c93cb \
+                    sha256  e3971985977cee4b75f6b49f6e43842d3b699c4255d010adb82796073e98fbfe \
+                    size    1601563
 
 depends_lib         port:fontconfig \
                     port:freetype \

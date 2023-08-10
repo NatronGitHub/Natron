@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.1.2
-checksums                       rmd160  addc890756f1fb7753e841699c052741c46ca6c3 \
-                                sha256  31b1118eb8bfd43cd95d9a3f146f814ff874f6ed3999b29d94f4d1e7dbac5ef6 \
-                                size    2612652
+version                         8.2.1
+checksums                       rmd160  b8486b2903708f892bdff05a4f9a593c776a3ec6 \
+                                sha256  dd322f6bd0a20e6cebdfd388f69e98c3d183bed792cf4713c8a7ef498cba4894 \
+                                size    2631932
 
 categories                      net www
 platforms                       darwin freebsd
@@ -45,9 +45,8 @@ if {${name} eq ${subport}} {
                                 port:zlib \
                                 port:zstd
 
-    # Prevent curl-config from telling curl's dependents that they have to
-    # link with all of curl's dependencies as well.
     patchfiles                  configure.patch
+    patchfiles-append           SCDynamicStoreCopyProxies.patch
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -214,8 +213,6 @@ if {${name} eq ${subport}} {
                                 port:ngtcp2
         configure.args-append   --with-nghttp3=${prefix} \
                                 --with-ngtcp2=${prefix}
-
-        patchfiles-append       patch-lib-vquic-curl_ngtcp2.c.diff
     }
 
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
@@ -281,11 +278,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1676938725
+    set certdata_updated        1690233032
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         fc546cbeb1cc7a486bc5147bcff3a879374cf213
+    set certdata_commit         60b731ed0b92d1f2f7d80dfc54f71fcfecb8ff49
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20221204
+    set certdata_date           20230721
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -306,9 +303,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  70914b37764956f1ccd907871b4f58d0ee126b23 \
-                                sha256  56b3095fb443163031bb4941e4e13dd1c703e96172218eb2a0dadb6d22dfe75b \
-                                size    271958
+                                rmd160  1102ce76dd1bf44a153cc6cae3a790dcae9e9fda \
+                                sha256  c4c7820155d24950586d71cdf9a1bdf9ec868116aee5c87c0389d082d0173572 \
+                                size    286425
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

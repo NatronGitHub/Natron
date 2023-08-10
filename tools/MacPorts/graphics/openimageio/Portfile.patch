@@ -1,79 +1,81 @@
---- Portfile.orig	2023-05-10 16:09:40.000000000 -0700
-+++ Portfile	2023-05-21 19:27:37.000000000 -0700
-@@ -2,17 +2,14 @@
+--- Portfile.orig	2023-08-10 19:07:00.000000000 +0200
++++ Portfile	2023-08-10 19:51:16.000000000 +0200
+@@ -2,7 +2,6 @@
  
  PortSystem              1.0
  PortGroup               github 1.0
 -PortGroup               qt5 1.0
-+#PortGroup               qt5 1.0
  PortGroup               cmake 1.1
  PortGroup               active_variants 1.1
  PortGroup               compiler_blacklist_versions 1.0
- PortGroup               boost 1.0
- 
--github.setup            OpenImageIO oiio 2.1.20.0 v
--revision                6
--checksums               rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
--                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
--                        size    29115990
-+github.setup            OpenImageIO oiio 2.4.8.0 v
-+revision                100
- 
- name                    openimageio
- categories              graphics
-@@ -21,6 +18,11 @@
+@@ -15,50 +14,24 @@
  description             a library for reading and writing images
  long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                          related classes, utilities, and applications.
 +platforms               darwin
-+
-+checksums           rmd160  856beebc7dd3d26567a4dd8efcd032038c9ee74e \
-+                    sha256  cc91905f862c402ec18d3992e09c7ed34816cf48b1147465ffafda8ce9c1318c \
-+                    size    32130754
  
- compiler.cxx_standard   2014
+-# Pin the used version before macOS 11, which is required by pinned versions
+-# of opencolorio and osl.
+-if {${os.platform} eq "darwin" && ${os.major} >= 20} {
+-    set port_latest     yes
+-} else {
+-    set port_latest     no
+-}
+-
+-if {${port_latest}} {
+-    github.setup        OpenImageIO oiio 2.4.5.0 v
+-    revision            7
+-    checksums           rmd160  32b2b0f0b01268a91fc98cfca948a71e89d8e54b \
+-                        sha256  21177a9665021a99123885cd8383116d15013b6610b4b09bcf209612423fedc5 \
+-                        size    31938357
+-} else {
+-    github.setup        OpenImageIO oiio 2.1.20.0 v
+-    revision            12
+-    checksums           rmd160  d10c488b93ab2335d53545d8a1b35ba4c1babb98 \
+-                        sha256  75222543286d3a12473aa03fdb4e6c9f98760c5ad1ad89d3cf82a5da41385ae0 \
+-                        size    29115990
+-
+-    livecheck.type      none
+-}
++github.setup        OpenImageIO oiio 2.4.14.0 v
++revision            100
++checksums           rmd160  f0c51d041627f1867b3de2b322edaef21ba8ca0e \
++                    sha256  92ad4b107394b273397baa1abe90207e1f8ef9fd52ffbfc23b46e3b0005d4439 \
++                    size    47890322
+ 
+ github.tarball_from     archive
+ 
+-if {${port_latest}} {
+-    patchfiles-append   patch-enforce-clang14.diff
+-    patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
+-
+-    depends_lib-append  port:imath \
+-                        port:openexr
+-} else {
+-    patchfiles-append   patch-FindOpenJpeg.cmake.diff
+-    patchfiles-append   patch-libraw-0.21.0.diff
+-    patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
+-
+-    depends_lib-append  port:field3d \
+-                        port:openexr2
++depends_lib-append  port:imath \
++                    port:openexr
+ 
+-    configure.pkg_config_path-prepend \
+-                        ${prefix}/libexec/openexr2/lib/pkgconfig
+-}
++patchfiles-append oiio-2.0.8-invalidatespec.patch
++patchfiles-append oiio-2.0.8-atomic-load.patch
++patchfiles-append oiio-2.3.20-strnlen.patch
++patchfiles-append oiio-2.4.6-sysutil.patch
++patchfiles-append oiio-2.4.6-filesystem.patch
+ 
  # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -32,9 +34,15 @@
- 
- compiler.thread_local_storage yes
- 
--github.tarball_from     archive
-+worksrcdir              oiio-${version}
- 
--patchfiles-append       patch-FindOpenJpeg.cmake.diff
-+patch.pre_args  -p1
-+patchfiles \
-+    oiio-2.0.8-invalidatespec.patch \
-+    oiio-2.0.8-atomic-load.patch \
-+    oiio-2.3.20-strnlen.patch \
-+    oiio-2.4.6-sysutil.patch \
-+    oiio-2.4.6-filesystem.patch
- 
- set port_libfmt         libfmt9
- cmake.module_path-append \
-@@ -47,27 +55,96 @@
- 
- # do not "Try to download and build any missing dependencies"
- configure.args-append   -DBUILD_MISSING_DEPS=OFF \
--                        -DBUILD_MISSING_FMT=OFF
-+                        -DBUILD_MISSING_FMT=OFF \
-+                        -DJPEG_INCLUDE_DIR=${prefix}/include \
- 
- depends_lib-append      port:robin-map \
-                         port:zlib \
-                         port:bzip2 \
-                         port:libpng \
-                         port:tiff \
--                        port:ilmbase \
-                         port:openexr \
+ # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
+@@ -101,11 +74,78 @@
                          port:squish \
                          port:${port_libfmt}
  
- # optional components
- 
--#configure.args-append   -DUSE_OPENGL=OFF \
--#                        -DUSE_QT=OFF
--qt5.min_version         5.6
 +# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 +# tested with openimageio 1.4.6rc1:
 +# macports-clang-3.3 and later work
@@ -138,8 +140,11 @@
 +    -DBUILD_FMT_FORCE:BOOL=TRUE \
 +    -DSTOP_ON_WARNING:BOOL=FALSE
 +
-+# optional components
-+
+ # optional components
+ 
+-#configure.args-append   -DUSE_OPENGL=OFF \
+-#                        -DUSE_QT=OFF
+-qt5.min_version         5.6
 +default_variants    +opencolorio +openjpeg +freetype
 +
 +variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
@@ -149,28 +154,8 @@
  
  configure.args-append   -DUSE_PYTHON=OFF
  
--set pythons_suffixes    {27 36 37 38 39}
-+set pythons_suffixes    {27 36 37 38 39 310}
- 
- set pythons_ports       {}
- foreach s ${pythons_suffixes} {
-@@ -100,34 +177,58 @@
+@@ -147,26 +187,46 @@
  }
- # this default version should stay synchronized with python_get_default_version
- #    in the python PortGroup
--if {${set_python_default}} {
--    default_variants        +python39
--}
-+#if {${set_python_default}} {
-+#    default_variants        +python310
-+#}
- 
- #configure.args-append       -DUSE_FIELD3D=OFF
-+variant field3d description {Use Field3D.} {
- depends_lib-append          port:field3d
-+    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
-+    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
-+}
  
  #configure.args-append       -DUSE_FFMPEG=OFF
 +variant ffmpeg description {Add FFmpeg support.} {
@@ -216,7 +201,7 @@
  
  #configure.args-append       -DUSE_GIF=OFF
  depends_lib-append          port:giflib
-@@ -136,21 +237,35 @@
+@@ -175,15 +235,25 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
@@ -240,7 +225,9 @@
 +    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
 +}
  
- # not in MacPorts
+ configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+ 
+@@ -191,7 +261,11 @@
  configure.args-append       -DUSE_NUKE=OFF
  
  #configure.args-append       -DUSE_DICOM=OFF

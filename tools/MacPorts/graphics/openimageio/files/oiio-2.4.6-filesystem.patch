@@ -1,5 +1,5 @@
---- oiio-Release-2.4.6.0/src/libutil/filesystem.cpp.orig	2022-12-07 22:42:34.000000000 -0800
-+++ oiio-Release-2.4.6.0/src/libutil/filesystem.cpp	2022-12-07 23:07:36.000000000 -0800
+--- src/libutil/filesystem.cpp.orig	2022-12-07 22:42:34.000000000 -0800
++++ src/libutil/filesystem.cpp	2022-12-07 23:07:36.000000000 -0800
 @@ -45,6 +45,224 @@
  
  

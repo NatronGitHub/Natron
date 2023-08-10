@@ -103,6 +103,9 @@ configure.args-append \
                 --without-zstd \
                 ac_cv_prog_AWK=/usr/bin/awk
 
+# https://trac.macports.org/wiki/WimplicitFunctionDeclaration#strchr
+configure.checks.implicit_function_declaration.whitelist-append strchr
+
 compiler.thread_local_storage yes
 
 # Undefined symbols for architecture x86_64: "___get_cpuid_count"

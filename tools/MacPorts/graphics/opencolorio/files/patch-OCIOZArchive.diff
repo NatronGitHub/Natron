@@ -1,0 +1,17 @@
+--- src/OpenColorIO/OCIOZArchive.cpp.orig	2023-08-10 19:00:47.000000000 +0200
++++ src/OpenColorIO/OCIOZArchive.cpp	2023-08-10 19:00:58.000000000 +0200
+@@ -24,7 +24,6 @@
+ #include "mz_strm_mem.h"
+ #include "mz_strm_os.h"
+ #include "mz_strm_split.h"
+-#include "mz_strm_zlib.h"
+ #include "mz_zip.h"
+ #include "mz_zip_rw.h"
+ 
+@@ -630,4 +629,4 @@
+     getEntriesMappingFromArchiveFile(m_archiveAbsPath, m_entries);
+ }
+ 
+-} // namespace OCIO_NAMESPACE
+\ No newline at end of file
++} // namespace OCIO_NAMESPACE

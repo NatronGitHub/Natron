@@ -1,5 +1,5 @@
---- oiio-Release-2.0.8/src/libtexture/imagecache_pvt.h.orig	2019-05-03 17:56:26.000000000 -0700
-+++ oiio-Release-2.0.8/src/libtexture/imagecache_pvt.h	2019-05-23 20:53:57.000000000 -0700
+--- src/libtexture/imagecache_pvt.h.orig	2019-05-03 17:56:26.000000000 -0700
++++ src/libtexture/imagecache_pvt.h	2019-05-23 20:53:57.000000000 -0700
 @@ -337,7 +337,8 @@
      void invalidate_spec()
      {

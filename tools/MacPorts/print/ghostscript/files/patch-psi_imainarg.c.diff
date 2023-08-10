@@ -1,0 +1,11 @@
+--- psi/imainarg.c.orig	2023-06-21 14:10:21
++++ psi/imainarg.c	2023-07-24 12:51:29
+@@ -1455,7 +1455,7 @@
+ print_help_trailer(const gs_main_instance *minst)
+ {
+     char buffer[gp_file_name_sizeof];
+-    const char *use_htm = "Use.htm", *p = buffer;
++    const char *use_htm = "Ghostscript.pdf", *p = buffer;
+     uint blen = sizeof(buffer);
+ 
+     if (gp_file_name_combine(gs_doc_directory, strlen(gs_doc_directory),

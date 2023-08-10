@@ -1,0 +1,26 @@
+--- src/cmake/compiler.cmake.orig	2023-06-26 09:39:08.000000000 -0400
++++ src/cmake/compiler.cmake	2023-06-26 09:39:45.000000000 -0400
+@@ -100,12 +100,12 @@
+ endif()
+ option (EXTRA_WARNINGS "Enable lots of extra pedantic warnings" OFF)
+ if (NOT MSVC)
+-    add_compile_options ("-Wall")
++#    add_compile_options ("-Wall")
+     if (EXTRA_WARNINGS)
+         add_compile_options ("-Wextra")
+     endif ()
+     if (STOP_ON_WARNING)
+-        add_compile_options ("-Werror")
++#        add_compile_options ("-Werror")
+     endif ()
+ endif ()
+ 
+@@ -151,7 +151,7 @@
+     # disable warning about unused command line arguments
+     add_compile_options ("-Qunused-arguments")
+     # Don't warn if we ask it not to warn about warnings it doesn't know
+-    add_compile_options ("-Wunknown-warning-option")
++    add_compile_options ("-Wno-unknown-warning-option")
+     if (CLANG_VERSION_STRING VERSION_GREATER_EQUAL 3.6 OR
+         APPLECLANG_VERSION_STRING VERSION_GREATER 6.1)
+         add_compile_options ("-Wno-unused-local-typedefs")

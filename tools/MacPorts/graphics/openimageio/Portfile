@@ -2,14 +2,10 @@
 
 PortSystem              1.0
 PortGroup               github 1.0
-#PortGroup               qt5 1.0
 PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
 PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
-
-github.setup            OpenImageIO oiio 2.4.8.0 v
-revision                100
 
 name                    openimageio
 categories              graphics
@@ -20,34 +16,47 @@ long_description        OpenImageIO is a library for reading and writing images,
                         related classes, utilities, and applications.
 platforms               darwin
 
-checksums           rmd160  856beebc7dd3d26567a4dd8efcd032038c9ee74e \
-                    sha256  cc91905f862c402ec18d3992e09c7ed34816cf48b1147465ffafda8ce9c1318c \
-                    size    32130754
+github.setup        OpenImageIO oiio 2.4.14.0 v
+revision            100
+checksums           rmd160  f0c51d041627f1867b3de2b322edaef21ba8ca0e \
+                    sha256  92ad4b107394b273397baa1abe90207e1f8ef9fd52ffbfc23b46e3b0005d4439 \
+                    size    47890322
 
-compiler.cxx_standard   2014
+github.tarball_from     archive
+
+depends_lib-append  port:imath \
+                    port:openexr
+
+patchfiles-append oiio-2.0.8-invalidatespec.patch
+patchfiles-append oiio-2.0.8-atomic-load.patch
+patchfiles-append oiio-2.3.20-strnlen.patch
+patchfiles-append oiio-2.4.6-sysutil.patch
+patchfiles-append oiio-2.4.6-filesystem.patch
+
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
-# OpenVDB header files use C++14 features
-configure.args-append   -DCMAKE_CXX_STANDARD=14
+
+# OpenVDB header files use C++17 features
+compiler.cxx_standard   2017
+configure.args-append   -DCMAKE_CXX_STANDARD=17
 
 compiler.thread_local_storage yes
 
-worksrcdir              oiio-${version}
+configure.cxxflags-append \
+                        -Wno-deprecated-declarations \
+                        -Wno-error=unknown-warning-option \
+                        -Wno-unknown-warning-option
 
-patch.pre_args  -p1
-patchfiles \
-    oiio-2.0.8-invalidatespec.patch \
-    oiio-2.0.8-atomic-load.patch \
-    oiio-2.3.20-strnlen.patch \
-    oiio-2.4.6-sysutil.patch \
-    oiio-2.4.6-filesystem.patch
-
+# NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
 set port_libfmt         libfmt9
-cmake.module_path-append \
+cmake.module_path-prepend \
                         ${prefix}/lib/${port_libfmt}/cmake
 configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
+
+# Don't treat clang warnings as errors
+configure.args-append   -DSTOP_ON_WARNINGS=OFF
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
@@ -55,19 +64,15 @@ configure.args-append   -DUSE_CCACHE=OFF
 
 # do not "Try to download and build any missing dependencies"
 configure.args-append   -DBUILD_MISSING_DEPS=OFF \
-                        -DBUILD_MISSING_FMT=OFF \
-                        -DJPEG_INCLUDE_DIR=${prefix}/include \
+                        -DBUILD_MISSING_FMT=OFF
 
 depends_lib-append      port:robin-map \
                         port:zlib \
                         port:bzip2 \
                         port:libpng \
                         port:tiff \
-                        port:openexr \
                         port:squish \
                         port:${port_libfmt}
-
-# optional components
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:
@@ -144,7 +149,7 @@ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolori
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38 39 310}
+set pythons_suffixes    {27 36 37 38 39 310 311}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -153,7 +158,7 @@ foreach s ${pythons_suffixes} {
 
 foreach s ${pythons_suffixes} {
     set p python${s}
-    set v [string index ${s} 0].[string index ${s} 1]
+    set v [string index ${s} 0].[string range ${s} 1 end]
     set i [lsearch -exact ${pythons_ports} ${p}]
     set c [lreplace ${pythons_ports} ${i} ${i}]
     variant ${p} description "Build the Python ${v} bindings" conflicts {*}${c} "
@@ -177,15 +182,8 @@ foreach s ${pythons_suffixes} {
 }
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
-#if {${set_python_default}} {
-#    default_variants        +python310
-#}
-
-#configure.args-append       -DUSE_FIELD3D=OFF
-variant field3d description {Use Field3D.} {
-depends_lib-append          port:field3d
-    configure.args-delete -DUSE_FIELD3D:BOOL=FALSE
-    configure.args-append -DUSE_FIELD3D:BOOL=TRUE
+if {${set_python_default}} {
+    default_variants        +python311
 }
 
 #configure.args-append       -DUSE_FFMPEG=OFF
@@ -257,6 +255,8 @@ depends_lib-append          port:tbb \
     configure.args-append -DUSE_OPENVDB:BOOL=TRUE
 }
 
+configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+
 # not in MacPorts
 configure.args-append       -DUSE_NUKE=OFF
 
@@ -269,3 +269,5 @@ depends_lib-append          port:dcmtk
 
 #configure.args-append       -DUSE_WEBP=OFF
 depends_lib-append          port:webp
+
+github.livecheck.regex      {([0-9.]+)}
