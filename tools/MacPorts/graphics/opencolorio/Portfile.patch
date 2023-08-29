@@ -1,5 +1,5 @@
---- Portfile.orig	2023-08-10 18:32:48.000000000 +0200
-+++ Portfile	2023-08-10 19:04:28.000000000 +0200
+--- Portfile.orig	2023-08-29 21:57:17
++++ Portfile	2023-08-29 21:58:24
 @@ -7,7 +7,7 @@
  
  boost.depends_type  build
@@ -22,7 +22,7 @@
  
  # Exclude pre-releases from livecheck
  github.livecheck.regex  {([0-9.]+)}
-@@ -31,28 +31,8 @@
+@@ -31,31 +31,9 @@
  configure.args-append \
      -DCMAKE_CONFIGURATION_TYPES=MacPorts
  
@@ -31,7 +31,9 @@
 -if {${os.platform} eq "darwin" && ${os.major} < 20} {
 -    github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
 -    revision            3
--
++patchfiles-append \
++    patch-OCIOZArchive.diff
+ 
 -    checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
 -                        sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
 -                        size    13830493
@@ -44,16 +46,17 @@
 -
 -    patchfiles-append   patch-yaml-cpp-0.7.diff
 -
+-    patchfiles-append   patch-fix-endianness.diff
+-
 -    patchfiles-append   patch-CMakeLists.txt.diff
 -
 -    livecheck.type      none
 -}
-+patchfiles-append \
-+    patch-OCIOZArchive.diff
- 
+-
  # source assumes C++11 compiler
  compiler.cxx_standard 2011
-@@ -79,6 +59,9 @@
+ configure.cxxflags-append \
+@@ -93,6 +71,9 @@
      port:tinyxml
  
  configure.args-append \
@@ -63,7 +66,7 @@
      -DUSE_EXTERNAL_YAML=ON \
      -DUSE_EXTERNAL_TINYXML=ON \
      -DUSE_EXTERNAL_LCMS=ON
-@@ -87,8 +70,9 @@
+@@ -107,8 +88,9 @@
  # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
  
  variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 python38 python39 python310 python311 {
@@ -74,7 +77,7 @@
          -DPYTHON=${prefix}/bin/python2.7
      post-destroot {
          xinstall -d -m 0755 \
-@@ -100,8 +84,9 @@
+@@ -120,8 +102,9 @@
  }
  
  variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 python38 python39 python310 python311 {
@@ -85,7 +88,7 @@
          -DPYTHON=${prefix}/bin/python3.6
      post-destroot {
          xinstall -d -m 0755 \
-@@ -113,8 +98,9 @@
+@@ -133,8 +116,9 @@
  }
  
  variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 python38 python39 python310 python311 {
@@ -96,7 +99,7 @@
          -DPYTHON=${prefix}/bin/python3.7
      post-destroot {
          xinstall -d -m 0755 \
-@@ -126,8 +112,9 @@
+@@ -146,8 +130,9 @@
  }
  
  variant python38 description {Build the Python 3.8 bindings} conflicts python27 python36 python37 python39 python310 python311 {
@@ -107,7 +110,7 @@
          -DPYTHON=${prefix}/bin/python3.8
      post-destroot {
          xinstall -d -m 0755 \
-@@ -139,8 +126,9 @@
+@@ -159,8 +144,9 @@
  }
  
  variant python39 description {Build the Python 3.9 bindings} conflicts python27 python36 python37 python38 python310 python311 {
@@ -118,7 +121,7 @@
          -DPYTHON=${prefix}/bin/python3.9
      post-destroot {
          xinstall -d -m 0755 \
-@@ -152,8 +140,9 @@
+@@ -172,8 +158,9 @@
  }
  
  variant python310 description {Build the Python 3.10 bindings} conflicts python27 python36 python37 python38 python39 python311 {
@@ -129,7 +132,7 @@
          -DPYTHON=${prefix}/bin/python3.10
      post-destroot {
          xinstall -d -m 0755 \
-@@ -166,8 +155,9 @@
+@@ -186,8 +173,9 @@
  
  
  variant python311 description {Build the Python 3.11 bindings} conflicts python27 python36 python37 python38 python39 python310 {
@@ -140,7 +143,7 @@
          -DPYTHON=${prefix}/bin/python3.11
      post-destroot {
          xinstall -d -m 0755 \
-@@ -184,6 +174,7 @@
+@@ -204,6 +192,7 @@
  
  if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
      configure.args-append \

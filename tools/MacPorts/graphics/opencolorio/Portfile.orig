@@ -49,6 +49,8 @@ if {${os.platform} eq "darwin" && ${os.major} < 20} {
 
     patchfiles-append   patch-yaml-cpp-0.7.diff
 
+    patchfiles-append   patch-fix-endianness.diff
+
     patchfiles-append   patch-CMakeLists.txt.diff
 
     livecheck.type      none
@@ -60,8 +62,20 @@ configure.cxxflags-append \
     -std=c++11
 
 # see https://github.com/imageworks/OpenColorIO/issues/563
-configure.cxxflags-append \
-    -Wno-error=self-assign-field
+# https://trac.macports.org/ticket/67904
+if {[string match *clang* ${configure.compiler}]} {
+    configure.cxxflags-append \
+        -Wno-error=self-assign-field
+}
+
+# src/core/ExponentOps.cpp: error: 'OpenColorIO::v1::{anonymous}::ExponentOp::~ExponentOp()'
+# defined but not used [-Werror=unused-function]
+# pyglue/PyAllocationTransform.cpp: error: cast between incompatible function types from 'PyObject* (*)(PyObject*)' \
+# {aka '_object* (*)(_object*)'} to 'PyCFunction' {aka '_object* (*)(_object*, _object*)'} [-Werror=cast-function-type]
+if {[string match *gcc* ${configure.compiler}]} {
+    configure.cxxflags-append \
+        -Wno-unused-function -Wno-cast-function-type
+}
 
 configure.cxxflags-append \
     -Wno-deprecated-declarations
@@ -82,6 +96,12 @@ configure.args-append \
     -DUSE_EXTERNAL_YAML=ON \
     -DUSE_EXTERNAL_TINYXML=ON \
     -DUSE_EXTERNAL_LCMS=ON
+
+if {${configure.build_arch} in [list ppc ppc64]} {
+    # This option is ON by default:
+    configure.args-append \
+        -DOCIO_USE_SSE=OFF
+}
 
 # OpenColorIO intentially installs Python module in lib
 # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
@@ -221,4 +241,18 @@ variant quartz {
 if {![variant_isset x11] && ![variant_isset quartz]} {
     configure.args-append \
         -DOCIO_BUILD_APPS=OFF
+}
+
+# Notice that on PowerPC tests will report a failure, however if you look into the actual output,
+# almost all tests pass (with the fix for endianness above). What still fails is a result of OpenColorIO
+# being incapable of properly handling rounding: FAILED: osvec[i] == PROFILE_OUTvec[i]
+# values were 'luma: [0.212599993, 0.715200007, 0.0722000003]' and 'luma: [0.2126, 0.7152, 0.0722]'
+variant tests description "Enable testing" {
+    configure.pre_args-replace \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF
+    configure.args-append \
+        -DOCIO_BUILD_TESTS=ON
+
+    test.run    yes
 }
