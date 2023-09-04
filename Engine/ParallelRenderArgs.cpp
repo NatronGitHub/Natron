@@ -414,7 +414,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ///Concatenate transforms if needed
         if (useTransforms) {
             fvRequest->globalData.transforms = std::make_shared<InputMatrixMap>();
-#pragma message WARN("TODO: can set draftRender properly here?")
+//#pragma message WARN("TODO: can set draftRender properly here?")
             effect->tryConcatenateTransforms( time, /*draftRender=*/false, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
         }
 

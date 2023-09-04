@@ -756,7 +756,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
+//#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
         OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
@@ -1863,7 +1863,7 @@ OfxEffectInstance::isIdentity(double time,
             stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
         }
         if (identityView != view || identityPlane != kFnOfxImagePlaneColour) {
-#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity across views and planes?")
+//#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity across views and planes?")
             // Natron 2 cannot handle isIdentity across planes
             stat = kOfxStatOK;
         }

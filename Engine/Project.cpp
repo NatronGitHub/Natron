@@ -1190,7 +1190,7 @@ Project::getProjectDefaultFormat(Format *f) const
     ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
     // use the label here, because the id does not contain the format specifications.
     // see ProjectPrivate::generateStringFromFormat()
-#pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
+//#pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
     if ( !formatSpec.label.empty() ) {
         ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.label.c_str() ), f);
     } else {

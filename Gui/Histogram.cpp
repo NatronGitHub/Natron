@@ -1013,7 +1013,7 @@ HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
     GLenum attachment = colorAttachmentFromDisplayMode(channel);
 
 #ifdef DEBUG
-#pragma message WARN("TODO: ave currently bound VA, Buffer, and bound texture")
+//#pragma message WARN("TODO: ave currently bound VA, Buffer, and bound texture")
 #endif
     /*binding the VAO holding managing the VBO*/
     glBindVertexArray(vaoID);

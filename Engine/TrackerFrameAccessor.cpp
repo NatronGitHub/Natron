@@ -494,7 +494,7 @@ TrackerFrameAccessor::GetMaskForTrack(int clip,
     // https://developer.blender.org/rBb0015686e2e48a384a0b2a03a75f6daaad7271c0
     //
 
-#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
+//#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
 
     return NULL;
 }

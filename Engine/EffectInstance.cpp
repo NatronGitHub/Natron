@@ -3874,7 +3874,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if (isProjectFormat) {
             *isProjectFormat = false;
         }
-#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
+//#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
         if ( rod->isNull() ) {
             return eStatusFailed;
         }

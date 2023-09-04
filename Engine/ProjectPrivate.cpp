@@ -168,7 +168,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                 std::string optionID = choiceData->_choiceString;
                                 // first, try to get the id the easy way ( see choiceMatch() )
                                 int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
-#pragma message WARN("TODO: choice id filters")
+//#pragma message WARN("TODO: choice id filters")
                                 //if (id < 0) {
                                 //    // no luck, try the filters
                                 //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);

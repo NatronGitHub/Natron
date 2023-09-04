@@ -3794,7 +3794,7 @@ ViewerGL::pickColorInternal(double x,
                             bool /*pickInput*/)
 {
 
-#pragma message WARN("Todo: use pickInput")
+//#pragma message WARN("Todo: use pickInput")
     float r, g, b, a;
     QPointF imgPos;
     {

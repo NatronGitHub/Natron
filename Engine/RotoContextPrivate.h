@@ -1138,7 +1138,7 @@ public:
         int defVal = 0;
         {
             std::vector<ChoiceOption> choices;
-#pragma message WARN("TODO: better sync with OFX filter param")
+//#pragma message WARN("TODO: better sync with OFX filter param")
             // must be kept in sync with ofxsFilter.h
             choices.push_back(ChoiceOption("impulse", kFilterImpulse, tr(kFilterImpulseHint).toStdString()));
             choices.push_back(ChoiceOption("box", kFilterBox, tr(kFilterBoxHint).toStdString()));
@@ -2081,7 +2081,7 @@ public:
         shutterType->setDefaultValue(0);
         {
             std::vector<ChoiceOption> options;
-#pragma message WARN("TODO: sync with ofxsShutter")
+//#pragma message WARN("TODO: sync with ofxsShutter")
             options.push_back(ChoiceOption("centered", "Centered", tr(kRotoShutterOffsetCenteredHint).toStdString()));
             options.push_back(ChoiceOption("start", "Start", tr(kRotoShutterOffsetStartHint).toStdString()));
             options.push_back(ChoiceOption("end", "End", tr(kRotoShutterOffsetEndHint).toStdString()));
@@ -2139,7 +2139,7 @@ public:
         globalShutterType->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         globalShutterType->setDefaultValue(0);
         {
-#pragma message WARN("TODO: sync with ofxsShutter")
+//#pragma message WARN("TODO: sync with ofxsShutter")
             std::vector<std::string> options, helps;
             options.push_back("Centered");
             helps.push_back(kRotoShutterOffsetCenteredHint);
