@@ -116,11 +116,7 @@ public:
 
     RectD toCanonicalFormat() const
     {
-        RectD ret;
-
-        toCanonical_noClipping(0, _par, &ret);
-
-        return ret;
+        return toCanonical_noClipping(0, _par);
     }
 
     Format & operator=(const Format & other)

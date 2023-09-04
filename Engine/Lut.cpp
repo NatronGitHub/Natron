@@ -171,7 +171,7 @@ static bool
 clip(RectI* what,
      const RectI & to)
 {
-    return what->intersect(to, what);
+    return what->clipIfOverlaps(to);
 }
 
 #ifdef DEAD_CODE

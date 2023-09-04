@@ -174,8 +174,23 @@ public:
         return ret;
     }
 
-    void toCanonical(unsigned int thisLevel, double par, const RectD & rod, RectD *rect) const;
-    void toCanonical_noClipping(unsigned int thisLevel, double par, RectD *rect) const;
+    /**
+     * @brief Converts this rectangle to canonical coordinates and clips it if it intersects with the rod provided.
+     */
+    RectD toCanonical(unsigned int thisLevel, double par, const RectD & rod) const;
+
+    RectD toCanonical_noClipping(unsigned int thisLevel, double par) const;
+
+    /**
+     * @brief Converts this rectangle to an equivalent one at a different mipmap level.
+     *
+     * @param fromLevel The mipmap level of this rectangle.
+     * @param toLevel The mipmap level we want to convert to.
+     * @param par The pixel aspect ratio for this rectangle.
+     * @param rod The region of definition to clip this rectangle to when converting it to canonical coordinates.
+     *
+     **/
+    RectI toNewMipMapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**
@@ -339,8 +354,17 @@ public:
         }
     }
 
-    /*intersection of two boxes*/
-    bool intersect(const RectI & r,
+
+private:
+    /**
+     * @brief Computes intersection of this rectangle and the one provided as a parameter, if they overlap.
+     *
+     * @param[in] r The rectangle to intersect with this rectangle.
+     * @param[out] intersection Updated to contain the intersection of the two rectangles if this method returns true. Otherwise left unmodified.
+     * @returns True if this rectangle and the one passed in are not null and overlap.
+     **/
+    // Note: This is private to encourage the use of intersect() or clipIfOverlaps().
+    bool intersectInternal(const RectI & r,
                    RectI* intersection) const
     {
         if ( !intersects(r) ) {
@@ -359,13 +383,36 @@ public:
         return true;
     }
 
-    bool intersect(int x1_,
-                   int y1_,
-                   int x2_,
-                   int y2_,
-                   RectI* intersection) const
+public:
+
+    /**
+     * @brief Computes the intersection of this rectangle and rect.
+     *
+     * @returns Intersection of the two rectangles if they overlap. If there is no overlap a null (i.e. default constructed) rectangle is returned.
+     **/
+    RectI intersect(const RectI & rect) const
     {
-        return intersect(RectI(x1_, y1_, x2_, y2_), intersection);
+        RectI intersection;
+        intersectInternal(rect, &intersection);
+        return intersection;
+    }
+
+    RectI intersect(int x1_,
+                    int y1_,
+                    int x2_,
+                    int y2_) const
+    {
+        return intersect(RectI(x1_, y1_, x2_, y2_));
+    }
+
+    /**
+     * @brief Updates this rectangle to the intersection rectangle if this rectangle overlaps with rect. If there is no overlap then this rectangle remains unchanged.
+     *
+     * @returns True if the rectangles overlap and this rectangle was clipped.
+     **/
+    bool clipIfOverlaps(const RectI& rect)
+    {
+        return intersectInternal(rect, this);
     }
 
     /// returns true if the rect passed as parameter  intersects this one

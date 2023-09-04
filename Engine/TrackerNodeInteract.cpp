@@ -725,8 +725,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 textureRectCanonical.y1 = textureRectCanonical.y2 - height;
 
 
-                RectD canonicalSearchWindow;
-                texRect.toCanonical_noClipping(0, texRect.par, &canonicalSearchWindow);
+                const RectD canonicalSearchWindow = texRect.toCanonical_noClipping(0, texRect.par);
 
                 //Remove any offset to the center to see the marker in the magnification window
                 double xCenterPercent = (center.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
@@ -899,8 +898,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     texCoords.x1 = texCoords.y1 = 0.;
     texCoords.x2 = texCoords.y2 = 1.;
 
-    RectD canonicalSearchWindow;
-    texRect.toCanonical_noClipping(0, texRect.par, &canonicalSearchWindow);
+    const RectD canonicalSearchWindow = texRect.toCanonical_noClipping(0, texRect.par);
 
     Point centerPoint, innerTopLeft, innerTopRight, innerBtmLeft, innerBtmRight;
 
@@ -1157,7 +1155,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
 
     if (image) {
         bounds = image->getBounds();
-        renderWindow.intersect(bounds, &roi);
+        roi = renderWindow.intersect(bounds);
     } else {
         bounds = renderWindow;
         roi = bounds;

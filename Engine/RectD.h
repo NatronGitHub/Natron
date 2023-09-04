@@ -219,15 +219,19 @@ public:
         y2 = std::max(y2, t);
     }
 
-    /*intersection of two boxes*/
-    bool intersect(const RectD & r,
+private:
+    /**
+     * @brief Computes intersection of this rectangle and the one provided as a parameter, if they overlap.
+     *
+     * @param[in] r The rectangle to intersect with this rectangle.
+     * @param[out] intersection Updated to contain the intersection of the two rectangles if this method returns true. Otherwise left unmodified.
+     * @returns True if this rectangle and the one passed in are not null and overlap.
+     **/
+    // Note: This is private to encourage the use of intersect() or clipIfOverlaps().
+    bool intersectInternal(const RectD & r,
                    RectD* intersection) const
     {
-        if ( isNull() || r.isNull() ) {
-            return false;
-        }
-
-        if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
+        if (!intersects(r)) {
             return false;
         }
 
@@ -239,13 +243,36 @@ public:
         return true;
     }
 
-    bool intersect(double l,
-                   double b,
-                   double r,
-                   double t,
-                   RectD* intersection) const
+public:
+
+    /**
+     * @brief Computes the intersection of this rectangle and rect.
+     *
+     * @returns Intersection of the two rectangles if they overlap. If there is no overlap a null (i.e. default constructed) rectangle is returned.
+     **/
+    RectD intersect(const RectD & rect) const
     {
-        return intersect(RectD(l, b, r, t), intersection);
+        RectD intersection;
+        intersectInternal(rect, &intersection);
+        return intersection;
+    }
+
+    RectD intersect(double l,
+                    double b,
+                    double r,
+                    double t) const
+    {
+        return intersect(RectD(l, b, r, t));
+    }
+
+    /**
+     * @brief Updates this rectangle to the intersection rectangle if this rectangle overlaps with rect. If there is no overlap then this rectangle remains unchanged.
+     *
+     * @returns True if the rectangles overlap and this rectangle was clipped.
+     **/
+    bool clipIfOverlaps(const RectD& rect)
+    {
+        return intersectInternal(rect, this);
     }
 
     /// returns true if the rect passed as parameter is intersects this one
@@ -307,13 +334,11 @@ public:
 
 #endif
 
-    void toPixelEnclosing(const RenderScale & scale,
-                          double par,
-                          RectI *rect) const;
+    RectI toPixelEnclosing(const RenderScale & scale,
+                          double par) const;
 
-    void toPixelEnclosing(unsigned int mipMapLevel,
-                          double par,
-                          RectI *rect) const;
+    RectI toPixelEnclosing(unsigned int mipMapLevel,
+                          double par) const;
 
     static void ofxRectDToRectD(const OfxRectD & r,
                                 RectD *ret)

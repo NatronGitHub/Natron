@@ -242,8 +242,7 @@ AddFormatDialog::onCopyFromViewer()
             RectD f = tab->getViewer()->getRoD(0);
             RectD canonicalFormat = tab->getViewer()->getCanonicalFormat(0);
             double par = tab->getViewer()->getPAR(0);
-            RectI format;
-            canonicalFormat.toPixelEnclosing(0, par, &format);
+            const RectI format = canonicalFormat.toPixelEnclosing(0, par);
             _widthSpinBox->setValue( format.width() );
             _heightSpinBox->setValue( format.height() );
             _pixelAspectSpinBox->setValue(par);

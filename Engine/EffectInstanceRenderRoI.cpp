@@ -202,8 +202,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
 
 #endif
         tmp->setKey(inputImage->getKey());
-        RectI clippedRoi;
-        roi.intersect(bounds, &clippedRoi);
+        const RectI clippedRoi = roi.intersect(bounds);
 
         bool unPremultIfNeeded = outputPremult == eImagePremultiplicationPremultiplied && inputImage->getComponentsCount() == 4 && tmp->getComponentsCount() == 3;
 
@@ -440,9 +439,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (renderFullScaleThenDownscale) {
             //We cache 'image', hence the RoI should be expressed in its coordinates
             //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
-            RectD canonicalRoI;
-            args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-            canonicalRoI.toPixelEnclosing(0, par, &roi);
+            roi = args.roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
         } else {
             roi = args.roi;
         }
@@ -558,8 +555,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ViewIdx inputIdentityView(args.view);
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
-        RectI pixelRod;
-        rod.toPixelEnclosing(args.mipMapLevel, par, &pixelRod);
+        const RectI pixelRod = rod.toPixelEnclosing(args.mipMapLevel, par);
         ViewInvarianceLevel viewInvariance = isViewInvariant();
 
         if ( (args.view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
@@ -616,12 +612,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             double firstFrame, lastFrame;
             getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
-
-            RectD canonicalRoI;
-            ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
-            ///later on for us already.
-            //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
-            args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
             EffectInstancePtr inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
@@ -747,24 +737,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
 
-    RectI downscaledImageBoundsNc;
-    RectI upscaledImageBoundsNc;
+    RectI downscaledImageBoundsNc = rod.toPixelEnclosing(args.mipMapLevel, par);
+    RectI upscaledImageBoundsNc = rod.toPixelEnclosing(0, par);
     {
-        rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBoundsNc);
-        rod.toPixelEnclosing(0, par, &upscaledImageBoundsNc);
-
-
         ///Make sure the RoI falls within the image bounds
         ///Intersection will be in pixel coordinates
         if (frameArgs->tilesSupported) {
             if (renderFullScaleThenDownscale) {
-                if ( !roi.intersect(upscaledImageBoundsNc, &roi) ) {
+                if ( !roi.clipIfOverlaps(upscaledImageBoundsNc) ) {
                     return eRenderRoIRetCodeOk;
                 }
                 assert(roi.x1 >= upscaledImageBoundsNc.x1 && roi.y1 >= upscaledImageBoundsNc.y1 &&
                        roi.x2 <= upscaledImageBoundsNc.x2 && roi.y2 <= upscaledImageBoundsNc.y2);
             } else {
-                if ( !roi.intersect(downscaledImageBoundsNc, &roi) ) {
+                if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
                     return eRenderRoIRetCodeOk;
                 }
                 assert(roi.x1 >= downscaledImageBoundsNc.x1 && roi.y1 >= downscaledImageBoundsNc.y1 &&
@@ -772,8 +758,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
             ///just allocate the roi
-            upscaledImageBoundsNc.intersect(roi, &upscaledImageBoundsNc);
-            downscaledImageBoundsNc.intersect(args.roi, &downscaledImageBoundsNc);
+            upscaledImageBoundsNc.clipIfOverlaps(roi);
+            downscaledImageBoundsNc.clipIfOverlaps(args.roi);
 #endif
         }
     }
@@ -788,14 +774,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     const RectI & downscaledImageBounds = downscaledImageBoundsNc;
     const RectI & upscaledImageBounds = upscaledImageBoundsNc;
-    RectD canonicalRoI;
-    {
-        if (renderFullScaleThenDownscale) {
-            roi.toCanonical(0, par, rod, &canonicalRoI);
-        } else {
-            roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-        }
-    }
+    const RectD canonicalRoI = roi.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipMapLevel, par, rod);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
@@ -864,7 +844,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
                 if (frameArgs->tilesSupported) {
                     roi = args.roi;
-                    if ( !roi.intersect(downscaledImageBoundsNc, &roi) ) {
+                    if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
                         return eRenderRoIRetCodeOk;
                     }
                 } else {
@@ -1114,7 +1094,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             lastStrokeRoD = getApp()->getLastPaintStrokeBbox();
             node->clearLastPaintStrokeRoD();
             // qDebug() << getScriptName_mt_safe().c_str() << "last stroke RoD: " << lastStrokeRoD.x1 << lastStrokeRoD.y1 << lastStrokeRoD.x2 << lastStrokeRoD.y2;
-            lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);
+            lastStrokePixelRoD = lastStrokeRoD.toPixelEnclosing(mipMapLevel, par);
         }
     }
 
@@ -1158,8 +1138,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         if ( isDuringPaintStroke && !rectsLeftToRender.empty() && !lastStrokePixelRoD.isNull() ) {
             rectsLeftToRender.clear();
-            RectI intersection;
-            if ( downscaledImageBounds.intersect(lastStrokePixelRoD, &intersection) ) {
+            const RectI intersection = downscaledImageBounds.intersect(lastStrokePixelRoD);
+            if ( !intersection.isNull() ) {
                 rectsLeftToRender.push_back(intersection);
             }
         }
@@ -1239,7 +1219,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         hasDifferentRods = true;
                     }
                 }
-                inputsIntersection.intersect(inputRod, &inputsIntersection);
+                inputsIntersection.clipIfOverlaps(inputRod);
             }
         }
 
@@ -1251,7 +1231,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
            are identity over one of the input effect, thus avoiding pixels to render.
          */
         if ( inputsIntersectionSet && (hasMask || hasDifferentRods) ) {
-            inputsIntersection.toPixelEnclosing(mipMapLevel, par, &inputsRoDIntersectionPixel);
+            inputsRoDIntersectionPixel = inputsIntersection.toPixelEnclosing(mipMapLevel, par);
             tryIdentityOptim = true;
         }
     }
@@ -1322,12 +1302,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         RenderRoIRetCode inputCode;
         {
-            RectD canonicalRoI;
-            if (renderFullScaleThenDownscale) {
-                it->rect.toCanonical(0, par, rod, &canonicalRoI);
-            } else {
-                it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-            }
+            const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipMapLevel, par, rod);
 
             inputCode = renderInputImagesForRoI(requestPassData,
                                                 useTransforms,
@@ -1478,8 +1453,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
 
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
-                    RectI bounds;
-                    rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
+                    const RectI bounds = rod.toPixelEnclosing(args.mipMapLevel, par);
                     it->second.downscaleImage = std::make_shared<Image>(*components,
                                                                           rod,
                                                                           downscaledImageBounds,
@@ -1690,9 +1664,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (!frameArgs->tilesSupported) {
                 //assert that bounds are consistent with the RoD if tiles are not supported
                 const RectD & srcRodCanonical = renderFullScaleThenDownscale ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
-                RectI srcBounds;
-                srcRodCanonical.toPixelEnclosing(renderFullScaleThenDownscale ? it->second.fullscaleImage->getMipMapLevel() : it->second.downscaleImage->getMipMapLevel(), par, &srcBounds);
-                RectI srcRealBounds = renderFullScaleThenDownscale ? it->second.fullscaleImage->getBounds() : it->second.downscaleImage->getBounds();
+                const RectI srcBounds = srcRodCanonical.toPixelEnclosing(renderFullScaleThenDownscale ? it->second.fullscaleImage->getMipMapLevel() : it->second.downscaleImage->getMipMapLevel(), par);
+                const RectI srcRealBounds = renderFullScaleThenDownscale ? it->second.fullscaleImage->getBounds() : it->second.downscaleImage->getBounds();
                 assert(srcRealBounds.x1 == srcBounds.x1);
                 assert(srcRealBounds.x2 == srcBounds.x2);
                 assert(srcRealBounds.y1 == srcBounds.y1);
@@ -1812,10 +1785,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 
 #ifdef DEBUG
-        RectI renderedImageBounds;
-        rod.toPixelEnclosing(args.mipMapLevel, par, &renderedImageBounds);
-        RectI expectedContainedRoI;
-        args.roi.intersect(renderedImageBounds, &expectedContainedRoI);
+        const RectI renderedImageBounds = rod.toPixelEnclosing(args.mipMapLevel, par);
+        const RectI expectedContainedRoI = args.roi.intersect(renderedImageBounds);
         if ( !it->second.downscaleImage->getBounds().contains(expectedContainedRoI) ) {
             qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
         }

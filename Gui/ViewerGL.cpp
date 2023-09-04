@@ -490,8 +490,7 @@ ViewerGL::paintGL()
                 const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
                 RectI texRect(r.x1, r.y1, r.x2, r.y2);
                 const double par = r.par;
-                RectD canonicalTexRect;
-                texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
+                const RectD canonicalTexRect = texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par);
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
@@ -1316,7 +1315,7 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
 
         if (mipMapLevel != 0) {
             // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-            visibleArea.toPixelEnclosing(mipMapLevel, par, &ret);
+            ret = visibleArea.toPixelEnclosing(mipMapLevel, par);
         } else {
             ret.x1 = std::floor(visibleArea.x1 / par);
             ret.x2 = std::ceil(visibleArea.x2 / par);
@@ -1324,11 +1323,8 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
             ret.y2 = std::ceil(visibleArea.y2);
         }
 
-        ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
-        if ( !ret.intersect(imageRoDPixel, &ret) ) {
-            ret.clear();
-        }
-
+        /// Clip the roi to the image's Region of Definition or return an empty rectangle if they don't intersect.
+        ret = ret.intersect(imageRoDPixel);
     }
 
     ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
@@ -1341,15 +1337,11 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
         userRoI = _imp->userRoI;
     }
     if (userRoiEnabled) {
-        RectI userRoIpixel;
-
         ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-        userRoI.toPixelEnclosing(mipMapLevel, par, &userRoIpixel);
+        const RectI userRoIpixel = userRoI.toPixelEnclosing(mipMapLevel, par);
 
         ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
-        if ( !ret.intersect(userRoIpixel, &ret) ) {
-            ret.clear();
-        }
+        ret = ret.intersect(userRoIpixel);
     }
 
     return ret;
@@ -1362,19 +1354,9 @@ ViewerGL::getExactImageRectangleDisplayed(int texIndex,
                                           unsigned int mipMapLevel)
 {
     bool clipToFormat = isClippingImageToFormat();
-    RectD clippedRod;
-
-    if (clipToFormat) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
-
-    return roi;
+    const RectD clippedRod = clipToFormat ? rod.intersect(_imp->displayTextures[texIndex].format) : rod;
+    const RectI bounds = clippedRod.toPixelEnclosing(mipMapLevel, par);
+    return getImageRectangleDisplayed(bounds, par, mipMapLevel);
 }
 
 RectI
@@ -1388,17 +1370,9 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
                                                       RectI* roiNotRounded)
 {
     bool clipToProject = isClippingImageToFormat();
-    RectD clippedRod;
-
-    if (clipToProject) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
+    const RectD clippedRod = clipToProject ? rod.intersect(_imp->displayTextures[texIndex].format) : rod;
+    const RectI bounds = clippedRod.toPixelEnclosing(mipMapLevel, par);
+    const RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
 
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
@@ -1425,9 +1399,7 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
                 tile.y2 = y2;
 
                 if (tiles) {
-                    RectI tileRectRounded;
-                    tile.intersect(bounds, &tileRectRounded);
-                    tiles->push_back(tileRectRounded);
+                    tiles->push_back(tile.intersect(bounds)); // tileRectRounded
                 }
                 assert( texRect.contains(tile) );
             }
@@ -3077,20 +3049,18 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
         return;
     }
 
-    RectI pixelRoD;
-    rod.toPixelEnclosing(0, par, &pixelRoD);
+    const RectI pixelRoD = rod.toPixelEnclosing(0, par);
 
     _imp->displayTextures[textureIndex].rod = rod;
     if ( _imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen() ) {
         _imp->infoViewer[textureIndex]->setDataWindow(pixelRoD);
     }
 
-    const RectI& r = pixelRoD;
     QString x1, y1, x2, y2;
-    x1.setNum(r.x1);
-    y1.setNum(r.y1);
-    x2.setNum(r.x2);
-    y2.setNum(r.y2);
+    x1.setNum(pixelRoD.x1);
+    y1.setNum(pixelRoD.y1);
+    x2.setNum(pixelRoD.x2);
+    y2.setNum(pixelRoD.y2);
 
 
     _imp->currentViewerInfo_btmLeftBBOXoverlay[textureIndex] = x1 + QLatin1Char(',') + y1;
