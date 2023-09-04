@@ -2301,9 +2301,7 @@ private:
                         components.push_back(*it2);
                     }
                 }
-                RectI renderWindow;
-                rod.toPixelEnclosing(scale, par, &renderWindow);
-
+                const RectI renderWindow = rod.toPixelEnclosing(scale, par);
 
                 AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
                 if (isAbortableThread) {
@@ -2413,8 +2411,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     OutputEffectInstancePtr effect = _effect.lock();
     U64 hash = effect->getHash();
     bool isProjectFormat;
-    RectD rod;
-    RectI roi;
     std::list<ImagePlaneDesc> components;
 
     {
@@ -2447,9 +2443,9 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  false,
                                                  false,
                                                  it->stats);
-
+        RectD rod;
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
-        rod.toPixelEnclosing(0, par, &roi);
+        const RectI roi = rod.toPixelEnclosing(0, par);
 
 
         RenderingFlagSetter flagIsRendering( effect->getNode() );

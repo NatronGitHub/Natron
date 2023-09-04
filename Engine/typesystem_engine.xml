@@ -236,37 +236,9 @@
        <modify-function signature="roundPowerOfTwoSmallestEnclosing(unsigned int)const" remove="all"/>
        <modify-function signature="downscalePowerOfTwoLargestEnclosed(unsigned int)const" remove="all"/>
        <modify-function signature="downscalePowerOfTwoSmallestEnclosing(unsigned int)const" remove="all"/>
-       <modify-function signature="toCanonical(unsigned int,double,RectD,RectD*)const" remove="all"/>
-       <modify-function signature="toCanonical_noClipping(unsigned int,double,RectD*)const" remove="all"/>
+       <modify-function signature="toCanonical(unsigned int,double,RectD)const" remove="all"/>
+       <modify-function signature="toCanonical_noClipping(unsigned int,double)const" remove="all"/>
        <modify-function signature="splitIntoSmallerRects(int)const" remove="all"/>
-       <modify-function signature="intersect(RectI,RectI*)const">
-           <modify-argument index="2">
-               <remove-argument/>
-           </modify-argument>
-           <modify-argument index="return">
-               <replace-type modified-type="RectI"/>
-           </modify-argument>
-           <inject-code class="target" position="beginning">
-               RectI t;
-               %CPPSELF.%FUNCTION_NAME(%1,&amp;t);
-               %PYARG_0 = %CONVERTTOPYTHON[RectI](t);
-               return %PYARG_0;
-           </inject-code>
-       </modify-function>
-       <modify-function signature="intersect(int,int,int,int,RectI*)const">
-           <modify-argument index="5">
-               <remove-argument/>
-           </modify-argument>
-           <modify-argument index="return">
-               <replace-type modified-type="RectI"/>
-           </modify-argument>
-           <inject-code class="target" position="beginning">
-               RectI t;
-               %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,&amp;t);
-               %PYARG_0 = %CONVERTTOPYTHON[RectI](t);
-               return %PYARG_0;
-           </inject-code>
-       </modify-function>
    </object-type>
 
    <object-type name="ExprUtils">
@@ -737,36 +709,7 @@
    </object-type>
    <object-type name="RectD">
        <modify-function signature="operator=(RectD)" remove="all"/>
-       <modify-function signature="toPixelEnclosing(unsigned int,double,RectI*)const" remove="all"/>
-       <modify-function signature="intersect(RectD,RectD*)const">
-           <modify-argument index="2">
-               <remove-argument/>
-           </modify-argument>
-           <modify-argument index="return">
-               <replace-type modified-type="RectD"/>
-           </modify-argument>
-           <inject-code class="target" position="beginning">
-               RectD t;
-               %CPPSELF.%FUNCTION_NAME(%1,&amp;t);
-               %PYARG_0 = %CONVERTTOPYTHON[RectD](t);
-               return %PYARG_0;
-           </inject-code>
-       </modify-function>
-       <modify-function signature="intersect(double,double,double,double,RectD*)const">
-           <modify-argument index="5">
-               <remove-argument/>
-           </modify-argument>
-           <modify-argument index="return">
-               <replace-type modified-type="RectD"/>
-           </modify-argument>
-           <inject-code class="target" position="beginning">
-               RectD t;
-               %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,&amp;t);
-               %PYARG_0 = %CONVERTTOPYTHON[RectD](t);
-               return %PYARG_0;
-           </inject-code>
-       </modify-function>
-       
+       <modify-function signature="toPixelEnclosing(unsigned int,double)const" remove="all"/>
    </object-type>
 
     <value-type name="ImageLayer" copyable="true" hash-function="ImageLayer::getHash">

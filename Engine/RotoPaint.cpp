@@ -1455,8 +1455,7 @@ RotoPaint::isIdentity(double time,
         bool isProjectFormat;
         StatusEnum s = maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
         Q_UNUSED(s);
-        RectI maskPixelRod;
-        maskRod.toPixelEnclosing(scale, getAspectRatio(ROTOPAINT_MASK_INPUT_INDEX), &maskPixelRod);
+        const RectI maskPixelRod = maskRod.toPixelEnclosing(scale, getAspectRatio(ROTOPAINT_MASK_INPUT_INDEX));
         if ( !maskPixelRod.intersects(roi) ) {
             *inputTime = time;
             *inputNb = 0;
@@ -1628,8 +1627,8 @@ RotoPaint::render(const RenderActionArgs& args)
                     plane->second->fillZero(dRect);
 
                     if ( bgImg->getComponents() != plane->second->getComponents() ) {
-                        RectI intersection;
-                        if (args.roi.intersect(bgImg->getBounds(), &intersection)) {
+                        const RectI intersection = args.roi.intersect(bgImg->getBounds());
+                        if (!intersection.isNull()) {
                             bgImg->convertToFormat( intersection,
                                                 getApp()->getDefaultColorSpaceForBitDepth( rotoImagesIt->second->getBitDepth() ),
                                                 getApp()->getDefaultColorSpaceForBitDepth( plane->second->getBitDepth() ), 3

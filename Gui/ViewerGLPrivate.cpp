@@ -250,11 +250,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     const double par = roiRounded.par;
-    RectD canonicalRoIRoundedToTileSize;
-    roiRounded.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
-
-    RectD canonicalRoINotRounded;
-    roiNotRounded.toCanonical_noClipping(mipMapLevel, par, &canonicalRoINotRounded);
+    const RectD canonicalRoIRoundedToTileSize = roiRounded.toCanonical_noClipping(mipMapLevel, par);
+    const RectD canonicalRoINotRounded = roiNotRounded.toCanonical_noClipping(mipMapLevel, par);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
@@ -265,12 +262,12 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         clipToDisplayWindow = this->clipToDisplayWindow;
     }
     RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
-    rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+    rectClippedToRoI.clipIfOverlaps(rod);
 
 
     if (clipToDisplayWindow) {
-        rod.intersect(this->displayTextures[textureIndex].format, &rod);
-        rectClippedToRoI.intersect(this->displayTextures[textureIndex].format, &rectClippedToRoI);
+        rod.clipIfOverlaps(this->displayTextures[textureIndex].format);
+        rectClippedToRoI.clipIfOverlaps(this->displayTextures[textureIndex].format);
     }
 
     
@@ -297,11 +294,11 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         {
             QMutexLocker l(&this->userRoIMutex);
             //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !rod.intersect(this->userRoI, &rod) ) {
+            if ( !rod.clipIfOverlaps(this->userRoI) ) {
                 return;
             }
         }
-        rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+        rectClippedToRoI.clipIfOverlaps(rod);
         //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 

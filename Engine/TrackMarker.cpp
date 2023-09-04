@@ -1152,15 +1152,12 @@ TrackMarker::getMarkerImageRoI(int time) const
     roiCanonical.x2 = swTr->getValueAtTime(time, 0) + center.x + offset.x;
     roiCanonical.y2 = swTr->getValueAtTime(time, 1) + center.y + offset.y;
 
-    RectI roi;
     NodePtr node = getContext()->getNode();
     NodePtr input = node->getInput(0);
     if (!input) {
         return RectI();
     }
-    roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1., &roi);
-
-    return roi;
+    return roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1.);
 }
 
 std::pair<ImagePtr, RectI>

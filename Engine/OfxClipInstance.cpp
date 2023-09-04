@@ -1383,10 +1383,10 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     // The bounds of the image at the moment we peak the rowBytes and the internal buffer pointer.
     // Note that when the ReadAccess, or WriteAccess object is released, the image may be resized afterwards (only bigger)
-    RectI pluginsSeenBounds;
+    const RectI bounds = internalImage->getBounds();
+    const RectI pluginsSeenBounds = renderWindow.intersect(bounds);
 
     int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
-
 
     if (isSrcImage) {
         // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
@@ -1397,9 +1397,6 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
         NATRON_NAMESPACE::Image::ReadAccessPtr access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
-        // data ptr
-        const RectI bounds = internalImage->getBounds();
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
 
         // row bytes
@@ -1408,8 +1405,6 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         if (storage == eStorageModeGLTex) {
             _imp->access = access;
         } else {
-
-
             if (!copySrcToPluginLocalData) {
                 const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
                 assert(ptr);
@@ -1440,16 +1435,12 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
             }
         }
     } else {
-        const RectI bounds = internalImage->getBounds();
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
 
         // row bytes
         ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
         
         NATRON_NAMESPACE::Image::WriteAccessPtr access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
-
-        // data ptr
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
 
         if (storage != eStorageModeGLTex) {
             unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
@@ -1475,8 +1466,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
     // Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
-    RectI pixelRod;
-    rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio(), &pixelRod);
+    const RectI pixelRod = rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio());
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);

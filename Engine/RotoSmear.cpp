@@ -128,8 +128,7 @@ RotoSmear::isIdentity(double time,
     NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);
 
-    RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
+    const RectI maskPixelRod = maskRod.toPixelEnclosing(scale, getAspectRatio(-1));
     if ( !maskPixelRod.intersects(roi) ) {
         *inputTime = time;
         *inputNb = 0;
@@ -153,9 +152,7 @@ renderSmearDot(const unsigned char* maskData,
 {
     /// First copy the portion of the image around the previous dot into tmpBuf
     RectD prevDotRoD(prev.x - brushSizePixels / 2., prev.y - brushSizePixels / 2., prev.x + brushSizePixels / 2., prev.y + brushSizePixels / 2.);
-    RectI prevDotBounds;
-
-    prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio(), &prevDotBounds);
+    const RectI prevDotBounds = prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio());
     ImagePtr tmpBuf( new Image(outputImage->getComponents(),
                                prevDotRoD,
                                prevDotBounds,

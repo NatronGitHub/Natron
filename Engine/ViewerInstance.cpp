@@ -998,10 +998,9 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             QMutexLocker k(&_imp->viewerParamsMutex);
             partialRects = _imp->partialUpdateRects;
             for (std::list<RectD>::iterator it = partialRects.begin(); it != partialRects.end(); ++it) {
-                RectI pixelRect;
-                it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
+                RectI pixelRect = it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio);
                 ///Intersect to the RoI
-                if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
+                if ( pixelRect.clipIfOverlaps(outArgs->params->roi) ) {
                     tile.rect.set(pixelRect);
                     tile.rectRounded  = pixelRect;
                     tile.rect.closestPo2 = 1 << mipmapLevel;
@@ -1400,8 +1399,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
     if (useTLS) {
-        RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
+        const RectD canonicalRoi = roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod);
 
         FrameRequestMap requestPassData;
         StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), requestPassData);
@@ -1609,7 +1607,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
         if (colorImage) {
-            splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
+            viewerRenderRoI = splitRoi[rectIndex].intersect(colorImage->getBounds());
         }
 
         UpdateViewerParamsPtr updateParams;
@@ -1673,8 +1671,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     //Overwrite the RoI to only the last portion rendered
                     RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
-
-                    lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
+                    lastPaintBboxPixel = lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par);
 
 
                     //The last buffer must be valid
@@ -1702,19 +1699,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         return eViewerRenderRetCodeFail;
                     }
 
-                    /*UpdateViewerParams::CachedTile tileCopy = tile;
-                       //If we are painting, only render the portion needed
-                       if ( !lastPaintBboxPixel.isNull() ) {
-                        tileCopy.rect.intersect(lastPaintBboxPixel, &tileCopy.rect);
-                        std::size_t pixelSize = 4;
-                        if (updateParams->depth == eImageBitDepthFloat) {
-                            pixelSize *= sizeof(float);
-                        }
-                        std::size_t dstRowSize = tileCopy.rect.width() * pixelSize;
-                        tileCopy.bytesCount = tileCopy.rect.height() * dstRowSize;
-                       }
-
-                       unCachedTiles.push_back(tileCopy);*/
                     unCachedTiles.push_back(tile);
                 }
                 _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
@@ -1737,12 +1721,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             // For the viewer, we need the enclosing rectangle to avoid black borders.
             // Do this here to avoid infinity values.
 
-            RectI bounds;
-            updateParams->rod.toPixelEnclosing(updateParams->mipMapLevel, updateParams->pixelAspectRatio, &bounds);
+            const RectI bounds = updateParams->rod.toPixelEnclosing(updateParams->mipMapLevel, updateParams->pixelAspectRatio);
 
-            RectI tileBounds;
-            tileBounds.x1 = tileBounds.y1 = 0;
-            tileBounds.x2 = tileBounds.y2 = inArgs.params->tileSize;
+            const RectI tileBounds(0, 0, inArgs.params->tileSize, inArgs.params->tileSize);
             assert(!tileBounds.isNull());
             if (tileBounds.isNull()) {
                 return eViewerRenderRetCodeRedraw;
@@ -1821,7 +1802,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         //If we are painting, only render the portion needed
         if ( !lastPaintBboxPixel.isNull() ) {
-            lastPaintBboxPixel.intersect(viewerRenderRoI, &viewerRenderRoI);
+            viewerRenderRoI.clipIfOverlaps(lastPaintBboxPixel);
         }
 
         TimeLapsePtr viewerRenderTimeRecorder;
@@ -2899,8 +2880,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParamsPtr params
         doUpdate = false;
     }*/
     if (doUpdate) {
-        /*RectI bounds;
-           params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/
 
         assert( (params->isPartialRect && params->tiles.size() == 1) || !params->isPartialRect );
 

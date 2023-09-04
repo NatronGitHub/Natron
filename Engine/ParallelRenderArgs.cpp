@@ -260,10 +260,9 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                     frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
                                 }
 
-                                RectI inputRoIPixelCoords;
                                 const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
                                 const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
-                                roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
+                                const RectI inputRoIPixelCoords = roi.toPixelEnclosing(upstreamMipMapLevel, inputPar);
 
                                 std::map<ImagePlaneDesc, ImagePtr> inputImgs;
                                 {
@@ -381,8 +380,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         fvRequest->globalData.identityView = view;
 
 
-        RectI identityRegionPixel;
-        canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
+        const RectI identityRegionPixel = canonicalRenderWindow.toPixelEnclosing(mappedLevel, par);
 
         if ( (view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
             fvRequest->globalData.isIdentity = true;

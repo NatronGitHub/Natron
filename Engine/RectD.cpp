@@ -33,28 +33,25 @@
 
 NATRON_NAMESPACE_ENTER
 
-void
-RectD::toPixelEnclosing(const RenderScale & scale,
-                        double par,
-                        RectI *rect) const
+RectI
+RectD::toPixelEnclosing(const RenderScale& scale,
+                        double par) const
 {
-    rect->x1 = std::floor(x1 * scale.x / par);
-    rect->y1 = std::floor(y1 * scale.y);
-    rect->x2 = std::ceil(x2 * scale.x / par);
-    rect->y2 = std::ceil(y2 * scale.y);
+    return RectI(std::floor(x1 * scale.x / par),
+                 std::floor(y1 * scale.y),
+                 std::ceil(x2 * scale.x / par),
+                 std::ceil(y2 * scale.y));
 }
 
-void
+RectI
 RectD::toPixelEnclosing(unsigned int mipMapLevel,
-                        double par,
-                        RectI *rect) const
+                        double par) const
 {
-    double scale = 1. / (1 << mipMapLevel);
-
-    rect->x1 = std::floor(x1 * scale / par);
-    rect->y1 = std::floor(y1 * scale);
-    rect->x2 = std::ceil(x2 * scale / par);
-    rect->y2 = std::ceil(y2 * scale);
+    const double scale = 1. / (1 << mipMapLevel);
+    return RectI(std::floor(x1 * scale / par),
+                 std::floor(y1 * scale),
+                 std::ceil(x2 * scale / par),
+                 std::ceil(y2 * scale));
 }
 
 NATRON_NAMESPACE_EXIT
