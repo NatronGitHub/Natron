@@ -273,7 +273,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
     if ( ( (nearbyItemCode == eNearbyItemNode) || (nearbyItemCode == eNearbyItemBackdropFrame) ) && groupEdited ) {
         assert(nearbyNode);
-#pragma message WARN("TODO: if control is held, select all the nodes above, see https://github.com/NatronGitHub/Natron/issues/97")
+//#pragma message WARN("TODO: if control is held, select all the nodes above, see https://github.com/NatronGitHub/Natron/issues/97")
         NodeGuiPtr selectedNode = nearbyNode->shared_from_this();
 
         didSomething = true;

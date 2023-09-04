@@ -976,7 +976,7 @@ bool BothAreSpaces(char lhs, char rhs) { return (lhs == rhs) && (lhs == ' '); }
 // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
 // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with PAR=1, where the PAR was removed)
 // returns index if choice was matched, -1 if not matched
-#pragma message WARN("choiceMatch() should be moved into filterKnobChoiceOptionCompat().")
+//#pragma message WARN("choiceMatch() should be moved into filterKnobChoiceOptionCompat().")
 // TODO: choiceMatch() should be moved into filterKnobChoiceOptionCompat()
 // TODO: filterKnobChoiceOptionCompat() should be used everywhere instead of choiceMatch()
 int

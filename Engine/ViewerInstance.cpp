@@ -962,7 +962,7 @@ ViewerInstance::getRegionsOfInterest(double /*time*/,
                                      ViewIdx /*view*/,
                                      RoIMap* ret)
 {
-#pragma message WARN("2.2: fix this and only add RoI for thread local input")
+//#pragma message WARN("2.2: fix this and only add RoI for thread local input")
     for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {
@@ -1503,7 +1503,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
     }
 
-#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
+//#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
     BufferableObjectPtrList partialUpdateObjects;
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
         //AlphaImage will only be set when displaying the Matte overlay
