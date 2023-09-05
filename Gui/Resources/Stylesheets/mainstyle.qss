@@ -18,21 +18,18 @@ QLabel {
     color: %5;
 }
 
+Label[altered="true"],
+Natron--Label[altered="true"] { color: %10; }
+Label[altered="false"],
+Natron--Label[altered="false"] { color: %5; }
 
-
-
-
-
-Label[altered="true"] { color: %10; }
-Label[altered="false"] { color: %5; }
-
-
-
-NodeSettingsPanel[_selected="true"] {
+NodeSettingsPanel[_selected="true"],
+Natron--NodeSettingsPanel[_selected="true"] {
     border:1px solid white;
     border-radius: 2px;
 }
-NodeSettingsPanel[_selected="false"] {
+NodeSettingsPanel[_selected="false"],
+Natron--NodeSettingsPanel[_selected="false"] {
     border:1px solid black;
     border-radius: 2px;
 }
@@ -155,7 +152,6 @@ QScrollBar::sub-line:horizontal {
     subcontrol-origin: margin;
 }
 
-
 QTreeView,QListView,QHeaderView {
     color: %5;
     background-color: %3;
@@ -196,7 +192,8 @@ QHeaderView:section {
     selection-background-color: %1; /* same as selection-color??? */
 }
 
-ComboBox {
+ComboBox,
+Natron--ComboBox {
     border-radius: 2px;
     border: 1px solid black;
 }
@@ -204,72 +201,84 @@ ComboBox {
 /*See http://doc.qt.io/qt-5/stylesheet-syntax.html for classes in namespaces*/
 
 /*Basic background: No multiple selection, no animation, no sunken style*/
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"],
+Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"] {
     background-color: %2;
 }
 
 /*Basic background: No multiple selection, no animation but sunken style*/
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"],
+Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"] {
     background-color: %3;
 }
 
 /*Multiple selection always have a black background*/
-ClickableLabel[dirty="true"]{
+ClickableLabel[dirty="true"],
+Natron--ClickableLabel[dirty="true"] {
     background-color: black;
 }
 
 /*No multiple selection and interpolated*/
-ClickableLabel[dirty="false"][animation="1"]{
+ClickableLabel[dirty="false"][animation="1"],
+Natron--ClickableLabel[dirty="false"][animation="1"] {
     background-color: %6;
 }
 
 /*Multiple selection and interpolated: change text color instead*/
-ClickableLabel[dirty="true"][animation="1"] {
+ClickableLabel[dirty="true"][animation="1"],
+Natron--ClickableLabel[dirty="true"][animation="1"] {
     color: %6;
 }
 
 /*No multiple selection and keyframe*/
-ClickableLabel[dirty="false"][animation="2"]{
+ClickableLabel[dirty="false"][animation="2"],
+Natron--ClickableLabel[dirty="false"][animation="2"] {
     background-color: %7;
 }
 
 /*Multiple selection and keyframe: change text color instead*/
-ClickableLabel[dirty="true"][animation="2"] {
+ClickableLabel[dirty="true"][animation="2"],
+Natron--ClickableLabel[dirty="true"][animation="2"] {
     color: %7;
 }
 
 /*No multiple selection and expr. Change also text colour otherwise the default white is not perceptible*/
-ClickableLabel[dirty="false"][animation="3"] {
+ClickableLabel[dirty="false"][animation="3"],
+Natron--ClickableLabel[dirty="false"][animation="3"] {
     background-color: %7;
     color: %9;
 }
 
 /*Multiple selection and expr: change text color instead*/
-ClickableLabel[dirty="true"][animation="3"] {
+ClickableLabel[dirty="true"][animation="3"],
+Natron--ClickableLabel[dirty="true"][animation="3"] {
     color: %9;
 }
 
 /*Disabled and no multiple selection: */
-ClickableLabel[readOnly="true"][dirty="false"] {
+ClickableLabel[readOnly="true"][dirty="false"],
+Natron--ClickableLabel[readOnly="true"][dirty="false"] {
     color: %8;
 }
 
 /*Disabled and multiple selection: */
-ClickableLabel[readOnly="true"][dirty="true"] {
+ClickableLabel[readOnly="true"][dirty="true"],
+Natron--ClickableLabel[readOnly="true"][dirty="true"] {
     background-color: black;
     color: %8;
 }
 
-
-
-TabWidget{
+TabWidget,
+Natron--TabWidget {
     background-color: %4;
 }
 
-NodeSettingsPanel{
+NodeSettingsPanel,
+Natron--NodeSettingsPanel {
     background-color: %2;
     color: %5;
 }
+
 QPushButton{
     background-color: %3;
     color: %5;
@@ -304,8 +313,8 @@ QDialog {
     background-color: %2;
 }
 
-
-NodeCreationDialog {
+NodeCreationDialog,
+Natron--NodeCreationDialog {
     background-color: %2;
     border: 5px black;
     border-radius:2px;
@@ -319,30 +328,31 @@ QToolButton:pressed {
     border: 1px solid %1;
 }
 
-
 QToolButton:focus {
     border: 1px solid %1;
 }
 
-ViewerToolButton[isSelected="true"]
-{
+ViewerToolButton[isSelected="true"],
+Natron--ViewerToolButton[isSelected="true"] {
     border: 1px solid %1;
 }
 
-ViewerToolButton
-{
+ViewerToolButton,
+Natron--ViewerToolButton {
     border: 0px ;
 }
 
-ViewerToolButton[isSelected="false"]:pressed {
+ViewerToolButton[isSelected="false"]:pressed,
+Natron--ViewerToolButton[isSelected="false"]:pressed {
     border: 0px;
 }
-ViewerToolButton[isSelected="true"]:pressed {
+ViewerToolButton[isSelected="true"]:pressed,
+Natron--ViewerToolButton[isSelected="true"]:pressed {
     border: 1px solid %1;
 }
 
-
-ViewerToolButton:focus {
+ViewerToolButton:focus,
+Natron--ViewerToolButton:focus {
     border: 0px;
 }
 
@@ -384,7 +394,6 @@ QScrollArea {
     background-color: %2;
 }
 
-
 QComboBox {
     color: %5;
     background-color: %3;
@@ -415,7 +424,6 @@ QTabWidget::pane {
     border:1px solid black;
     margin-top: -1px;
 }
-
 
 QLineEdit {
     border: 1px solid;
@@ -475,7 +483,8 @@ QTabBar::tab {
     border-top-left-radius: 5px;
 }
 
-QTabBar::tab#DockablePanelTabWidget {
+QTabBar::tab#DockablePanelTabWidget,
+QTabBar::tab#Natron--DockablePanelTabWidget {
     min-width: 3em;
 }
 
@@ -487,7 +496,6 @@ QTabBar::tab:selected {
     border-bottom-style:none;
     /*border-color: %1;*/
 }
-
 
 QTabBar::tab:!selected {
     color: %5;  /* color of the text on deselected tabs */
@@ -518,15 +526,18 @@ QTabBar::close-button:hover {
     subcontrol-position: right;
 }
 
-TabBar[mouseOverFocus="true"][clickFocus="false"] {
+TabBar[mouseOverFocus="true"][clickFocus="false"],
+Natron--TabBar[mouseOverFocus="true"][clickFocus="false"] {
     color: %11;
 }
 
-TabBar[clickFocus="true"] {
+TabBar[clickFocus="true"],
+Natron--TabBar[clickFocus="true"] {
     color: %1;
 }
 
-TabBar[mouseOverFocus="false"][clickFocus="false"] {
+TabBar[mouseOverFocus="false"][clickFocus="false"],
+Natron--TabBar[mouseOverFocus="false"][clickFocus="false"] {
     color: %5;
 }
 
@@ -583,8 +594,6 @@ Natron--SpinBox[altered="true"][dirty="false"] {
     color: %10;
 }
 
-
-
 LineEdit[animation="0"],
 Natron--LineEdit[animation="0"] {
     background-color: %3;
@@ -611,7 +620,7 @@ Natron--LineEdit[altered="true"] {
     color: %10;
 }
 
-QTextEdit{
+QTextEdit {
     color: %5;
     background-color: %3;
     selection-color: %8;
@@ -748,7 +757,14 @@ QPlainTextEdit {
     selection-background-color: %1;
 }
 
-OutputScriptTextEdit {
+QTextBrowser[html],
+QTextBrowser[plainText] {
+    color: %5;
+}
+
+OutputScriptTextEdit,
+Natron--OutputScriptTextEdit,
+Natron--OutputScriptTextEdit[plainText] {
     color: %5;
     background-color: %2;
     selection-color: %8;
