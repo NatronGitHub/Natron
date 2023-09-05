@@ -98,6 +98,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     ///filling tabs now
 
     _aboutText = new QTextBrowser(_tabWidget);
+    _aboutText->setObjectName( QString::fromUtf8("TextBrowser") );
     _aboutText->setOpenExternalLinks(true);
     QString aboutText;
     {
@@ -450,6 +451,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     _tabWidget->addTab( _aboutText, tr("About") );
 
     _changelogText =  new QTextBrowser(_tabWidget);
+    _changelogText->setObjectName( QString::fromUtf8("TextBrowser") );
     _changelogText->setOpenExternalLinks(true);
     {
         QFile changelogFile( QString::fromUtf8(":CHANGELOG.md") );
@@ -459,12 +461,14 @@ AboutWindow::AboutWindow(QWidget* parent)
     _tabWidget->addTab( _changelogText, tr("Changelog") );
 
     _libsText = new QTextBrowser(_tabWidget);
+    _libsText->setObjectName( QString::fromUtf8("TextBrowser") );
     _libsText->setOpenExternalLinks(true);
     updateLibrariesVersions();
 
     _tabWidget->addTab( _libsText, tr("Libraries") );
 
     _teamText = new QTextBrowser(_tabWidget);
+    _teamText->setObjectName( QString::fromUtf8("TextBrowser") );
     _teamText->setOpenExternalLinks(false);
     {
         QFile team_file( QString::fromUtf8(":CONTRIBUTORS.txt") );
@@ -474,6 +478,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     _tabWidget->addTab( _teamText, tr("Contributors") );
 
     _licenseText = new QTextBrowser(_tabWidget);
+    _licenseText->setObjectName( QString::fromUtf8("TextBrowser") );
     _licenseText->setOpenExternalLinks(false);
     {
         QFile license( QString::fromUtf8(":LICENSE.txt") );
@@ -507,6 +512,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     splitter->addWidget(_view);
 
     _thirdPartyBrowser = new QTextBrowser(thirdPartyContainer);
+    _thirdPartyBrowser->setObjectName( QString::fromUtf8("TextBrowser") );
     _thirdPartyBrowser->setOpenExternalLinks(false);
     splitter->addWidget(_thirdPartyBrowser);
     splitter->setStretchFactor(0, 1);
