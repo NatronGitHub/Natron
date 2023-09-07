@@ -1598,7 +1598,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     Q_UNUSED(outputRoD);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
-    assert((supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.));
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
 
@@ -1828,11 +1828,10 @@ OfxEffectInstance::isIdentity(double time,
     // isIdentity may be the first action with renderscale called on any effect.
     // it may have to check for render scale support.
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ( (supportsRS == eSupportsNo) && !scaleIsOne ) {
-        qDebug() << "isIdentity called with render scale != 1, but effect does not support render scale!";
+    if (!isSupportedRenderScale(supportsRS, scale) ) {
+        qDebug() << "isIdentity called with an unsupported RenderScale!";
         assert(false);
-        throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
+        throw std::logic_error("isIdentity called with an unsupported RenderScale");
     }
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
@@ -1944,11 +1943,7 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool isOpenGLRender,
                                        const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        Q_UNUSED(scaleIsOne);
-    }
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
@@ -1990,11 +1985,7 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool isOpenGLRender,
                                      const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        Q_UNUSED(scaleIsOne);
-    }
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);

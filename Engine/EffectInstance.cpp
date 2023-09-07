@@ -654,7 +654,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
         getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, ViewIdx(0), inputRois_p);
     }
 
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
     const RectI pixelRod = rod.toPixelEnclosing(scale, getAspectRatio(-1));
     try {
         int identityInputNb;
@@ -1192,7 +1192,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
     bool firstInput = true;
     RenderScale renderMappedScale = scale;
 
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputMask(i) ) {
@@ -2402,7 +2402,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
     actionArgs.byPassCache = byPassCache;
     actionArgs.processChannels = processChannels;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
-    assert( !( (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
+    assert(isSupportedRenderScale(_publicInterface->supportsRenderScaleMaybe(), actionArgs.mappedScale));
     actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     actionArgs.originalScale.y = actionArgs.originalScale.x;
     actionArgs.draftMode = frameArgs->draftMode;
@@ -3751,8 +3751,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   ViewIdx* inputView,
                                   int* inputNb)
 {
-    //assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-
     if (useIdentityCache) {
         double timeF = 0.;
         bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
@@ -5954,6 +5952,13 @@ EffectInstance::setClipPreferencesRunning(bool running)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->runningClipPreferences = running;
+}
+
+// static
+bool
+EffectInstance::isSupportedRenderScale(SupportsEnum supportsRS, const RenderScale renderScale)
+{
+    return (supportsRS != eSupportsNo) || (renderScale.x == 1. && renderScale.y == 1.);
 }
 
 NATRON_NAMESPACE_EXIT
