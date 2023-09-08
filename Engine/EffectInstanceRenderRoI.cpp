@@ -754,11 +754,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * Keep in memory what the user has requested, and change the roi to the full bounds if the effect doesn't support tiles
      */
     const RectI originalRoI = roi;
+    // Store the mipMapLevel for originalRoI here because renderFullScaleThenDownscale may change later and we'll lose
+    // the ability to recover this information when we potentially need it for a downscale operation later.
+    const unsigned int originalRoIMipMapLevel = renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
 
     if (frameArgs->tilesSupported) {
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
         ///just allocate the roi
-        upscaledImageBoundsNc.clipIfOverlaps(roi);
+        const RectI upscaledRoI = renderFullScaleThenDownscale ? roi : roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
+        upscaledImageBoundsNc.clipIfOverlaps(upscaledRoI);
         downscaledImageBoundsNc.clipIfOverlaps(args.roi);
 #endif
     } else {
@@ -1749,7 +1753,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         assert(comp);
         ///The image might need to be converted to fit the original requested format
         if (comp) {
-            it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
+            const RectI downscaledOriginalRoI = originalRoI.toNewMipMapLevel(originalRoIMipMapLevel, args.mipMapLevel, par, rod);
+            it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, downscaledOriginalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
 
             StorageModeEnum imageStorage = it->second.downscaleImage->getStorageMode();
