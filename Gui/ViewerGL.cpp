@@ -2539,7 +2539,7 @@ ViewerGL::penMotionInternal(int x,
 void
 ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+    unsigned int mipMapLevel = getCurrentRenderScale();
     QPointF pos_opengl;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
