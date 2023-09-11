@@ -298,10 +298,13 @@ platform darwin {
 
     # Available on 10.6+
     if {(${os.major} >= 10) && (${configure.build_arch} ne "ppc")} {
-        configure.args-append \
+        # Only enable 'rav1e', for non-slim installation
+        if {![variant_isset slim]} {
+            configure.args-append \
                     --enable-librav1e
-        depends_lib-append \
+            depends_lib-append \
                     port:rav1e
+        }
     }
 }
 
@@ -472,6 +475,8 @@ variant nonfree description {enable nonfree code, libraries and binaries will no
     depends_lib-append \
                     port:libfdk-aac
 }
+
+variant slim description {Trim dependencies slightly, without significantly impacting overall feature set} {}
 
 if {[variant_isset nonfree]} {
 notes "
