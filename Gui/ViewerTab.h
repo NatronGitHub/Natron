@@ -162,9 +162,9 @@ public:
 
     void setAutoContrastEnabled(bool b);
 
-    void setMipMapLevel(int level);
+    void setMipmapLevel(int level);
 
-    int getMipMapLevel() const;
+    int getMipmapLevel() const;
 
     void setRenderScaleActivated(bool act);
 

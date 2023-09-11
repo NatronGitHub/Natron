@@ -103,7 +103,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                         viewerData.colorSpace = tab->getColorSpace();
                         viewerData.channels = tab->getChannelsString();
                         viewerData.renderScaleActivated = tab->getRenderScaleActivated();
-                        viewerData.mipMapLevel = tab->getMipMapLevel();
+                        viewerData.mipmapLevel = tab->getMipmapLevel();
                         viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
                         viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
                         viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();

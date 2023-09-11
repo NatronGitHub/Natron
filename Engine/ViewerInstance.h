@@ -50,7 +50,7 @@ public:
     UpdateViewerParamsPtr params;
     RenderingFlagSetterPtr isRenderingFlag;
     bool draftModeEnabled;
-    unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
+    unsigned int mipmapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
@@ -148,7 +148,7 @@ private:
 
 
     /**
-     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
+     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipmapLevel.
      * setupMinimalUpdateViewerParams(...) MUST have been called before.
      * When returning this function, the UpdateViewerParams will have been filled entirely
      * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
@@ -231,9 +231,9 @@ public:
 
     double getGain() const WARN_UNUSED_RETURN;
 
-    int getMipMapLevel() const WARN_UNUSED_RETURN;
+    unsigned int getMipmapLevel() const WARN_UNUSED_RETURN;
 
-    int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
+    unsigned int getMipmapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
@@ -326,12 +326,12 @@ public:
 
     bool isViewerPaused(int texIndex) const;
 
-    unsigned int getViewerMipMapLevel() const;
+    unsigned int getViewerMipmapLevel() const;
 
 public Q_SLOTS:
 
 
-    void onMipMapLevelChanged(int level);
+    void onMipmapLevelChanged(int level);
 
 
     /**

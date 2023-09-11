@@ -122,7 +122,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
                        const KeyFrameSet& pCurve,
                        const Transform::Matrix3x3& transform,
-                       unsigned int mipMapLevel,
+                       unsigned int mipmapLevel,
                        double halfBrushSize,
                        bool pressureAffectsSize,
                        std::list<std::pair<Point, double> >* points,
@@ -156,7 +156,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     }
 
 
-    int pot = 1 << mipMapLevel;
+    int pot = 1 << mipmapLevel;
 
     if ( (xCurve.size() == 1) && ( xIt != xCurve.end() ) && ( yIt != yCurve.end() ) && ( pIt != pCurve.end() ) ) {
         assert( xNext == xCurve.end() && yNext == yCurve.end() && pNext == pCurve.end() );
@@ -839,7 +839,7 @@ RotoStrokeItem::getYControlPoints() const
 }
 
 void
-RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
+RotoStrokeItem::evaluateStroke(unsigned int mipmapLevel,
                                double time,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
                                RectD* bbox) const
@@ -864,7 +864,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
         std::list<std::pair<Point, double> > points;
         RectD strokeBbox;
 
-        evaluateStrokeInternal(xSet, ySet, pSet, transform, mipMapLevel, brushSize, pressureAffectsSize, &points, &strokeBbox);
+        evaluateStrokeInternal(xSet, ySet, pSet, transform, mipmapLevel, brushSize, pressureAffectsSize, &points, &strokeBbox);
         if (bbox) {
             if (bboxSet) {
                 bbox->merge(strokeBbox);

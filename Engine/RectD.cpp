@@ -42,10 +42,10 @@ RectD::toPixelEnclosing(const RenderScale& renderScale,
 }
 
 RectI
-RectD::toPixelEnclosing(unsigned int mipMapLevel,
+RectD::toPixelEnclosing(unsigned int mipmapLevel,
                         double par) const
 {
-    const double scale = 1. / (1 << mipMapLevel);
+    const double scale = 1. / (1 << mipmapLevel);
     return RectI(std::floor(x1 * scale / par),
                  std::floor(y1 * scale),
                  std::ceil(x2 * scale / par),

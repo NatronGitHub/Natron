@@ -522,7 +522,7 @@ Node::getLastPaintStrokePoints(double time,
 }
 
 ImagePtr
-Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+Node::getOrRenderLastStrokeImage(unsigned int mipmapLevel,
                                  double par,
                                  const ImagePlaneDesc& components,
                                  ImageBitDepthEnum depth) const
@@ -544,7 +544,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     double distNextIn = 0.;
     ImagePtr strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
+    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipmapLevel, par, components, depth, distNextIn, &strokeImage);
 
     getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
 
@@ -3325,12 +3325,12 @@ Node::makePreviewImage(SequenceTime time,
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(xZoomFactor) / M_LN2 ) );
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(yZoomFactor) / M_LN2 ) );
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
-    unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
+    unsigned int mipmapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
 
-    const RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
+    const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
     const double par = effect->getAspectRatio(-1);
-    const RectI renderWindow = rod.toPixelEnclosing(mipMapLevel, par);
+    const RectI renderWindow = rod.toPixelEnclosing(mipmapLevel, par);
 
     NodePtr thisNode = shared_from_this();
     RenderingFlagSetter flagIsRendering(thisNode);
@@ -3357,7 +3357,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   true, // isDraft
                                                   RenderStatsPtr() );
         FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -3379,7 +3379,7 @@ Node::makePreviewImage(SequenceTime time,
         try {
             std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time,
                                                                                                            scale,
-                                                                                                           mipMapLevel,
+                                                                                                           mipmapLevel,
                                                                                                            ViewIdx(0), //< preview only renders view 0 (left)
                                                                                                            false,
                                                                                                            renderWindow,
@@ -4436,7 +4436,7 @@ Node::unlock(const ImagePtr & image)
 
 ImagePtr
 Node::getImageBeingRendered(double time,
-                            unsigned int mipMapLevel,
+                            unsigned int mipmapLevel,
                             ViewIdx view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
@@ -4444,7 +4444,7 @@ Node::getImageBeingRendered(double time,
     for (std::list<ImagePtr>::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
         const ImageKey &key = (*it)->getKey();
-        if ( (key._view == view) && ( (*it)->getMipMapLevel() == mipMapLevel ) && (key._time == time) ) {
+        if ( (key._view == view) && ( (*it)->getMipmapLevel() == mipmapLevel ) && (key._time == time) ) {
             return *it;
         }
     }

@@ -1394,7 +1394,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 
     assert(_imp->effect);
 
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
 
     // getRegionOfDefinition may be the first action with renderscale called on any effect.
     // it may have to check for render scale support.
@@ -1412,7 +1412,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            mipMapLevel);
+                                            mipmapLevel);
 
         assert(_imp->effect);
         if (getRecursionLevel() > 1) {
@@ -1534,7 +1534,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
 
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     OfxRectD ofxRod;
 
     {
@@ -1545,7 +1545,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
         if (getRecursionLevel() == 0) {
             ClipsThreadStorageSetter clipSetter(effectInstance(),
                                                 view,
-                                                mipMapLevel);
+                                                mipmapLevel);
 
 
             // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
@@ -1600,13 +1600,13 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     OfxStatus stat;
 
     ///before calling getRoIaction set the relevant info on the clips
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     {
         SET_CAN_SET_VALUE(false);
 
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            mipMapLevel);
+                                            mipmapLevel);
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
 
@@ -1831,7 +1831,7 @@ OfxEffectInstance::isIdentity(double time,
         throw std::logic_error("isIdentity called with an unsupported RenderScale");
     }
 
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     OfxStatus stat;
 
     {
@@ -1840,7 +1840,7 @@ OfxEffectInstance::isIdentity(double time,
 
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            mipMapLevel);
+                                            mipmapLevel);
         OfxRectI ofxRoI;
         ofxRoI.x1 = renderWindow.left();
         ofxRoI.x2 = renderWindow.right();
@@ -1943,11 +1943,11 @@ OfxEffectInstance::beginSequenceRender(double first,
     assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            mipMapLevel);
+                                            mipmapLevel);
 
         SET_CAN_SET_VALUE(false);
 
@@ -1985,11 +1985,11 @@ OfxEffectInstance::endSequenceRender(double first,
     assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     {
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            mipMapLevel);
+                                            mipmapLevel);
         SET_CAN_SET_VALUE(false);
 
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );

@@ -116,7 +116,7 @@ ActionsCache::getIdentityResult(U64 hash,
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = 0;
+            key.mipmapLevel = 0;
 
             IdentityCacheMap::const_iterator found = it->_identityCache.find(key);
             if ( found != it->_identityCache.end() ) {
@@ -148,7 +148,7 @@ ActionsCache::setIdentityResult(U64 hash,
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = 0;
+    key.mipmapLevel = 0;
 
     IdentityResults & v = cache._identityCache[key];
     v.inputIdentityNb = inputNbIdentity;
@@ -167,7 +167,7 @@ ActionsCache::getComponentsNeededResults(U64 hash, double time, ViewIdx view, Ef
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = 0;
+            key.mipmapLevel = 0;
 
             ComponentsNeededCacheMap::const_iterator found = it->_componentsNeededCache.find(key);
             if ( found != it->_componentsNeededCache.end() ) {
@@ -200,7 +200,7 @@ ActionsCache::setComponentsNeededResults(U64 hash, double time, ViewIdx view, co
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = 0;
+    key.mipmapLevel = 0;
 
     ComponentsNeededResults & v = cache._componentsNeededCache[key];
     v.neededComps = neededComps;
@@ -217,7 +217,7 @@ bool
 ActionsCache::getRoDResult(U64 hash,
                            double time,
                            ViewIdx view,
-                           unsigned int mipMapLevel,
+                           unsigned int mipmapLevel,
                            RectD* rod)
 {
     QMutexLocker l(&_cacheMutex);
@@ -227,7 +227,7 @@ ActionsCache::getRoDResult(U64 hash,
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = mipMapLevel;
+            key.mipmapLevel = mipmapLevel;
 
             RoDCacheMap::const_iterator found = it->_rodCache.find(key);
             if ( found != it->_rodCache.end() ) {
@@ -247,7 +247,7 @@ void
 ActionsCache::setRoDResult(U64 hash,
                            double time,
                            ViewIdx view,
-                           unsigned int mipMapLevel,
+                           unsigned int mipmapLevel,
                            const RectD & rod)
 {
     QMutexLocker l(&_cacheMutex);
@@ -256,7 +256,7 @@ ActionsCache::setRoDResult(U64 hash,
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = mipMapLevel;
+    key.mipmapLevel = mipmapLevel;
 
     cache._rodCache[key] = rod;
 }
@@ -265,7 +265,7 @@ bool
 ActionsCache::getFramesNeededResult(U64 hash,
                                     double time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
                                     FramesNeededMap* framesNeeded)
 {
     QMutexLocker l(&_cacheMutex);
@@ -275,7 +275,7 @@ ActionsCache::getFramesNeededResult(U64 hash,
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = mipMapLevel;
+            key.mipmapLevel = mipmapLevel;
 
             FramesNeededCacheMap::const_iterator found = it->_framesNeededCache.find(key);
             if ( found != it->_framesNeededCache.end() ) {
@@ -295,7 +295,7 @@ void
 ActionsCache::setFramesNeededResult(U64 hash,
                                     double time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
                                     const FramesNeededMap & framesNeeded)
 {
     QMutexLocker l(&_cacheMutex);
@@ -304,7 +304,7 @@ ActionsCache::setFramesNeededResult(U64 hash,
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = mipMapLevel;
+    key.mipmapLevel = mipmapLevel;
 
     cache._framesNeededCache[key] = framesNeeded;
 }

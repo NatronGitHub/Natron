@@ -321,7 +321,7 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            const std::set<unsigned int>& mm = stats.getMipMapLevelsRendered();
+            const std::set<unsigned int>& mm = stats.getMipmapLevelsRendered();
             for (std::set<unsigned int>::const_iterator it = mm.begin(); it != mm.end(); ++it) {
                 str.append( QString::number(*it) );
                 str.append( QLatin1Char(' ') );

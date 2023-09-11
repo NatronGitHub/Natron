@@ -849,7 +849,7 @@ PyViewer::setProxyIndex(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    _viewer->setMipMapLevel(index + 1);
+    _viewer->setMipmapLevel(index + 1);
 }
 
 int
@@ -859,7 +859,7 @@ PyViewer::getProxyIndex() const
         return 0;
     }
 
-    return _viewer->getMipMapLevel() - 1;
+    return _viewer->getMipmapLevel() - 1;
 }
 
 void

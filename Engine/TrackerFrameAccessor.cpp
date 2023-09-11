@@ -52,7 +52,7 @@ namespace  {
 struct FrameAccessorCacheKey
 {
     int frame;
-    int mipMapLevel;
+    int mipmapLevel;
     mv::FrameAccessor::InputMode mode;
 };
 
@@ -66,9 +66,9 @@ struct CacheKey_compare_less
         } else if (lhs.frame > rhs.frame) {
             return false;
         } else {
-            if (lhs.mipMapLevel < rhs.mipMapLevel) {
+            if (lhs.mipmapLevel < rhs.mipmapLevel) {
                 return true;
-            } else if (lhs.mipMapLevel > rhs.mipMapLevel) {
+            } else if (lhs.mipmapLevel > rhs.mipmapLevel) {
                 return false;
             } else {
                 if ( (int)lhs.mode < (int)rhs.mode ) {
@@ -295,7 +295,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
 
     FrameAccessorCacheKey key;
     key.frame = frame;
-    key.mipMapLevel = downscale;
+    key.mipmapLevel = downscale;
     key.mode = input_mode;
 
     /*
