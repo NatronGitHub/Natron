@@ -174,7 +174,6 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if ( currentNode == targetNode  ) {
         return true;
     }
-    RenderScale s(1.);
     EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
@@ -186,7 +185,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
         // Always use draft mode to draw overlay (so that transforms are applied,
         // even in case of motion blur, see Transform3x3Plugin::getTransform() )
-        stat = currentNode->getTransform_public(time, s, /*draftRender=*/true, view, &input, &mat);
+        stat = currentNode->getTransform_public(time, RenderScale::identity, /*draftRender=*/true, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
         return false;

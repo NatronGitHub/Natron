@@ -335,8 +335,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     }
 
     // Not in accessor cache, call renderRoI
-    RenderScale scale;
-    scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
+    const RenderScale scale = RenderScale::fromMipmapLevel( (unsigned int)downscale );
 
 
     RectD precomputedRoD;

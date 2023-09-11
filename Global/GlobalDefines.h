@@ -75,18 +75,6 @@ typedef std::uint16_t U16;
 NATRON_NAMESPACE_ENTER
 
 typedef int SequenceTime;
-
-struct RenderScale
-    : public OfxPointD
-{
-    RenderScale() { x = y = 1.; }
-
-    RenderScale(double scale) { x = y = scale; }
-
-    RenderScale(double scaleX,
-                double scaleY) { x = scaleX; y = scaleY; }
-};
-
 typedef OfxPointD Point;
 typedef OfxRGBAColourF RGBAColourF;
 typedef OfxRGBAColourD RGBAColourD;

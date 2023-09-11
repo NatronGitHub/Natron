@@ -1531,7 +1531,7 @@ RotoPaint::render(const RenderActionArgs& args)
             copyChannels[i] = _imp->enabledKnobs[i].lock()->getValue();
         }
 
-        unsigned int mipMapLevel = Image::getLevelFromScale(args.mappedScale.x);
+        unsigned int mipMapLevel = args.mappedScale.toMipmapLevel();
         RenderRoIArgs rotoPaintArgs(args.time,
                                     args.mappedScale,
                                     mipMapLevel,

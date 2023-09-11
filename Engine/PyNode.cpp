@@ -967,9 +967,8 @@ Effect::getRegionOfDefinition(double time,
         return rod;
     }
     U64 hash = getInternalNode()->getHashValue();
-    RenderScale s(1.);
     bool isProject;
-    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, ViewIdx(view), &rod, &isProject);
+    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, RenderScale::identity, ViewIdx(view), &rod, &isProject);
     if (stat != eStatusOK) {
         return RectD();
     }

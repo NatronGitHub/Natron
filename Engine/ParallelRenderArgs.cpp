@@ -246,9 +246,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
                                 ///limit calculations that will be done later on anyway.
                             } else {
-                                RenderScale scaleOne(1.);
-                                RenderScale scale( Image::getScaleFromMipMapLevel(originalMipMapLevel) );
-
                                 ///Render the input image with the bit depth of its preference
                                 ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
 
@@ -261,7 +258,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 }
 
                                 const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
-                                const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
+                                const RenderScale upstreamScale = useScaleOneInputs ? RenderScale::identity : RenderScale::fromMipmapLevel(originalMipMapLevel);
                                 const RectI inputRoIPixelCoords = roi.toPixelEnclosing(upstreamMipMapLevel, inputPar);
 
                                 std::map<ImagePlaneDesc, ImagePtr> inputImgs;
@@ -344,7 +341,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ///Setup global data for the node for the whole frame render
 
         NodeFrameRequestPtr tmp = std::make_shared<NodeFrameRequest>();
-        tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
+        tmp->mappedScale = RenderScale::fromMipmapLevel(mappedLevel);
         tmp->nodeHash = effect->getRenderHash();
 
         std::pair<FrameRequestMap::iterator, bool> ret = requests.insert( std::make_pair(node, tmp) );

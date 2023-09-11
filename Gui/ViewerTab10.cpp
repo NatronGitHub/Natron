@@ -617,11 +617,11 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
-    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
+    const unsigned int mipMapLevel = _imp->viewer->getCurrentRenderScale();
+    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipMapLevel), e) ) {
         update();
-    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+    } else if ( notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipMapLevel), e) ) {
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
@@ -901,8 +901,8 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if ( !getGui() ) {
         return QWidget::keyPressEvent(e);
     }
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
-    if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
+    const unsigned int mipMapLevel = _imp->viewer->getCurrentRenderScale();
+    if ( notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipMapLevel), e) ) {
         _imp->viewer->redraw();
     } else {
         handleUnCaughtKeyUpEvent(e);
