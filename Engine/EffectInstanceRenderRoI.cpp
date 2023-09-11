@@ -387,7 +387,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         renderMappedMipMapLevel = args.mipMapLevel;
     }
     RenderScale renderMappedScale( Image::getScaleFromMipMapLevel(renderMappedMipMapLevel) );
-    assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+    assert(isSupportedRenderScale(supportsRS, renderMappedScale));
 
 
     const FrameViewRequest* requestPassData = 0;
@@ -397,26 +397,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
-    RectD rod; //!< rod is in canonical coordinates
+
+    RectD rodNc; //!< rod is in canonical coordinates
     bool isProjectFormat = false;
     {
         ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
         if ( !args.preComputedRoD.isNull() ) {
-            rod = args.preComputedRoD;
+            rodNc = args.preComputedRoD;
         } else {
             ///Check if the pre-pass already has the RoD
             if (requestPassData) {
-                rod = requestPassData->globalData.rod;
+                rodNc = requestPassData->globalData.rod;
                 isProjectFormat = requestPassData->globalData.isProjectFormat;
             } else {
-                assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-                StatusEnum stat = getRegionOfDefinition_public(nodeHash, args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
+                assert(isSupportedRenderScale(supportsRS, renderMappedScale));
+                StatusEnum stat = getRegionOfDefinition_public(nodeHash, args.time, renderMappedScale, args.view, &rodNc, &isProjectFormat);
 
                 ///The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
                     ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
                     return eRenderRoIRetCodeOk;
-                } else if ( rod.isNull() ) {
+                } else if ( rodNc.isNull() ) {
                     //Nothing to render
                     return eRenderRoIRetCodeOk;
                 }
@@ -432,18 +433,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
     }
+    const RectD rod = rodNc;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End get RoD ///////////////////////////////////////////////////////////////
-    RectI roi;
-    {
-        if (renderFullScaleThenDownscale) {
-            //We cache 'image', hence the RoI should be expressed in its coordinates
-            //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
-            roi = args.roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
-        } else {
-            roi = args.roi;
-        }
-    }
 
     ///Determine needed planes
     ComponentsNeededMapPtr neededComps = std::make_shared<ComponentsNeededMap>();
@@ -553,7 +545,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         double inputTimeIdentity = 0.;
         int inputNbIdentity;
         ViewIdx inputIdentityView(args.view);
-        assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+        assert(isSupportedRenderScale(supportsRS, renderMappedScale));
         bool identity;
         const RectI pixelRod = rod.toPixelEnclosing(args.mipMapLevel, par);
         ViewInvarianceLevel viewInvariance = isViewInvariant();
@@ -736,39 +728,44 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
-
     RectI downscaledImageBoundsNc = rod.toPixelEnclosing(args.mipMapLevel, par);
     RectI upscaledImageBoundsNc = rod.toPixelEnclosing(0, par);
-    {
-        ///Make sure the RoI falls within the image bounds
-        ///Intersection will be in pixel coordinates
-        if (frameArgs->tilesSupported) {
-            if (renderFullScaleThenDownscale) {
-                if ( !roi.clipIfOverlaps(upscaledImageBoundsNc) ) {
-                    return eRenderRoIRetCodeOk;
-                }
-                assert(roi.x1 >= upscaledImageBoundsNc.x1 && roi.y1 >= upscaledImageBoundsNc.y1 &&
-                       roi.x2 <= upscaledImageBoundsNc.x2 && roi.y2 <= upscaledImageBoundsNc.y2);
-            } else {
-                if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
-                    return eRenderRoIRetCodeOk;
-                }
-                assert(roi.x1 >= downscaledImageBoundsNc.x1 && roi.y1 >= downscaledImageBoundsNc.y1 &&
-                       roi.x2 <= downscaledImageBoundsNc.x2 && roi.y2 <= downscaledImageBoundsNc.y2);
-            }
-#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-            ///just allocate the roi
-            upscaledImageBoundsNc.clipIfOverlaps(roi);
-            downscaledImageBoundsNc.clipIfOverlaps(args.roi);
-#endif
+    RectI roi;
+
+    if (renderFullScaleThenDownscale) {
+        //We cache 'image', hence the RoI should be expressed in its coordinates
+        //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
+        roi = args.roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
+
+        if (frameArgs->tilesSupported && !roi.clipIfOverlaps(upscaledImageBoundsNc)) {
+            return eRenderRoIRetCodeOk;
         }
+        assert( upscaledImageBoundsNc.contains(roi));
+    } else {
+        roi = args.roi;
+
+        if (frameArgs->tilesSupported && !roi.clipIfOverlaps(downscaledImageBoundsNc)) {
+            return eRenderRoIRetCodeOk;
+        }
+        assert(downscaledImageBoundsNc.contains(roi));
     }
 
     /*
-     * Keep in memory what the user as requested, and change the roi to the full bounds if the effect doesn't support tiles
+     * Keep in memory what the user has requested, and change the roi to the full bounds if the effect doesn't support tiles
      */
     const RectI originalRoI = roi;
-    if (!frameArgs->tilesSupported) {
+    // Store the mipMapLevel for originalRoI here because renderFullScaleThenDownscale may change later and we'll lose
+    // the ability to recover this information when we potentially need it for a downscale operation later.
+    const unsigned int originalRoIMipMapLevel = renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
+
+    if (frameArgs->tilesSupported) {
+#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
+        ///just allocate the roi
+        const RectI upscaledRoI = renderFullScaleThenDownscale ? roi : roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
+        upscaledImageBoundsNc.clipIfOverlaps(upscaledRoI);
+        downscaledImageBoundsNc.clipIfOverlaps(args.roi);
+#endif
+    } else {
         roi = renderFullScaleThenDownscale ? upscaledImageBoundsNc : downscaledImageBoundsNc;
     }
 
@@ -1199,10 +1196,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (!input) {
                     continue;
                 }
-                bool isProjectFormat;
                 ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
-                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
+                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, nullptr);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
                 }
@@ -1757,7 +1753,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         assert(comp);
         ///The image might need to be converted to fit the original requested format
         if (comp) {
-            it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
+            const RectI downscaledOriginalRoI = originalRoI.toNewMipMapLevel(originalRoIMipMapLevel, args.mipMapLevel, par, rod);
+            it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, downscaledOriginalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
 
             StorageModeEnum imageStorage = it->second.downscaleImage->getStorageMode();
@@ -1909,7 +1906,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
 
     if (callBegin) {
-        assert( !( (self->supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+        assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
         if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
                                        isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
@@ -1997,7 +1994,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
     ///never call endsequence render here if the render is sequential
     if (callBegin) {
-        assert( !( (self->supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+        assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
         if (self->endSequenceRender_public(time, time, time, false, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
