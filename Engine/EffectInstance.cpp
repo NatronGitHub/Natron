@@ -5954,13 +5954,6 @@ EffectInstance::setClipPreferencesRunning(bool running)
     _imp->runningClipPreferences = running;
 }
 
-// static
-bool
-EffectInstance::isSupportedRenderScale(SupportsEnum supportsRS, const RenderScale renderScale)
-{
-    return (supportsRS != eSupportsNo) || (renderScale.x == 1. && renderScale.y == 1.);
-}
-
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING
