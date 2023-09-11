@@ -34,7 +34,7 @@ public:
     // Named constant where x & y scale are both 1. (i.e the identity scale factor in both directions.)
     static const RenderScale identity;
 
-    bool operator==(const RenderScale& rhs) const { return x == rhs.x && y == rhs.y; }
+    bool operator==(const RenderScale& rhs) const { return mipmapLevel == rhs.mipmapLevel; }
     bool operator!=(const RenderScale& rhs) const { return !(*this == rhs); }
 
     OfxPointD toOfxPointD() const;
@@ -43,9 +43,8 @@ public:
     unsigned int toMipmapLevel() const;
 
 private:
-    RenderScale(double scale);
-    double x = 1.;
-    double y = 1.;
+    RenderScale(unsigned int mipmapLevel_);
+    unsigned int mipmapLevel = 0;
 };
 
 NATRON_NAMESPACE_EXIT

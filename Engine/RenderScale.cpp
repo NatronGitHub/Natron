@@ -28,29 +28,29 @@ NATRON_NAMESPACE_ENTER
 // static
 const RenderScale RenderScale::identity;
 
-RenderScale::RenderScale(double scale)
-    : x(scale)
-    , y(scale)
+RenderScale::RenderScale(unsigned int mipmapLevel_)
+    : mipmapLevel(mipmapLevel_)
 {
 }
 
 OfxPointD
 RenderScale::toOfxPointD() const
 {
-    return { x, y };
+    const double scale = Image::getScaleFromMipMapLevel(mipmapLevel);
+    return { scale, scale };
 }
 
 // static
 RenderScale
 RenderScale::fromMipmapLevel(unsigned int mipmapLevel)
 {
-    return RenderScale(Image::getScaleFromMipMapLevel(mipmapLevel));
+    return RenderScale(mipmapLevel);
 }
 
 unsigned int
 RenderScale::toMipmapLevel() const
 {
-    return Image::getLevelFromScale(x);
+    return mipmapLevel;
 }
 
 NATRON_NAMESPACE_EXIT
