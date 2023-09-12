@@ -1,0 +1,23 @@
+--- src/cmake/compiler.cmake.orig	2023-06-26 09:36:34.000000000 -0400
++++ src/cmake/compiler.cmake	2023-06-26 09:37:53.000000000 -0400
+@@ -82,9 +82,9 @@
+ #
+ option (STOP_ON_WARNING "Stop building if there are any compiler warnings" OFF)
+ if (NOT MSVC)
+-    add_compile_options ("-Wall")
++#    add_compile_options ("-Wall")
+     if (STOP_ON_WARNING OR DEFINED ENV{CI})
+-        add_compile_options ("-Werror")
++#        add_compile_options ("-Werror")
+         # N.B. Force CI builds (Travis defines $CI) to use -Werror, even if
+         # STOP_ON_WARNING has been switched off by default, which we may do
+         # in release branches.
+@@ -133,7 +133,7 @@
+     # disable warning about unused command line arguments
+     add_compile_options ("-Qunused-arguments")
+     # Don't warn if we ask it not to warn about warnings it doesn't know
+-    add_compile_options ("-Wunknown-warning-option")
++    add_compile_options ("-Wno-unknown-warning-option")
+     if (CLANG_VERSION_STRING VERSION_GREATER_EQUAL 3.6 OR
+         APPLECLANG_VERSION_STRING VERSION_GREATER 6.1)
+         add_compile_options ("-Wno-unused-local-typedefs")

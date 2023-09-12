@@ -138,9 +138,9 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                                          bool copyBitmap)
 {
     const RectI & r = srcImg._bounds;
-    RectI intersection;
+    const RectI intersection = renderWindow.intersect(r);
 
-    if ( !renderWindow.intersect(r, &intersection) ) {
+    if ( intersection.isNull() ) {
         return;
     }
 

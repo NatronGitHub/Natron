@@ -1127,6 +1127,14 @@ protected:
      **/
     virtual void getFrameRange(double *first, double *last);
 
+    /**
+     * @brief Returns true if the value of renderScale is supported for the given the value of supportsRS.
+     **/
+    static bool isSupportedRenderScale(SupportsEnum supportsRS, const RenderScale renderScale)
+    {
+        return (supportsRS != eSupportsNo) || (renderScale.x == 1. && renderScale.y == 1.);
+    }
+
 public:
 
     StatusEnum getRegionOfDefinition_public(U64 hash,

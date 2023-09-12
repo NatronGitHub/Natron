@@ -35,6 +35,7 @@ logging
 msilib
 multiprocessing
 pydoc_data
+re
 sqlite3
 unittest
 urllib

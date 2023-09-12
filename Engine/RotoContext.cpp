@@ -2540,9 +2540,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
     getColor(time, shapeColor);
 
     ImagePtr source = *image;
-    RectI pixelPointsBbox;
-    pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
-
+    const RectI pixelPointsBbox = pointsBbox.toPixelEnclosing(mipmapLevel, par);
 
     NodePtr node = getContext()->getNode();
     ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
@@ -2565,13 +2563,10 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
             mipMapLevelChanged = true;
 
             RectD otherRoD = (*image)->getRoD();
-            RectI oldBounds;
-            otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par, &oldBounds );
+            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par);
             RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
-            RectI mergeBounds;
-            mergeRoD.toPixelEnclosing(mipmapLevel, par, &mergeBounds);
-
+            const RectI mergeBounds = mergeRoD.toPixelEnclosing(mipmapLevel, par);
 
             //upscale the original image
             source.reset( new Image(components,
@@ -2590,12 +2585,10 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
             mipMapLevelChanged = true;
 
             RectD otherRoD = (*image)->getRoD();
-            RectI oldBounds;
-            otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par, &oldBounds );
+            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par );
             RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
-            RectI mergeBounds;
-            mergeRoD.toPixelEnclosing(mipmapLevel, par, &mergeBounds);
+            const RectI mergeBounds = mergeRoD.toPixelEnclosing(mipmapLevel, par);
 
             //downscale the original image
             source.reset( new Image(components,
@@ -2814,9 +2807,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImagePlaneDesc& components,
         rotoBbox.merge(rotoNodeSrcRod);
     }
 
-    RectI pixelRod;
-    rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
-
+    const RectI pixelRod = rotoBbox.toPixelEnclosing(mipmapLevel, 1.);
 
     ImageParamsPtr params = Image::makeParams( rotoBbox,
                                                                pixelRod,

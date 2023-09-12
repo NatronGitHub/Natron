@@ -22,19 +22,20 @@ file(GLOB NatronGui_HEADERS *.h)
 file(GLOB NatronGui_SOURCES *.cpp)
 
 set(PYGUI_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
-set(PYGUI_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore
+set(PYGUI_INCLUDE_DIRS . .. ../Engine ../Global ../libs/OpenFX/include)
+list(APPEND PYGUI_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore
     ${PYSIDE_INCLUDE_DIRS}/QtGui ${PYSIDE_INCLUDE_DIRS}/QtWidgets)
 list(APPEND PYGUI_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${QTGUI_INCLUDE_DIRS}
     ${QTWIDGETS_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-list(JOIN PYGUI_INCLUDE_DIRS ":" PYGUI_INCS)
+list(TRANSFORM PYGUI_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYGUI_INCS)
 set(PYGUI_HEADER PySide2_Gui_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
 
 set(shiboken_args
     "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
-    "-I.:..:../Engine:../Global:../libs/OpenFX/include:${PYGUI_INCS}"
-    "-T../Engine:${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"
+    ${PYGUI_INCS}
+    "-T../Engine" "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"
     "${PYGUI_HEADER}" "typesystem_natronGui.xml")
 if(APPLE)
    list(APPEND shiboken_args -I${Qt5_DIR}/../../../include)

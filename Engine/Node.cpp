@@ -3333,8 +3333,7 @@ Node::makePreviewImage(SequenceTime time,
     scale.y = scale.x;
 
     const double par = effect->getAspectRatio(-1);
-    RectI renderWindow;
-    rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+    const RectI renderWindow = rod.toPixelEnclosing(mipMapLevel, par);
 
     NodePtr thisNode = shared_from_this();
     RenderingFlagSetter flagIsRendering(thisNode);

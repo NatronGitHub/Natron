@@ -120,11 +120,11 @@ private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
 
-    QString mapUrlToDisplayName(const QString& originalName);
+    QString mapPathToDisplayName(const QString& originalName);
 
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
-    std::vector<QUrl> invalidUrls;
+    std::set<QUrl> invalidUrls;
     std::map<std::string, std::string> envVars;
 };
 
@@ -542,6 +542,9 @@ private:
 
     void getSequenceFromFilesForFole(const QString & file, SequenceParsing::SequenceFromFiles* sequence) const;
 
+    void updateFileExtensionCombo(const QString& extension);
+    void updateUpButton(const QString &newPath);
+
 private:
     // FIXME: PIMPL
 
@@ -565,7 +568,6 @@ private:
     Button* _openButton;
     Button* _cancelButton;
     Button* _addFavoriteButton;
-    Button* _editFavoriteButton;
     Button* _removeFavoriteButton;
     FileDialogLineEdit* _selectionLineEdit;
     Label* _relativeLabel;

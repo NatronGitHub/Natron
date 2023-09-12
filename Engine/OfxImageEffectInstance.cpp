@@ -327,8 +327,7 @@ OfxImageEffectInstance::getProjectSize(double & xSize,
     pixelF.x2 = f.x2;
     pixelF.y1 = f.y1;
     pixelF.y2 = f.y2;
-    RectD canonicalF;
-    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    const RectD canonicalF = pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio());
     xSize = canonicalF.width();
     ySize = canonicalF.height();
 }
@@ -350,8 +349,7 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
     pixelF.x2 = f.x2;
     pixelF.y1 = f.y1;
     pixelF.y2 = f.y2;
-    RectD canonicalF;
-    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    const RectD canonicalF = pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio());
     xOffset = canonicalF.left();
     yOffset = canonicalF.bottom();
 }
@@ -373,8 +371,7 @@ OfxImageEffectInstance::getProjectExtent(double & xSize,
     pixelF.x2 = f.x2;
     pixelF.y1 = f.y1;
     pixelF.y2 = f.y2;
-    RectD canonicalF;
-    pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio(), &canonicalF);
+    const RectD canonicalF = pixelF.toCanonical_noClipping(0, f.getPixelAspectRatio());
     xSize = canonicalF.right();
     ySize = canonicalF.top();
 }

@@ -114,25 +114,30 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
     return ret;
 } // RectI::splitIntoSmallerRects
 
-void
+RectD
 RectI::toCanonical(unsigned int thisLevel,
                    double par,
-                   const RectD & rod,
-                   RectD *rect) const
+                   const RectD& rod) const
 {
-    toCanonical_noClipping(thisLevel, par, rect);
-    rect->intersect(rod, rect);
+    RectD rect = toCanonical_noClipping(thisLevel, par);
+    rect.clipIfOverlaps(rod);
+    return rect;
 }
 
-void
+RectD
 RectI::toCanonical_noClipping(unsigned int thisLevel,
-                              double par,
-                              RectD *rect) const
+                              double par) const
 {
-    rect->x1 = (x1 << thisLevel) * par;
-    rect->x2 = (x2 << thisLevel) * par;
-    rect->y1 = y1 << thisLevel;
-    rect->y2 = y2 << thisLevel;
+    return RectD((x1 << thisLevel) * par,
+                 y1 << thisLevel,
+                 (x2 << thisLevel) * par,
+                 y2 << thisLevel);
+}
+
+RectI
+RectI::toNewMipMapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const
+{
+    return toCanonical(fromLevel, par, rod).toPixelEnclosing(toLevel, par);
 }
 
 NATRON_NAMESPACE_EXIT

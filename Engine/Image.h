@@ -685,8 +685,7 @@ public:
             return;
         }
         QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
+        const RectI intersection = _bounds.intersect(roi);
         _bitmap.markForRendered(intersection);
     }
 
@@ -698,8 +697,7 @@ public:
             return;
         }
         QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
+        const RectI intersection = _bounds.intersect(roi);
         _bitmap.markForRendering(intersection);
     }
 
@@ -711,8 +709,7 @@ public:
             return;
         }
         QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
+        const RectI intersection = _bounds.intersect(roi);
         _bitmap.clear(intersection);
     }
 

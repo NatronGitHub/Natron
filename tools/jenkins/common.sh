@@ -412,7 +412,7 @@ if [ "$PKGOS" = "Linux" ]; then
     #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
-    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "OSX" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi

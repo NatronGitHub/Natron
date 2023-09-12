@@ -654,9 +654,8 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
         getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, ViewIdx(0), inputRois_p);
     }
 
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-    RectI pixelRod;
-    rod.toPixelEnclosing(scale, getAspectRatio(-1), &pixelRod);
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
+    const RectI pixelRod = rod.toPixelEnclosing(scale, getAspectRatio(-1));
     try {
         int identityInputNb;
         double identityTime;
@@ -992,8 +991,7 @@ EffectInstance::getImage(int inputNb,
     }
 
 
-    RectI pixelRoI;
-    roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
+    RectI pixelRoI = roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par);
 
     ImagePtr inputImg;
 
@@ -1115,23 +1113,19 @@ EffectInstance::getImage(int inputNb,
         assert(inputImgMipMapLevel != 0);
         ///Resize the image according to the requested scale
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
-        RectI bounds;
-        inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
+        const RectI bounds = inputImg->getRoD().toPixelEnclosing(0, par);
         ImagePtr rescaledImg = std::make_shared<Image>( inputImg->getComponents(), inputImg->getRoD(),
                                                          bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() );
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
-            RectD canonicalPixelRoI;
-
             if (!inputRoDSet) {
                 bool isProjectFormat;
                 StatusEnum st = inputEffect->getRegionOfDefinition_public(inputEffect->getRenderHash(), time, scale, view, &inputRoD, &isProjectFormat);
                 Q_UNUSED(st);
             }
 
-            pixelRoI.toCanonical(inputImgMipMapLevel, par, inputRoD, &canonicalPixelRoI);
-            canonicalPixelRoI.toPixelEnclosing(0, par, roiPixel);
-            pixelRoI = *roiPixel;
+            pixelRoI = pixelRoI.toNewMipMapLevel(inputImgMipMapLevel, 0, par, inputRoD);
+            *roiPixel = pixelRoI;
         }
 
         inputImg = rescaledImg;
@@ -1185,7 +1179,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RectI format = getOutputFormat();
     double par = getAspectRatio(-1);
-    format.toCanonical_noClipping(mipMapLevel, par, rod);
+    *rod = format.toCanonical_noClipping(mipMapLevel, par);
 }
 
 StatusEnum
@@ -1198,7 +1192,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
     bool firstInput = true;
     RenderScale renderMappedScale = scale;
 
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
+    assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputMask(i) ) {
@@ -1288,7 +1282,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         assert(!format.isNull());
         double par = getAspectRatio(-1);
         unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-        format.toCanonical_noClipping(mipMapLevel, par, &canonicalFormat);
+        canonicalFormat = format.toCanonical_noClipping(mipMapLevel, par);
     }
 
     // BE CAREFUL:
@@ -1680,7 +1674,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 ////just discard this entry
                 Format projectFormat;
                 getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
-                RectD canonicalProject = projectFormat.toCanonicalFormat();
+                const RectD canonicalProject = projectFormat.toCanonicalFormat();
                 if ( canonicalProject != (*it)->getRoD() ) {
                     appPTR->removeFromNodeCache(*it);
                     continue;
@@ -1740,21 +1734,11 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
                 const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
 
-
-                //RectD imgToConvertCanonical;
-                //imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
-                RectI downscaledBounds;
-                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
-                //imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
-                //imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+                RectI downscaledBounds = rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio());
 
                 if (boundsParam) {
                     downscaledBounds.merge(*boundsParam);
                 }
-
-                //RectI pixelRoD;
-                //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
-                //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
                 ImageParamsPtr imageParams = Image::makeParams(rod,
                                                                                downscaledBounds,
@@ -1786,9 +1770,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                  */
                 int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
                 RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
-                dstRoi.intersect(downscaledBounds, &dstRoi);
+                dstRoi.clipIfOverlaps(downscaledBounds);
                 dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
-                dstRoi.intersect(imgToConvertBounds, &dstRoi);
+                dstRoi.clipIfOverlaps(imgToConvertBounds);
 
                 if (imgToConvertBounds.area() > 1) {
                     imageToConvert->downscaleMipMap( rod,
@@ -2229,11 +2213,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
     ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
-    RectD canonicalRectToRender;
-    renderMappedRectToRender.toCanonical(renderMappedMipMapLevel, par, rod, &canonicalRectToRender);
     if (renderFullScaleThenDownscale) {
         assert(mipMapLevel > 0 && renderMappedMipMapLevel != mipMapLevel);
-        canonicalRectToRender.toPixelEnclosing(mipMapLevel, par, &downscaledRectToRender);
+        downscaledRectToRender = renderMappedRectToRender.toNewMipMapLevel(renderMappedMipMapLevel, mipMapLevel, par, rod);
     }
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
@@ -2296,10 +2278,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     RenderScale scale( Image::getScaleFromMipMapLevel(mipMapLevel) );
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
-    RectI dstBounds;
-    dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
-    RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
+    const RectI dstBounds = dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par); // compute dstRod at level 0
     if (!frameArgs->tilesSupported) {
+        const RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
         assert(dstRealBounds.x1 == dstBounds.x1);
         assert(dstRealBounds.x2 == dstBounds.x2);
         assert(dstRealBounds.y1 == dstBounds.y1);
@@ -2311,8 +2292,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
          ++it) {
         for (ImageList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             const RectD & srcRodCanonical = (*it2)->getRoD();
-            RectI srcBounds;
-            srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio(), &srcBounds ); // compute srcRod at level 0
+            const RectI srcBounds = srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio() ); // compute srcRod at level 0
 
             if (!frameArgs->tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -2325,7 +2305,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                  * Blur will actually retrieve the image from the cache and downscale it rather than recompute it.
                  * Since the Writer does not support tiles, the Blur image is the full image and not a tile, which can be veryfied by
                  *
-                 * blurCachedImage->getRod().toPixelEnclosing(blurCachedImage->getMipMapLevel(), blurCachedImage->getPixelAspectRatio(), &bounds)
+                 * bounds = blurCachedImage->getRod().toPixelEnclosing(blurCachedImage->getMipMapLevel(), blurCachedImage->getPixelAspectRatio())
                  *
                  * Since the Blur RoD changed (the RoD at mmlevel 0 is different than the ROD at mmlevel 1),
                  * the resulting bounds of the downscaled image are not necessarily exactly result of the new downscaled RoD to the enclosing pixel
@@ -2422,7 +2402,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
     actionArgs.byPassCache = byPassCache;
     actionArgs.processChannels = processChannels;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
-    assert( !( (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
+    assert(isSupportedRenderScale(_publicInterface->supportsRenderScaleMaybe(), actionArgs.mappedScale));
     actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     actionArgs.originalScale.y = actionArgs.originalScale.x;
     actionArgs.draftMode = frameArgs->draftMode;
@@ -2553,8 +2533,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
                         ///then upscale
                         const RectD & rod = sourceImage->getRoD();
-                        RectI bounds;
-                        rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio(), &bounds);
+                        const RectI bounds = rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio());
                         ImagePtr inputPlane = std::make_shared<Image>(it->first,
                                                        rod,
                                                        bounds,
@@ -2576,8 +2555,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                         if ( ( it->second.downscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.downscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
                             ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( idIt->second->getBitDepth() );
                             ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
-                            RectI convertWindow;
-                            idIt->second->getBounds().intersect(downscaledRectToRender, &convertWindow);
+                            const RectI convertWindow = idIt->second->getBounds().intersect(downscaledRectToRender);
                             idIt->second->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
                         } else {
                             it->second.downscaleImage->pasteFrom(*(idIt->second), downscaledRectToRender, false, glContext);
@@ -3773,8 +3751,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   ViewIdx* inputView,
                                   int* inputNb)
 {
-    //assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
-
     if (useIdentityCache) {
         double timeF = 0.;
         bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
@@ -3874,7 +3850,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if (isProjectFormat) {
             *isProjectFormat = false;
         }
-#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
+//#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
         if ( rod->isNull() ) {
             return eStatusFailed;
         }
@@ -4671,7 +4647,7 @@ EffectInstance::getOverlayInteractRenderScale() const
 
     if (isDoingInteractAction() && _imp->overlaysViewport) {
         unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
-        renderScale.x = renderScale.y = 1 << mmLevel;
+        renderScale.x = renderScale.y = Image::getScaleFromMipMapLevel(mmLevel);
     }
 
     return renderScale;

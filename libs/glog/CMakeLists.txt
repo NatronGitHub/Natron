@@ -36,7 +36,7 @@ set(glog_SOURCES
     src/utilities.cc
     src/vlog_is_on.cc
 )
-if(WINDOWS)
+if(WIN32)
     set(glog_HEADERS
         ${glog_HEADERS}
         src/windows/config.h
@@ -74,9 +74,10 @@ endif()
 add_library(glog STATIC ${glog_HEADERS} ${glog_SOURCES})
 target_include_directories(glog PRIVATE src)
 target_compile_definitions(glog PRIVATE GOOGLE_GLOG_DLL_DECL=)
-if(WINDOWS)
-    target_include_directories(APPEND glog src/windows)
-    target_compile_definitions(APPEND glog GLOG_NO_ABBREVIATED_SEVERITIES)
+if(WIN32)
+    target_include_directories(glog AFTER PRIVATE src/windows)
+    target_compile_definitions(glog PUBLIC GLOG_NO_ABBREVIATED_SEVERITIES GOOGLE_GLOG_DLL_DECL= )
+    target_compile_definitions(glog PRIVATE HAVE_PTHREAD _POSIX_THREAD_SAFE_FUNCTIONS )
 endif()
 target_link_libraries(glog PUBLIC gflags)
 set_target_properties(glog PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -642,7 +642,8 @@ Gui::debugImage(const Image* image,
     if ( roi.isNull() ) {
         renderWindow = bounds;
     } else {
-        if ( !roi.intersect(bounds, &renderWindow) ) {
+        renderWindow = roi.intersect(bounds);
+        if ( renderWindow.isNull() ) {
             qDebug() << "The RoI does not intersect the bounds of the image.";
 
             return;

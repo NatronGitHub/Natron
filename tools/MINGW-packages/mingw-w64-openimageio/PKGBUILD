@@ -3,7 +3,7 @@
 _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-pkgver=2.4.10.0
+pkgver=2.4.13.0
 pkgrel=99.1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
@@ -33,12 +33,14 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.1.10-boost.diff
         oiio-2.0.8-invalidatespec.patch
         oiio-2.2.14-libraw.diff
+        oiio-2.4.13.0-thread-shutdown.patch # Remove when updating to a future 2.5 release that has these changes.
        )
-sha256sums=('59f523a0b9a1014993bedcf7752993af43b348761165f52ea6eb84787f57aed5'
+sha256sums=('72b7d2d5edd1049bb7fc09becad4d8be64a9918cdf79bae98b4b32e1fda762cd'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
             '89e21326d6445304293bcedc3a52bfa1dfec9b769b397f6a312ca27d1de93423'
+            '3847eba62ac7a689c4c70b814461583d9c6e921259dd0343b17509d8b35d6f0f'
            )
 
 prepare() {
@@ -46,6 +48,7 @@ prepare() {
   #patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
   patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
+  patch -p1 -i ${srcdir}/oiio-2.4.13.0-thread-shutdown.patch
 }
 
 build() {

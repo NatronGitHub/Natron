@@ -716,6 +716,11 @@ OSGLContext_wayland::makeContextCurrent(const OSGLContext_wayland*)
     return false;
 }
 
+bool
+OSGLContext_wayland::threadHasACurrentContext() {
+    return false;
+}
+
 void
 OSGLContext_wayland::getGPUInfos(std::list<OpenGLRendererInfo>&)
 {

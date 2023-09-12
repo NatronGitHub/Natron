@@ -66,13 +66,13 @@ cd "$TMP_PATH"
 
 
 # OpenColorIO-Configs setup
-OCIO_CONFIGS_VERSION=""
+OCIO_CONFIGS_VERSION=${OCIO_CONFIGS_VERSION:-}
 if [ "$NATRON_BUILD_CONFIG" = "ALPHA" ] || [ "$NATRON_BUILD_CONFIG" = "BETA" ] || [ "$NATRON_BUILD_CONFIG" = "RC" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     OCIO_CONFIGS_VERSION=$(echo $NATRON_GIT_BRANCH | sed 's#tags/v##;' | cut -c1-3)
-else
+elif [ "$OCIO_CONFIGS_VERSION" = "" ]; then
     case "$NATRON_GIT_BRANCH" in
-        RB-*)
-            OCIO_CONFIGS_VERSION=$(echo $NATRON_GIT_BRANCH | sed 's#RB-##;')
+        *RB-*)
+            OCIO_CONFIGS_VERSION=$(echo $NATRON_GIT_BRANCH | sed 's#.*RB-##;')
             ;;
     esac
 fi
@@ -342,9 +342,37 @@ if [ "$PKGOS" = "OSX" ]; then
     MAC_CRASH_PATH=/NatronCrashReporter.app/Contents/MacOS
 fi
 
+CP_OR_MV=cp
+if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+    echo "Cleaning up files to minimize disk usage..."
+
+    # Free up some disk space before copying.
+    DIRS_TO_CLEAN="Engine Gui Tests libs/openMVG libs/ceres libs/libmv"
+
+    for dir in ${DIRS_TO_CLEAN}; do
+        if [ "$PKGOS" = "Windows" ]; then
+            rm -vf ${dir}/${WIN_BIN_TYPE}/{*.o,*.a}
+        else
+            rm -vf ${dir}/{*.o,*.a}
+        fi
+
+        if [ -d ${dir}/pch ]; then
+            rm -rv ${dir}/pch
+        fi
+    done
+
+    # Move large files instead of copying them to minimize disk usage.
+    CP_OR_MV=mv
+fi
+
 
 cp Tests/$NATRON_TEST "$TMP_BINARIES_PATH/bin/"
-cp App${MAC_APP_PATH:-}/$NATRON_BIN "$TMP_BINARIES_PATH/bin/"
+TEST_BINARY_TO_RUN="$TMP_BINARIES_PATH/bin/Tests"
+if [ "$PKGOS" = "Windows" ]; then
+    TEST_BINARY_TO_RUN="${TEST_BINARY_TO_RUN}.exe"
+fi
+
+${CP_OR_MV} App${MAC_APP_PATH:-}/$NATRON_BIN "$TMP_BINARIES_PATH/bin/"
 
 # copy Info.plist and PkgInfo
 if [ "$PKGOS" = "OSX" ]; then
@@ -355,14 +383,14 @@ if [ "$PKGOS" = "OSX" ]; then
     cp "App${MAC_PKGINFO}" "$TMP_BINARIES_PATH/bin/"
 fi
 
-cp Renderer/$RENDERER_BIN "$TMP_BINARIES_PATH/bin/"
+${CP_OR_MV} Renderer/$RENDERER_BIN "$TMP_BINARIES_PATH/bin/"
 
 if [ -f ProjectConverter/$NATRON_CONVERTER ]; then
     cp ProjectConverter/$NATRON_CONVERTER "${TMP_BINARIES_PATH}/bin/"
 fi
 
 if [ -f PythonBin/$NATRON_PYTHON_BIN ]; then
-    cp PythonBin/$NATRON_PYTHON_BIN "${TMP_BINARIES_PATH}/bin/"
+    ${CP_OR_MV} PythonBin/$NATRON_PYTHON_BIN "${TMP_BINARIES_PATH}/bin/"
 fi
 
 mkdir -p "$TMP_BINARIES_PATH/docs/natron" || true
@@ -370,8 +398,8 @@ cp "$srcdir"/LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
 
 # install crashapp(s)
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    cp CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI "$TMP_BINARIES_PATH/bin/"
-    cp CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
+    ${CP_OR_MV} CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI "$TMP_BINARIES_PATH/bin/"
+    ${CP_OR_MV} CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
 fi
 
 RES_DIR="$TMP_BINARIES_PATH/Resources"
@@ -449,7 +477,7 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" Tests/Tests
+    env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then
@@ -467,7 +495,7 @@ elif [ "$PKGOS" = "Windows" ]; then
     #rm -rf /c/Users/NatronWin/AppData/Local/INRIA/Natron &> /dev/null || true
     rm -rf "$LOCALAPPDATA\\INRIA\\Natron"* &> /dev/null || true
     testfail=0
-    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 Tests/$WIN_BIN_TYPE/Tests.exe || testfail=1
+    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
     if [ $testfail != 0 ]; then
         echo "*** WARNING: Natron tests FAILED"
     fi
@@ -492,14 +520,14 @@ elif [ "$PKGOS" = "OSX" ]; then
     # However, The universal build on OS X 10.6 requires this
     if [ "$MACOSX_DEPLOYMENT_TARGET" = "10.6" ]; then
         if [ "$COMPILER" = "gcc" ]; then
-            env DYLD_LIBRARY_PATH="$SDK_HOME"/lib/libgcc:/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$SDK_HOME"/lib $TIMEOUT -s KILL 1800 Tests/Tests
+            env DYLD_LIBRARY_PATH="$SDK_HOME"/lib/libgcc:/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources:"$SDK_HOME"/lib $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN}
         else
             # be more tolerant to test fails on 10.6
-            $TIMEOUT -s KILL 1800 Tests/Tests || true
+            $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN} || true
         fi
     else
         # Tests exit with a segfault on Qt5
-        $TIMEOUT -s KILL 1800 Tests/Tests || [ "$QT_VERSION_MAJOR" = 5 ]
+        $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN} || [ "$QT_VERSION_MAJOR" = 5 ]
     fi
 fi
 set +x

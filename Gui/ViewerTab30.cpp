@@ -1219,9 +1219,8 @@ ViewerTab::onClipPreferencesChanged()
             setInfoBarAndViewerResolution(format, canonicalFormat, format.getPixelAspectRatio(), i);
         } else {
             RectI inputFormat = input->getOutputFormat();
-            RectD inputCanonicalFormat;
             double inputPar = input->getAspectRatio(-1);
-            inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
+            RectD inputCanonicalFormat = inputFormat.toCanonical_noClipping(0, inputPar);
 
             setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
 

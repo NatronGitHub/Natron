@@ -347,7 +347,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
             return (mv::FrameAccessor::Key)0;
         }
         double par = effect->getAspectRatio(-1);
-        precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
+        roi = precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par);
     }
 
     std::list<ImagePlaneDesc> components;
@@ -400,8 +400,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     assert( !planes.empty() );
     const ImagePtr& sourceImage = planes.begin()->second;
     RectI sourceBounds = sourceImage->getBounds();
-    RectI intersectedRoI;
-    if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {
+    const RectI intersectedRoI = roi.intersect(sourceBounds);
+    if ( intersectedRoI.isNull() ) {
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "RoI does not intersect the source image bounds (RoI x1="
                  << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
@@ -494,7 +494,7 @@ TrackerFrameAccessor::GetMaskForTrack(int clip,
     // https://developer.blender.org/rBb0015686e2e48a384a0b2a03a75f6daaad7271c0
     //
 
-#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
+//#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
 
     return NULL;
 }

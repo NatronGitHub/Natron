@@ -121,7 +121,7 @@ public:
      * Creates a DocumentWindow with a given @arg parent and @arg flags.
      */
     explicit DocumentWindow(QWidget* parent = 0,
-                            Qt::WindowFlags flags = 0);
+                            Qt::WindowFlags flags = Qt::WindowFlags());
 
     /**
      * Destructor
@@ -230,8 +230,8 @@ protected:
      */
     void registerCommand(const QString& command,
                          const QString& documentId,
-                         const QString cmdLineArg = QString::null,
-                         const QString ddeCommand = QString::null);
+                         const QString cmdLineArg = QString(),
+                         const QString ddeCommand = QString());
 
     /**
      * Call this method to enable the user to open data files associated with your application
@@ -262,7 +262,7 @@ private:
     /**
      * Sets specified value in the registry under HKCU\Software\Classes, which is mapped to HKCR then.
      */
-    bool SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName = QString::null);
+    bool SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName = QString());
 
     /**
      * this method is called to do the DDE command handling. It does argument splitting and then calls

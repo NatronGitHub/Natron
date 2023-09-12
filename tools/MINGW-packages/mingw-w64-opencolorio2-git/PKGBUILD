@@ -26,10 +26,12 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
 options=('strip')
 source=("${_realname}"::"git+https://github.com/imageworks/OpenColorIO.git#commit=${gitcommit}"
         OpenColorIO.pc
-        ocio-2.1.1.patch)
+        ocio-2.1.1.patch
+        Findyaml-cpp.patch)
 sha256sums=('SKIP'
             '1e825196e03f26f30d426f84c01ad408ab6cbaaae5b7a06faa7571c2733d6936'
-            '8047d94b5b940c9686b2df34f441ff53947877bcdaae82072180d68c9d547138')
+            '8047d94b5b940c9686b2df34f441ff53947877bcdaae82072180d68c9d547138'
+            'bb8a10566c3f105d7e9323bf84f7c943a9085d74660316b354c3b506da880101')
 
 pkgver() {
   cd "${srcdir}/${_realname}"
@@ -39,6 +41,7 @@ pkgver() {
 prepare() {
   cd ${_realname}
   #patch -p1 -i ${srcdir}/ocio-2.1.1.patch
+  patch -p1 -i ${srcdir}/Findyaml-cpp.patch
 }
 
 build() {

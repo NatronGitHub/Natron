@@ -619,8 +619,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
     assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
 
 
-    RectI srcRoi;
-    roi.intersect(_bounds, &srcRoi);
+    const RectI srcRoi = roi.intersect(_bounds);
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);

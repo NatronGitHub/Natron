@@ -3,7 +3,7 @@
 _realname=imath
 pkgbase=mingw-w64-natron_${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
-pkgver=3.1.7
+pkgver=3.1.9
 pkgrel=99.1
 pkgdesc='A C++ and python library of 2D and 3D vector, matrix, and math operations for computer graphics (mingw-w64)'
 url='https://www.openexr.com/'
@@ -22,7 +22,7 @@ optdepends=("${MINGW_PACKAGE_PREFIX}-python: python bindings"
 source=("https://github.com/AcademySoftwareFoundation/Imath/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
         0001-cmake-libs-name.patch
         0002-fix-openexr-clang-build.patch)
-sha256sums=('bff1fa140f4af0e7f02c6cb78d41b9a7d5508e6bcdfda3a583e35460eb6d4b47'
+sha256sums=('f1d8aacd46afed958babfced3190d2d3c8209b66da451f556abd6da94c165cf3'
             '2dc2de52e2475cc9d725ff443466d3ac247a405018f1d9b0caeb03a9d5116d9b'
             '0eea3c7b57d5b59887f963d696c2afdcfb1976a3913f161995e19b13d6a65086')
 

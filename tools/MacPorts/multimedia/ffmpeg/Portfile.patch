@@ -1,18 +1,18 @@
---- Portfile.orig	2022-10-06 08:08:57.000000000 -0700
-+++ Portfile	2022-10-06 08:09:48.000000000 -0700
-@@ -86,6 +86,8 @@
-                     port:libbluray \
+--- Portfile.orig	2023-07-03 17:31:16.000000000 -0700
++++ Portfile	2023-07-03 17:35:55.000000000 -0700
+@@ -92,6 +92,8 @@
+                     port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
-                     path:lib/pkgconfig/gnutls.pc:gnutls \
+                     port:openjpeg \
 +                    port:openh264 \
 +                    port:snappy \
-                     port:openjpeg \
-                     port:zvbi \
-                     port:fontconfig \
-@@ -128,6 +130,11 @@
+                     port:soxr \
+                     path:lib/libspeex.dylib:speex \
+                     port:xz \
+@@ -132,6 +134,11 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 800}
-
+ 
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 +# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 +compiler.blacklist-append \
@@ -21,42 +21,58 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -145,6 +152,8 @@
-                     --enable-librsvg \
-                     --enable-libtheora \
-                     --enable-libopenjpeg \
-+                    --enable-libopenh264 \
-+                    --enable-libsnappy \
-                     --enable-libmodplug \
-                     --enable-libvpx \
-                     --enable-libsoxr \
-@@ -159,12 +168,14 @@
-                     --enable-libfreetype \
-                     --enable-libfribidi \
-                     --enable-zlib \
+@@ -154,12 +161,14 @@
+ set port_docdir     ${port_sharedir}/doc
+ 
+ configure.pre_args-append \
++                    --cxx="${configure.cxx}" \
+                     --cc="${configure.cc}" \
+                     --mandir=${prefix}/share/man
+ 
+ configure.args-append \
+                     --disable-audiotoolbox \
+                     --disable-indev=jack \
 +                    --disable-libaom \
                      --disable-libjack \
                      --disable-libopencore-amrnb \
                      --disable-libopencore-amrwb \
-                     --disable-libxcb \
-                     --disable-libxcb-shm \
-                     --disable-libxcb-xfixes \
+@@ -171,6 +180,7 @@
+                     --disable-sdl2 \
+                     --disable-securetransport \
+                     --disable-videotoolbox \
 +                    --disable-xlib \
-                     --disable-indev=jack \
-                     --disable-opencl \
-                     --disable-outdev=xv \
-@@ -175,6 +186,7 @@
-                     --mandir=${prefix}/share/man \
-                     --enable-shared \
-                     --enable-pthreads \
-+                    --cxx=${configure.cxx} \
-                     --cc=${configure.cc}
-
- platform darwin {
-@@ -266,6 +278,24 @@
-     system "find ${worksrcpath} -type f -print0 | xargs -0 chmod a+r"
- }
-
+                     --enable-avfilter \
+                     --enable-avresample \
+                     --enable-fontconfig \
+@@ -183,6 +193,8 @@
+                     --enable-libmodplug \
+                     --enable-libmp3lame \
+                     --enable-libopenjpeg \
++                    --enable-libopenh264 \
++                    --enable-libsnappy \
+                     --enable-libopus \
+                     --enable-librsvg \
+                     --enable-libsoxr \
+@@ -329,6 +341,15 @@
+                     --disable-dependency-tracking
+ 
+ if {${universal_possible} && [variant_isset universal]} {
++    # the following is inspired by the icu Portfile
++    # if we can't run executables for the target arch, mark it as a cross-compile
++    foreach arch ${configure.universal_archs} {
++        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
++            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
++            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
++            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
++        }
++    }
+     foreach arch ${configure.universal_archs} {
+         set merger_host($arch) ""
+         lappend merger_configure_args($arch) \
+@@ -364,6 +385,24 @@
+ 
+ destroot.env-append V=1
+ 
 +post-extract {
 +    if {${configure.cxx_stdlib} eq "libc++"} {
 +        # fix configure, which contains many references to libstdc++
@@ -76,28 +92,12 @@
 +}
 +
  post-destroot {
-     file mkdir ${destroot}${prefix}/share/doc/ffmpeg
-     file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -301,6 +331,15 @@
- configure.universal_args-delete --disable-dependency-tracking
-
- if {${universal_possible} && [variant_isset universal]} {
-+    # the following is inspired by the icu Portfile
-+    # if we can't run executables for the target arch, mark it as a cross-compile
-+    foreach arch ${configure.universal_archs} {
-+        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
-+            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
-+            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
-+            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
-+        }
-+    }
-     foreach arch ${configure.universal_archs} {
-         set merger_host($arch) ""
-         lappend merger_configure_args($arch) --arch=${arch}
-@@ -330,12 +369,53 @@
-                             --disable-libxcb-xfixes
+     # Copy docs
+     file mkdir ${destroot}${port_docdir}
+@@ -386,12 +425,53 @@
+                     --disable-libxcb-xfixes
  }
-
+ 
 +variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 +
 +    depends_lib-delete \
@@ -143,15 +143,15 @@
  } else {
      require_active_variants libsdl2 "" x11
  }
-
+ 
 +
  variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
-     depends_lib-append port:libdc1394
-     configure.args-append --enable-libdc1394
-@@ -365,6 +445,20 @@
-     depends_lib-delete      path:lib/pkgconfig/gnutls.pc:gnutls
+     depends_lib-append \
+                     port:libdc1394
+@@ -432,6 +512,20 @@
+                     path:lib/pkgconfig/gnutls.pc:gnutls
  }
-
+ 
 +variant aom description {Enable Alliance for Open Media AV1 Codec} {
 +    depends_lib-append      port:aom
 +    configure.args-delete   --disable-libaom
@@ -167,12 +167,12 @@
 +}
 +
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
-     configure.args-append   --enable-gpl \
-                             --enable-postproc \
-@@ -386,6 +480,12 @@
-     depends_lib-append      path:lib/pkgconfig/smbclient.pc:samba3 \
-                             port:libaribb24
-     license                 GPL-3+
+     license         GPL-2+
+ 
+@@ -459,6 +553,12 @@
+     depends_lib-append \
+                     port:libaribb24 \
+                     path:lib/pkgconfig/smbclient.pc:samba3
 +
 +    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)
 +    if {[variant_isset universal]} {
@@ -180,5 +180,5 @@
 +        configure.args-delete --enable-libsmbclient
 +    }
  }
-
+ 
  # the build server uses the default variants, and we want distributable binaries

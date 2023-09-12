@@ -1,0 +1,14 @@
+diff --git src/libtexture/texturesys.cpp src/libtexture/texturesys.cpp
+index d2d64dbdb..c0d4fc0e4 100644
+--- src/libtexture/texturesys.cpp
++++ src/libtexture/texturesys.cpp
+@@ -2299,9 +2299,7 @@ TextureSystemImpl::sample_bilinear(
+         else
+             tile_st %= tilewh;
+         OIIO_PRAGMA_WARNING_PUSH
+-#if OIIO_CLANG_VERSION >= 140000 || OIIO_INTEL_CLANG_VERSION >= 140000
+         OIIO_CLANG_PRAGMA(GCC diagnostic ignored "-Wbitwise-instead-of-logical")
+-#endif
+         bool s_onetile = (tile_st[S0] != tilewhmask[S0])
+                          & (sttex[S0] + 1 == sttex[S1]);
+         bool t_onetile = (tile_st[T0] != tilewhmask[T0])

@@ -208,8 +208,7 @@ Image::applyMaskMix(const RectI& roi,
     if (maskImg) {
         maskLock.reset( new QReadLocker(&maskImg->_entryLock) );
     }
-    RectI realRoI;
-    roi.intersect(_bounds, &realRoI);
+    const RectI realRoI = roi.intersect(_bounds);
 
     assert( !originalImg || getBitDepth() == originalImg->getBitDepth() );
     assert( !masked || !maskImg || maskImg->getComponents() == ImagePlaneDesc::getAlphaComponents() );

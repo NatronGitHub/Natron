@@ -1,0 +1,45 @@
+--- src/core/Platform.h	2019-03-28 13:12:57.000000000 +0800
++++ src/core/Platform.h	2023-08-04 22:13:55.000000000 +0800
+@@ -122,7 +122,12 @@
+ 
+ // TODO: Add proper endian detection using architecture / compiler mojo
+ //       In the meantime, hardcode to x86
+-#define OCIO_LITTLE_ENDIAN 1  // This is correct on x86
++#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
++    __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
++    #define OCIO_BIG_ENDIAN
++#else
++    #define OCIO_LITTLE_ENDIAN // This is correct on x86
++#endif
+ 
+     /*
+      * Mutex classes
+
+
+--- src/core/FileFormatIridasLook.cpp	2019-03-28 13:12:57.000000000 +0800
++++ src/core/FileFormatIridasLook.cpp	2023-08-04 22:15:26.000000000 +0800
+@@ -132,20 +132,22 @@
+             
+             unsigned char * fvalbytes = reinterpret_cast<unsigned char *>(&fval);
+             
+-#if OCIO_LITTLE_ENDIAN
++#if defined(OCIO_LITTLE_ENDIAN)
+             // Since incoming values are little endian, and we're on little endian
+             // preserve the byte order
+             fvalbytes[0] = (unsigned char) (asciinums[1] | (asciinums[0] << 4));
+             fvalbytes[1] = (unsigned char) (asciinums[3] | (asciinums[2] << 4));
+             fvalbytes[2] = (unsigned char) (asciinums[5] | (asciinums[4] << 4));
+             fvalbytes[3] = (unsigned char) (asciinums[7] | (asciinums[6] << 4));
+-#else
++#elif defined(OCIO_BIG_ENDIAN)
+             // Since incoming values are little endian, and we're on big endian
+             // flip the byte order
+             fvalbytes[3] = (unsigned char) (asciinums[1] | (asciinums[0] << 4));
+             fvalbytes[2] = (unsigned char) (asciinums[3] | (asciinums[2] << 4));
+             fvalbytes[1] = (unsigned char) (asciinums[5] | (asciinums[4] << 4));
+             fvalbytes[0] = (unsigned char) (asciinums[7] | (asciinums[6] << 4));
++#else
++    #error "Endianness is unknown."
+ #endif
+             return true;
+         }

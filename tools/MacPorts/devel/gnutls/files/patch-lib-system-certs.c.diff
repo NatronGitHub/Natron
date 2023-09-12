@@ -1,18 +1,16 @@
---- ./lib/system/certs.c.old	2017-04-14 10:36:27.000000000 -0700
-+++ ./lib/system/certs.c	2017-04-14 10:37:10.000000000 -0700
-@@ -47,8 +47,15 @@
+--- lib/system/certs.c.orig	2023-08-04 01:20:32
++++ lib/system/certs.c	2023-08-11 05:05:09
+@@ -47,7 +47,13 @@
  #ifdef __APPLE__
- # include <CoreFoundation/CoreFoundation.h>
- # include <Security/Security.h>
+ #include <CoreFoundation/CoreFoundation.h>
+ #include <Security/Security.h>
 +#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
 +#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1050
- # include <Availability.h>
+ #include <Availability.h>
 +#else
 +# include <AvailabilityMacros.h>
 +#endif
- #endif
 +#endif
-+
+ #endif
  
  /* System specific function wrappers for certificate stores.
-  */

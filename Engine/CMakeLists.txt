@@ -27,14 +27,14 @@ file(GLOB NatronEngine_SOURCES *.cpp)
 set(PYENGINE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Qt${QT_VERSION_MAJOR})
 set(PYENGINE_INCLUDE_DIRS ${PYSIDE_INCLUDE_DIRS} ${PYSIDE_INCLUDE_DIRS}/QtCore)
 list(APPEND PYENGINE_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-list(JOIN PYENGINE_INCLUDE_DIRS ":" PYENGINE_INCS)
+list(TRANSFORM PYENGINE_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYENGINE_INCS)
 set(PYENGINE_HEADER PySide2_Engine_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
 
 set(shiboken_args
     "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
-    "-I.:..:../Global:../libs/OpenFX/include:${PYENGINE_INCS}"
+    "-I." "-I.." "-I../Global" "-I../libs/OpenFX/include" ${PYENGINE_INCS}
     "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYENGINE_OUT}"
     "${PYENGINE_HEADER}" "typesystem_engine.xml")
 if(APPLE)
@@ -94,6 +94,12 @@ target_link_libraries(NatronEngine
         openMVG
         tess
 )
+
+if(WIN32)
+    #System library is required on windows to map network share names from drive letters
+    target_link_libraries(NatronEngine PRIVATE mpr)
+endif()
+
 target_include_directories(NatronEngine
     PUBLIC
         ../Global/glad$<IF:$<CONFIG:Debug>,Deb,Rel>/include
