@@ -326,8 +326,6 @@ public:
 
     bool isViewerPaused(int texIndex) const;
 
-    unsigned int getViewerMipmapLevel() const;
-
 public Q_SLOTS:
 
 

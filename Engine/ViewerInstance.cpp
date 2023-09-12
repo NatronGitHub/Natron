@@ -3014,14 +3014,6 @@ ViewerInstance::onGainChanged(double exp)
     }
 }
 
-unsigned int
-ViewerInstance::getViewerMipmapLevel() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipmapLevel;
-}
-
 void
 ViewerInstance::onMipmapLevelChanged(unsigned int level)
 {
