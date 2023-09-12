@@ -627,12 +627,11 @@ checkCanConnectNoMultiRes(const Node* output,
 {
     //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
-    RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
     StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(),
                                                                                output->getApp()->getTimeLine()->currentFrame(),
-                                                                               scale,
+                                                                               RenderScale::identity,
                                                                                ViewIdx(0),
                                                                                &rod, &isProjectFormat);
 
@@ -660,7 +659,7 @@ checkCanConnectNoMultiRes(const Node* output,
             RectD inputRod;
             stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(),
                                                                                 output->getApp()->getTimeLine()->currentFrame(),
-                                                                                scale,
+                                                                                RenderScale::identity,
                                                                                 ViewIdx(0),
                                                                                 &inputRod, &isProjectFormat);
             if ( (stat == eStatusFailed) && !inputRod.isNull() ) {

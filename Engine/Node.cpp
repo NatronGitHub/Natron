@@ -1641,12 +1641,11 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
-        RenderScale scale(1.);
         RectD rod;
         bool isProjectFormat;
         StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
                                                               time,
-                                                              scale, ViewIdx(0), &rod, &isProjectFormat);
+                                                              RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
@@ -3301,7 +3300,6 @@ Node::makePreviewImage(SequenceTime time,
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
-    RenderScale scale(1.);
     U64 nodeHash = getHashValue();
     EffectInstance* effect = 0;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
@@ -3317,7 +3315,7 @@ Node::makePreviewImage(SequenceTime time,
 
     effect->clearPersistentMessage(false);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -3329,8 +3327,7 @@ Node::makePreviewImage(SequenceTime time,
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
     unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
 
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+    const RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
 
     const double par = effect->getAspectRatio(-1);
     const RectI renderWindow = rod.toPixelEnclosing(mipMapLevel, par);
@@ -4811,7 +4808,6 @@ Node::onRefreshIdentityStateRequestReceived()
 
     ProjectPtr project = getApp()->getProject();
     double time = project->currentFrame();
-    RenderScale scale(1.);
     double inputTime = 0;
     U64 hash = getHashValue();
     bool viewAware =  _imp->effect->isViewAware();
@@ -4834,7 +4830,7 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
             int identityInputNb = -1;
             ViewIdx identityView;
-            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
+            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, RenderScale::identity, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
             if ( (i > 0) && ( (isViewIdentity != isIdentity) || (identityInputNb != inputNb) || (identityView.value() != i) ) ) {
                 isIdentity = false;
                 inputNb = -1;
@@ -5167,7 +5163,6 @@ Node::Implementation::onLayerChanged(int inputNb,
     }
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         effect->refreshMetadata_public(true);
     }
     if ( !enabledChan[0].lock() ) {
@@ -5273,7 +5268,6 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,
 
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         effect->refreshMetadata_public(true);
     }
 }
@@ -5819,7 +5813,6 @@ addIdentityNodesRecursively(const Node* caller,
             /*
                Very unlikely that there's no request pass. But we still check
              */
-            RenderScale scale(1.);
             double inputTimeId;
             ViewIdx identityView;
             int inputNbId;
@@ -5829,7 +5822,7 @@ addIdentityNodesRecursively(const Node* caller,
 
             RectI format = node->getEffectInstance()->getOutputFormat();
 
-            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, format, view, &inputTimeId, &identityView, &inputNbId);
+            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, RenderScale::identity, format, view, &inputTimeId, &identityView, &inputNbId);
         }
 
 
@@ -6111,14 +6104,12 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         }
 
         double time = (double)getApp()->getTimeLine()->currentFrame();
-        RenderScale scaleOne(1.);
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, RenderScale::identity, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
-                RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, RenderScale::fromMipmapLevel(1), ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {
@@ -7262,7 +7253,6 @@ Node::addUserComponents(const ImagePlaneDesc& comps)
     }
     if (!_imp->isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         getEffectInstance()->refreshMetadata_public(true);
     }
     {

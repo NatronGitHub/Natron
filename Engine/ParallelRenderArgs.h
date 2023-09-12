@@ -35,6 +35,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/RenderScale.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 

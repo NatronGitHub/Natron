@@ -2333,12 +2333,6 @@ Image::buildMipMapLevel(const RectD& dstRoD,
     }
 } // buildMipMapLevel
 
-double
-Image::getScaleFromMipMapLevel(unsigned int level)
-{
-    return 1. / (1 << level);
-}
-
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif

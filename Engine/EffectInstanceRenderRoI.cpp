@@ -386,7 +386,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         renderMappedMipMapLevel = args.mipMapLevel;
     }
-    RenderScale renderMappedScale( Image::getScaleFromMipMapLevel(renderMappedMipMapLevel) );
+    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipMapLevel) );
     assert(isSupportedRenderScale(supportsRS, renderMappedScale));
 
 
@@ -426,7 +426,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     supportsRS = supportsRenderScaleMaybe();
                     renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
                     if (renderFullScaleThenDownscale) {
-                        renderMappedScale.x = renderMappedScale.y = 1.;
+                        renderMappedScale = RenderScale::identity;
                         renderMappedMipMapLevel = 0;
                     }
                 }
@@ -572,7 +572,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
             renderFullScaleThenDownscale = true;
-            renderMappedScale.x = renderMappedScale.y = 1.;
+            renderMappedScale = RenderScale::identity;
             renderMappedMipMapLevel = 0;
         }
 
@@ -838,7 +838,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (renderFullScaleThenDownscale) {
                 renderFullScaleThenDownscale = false;
                 renderMappedMipMapLevel = args.mipMapLevel;
-                renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
+                renderMappedScale = RenderScale::fromMipmapLevel(renderMappedMipMapLevel);
                 if (frameArgs->tilesSupported) {
                     roi = args.roi;
                     if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
@@ -1864,7 +1864,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
         }
     }
 
-    RenderScale renderMappedScale( Image::getScaleFromMipMapLevel(renderMappedMipMapLevel) );
+    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipMapLevel) );
     RenderingFunctorRetEnum renderStatus = eRenderingFunctorRetOK;
     if ( planesToRender->rectsToRender.empty() ) {
         retCode = EffectInstance::eRenderRoIStatusImageAlreadyRendered;

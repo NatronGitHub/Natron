@@ -814,7 +814,7 @@ EffectInstance::getImage(int inputNb,
     /*
      * These are the data fields stored in the TLS from the on-going render action or instance changed action
      */
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    unsigned int mipMapLevel = scale.toMipmapLevel();
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstancePtr identityInput;
@@ -1176,7 +1176,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                               RectD *rod)
 {
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    unsigned int mipMapLevel = scale.toMipmapLevel();
     RectI format = getOutputFormat();
     double par = getAspectRatio(-1);
     *rod = format.toCanonical_noClipping(mipMapLevel, par);
@@ -1258,7 +1258,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                 bool isProjectFormat;
                 RenderScale inputScale = scale;
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
-                    inputScale.x = inputScale.y = 1.;
+                    inputScale = RenderScale::identity;
                 }
                 StatusEnum st = input->getRegionOfDefinition_public(hash, time, inputScale, view, &inputRod, &isProjectFormat);
                 if (st != eStatusFailed) {
@@ -1281,7 +1281,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         RectI format = getOutputFormat();
         assert(!format.isNull());
         double par = getAspectRatio(-1);
-        unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+        unsigned int mipMapLevel = scale.toMipmapLevel();
         canonicalFormat = format.toCanonical_noClipping(mipMapLevel, par);
     }
 
@@ -1351,7 +1351,7 @@ EffectInstance::getRegionsOfInterest(double time,
                 //Tiles not supported: get the RoD as RoI
                 RectD rod;
                 bool isPF;
-                RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
+                RenderScale inpScale = (input->supportsRenderScale() ? scale : RenderScale::identity);
                 StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(), time, inpScale, view, &rod, &isPF);
                 if (stat == eStatusFailed) {
                     return;
@@ -2060,10 +2060,11 @@ EffectInstance::transformInputRois(const EffectInstance* self,
             invertTransform = Transform::matInverse(*it->second.cat, det);
         }
 
-        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, scale.x,
-                                                                               scale.y, false);
-        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par,  scale.x,
-                                                                               scale.y, false);
+        const auto scalePt = scale.toOfxPointD();
+        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, scalePt.x,
+                                                                               scalePt.y, false);
+        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par,  scalePt.x,
+                                                                               scalePt.y, false);
 
         invertTransform = Transform::matMul(Transform::matMul(pixelToCanonical, invertTransform), canonicalToPixel);
         Transform::transformRegionFromRoD(foundRoI->second, invertTransform, transformedRenderWindow);
@@ -2275,7 +2276,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
 #ifndef NDEBUG
-    RenderScale scale( Image::getScaleFromMipMapLevel(mipMapLevel) );
+    RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
     const RectI dstBounds = dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par); // compute dstRod at level 0
@@ -2401,10 +2402,9 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
     actionArgs.processChannels = processChannels;
-    actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
+    actionArgs.mappedScale = RenderScale::fromMipmapLevel(firstPlane.renderMappedImage->getMipMapLevel());
     assert(isSupportedRenderScale(_publicInterface->supportsRenderScaleMaybe(), actionArgs.mappedScale));
-    actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    actionArgs.originalScale.y = actionArgs.originalScale.x;
+    actionArgs.originalScale = RenderScale::fromMipmapLevel(mipMapLevel);
     actionArgs.draftMode = frameArgs->draftMode;
     actionArgs.useOpenGL = planes.useOpenGL;
 
@@ -3303,7 +3303,7 @@ EffectInstance::drawOverlay_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3335,7 +3335,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3379,7 +3379,7 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3425,7 +3425,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3471,7 +3471,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3515,7 +3515,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3551,7 +3551,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3587,7 +3587,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3620,7 +3620,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3654,7 +3654,7 @@ EffectInstance::onOverlayFocusLost_public(double time,
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
-        actualScale.x = actualScale.y = 1.;
+        actualScale = RenderScale::identity;
     } else {
         actualScale = renderScale;
     }
@@ -3815,7 +3815,7 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
                                                RectD* rod,
                                                bool* isProjectFormat)
 {
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    unsigned int mipMapLevel = scale.toMipmapLevel();
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
 
     if (foundInCache) {
@@ -3844,7 +3844,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         return eStatusFailed;
     }
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+    unsigned int mipMapLevel = scale.toMipmapLevel();
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         if (isProjectFormat) {
@@ -3881,12 +3881,11 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         }
 
         StatusEnum ret;
-        RenderScale scaleOne(1.);
         {
             RECURSIVE_ACTION();
 
 
-            ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
+            ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? RenderScale::identity : scale, view, rod);
 
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
@@ -4643,11 +4642,11 @@ EffectInstance::redrawOverlayInteract()
 RenderScale
 EffectInstance::getOverlayInteractRenderScale() const
 {
-    RenderScale renderScale(1.);
+    RenderScale renderScale;
 
     if (isDoingInteractAction() && _imp->overlaysViewport) {
         unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
-        renderScale.x = renderScale.y = Image::getScaleFromMipMapLevel(mmLevel);
+        renderScale = RenderScale::fromMipmapLevel(mmLevel);
     }
 
     return renderScale;
@@ -5070,7 +5069,6 @@ EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
-    RenderScale scale(1.);
     Format frmt;
 
     getApp()->getProject()->getProjectDefaultFormat(&frmt);
@@ -5078,7 +5076,7 @@ EffectInstance::getNearestNonIdentity(double time)
     double inputTimeIdentity;
     int inputNbIdentity;
     ViewIdx inputView;
-    if ( !isIdentity_public(true, hash, time, scale, frmt, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, hash, time, RenderScale::identity, frmt, ViewIdx(0), &inputTimeIdentity, &inputView, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {

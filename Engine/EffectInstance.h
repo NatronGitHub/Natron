@@ -39,6 +39,7 @@
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
+#include "Engine/RenderScale.h"
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/ParallelRenderArgs.h"
@@ -158,7 +159,7 @@ public:
 
         RenderRoIArgs()
             : time(0)
-            , scale(1.)
+            , scale()
             , mipMapLevel(0)
             , view(0)
             , roi()
@@ -1132,7 +1133,7 @@ protected:
      **/
     static bool isSupportedRenderScale(SupportsEnum supportsRS, const RenderScale renderScale)
     {
-        return (supportsRS != eSupportsNo) || (renderScale.x == 1. && renderScale.y == 1.);
+        return (supportsRS != eSupportsNo) || (renderScale == RenderScale::identity);
     }
 
 public:

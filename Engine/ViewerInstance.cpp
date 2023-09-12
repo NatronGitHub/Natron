@@ -1158,8 +1158,6 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
-    const RenderScale scaleOne(1.);
-
     // This may be eSupportsMaybe
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
 
@@ -1169,8 +1167,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
     for (int lookup = 0; lookup < nLookups; ++lookup) {
         const unsigned mipMapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipMapLevelWithDraft;
-        RenderScale scale;
-        scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+        RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
 
 
         RectD rod;
@@ -1193,7 +1190,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         } else {
             stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,
                                                                               outArgs->params->time,
-                                                                              supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                              supportsRS ==  eSupportsNo ? RenderScale::identity : scale,
                                                                               outArgs->params->view,
                                                                               &rod,
                                                                               0 /*isProjectFormat*/);
@@ -1517,7 +1514,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             {
                 std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                    Image::getScaleFromMipMapLevel(inArgs.params->mipMapLevel),
+                                                                    RenderScale::fromMipmapLevel(inArgs.params->mipMapLevel),
                                                                     inArgs.params->mipMapLevel,
                                                                     view,
                                                                     inArgs.forceRender,

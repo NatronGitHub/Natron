@@ -90,11 +90,10 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , pboID(0)
     , imageGetterWatcher()
     , showMarkerTexture(false)
-    , selectedMarkerScale()
+    , selectedMarkerScale(1.)
     , selectedMarkerImg()
     , isTracking(false)
 {
-    selectedMarkerScale.x = selectedMarkerScale.y = 1.;
 }
 
 TrackerNodeInteract::~TrackerNodeInteract()
@@ -920,7 +919,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     topLeftTex.x = texCoords.x1; topLeftTex.y = texCoords.y2;
     topRightTex.x = texCoords.x2; topRightTex.y = texCoords.y2;
     btmRightTex.x = texCoords.x2; btmRightTex.y = texCoords.y1;
-    Transform::Matrix3x3 m = Transform::matTransformCanonical(0, 0, selectedMarkerScale.x, selectedMarkerScale.y, 0, 0, false, 0, xCenterPercent, yCenterPercent);
+    Transform::Matrix3x3 m = Transform::matTransformCanonical(0, 0, selectedMarkerScale, selectedMarkerScale, 0, 0, false, 0, xCenterPercent, yCenterPercent);
     btmLeftTex = Transform::matApply(m, btmLeftTex);
     topLeftTex = Transform::matApply(m, topLeftTex);
     btmRightTex = Transform::matApply(m, btmRightTex);

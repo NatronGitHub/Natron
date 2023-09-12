@@ -213,7 +213,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
-    unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
+    unsigned int mipmapLevel = args.originalScale.toMipmapLevel();
     std::list<std::list<std::pair<Point, double> > > strokes;
     int strokeIndex;
     node->getLastPaintStrokePoints(args.time, mipmapLevel, &strokes, &strokeIndex);

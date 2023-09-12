@@ -603,7 +603,7 @@ ViewerGL::centerWipe()
 }
 
 void
-ViewerGL::drawOverlay(unsigned int mipMapLevel)
+ViewerGL::drawOverlay(unsigned int mipmapLevel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -722,13 +722,12 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
         glCheckError();
         glColor4f(1., 1., 1., 1.);
-        double scale = 1. / (1 << mipMapLevel);
 
         /*
            Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
          */
         double time = getCurrentlyDisplayedTime();
-        _imp->viewerTab->drawOverlays( time, RenderScale(scale) );
+        _imp->viewerTab->drawOverlays( time, RenderScale::fromMipmapLevel(mipmapLevel) );
 
         glCheckErrorIgnoreOSXBug();
 
@@ -1881,9 +1880,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
-        unsigned int mipMapLevel = getCurrentRenderScale();
-        double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale::fromMipmapLevel(getCurrentRenderScale()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2083,9 +2080,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    unsigned int mipMapLevel = getCurrentRenderScale();
-    double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentRenderScale()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2508,10 +2503,8 @@ ViewerGL::penMotionInternal(int x,
     }; break;
     default: {
         QPointF localPos(x, y);
-        unsigned int mipMapLevel = getCurrentRenderScale();
-        double scale = 1. / (1 << mipMapLevel);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale(scale), localPos, zoomPos, pressure, timestamp) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentRenderScale()), localPos, zoomPos, pressure, timestamp) ) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -2539,15 +2532,12 @@ ViewerGL::penMotionInternal(int x,
 void
 ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    unsigned int mipMapLevel = getCurrentRenderScale();
     QPointF pos_opengl;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    double scale = 1. / (1 << mipMapLevel);
-
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale::fromMipmapLevel(getCurrentRenderScale()), QMouseEventLocalPos(e), pos_opengl) ) {
         update();
     }
     QOpenGLWidget::mouseDoubleClickEvent(e);
@@ -3139,8 +3129,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    double scale = 1. / ( 1 << getCurrentRenderScale() );
-    if ( _imp->viewerTab->notifyOverlaysFocusGained( RenderScale(scale) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusGained( RenderScale::fromMipmapLevel(getCurrentRenderScale()) ) ) {
         update();
     }
     QOpenGLWidget::focusInEvent(e);
@@ -3156,8 +3145,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
         return;
     }
 
-    double scale = 1. / ( 1 << getCurrentRenderScale() );
-    if ( _imp->viewerTab->notifyOverlaysFocusLost( RenderScale(scale) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusLost( RenderScale::fromMipmapLevel(getCurrentRenderScale()) ) ) {
         update();
     }
     QOpenGLWidget::focusOutEvent(e);
