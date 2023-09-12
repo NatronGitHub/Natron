@@ -194,7 +194,7 @@ ViewerTab::getGamma() const
 }
 
 void
-ViewerTab::setMipmapLevel(int level)
+ViewerTab::setMipmapLevel(unsigned int level)
 {
     if (level > 0) {
         _imp->renderScaleCombo->setCurrentIndex(level - 1);
@@ -204,7 +204,7 @@ ViewerTab::setMipmapLevel(int level)
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
-int
+unsigned int
 ViewerTab::getMipmapLevel() const
 {
     return _imp->viewerNode->getMipmapLevel();
@@ -327,7 +327,7 @@ ViewerTab::onAutoContrastChanged(bool b)
 void
 ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
-    int level;
+    unsigned int level;
 
     if (_imp->renderScaleActive) {
         level = index + 1;

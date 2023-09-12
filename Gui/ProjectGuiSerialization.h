@@ -113,7 +113,7 @@ struct ViewerData
     double gain;
     double gamma;
     bool renderScaleActivated;
-    int mipmapLevel;
+    unsigned int mipmapLevel;
     std::string colorSpace;
     std::string channels;
     std::string layerName, alphaLayerName;

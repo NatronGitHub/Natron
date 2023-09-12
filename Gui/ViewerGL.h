@@ -447,7 +447,7 @@ public:
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
     ///same as getMipmapLevel but with the zoomFactor taken into account
-    int getMipmapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
+    unsigned int getMipmapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

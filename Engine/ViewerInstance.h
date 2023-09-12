@@ -331,7 +331,7 @@ public:
 public Q_SLOTS:
 
 
-    void onMipmapLevelChanged(int level);
+    void onMipmapLevelChanged(unsigned int level);
 
 
     /**

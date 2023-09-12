@@ -851,12 +851,12 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     if (isFullFrameProcessingEnabled()) {
         outArgs->mipmapLevelWithoutDraft = 0;
     } else {
-        int zoomMipmapLevel;
+        unsigned int zoomMipmapLevel;
         {
             double closestPowerOf2 = zoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil(std::log(zoomFactor) / M_LN2) );
             zoomMipmapLevel = std::log(closestPowerOf2) / M_LN2;
         }
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipmapLevel );
+        outArgs->mipmapLevelWithoutDraft = std::max(outArgs->mipmapLevelWithoutDraft, zoomMipmapLevel);
     }
     outArgs->mipmapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
 
@@ -874,7 +874,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
                 autoProxyLevel = 0;
             }
         }
-        outArgs->mipmapLevelWithDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)autoProxyLevel );
+        outArgs->mipmapLevelWithDraft = std::max(outArgs->mipmapLevelWithoutDraft, autoProxyLevel);
     }
 
 
@@ -3023,13 +3023,13 @@ ViewerInstance::getViewerMipmapLevel() const
 }
 
 void
-ViewerInstance::onMipmapLevelChanged(int level)
+ViewerInstance::onMipmapLevelChanged(unsigned int level)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerMipmapLevel == (unsigned int)level) {
+        if (_imp->viewerMipmapLevel == level) {
             return;
         }
         _imp->viewerMipmapLevel = level;

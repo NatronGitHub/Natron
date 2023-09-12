@@ -52,7 +52,7 @@ namespace  {
 struct FrameAccessorCacheKey
 {
     int frame;
-    int mipmapLevel;
+    unsigned int mipmapLevel;
     mv::FrameAccessor::InputMode mode;
 };
 
@@ -292,10 +292,10 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     // other case(s) when they get integrated into libmv.
     assert(input_mode == mv::FrameAccessor::MONO);
 
-
+    const unsigned int mipmapLevel = static_cast<unsigned int>(downscale);
     FrameAccessorCacheKey key;
     key.frame = frame;
-    key.mipmapLevel = downscale;
+    key.mipmapLevel = mipmapLevel;
     key.mode = input_mode;
 
     /*
@@ -335,7 +335,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     }
 
     // Not in accessor cache, call renderRoI
-    const RenderScale scale = RenderScale::fromMipmapLevel( (unsigned int)downscale );
+    const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
 
     RectD precomputedRoD;
@@ -346,7 +346,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
             return (mv::FrameAccessor::Key)0;
         }
         double par = effect->getAspectRatio(-1);
-        roi = precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par);
+        roi = precomputedRoD.toPixelEnclosing(mipmapLevel, par);
     }
 
     std::list<ImagePlaneDesc> components;
@@ -374,7 +374,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
-                                        downscale,
+                                        mipmapLevel,
                                         ViewIdx(0),
                                         false,
                                         roi,

@@ -4229,13 +4229,13 @@ ViewerGL::getLastRenderedImageByMipmapLevel(int textureIndex,
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
-int
+unsigned int
 ViewerGL::getMipmapLevelCombinedToZoomFactor() const
 {
     if (!getInternalNode()) {
         return 0;
     }
-    int mmLvl = getInternalNode()->getMipmapLevel();
+    unsigned int mmLvl = getInternalNode()->getMipmapLevel();
     double factor = getZoomFactor();
 
     if (factor > 1) {
