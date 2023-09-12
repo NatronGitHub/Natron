@@ -4643,8 +4643,7 @@ EffectInstance::getOverlayInteractRenderScale() const
     RenderScale renderScale;
 
     if (isDoingInteractAction() && _imp->overlaysViewport) {
-        unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
-        renderScale = RenderScale::fromMipmapLevel(mmLevel);
+        renderScale = RenderScale::fromMipmapLevel(_imp->overlaysViewport->getCurrentMipmapLevel());
     }
 
     return renderScale;

@@ -618,7 +618,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
 
-    const unsigned int mipmapLevel = _imp->viewer->getCurrentRenderScale();
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
     if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
@@ -901,7 +901,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if ( !getGui() ) {
         return QWidget::keyPressEvent(e);
     }
-    const unsigned int mipmapLevel = _imp->viewer->getCurrentRenderScale();
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
     if ( notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
         _imp->viewer->redraw();
     } else {

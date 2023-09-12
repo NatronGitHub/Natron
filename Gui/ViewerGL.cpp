@@ -511,7 +511,7 @@ ViewerGL::paintGL()
 
         glCheckError();
         if (_imp->overlay) {
-            drawOverlay( getCurrentRenderScale() );
+            drawOverlay(getCurrentMipmapLevel());
         } else {
             const QFont& f = font();
             QFontMetrics fm(f);
@@ -1880,7 +1880,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale::fromMipmapLevel(getCurrentRenderScale()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2080,7 +2080,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentRenderScale()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2504,7 +2504,7 @@ ViewerGL::penMotionInternal(int x,
     default: {
         QPointF localPos(x, y);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentRenderScale()), localPos, zoomPos, pressure, timestamp) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp)) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -2537,7 +2537,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale::fromMipmapLevel(getCurrentRenderScale()), QMouseEventLocalPos(e), pos_opengl) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), pos_opengl) ) {
         update();
     }
     QOpenGLWidget::mouseDoubleClickEvent(e);
@@ -3129,7 +3129,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    if ( _imp->viewerTab->notifyOverlaysFocusGained( RenderScale::fromMipmapLevel(getCurrentRenderScale()) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusGained(RenderScale::fromMipmapLevel(getCurrentMipmapLevel())) ) {
         update();
     }
     QOpenGLWidget::focusInEvent(e);
@@ -3145,7 +3145,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
         return;
     }
 
-    if ( _imp->viewerTab->notifyOverlaysFocusLost( RenderScale::fromMipmapLevel(getCurrentRenderScale()) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusLost(RenderScale::fromMipmapLevel(getCurrentMipmapLevel())) ) {
         update();
     }
     QOpenGLWidget::focusOutEvent(e);
@@ -4247,7 +4247,7 @@ ViewerGL::getMipmapLevelCombinedToZoomFactor() const
 }
 
 unsigned int
-ViewerGL::getCurrentRenderScale() const
+ViewerGL::getCurrentMipmapLevel() const
 {
     return getMipmapLevelCombinedToZoomFactor();
 }
