@@ -20,6 +20,8 @@
 #ifndef RENDERSCALE_H
 #define RENDERSCALE_H
 
+#include <cassert>
+
 #include "Global/Macros.h"
 
 #include "ofxCore.h"
@@ -37,13 +39,19 @@ public:
     bool operator==(const RenderScale& rhs) const { return mipmapLevel == rhs.mipmapLevel; }
     bool operator!=(const RenderScale& rhs) const { return !(*this == rhs); }
 
-    OfxPointD toOfxPointD() const;
+    OfxPointD toOfxPointD() const
+    {
+        assert(mipmapLevel < 8 * sizeof(mipmapLevel));
+        const double scale = 1. / (1 << mipmapLevel);
+        return { scale, scale };
+    }
 
-    static RenderScale fromMipmapLevel(unsigned int mipmapLevel);
-    unsigned int toMipmapLevel() const;
+    static RenderScale fromMipmapLevel(unsigned int mipmapLevel) { return RenderScale(mipmapLevel); }
+    unsigned int toMipmapLevel() const { return mipmapLevel; }
 
 private:
-    RenderScale(unsigned int mipmapLevel_);
+    RenderScale(unsigned int mipmapLevel_) : mipmapLevel(mipmapLevel_) {}
+
     unsigned int mipmapLevel = 0;
 };
 

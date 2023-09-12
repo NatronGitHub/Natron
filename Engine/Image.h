@@ -322,11 +322,6 @@ public:
         return this->_params->getMipMapLevel();
     }
 
-    double getScale() const
-    {
-        return getScaleFromMipMapLevel( getMipMapLevel() );
-    }
-
     unsigned int getComponentsCount() const;
     const ImagePlaneDesc& getComponents() const
     {
@@ -766,7 +761,6 @@ public:
     void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
 
-    static double getScaleFromMipMapLevel(unsigned int level);
     static unsigned int getLevelFromScale(double s);
 
     /**

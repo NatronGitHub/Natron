@@ -28,29 +28,4 @@ NATRON_NAMESPACE_ENTER
 // static
 const RenderScale RenderScale::identity;
 
-RenderScale::RenderScale(unsigned int mipmapLevel_)
-    : mipmapLevel(mipmapLevel_)
-{
-}
-
-OfxPointD
-RenderScale::toOfxPointD() const
-{
-    const double scale = Image::getScaleFromMipMapLevel(mipmapLevel);
-    return { scale, scale };
-}
-
-// static
-RenderScale
-RenderScale::fromMipmapLevel(unsigned int mipmapLevel)
-{
-    return RenderScale(mipmapLevel);
-}
-
-unsigned int
-RenderScale::toMipmapLevel() const
-{
-    return mipmapLevel;
-}
-
 NATRON_NAMESPACE_EXIT
