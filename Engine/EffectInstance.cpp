@@ -814,7 +814,7 @@ EffectInstance::getImage(int inputNb,
     /*
      * These are the data fields stored in the TLS from the on-going render action or instance changed action
      */
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     RoIMap inputsRoI;
     bool isIdentity = false;
     EffectInstancePtr identityInput;
@@ -964,15 +964,15 @@ EffectInstance::getImage(int inputNb,
 
 
     ///Does this node supports images at a scale different than 1
-    bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0 && returnStorage == eStorageModeRAM);
+    bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipmapLevel != 0 && returnStorage == eStorageModeRAM);
 
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
-    unsigned int renderMappedMipMapLevel = mipMapLevel;
+    unsigned int renderMappedMipmapLevel = mipmapLevel;
     if (renderFullScaleThenDownscale) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
         if (renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
-            renderMappedMipMapLevel = 0;
+            renderMappedMipmapLevel = 0;
         }
     }
 
@@ -991,7 +991,7 @@ EffectInstance::getImage(int inputNb,
     }
 
 
-    RectI pixelRoI = roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par);
+    RectI pixelRoI = roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipmapLevel, par);
 
     ImagePtr inputImg;
 
@@ -1001,7 +1001,7 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = node->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
+                inputImg = node->getOrRenderLastStrokeImage(mipmapLevel, par, components, depth);
             } else {
                 RectD rotoSrcRod;
                 if (inputIsRotoBrush) {
@@ -1018,7 +1018,7 @@ EffectInstance::getImage(int inputNb,
                 }
 
                 inputImg = attachedStroke->renderMaskFromStroke(components,
-                                                                time, view, depth, mipMapLevel, rotoSrcRod);
+                                                                time, view, depth, mipmapLevel, rotoSrcRod);
 
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);
@@ -1065,7 +1065,7 @@ EffectInstance::getImage(int inputNb,
     std::map<ImagePlaneDesc, ImagePtr> inputImages;
     RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
                                                                     scale,
-                                                                    renderMappedMipMapLevel,
+                                                                    renderMappedMipmapLevel,
                                                                     view,
                                                                     byPassCache,
                                                                     pixelRoI,
@@ -1104,19 +1104,19 @@ EffectInstance::getImage(int inputNb,
     if (roiPixel) {
         *roiPixel = pixelRoI;
     }
-    unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
+    unsigned int inputImgMipmapLevel = inputImg->getMipmapLevel();
 
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it because it is really low def!
     ///For OpenGL textures, we do not do it because GL_TEXTURE_2D uses normalized texture coordinates anyway, so any OpenGL plug-in should support render scale.
-    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && returnStorage == eStorageModeRAM) {
-        assert(inputImgMipMapLevel != 0);
+    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipmapLevel != 0) && returnStorage == eStorageModeRAM) {
+        assert(inputImgMipmapLevel != 0);
         ///Resize the image according to the requested scale
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         const RectI bounds = inputImg->getRoD().toPixelEnclosing(0, par);
         ImagePtr rescaledImg = std::make_shared<Image>( inputImg->getComponents(), inputImg->getRoD(),
                                                          bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() );
-        inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
+        inputImg->upscaleMipmap( inputImg->getBounds(), inputImgMipmapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
             if (!inputRoDSet) {
                 bool isProjectFormat;
@@ -1124,7 +1124,7 @@ EffectInstance::getImage(int inputNb,
                 Q_UNUSED(st);
             }
 
-            pixelRoI = pixelRoI.toNewMipMapLevel(inputImgMipMapLevel, 0, par, inputRoD);
+            pixelRoI = pixelRoI.toNewMipmapLevel(inputImgMipmapLevel, 0, par, inputRoD);
             *roiPixel = pixelRoI;
         }
 
@@ -1176,10 +1176,10 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                               RectD *rod)
 {
 
-    unsigned int mipMapLevel = scale.toMipmapLevel();
+    unsigned int mipmapLevel = scale.toMipmapLevel();
     RectI format = getOutputFormat();
     double par = getAspectRatio(-1);
-    *rod = format.toCanonical_noClipping(mipMapLevel, par);
+    *rod = format.toCanonical_noClipping(mipmapLevel, par);
 }
 
 StatusEnum
@@ -1281,8 +1281,8 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         RectI format = getOutputFormat();
         assert(!format.isNull());
         double par = getAspectRatio(-1);
-        unsigned int mipMapLevel = scale.toMipmapLevel();
-        canonicalFormat = format.toCanonical_noClipping(mipMapLevel, par);
+        unsigned int mipmapLevel = scale.toMipmapLevel();
+        canonicalFormat = format.toCanonical_noClipping(mipmapLevel, par);
     }
 
     // BE CAREFUL:
@@ -1617,7 +1617,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     StorageModeEnum storage,
                                                     StorageModeEnum returnStorage,
                                                     const ImageKey & key,
-                                                    unsigned int mipMapLevel,
+                                                    unsigned int mipmapLevel,
                                                     const RectI* boundsParam,
                                                     const RectD* rodParam,
                                                     const RectI& roi,
@@ -1665,7 +1665,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         ImagePtr imageToConvert;
 
         for (ImageList::iterator it = cachedImages.begin(); it != cachedImages.end(); ++it) {
-            unsigned int imgMMlevel = (*it)->getMipMapLevel();
+            unsigned int imgMMlevel = (*it)->getMipmapLevel();
             const ImagePlaneDesc & imgComps = (*it)->getComponents();
             ImageBitDepthEnum imgDepth = (*it)->getBitDepth();
 
@@ -1692,26 +1692,26 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             }*/
 
             bool convertible = (imgComps.isColorPlane() && components.isColorPlane()) || (imgComps == components);
-            if ( (imgMMlevel == mipMapLevel) && convertible &&
+            if ( (imgMMlevel == mipmapLevel) && convertible &&
                  ( getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth) ) /* && imgComps == components && imgDepth == bitdepth*/ ) {
                 ///We found  a matching image
 
                 *image = *it;
                 break;
             } else {
-                if ( (*it)->getStorageMode() != eStorageModeRAM || (imgMMlevel >= mipMapLevel) || !convertible ||
+                if ( (*it)->getStorageMode() != eStorageModeRAM || (imgMMlevel >= mipmapLevel) || !convertible ||
                      ( getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth) ) ) {
                     ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
                     continue;
                 }
 
-                assert(imgMMlevel < mipMapLevel);
+                assert(imgMMlevel < mipmapLevel);
 
                 if (!imageToConvert) {
                     imageToConvert = *it;
                 } else {
                     ///We found an image which scale is closer to the requested mipmap level we want, use it instead
-                    if ( imgMMlevel > imageToConvert->getMipMapLevel() ) {
+                    if ( imgMMlevel > imageToConvert->getMipmapLevel() ) {
                         imageToConvert = *it;
                     }
                 }
@@ -1723,10 +1723,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             (imageToConvert)->allocateMemory();
 
 
-            if (imageToConvert->getMipMapLevel() != mipMapLevel) {
+            if (imageToConvert->getMipmapLevel() != mipmapLevel) {
                 ImageParamsPtr oldParams = imageToConvert->getParams();
 
-                assert(imageToConvert->getMipMapLevel() < mipMapLevel);
+                assert(imageToConvert->getMipmapLevel() < mipmapLevel);
 
                 //This is the bounds of the upscaled image
                 RectI imgToConvertBounds = imageToConvert->getBounds();
@@ -1734,7 +1734,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
                 const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
 
-                RectI downscaledBounds = rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio());
+                RectI downscaledBounds = rod.toPixelEnclosing(mipmapLevel, imageToConvert->getPixelAspectRatio());
 
                 if (boundsParam) {
                     downscaledBounds.merge(*boundsParam);
@@ -1743,7 +1743,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 ImageParamsPtr imageParams = Image::makeParams(rod,
                                                                                downscaledBounds,
                                                                                oldParams->getPixelAspectRatio(),
-                                                                               mipMapLevel,
+                                                                               mipmapLevel,
                                                                                oldParams->isRodProjectFormat(),
                                                                                oldParams->getComponents(),
                                                                                oldParams->getBitDepth(),
@@ -1751,8 +1751,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                                                oldParams->getFieldingOrder(),
                                                                                eStorageModeRAM);
 
-
-                imageParams->setMipMapLevel(mipMapLevel);
 
 
                 ImagePtr img;
@@ -1768,16 +1766,16 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                    of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
                    original mipmap level and ensure that it lies into the original image bounds
                  */
-                int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
+                int downscaleLevels = img->getMipmapLevel() - imageToConvert->getMipmapLevel();
                 RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
                 dstRoi.clipIfOverlaps(downscaledBounds);
                 dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
                 dstRoi.clipIfOverlaps(imgToConvertBounds);
 
                 if (imgToConvertBounds.area() > 1) {
-                    imageToConvert->downscaleMipMap( rod,
+                    imageToConvert->downscaleMipmap( rod,
                                                      dstRoi,
-                                                     imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
+                                                     imageToConvert->getMipmapLevel(), img->getMipmapLevel(),
                                                      imageToConvert->usesBitMap(),
                                                      img.get() );
                 } else {
@@ -2085,7 +2083,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
                                         const InputMatrixMapPtr& inputTransforms,
-                                        unsigned int mipMapLevel,
+                                        unsigned int mipmapLevel,
                                         const RenderScale & renderMappedScale,
                                         bool useScaleOneInputImages,
                                         bool byPassCache,
@@ -2112,7 +2110,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                               inputTransforms,
                               useTransforms,
                               renderStorageMode,
-                              mipMapLevel,
+                              mipmapLevel,
                               time,
                               view,
                               NodePtr(),
@@ -2146,8 +2144,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
                                                                         args.firstFrame,
                                                                         args.lastFrame,
                                                                         args.preferredInput,
-                                                                        args.mipMapLevel,
-                                                                        args.renderMappedMipMapLevel,
+                                                                        args.mipmapLevel,
+                                                                        args.renderMappedMipmapLevel,
                                                                         args.rod,
                                                                         args.time,
                                                                         args.view,
@@ -2173,8 +2171,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const int firstFrame,
                                                       const int lastFrame,
                                                       const int preferredInput,
-                                                      const unsigned int mipMapLevel,
-                                                      const unsigned int renderMappedMipMapLevel,
+                                                      const unsigned int mipmapLevel,
+                                                      const unsigned int renderMappedMipmapLevel,
                                                       const RectD & rod,
                                                       const double time,
                                                       const ViewIdx view,
@@ -2208,15 +2206,15 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     RectI renderMappedRectToRender = rectToRender.rect;
 
     /*
-     * downscaledRectToRender is in the mipMapLevel
+     * downscaledRectToRender is in the mipmapLevel
      */
     RectI downscaledRectToRender = renderMappedRectToRender;
 
 
     ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
     if (renderFullScaleThenDownscale) {
-        assert(mipMapLevel > 0 && renderMappedMipMapLevel != mipMapLevel);
-        downscaledRectToRender = renderMappedRectToRender.toNewMipMapLevel(renderMappedMipMapLevel, mipMapLevel, par, rod);
+        assert(mipmapLevel > 0 && renderMappedMipmapLevel != mipmapLevel);
+        downscaledRectToRender = renderMappedRectToRender.toNewMipmapLevel(renderMappedMipmapLevel, mipmapLevel, par, rod);
     }
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
@@ -2276,10 +2274,10 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
 #ifndef NDEBUG
-    RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
+    RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
-    const RectI dstBounds = dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par); // compute dstRod at level 0
+    const RectI dstBounds = dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipmapLevel(), par); // compute dstRod at level 0
     if (!frameArgs->tilesSupported) {
         const RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
         assert(dstRealBounds.x1 == dstBounds.x1);
@@ -2293,7 +2291,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
          ++it) {
         for (ImageList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             const RectD & srcRodCanonical = (*it2)->getRoD();
-            const RectI srcBounds = srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio() ); // compute srcRod at level 0
+            const RectI srcBounds = srcRodCanonical.toPixelEnclosing( (*it2)->getMipmapLevel(), (*it2)->getPixelAspectRatio() ); // compute srcRod at level 0
 
             if (!frameArgs->tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -2306,7 +2304,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                  * Blur will actually retrieve the image from the cache and downscale it rather than recompute it.
                  * Since the Writer does not support tiles, the Blur image is the full image and not a tile, which can be veryfied by
                  *
-                 * bounds = blurCachedImage->getRod().toPixelEnclosing(blurCachedImage->getMipMapLevel(), blurCachedImage->getPixelAspectRatio())
+                 * bounds = blurCachedImage->getRod().toPixelEnclosing(blurCachedImage->getMipmapLevel(), blurCachedImage->getPixelAspectRatio())
                  *
                  * Since the Blur RoD changed (the RoD at mmlevel 0 is different than the ROD at mmlevel 1),
                  * the resulting bounds of the downscaled image are not necessarily exactly result of the new downscaled RoD to the enclosing pixel
@@ -2337,13 +2335,13 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     } //end for
 
     if (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) {
-        assert(firstPlaneToRender.renderMappedImage->getMipMapLevel() == 0);
-        assert(renderMappedMipMapLevel == 0);
+        assert(firstPlaneToRender.renderMappedImage->getMipmapLevel() == 0);
+        assert(renderMappedMipmapLevel == 0);
     }
 #endif // !NDEBUG
 
     RenderingFunctorRetEnum handlerRet =  renderHandler(tls,
-                                                        mipMapLevel,
+                                                        mipmapLevel,
                                                         renderFullScaleThenDownscale,
                                                         isSequentialRender,
                                                         isRenderResponseToUserInteraction,
@@ -2366,7 +2364,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
-                                              const unsigned int mipMapLevel,
+                                              const unsigned int mipmapLevel,
                                               const bool renderFullScaleThenDownscale,
                                               const bool isSequentialRender,
                                               const bool isRenderResponseToUserInteraction,
@@ -2402,9 +2400,9 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
     actionArgs.processChannels = processChannels;
-    actionArgs.mappedScale = RenderScale::fromMipmapLevel(firstPlane.renderMappedImage->getMipMapLevel());
+    actionArgs.mappedScale = RenderScale::fromMipmapLevel(firstPlane.renderMappedImage->getMipmapLevel());
     assert(isSupportedRenderScale(_publicInterface->supportsRenderScaleMaybe(), actionArgs.mappedScale));
-    actionArgs.originalScale = RenderScale::fromMipmapLevel(mipMapLevel);
+    actionArgs.originalScale = RenderScale::fromMipmapLevel(mipmapLevel);
     actionArgs.draftMode = frameArgs->draftMode;
     actionArgs.useOpenGL = planes.useOpenGL;
 
@@ -2458,7 +2456,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
         // scoped_ptr
         std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
                                                                                                        actionArgs.originalScale,
-                                                                                                       mipMapLevel,
+                                                                                                       mipmapLevel,
                                                                                                        view,
                                                                                                        false,
                                                                                                        downscaledRectToRender,
@@ -2501,7 +2499,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
                 std::map<ImagePlaneDesc, ImagePtr>::iterator idIt = identityPlanes.begin();
                 for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
-                    if ( renderFullScaleThenDownscale && ( idIt->second->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
+                    if ( renderFullScaleThenDownscale && ( idIt->second->getMipmapLevel() > it->second.fullscaleImage->getMipmapLevel() ) ) {
                         // We cannot be rendering using OpenGL in this case
                         assert(!planes.useOpenGL);
 
@@ -2517,7 +2515,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                             sourceImage = std::make_shared<Image>(it->second.fullscaleImage->getComponents(),
                                                                     idIt->second->getRoD(),
                                                                     idIt->second->getBounds(),
-                                                                    idIt->second->getMipMapLevel(),
+                                                                    idIt->second->getMipmapLevel(),
                                                                     idIt->second->getPixelAspectRatio(),
                                                                     it->second.fullscaleImage->getBitDepth(),
                                                                     idIt->second->getPremultiplication(),
@@ -2533,17 +2531,17 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
                         ///then upscale
                         const RectD & rod = sourceImage->getRoD();
-                        const RectI bounds = rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio());
+                        const RectI bounds = rod.toPixelEnclosing(it->second.renderMappedImage->getMipmapLevel(), it->second.renderMappedImage->getPixelAspectRatio());
                         ImagePtr inputPlane = std::make_shared<Image>(it->first,
                                                        rod,
                                                        bounds,
-                                                       it->second.renderMappedImage->getMipMapLevel(),
+                                                       it->second.renderMappedImage->getMipmapLevel(),
                                                        it->second.renderMappedImage->getPixelAspectRatio(),
                                                        it->second.renderMappedImage->getBitDepth(),
                                                        it->second.renderMappedImage->getPremultiplication(),
                                                        it->second.renderMappedImage->getFieldingOrder(),
                                                        false);
-                        sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
+                        sourceImage->upscaleMipmap( sourceImage->getBounds(), sourceImage->getMipmapLevel(), inputPlane->getMipmapLevel(), inputPlane.get() );
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                     } else {
                         if ( !idIt->second->getBounds().contains(downscaledRectToRender) ) {
@@ -2592,7 +2590,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
             it->second.tmpImage = std::make_shared<Image>(prefComp,
                                                             it->second.renderMappedImage->getRoD(),
                                                             actionArgs.roi,
-                                                            it->second.renderMappedImage->getMipMapLevel(),
+                                                            it->second.renderMappedImage->getMipmapLevel(),
                                                             it->second.renderMappedImage->getPixelAspectRatio(),
                                                             outputClipPrefDepth,
                                                             it->second.renderMappedImage->getPremultiplication(),
@@ -2776,19 +2774,19 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                 assert(!planes.useOpenGL);
 
                 ///copy the rectangle rendered in the full scale image to the downscaled output
-                assert(mipMapLevel != 0);
+                assert(mipmapLevel != 0);
 
                 assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
 
                 ImagePtr mappedOriginalInputImage = originalInputImage;
 
-                if ( originalInputImage && (originalInputImage->getMipMapLevel() != 0) ) {
+                if ( originalInputImage && (originalInputImage->getMipmapLevel() != 0) ) {
                     bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnProcessedChannels(processChannels);
                     if (mustCopyUnprocessedChannels || useMaskMix) {
                         ///there is some processing to be done by copyUnProcessedChannels or applyMaskMix
-                        ///but originalInputImage is not in the correct mipMapLevel, upscale it
-                        assert(originalInputImage->getMipMapLevel() > it->second.tmpImage->getMipMapLevel() &&
-                               originalInputImage->getMipMapLevel() == mipMapLevel);
+                        ///but originalInputImage is not in the correct mipmapLevel, upscale it
+                        assert(originalInputImage->getMipmapLevel() > it->second.tmpImage->getMipmapLevel() &&
+                               originalInputImage->getMipmapLevel() == mipmapLevel);
                         ImagePtr tmp = std::make_shared<Image>(it->second.tmpImage->getComponents(),
                                                 it->second.tmpImage->getRoD(),
                                                 renderMappedRectToRender,
@@ -2798,7 +2796,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
                                                 false);
-                        originalInputImage->upscaleMipMap( downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get() );
+                        originalInputImage->upscaleMipmap( downscaledRectToRender, originalInputImage->getMipmapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }
                 }
@@ -2818,7 +2816,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
                                             it->second.tmpImage->getRoD(),
                                             renderMappedRectToRender,
-                                            mipMapLevel,
+                                            mipmapLevel,
                                             it->second.tmpImage->getPixelAspectRatio(),
                                             it->second.fullscaleImage->getBitDepth(),
                                             it->second.fullscaleImage->getPremultiplication(),
@@ -2828,7 +2826,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     ImagePtr tmp = std::make_shared<Image>(it->second.fullscaleImage->getComponents(),
                                                              it->second.tmpImage->getRoD(),
                                                              renderMappedRectToRender,
-                                                             mipMapLevel,
+                                                             mipmapLevel,
                                                              it->second.tmpImage->getPixelAspectRatio(),
                                                              it->second.fullscaleImage->getBitDepth(),
                                                              it->second.fullscaleImage->getPremultiplication(),
@@ -2840,15 +2838,15 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() ),
                                                           -1, false, unPremultRequired, tmp.get() );
-                    tmp->downscaleMipMap( it->second.tmpImage->getRoD(),
-                                          renderMappedRectToRender, 0, mipMapLevel, false, it->second.downscaleImage.get() );
+                    tmp->downscaleMipmap( it->second.tmpImage->getRoD(),
+                                          renderMappedRectToRender, 0, mipmapLevel, false, it->second.downscaleImage.get() );
                     it->second.fullscaleImage->pasteFrom(*tmp, renderMappedRectToRender, false);
                 } else {
                     /*
                      *  Downscaling required only
                      */
-                    it->second.tmpImage->downscaleMipMap( it->second.tmpImage->getRoD(),
-                                                          actionArgs.roi, 0, mipMapLevel, false, it->second.downscaleImage.get() );
+                    it->second.tmpImage->downscaleMipmap( it->second.tmpImage->getRoD(),
+                                                          actionArgs.roi, 0, mipmapLevel, false, it->second.downscaleImage.get() );
                     if (it->second.tmpImage != it->second.fullscaleImage) {
                         it->second.fullscaleImage->pasteFrom(*(it->second.tmpImage), renderMappedRectToRender, false);
                     }
@@ -2938,7 +2936,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                  img->getPremultiplication(),
                                  img->getFieldingOrder(),
                                  img->getPixelAspectRatio(),
-                                 img->getMipMapLevel(),
+                                 img->getMipmapLevel(),
                                  false,
                                  img->getParams()->getStorageInfo().mode,
                                  useCache,
@@ -2958,7 +2956,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
             p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
                                         p.renderMappedImage->getRoD(),
                                         tls->currentRenderArgs.renderWindowPixel,
-                                        p.renderMappedImage->getMipMapLevel(),
+                                        p.renderMappedImage->getMipmapLevel(),
                                         p.renderMappedImage->getPixelAspectRatio(),
                                         p.renderMappedImage->getBitDepth(),
                                         p.renderMappedImage->getPremultiplication(),
@@ -2969,7 +2967,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
             p.tmpImage = std::make_shared<Image>(p.renderMappedImage->getComponents(),
                                                    p.renderMappedImage->getRoD(),
                                                    tls->currentRenderArgs.renderWindowPixel,
-                                                   p.renderMappedImage->getMipMapLevel(),
+                                                   p.renderMappedImage->getMipmapLevel(),
                                                    p.renderMappedImage->getPixelAspectRatio(),
                                                    p.renderMappedImage->getBitDepth(),
                                                    p.renderMappedImage->getPremultiplication(),
@@ -3815,8 +3813,8 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
                                                RectD* rod,
                                                bool* isProjectFormat)
 {
-    unsigned int mipMapLevel = scale.toMipmapLevel();
-    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+    unsigned int mipmapLevel = scale.toMipmapLevel();
+    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipmapLevel, rod);
 
     if (foundInCache) {
         if (isProjectFormat) {
@@ -3844,8 +3842,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         return eStatusFailed;
     }
 
-    unsigned int mipMapLevel = scale.toMipmapLevel();
-    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
+    unsigned int mipmapLevel = scale.toMipmapLevel();
+    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipmapLevel, rod);
     if (foundInCache) {
         if (isProjectFormat) {
             *isProjectFormat = false;
@@ -3891,7 +3889,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
                 _imp->actionsCache->invalidateAll(hash);
-                _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
+                _imp->actionsCache->setRoDResult( hash, time, view, mipmapLevel, RectD() );
 
                 // }
                 return ret;
@@ -3899,7 +3897,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             if ( rod->isNull() ) {
                 // RoD is empty, which means output is black and transparent
-                _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
+                _imp->actionsCache->setRoDResult( hash, time, view, mipmapLevel, RectD() );
 
                 return ret;
             }
@@ -3913,7 +3911,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
         //if (!isDuringStrokeCreation) {
-        _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
+        _imp->actionsCache->setRoDResult(hash, time, view,  mipmapLevel, *rod);
 
         //}
         return ret;
@@ -3939,11 +3937,11 @@ FramesNeededMap
 EffectInstance::getFramesNeeded_public(U64 hash,
                                        double time,
                                        ViewIdx view,
-                                       unsigned int mipMapLevel)
+                                       unsigned int mipmapLevel)
 {
     NON_RECURSIVE_ACTION();
     FramesNeededMap framesNeeded;
-    bool foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
+    bool foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, mipmapLevel, &framesNeeded);
     if (foundInCache) {
         return framesNeeded;
     }
@@ -3956,7 +3954,7 @@ EffectInstance::getFramesNeeded_public(U64 hash,
         }
     }
 
-    _imp->actionsCache->setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
+    _imp->actionsCache->setFramesNeededResult(hash, time, view, mipmapLevel, framesNeeded);
 
     return framesNeeded;
 }
@@ -4645,8 +4643,7 @@ EffectInstance::getOverlayInteractRenderScale() const
     RenderScale renderScale;
 
     if (isDoingInteractAction() && _imp->overlaysViewport) {
-        unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
-        renderScale = RenderScale::fromMipmapLevel(mmLevel);
+        renderScale = RenderScale::fromMipmapLevel(_imp->overlaysViewport->getCurrentMipmapLevel());
     }
 
     return renderScale;

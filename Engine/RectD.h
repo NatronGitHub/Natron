@@ -337,7 +337,7 @@ public:
     RectI toPixelEnclosing(const RenderScale & scale,
                           double par) const;
 
-    RectI toPixelEnclosing(unsigned int mipMapLevel,
+    RectI toPixelEnclosing(unsigned int mipmapLevel,
                           double par) const;
 
     static void ofxRectDToRectD(const OfxRectD & r,

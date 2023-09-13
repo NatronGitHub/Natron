@@ -88,7 +88,7 @@ struct FinishedHistogram
     int binsCount;
     int pixelsCount;
     double vmin, vmax;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
 
     FinishedHistogram()
         : histogram1()
@@ -99,7 +99,7 @@ struct FinishedHistogram
         , pixelsCount(0)
         , vmin(0)
         , vmax(0)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
     {
     }
 };
@@ -199,7 +199,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
                                                int* mode,
                                                double* vmin,
                                                double* vmax,
-                                               unsigned int* mipMapLevel)
+                                               unsigned int* mipmapLevel)
 {
     assert(histogram1 && histogram2 && histogram3 && binsCount && pixelsCount && mode && vmin && vmax);
 
@@ -218,7 +218,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     *mode = h->mode;
     *vmin = h->vmin;
     *vmax = h->vmax;
-    *mipMapLevel = h->mipMapLevel;
+    *mipmapLevel = h->mipmapLevel;
     _imp->produced.pop_back();
 
     return true;
@@ -417,7 +417,7 @@ HistogramCPU::run()
         ret->mode = request.mode;
         ret->vmin = request.vmin;
         ret->vmax = request.vmax;
-        ret->mipMapLevel = request.image->getMipMapLevel();
+        ret->mipmapLevel = request.image->getMipmapLevel();
 
 
         switch (request.mode) {

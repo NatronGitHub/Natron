@@ -75,10 +75,10 @@ public:
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel,
+    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipmapLevel) = 0;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel,
                                                               std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) = 0;
-    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
+    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
@@ -123,7 +123,7 @@ public:
                                                const RectD& rod,
                                                double par,
                                                ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
+                                               unsigned int mipmapLevel,
                                                ImagePremultiplicationEnum premult,
                                                double gain,
                                                double gamma,

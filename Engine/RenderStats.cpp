@@ -207,13 +207,13 @@ NodeRenderStats::getIdentityRectangles() const
 }
 
 void
-NodeRenderStats::addMipMapLevelRendered(unsigned int level)
+NodeRenderStats::addMipmapLevelRendered(unsigned int level)
 {
     _imp->mipmapLevelsAccessed.insert(level);
 }
 
 const std::set<unsigned int>&
-NodeRenderStats::getMipMapLevelsRendered() const
+NodeRenderStats::getMipmapLevelsRendered() const
 {
     return _imp->mipmapLevelsAccessed;
 }
@@ -397,7 +397,7 @@ RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
     stats.setOutputPremult(outputPremult);
     stats.setTilesSupported(tilesSupported);
     stats.setRenderScaleSupported(renderScaleSupported);
-    stats.addMipMapLevelRendered(mipmapLevel);
+    stats.addMipmapLevelRendered(mipmapLevel);
     stats.setChannelsRendered(channelsRendered);
     stats.setRoD(rod);
 }

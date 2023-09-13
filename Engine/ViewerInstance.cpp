@@ -450,7 +450,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             roi.x2 = args[i]->params->textureRect.x2;
             roi.y2 = args[i]->params->textureRect.y2;
            }
-           status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
+           status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipmapLevel, roi, thisNode, request);
            if (status[i] == eStatusFailed) {
             continue;
            }*/
@@ -834,7 +834,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)_imp->viewerMipMapLevel;
+        outArgs->mipmapLevelWithoutDraft = _imp->viewerMipmapLevel;
     }
 
     assert(_imp->uiContext);
@@ -851,20 +851,20 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     if (isFullFrameProcessingEnabled()) {
         outArgs->mipmapLevelWithoutDraft = 0;
     } else {
-        int zoomMipMapLevel;
+        unsigned int zoomMipmapLevel;
         {
             double closestPowerOf2 = zoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil(std::log(zoomFactor) / M_LN2) );
-            zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
+            zoomMipmapLevel = std::log(closestPowerOf2) / M_LN2;
         }
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel );
+        outArgs->mipmapLevelWithoutDraft = std::max(outArgs->mipmapLevelWithoutDraft, zoomMipmapLevel);
     }
-    outArgs->mipMapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
+    outArgs->mipmapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
 
     outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();
 
     // If draft mode is enabled, compute the mipmap level according to the auto-proxy setting in the preferences
     if ( outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled() ) {
-        unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
+        unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipmapLevel();
         if (zoomFactor > 1) {
             //Decrease draft mode at each inverse mipmaplevel level taken
             unsigned int invLevel = Image::getLevelFromScale(1. / zoomFactor);
@@ -874,7 +874,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
                 autoProxyLevel = 0;
             }
         }
-        outArgs->mipMapLevelWithDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)autoProxyLevel );
+        outArgs->mipmapLevelWithDraft = std::max(outArgs->mipmapLevelWithoutDraft, autoProxyLevel);
     }
 
 
@@ -1059,7 +1059,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
 
     outArgs->params->rod = rod;
-    outArgs->params->mipMapLevel = mipmapLevel;
+    outArgs->params->mipmapLevel = mipmapLevel;
 
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
 
@@ -1156,7 +1156,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     // zillions of textures in the cache, each a few pixels different.
     const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !outArgs->isDoingPartialUpdates;
 
-    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
+    // If it's eSupportsMaybe and mipmapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
     // This may be eSupportsMaybe
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
@@ -1166,8 +1166,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     const int nLookups = outArgs->draftModeEnabled ? 2 : 1;
 
     for (int lookup = 0; lookup < nLookups; ++lookup) {
-        const unsigned mipMapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipMapLevelWithDraft;
-        RenderScale scale = RenderScale::fromMipmapLevel(mipMapLevel);
+        const unsigned mipmapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipmapLevelWithDraft;
+        RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
 
         RectD rod;
@@ -1201,7 +1201,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         }
 
         // update scale after the first call to getRegionOfDefinition
-        if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
+        if ( (supportsRS == eSupportsMaybe) && (mipmapLevel != 0) ) {
             supportsRS = (outArgs->activeInputToRender)->supportsRenderScaleMaybe();
         }
 
@@ -1212,7 +1212,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         Q_UNUSED(isRodProjectFormat);
 
         // Ok we go the RoD, we can actually compute the RoI and look-up the cache
-        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);
+        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipmapLevel, stats, outArgs);
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
@@ -1396,10 +1396,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
     if (useTLS) {
-        const RectD canonicalRoi = roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod);
+        const RectD canonicalRoi = roi.toCanonical(inArgs.params->mipmapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod);
 
         FrameRequestMap requestPassData;
-        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), requestPassData);
+        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipmapLevel, canonicalRoi, getNode(), requestPassData);
         if (stat == eStatusFailed) {
             return eViewerRenderRetCodeFail;
         }
@@ -1495,7 +1495,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             channelsRendered[3] = true;
             break;
         }
-        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
+        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipmapLevel);
     }
 
 //#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
@@ -1514,8 +1514,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             {
                 std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                    RenderScale::fromMipmapLevel(inArgs.params->mipMapLevel),
-                                                                    inArgs.params->mipMapLevel,
+                                                                    RenderScale::fromMipmapLevel(inArgs.params->mipmapLevel),
+                                                                    inArgs.params->mipmapLevel,
                                                                     view,
                                                                     inArgs.forceRender,
                                                                     splitRoi[rectIndex],
@@ -1656,7 +1656,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
                 bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
-                                    updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
+                                    updateParams->mipmapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipmapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
 
                 if (!canUseOldTex) {
@@ -1668,7 +1668,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     //Overwrite the RoI to only the last portion rendered
                     RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
-                    lastPaintBboxPixel = lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par);
+                    lastPaintBboxPixel = lastPaintBbox.toPixelEnclosing(updateParams->mipmapLevel, par);
 
 
                     //The last buffer must be valid
@@ -1718,7 +1718,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             // For the viewer, we need the enclosing rectangle to avoid black borders.
             // Do this here to avoid infinity values.
 
-            const RectI bounds = updateParams->rod.toPixelEnclosing(updateParams->mipMapLevel, updateParams->pixelAspectRatio);
+            const RectI bounds = updateParams->rod.toPixelEnclosing(updateParams->mipmapLevel, updateParams->pixelAspectRatio);
 
             const RectI tileBounds(0, 0, inArgs.params->tileSize, inArgs.params->tileSize);
             assert(!tileBounds.isNull());
@@ -1743,7 +1743,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                  inArgs.channels,
                                  inArgs.params->view,
                                  it->rect,
-                                 inArgs.params->mipMapLevel,
+                                 inArgs.params->mipmapLevel,
                                  inputToRenderName,
                                  inArgs.params->layer,
                                  inArgs.params->alphaLayer.getPlaneID() + inArgs.params->alphaChannelName,
@@ -2924,7 +2924,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParamsPtr params
             }
         }
 
-        uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod,  params->pixelAspectRatio, depth, params->mipMapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
+        uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod,  params->pixelAspectRatio, depth, params->mipmapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
 
         if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
@@ -3014,25 +3014,17 @@ ViewerInstance::onGainChanged(double exp)
     }
 }
 
-unsigned int
-ViewerInstance::getViewerMipMapLevel() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
-}
-
 void
-ViewerInstance::onMipMapLevelChanged(int level)
+ViewerInstance::onMipmapLevelChanged(unsigned int level)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerMipMapLevel == (unsigned int)level) {
+        if (_imp->viewerMipmapLevel == level) {
             return;
         }
-        _imp->viewerMipMapLevel = level;
+        _imp->viewerMipmapLevel = level;
     }
 }
 
@@ -3217,14 +3209,14 @@ ViewerInstance::getGain() const
     return _imp->viewerParamsGain;
 }
 
-int
-ViewerInstance::getMipMapLevel() const
+unsigned int
+ViewerInstance::getMipmapLevel() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
 
     QMutexLocker l(&_imp->viewerParamsMutex);
 
-    return _imp->viewerMipMapLevel;
+    return _imp->viewerMipmapLevel;
 }
 
 DisplayChannelsEnum
@@ -3402,8 +3394,8 @@ ViewerInstance::getTimelineBounds(int* first,
     }
 }
 
-int
-ViewerInstance::getMipMapLevelFromZoomFactor() const
+unsigned int
+ViewerInstance::getMipmapLevelFromZoomFactor() const
 {
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );

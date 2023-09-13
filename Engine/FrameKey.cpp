@@ -43,7 +43,7 @@ FrameKey::FrameKey()
     , _channels(0)
     , _view(0)
     , _textureRect()
-    , _mipMapLevel(0)
+    , _mipmapLevel(0)
     , _layer()
     , _alphaChannelFullName()
     , _useShaders(false)
@@ -61,7 +61,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
                    int channels,
                    ViewIdx view,
                    const TextureRect & textureRect,
-                   unsigned int mipMapLevel,
+                   unsigned int mipmapLevel,
                    const std::string & inputName,
                    const ImagePlaneDesc& layer,
                    const std::string& alphaChannelFullName,
@@ -77,7 +77,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
     , _channels(channels)
     , _view(view)
     , _textureRect(textureRect)
-    , _mipMapLevel(mipMapLevel)
+    , _mipmapLevel(mipmapLevel)
     , _inputName(inputName)
     , _layer(layer)
     , _alphaChannelFullName(alphaChannelFullName)
@@ -104,7 +104,7 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.x2);
     hash->append(_textureRect.y2);
     hash->append(_textureRect.closestPo2);
-    hash->append(_mipMapLevel);
+    hash->append(_mipmapLevel);
     Hash64_appendQString( hash, QString::fromUtf8( _layer.getPlaneID().c_str() ) );
     const std::vector<std::string>& channels = _layer.getChannels();
     for (std::size_t i = 0; i < channels.size(); ++i) {
@@ -130,7 +130,7 @@ FrameKey::operator==(const FrameKey & other) const
            _channels == other._channels &&
            _view == other._view &&
            _textureRect == other._textureRect &&
-           _mipMapLevel == other._mipMapLevel &&
+           _mipmapLevel == other._mipmapLevel &&
            _inputName == other._inputName &&
            _layer == other._layer &&
            _alphaChannelFullName == other._alphaChannelFullName &&

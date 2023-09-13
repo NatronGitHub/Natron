@@ -183,7 +183,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
        ImagePtr tmp( new Image(targetComponents,
                                 inputImage->getRoD(),
                                 bounds,
-                                inputImage->getMipMapLevel(),
+                                inputImage->getMipmapLevel(),
                                 inputImage->getPixelAspectRatio(),
                                 targetDepth,
                                 inputImage->getPremultiplication(),
@@ -193,7 +193,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
         ImagePtr tmp = std::make_shared<Image>(targetComponents,
                                                  inputImage->getRoD(),
                                                  bounds,
-                                                 inputImage->getMipMapLevel(),
+                                                 inputImage->getMipmapLevel(),
                                                  inputImage->getPixelAspectRatio(),
                                                  targetDepth,
                                                  inputImage->getPremultiplication(),
@@ -374,19 +374,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     const double par = getAspectRatio(-1);
     const ImageFieldingOrderEnum fieldingOrder = getFieldingOrder();
     const ImagePremultiplicationEnum thisEffectOutputPremult = getPremult();
-    const unsigned int mipMapLevel = args.mipMapLevel;
+    const unsigned int mipmapLevel = args.mipmapLevel;
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
+    ///This flag is relevant only when the mipmapLevel is different than 0. We use it to determine
     ///whether the plug-in should render in the full scale image, and then we downscale afterwards or
     ///if the plug-in can just use the downscaled image to render.
-    bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
-    unsigned int renderMappedMipMapLevel;
+    bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipmapLevel != 0);
+    unsigned int renderMappedMipmapLevel;
     if (renderFullScaleThenDownscale) {
-        renderMappedMipMapLevel = 0;
+        renderMappedMipmapLevel = 0;
     } else {
-        renderMappedMipMapLevel = args.mipMapLevel;
+        renderMappedMipmapLevel = args.mipmapLevel;
     }
-    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipMapLevel) );
+    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipmapLevel) );
     assert(isSupportedRenderScale(supportsRS, renderMappedScale));
 
 
@@ -421,13 +421,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     //Nothing to render
                     return eRenderRoIRetCodeOk;
                 }
-                if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
+                if ( (supportsRS == eSupportsMaybe) && (renderMappedMipmapLevel != 0) ) {
                     // supportsRenderScaleMaybe may have changed, update it
                     supportsRS = supportsRenderScaleMaybe();
-                    renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
+                    renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipmapLevel != 0);
                     if (renderFullScaleThenDownscale) {
                         renderMappedScale = RenderScale::identity;
-                        renderMappedMipMapLevel = 0;
+                        renderMappedMipmapLevel = 0;
                     }
                 }
             }
@@ -547,7 +547,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ViewIdx inputIdentityView(args.view);
         assert(isSupportedRenderScale(supportsRS, renderMappedScale));
         bool identity;
-        const RectI pixelRod = rod.toPixelEnclosing(args.mipMapLevel, par);
+        const RectI pixelRod = rod.toPixelEnclosing(args.mipmapLevel, par);
         ViewInvarianceLevel viewInvariance = isViewInvariant();
 
         if ( (args.view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
@@ -569,11 +569,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
 
-        if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
+        if ( (supportsRS == eSupportsMaybe) && (mipmapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
             renderFullScaleThenDownscale = true;
             renderMappedScale = RenderScale::identity;
-            renderMappedMipMapLevel = 0;
+            renderMappedMipmapLevel = 0;
         }
 
         if (identity) {
@@ -728,14 +728,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
-    RectI downscaledImageBoundsNc = rod.toPixelEnclosing(args.mipMapLevel, par);
+    RectI downscaledImageBoundsNc = rod.toPixelEnclosing(args.mipmapLevel, par);
     RectI upscaledImageBoundsNc = rod.toPixelEnclosing(0, par);
     RectI roi;
 
     if (renderFullScaleThenDownscale) {
         //We cache 'image', hence the RoI should be expressed in its coordinates
         //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
-        roi = args.roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
+        roi = args.roi.toNewMipmapLevel(args.mipmapLevel, 0, par, rod);
 
         if (frameArgs->tilesSupported && !roi.clipIfOverlaps(upscaledImageBoundsNc)) {
             return eRenderRoIRetCodeOk;
@@ -754,14 +754,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * Keep in memory what the user has requested, and change the roi to the full bounds if the effect doesn't support tiles
      */
     const RectI originalRoI = roi;
-    // Store the mipMapLevel for originalRoI here because renderFullScaleThenDownscale may change later and we'll lose
+    // Store the mipmapLevel for originalRoI here because renderFullScaleThenDownscale may change later and we'll lose
     // the ability to recover this information when we potentially need it for a downscale operation later.
-    const unsigned int originalRoIMipMapLevel = renderFullScaleThenDownscale ? 0 : args.mipMapLevel;
+    const unsigned int originalRoIMipmapLevel = renderFullScaleThenDownscale ? 0 : args.mipmapLevel;
 
     if (frameArgs->tilesSupported) {
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
         ///just allocate the roi
-        const RectI upscaledRoI = renderFullScaleThenDownscale ? roi : roi.toNewMipMapLevel(args.mipMapLevel, 0, par, rod);
+        const RectI upscaledRoI = renderFullScaleThenDownscale ? roi : roi.toNewMipmapLevel(args.mipmapLevel, 0, par, rod);
         upscaledImageBoundsNc.clipIfOverlaps(upscaledRoI);
         downscaledImageBoundsNc.clipIfOverlaps(args.roi);
 #endif
@@ -771,7 +771,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     const RectI & downscaledImageBounds = downscaledImageBoundsNc;
     const RectI & upscaledImageBounds = upscaledImageBoundsNc;
-    const RectD canonicalRoI = roi.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipMapLevel, par, rod);
+    const RectD canonicalRoI = roi.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipmapLevel, par, rod);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
@@ -837,8 +837,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // OpenGL renders always support render scale...
             if (renderFullScaleThenDownscale) {
                 renderFullScaleThenDownscale = false;
-                renderMappedMipMapLevel = args.mipMapLevel;
-                renderMappedScale = RenderScale::fromMipmapLevel(renderMappedMipMapLevel);
+                renderMappedMipmapLevel = args.mipmapLevel;
+                renderMappedScale = RenderScale::fromMipmapLevel(renderMappedMipmapLevel);
                 if (frameArgs->tilesSupported) {
                     roi = args.roi;
                     if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
@@ -880,7 +880,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                   args.view,
                                                   1.,
                                                   draftModeSupported && frameArgs->draftMode,
-                                                  renderMappedMipMapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                  renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
     std::unique_ptr<ImageKey> nonDraftKey( new ImageKey(getNode().get(),
                                                           nodeHash,
                                                           isFrameVaryingOrAnimated,
@@ -888,7 +888,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           args.view,
                                                           1.,
                                                           false,
-                                                          renderMappedMipMapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                          renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
 
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 
@@ -940,9 +940,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 // If the node doesn't support render scale, first lookup the cache with requested level, if not cached then lookup
                 // with full scale
-                unsigned int lookupMipMapLevel = (renderMappedMipMapLevel != mipMapLevel && !isDuringPaintStroke)? mipMapLevel : renderMappedMipMapLevel;
+                unsigned int lookupMipmapLevel = (renderMappedMipmapLevel != mipmapLevel && !isDuringPaintStroke)? mipmapLevel : renderMappedMipmapLevel;
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, lookupMipMapLevel,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, lookupMipmapLevel,
                                                         &downscaledImageBounds,
                                                         &rod, args.roi,
                                                         args.bitdepth, *it,
@@ -956,7 +956,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                 appPTR->removeFromNodeCache( key->getHash() );
                                 plane.fullscaleImage.reset();
                             }
-                        } else if (renderMappedMipMapLevel != mipMapLevel) {
+                        } else if (renderMappedMipmapLevel != mipmapLevel) {
                             // Only keep the cached image if it covers the roi
                             std::list<RectI> restToRender;
                             plane.fullscaleImage->getRestToRender(args.roi, restToRender);
@@ -964,17 +964,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                 plane.fullscaleImage.reset();
                             } else {
                                 renderFullScaleThenDownscale = false;
-                                renderMappedMipMapLevel = mipMapLevel;
+                                renderMappedMipmapLevel = mipmapLevel;
                                 roi = args.roi;
                             }
                         }
                         break;
                     }
                 }
-                if (!plane.fullscaleImage && renderMappedMipMapLevel != lookupMipMapLevel) {
+                if (!plane.fullscaleImage && renderMappedMipmapLevel != lookupMipmapLevel) {
                     // Not found at requested mipmap level, look at full scale
                     for (int n = 0; n < nLookups; ++n) {
-                        getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
+                        getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipmapLevel,
                                                             &upscaledImageBounds,
                                                             &rod, roi,
                                                             args.bitdepth, *it,
@@ -1057,7 +1057,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (requestPassData) {
             *framesNeeded = requestPassData->globalData.frameViewsNeeded;
         } else {
-            *framesNeeded = getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipMapLevel);
+            *framesNeeded = getFramesNeeded_public(nodeHash, args.time, args.view, renderMappedMipmapLevel);
         }
     }
 
@@ -1091,7 +1091,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             lastStrokeRoD = getApp()->getLastPaintStrokeBbox();
             node->clearLastPaintStrokeRoD();
             // qDebug() << getScriptName_mt_safe().c_str() << "last stroke RoD: " << lastStrokeRoD.x1 << lastStrokeRoD.y1 << lastStrokeRoD.x2 << lastStrokeRoD.y2;
-            lastStrokePixelRoD = lastStrokeRoD.toPixelEnclosing(mipMapLevel, par);
+            lastStrokePixelRoD = lastStrokeRoD.toPixelEnclosing(mipmapLevel, par);
         }
     }
 
@@ -1227,7 +1227,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
            are identity over one of the input effect, thus avoiding pixels to render.
          */
         if ( inputsIntersectionSet && (hasMask || hasDifferentRods) ) {
-            inputsRoDIntersectionPixel = inputsIntersection.toPixelEnclosing(mipMapLevel, par);
+            inputsRoDIntersectionPixel = inputsIntersection.toPixelEnclosing(mipmapLevel, par);
             tryIdentityOptim = true;
         }
     }
@@ -1298,7 +1298,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         RenderRoIRetCode inputCode;
         {
-            const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipMapLevel, par, rod);
+            const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipmapLevel, par, rod);
 
             inputCode = renderInputImagesForRoI(requestPassData,
                                                 useTransforms,
@@ -1308,7 +1308,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                 rod,
                                                 canonicalRoI,
                                                 tls->currentRenderArgs.transformRedirections,
-                                                args.mipMapLevel,
+                                                args.mipmapLevel,
                                                 renderMappedScale,
                                                 renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                 byPassCache,
@@ -1391,7 +1391,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    planesToRender->outputPremult,
                                    fieldingOrder,
                                    par,
-                                   args.mipMapLevel,
+                                   args.mipmapLevel,
                                    renderFullScaleThenDownscale,
                                    storage,
                                    createInCache,
@@ -1448,19 +1448,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     it->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
                 }
 
-                if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
-                    const RectI bounds = rod.toPixelEnclosing(args.mipMapLevel, par);
+                if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipmapLevel() == 0) ) {
+                    const RectI bounds = rod.toPixelEnclosing(args.mipmapLevel, par);
                     it->second.downscaleImage = std::make_shared<Image>(*components,
                                                                           rod,
                                                                           downscaledImageBounds,
-                                                                          args.mipMapLevel,
+                                                                          args.mipmapLevel,
                                                                           it->second.fullscaleImage->getPixelAspectRatio(),
                                                                           outputDepth,
                                                                           planesToRender->outputPremult,
                                                                           fieldingOrder,
                                                                           true);
 
-                    it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
+                    it->second.fullscaleImage->downscaleMipmap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipmapLevel, true, it->second.downscaleImage.get() );
                 }
             }
 
@@ -1470,7 +1470,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///Subsequently the image and downscaled image are different only if the plug-in
             ///does not support the render scale and the proxy mode is turned on.
             assert( (it->second.fullscaleImage == it->second.downscaleImage && !renderFullScaleThenDownscale) ||
-                    ( ( it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipMapLevel() == it->second.downscaleImage->getMipMapLevel() ) && renderFullScaleThenDownscale ) );
+                    ( ( it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipmapLevel() == it->second.downscaleImage->getMipmapLevel() ) && renderFullScaleThenDownscale ) );
         } // for each plane
 
 #if NATRON_ENABLE_TRIMAP
@@ -1543,7 +1543,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
         if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
-            frameArgs->stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender->outputPremult, processChannels, frameArgs->tilesSupported, !renderFullScaleThenDownscale, renderMappedMipMapLevel);
+            frameArgs->stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender->outputPremult, processChannels, frameArgs->tilesSupported, !renderFullScaleThenDownscale, renderMappedMipmapLevel);
         }
 
 # ifdef DEBUG
@@ -1580,7 +1580,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               args.time,
                                               frameArgs,
                                               safety,
-                                              args.mipMapLevel,
+                                              args.mipmapLevel,
                                               args.view,
                                               rod,
                                               par,
@@ -1660,7 +1660,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (!frameArgs->tilesSupported) {
                 //assert that bounds are consistent with the RoD if tiles are not supported
                 const RectD & srcRodCanonical = renderFullScaleThenDownscale ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
-                const RectI srcBounds = srcRodCanonical.toPixelEnclosing(renderFullScaleThenDownscale ? it->second.fullscaleImage->getMipMapLevel() : it->second.downscaleImage->getMipMapLevel(), par);
+                const RectI srcBounds = srcRodCanonical.toPixelEnclosing(renderFullScaleThenDownscale ? it->second.fullscaleImage->getMipmapLevel() : it->second.downscaleImage->getMipmapLevel(), par);
                 const RectI srcRealBounds = renderFullScaleThenDownscale ? it->second.fullscaleImage->getBounds() : it->second.downscaleImage->getBounds();
                 assert(srcRealBounds.x1 == srcBounds.x1);
                 assert(srcRealBounds.x2 == srcBounds.x2);
@@ -1719,14 +1719,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         //We have to return the downscale image, so make sure it has been computed
         if ( (renderRetCode != eRenderRoIStatusRenderFailed) &&
              renderFullScaleThenDownscale &&
-             ( it->second.fullscaleImage->getMipMapLevel() != mipMapLevel && it->second.fullscaleImage->getStorageMode() != eStorageModeGLTex) &&
+             ( it->second.fullscaleImage->getMipmapLevel() != mipmapLevel && it->second.fullscaleImage->getStorageMode() != eStorageModeGLTex) &&
              !hasSomethingToRender ) {
-            assert(it->second.fullscaleImage->getMipMapLevel() == 0);
+            assert(it->second.fullscaleImage->getMipmapLevel() == 0);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
                 it->second.downscaleImage = std::make_shared<Image>(it->second.fullscaleImage->getComponents(),
                                                                       it->second.fullscaleImage->getRoD(),
                                                                       downscaledImageBounds,
-                                                                      args.mipMapLevel,
+                                                                      args.mipmapLevel,
                                                                       it->second.fullscaleImage->getPixelAspectRatio(),
                                                                       it->second.fullscaleImage->getBitDepth(),
                                                                       it->second.fullscaleImage->getPremultiplication(),
@@ -1735,7 +1735,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 
-            it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
+            it->second.fullscaleImage->downscaleMipmap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipmapLevel, false, it->second.downscaleImage.get() );
         }
 
         const ImagePlaneDesc* comp = 0;
@@ -1753,7 +1753,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         assert(comp);
         ///The image might need to be converted to fit the original requested format
         if (comp) {
-            const RectI downscaledOriginalRoI = originalRoI.toNewMipMapLevel(originalRoIMipMapLevel, args.mipMapLevel, par, rod);
+            const RectI downscaledOriginalRoI = originalRoI.toNewMipmapLevel(originalRoIMipmapLevel, args.mipmapLevel, par, rod);
             it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, downscaledOriginalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
 
@@ -1782,7 +1782,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 
 #ifdef DEBUG
-        const RectI renderedImageBounds = rod.toPixelEnclosing(args.mipMapLevel, par);
+        const RectI renderedImageBounds = rod.toPixelEnclosing(args.mipmapLevel, par);
         const RectI expectedContainedRoI = args.roi.intersect(renderedImageBounds);
         if ( !it->second.downscaleImage->getBounds().contains(expectedContainedRoI) ) {
             qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
@@ -1821,7 +1821,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
                                   double time,
                                   const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
-                                  unsigned int mipMapLevel,
+                                  unsigned int mipmapLevel,
                                   ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
@@ -1855,16 +1855,16 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
         self->getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
-    unsigned int renderMappedMipMapLevel = 0;
+    unsigned int renderMappedMipmapLevel = 0;
 
     for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         it->second.renderMappedImage = renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage;
         if ( it == planesToRender->planes.begin() ) {
-            renderMappedMipMapLevel = it->second.renderMappedImage->getMipMapLevel();
+            renderMappedMipmapLevel = it->second.renderMappedImage->getMipmapLevel();
         }
     }
 
-    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipMapLevel) );
+    RenderScale renderMappedScale( RenderScale::fromMipmapLevel(renderMappedMipmapLevel) );
     RenderingFunctorRetEnum renderStatus = eRenderingFunctorRetOK;
     if ( planesToRender->rectsToRender.empty() ) {
         retCode = EffectInstance::eRenderRoIStatusImageAlreadyRendered;
@@ -1932,8 +1932,8 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             tiledArgs->firstFrame = firstFrame;
             tiledArgs->lastFrame = lastFrame;
             tiledArgs->preferredInput = preferredInput;
-            tiledArgs->mipMapLevel = mipMapLevel;
-            tiledArgs->renderMappedMipMapLevel = renderMappedMipMapLevel;
+            tiledArgs->mipmapLevel = mipmapLevel;
+            tiledArgs->renderMappedMipmapLevel = renderMappedMipmapLevel;
             tiledArgs->rod = rod;
             tiledArgs->time = time;
             tiledArgs->view = view;
@@ -1981,7 +1981,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipmapLevel, renderMappedMipmapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) || (functorRet == eRenderingFunctorRetOutOfGPUMemory) ) {
                     renderStatus = functorRet;

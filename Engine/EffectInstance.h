@@ -134,7 +134,7 @@ public:
 
         double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
-        unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
+        unsigned int mipmapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         ViewIdx view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
@@ -160,7 +160,7 @@ public:
         RenderRoIArgs()
             : time(0)
             , scale()
-            , mipMapLevel(0)
+            , mipmapLevel(0)
             , view(0)
             , roi()
             , preComputedRoD()
@@ -178,7 +178,7 @@ public:
 
         RenderRoIArgs( double time_,
                        const RenderScale & scale_,
-                       unsigned int mipMapLevel_,
+                       unsigned int mipmapLevel_,
                        ViewIdx view_,
                        bool byPassCache_,
                        const RectI & roi_,
@@ -192,7 +192,7 @@ public:
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
             , scale(scale_)
-            , mipMapLevel(mipMapLevel_)
+            , mipmapLevel(mipmapLevel_)
             , view(view_)
             , roi(roi_)
             , preComputedRoD(preComputedRoD_)
@@ -580,7 +580,7 @@ public:
                                              StorageModeEnum storage,
                                              StorageModeEnum returnStorage,
                                              const ImageKey & key,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
                                              const RectI& roi,
@@ -687,7 +687,7 @@ public:
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
                                            double time,
                                            ViewIdx view,
-                                           unsigned originalMipMapLevel,
+                                           unsigned originalMipmapLevel,
                                            const NodePtr & node,
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
@@ -701,7 +701,7 @@ public:
      **/
     static StatusEnum computeRequestPass(double time,
                                          ViewIdx view,
-                                         unsigned int mipMapLevel,
+                                         unsigned int mipmapLevel,
                                          const RectD & renderWindow,
                                          const NodePtr & treeRoot,
                                          FrameRequestMap & request);
@@ -714,7 +714,7 @@ public:
                                                                const InputMatrixMapPtr & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
                                                                StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
-                                                               unsigned int originalMipMapLevel,         // roi functor specific
+                                                               unsigned int originalMipmapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
@@ -1162,7 +1162,7 @@ public:
                                      ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel) WARN_UNUSED_RETURN;
 
     void getFrameRange_public(U64 hash, double *first, double *last, bool bypasscache = false);
 
@@ -2123,7 +2123,7 @@ private:
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
      * @param time The time at which to render
      * @param scale The scale at which to render
-     * @param mipMapLevel Redundant with scale
+     * @param mipmapLevel Redundant with scale
      * @param view The view on which to render
      * @param renderWindow The rectangle to render of the image, in pixel coordinates
      * @param cachedImgParams The parameters of the image to render as they are in the cache.
@@ -2148,7 +2148,7 @@ private:
                                                  double time,
                                                  const ParallelRenderArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
-                                                 unsigned int mipMapLevel,
+                                                 unsigned int mipmapLevel,
                                                  ViewIdx view,
                                                  const RectD & rod, //!< rod in canonical coordinates
                                                  const double par,
@@ -2173,7 +2173,7 @@ private:
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
                                              const InputMatrixMapPtr & transformMatrix,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
                                              const RenderScale & renderMappedScale,
                                              bool useScaleOneInputImages,
                                              bool byPassCache,

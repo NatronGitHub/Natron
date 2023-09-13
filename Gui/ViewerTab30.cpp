@@ -194,20 +194,20 @@ ViewerTab::getGamma() const
 }
 
 void
-ViewerTab::setMipMapLevel(int level)
+ViewerTab::setMipmapLevel(unsigned int level)
 {
     if (level > 0) {
         _imp->renderScaleCombo->setCurrentIndex(level - 1);
     }
 
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewerNode->onMipmapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
-int
-ViewerTab::getMipMapLevel() const
+unsigned int
+ViewerTab::getMipmapLevel() const
 {
-    return _imp->viewerNode->getMipMapLevel();
+    return _imp->viewerNode->getMipmapLevel();
 }
 
 void
@@ -219,7 +219,7 @@ ViewerTab::setRenderScaleActivated(bool act)
 bool
 ViewerTab::getRenderScaleActivated() const
 {
-    return _imp->viewerNode->getMipMapLevel() != 0;
+    return _imp->viewerNode->getMipmapLevel() != 0;
 }
 
 void
@@ -327,14 +327,14 @@ ViewerTab::onAutoContrastChanged(bool b)
 void
 ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
-    int level;
+    unsigned int level;
 
     if (_imp->renderScaleActive) {
         level = index + 1;
     } else {
         level = 0;
     }
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewerNode->onMipmapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 

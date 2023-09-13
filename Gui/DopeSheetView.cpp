@@ -2817,17 +2817,6 @@ DopeSheetView::restoreOpenGLContext()
     running_in_main_thread();
 }
 
-/**
- * @brief DopeSheetView::getCurrentRenderScale
- *
- *
- */
-unsigned int
-DopeSheetView::getCurrentRenderScale() const
-{
-    return 0;
-}
-
 void
 DopeSheetView::onSelectedAllTriggered()
 {

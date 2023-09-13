@@ -109,7 +109,7 @@ struct TextureInfo
         , gain(1.)
         , gamma(1.)
         , offset(0.)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
         , premult(eImagePremultiplicationOpaque)
         , time(0)
         , rod()
@@ -127,7 +127,7 @@ struct TextureInfo
     double gain;
     double gamma;
     double offset;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
     ImagePremultiplicationEnum premult;
     SequenceTime time;
     RectD rod;
@@ -240,7 +240,7 @@ public:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel, int textureIndex, DrawPolygonModeEnum polygonMode, bool background);
+    void drawRenderingVAO(unsigned int mipmapLevel, int textureIndex, DrawPolygonModeEnum polygonMode, bool background);
 
     void initializeGL();
 

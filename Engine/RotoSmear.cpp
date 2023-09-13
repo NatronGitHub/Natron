@@ -310,7 +310,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
         for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
-            assert(plane->second->getMipMapLevel() == mipmapLevel);
+            assert(plane->second->getMipmapLevel() == mipmapLevel);
 
             distToNext = 0.;
             int nComps = plane->first.getNumComponents();

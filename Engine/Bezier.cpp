@@ -337,7 +337,7 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
                         const BezierCP & last,
                         double time,
                         ViewIdx view,
-                        unsigned int mipMapLevel,
+                        unsigned int mipmapLevel,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox) ///< input/output
 {
@@ -372,8 +372,8 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
+    if (mipmapLevel > 0) {
+        int pot = 1 << mipmapLevel;
         p0.x /= pot;
         p0.y /= pot;
 
@@ -396,7 +396,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
                                     bool isOpenBezier,
                                     double time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
                                     const Transform::Matrix3x3& transform,
                                     RectD* bbox) ///< input/output
 {
@@ -428,7 +428,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox);
+        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipmapLevel, transform, bbox);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -717,7 +717,7 @@ bezierSegmentEval(bool useGuiCurves,
                   const BezierCP & last,
                   double time,
                   ViewIdx view,
-                  unsigned int mipMapLevel,
+                  unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                   int nbPointsPerSegment,
 #else
@@ -752,8 +752,8 @@ bezierSegmentEval(bool useGuiCurves,
     p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
 
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
+    if (mipmapLevel > 0) {
+        int pot = 1 << mipmapLevel;
         p0.x /= pot;
         p0.y /= pot;
 
@@ -2539,7 +2539,7 @@ Bezier::deCastelJau(bool isOpenBezier,
                     bool useGuiCurves,
                     const std::list<BezierCPPtr>& cps,
                     double time,
-                    unsigned int mipMapLevel,
+                    unsigned int mipmapLevel,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
@@ -2572,7 +2572,7 @@ Bezier::deCastelJau(bool isOpenBezier,
 
         if (points) {
             std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipmapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
 
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
             if (isClosed || !isLastSegment) {
@@ -2583,7 +2583,7 @@ Bezier::deCastelJau(bool isOpenBezier,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipmapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
             if (isClosed || !isLastSegment) {
                 if (!pointsSingleList->empty()) {
@@ -2605,7 +2605,7 @@ Bezier::deCastelJau(bool isOpenBezier,
 void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
-                                   unsigned int mipMapLevel,
+                                   unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2614,7 +2614,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    std::list<std::list<ParametricPoint> >* points,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2626,7 +2626,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
-                                   unsigned int mipMapLevel,
+                                   unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2635,7 +2635,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    std::list<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2647,7 +2647,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 void
 Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
                                             double time,
-                                            unsigned int mipMapLevel,
+                                            unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                             int nbPointsPerSegment,
 #else
@@ -2662,7 +2662,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 
     getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    deCastelJau(isOpenBezier(), useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished,
+    deCastelJau(isOpenBezier(), useGuiCurves, _imp->points, time, mipmapLevel, _imp->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -2674,11 +2674,11 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
-                                                unsigned int mipMapLevel,
+                                                unsigned int mipmapLevel,
                                                 std::list<std::list<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                -1,
 #else
@@ -2690,7 +2690,7 @@ Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                              double time,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2700,7 +2700,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                              std::list<ParametricPoint >* points,
                                              RectD* bbox) const
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -2712,7 +2712,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                                                          double time,
-                                                         unsigned int mipMapLevel,
+                                                         unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                          int nbPointsPerSegment,
 #else
@@ -2760,7 +2760,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
         }
         if (points) {
             std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -2777,7 +2777,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -2809,7 +2809,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 double time,
-                                                unsigned int mipMapLevel,
+                                                unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2819,7 +2819,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 std::list<std::list<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else

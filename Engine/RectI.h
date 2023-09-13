@@ -190,7 +190,7 @@ public:
      * @param rod The region of definition to clip this rectangle to when converting it to canonical coordinates.
      *
      **/
-    RectI toNewMipMapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const;
+    RectI toNewMipmapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**

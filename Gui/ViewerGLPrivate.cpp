@@ -230,7 +230,7 @@ static const GLubyte triangleStrip[28] = {
 // |/  |/  |/  |
 // 12--13--14--15
 void
-ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
+ViewerGL::Implementation::drawRenderingVAO(unsigned int mipmapLevel,
                                            int textureIndex,
                                            ViewerGL::DrawPolygonModeEnum polygonMode,
                                            bool background)
@@ -250,8 +250,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     const double par = roiRounded.par;
-    const RectD canonicalRoIRoundedToTileSize = roiRounded.toCanonical_noClipping(mipMapLevel, par);
-    const RectD canonicalRoINotRounded = roiNotRounded.toCanonical_noClipping(mipMapLevel, par);
+    const RectD canonicalRoIRoundedToTileSize = roiRounded.toCanonical_noClipping(mipmapLevel, par);
+    const RectD canonicalRoINotRounded = roiNotRounded.toCanonical_noClipping(mipmapLevel, par);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);

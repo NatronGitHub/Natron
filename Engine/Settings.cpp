@@ -2491,7 +2491,7 @@ Settings::isAutoProxyEnabled() const
 }
 
 unsigned int
-Settings::getAutoProxyMipMapLevel() const
+Settings::getAutoProxyMipmapLevel() const
 {
     return (unsigned int)_autoProxyLevel->getValue() + 1;
 }
