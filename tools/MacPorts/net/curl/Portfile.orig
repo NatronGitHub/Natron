@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.2.1
-checksums                       rmd160  b8486b2903708f892bdff05a4f9a593c776a3ec6 \
-                                sha256  dd322f6bd0a20e6cebdfd388f69e98c3d183bed792cf4713c8a7ef498cba4894 \
-                                size    2631932
+version                         8.3.0
+checksums                       rmd160  f5f0aa07f0783cc331fb86c50249037d3524e33f \
+                                sha256  376d627767d6c4f05105ab6d497b0d9aba7111770dd9d995225478209c37ea63 \
+                                size    2641764
 
 categories                      net www
 platforms                       darwin freebsd
@@ -46,7 +46,12 @@ if {${name} eq ${subport}} {
                                 port:zstd
 
     patchfiles                  configure.patch
-    patchfiles-append           SCDynamicStoreCopyProxies.patch
+
+    # see https://github.com/curl/curl/issues/11893
+    if {${os.platform} eq "darwin" && ${os.major} >= 23} {
+        incr revision
+        patchfiles-append       patch-sonoma.patch
+    }
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
