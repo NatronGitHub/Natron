@@ -441,7 +441,8 @@ enum ViewerColorSpaceEnum
 {
     eViewerColorSpaceSRGB = 0,
     eViewerColorSpaceLinear,
-    eViewerColorSpaceRec709
+    eViewerColorSpaceRec709,
+    eViewerColorSpaceBT1886
 };
 
 enum ImageBitDepthEnum

@@ -1293,6 +1293,12 @@ LutManager::sRGBLut()
     return LutManager::m_instance.getLut("sRGB", from_func_srgb, to_func_srgb);
 }
 
+const Lut*
+LutManager::BT1886Lut()
+{
+    return LutManager::m_instance.getLut("BT1886", from_func_bt1886, to_func_bt1886);
+}
+
 // Rec.709 and Rec.2020 share the same transfer function (and illuminant), except that
 // Rec.2020 is more precise.
 // https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2020-0-201208-S!!PDF-E.pdf

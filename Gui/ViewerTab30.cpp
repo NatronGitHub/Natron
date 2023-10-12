@@ -89,8 +89,11 @@ ViewerTab::getColorSpace() const
 
         return "Rec.709";
         break;
-    default:
+    case eViewerColorSpaceBT1886:
 
+        return "BT1886";
+        break;
+    default:
         return "";
         break;
     }

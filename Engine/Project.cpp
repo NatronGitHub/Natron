@@ -1001,6 +1001,7 @@ Project::initializeKnobs()
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
+    colorSpaces.push_back(ChoiceOption("BT1886","",""));
 
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit LUT") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");

@@ -42,6 +42,9 @@ const char* fragRGB =
     "float linear_to_rec709(float c) {"
     "    return (c<0.018) ? (4.500*c) : (1.099*pow(c,0.45) - 0.099);\n"
     "}\n"
+    "float linear_to_bt1886(float c) {"
+    "    return pow(c,1.0/2.4);\n"
+    "}\n"
     "void main(){\n"
     "    vec4 color_tmp = texture2D(Tex,gl_TexCoord[0].st);\n"
     "    color_tmp.rgb = (color_tmp.rgb * gain) + offset;\n"
@@ -52,11 +55,20 @@ const char* fragRGB =
     "       color_tmp.b = linear_to_srgb(color_tmp.b);\n"
 // << END TO SRGB
     "   }\n"
-    "   else if (lut == 2){ // Rec 709\n" // << TO REC 709
+    "   else if (lut == 2){ // Rec 709\n"
+// << TO REC 709
     "       color_tmp.r = linear_to_rec709(color_tmp.r);\n"
     "       color_tmp.g = linear_to_rec709(color_tmp.g);\n"
     "       color_tmp.b = linear_to_rec709(color_tmp.b);\n"
-    "   }\n" // << END TO REC 709
+// << END TO REC 709
+    "   }\n"
+    "   else if (lut == 3){ // BT1886\n"
+// << TO BT1886
+    "       color_tmp.r = linear_to_bt1886(color_tmp.r);\n"
+    "       color_tmp.g = linear_to_bt1886(color_tmp.g);\n"
+    "       color_tmp.b = linear_to_bt1886(color_tmp.b);\n"
+// << END TO BT1886
+    "   }\n"
     "   if (gamma <= 0.) {\n"
     "       color_tmp.r = (color_tmp.r >= 1.) ? 1. : 0.;\n"
     "       color_tmp.g = (color_tmp.g >= 1.) ? 1. : 0.;\n"
