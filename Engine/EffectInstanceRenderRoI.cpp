@@ -737,17 +737,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
         roi = args.roi.toNewMipmapLevel(args.mipmapLevel, 0, par, rod);
 
-        if (frameArgs->tilesSupported && !roi.clipIfOverlaps(upscaledImageBoundsNc)) {
-            return eRenderRoIRetCodeOk;
+        if (frameArgs->tilesSupported) {
+            if (!roi.clipIfOverlaps(upscaledImageBoundsNc)) {
+                return eRenderRoIRetCodeOk;
+            }
+            assert(upscaledImageBoundsNc.contains(roi));
         }
-        assert( upscaledImageBoundsNc.contains(roi));
     } else {
         roi = args.roi;
 
-        if (frameArgs->tilesSupported && !roi.clipIfOverlaps(downscaledImageBoundsNc)) {
-            return eRenderRoIRetCodeOk;
+        if (frameArgs->tilesSupported) {
+            if (!roi.clipIfOverlaps(downscaledImageBoundsNc)) {
+                return eRenderRoIRetCodeOk;
+            }
+            assert(downscaledImageBoundsNc.contains(roi));
         }
-        assert(downscaledImageBoundsNc.contains(roi));
     }
 
     /*

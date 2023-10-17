@@ -66,34 +66,49 @@ jobs:
           tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Unix
+      - name: Download Plugins
         run: |
-          mkdir build && cd build
-          cmake ../
-          make -j2
-
-      - name: Run Unix Tests
-        id: run-unix-tests
-        # Allow continuing after error so logs can be uploaded.
-        continue-on-error: true
-        run: |
-          cd build
-
           mkdir Plugins && cd Plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
           unzip openfx-io-build-ubuntu_22-testing.zip
           cd ..
 
-          OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+      - name: Build Unix (debug)
+        run: |
+          mkdir debug && cd debug
+          cmake -DCMAKE_BUILD_TYPE=Debug ../
+          make -j2
+
+      - name: Run Unix Tests (debug)
+        id: run-unix-tests-debug
+        # Allow continuing after error so logs can be uploaded.
+        continue-on-error: true
+        run: |
+          cd debug
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+
+      - name: Build Unix (release)
+        run: |
+          mkdir release && cd release
+          cmake ../
+          make -j2
+
+      - name: Run Unix Tests (release)
+        id: run-unix-tests-release
+        # Allow continuing after error so logs can be uploaded.
+        continue-on-error: true
+        run: |
+          cd release
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.os }} Test Logs
-          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
+          path: ${{ github.workspace }}/release/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
-        if: steps.run-unix-tests.outcome == 'failure'
+        if: steps.run-unix-tests-debug.outcome == 'failure' || steps.run-unix-tests-release.outcome == 'failure'
         run: exit 1
 
   win-test:
