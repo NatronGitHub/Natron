@@ -12,7 +12,7 @@ url="https://www.openexr.com/"
 license=('spdx:BSD-3-Clause')
 depends=("${MINGW_PACKAGE_PREFIX}-natron_imath"
          "${MINGW_PACKAGE_PREFIX}-libdeflate"
-         "${MINGW_PACKAGE_PREFIX}-libwinpthread-git"
+         "${MINGW_PACKAGE_PREFIX}-libwinpthread-git")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-ninja")
