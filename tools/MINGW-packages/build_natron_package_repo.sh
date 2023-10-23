@@ -6,6 +6,7 @@ CWD=$(pwd)
 PKGS="
 mingw-w64-natron-setup
 mingw-w64-imath
+mingw-w64-libdeflate
 mingw-w64-openexr
 mingw-w64-libraw-gpl2
 mingw-w64-opencolorio2-git
