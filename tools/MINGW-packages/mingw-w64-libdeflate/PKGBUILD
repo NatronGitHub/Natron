@@ -1,0 +1,56 @@
+# Maintainer: Miloš Komarčević <miloskomarcevic@aim.com>
+
+_realname=libdeflate
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.19
+pkgrel=99.1
+pkgdesc="Heavily optimized library for DEFLATE/zlib/gzip compression and decompression (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+url='https://github.com/ebiggers/libdeflate'
+license=('spdx:MIT')
+makedepends=(
+  "${MINGW_PACKAGE_PREFIX}-cc"
+  "${MINGW_PACKAGE_PREFIX}-cmake"
+  "${MINGW_PACKAGE_PREFIX}-ninja"
+)
+source=(${_realname}-${pkgver}.tar.gz::"${url}/archive/v${pkgver}.tar.gz"
+        "002-pkg-config.patch")
+sha256sums=('27bf62d71cd64728ff43a9feb92f2ac2f2bf748986d856133cc1e51992428c25'
+            '7feb96b6466375824af54a829dfe0d5cbd641970d64ef9fe0f9f4ab5e18040dd')
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+
+  patch -p1 -i "${srcdir}"/002-pkg-config.patch
+}
+
+build() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+    "${MINGW_PREFIX}"/bin/cmake.exe \
+      -GNinja \
+      -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+      "${extra_config[@]}" \
+      ../${_realname}-${pkgver}
+
+  "${MINGW_PREFIX}"/bin/cmake.exe --build .
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  DESTDIR="${pkgdir}" "${MINGW_PREFIX}"/bin/cmake.exe --install .
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/COPYING "${pkgdir}"${MINGW_PREFIX}/share/licenses/${_realname}/COPYING
+}
