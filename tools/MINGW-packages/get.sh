@@ -5,8 +5,9 @@ VERSION="current"
 TMP="${CWD}/tmp-${VERSION}"
 URL="https://sourceforge.net/projects/natron/files/MINGW-packages"
 PKGS="
-mingw-w64-x86_64-imath-3.1.7-99.1-any.pkg.tar.zst
-mingw-w64-x86_64-openexr-3.1.7-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-imath-3.1.9-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-libdeflate-1.19-99.1-any.pkg.tar.zst
+mingw-w64-x86_64-openexr-3.2.1-99.1-any.pkg.tar.zst
 mingw-w64-x86_64-opencolorio-git-1356.66b7b7d5-99.1-any.pkg.tar.zst
 mingw-w64-x86_64-openimageio-2.4.10.0-99.1-any.pkg.tar.zst
 mingw-w64-x86_64-ffmpeg-gpl2-4.4.3-99.1-any.pkg.tar.zst
