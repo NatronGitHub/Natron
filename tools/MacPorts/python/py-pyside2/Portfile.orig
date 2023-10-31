@@ -4,7 +4,7 @@ PortSystem              1.0
 PortGroup               python 1.0
 
 name                    py-pyside2
-version                 5.15.10
+version                 5.15.11
 revision                0
 categories-append       devel aqua
 platforms               darwin
@@ -18,14 +18,15 @@ master_sites            https://download.qt.io/official_releases/QtForPython/pys
 distname                pyside-setup-opensource-src-${version}
 use_xz                  yes
 
-checksums               rmd160  492396a82a4140e86a81e4235cafa6a781766714 \
-                        sha256  2af691d3613a41f83a60439b46568fc2c696dbfae42f7cd7b07152d115ead33a \
-                        size    3583764
+checksums               rmd160  7f5725800c28998c6600b8360caab88bc137b11d \
+                        sha256  da567cd3b7854d27a0b4afe3e89de8b2f98b7a6d57393be56f1fc13f770faf29 \
+                        size    3584760
 
 
-python.versions         37 38 39 310
+python.versions         37 38 39 310 311
+python.pep517           no
 
-set llvm_version        16
+set llvm_version        17
 
 if {${name} ne ${subport}} {
     PortGroup           qt5 1.0
@@ -38,9 +39,6 @@ if {${name} ne ${subport}} {
 
     # Needed for generating shiboken2 documentation
     qt5.depends_build_component sqlite-plugin
-
-    # undeclared identifier NPY_ARRAY_UPDATEIFCOPY
-    patchfiles-append   patch-shiboken2-numpy-1.23.0.diff
 
     depends_build-append \
         path:bin/cmake:cmake \

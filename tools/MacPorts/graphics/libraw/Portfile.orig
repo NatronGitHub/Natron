@@ -29,6 +29,7 @@ depends_lib         port:jasper \
                     port:lcms2
 
 use_autoreconf      yes
+autoreconf.args     -fvi
 
 # libraw_datastream.h:125:8: error: no template named 'unique_ptr' in namespace 'std'
 compiler.cxx_standard 2011

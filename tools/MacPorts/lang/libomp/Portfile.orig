@@ -30,7 +30,7 @@ subport                 libomp-devel {}
 
 if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
-    version             16.0.6
+    version             17.0.3
     revision            0
 
     if { ${subport} eq "libomp-devel" } {
@@ -46,13 +46,13 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 
     checksums \
         openmp-${version}.src.tar.xz \
-        rmd160  de7bc41e8207077aee79e3ff45c782f489f8f383 \
-        sha256  a2536f06373774f2829d892b72eea5f97bab20e69b26b03042d947f992eb8e38 \
-        size    1278072 \
+                    rmd160  a79350f38202f4e9819373a433b1b19cef631eb2 \
+                    sha256  e04172c067f256d06cd8112abb49bc65f4e1d986a4b49b36cd837dfee3cdd274 \
+                    size    1273276 \
         cmake-${version}.src.tar.xz \
-        rmd160  94ead500d749de031894e9a14c51ed17951c8fd7 \
-        sha256  39d342a4161095d2f28fb1253e4585978ac50521117da666e2b1f6f28b62f514 \
-        size    9008
+                    rmd160  2f419efae4d3f8c9d87943cf1873031468a19bd7 \
+                    sha256  54fc534f0da09088adbaa6c3bfc9899a500153b96e60c2fb9322a7aa37b1027a \
+                    size    8712
 
     if {${os.major} <= 12} {
         # kmp_alloc.c includes <atomic> but libc++ is not the default on
@@ -97,6 +97,18 @@ cmake.out_of_source     yes
 
 # According to documentation builds with clang >= 3.3
 compiler.blacklist-append {clang < 500} *gcc*
+
+# https://trac.macports.org/ticket/68490#
+# Use clang-11-bootstrap on OSX10.11 and older
+if {${os.major} <= 15} {
+    compiler.blacklist-append clang *gcc*
+    depends_build-append port:clang-11-bootstrap
+    depends_skip_archcheck-append clang-11-bootstrap
+    pre-configure {
+        configure.cc    ${prefix}/libexec/clang-11-bootstrap/bin/clang
+        configure.cxx   ${prefix}/libexec/clang-11-bootstrap/bin/clang++
+    }
+}
 
 if {${os.major} <= 17} {
     default_variants    +universal

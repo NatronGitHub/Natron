@@ -7,8 +7,8 @@ PortGroup           muniversal 1.0
 name                libvpx
 conflicts           libvpx-devel
 set my_name         libvpx
-version             1.13.0
-revision            1
+version             1.13.1
+revision            0
 
 categories          multimedia
 license             Permissive
