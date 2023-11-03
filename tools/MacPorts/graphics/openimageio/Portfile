@@ -18,9 +18,9 @@ platforms               darwin
 
 github.setup        OpenImageIO oiio 2.4.15.0 v
 revision            100
-checksums           rmd160  31292919a0cb4f9fb4ee92d08add97349280874a \
-                    sha256  b2d76e3880d25d3b005f7c694811a991ccebb6e396965959d194f79c369ff390 \
-                    size    47894535
+checksums           rmd160  2ccbd4905b7133f730d08a4387ae3641db0d73c3 \
+                    sha256  67f28a1599eb942a075f23cc35c938f7de0b901a40583da6798cf9a418c56e07 \
+                    size    47894262
 
 github.tarball_from     archive
 
