@@ -1,5 +1,3 @@
-# Maintainer: Miloš Komarčević <miloskomarcevic@aim.com>
-
 _realname=libdeflate
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
