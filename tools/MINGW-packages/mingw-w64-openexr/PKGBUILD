@@ -69,6 +69,7 @@ build() {
       -DBUILD_SHARED_LIBS=ON \
       -DBUILD_TESTING=OFF \
       -DOPENEXR_INSTALL_EXAMPLES=OFF \
+      -DOPENEXR_BUILD_TOOLS=OFF \
       ../${_realname}-${pkgver}
 
   ${MINGW_PREFIX}/bin/cmake --build .
