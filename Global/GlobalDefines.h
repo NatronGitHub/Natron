@@ -26,6 +26,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cstdint>
 #include <utility>
 #if defined(_WIN32)
 #include <string>
@@ -47,9 +48,6 @@
 #undef isalpha
 #undef isalnum
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <cstdint>
-#endif
 #include <QtCore/QtGlobal>
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtCore/QForeachContainer>

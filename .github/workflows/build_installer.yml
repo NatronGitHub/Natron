@@ -4,6 +4,10 @@ on:
   workflow_dispatch: {}
   push:
 
+env:
+  NATRON_BUILD_WORKSPACE: 'D:/nbw'
+  CI: 'True'
+
 jobs:
   win-installer:
     name: Windows Installer
@@ -11,8 +15,6 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-      CI: 'True'
 
     steps:
       - name: Checkout branch
@@ -41,7 +43,6 @@ jobs:
       - name: Build
         id: build
         run: |
-          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
           NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
           mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
 
@@ -76,8 +77,6 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-      CI: 'True'
 
     steps:
       - name: Checkout branch
@@ -106,7 +105,6 @@ jobs:
       - name: Build
         id: build
         run: |
-          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
           NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
           mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
 
