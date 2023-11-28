@@ -115,6 +115,9 @@ lutFromColorspace(ViewerColorSpaceEnum cs)
     case eViewerColorSpaceRec709:
         lut = Color::LutManager::Rec709Lut();
         break;
+    case eViewerColorSpaceBT1886:
+        lut = Color::LutManager::BT1886Lut();
+        break;
     case eViewerColorSpaceLinear:
     default:
         lut = 0;
