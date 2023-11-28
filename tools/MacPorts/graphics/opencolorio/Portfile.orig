@@ -106,7 +106,7 @@ if {${configure.build_arch} in [list ppc ppc64]} {
 # OpenColorIO intentially installs Python module in lib
 # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
 
-variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 python38 python39 python310 python311 {
+variant python27 description {Build the Python 2.7 bindings} conflicts python38 python39 python310 python311 {
     depends_lib-append port:python27
     configure.args-append \
         -DPYTHON=${prefix}/bin/python2.7
@@ -119,33 +119,7 @@ variant python27 description {Build the Python 2.7 bindings} conflicts python36 
     }
 }
 
-variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 python38 python39 python310 python311 {
-    depends_lib-append port:python36
-    configure.args-append \
-        -DPYTHON=${prefix}/bin/python3.6
-    post-destroot {
-        xinstall -d -m 0755 \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.6/lib/python3.6/site-packages
-        ln -s \
-            ${prefix}/lib/python3.6/site-packages/PyOpenColorIO.so \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.6/lib/python3.6/site-packages/
-    }
-}
-
-variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 python38 python39 python310 python311 {
-    depends_lib-append port:python37
-    configure.args-append \
-        -DPYTHON=${prefix}/bin/python3.7
-    post-destroot {
-        xinstall -d -m 0755 \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.7/lib/python3.7/site-packages
-        ln -s \
-            ${prefix}/lib/python3.7/site-packages/PyOpenColorIO.so \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.7/lib/python3.7/site-packages/
-    }
-}
-
-variant python38 description {Build the Python 3.8 bindings} conflicts python27 python36 python37 python39 python310 python311 {
+variant python38 description {Build the Python 3.8 bindings} conflicts python27 python39 python310 python311 {
     depends_lib-append port:python38
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.8
@@ -158,7 +132,7 @@ variant python38 description {Build the Python 3.8 bindings} conflicts python27 
     }
 }
 
-variant python39 description {Build the Python 3.9 bindings} conflicts python27 python36 python37 python38 python310 python311 {
+variant python39 description {Build the Python 3.9 bindings} conflicts python27 python38 python310 python311 {
     depends_lib-append port:python39
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.9
@@ -171,7 +145,7 @@ variant python39 description {Build the Python 3.9 bindings} conflicts python27 
     }
 }
 
-variant python310 description {Build the Python 3.10 bindings} conflicts python27 python36 python37 python38 python39 python311 {
+variant python310 description {Build the Python 3.10 bindings} conflicts python27 python38 python39 python311 {
     depends_lib-append port:python310
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.10
@@ -185,7 +159,7 @@ variant python310 description {Build the Python 3.10 bindings} conflicts python2
 }
 
 
-variant python311 description {Build the Python 3.11 bindings} conflicts python27 python36 python37 python38 python39 python310 {
+variant python311 description {Build the Python 3.11 bindings} conflicts python27 python38 python39 python310 {
     depends_lib-append port:python311
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.11
@@ -198,11 +172,11 @@ variant python311 description {Build the Python 3.11 bindings} conflicts python2
     }
 }
 
-if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
+if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
     default_variants +python311
 }
 
-if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
+if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
     configure.args-append \
         -DOCIO_BUILD_PYGLUE=OFF
 }

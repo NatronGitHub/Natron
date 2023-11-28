@@ -86,8 +86,14 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
         worksrcdir      openmp-${version}/final/runtime
         version         3.8.1
         checksums       rmd160  a41054068a127ef84610afef8090109078cb6c46 \
-                        sha256  4c46b5946fe9b2a701661746d11c7c85c51a7f18673194a7ebd2a43470948a34
+                        sha256  4c46b5946fe9b2a701661746d11c7c85c51a7f18673194a7ebd2a43470948a34 \
+                        size    5587986
         set rtpath      "./"
+
+        # use cmake-bootstrap to minimize dependencies.
+        depends_build-replace  \
+                        path:bin/cmake:cmake port:cmake-bootstrap
+        configure.cmd   ${prefix}/libexec/cmake-bootstrap/bin/cmake
     }
     livecheck.type      none
 }
@@ -101,7 +107,7 @@ compiler.blacklist-append {clang < 500} *gcc*
 # https://trac.macports.org/ticket/68490#
 # Use clang-11-bootstrap on OSX10.11 and older
 if {${os.major} <= 15} {
-    compiler.blacklist-append clang *gcc*
+    configure.compiler.add_deps no
     depends_build-append port:clang-11-bootstrap
     depends_skip_archcheck-append clang-11-bootstrap
     pre-configure {

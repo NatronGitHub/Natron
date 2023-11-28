@@ -4,8 +4,8 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             10.02.0
-revision            0
+version             10.02.1
+revision            1
 
 categories          print
 license             AGPL-3 BSD
@@ -34,9 +34,9 @@ distfiles           ${distname}.tar.gz:source \
                     ${mappingresources_commit}.zip:misc
 
 checksums           ${distname}.tar.gz \
-                    rmd160  4b09840d7f2c029d807d4bf9f730d2364b87ba74 \
-                    sha256  15662eb7cc0aba5ef260ba83e40bb062a04c96c78ef717c80e8f983ebab3cce9 \
-                    size    98136363 \
+                    rmd160  4a8dd188fe10e5f16f4a7f3c5866e2923e3d7b3c \
+                    sha256  25399af0ef5bb94f2a13c91dc785c128d14f16744c4c92fa7c86e011c23151d8 \
+                    size    98194756 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \

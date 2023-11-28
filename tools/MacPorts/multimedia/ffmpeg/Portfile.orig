@@ -119,6 +119,12 @@ patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 # Fixed via upstream commit: 031f1561cd286596cdb374da32f8aa816ce3b135
 patchfiles-append   patch-libavcodec-libsvtav1-ten_bit_format.diff
 
+# Patch for building docs with texinfo >= 7
+# https://trac.macports.org/ticket/68747
+# https://trac.ffmpeg.org/ticket/10636
+# Fixed via upstream commit: f01fdedb69e4accb1d1555106d8f682ff1f1ddc7
+patchfiles-append   patch-texinfo-7.diff
+
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
 minimum_xcodeversions {9 3.1}
