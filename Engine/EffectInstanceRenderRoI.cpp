@@ -738,7 +738,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         roi = args.roi.toNewMipmapLevel(args.mipmapLevel, 0, par, rod);
 
         if (frameArgs->tilesSupported) {
-            if (!roi.clipIfOverlaps(upscaledImageBoundsNc)) {
+            roi.clip(upscaledImageBoundsNc);
+            if (roi.isNull()) {
                 return eRenderRoIRetCodeOk;
             }
             assert(upscaledImageBoundsNc.contains(roi));
@@ -747,7 +748,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         roi = args.roi;
 
         if (frameArgs->tilesSupported) {
-            if (!roi.clipIfOverlaps(downscaledImageBoundsNc)) {
+            roi.clip(downscaledImageBoundsNc);
+            if (roi.isNull()) {
                 return eRenderRoIRetCodeOk;
             }
             assert(downscaledImageBoundsNc.contains(roi));
@@ -844,8 +846,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 renderMappedMipmapLevel = args.mipmapLevel;
                 renderMappedScale = RenderScale::fromMipmapLevel(renderMappedMipmapLevel);
                 if (frameArgs->tilesSupported) {
-                    roi = args.roi;
-                    if ( !roi.clipIfOverlaps(downscaledImageBoundsNc) ) {
+                    roi = args.roi.intersect(downscaledImageBoundsNc);
+                    if ( roi.isNull() ) {
                         return eRenderRoIRetCodeOk;
                     }
                 } else {

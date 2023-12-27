@@ -266,13 +266,22 @@ public:
     }
 
     /**
-     * @brief Updates this rectangle to the intersection rectangle if this rectangle overlaps with rect. If there is no overlap then this rectangle remains unchanged.
-     *
-     * @returns True if the rectangles overlap and this rectangle was clipped.
+     * @brief Updates this rectangle to the intersection of this rectangle and |rect|. If there is no overlap, this rectangle is cleared so it represents a
+     * null rectangle.
      **/
-    bool clipIfOverlaps(const RectD& rect)
+    void clip(const RectD& rect) {
+        if (!intersectInternal(rect, this)) {
+            // |rect| does not intersect with *this so clear this object so it becomes a null rectangle.
+            clear();
+        }
+    }
+
+    /**
+     * @brief Updates this rectangle to the intersection rectangle if this rectangle overlaps with rect. If there is no overlap then this rectangle remains unchanged.
+     **/
+    void clipIfOverlaps(const RectD& rect)
     {
-        return intersectInternal(rect, this);
+        intersectInternal(rect, this);
     }
 
     /// returns true if the rect passed as parameter is intersects this one

@@ -167,11 +167,12 @@ LutManager::~LutManager()
     }
 }
 
-static bool
-clip(RectI* what,
-     const RectI & to)
+static RectI
+clip(const RectI& what,
+     const RectI& srcBounds,
+     const RectI& dstBounds)
 {
-    return what->clipIfOverlaps(to);
+    return what.intersect(srcBounds).intersect(dstBounds);
 }
 
 #ifdef DEAD_CODE
@@ -445,9 +446,9 @@ Lut::to_byte_packed(unsigned char* to,
                     bool premult) const
 {
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
 
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    if ( rect.isNull() ) {
         return;
     }
 
@@ -546,9 +547,8 @@ Lut::to_float_packed(float* to,
                      bool premult) const
 {
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull()) {
         return;
     }
 
@@ -658,8 +658,8 @@ Lut::from_byte_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull() ) {
         return;
     }
 
@@ -752,8 +752,8 @@ Lut::from_float_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull() ) {
         return;
     }
 
@@ -863,8 +863,8 @@ from_byte_packed(float *to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull() ) {
         return;
     }
 
@@ -933,8 +933,8 @@ from_float_packed(float *to,
 
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull()) {
         return;
     }
 
@@ -1132,8 +1132,8 @@ to_byte_packed(unsigned char* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull() ) {
         return;
     }
 
@@ -1241,8 +1241,8 @@ to_float_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    RectI rect = conversionRect;
-    if ( !clip(&rect, srcBounds) || !clip(&rect, dstBounds) ) {
+    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    if ( rect.isNull() ) {
         return;
     }
 

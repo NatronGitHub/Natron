@@ -1003,7 +1003,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             for (std::list<RectD>::iterator it = partialRects.begin(); it != partialRects.end(); ++it) {
                 RectI pixelRect = it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio);
                 ///Intersect to the RoI
-                if ( pixelRect.clipIfOverlaps(outArgs->params->roi) ) {
+                pixelRect.clip(outArgs->params->roi);
+                if ( !pixelRect.isNull() ) {
                     tile.rect.set(pixelRect);
                     tile.rectRounded  = pixelRect;
                     tile.rect.closestPo2 = 1 << mipmapLevel;
