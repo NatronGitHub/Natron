@@ -15,6 +15,12 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-qt5-base"
   "${MINGW_PACKAGE_PREFIX}-pyside2"
   "${MINGW_PACKAGE_PREFIX}-shiboken2"
+  # Clang is needed by shiboken2 for now because shiboken2 can't seem to find g++. It appears
+  # shiboken2 includes hard-coded paths to the g++ binary that is used when shiboken2 is built for msys2.
+  # Remove this dependency when the shiboken2 package is fixed so it works w/o clang or updates its pkg deps.
+  # The following change to msys2 made adding this clang dependency necessary.
+  # https://github.com/msys2/MINGW-packages/commit/c21027404c9d8776ad7dad94973a209bdc3aede2
+  "${MINGW_PACKAGE_PREFIX}-clang"
   "${MINGW_PACKAGE_PREFIX}-python-qtpy"
   # openfx-misc deps
   "${MINGW_PACKAGE_PREFIX}-osmesa"
