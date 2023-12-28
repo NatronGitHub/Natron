@@ -139,10 +139,18 @@ jobs:
         with:
           msystem: mingw64
           update: true
-          install: git base-devel mingw-w64-x86_64-cc mingw-w64-x86_64-qt5-base mingw-w64-x86_64-pyside2
-            mingw-w64-x86_64-shiboken2 mingw-w64-x86_64-python-qtpy mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-cmake mingw-w64-x86_64-boost mingw-w64-x86_64-cairo mingw-w64-x86_64-expat
-            mingw-w64-x86_64-wget unzip
+          install: git mingw-w64-x86_64-wget unzip mingw-w64-x86_64-ninja mingw-w64-x86_64-cmake
+
+      - name: Install Natron pacman repository
+        run: |
+          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
+          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
+          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
+          unzip natron_package_repo.zip
+          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
+          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
+          pacman -Syl natron
+          pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
       - name: Download OpenColorIO-Configs
         run: |
