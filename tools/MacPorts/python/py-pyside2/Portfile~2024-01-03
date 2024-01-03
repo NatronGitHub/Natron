@@ -4,7 +4,7 @@ PortSystem              1.0
 PortGroup               python 1.0
 
 name                    py-pyside2
-version                 5.15.11
+version                 5.15.12
 revision                0
 categories-append       devel aqua
 platforms               darwin
@@ -18,9 +18,9 @@ master_sites            https://download.qt.io/official_releases/QtForPython/pys
 distname                pyside-setup-opensource-src-${version}
 use_xz                  yes
 
-checksums               rmd160  7f5725800c28998c6600b8360caab88bc137b11d \
-                        sha256  da567cd3b7854d27a0b4afe3e89de8b2f98b7a6d57393be56f1fc13f770faf29 \
-                        size    3584760
+checksums               rmd160  6490e24dcc3ec3195003f8fd48b2b5ca0c8092ac \
+                        sha256  9c53a111ca5779064593e690db0da43ce0d5dad25369931b7a4f593886259ff4 \
+                        size    3585204
 
 
 python.versions         37 38 39 310 311

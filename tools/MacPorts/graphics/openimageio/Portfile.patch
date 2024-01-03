@@ -1,5 +1,5 @@
 --- Portfile.orig	2023-09-20 19:26:42
-+++ Portfile	2023-09-20 21:23:35
++++ Portfile	2024-01-03 06:38:40
 @@ -2,7 +2,6 @@
  
  PortSystem              1.0
@@ -21,11 +21,11 @@
 -} else {
 -    set port_latest     no
 -}
-+github.setup        OpenImageIO oiio 2.4.15.0 v
++github.setup        OpenImageIO oiio 2.4.17.0 v
 +revision            100
-+checksums           rmd160  31292919a0cb4f9fb4ee92d08add97349280874a \
-+                    sha256  b2d76e3880d25d3b005f7c694811a991ccebb6e396965959d194f79c369ff390 \
-+                    size    47894535
++checksums           rmd160  e593d35b8a4d62c0277622267c43911836eebd61 \
++                    sha256  7fe81d8e5bce30cc4a212f020ac3cc4344e6b7c1c0842475e3a048515099c65c \
++                    size    47900800
  
 -if {${port_latest}} {
 -    github.setup        OpenImageIO oiio 2.4.5.0 v

@@ -3,12 +3,12 @@
 PortSystem          1.0
 
 name                libraw
-version             0.21.1
+version             0.21.2
 revision            0
 
-checksums           rmd160  be36d8709eb2e8578f07b63ea8632eb6ed1d7775 \
-                    sha256  630a6bcf5e65d1b1b40cdb8608bdb922316759bfb981c65091fec8682d1543cd \
-                    size    1638461
+checksums           rmd160  7fe2461241ec66e0b63fdeffdc76d2033ade2b48 \
+                    sha256  fe7288013206854baf6e4417d0fb63ba4ed7227bf36fff021992671c2dd34b03 \
+                    size    1639305
 
 description         Library for RAW image manipulation
 long_description    A library for reading RAW files obtained from digital photo \
