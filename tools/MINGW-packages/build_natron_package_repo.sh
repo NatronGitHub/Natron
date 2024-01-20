@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 #set -x
-CWD=$(pwd)
+BUILD_SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 
 PKGS="
 mingw-w64-natron-setup
@@ -21,7 +21,7 @@ mingw-w64-dump_syms
 mingw-w64-natron-build-deps-qt5
 "
 
-source ./natron_repo_common.sh
+source "${BUILD_SCRIPT_DIR}/natron_repo_common.sh"
 
 trap natron_repo_cleanup EXIT
 
@@ -37,7 +37,7 @@ natron_repo_init ${NATRON_REPO_DIR}
 
 for pkg_dir in ${PKGS}; do
   echo -e "\n\nEntering package directory ${pkg_dir}."
-  cd "${CWD}/${pkg_dir}"
+  cd "${BUILD_SCRIPT_DIR}/${pkg_dir}"
 
   PACKAGE_NAME=`makepkg --printsrcinfo | awk '/pkgname/{print $3}'`
 
@@ -71,5 +71,5 @@ for pkg_dir in ${PKGS}; do
   fi
 
   echo -e "Leaving package directory ${pkg_dir}."
-  cd "${CWD}"
+  cd "${BUILD_SCRIPT_DIR}"
 done
