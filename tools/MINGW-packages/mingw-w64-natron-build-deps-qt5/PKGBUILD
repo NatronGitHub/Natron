@@ -41,7 +41,7 @@ depends=(
   # installer
   "zip"
   "unzip"
-  "${MINGW_PACKAGE_PREFIX}-firebird2-git"
+  "${MINGW_PACKAGE_PREFIX}-firebird"
   "${MINGW_PACKAGE_PREFIX}-breakpad-git"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"

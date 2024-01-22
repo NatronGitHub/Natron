@@ -143,13 +143,7 @@ jobs:
 
       - name: Install Natron pacman repository
         run: |
-          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
-          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
-          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
-          unzip natron_package_repo.zip
-          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
-          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
-          pacman -Syl natron
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
           pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
       - name: Download OpenColorIO-Configs
