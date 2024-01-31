@@ -23,7 +23,7 @@ source=("https://github.com/AcademySoftwareFoundation/Imath/archive/v${pkgver}/$
         0001-cmake-libs-name.patch
         0002-fix-openexr-clang-build.patch)
 sha256sums=('f2943e86bfb694e216c60b9a169e5356f8a90f18fbd34d7b6e3450be14f60b10'
-            'c9a21f10e921b08b059f10fefabaaf2b97178847dbcedc5d0b824456c63f2153'
+            '2dc2de52e2475cc9d725ff443466d3ac247a405018f1d9b0caeb03a9d5116d9b'
             '0eea3c7b57d5b59887f963d696c2afdcfb1976a3913f161995e19b13d6a65086')
 
 prepare() {
