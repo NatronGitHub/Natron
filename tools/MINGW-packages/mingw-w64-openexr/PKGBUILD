@@ -26,7 +26,8 @@ replaces=(
   "${MINGW_PACKAGE_PREFIX}-pyilmbase"
 )
 source=("https://github.com/openexr/openexr/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
-        0006-cmake-soversion.patch)
+        0006-cmake-soversion.patch
+        0007-export-TypedAttribute-value.patch))
 sha256sums=('61e175aa2203399fb3c8c2288752fbea3c2637680d50b6e306ea5f8ffdd46a9b'
             'a5ce463815e8d05c879dbe6a255e9f8ac2697cd3ef4242dac1e5cb331f78ed02'
             '204777b48cde1c4d390789f10c5e429d5295be701f68a7937a90d0ecf271c048')
@@ -44,7 +45,8 @@ prepare(){
   cd "${srcdir}/${_realname}-${pkgver}"
 
   apply_patch_with_msg \
-    0006-cmake-soversion.patch
+    0006-cmake-soversion.patch \
+    0007-export-TypedAttribute-value.patch
 }
 
 build() {
