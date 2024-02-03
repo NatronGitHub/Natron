@@ -1,0 +1,75 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=LibRaw
+pkgbase=mingw-w64-libraw
+pkgname="${MINGW_PACKAGE_PREFIX}-libraw"
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=0.21.2
+pkgrel=99.1
+pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+msys2_repository_url='https://github.com/LibRaw/LibRaw'
+url="https://www.libraw.org/"
+license=("spdx:LGPL-2.1 OR CDDL-1.0")
+makedepends=("${MINGW_PACKAGE_PREFIX}-autotools" "${MINGW_PACKAGE_PREFIX}-cc")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-jasper"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         "${MINGW_PACKAGE_PREFIX}-libwinpthread-git"
+         "${MINGW_PACKAGE_PREFIX}-omp")
+options=('staticlibs' 'strip')
+source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
+        "0001-libraw-pkgconfig-remove-stdcxx.patch"
+        "LibRaw_obsolete-macros.patch"
+        https://github.com/LibRaw/LibRaw/commit/e231b01a49ce37d2add75e2a8f7ece5602f00457.patch)
+sha256sums=('fe7288013206854baf6e4417d0fb63ba4ed7227bf36fff021992671c2dd34b03'
+            '3b4c6aece23e020bf50a8bf349a25186273a601286fa2bb1f0a7269083277c13'
+            '4a31c0ee066f43915beff6f7959b6b2cd246d390720df379bfc047d4cedb6a8f'
+            'df9a7d570be17acc9c4e4c2f836bc0815f7d43aec644fc16098969f6fa6353d8')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -p1 -i "${srcdir}/0001-libraw-pkgconfig-remove-stdcxx.patch"
+  patch -p1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
+
+  # https://github.com/LibRaw/LibRaw/issues/624
+  patch --binary -p1 -i "${srcdir}/e231b01a49ce37d2add75e2a8f7ece5602f00457.patch"
+
+  autoreconf -ifv
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MSYSTEM}" ]] && rm -rf "${srcdir}/build-${MSYSTEM}"
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+    LDFLAGS+=" -lomp"
+  fi
+
+  # This would enable more formats (X3F (Foveon), Rapsberry Pi RAW+JPEG),
+  # but upstream recommends against it for security reasons, see
+  # https://github.com/LibRaw/LibRaw/blob/27144e42000/Changelog.txt#L417
+  # CPPFLAGS+=" -DUSE_6BY9RPI -DUSE_X3FTOOLS"
+
+  CPPFLAGS+=" -DLIBRAW_FORCE_OPENMP"
+  ../${_realname}-${pkgver}/configure \
+      --prefix=${MINGW_PREFIX} \
+      --build=${MINGW_CHOST} \
+      --host=${MINGW_CHOST}
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  make install DESTDIR="${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/LICENSE.CDDL" "${pkgdir}${MINGW_PREFIX}/share/licenses/libraw/LICENSE.CDDL"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/LICENSE.LGPL" "${pkgdir}${MINGW_PREFIX}/share/licenses/libraw/LICENSE.LGPL"
+}
