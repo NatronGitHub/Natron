@@ -1,0 +1,86 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=opencolorio
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+pkgver=2.3.1
+pkgrel=99.1
+pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+url="https://opencolorio.org/"
+license=('spdx:BSD-3-Clause')
+depends=("${MINGW_PACKAGE_PREFIX}-expat"
+         "${MINGW_PACKAGE_PREFIX}-freeglut"
+         "${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-glew"
+         "${MINGW_PACKAGE_PREFIX}-natron_imath"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-minizip-ng"
+         "${MINGW_PACKAGE_PREFIX}-natron_openexr"
+         "${MINGW_PACKAGE_PREFIX}-yaml-cpp")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-pybind11"
+             "${MINGW_PACKAGE_PREFIX}-pystring"
+             "${MINGW_PACKAGE_PREFIX}-python"
+             "${MINGW_PACKAGE_PREFIX}-openshadinglanguage"
+             "${MINGW_PACKAGE_PREFIX}-zlib")
+optdepends=("${MINGW_PACKAGE_PREFIX}-python: Python bindings")
+source=(https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz
+        0003-fix-python-sitearch.patch)
+sha256sums=('7196e979a0449ce28afd46a78383476f3b8fc1cc1d3a417192be439ede83437b'
+            '4bb650747906aab5b71579d05674ee59a811d6370a6dcda93b5880abb094be70')
+
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Np1 -i "${srcdir}/$_patch"
+  done
+}
+
+prepare() {
+  cd ${_realname}-${pkgver}
+  apply_patch_with_msg \
+    0003-fix-python-sitearch.patch
+}
+
+build() {
+  mkdir -p ${srcdir}/build-${MSYSTEM} && cd ${srcdir}/build-${MSYSTEM}
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  "${MINGW_PREFIX}"/bin/cmake \
+    -GNinja \
+     ${extra_config} \
+    -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+    -DOCIO_BUILD_TESTS=OFF \
+    -DOCIO_BUILD_GPU_TESTS=OFF \
+    -DPython_EXECUTABLE=${MINGW_PREFIX}/bin/python.exe \
+    ../${_realname}-${pkgver}
+
+  "${MINGW_PREFIX}"/bin/cmake.exe --build .
+}
+
+package() {
+  cd build-${MSYSTEM}
+  DESTDIR="${pkgdir}" "${MINGW_PREFIX}"/bin/cmake.exe --install .
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/LICENSE "${pkgdir}${MINGW_PREFIX}"/share/licenses/${_realname}/LICENSE
+
+  local PREFIX_WIN=$(cygpath -wm ${MINGW_PREFIX})
+  for _f in "${pkgdir}${MINGW_PREFIX}"/lib/cmake/OpenColorIO/*.cmake; do
+    sed -e "s|${PREFIX_WIN}|\$\{_IMPORT_PREFIX\}|g" -i "${_f}"
+    sed -e "s|${MINGW_PREFIX}|\$\{_IMPORT_PREFIX\}|g" -i "${_f}"
+  done
+}
