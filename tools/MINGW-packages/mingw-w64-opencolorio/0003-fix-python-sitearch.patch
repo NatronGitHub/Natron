@@ -1,0 +1,11 @@
+--- a/src/bindings/python/CMakeLists.txt
++++ b/src/bindings/python/CMakeLists.txt
+@@ -238,7 +238,7 @@
+ ###############################################################################
+ # Install layout
+ # Set to site-package location.
+-if(WIN32)
++if(MSVC)
+     set(_Python_VARIANT_PATH "${CMAKE_INSTALL_LIBDIR}/site-packages")
+ else()
+     set(_Python_VARIANT_PATH "${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
