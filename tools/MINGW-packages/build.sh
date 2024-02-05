@@ -7,12 +7,12 @@ mingw-w64-shiboken
 mingw-w64-pyside
 mingw-w64-imath
 mingw-w64-openexr
-mingw-w64-libraw-gpl2
-mingw-w64-opencolorio2-git
+mingw-w64-libraw
+mingw-w64-opencolorio
 mingw-w64-openimageio
 mingw-w64-seexpr-git
 mingw-w64-x264-git
-mingw-w64-ffmpeg-gpl2
+mingw-w64-ffmpeg
 mingw-w64-sox
 mingw-w64-poppler
 mingw-w64-imagemagick
