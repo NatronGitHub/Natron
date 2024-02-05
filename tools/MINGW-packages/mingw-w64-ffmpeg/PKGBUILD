@@ -4,10 +4,10 @@
 # Contributor: Ray Donnelly <mingw.android@gmail.com>
 
 _realname=ffmpeg
-pkgbase="mingw-w64-${_realname}"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgbase="mingw-w64-natron_${_realname}"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgver=6.1.1
-pkgrel=4
+pkgrel=99.1
 pkgdesc="Complete solution to record, convert and stream audio and video (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
