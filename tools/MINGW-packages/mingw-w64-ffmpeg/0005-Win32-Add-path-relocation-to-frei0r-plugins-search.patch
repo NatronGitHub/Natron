@@ -1,0 +1,45 @@
+diff --git a/libavfilter/Makefile b/libavfilter/Makefile
+index 03998dc064..c8c16a9332 100644
+--- a/libavfilter/Makefile
++++ b/libavfilter/Makefile
+@@ -19,6 +19,7 @@
+        framequeue.o                                                     \
+        graphdump.o                                                      \
+        graphparser.o                                                    \
++       pathtools.o                                                      \
+        version.o                                                        \
+        video.o                                                          \
+ 
+--- ffmpeg-6.0/libavfilter/vf_frei0r.c.orig	2023-02-27 21:43:45.000000000 +0100
++++ ffmpeg-6.0/libavfilter/vf_frei0r.c	2023-11-06 19:53:02.978838800 +0100
+@@ -42,6 +42,7 @@
+ #include "formats.h"
+ #include "internal.h"
+ #include "video.h"
++#include "pathtools.h"
+ 
+ typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
+ typedef void (*f0r_destruct_f)(f0r_instance_t instance);
+@@ -192,12 +193,22 @@
+     char *path;
+     int ret = 0;
+     int i;
++#ifdef _WIN32
++    static char pathlist_entry[PATH_MAX];
++    static const char* const frei0r_pathlist[] = {
++        &pathlist_entry[0]
++    };
++    char *plugin_path = single_path_relocation_lib("/prefix/bin/", "/prefix/lib/frei0r-1/");
++    av_strlcpy(pathlist_entry, plugin_path, sizeof (pathlist_entry) / sizeof (pathlist_entry[0]));
++    free(plugin_path);
++#else
+     static const char* const frei0r_pathlist[] = {
+         "/usr/local/lib/frei0r-1/",
+         "/usr/lib/frei0r-1/",
+         "/usr/local/lib64/frei0r-1/",
+         "/usr/lib64/frei0r-1/"
+     };
++#endif
+ 
+     if (!dl_name) {
+         av_log(ctx, AV_LOG_ERROR, "No filter name provided.\n");
