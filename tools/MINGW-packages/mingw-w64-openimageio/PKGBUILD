@@ -3,12 +3,12 @@
 _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-pkgver=2.4.13.0
+pkgver=2.5.7.0
 pkgrel=99.1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
-license=("BSD-3")
+license=("spdx:Apache-2.0")
 depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-jasper"
@@ -35,7 +35,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.2.14-libraw.diff
         oiio-2.4.13.0-thread-shutdown.patch # Remove when updating to a future 2.5 release that has these changes.
        )
-sha256sums=('bb10a7ab6dff5dae2c6d854e9da38136546232235913237e8b1b3c99abb7dd0b'
+sha256sums=('801d57a2923912825cfd7780ab3ae4284f7a83c788fac9ea627f51c0185695fd'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
@@ -68,6 +68,7 @@ build() {
     -Wno-dev \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DCMAKE_DLL_NAME_WITH_SOVERSION=ON \
     -DUSE_FFMPEG=OFF \
     -DUSE_OPENJPEG=ON \
     -DUSE_FREETYPE=ON \
