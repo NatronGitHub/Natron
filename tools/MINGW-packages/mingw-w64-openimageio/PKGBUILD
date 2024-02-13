@@ -33,7 +33,6 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.1.10-boost.diff
         oiio-2.0.8-invalidatespec.patch
         oiio-2.2.14-libraw.diff
-        oiio-2.4.13.0-thread-shutdown.patch # Remove when updating to a future 2.5 release that has these changes.
        )
 sha256sums=('801d57a2923912825cfd7780ab3ae4284f7a83c788fac9ea627f51c0185695fd'
             'SKIP'
@@ -48,7 +47,6 @@ prepare() {
   #patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
   patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
-  patch -p1 -i ${srcdir}/oiio-2.4.13.0-thread-shutdown.patch
 }
 
 build() {
@@ -68,7 +66,7 @@ build() {
     -Wno-dev \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DCMAKE_DLL_NAME_WITH_SOVERSION=ON \
+    -DCMAKE_DLL_NAME_WITH_SOVERSION=OFF \
     -DUSE_FFMPEG=OFF \
     -DUSE_OPENJPEG=ON \
     -DUSE_FREETYPE=ON \
