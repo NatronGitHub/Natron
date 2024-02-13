@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -60,7 +60,7 @@ jobs:
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -126,13 +126,13 @@ jobs:
           echo "SYMBOLS_DIR=$(cygpath -m ${SYMBOLS_DIR})" >> $GITHUB_OUTPUT
 
       - name: Upload installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
 
       - name: Upload symbols
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.SYMBOLS_NAME }}
           path:  ${{ steps.build.outputs.SYMBOLS_DIR }}
