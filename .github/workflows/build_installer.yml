@@ -59,6 +59,22 @@ jobs:
           echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
 
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.3.1
         with:
@@ -124,6 +140,22 @@ jobs:
 
           echo "SYMBOLS_NAME=${SYMBOLS_NAME}" >> $GITHUB_OUTPUT
           echo "SYMBOLS_DIR=$(cygpath -m ${SYMBOLS_DIR})" >> $GITHUB_OUTPUT
+
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done
 
       - name: Upload installer
         uses: actions/upload-artifact@v4.3.1
