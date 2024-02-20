@@ -463,8 +463,11 @@ RectI
 Bitmap::minimalNonMarkedBbox(const RectI & roi) const
 {
     RectI realRoi = roi;
-    if (_dirtyZoneSet && !realRoi.clipIfOverlaps(_dirtyZone)) {
-        return RectI();
+    if (_dirtyZoneSet) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
+            return RectI();
+        }
     }
 
     return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map, NULL);
@@ -475,8 +478,11 @@ Bitmap::minimalNonMarkedRects(const RectI & roi,
                               std::list<RectI>& ret) const
 {
     RectI realRoi = roi;
-    if (_dirtyZoneSet && !realRoi.clipIfOverlaps(_dirtyZone)) {
-        return;
+    if (_dirtyZoneSet) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
+            return;
+        }
     }
     minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map, ret, NULL);
 }
@@ -487,9 +493,12 @@ Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,
                                     bool* isBeingRenderedElsewhere) const
 {
     RectI realRoi = roi;
-    if (_dirtyZoneSet && !realRoi.clipIfOverlaps(_dirtyZone)) {
-        *isBeingRenderedElsewhere = false;
-        return RectI();
+    if (_dirtyZoneSet) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
+            *isBeingRenderedElsewhere = false;
+            return RectI();
+        }
     }
 
     return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map, isBeingRenderedElsewhere);
@@ -501,9 +510,12 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
                                      bool* isBeingRenderedElsewhere) const
 {
     RectI realRoi = roi;
-    if (_dirtyZoneSet && !realRoi.clipIfOverlaps(_dirtyZone)) {
-        *isBeingRenderedElsewhere = false;
-        return;
+    if (_dirtyZoneSet) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
+            *isBeingRenderedElsewhere = false;
+            return;
+        }
     }
     minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map, ret, isBeingRenderedElsewhere);
 }
@@ -905,13 +917,10 @@ Image::pasteFromForDepth(const Image & srcImg,
     assert( !srcBounds.isNull() );
 
     // only copy the intersection of roi, bounds and otherBounds
-    RectI roi = srcRoi;
-    if (!roi.clipIfOverlaps(bounds)) {
-        // no intersection between roi and the bounds of this image
-        return;
-    }
-    if (!roi.clipIfOverlaps(srcBounds)) {
-        // no intersection between roi and the bounds of the other image
+    const RectI roi = srcRoi.intersect(bounds).intersect(srcBounds);
+    if (roi.isNull()) {
+        // no intersection between srcRoi and the bounds of this image or
+        // the bounds of the other image.
         return;
     }
 
@@ -1229,17 +1238,14 @@ Image::pasteFrom(const Image & src,
         glCheckError();
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
         // RAM image to OpenGL texture
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
+        const RectI& dstBounds = getBounds();
+        const RectI& srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        if (!roi.clipIfOverlaps(dstBounds)) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        if (!roi.clipIfOverlaps(srcBounds)) {
-            // no intersection between roi and the bounds of the other image
+        const RectI roi = srcRoi.intersect(dstBounds).intersect(srcBounds);
+        if (roi.isNull()) {
+            // no intersection between srcRoi and the bounds of this image or
+            // the bounds of the other image
             return;
         }
         GLuint pboID = glContext->getPBOId();
@@ -1301,17 +1307,14 @@ Image::pasteFrom(const Image & src,
     } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to RAM image
 
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
+        const RectI& dstBounds = getBounds();
+        const RectI& srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        if (!roi.clipIfOverlaps(dstBounds)) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        if (!roi.clipIfOverlaps(srcBounds)) {
-            // no intersection between roi and the bounds of the other image
+        const RectI roi = srcRoi.intersect(dstBounds).intersect(srcBounds);
+        if (roi.isNull()) {
+            // no intersection between srcRoi and the bounds of this image or
+            // the bounds of the other image
             return;
         }
 
@@ -1385,8 +1388,8 @@ Image::fillForDepthForComponents(const RectI & roi_,
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
-    RectI roi = roi_;
-    if (!roi.clipIfOverlaps(_bounds)) {
+    const RectI roi = roi_.intersect(_bounds);
+    if (roi.isNull()) {
         // no intersection between roi and the bounds of the image
         return;
     }
@@ -1454,8 +1457,8 @@ Image::fill(const RectI & roi,
     QWriteLocker k(&_entryLock);
 
     if (getStorageMode() == eStorageModeGLTex) {
-        RectI realRoI = roi;
-        if (!realRoI.clipIfOverlaps(_bounds)) {
+        const RectI realRoI = roi.intersect(_bounds);
+        if (realRoI.isNull()) {
             // no intersection between roi and the bounds of the image
             return;
         }
@@ -1788,6 +1791,7 @@ Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
                         Image* output) const
 {
+    assert( _bounds.contains(roi) );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
             (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
             (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
@@ -1823,8 +1827,7 @@ Image::halveRoIForDepth(const RectI & roi,
     assert( getComponents() == output->getComponents() );
 
     RectI dstRoI;
-    RectI srcRoI = roi;
-    srcRoI.clipIfOverlaps(srcBounds); // intersect srcRoI with the region of definition
+    const RectI srcRoI = roi.intersect(srcBounds); // intersect RoI with the region of definition
 #ifdef DEBUG_NAN
     assert(!checkForNaNsNoLock(srcRoI));
 #endif
@@ -1951,6 +1954,7 @@ Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
                 Image* output) const
 {
+    assert( _bounds.contains(roi) );
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
         halveRoIForDepth<unsigned char, 255>(roi, copyBitMap,  output);
@@ -1980,6 +1984,7 @@ Image::halve1DImageForDepth(const RectI & roi,
 
     assert(width == 1 || height == 1); /// must be 1D
     assert( output->getComponents() == getComponents() );
+    assert( _bounds.contains(roi) );
 
     /// Take the lock for both bitmaps since we're about to read/write from them!
     QWriteLocker k1(&output->_entryLock);
@@ -2075,8 +2080,7 @@ Image::downscaleMipmap(const RectD& dstRod,
     ///You should not call this function with a level equal to 0.
     assert(toLevel >  fromLevel);
 
-    assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
-           _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
+    assert(_bounds.contains(roi));
     double par = getPixelAspectRatio();
     unsigned int downscaleLvls = toLevel - fromLevel;
 
@@ -2279,6 +2283,8 @@ Image::buildMipmapLevel(const RectD& dstRoD,
                         bool copyBitMap,
                         Image* output) const
 {
+    assert(_bounds.contains(roi));
+
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
 
