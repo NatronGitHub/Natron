@@ -168,9 +168,9 @@ LutManager::~LutManager()
 }
 
 static RectI
-clip(const RectI& what,
-     const RectI& srcBounds,
-     const RectI& dstBounds)
+clip2(const RectI& what,
+      const RectI& srcBounds,
+      const RectI& dstBounds)
 {
     return what.intersect(srcBounds).intersect(dstBounds);
 }
@@ -446,7 +446,7 @@ Lut::to_byte_packed(unsigned char* to,
                     bool premult) const
 {
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
 
     if ( rect.isNull() ) {
         return;
@@ -547,7 +547,7 @@ Lut::to_float_packed(float* to,
                      bool premult) const
 {
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull()) {
         return;
     }
@@ -658,7 +658,7 @@ Lut::from_byte_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull() ) {
         return;
     }
@@ -752,7 +752,7 @@ Lut::from_float_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull() ) {
         return;
     }
@@ -863,7 +863,7 @@ from_byte_packed(float *to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull() ) {
         return;
     }
@@ -933,7 +933,7 @@ from_float_packed(float *to,
 
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull()) {
         return;
     }
@@ -1132,7 +1132,7 @@ to_byte_packed(unsigned char* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull() ) {
         return;
     }
@@ -1241,7 +1241,7 @@ to_float_packed(float* to,
     }
 
     ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip(conversionRect, srcBounds, dstBounds);
+    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
     if ( rect.isNull() ) {
         return;
     }
