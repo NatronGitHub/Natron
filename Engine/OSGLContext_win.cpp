@@ -817,40 +817,40 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 UINT gpuID = gpuIDs[index];
 
                 OpenGLRendererInfo info;
-                info.rendererName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_RENDERER_STRING_AMD);
-                if (info.rendererName.empty()) {
-                    continue;
-                }
-
-                info.vendorName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_VENDOR_AMD);
-                if (info.vendorName.empty()) {
-                    continue;
-                }
-
-                info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_OPENGL_VERSION_STRING_AMD);
-                if (info.glVersionString.empty()) {
-                    continue;
-                }
-
-                // note: cannot retrieve GL_SHADING_LANGUAGE_VERSION
-
-                info.maxMemBytes = 0;
-                if (!isApplication32Bits()) {
-                    int ramMB = 0;
-                    // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
-                    // It works fine in 64 bits mode
-                    if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
-                        continue;
-                    }
-                    info.maxMemBytes = ramMB * 1e6;
-                }
-
                 info.rendererID.renderID = gpuID;
 
                 {
                     ScopedGLContext scopedContext(info.rendererID);
                     if (!scopedContext) {
                         continue;
+                    }
+
+                    info.rendererName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_RENDERER_STRING_AMD);
+                    if (info.rendererName.empty()) {
+                        continue;
+                    }
+
+                    info.vendorName = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_VENDOR_AMD);
+                    if (info.vendorName.empty()) {
+                        continue;
+                    }
+
+                    info.glVersionString = GetGPUInfoAMDInternal_string(wglInfo, gpuID, WGL_GPU_OPENGL_VERSION_STRING_AMD);
+                    if (info.glVersionString.empty()) {
+                        continue;
+                    }
+
+                    // note: cannot retrieve GL_SHADING_LANGUAGE_VERSION
+
+                    info.maxMemBytes = 0;
+                    if (!isApplication32Bits()) {
+                        int ramMB = 0;
+                        // AMD drivers are f*** up in 32 bits, they read a wrong buffer size.
+                        // It works fine in 64 bits mode
+                        if (!GetGPUInfoAMDInternal_int(wglInfo, gpuID, WGL_GPU_RAM_AMD, &ramMB)) {
+                            continue;
+                        }
+                        info.maxMemBytes = ramMB * 1e6;
                     }
 
                     try {
