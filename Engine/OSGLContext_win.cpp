@@ -693,7 +693,6 @@ static std::string GetGPUInfoAMDInternal_string(const OSGLContext_wgl_data* wglI
 
 static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT gpuID, int info, int* value)
 {
-
     std::vector<unsigned int> data;
     int totalSize = 0;
 
@@ -718,6 +717,36 @@ static bool GetGPUInfoAMDInternal_int(const OSGLContext_wgl_data* wglInfo, UINT 
     *value = (int)data[0];
     return true;
 }
+
+namespace {
+class ScopedGLContext {
+public:
+    ScopedGLContext(const GLRendererID& gid) {
+        assert(!OSGLContext_win::threadHasACurrentContext());
+        try {
+            _context = std::make_unique<OSGLContext_win>(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, nullptr);
+        } catch (const std::exception& e) {
+            std::cerr << "Failed to create GL context : " << e.what() << std::endl;
+            return;
+        }
+
+        if (!OSGLContext_win::makeContextCurrent(_context.get())) {
+            _context.reset();
+        }
+    }
+
+    ~ScopedGLContext() {
+        if (_context) {
+            OSGLContext_win::makeContextCurrent(nullptr);
+        }
+    }
+
+    explicit operator bool() const { return (bool)_context; }
+
+private:
+    std::unique_ptr<OSGLContext_win> _context;
+};
+} // namespace
 
 void
 OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
@@ -749,37 +778,27 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         for (std::size_t i = 0; i < gpuHandles.size(); ++i) {
             OpenGLRendererInfo info;
             info.rendererID.rendererHandle = (void*)gpuHandles[i];
+            {
+                ScopedGLContext scopedContext(info.rendererID);
+                if (!scopedContext) {
+                    continue;
+                }
 
-            std::unique_ptr<OSGLContext_win> context;
-            try {
-                GLRendererID gid;
-                gid.rendererHandle = info.rendererID.rendererHandle;
-                context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, 0) );
-            } catch (const std::exception& e) {
-                continue;
+                try {
+                    OSGLContext::checkOpenGLVersion();
+                } catch (const std::exception& e) {
+                    std::cerr << e.what() << std::endl;
+                    continue;
+                }
+
+                info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
+                info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
+                info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+                info.glslVersionString = std::string( (const char*)glGetString (GL_SHADING_LANGUAGE_VERSION) );
+                info.maxMemBytes = nvx_get_GPU_mem_info();
+                glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+                renderers.push_back(info);
             }
-
-            if ( !makeContextCurrent( context.get() ) ) {
-                continue;
-            }
-
-            try {
-                OSGLContext::checkOpenGLVersion();
-            } catch (const std::exception& e) {
-                std::cerr << e.what() << std::endl;
-                makeContextCurrent(nullptr);
-                continue;
-            }
-
-            info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-            info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-            info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
-            info.glslVersionString = std::string( (const char*)glGetString (GL_SHADING_LANGUAGE_VERSION) );
-            info.maxMemBytes = nvx_get_GPU_mem_info();
-            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
-            renderers.push_back(info);
-
-            makeContextCurrent(nullptr);
         }
     } else if (wglInfo->AMD_gpu_association && !isApplication32Bits()) {
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
@@ -827,33 +846,23 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 }
 
                 info.rendererID.renderID = gpuID;
-                
-                std::unique_ptr<OSGLContext_win> context;
 
-                GLRendererID gid;
-                gid.renderID = info.rendererID.renderID;
-                try {
-                    context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, 0) );
-                } catch (const std::exception& e) {
-                    continue;
+                {
+                    ScopedGLContext scopedContext(info.rendererID);
+                    if (!scopedContext) {
+                        continue;
+                    }
+
+                    try {
+                        OSGLContext::checkOpenGLVersion();
+                    } catch (const std::exception& e) {
+                        std::cerr << e.what() << std::endl;
+                        continue;
+                    }
+
+                    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+                    renderers.push_back(info);
                 }
-
-                if ( !makeContextCurrent( context.get() ) ) {
-                    continue;
-                }
-
-                try {
-                    OSGLContext::checkOpenGLVersion();
-                } catch (const std::exception& e) {
-                    std::cerr << e.what() << std::endl;
-                    makeContextCurrent(nullptr);
-                    continue;
-                }
-
-                glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
-                renderers.push_back(info);
-                
-                makeContextCurrent(nullptr);
             }
         }
     }
@@ -863,38 +872,29 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     }
     if (defaultFallback) {
         // No extension, use default
-        std::unique_ptr<OSGLContext_win> context;
-        try {
-            context.reset( new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
-        } catch (const std::exception& e) {
-            std::cerr << e.what() << std::endl;
+        {
+            ScopedGLContext scopedContext{GLRendererID()};
+            if (!scopedContext) {
+                return;
+            }
 
-            return;
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                return;
+            }
+
+            OpenGLRendererInfo info;
+            info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
+            info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
+            info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
+            info.glslVersionString = std::string( (const char *) glGetString (GL_SHADING_LANGUAGE_VERSION) );
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+            // We don't have any way to get memory size, set it to 0
+            info.maxMemBytes = nvx_get_GPU_mem_info();
+            renderers.push_back(info);
         }
-
-        if ( !makeContextCurrent( context.get() ) ) {
-            return;
-        }
-
-        try {
-            OSGLContext::checkOpenGLVersion();
-        } catch (const std::exception& e) {
-            std::cerr << e.what() << std::endl;
-            makeContextCurrent(nullptr);
-            return;
-        }
-
-        OpenGLRendererInfo info;
-        info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-        info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-        info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
-        info.glslVersionString = std::string( (const char *) glGetString (GL_SHADING_LANGUAGE_VERSION) );
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
-        // We don't have any way to get memory size, set it to 0
-        info.maxMemBytes = nvx_get_GPU_mem_info();
-        renderers.push_back(info);
-
-        makeContextCurrent(nullptr);
     }
 } // OSGLContext_win::getGPUInfos
 
