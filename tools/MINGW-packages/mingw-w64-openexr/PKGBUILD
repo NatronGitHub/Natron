@@ -3,7 +3,7 @@
 _realname=openexr
 pkgbase=mingw-w64-natron_${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
-pkgver=3.2.2
+pkgver=3.2.3
 pkgrel=99.1
 pkgdesc='A high dynamic-range image file format library (mingw-w64)'
 arch=('any')
@@ -28,8 +28,8 @@ replaces=(
 source=("https://github.com/openexr/openexr/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
         0006-cmake-soversion.patch
         0007-export-TypedAttribute-value.patch)
-sha256sums=('65de6459c245a4977ce4d7777e70b30d7ef48ec38e0cfb10205706ca50a8bf2e'
-            'a5ce463815e8d05c879dbe6a255e9f8ac2697cd3ef4242dac1e5cb331f78ed02'
+sha256sums=('f3f6c4165694d5c09e478a791eae69847cadb1333a2948ca222aa09f145eba63'
+            '5653da878ebbf5f3087bb529213931b48e151aef082b34e19d189e22be0411e7'
             '204777b48cde1c4d390789f10c5e429d5295be701f68a7937a90d0ecf271c048')
 
 # Helper macros to help make tasks easier #
@@ -72,7 +72,7 @@ build() {
       ${extra_config[@]} \
       -DBUILD_SHARED_LIBS=ON \
       -DBUILD_TESTING=OFF \
-      -DOPENEXR_INSTALL_EXAMPLES=OFF \
+      -DOPENEXR_BUILD_EXAMPLES=OFF \
       ../${_realname}-${pkgver}
 
   ${MINGW_PREFIX}/bin/cmake --build .
