@@ -65,7 +65,6 @@ build() {
     -Wno-dev \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DCMAKE_DLL_NAME_WITH_SOVERSION=OFF \
     -DUSE_FFMPEG=OFF \
     -DUSE_OPENJPEG=ON \
     -DUSE_FREETYPE=ON \
