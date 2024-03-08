@@ -6,7 +6,6 @@ on:
     branches:
     - RB-2.5
     - RB-2.6
-    - fix-ci # For testing. Remove before commit.
     paths-ignore:
       - Documentation
   pull_request:
@@ -40,7 +39,7 @@ jobs:
           python-version: '3.10'
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
       - name: Install Linux system packages
@@ -102,7 +101,7 @@ jobs:
           OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
           path: ${{ github.workspace }}/release/Testing/Temporary/LastTest.log
@@ -130,7 +129,7 @@ jobs:
         python-version: ['3.10']
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -173,7 +172,7 @@ jobs:
           PYTHONHOME=/mingw64 OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
           path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log

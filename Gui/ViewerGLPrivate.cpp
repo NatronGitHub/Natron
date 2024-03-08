@@ -294,7 +294,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipmapLevel,
         {
             QMutexLocker l(&this->userRoIMutex);
             //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !rod.clipIfOverlaps(this->userRoI) ) {
+            rod.clip(this->userRoI);
+            if ( rod.isNull() ) {
                 return;
             }
         }
