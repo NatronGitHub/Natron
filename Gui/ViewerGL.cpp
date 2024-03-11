@@ -203,7 +203,7 @@ ViewerGL::resizeGL(int w,
     bool zoomSinceLastFit;
     double oldWidth, oldHeight;
     {
-        QMutexLocker(&_imp->zoomCtxMutex);
+        QMutexLocker l(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
         _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight, /*alignTop=*/ true, /*alignRight=*/ false);
@@ -2911,7 +2911,7 @@ ViewerGL::fitImageToFormat()
     double zoomFactor;
     unsigned int oldMipmapLevel, newMipmapLevel;
     {
-        QMutexLocker(&_imp->zoomCtxMutex);
+        QMutexLocker l(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
         //oldMipmapLevel = std::log( old_zoomFactor >= 1 ? 1 :
         //                           std::pow( 2, -std::ceil(std::log(old_zoomFactor) / M_LN2) ) ) / M_LN2;
@@ -3467,7 +3467,7 @@ ViewerGL::setUserRoIEnabled(bool b)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     {
-        QMutexLocker(&_imp->userRoIMutex);
+        QMutexLocker l(&_imp->userRoIMutex);
         _imp->userRoIEnabled = b;
     }
     if (!b) {
@@ -3568,7 +3568,7 @@ bool
 ViewerGL::isUserRegionOfInterestEnabled() const
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
 
     return _imp->userRoIEnabled;
 }
@@ -3577,7 +3577,7 @@ RectD
 ViewerGL::getUserRegionOfInterest() const
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
 
     return _imp->userRoI;
 }
@@ -3586,7 +3586,7 @@ void
 ViewerGL::setUserRoI(const RectD & r)
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
     _imp->userRoI = r;
 }
 
