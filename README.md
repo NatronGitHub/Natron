@@ -134,11 +134,11 @@ You should start contributing to the Natron project by first picking an easy tas
 
 We coordinate development through the [GitHub issue tracker](https://github.com/NatronGitHub/Natron/issues).
 
-The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.4.
+The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.5.
 
 Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, a version that is no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
 
-Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.4), preferably on the ["RB-2.4"](https://github.com/NatronGitHub/Natron/tree/RB-2.4) branch.
+Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.5), preferably on the ["RB-2.5"](https://github.com/NatronGitHub/Natron/tree/RB-2.5) branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit` hook that verifies code styling before accepting changes. You can add this to your local repository's `.git/hooks/` directory by doing the following:
 
