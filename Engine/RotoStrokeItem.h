@@ -136,7 +136,7 @@ public:
 
 
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, double time,
+    void evaluateStroke(unsigned int mipmapLevel, double time,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0) const;
 

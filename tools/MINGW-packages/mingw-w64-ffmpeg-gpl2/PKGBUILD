@@ -49,7 +49,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz
         https://github.com/FFmpeg/FFmpeg/commit/effadce6c756247ea8bae32dc13bb3e6f464f0eb.patch)
 sha256sums=('6c5b6c195e61534766a0b5fe16acc919170c883362612816d0a1c7f4f947006e'
-            '206f4d8437b21f6197ffc444c86d0504892a5c2137cb227b4af1c1e8bf2c426c')
+            '8fad5f253bcda7a17523dbfcbfcfd60b3db23783dcdb65998005cddc7c7776c3')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"

@@ -16,11 +16,11 @@ long_description        OpenImageIO is a library for reading and writing images,
                         related classes, utilities, and applications.
 platforms               darwin
 
-github.setup        OpenImageIO oiio 2.4.14.0 v
+github.setup        OpenImageIO oiio 2.4.17.0 v
 revision            100
-checksums           rmd160  f0c51d041627f1867b3de2b322edaef21ba8ca0e \
-                    sha256  92ad4b107394b273397baa1abe90207e1f8ef9fd52ffbfc23b46e3b0005d4439 \
-                    size    47890322
+checksums           rmd160  e593d35b8a4d62c0277622267c43911836eebd61 \
+                    sha256  7fe81d8e5bce30cc4a212f020ac3cc4344e6b7c1c0842475e3a048515099c65c \
+                    size    47900800
 
 github.tarball_from     archive
 

@@ -491,7 +491,7 @@ OutputEffectInstance::reportStats(int time,
         ofile << std::endl;
 
         ofile << "Mipmap level(s) rendered: ";
-        for (std::set<unsigned int>::const_iterator it2 = it->second.getMipMapLevelsRendered().begin(); it2 != it->second.getMipMapLevelsRendered().end(); ++it2) {
+        for (std::set<unsigned int>::const_iterator it2 = it->second.getMipmapLevelsRendered().begin(); it2 != it->second.getMipmapLevelsRendered().end(); ++it2) {
             ofile << *it2 << ' ';
         }
         ofile << std::endl;

@@ -173,6 +173,7 @@ SOURCES += \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
+    RenderScale.cpp \
     RenderStats.cpp \
     RotoContext.cpp \
     RotoDrawableItem.cpp \
@@ -343,6 +344,7 @@ HEADERS += \
     RectDSerialization.h \
     RectI.h \
     RectISerialization.h \
+    RenderScale.h \
     RenderStats.h \
     RotoContext.h \
     RotoContextPrivate.h \

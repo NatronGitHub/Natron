@@ -384,8 +384,11 @@ static PyObject* Sbk_RectDFunc_intersect(PyObject* self, PyObject* args)
                 // intersect(RectD,RectD*)const
                 // Begin code injection
 
-                RectD t;
-                cppSelf->intersect(*cppArg0,&t);
+                // Original:
+                //RectD t;
+                //cppSelf->intersect(*cppArg0,&t);
+                // Fix after https://github.com/NatronGitHub/Natron/pull/914 :
+                RectD t = cppSelf->intersect(*cppArg0);
                 pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], &t);
                 return pyResult;
 
@@ -410,8 +413,11 @@ static PyObject* Sbk_RectDFunc_intersect(PyObject* self, PyObject* args)
                 // intersect(double,double,double,double,RectD*)const
                 // Begin code injection
 
-                RectD t;
-                cppSelf->intersect(cppArg0,cppArg1,cppArg2,cppArg3,&t);
+                // Original:
+                //RectD t;
+                //cppSelf->intersect(cppArg0,cppArg1,cppArg2,cppArg3,&t);
+                // Fix after https://github.com/NatronGitHub/Natron/pull/914 :
+                RectD t = cppSelf->intersect(cppArg0,cppArg1,cppArg2,cppArg3);
                 pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], &t);
                 return pyResult;
 

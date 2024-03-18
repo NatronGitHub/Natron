@@ -528,6 +528,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->viewerColorSpace->addItem( QString::fromUtf8("Linear(None)") );
     _imp->viewerColorSpace->addItem( QString::fromUtf8("sRGB") );
     _imp->viewerColorSpace->addItem( QString::fromUtf8("Rec.709") );
+    _imp->viewerColorSpace->addItem( QString::fromUtf8("BT1886") );
     _imp->viewerColorSpace->setCurrentIndex(1);
 
     QPixmap pixCheckerboardEnabled, pixCheckerboardDisabld;

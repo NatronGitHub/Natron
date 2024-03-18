@@ -35,7 +35,7 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         oiio-2.2.14-libraw.diff
         oiio-2.4.13.0-thread-shutdown.patch # Remove when updating to a future 2.5 release that has these changes.
        )
-sha256sums=('72b7d2d5edd1049bb7fc09becad4d8be64a9918cdf79bae98b4b32e1fda762cd'
+sha256sums=('bb10a7ab6dff5dae2c6d854e9da38136546232235913237e8b1b3c99abb7dd0b'
             'SKIP'
             'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
@@ -44,7 +44,7 @@ sha256sums=('72b7d2d5edd1049bb7fc09becad4d8be64a9918cdf79bae98b4b32e1fda762cd'
            )
 
 prepare() {
-  cd ${srcdir}/oiio-${pkgver}
+  cd ${srcdir}/OpenImageIO-${pkgver}
   #patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
   patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
   patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
@@ -92,7 +92,7 @@ build() {
     -DCMAKE_CXX_STANDARD=14 \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     ${extra_config} \
-    ../oiio-${pkgver}
+    ../OpenImageIO-${pkgver}
   make
 }
 

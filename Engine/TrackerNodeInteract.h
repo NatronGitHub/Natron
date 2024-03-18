@@ -375,7 +375,7 @@ public:
     GLuint pboID;
     TrackWatcherPtr imageGetterWatcher;
     bool showMarkerTexture;
-    RenderScale selectedMarkerScale;
+    double selectedMarkerScale;
     ImageWPtr selectedMarkerImg;
     bool isTracking;
 

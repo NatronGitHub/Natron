@@ -27,7 +27,7 @@ jobs:
         shell: msys2 {0}
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
       - name: Setup MinGW environment
@@ -39,32 +39,37 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup
         shell: pwsh
+      - name: Prep MinGW package version list
+        run: |
+          pacman -Sl mingw64 msys > mingw-package-version-list.txt
       - name: Restore natron repo directory from cache
         id: restore-natron-repo-cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4.0.0
         with:
-          path: tools/MINGW-packages/natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
+          path: natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
       - name: Build natron package repo
         id: build-package-repo
         # Allow continuing after error so cache gets updated and makes reruns faster.
         continue-on-error: true
         run: |
-          cd tools/MINGW-packages
-          ./build_natron_package_repo.sh natron_repo
+          tools/MINGW-packages/build_natron_package_repo.sh natron_repo
+
+          REPO_VERSION=`cat ${GITHUB_WORKSPACE}/tools/MINGW-packages/windows_pacman_repo_version.txt`
+          echo "REPO_VERSION=${REPO_VERSION}" >> "$GITHUB_OUTPUT"
       - name: Save natron repo directory to cache
         id: save-natron-repo-cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4.0.0
         # save even if build fails.
         if: always()
         with:
-          path: tools/MINGW-packages/natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('tools/MINGW-packages/**/PKGBUILD') }}
+          path: natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
       - name: Upload natron_package_repo artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
-          name: natron_package_repo
-          path: tools/MINGW-packages/natron_repo
+          name: natron_package_repo-${{ steps.build-package-repo.outputs.REPO_VERSION }}
+          path: natron_repo
       - name: Check on failures
         if: steps.build-package-repo.outcome != 'success'
         run: exit 1

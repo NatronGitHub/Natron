@@ -233,6 +233,7 @@ class ProjectSerialization;
 class RectD;
 class RectI;
 class RenderEngine;
+class RenderScale;
 class RenderStats;
 class RenderingFlagSetter;
 class RotoContext;

@@ -1,5 +1,5 @@
---- Portfile.orig	2023-08-29 21:57:17
-+++ Portfile	2023-08-29 21:58:24
+--- Portfile.orig	2023-11-28 15:59:17.000000000 +0100
++++ Portfile	2023-11-28 16:02:49.000000000 +0100
 @@ -7,7 +7,7 @@
  
  boost.depends_type  build
@@ -22,7 +22,7 @@
  
  # Exclude pre-releases from livecheck
  github.livecheck.regex  {([0-9.]+)}
-@@ -31,31 +31,9 @@
+@@ -31,30 +31,8 @@
  configure.args-append \
      -DCMAKE_CONFIGURATION_TYPES=MacPorts
  
@@ -31,9 +31,7 @@
 -if {${os.platform} eq "darwin" && ${os.major} < 20} {
 -    github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
 -    revision            3
-+patchfiles-append \
-+    patch-OCIOZArchive.diff
- 
+-
 -    checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
 -                        sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
 -                        size    13830493
@@ -52,10 +50,11 @@
 -
 -    livecheck.type      none
 -}
--
++patchfiles-append \
++    patch-OCIOZArchive.diff
+ 
  # source assumes C++11 compiler
  compiler.cxx_standard 2011
- configure.cxxflags-append \
 @@ -93,6 +71,9 @@
      port:tinyxml
  
@@ -69,7 +68,7 @@
 @@ -107,8 +88,9 @@
  # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
  
- variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 python38 python39 python310 python311 {
+ variant python27 description {Build the Python 2.7 bindings} conflicts python38 python39 python310 python311 {
 -    depends_lib-append port:python27
 +    depends_lib-append port:python27 port:py27-pybind11
      configure.args-append \
@@ -80,29 +79,7 @@
 @@ -120,8 +102,9 @@
  }
  
- variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 python38 python39 python310 python311 {
--    depends_lib-append port:python36
-+    depends_lib-append port:python36 port:py36-pybind11
-     configure.args-append \
-+        -DOCIO_PYTHON_VERSION=3.6 \
-         -DPYTHON=${prefix}/bin/python3.6
-     post-destroot {
-         xinstall -d -m 0755 \
-@@ -133,8 +116,9 @@
- }
- 
- variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 python38 python39 python310 python311 {
--    depends_lib-append port:python37
-+    depends_lib-append port:python37 port:py37-pybind11
-     configure.args-append \
-+        -DOCIO_PYTHON_VERSION=3.7 \
-         -DPYTHON=${prefix}/bin/python3.7
-     post-destroot {
-         xinstall -d -m 0755 \
-@@ -146,8 +130,9 @@
- }
- 
- variant python38 description {Build the Python 3.8 bindings} conflicts python27 python36 python37 python39 python310 python311 {
+ variant python38 description {Build the Python 3.8 bindings} conflicts python27 python39 python310 python311 {
 -    depends_lib-append port:python38
 +    depends_lib-append port:python38 port:py38-pybind11
      configure.args-append \
@@ -110,10 +87,10 @@
          -DPYTHON=${prefix}/bin/python3.8
      post-destroot {
          xinstall -d -m 0755 \
-@@ -159,8 +144,9 @@
+@@ -133,8 +116,9 @@
  }
  
- variant python39 description {Build the Python 3.9 bindings} conflicts python27 python36 python37 python38 python310 python311 {
+ variant python39 description {Build the Python 3.9 bindings} conflicts python27 python38 python310 python311 {
 -    depends_lib-append port:python39
 +    depends_lib-append port:python39 port:py39-pybind11
      configure.args-append \
@@ -121,10 +98,10 @@
          -DPYTHON=${prefix}/bin/python3.9
      post-destroot {
          xinstall -d -m 0755 \
-@@ -172,8 +158,9 @@
+@@ -146,8 +130,9 @@
  }
  
- variant python310 description {Build the Python 3.10 bindings} conflicts python27 python36 python37 python38 python39 python311 {
+ variant python310 description {Build the Python 3.10 bindings} conflicts python27 python38 python39 python311 {
 -    depends_lib-append port:python310
 +    depends_lib-append port:python310 port:py310-pybind11
      configure.args-append \
@@ -132,10 +109,10 @@
          -DPYTHON=${prefix}/bin/python3.10
      post-destroot {
          xinstall -d -m 0755 \
-@@ -186,8 +173,9 @@
+@@ -160,8 +145,9 @@
  
  
- variant python311 description {Build the Python 3.11 bindings} conflicts python27 python36 python37 python38 python39 python310 {
+ variant python311 description {Build the Python 3.11 bindings} conflicts python27 python38 python39 python310 {
 -    depends_lib-append port:python311
 +    depends_lib-append port:python311 port:py311-pybind11
      configure.args-append \
@@ -143,9 +120,9 @@
          -DPYTHON=${prefix}/bin/python3.11
      post-destroot {
          xinstall -d -m 0755 \
-@@ -204,6 +192,7 @@
+@@ -178,6 +164,7 @@
  
- if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
+ if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
      configure.args-append \
 +        -DOCIO_BUILD_PYTHON=OFF \
          -DOCIO_BUILD_PYGLUE=OFF

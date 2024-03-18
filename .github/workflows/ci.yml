@@ -6,7 +6,6 @@ on:
     branches:
     - RB-2.5
     - RB-2.6
-    - fix-ci # For testing. Remove before commit.
     paths-ignore:
       - Documentation
   pull_request:
@@ -40,7 +39,7 @@ jobs:
           python-version: '3.10'
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
       - name: Install Linux system packages
@@ -66,34 +65,49 @@ jobs:
           tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Unix
+      - name: Download Plugins
         run: |
-          mkdir build && cd build
-          cmake ../
-          make -j2
-
-      - name: Run Unix Tests
-        id: run-unix-tests
-        # Allow continuing after error so logs can be uploaded.
-        continue-on-error: true
-        run: |
-          cd build
-
           mkdir Plugins && cd Plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
           unzip openfx-io-build-ubuntu_22-testing.zip
           cd ..
 
-          OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+      - name: Build Unix (debug)
+        run: |
+          mkdir debug && cd debug
+          cmake -DCMAKE_BUILD_TYPE=Debug ../
+          make -j2
+
+      - name: Run Unix Tests (debug)
+        id: run-unix-tests-debug
+        # Allow continuing after error so logs can be uploaded.
+        continue-on-error: true
+        run: |
+          cd debug
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+
+      - name: Build Unix (release)
+        run: |
+          mkdir release && cd release
+          cmake ../
+          make -j2
+
+      - name: Run Unix Tests (release)
+        id: run-unix-tests-release
+        # Allow continuing after error so logs can be uploaded.
+        continue-on-error: true
+        run: |
+          cd release
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
-          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
+          path: ${{ github.workspace }}/release/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
-        if: steps.run-unix-tests.outcome == 'failure'
+        if: steps.run-unix-tests-debug.outcome == 'failure' || steps.run-unix-tests-release.outcome == 'failure'
         run: exit 1
 
   win-test:
@@ -115,7 +129,7 @@ jobs:
         python-version: ['3.10']
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -124,10 +138,12 @@ jobs:
         with:
           msystem: mingw64
           update: true
-          install: git base-devel mingw-w64-x86_64-cc mingw-w64-x86_64-qt5-base mingw-w64-x86_64-pyside2
-            mingw-w64-x86_64-shiboken2 mingw-w64-x86_64-python-qtpy mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-cmake mingw-w64-x86_64-boost mingw-w64-x86_64-cairo mingw-w64-x86_64-expat
-            mingw-w64-x86_64-wget unzip
+          install: git mingw-w64-x86_64-wget unzip mingw-w64-x86_64-ninja mingw-w64-x86_64-cmake
+
+      - name: Install Natron pacman repository
+        run: |
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
+          pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -156,7 +172,7 @@ jobs:
           PYTHONHOME=/mingw64 OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
           path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log

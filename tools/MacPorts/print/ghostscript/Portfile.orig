@@ -4,8 +4,9 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             10.01.2
+version             10.02.1
 revision            1
+
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -13,8 +14,8 @@ description         GPL Ghostscript, An interpreter for PostScript and PDF
 long_description    Ghostscript is the well-known PostScript interpreter which \
                     is available for all common and most esoteric platforms and \
                     supports many different printers and some displays.
-
 homepage            https://www.ghostscript.com/
+
 master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
                     sourceforge:project/gs-fonts/gs-fonts/6.0%20%28misc%2C%20AFPL%29/:otherfonts \
                     sourceforge:project/gs-fonts/gs-fonts/8.11%20%28base%2035%2C%20GPL%29/:stdfonts \
@@ -32,15 +33,10 @@ distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-std-8.11.tar.gz:stdfonts \
                     ${mappingresources_commit}.zip:misc
 
-patchfiles          patch-base_unix-dll.mak.diff \
-                    patch-base_unixinst.mak.diff \
-                    patch-base_gspaint.diff \
-                    patch-psi_imainarg.c.diff
-
 checksums           ${distname}.tar.gz \
-                    rmd160  1a21460fb6ec98858a723cd6570a1b98e9f2124a \
-                    sha256  ee76cb526f5b6683e2adcb65398a1f333f7972289cec960b67aaa227c0d72e88 \
-                    size    96848797 \
+                    rmd160  4a8dd188fe10e5f16f4a7f3c5866e2923e3d7b3c \
+                    sha256  25399af0ef5bb94f2a13c91dc785c128d14f16744c4c92fa7c86e011c23151d8 \
+                    size    98194756 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -53,27 +49,6 @@ checksums           ${distname}.tar.gz \
                     rmd160  a65458ab9955421cf3085cf84a6eac299e8c93cb \
                     sha256  e3971985977cee4b75f6b49f6e43842d3b699c4255d010adb82796073e98fbfe \
                     size    1601563
-
-depends_lib         port:fontconfig \
-                    port:freetype \
-                    port:jbig2dec \
-                    path:include/turbojpeg.h:libjpeg-turbo \
-                    port:libiconv \
-                    port:libidn \
-                    port:libpaper \
-                    port:libpng \
-                    port:openjpeg \
-                    port:tiff \
-                    port:zlib \
-                    port:lcms2
-
-depends_build       port:pkgconfig
-
-# tell ghostscript it's OK to use the system pkg-config even when cross-compiling
-# see https://trac.macports.org/ticket/66627
-configure.env-append PKGCONFIG=${prefix}/bin/pkg-config
-
-depends_run         port:perl5
 
 extract.only        ${distname}.tar.gz \
                     ghostscript-fonts-other-6.0.tar.gz \
@@ -95,9 +70,14 @@ post-extract {
     copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/pdf2other/*]    ${worksrcpath}/Resource/CMap
 }
 
+patchfiles-append   patch-base_unix-dll.mak.diff
+patchfiles-append   patch-base_unixinst.mak.diff
+
 post-patch {
-    reinplace s|__PREFIX__|${prefix}| ${worksrcpath}/base/unix-dll.mak
-    reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| ${worksrcpath}/configure.ac
+    reinplace "s|__PREFIX__|${prefix}|" \
+                    ${worksrcpath}/base/unix-dll.mak
+    reinplace "s|ZLIBDIR=src|ZLIBDIR=${prefix}/include|" \
+                    ${worksrcpath}/configure.ac
 
     # Ensure that MacPorts perl is used everywhere
     fs-traverse f ${worksrcpath} {
@@ -107,28 +87,55 @@ post-patch {
     }
 }
 
-# https://trac.macports.org/ticket/56137
-configure.ldflags-prepend \
-                    -Lsobin
+depends_build-append \
+                    port:pkgconfig
+
+depends_lib-append \
+                    port:fontconfig \
+                    port:freetype \
+                    port:jbig2dec \
+                    port:lcms2 \
+                    port:libiconv \
+                    port:libidn \
+                    path:include/turbojpeg.h:libjpeg-turbo \
+                    port:libpaper \
+                    port:libpng \
+                    port:openjpeg \
+                    port:tiff \
+                    port:zlib
+
+depends_run-append \
+                    port:perl5
 
 use_autoreconf      yes
 autoreconf.args     -fv
 configure.checks.implicit_function_declaration.whitelist-append strchr
+
+# tell ghostscript it's OK to use the system pkg-config even when cross-compiling
+# see https://trac.macports.org/ticket/66627
+configure.env-append \
+                    PKGCONFIG=${prefix}/bin/pkg-config
+
+# https://trac.macports.org/ticket/56137
+configure.ldflags-prepend \
+                    -Lsobin
 
 # Make included OpenJPEG uses its own headers rather than the system ones
 configure.cppflags-replace \
                     -I${prefix}/include \
                     -isystem${prefix}/include
 
-configure.args      --disable-compile-inits \
+configure.args-append \
+                    --disable-compile-inits \
                     --disable-cups \
                     --disable-dbus \
                     --disable-gtk \
-                    --without-pcl \
-                    --without-xps \
+                    --with-system-libtiff \
                     --without-gpdl \
+                    --without-pcl \
+                    --without-tesseract \
                     --without-x \
-                    --with-system-libtiff
+                    --without-xps
 
 build.target        so
 

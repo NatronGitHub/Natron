@@ -14,9 +14,13 @@ if [ "$PYV" = 3 ]; then
     mv site-packages lib-dynload config-${PYVER}-* _sysconfigdata*.py* ..
     cd ..
     PYVERFULL="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()))")"
-    if [ "$PYVERFULL" = 3.9.14 ] || [ "$PYVERFULL" = 3.9.15 ]; then
-        # 3.9.14 and 3.9.15 don't have embedded zips
+    if [ "$PYVER" = 3.9 ] && version_gt "$PYVERFULL" 3.9.13; then
+        # 3.9.14 and later don't have embedded zips
         PYVERFULL=3.9.13
+    fi
+    if [ "$PYVER" = 3.10 ] && version_gt "$PYVERFULL" 3.10.11; then
+        # 3.10.12 and later don't have embedded zips
+        PYVERFULL=3.10.11
     fi
     wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
     unzip "python-${PYVERFULL}-embed-amd64.zip" "python${PYVERNODOT}.zip"

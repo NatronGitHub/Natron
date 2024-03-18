@@ -601,7 +601,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         bool isProjectFormat;
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
-        RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
+        const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
         StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash, time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
@@ -643,8 +643,8 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
         mipmapLevel = 0;
     } else {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-        if ( !tls->mipMapLevel.empty() ) {
-            mipmapLevel = tls->mipMapLevel.back();
+        if ( !tls->mipmapLevel.empty() ) {
+            mipmapLevel = tls->mipmapLevel.back();
         } else {
             mipmapLevel = 0;
         }
@@ -679,8 +679,8 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         if ( !tls->view.empty() ) {
             view = tls->view.back();
         }
-        if ( !tls->mipMapLevel.empty() ) {
-            mipmapLevel = tls->mipMapLevel.back();
+        if ( !tls->mipmapLevel.empty() ) {
+            mipmapLevel = tls->mipmapLevel.back();
         } else {
             mipmapLevel = 0;
         }
@@ -894,7 +894,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
-    unsigned int mipMapLevel = 0;
+    unsigned int mipmapLevel = 0;
     // Get mipmaplevel and view from the TLS
 #ifdef DEBUG
     if ( !tls || tls->view.empty() ) {
@@ -918,10 +918,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             view = ViewIdx( viewParam.value() );
         }
 
-        if ( tls->mipMapLevel.empty() ) {
-            mipMapLevel = 0;
+        if ( tls->mipmapLevel.empty() ) {
+            mipmapLevel = 0;
         } else {
-            mipMapLevel = tls->mipMapLevel.back();
+            mipmapLevel = tls->mipmapLevel.back();
         }
     } else {
         if ( viewParam.isCurrent() ) {
@@ -946,7 +946,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             }
             bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
                                   (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
-            if ( sameComponents && (internalImage->getMipMapLevel() == mipMapLevel) &&
+            if ( sameComponents && (internalImage->getMipmapLevel() == mipmapLevel) &&
                  ( time == internalImage->getTime() ) &&
                  ( view == internalImage->getKey().getView() ) ) {
                 if (retImage) {
@@ -971,7 +971,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
-    RenderScale renderScale( Image::getScaleFromMipMapLevel(mipMapLevel) );
+    const RenderScale renderScale = RenderScale::fromMipmapLevel(mipmapLevel);
     RectD bounds;
     if (optionalBounds) {
         bounds.x1 = optionalBounds->x1;
@@ -1368,8 +1368,8 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     assert(internalImage);
 
-    unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale( NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel) );
+    const unsigned int mipmapLevel = internalImage->getMipmapLevel();
+    const OfxPointD scale = RenderScale::fromMipmapLevel(mipmapLevel).toOfxPointD();
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 
@@ -1466,7 +1466,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
     // Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
-    const RectI pixelRod = rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio());
+    const RectI pixelRod = rod.toPixelEnclosing(mipmapLevel, internalImage->getPixelAspectRatio());
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
@@ -1580,7 +1580,7 @@ OfxClipInstance::setClipTLS(ViewIdx view,
 
     assert(tls);
     tls->view.push_back(view);
-    tls->mipMapLevel.push_back(mipmapLevel);
+    tls->mipmapLevel.push_back(mipmapLevel);
     RenderActionDataPtr d( new RenderActionData() );
     d->clipComponents = components;
     tls->renderData.push_back(d);
@@ -1599,9 +1599,9 @@ OfxClipInstance::invalidateClipTLS()
     if ( !tls->view.empty() ) {
         tls->view.pop_back();
     }
-    assert( !tls->mipMapLevel.empty() );
-    if ( !tls->mipMapLevel.empty() ) {
-        tls->mipMapLevel.pop_back();
+    assert( !tls->mipmapLevel.empty() );
+    if ( !tls->mipmapLevel.empty() ) {
+        tls->mipmapLevel.pop_back();
     }
     assert( !tls->renderData.empty() );
     if ( !tls->renderData.empty() ) {

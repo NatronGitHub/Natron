@@ -252,7 +252,7 @@ public:
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
     bool isAutoWipeEnabled() const;
     bool isAutoProxyEnabled() const;
-    unsigned int getAutoProxyMipMapLevel() const;
+    unsigned int getAutoProxyMipmapLevel() const;
     int getMaxOpenedNodesViewerContext() const;
     bool viewerNumberKeys() const;
     bool viewerOverlaysPath() const;

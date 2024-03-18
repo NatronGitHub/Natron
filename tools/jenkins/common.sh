@@ -380,7 +380,9 @@ else
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
 
-if [ -d "$SDK_HOME/llvm" ]; then
+if [ -n "${LLVM_PREFIX:-}" ]; then
+    LLVM_PATH="${LLVM_PREFIX}"
+elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
 elif [ -d "/opt/llvm" ]; then
     LLVM_PATH="/opt/llvm"

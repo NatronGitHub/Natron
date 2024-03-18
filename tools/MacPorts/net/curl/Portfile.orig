@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.2.1
-checksums                       rmd160  b8486b2903708f892bdff05a4f9a593c776a3ec6 \
-                                sha256  dd322f6bd0a20e6cebdfd388f69e98c3d183bed792cf4713c8a7ef498cba4894 \
-                                size    2631932
+version                         8.5.0
+checksums                       rmd160  47b80f4a164c18d95a9af6ffc42576ebe546ea85 \
+                                sha256  42ab8db9e20d8290a3b633e7fbb3cec15db34df65fd1015ef8ac1e4723750eeb \
+                                size    2658520
 
 categories                      net www
 platforms                       darwin freebsd
@@ -46,7 +46,6 @@ if {${name} eq ${subport}} {
                                 port:zstd
 
     patchfiles                  configure.patch
-    patchfiles-append           SCDynamicStoreCopyProxies.patch
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -57,7 +56,6 @@ if {${name} eq ${subport}} {
                                 --without-libssh2 \
                                 --without-mbedtls \
                                 --without-nghttp2 \
-                                --without-nss \
                                 --without-openssl \
                                 --without-ssl \
                                 --without-secure-transport \
@@ -118,30 +116,51 @@ if {${name} eq ${subport}} {
             RELEASE-NOTES \
             ${destroot}${docdir}
         xinstall -m 0644 -W ${worksrcpath}/docs \
+            ALTSVC.md \
             BINDINGS.md \
+            BUFREF.md \
             BUGS.md \
+            CIPHERS.md \
             CODE_OF_CONDUCT.md \
             CODE_STYLE.md \
+            CONNECTION-FILTERS.md \
             CONTRIBUTE.md \
+            CURL-DISABLE.md \
+            DEPRECATE.md \
+            DYNBUF.md \
             FAQ \
             FEATURES.md \
             GOVERNANCE.md \
             HELP-US.md \
             HISTORY.md \
+            HSTS.md \
             HTTP-COOKIES.md \
-            HTTP2.md \
             INTERNALS.md \
             KNOWN_BUGS \
             MAIL-ETIQUETTE \
+            PARALLEL-TRANSFERS.md \
             ROADMAP.md \
-            SECURITY-PROCESS.md \
+            SECURITY-ADVISORY.md \
             SSL-PROBLEMS.md \
             SSLCERTS.md \
             THANKS \
             TODO \
             TheArtOfHttpScripting.md \
+            URL-SYNTAX.md \
             VERSIONS.md \
+            WEBSOCKET.md \
+            VULN-DISCLOSURE-POLICY.md \
             ${destroot}${docdir}
+        if {[variant_isset http2]} {
+            xinstall -m 0644 -W ${worksrcpath}/docs \
+                HTTP2.md \
+                ${destroot}${docdir}
+        }
+        if {[variant_isset http3]} {
+            xinstall -m 0644 -W ${worksrcpath}/docs \
+                HTTP3.md \
+                ${destroot}${docdir}
+        }
         xinstall -m 0644 ${worksrcpath}/docs/libcurl/libcurl.m4 \
             ${destroot}${prefix}/share/aclocal/
     }

@@ -494,7 +494,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    ImagePtr getOrRenderLastStrokeImage(unsigned int mipmapLevel,
                                                         double par,
                                                         const ImagePlaneDesc& components,
                                                         ImageBitDepthEnum depth) const;
@@ -904,7 +904,7 @@ public:
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(double time, unsigned int mipmapLevel, ViewIdx view);
 
     void beginInputEdition();
 

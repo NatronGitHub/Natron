@@ -249,10 +249,8 @@ TEST(FileSystemModelTest, CleanPath) {
       expectedOutput = testCase.input;
     }
 #endif
-    // Make sure the expectation was actually set to something.
-    assert(!expectedOutput.isNull());
-
-    const auto output = FileSystemModel::cleanPath(input).toStdString();
-    EXPECT_EQ(expectedOutput, output) << " input '" << testCase.input << "'";
+    const QString output = FileSystemModel::cleanPath(input);
+    ASSERT_TRUE(!output.isNull());
+    EXPECT_EQ(expectedOutput, output.toStdString()) << " input '" << testCase.input << "'";
   }
 }

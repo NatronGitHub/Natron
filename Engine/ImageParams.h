@@ -111,7 +111,7 @@ public:
         , _bitdepth(eImageBitDepthFloat)
         , _fielding(eImageFieldingOrderNone)
         , _premult(eImagePremultiplicationPremultiplied)
-        , _mipMapLevel(0)
+        , _mipmapLevel(0)
         , _isRoDProjectFormat(false)
     {
     }
@@ -124,14 +124,14 @@ public:
         , _bitdepth(other._bitdepth)
         , _fielding(other._fielding)
         , _premult(other._premult)
-        , _mipMapLevel(other._mipMapLevel)
+        , _mipmapLevel(other._mipmapLevel)
         , _isRoDProjectFormat(other._isRoDProjectFormat)
     {
     }
 
     ImageParams(const RectD & rod,
                 const double par,
-                const unsigned int mipMapLevel,
+                const unsigned int mipmapLevel,
                 const RectI & bounds,
                 ImageBitDepthEnum bitdepth,
                 ImageFieldingOrderEnum fielding,
@@ -147,7 +147,7 @@ public:
         , _bitdepth(bitdepth)
         , _fielding(fielding)
         , _premult(premult)
-        , _mipMapLevel(mipMapLevel)
+        , _mipmapLevel(mipmapLevel)
         , _isRoDProjectFormat(isRoDProjectFormat)
     {
         CacheEntryStorageInfo& info = getStorageInfo();
@@ -229,14 +229,9 @@ public:
         _par = par;
     }
 
-    unsigned int getMipMapLevel() const
+    unsigned int getMipmapLevel() const
     {
-        return _mipMapLevel;
-    }
-
-    void setMipMapLevel(unsigned int mmlvl)
-    {
-        _mipMapLevel = mmlvl;
+        return _mipmapLevel;
     }
 
     template<class Archive>
@@ -251,7 +246,7 @@ public:
         return _rod == other._rod
                && _components == other._components
                && _bitdepth == other._bitdepth
-               && _mipMapLevel == other._mipMapLevel
+               && _mipmapLevel == other._mipmapLevel
                && _premult == other._premult
                && _fielding == other._fielding;
     }
@@ -269,7 +264,7 @@ private:
     ImageBitDepthEnum _bitdepth;
     ImageFieldingOrderEnum _fielding;
     ImagePremultiplicationEnum _premult;
-    unsigned int _mipMapLevel;
+    unsigned int _mipmapLevel;
     /// if true then when retrieving the associated image from cache
     /// the caller should update the rod to the current project format.
     /// This is because the project format might have changed since this image was cached.

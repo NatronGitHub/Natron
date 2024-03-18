@@ -743,11 +743,9 @@ TrackMarker::resetCenter()
     NodePtr input = context->getNode()->getInput(0);
     if (input) {
         SequenceTime time = input->getApp()->getTimeLine()->currentFrame();
-        RenderScale scale;
-        scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1197,10 +1195,8 @@ TrackMarker::getMarkerImage(int time,
                                               true, //isAnalysis
                                               false, //draftMode
                                               RenderStatsPtr() );
-    RenderScale scale;
-    scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,
-                                        scale,
+                                        RenderScale::identity,
                                         mipmapLevel, //mipmaplevel
                                         ViewIdx(0),
                                         false,

@@ -1,18 +1,18 @@
---- Portfile.orig	2023-01-28 18:14:47.000000000 -0800
-+++ Portfile	2023-01-28 18:14:55.000000000 -0800
-@@ -3,47 +3,67 @@
+--- Portfile.orig	2024-01-03 03:22:07
++++ Portfile	2023-07-04 02:43:05
+@@ -3,50 +3,69 @@
  PortSystem          1.0
  
  name                libraw
--version             0.21.1
+-version             0.21.2
 -revision            0
--
--checksums           rmd160  be36d8709eb2e8578f07b63ea8632eb6ed1d7775 \
--                    sha256  630a6bcf5e65d1b1b40cdb8608bdb922316759bfb981c65091fec8682d1543cd \
--                    size    1638461
 +version             0.18.13
 +set demosaicversion 0.18.8
  
+-checksums           rmd160  7fe2461241ec66e0b63fdeffdc76d2033ade2b48 \
+-                    sha256  fe7288013206854baf6e4417d0fb63ba4ed7227bf36fff021992671c2dd34b03 \
+-                    size    1639305
+-
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
                      cameras (CRW/CR2, NEF, RAF, DNG, and others).
@@ -50,6 +50,7 @@
                      port:lcms2
  
 -use_autoreconf      yes
+-autoreconf.args     -fvi
 -
 -# libraw_datastream.h:125:8: error: no template named 'unique_ptr' in namespace 'std'
 -compiler.cxx_standard 2011
@@ -70,8 +71,8 @@
 +        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
 +        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
 +    }
-+}
-+
+ }
+ 
 +variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
 +    distfiles-append \
 +        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
@@ -84,6 +85,8 @@
 +        LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
 +
 +    license                 GPL-3+
- }
- 
++}
++
  livecheck.type      regex
+ livecheck.url       ${homepage}/download/
+ livecheck.regex     "LibRaw-(\\d+(?:\\.\\d+)*)${extract.suffix}"

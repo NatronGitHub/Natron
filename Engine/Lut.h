@@ -89,6 +89,7 @@ public:
     ///buit-ins color-spaces
     static const Lut* sRGBLut();
     static const Lut* Rec709Lut();
+    static const Lut* BT1886Lut();
     static const Lut* CineonLut();
     static const Lut* Gamma1_8Lut();
     static const Lut* Gamma2_2Lut();
@@ -494,6 +495,18 @@ to_func_srgb(float v)
     } else {
         return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
     }
+}
+
+inline float
+from_func_bt1886(float v)
+{
+    return std::pow(v, 2.4);
+}
+
+inline float
+to_func_bt1886(float v)
+{
+    return std::pow(v, 1.0/2.4);
 }
 
 // r,g,b values are from 0 to 1

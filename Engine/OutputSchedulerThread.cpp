@@ -1085,11 +1085,10 @@ OutputSchedulerThread::startRender()
     }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
-        RenderScale scaleOne(1.);
         if (effect->beginSequenceRender_public( firstFrame, lastFrame,
                                                 frameStep,
                                                 false,
-                                                scaleOne, true,
+                                                RenderScale::identity, true,
                                                 true,
                                                 false,
                                                 ViewIdx(0),
@@ -1176,11 +1175,10 @@ OutputSchedulerThread::stopRender()
         firstFrame = args->firstFrame;
         lastFrame = args->lastFrame;
 
-        RenderScale scaleOne(1.);
         ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
                                                          1,
                                                          !appPTR->isBackground(),
-                                                         scaleOne, true,
+                                                         RenderScale::identity, true,
                                                          !appPTR->isBackground(),
                                                          false,
                                                          ViewIdx(0),
@@ -2245,8 +2243,8 @@ private:
 
         try {
             ////Writers always render at scale 1.
-            int mipMapLevel = 0;
-            RenderScale scale(1.);
+            const int mipmapLevel = 0;
+            const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
             RectD rod;
             bool isProjectFormat;
 
@@ -2323,7 +2321,7 @@ private:
 
                 {
                     FrameRequestMap request;
-                    stat = EffectInstance::computeRequestPass(time, viewsToRender[view], mipMapLevel, rod, activeInputNode, request);
+                    stat = EffectInstance::computeRequestPass(time, viewsToRender[view], mipmapLevel, rod, activeInputNode, request);
                     if (stat == eStatusFailed) {
                         _imp->scheduler->notifyRenderFailure("Error caught while rendering");
 
@@ -2335,7 +2333,7 @@ private:
                 std::map<ImagePlaneDesc, ImagePtr> planes;
                 std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                                                scale, //< the scale at which to render
-                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                               mipmapLevel, //< the mipmap level (redundant with the scale)
                                                                                                                viewsToRender[view], //< the view to render
                                                                                                                false,
                                                                                                                renderWindow, //< the region of interest (in pixel coordinates)
@@ -2406,8 +2404,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     //Only consider the first frame, we shouldn't have multiple view here anyway.
     const BufferedFrame& frame = frames.front();
 
-    ///Writers render to scale 1 always
-    RenderScale scale(1.);
     OutputEffectInstancePtr effect = _effect.lock();
     U64 hash = effect->getHash();
     bool isProjectFormat;
@@ -2444,6 +2440,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  false,
                                                  it->stats);
         RectD rod;
+        ///Writers render to scale 1 always
+        const RenderScale scale;
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
         const RectI roi = rod.toPixelEnclosing(0, par);
 

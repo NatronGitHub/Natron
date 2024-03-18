@@ -36,12 +36,12 @@ subport ${name} {
 subport ${name}-devel {
     conflicts   ${name}
     
-    version     3.8.1
+    version     3.8.2
     revision    0
 
-    checksums   rmd160  d9a09dec344ec897e7abaf408ba93e25e91ca2ad \
-                sha256  ba8b9e15ae20aba88f44661978f5b5863494316fe7e722ede9d069fe6294829c \
-                size    6447056
+    checksums   rmd160  94154bab53fef5b66365cb8ebd9caa616e3ed741 \
+                sha256  e765e5016ffa9b9dd243e363a0460d577074444ee2491267db2e96c9c2adef77 \
+                size    6456540
 
     patchfiles      patch-lib-system-certs.c.diff
 }

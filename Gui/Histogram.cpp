@@ -138,7 +138,7 @@ public:
         , vmin(0)
         , vmax(0)
         , binsCount(0)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
         , hasImage(false)
 #endif
         , sizeH()
@@ -279,7 +279,7 @@ public:
     unsigned int pixelsCount;
     double vmin, vmax; //< the x range of the histogram
     unsigned int binsCount;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
     bool hasImage;
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
 
@@ -510,20 +510,20 @@ ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 
     ImagePtr image;
     if (viewer) {
-        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor() );
+        image = viewer->getViewer()->getLastRenderedImageByMipmapLevel( textureIndex, viewer->getInternalNode()->getMipmapLevelFromZoomFactor() );
     }
 
     if (!useImageRoD) {
         if (viewer) {
             RectI bounds;
             double par = 1.;
-            unsigned int mipMapLevel = 0;
+            unsigned int mipmapLevel = 0;
             if (image) {
                 bounds = image->getBounds();
                 par = image->getPixelAspectRatio();
-                mipMapLevel = image->getMipMapLevel();
+                mipmapLevel = image->getMipmapLevel();
             }
-            *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipMapLevel);
+            *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipmapLevel);
         }
     } else {
         if (image) {
@@ -1575,7 +1575,7 @@ Histogram::onCPUHistogramComputed()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     int mode;
-    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode, &_imp->vmin, &_imp->vmax, &_imp->mipMapLevel);
+    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode, &_imp->vmin, &_imp->vmax, &_imp->mipmapLevel);
     assert(success);
     if (success) {
         _imp->hasImage = true;
@@ -1703,7 +1703,7 @@ HistogramPrivate::drawWarnings()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QOpenGLContext::currentContext() == widget->context() );
-    if (mipMapLevel > 0) {
+    if (mipmapLevel > 0) {
         QFontMetrics fm(*_textFont);
         QString str( tr("Image downscaled") );
 #if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)

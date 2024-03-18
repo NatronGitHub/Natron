@@ -76,6 +76,8 @@ ViewerTab::onColorSpaceComboBoxChanged(int v)
         colorspace = eViewerColorSpaceSRGB;
     } else if (v == 2) {
         colorspace = eViewerColorSpaceRec709;
+    } else if (v == 3) {
+        colorspace = eViewerColorSpaceBT1886;
     } else {
         assert(false);
         throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
@@ -617,11 +619,11 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
-    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
+    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
         update();
-    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+    } else if ( notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
@@ -901,8 +903,8 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if ( !getGui() ) {
         return QWidget::keyPressEvent(e);
     }
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
-    if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
+    if ( notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
         _imp->viewer->redraw();
     } else {
         handleUnCaughtKeyUpEvent(e);

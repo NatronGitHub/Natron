@@ -16,9 +16,9 @@ Image Layers and Channels
 #########################
 
 In natron an image is only a stack of black and white images called channels. channels are grouped in layers.
-The Color layer is the base layer. Color layer has channels R,G,B,A
-R,G,B codes the color of the pixels in Red Green blue
-A codes the transparency of the pixel called Alpha. When A=0 the pixel is transparent. When A=1 the pixel is transparent
+The Color layer is the base layer. Color layer has channels R,G,B,A.
+R,G,B codes the color of the pixels in Red Green blue.
+A codes the transparency of the pixel called Alpha. When A=0 the pixel is transparent. When A=1 the pixel is opaque
 The image can have as many layers as you want describing, the motion, the depth of your image or whatever else you want
 
 .. note::  You cannot see the stacking of the layers as in  as in Photoshop or After Effects. In Natron you will have different branches of your node tree that are Merged together. The Merge node is the good way to stack layers.

@@ -74,7 +74,7 @@ public:
         , gain(1.)
         , gamma(1.)
         , offset(0.)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
         , lut(eViewerColorSpaceSRGB)
         , layer()
         , alphaLayer()
@@ -122,7 +122,7 @@ public:
     double gain; // viewer gain
     double gamma; // viewer gamma
     double offset; // viewer offset
-    unsigned int mipMapLevel; // viewer mipmaplevel
+    unsigned int mipmapLevel; // viewer mipmaplevel
     ViewerColorSpaceEnum lut; // the viewer colorspace lut
     ImagePlaneDesc layer; // the image layer
     ImagePlaneDesc alphaLayer; // the alpha layer

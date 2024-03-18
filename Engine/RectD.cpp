@@ -30,24 +30,22 @@
 #include <stdexcept>
 
 #include "Engine/RectI.h"
+#include "Engine/RenderScale.h"
 
 NATRON_NAMESPACE_ENTER
 
 RectI
-RectD::toPixelEnclosing(const RenderScale& scale,
+RectD::toPixelEnclosing(const RenderScale& renderScale,
                         double par) const
 {
-    return RectI(std::floor(x1 * scale.x / par),
-                 std::floor(y1 * scale.y),
-                 std::ceil(x2 * scale.x / par),
-                 std::ceil(y2 * scale.y));
+    return toPixelEnclosing(renderScale.toMipmapLevel(), par);
 }
 
 RectI
-RectD::toPixelEnclosing(unsigned int mipMapLevel,
+RectD::toPixelEnclosing(unsigned int mipmapLevel,
                         double par) const
 {
-    const double scale = 1. / (1 << mipMapLevel);
+    const double scale = 1. / (1 << mipmapLevel);
     return RectI(std::floor(x1 * scale / par),
                  std::floor(y1 * scale),
                  std::ceil(x2 * scale / par),
