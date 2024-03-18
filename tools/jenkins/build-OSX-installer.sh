@@ -42,6 +42,7 @@ updateBuildOptions
 echo "*** macOS version:"
 macosx=$(uname -r | sed 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|')
 case "${macosx}" in
+23) echo "macOS 14.x    Sonoma";;
 22) echo "macOS 13.x    Ventura";;
 21) echo "macOS 12.x    Monterey";;
 20) echo "macOS 11.x    Big Sur";;

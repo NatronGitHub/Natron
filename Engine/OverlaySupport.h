@@ -98,7 +98,7 @@ public:
     /**
      * @brief Get the current mipmapLevel applied by the viewer
      **/
-    virtual unsigned int getCurrentRenderScale() const = 0;
+    virtual unsigned int getCurrentMipmapLevel() const { return 0; }
 
     /**
      * @brief Returns whether the given rectangle in canonical coords is visible in the viewport

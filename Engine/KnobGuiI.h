@@ -60,7 +60,6 @@ public:
     virtual bool isGuiFrozenForPlayback() const = 0;
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE { return 0; }
 
     virtual CurvePtr getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;

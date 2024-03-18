@@ -4,6 +4,10 @@ on:
   workflow_dispatch: {}
   push:
 
+env:
+  NATRON_BUILD_WORKSPACE: 'D:/nbw'
+  CI: 'True'
+
 jobs:
   win-installer:
     name: Windows Installer
@@ -11,12 +15,10 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-      CI: 'True'
 
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -29,19 +31,12 @@ jobs:
 
       - name: Install Natron pacman repository
         run: |
-          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
-          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
-          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
-          unzip natron_package_repo.zip
-          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
-          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
-          pacman -Syl natron
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
           pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
       - name: Build
         id: build
         run: |
-          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
           NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
           mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
 
@@ -64,8 +59,24 @@ jobs:
           echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
 
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
@@ -76,12 +87,10 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-      CI: 'True'
 
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
@@ -94,19 +103,12 @@ jobs:
 
       - name: Install Natron pacman repository
         run: |
-          mkdir ${GITHUB_WORKSPACE}/natron_pacman_repo
-          cd ${GITHUB_WORKSPACE}/natron_pacman_repo
-          wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/natron_package_repo.zip
-          unzip natron_package_repo.zip
-          NATRON_REPO_PATH=`cygpath -u $GITHUB_WORKSPACE`
-          echo -e "#NATRON_REPO_START\n[natron]\nSigLevel = Optional TrustAll\nServer = file://${NATRON_REPO_PATH}/natron_pacman_repo/\n#NATRON_REPO_END" >> /etc/pacman.conf
-          pacman -Syl natron
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
           pacman -S --needed --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
       - name: Build
         id: build
         run: |
-          NATRON_BUILD_WORKSPACE=${GITHUB_WORKSPACE}/natron_build
           NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
           mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
 
@@ -139,14 +141,30 @@ jobs:
           echo "SYMBOLS_NAME=${SYMBOLS_NAME}" >> $GITHUB_OUTPUT
           echo "SYMBOLS_DIR=$(cygpath -m ${SYMBOLS_DIR})" >> $GITHUB_OUTPUT
 
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done
+
       - name: Upload installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
 
       - name: Upload symbols
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.SYMBOLS_NAME }}
           path:  ${{ steps.build.outputs.SYMBOLS_DIR }}

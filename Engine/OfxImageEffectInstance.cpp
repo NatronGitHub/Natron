@@ -442,9 +442,9 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     ///get the render scale of the 1st viewer
     if ( !attachedViewers.empty() ) {
         ViewerInstance* first = attachedViewers.front();
-        int mipMapLevel = first->getMipMapLevel();
-        x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
-        y = x;
+        const auto scale = RenderScale::fromMipmapLevel(first->getMipmapLevel()).toOfxPointD();
+        x = scale.x;
+        y = scale.y;
     } else {
         x = 1.;
         y = 1.;

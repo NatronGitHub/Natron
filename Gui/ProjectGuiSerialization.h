@@ -113,7 +113,7 @@ struct ViewerData
     double gain;
     double gamma;
     bool renderScaleActivated;
-    int mipMapLevel;
+    unsigned int mipmapLevel;
     std::string colorSpace;
     std::string channels;
     std::string layerName, alphaLayerName;
@@ -164,7 +164,7 @@ struct ViewerData
         }
         ar & ::boost::serialization::make_nvp("Channels", channels);
         ar & ::boost::serialization::make_nvp("RenderScaleActivated", renderScaleActivated);
-        ar & ::boost::serialization::make_nvp("MipMapLevel", mipMapLevel);
+        ar & ::boost::serialization::make_nvp("MipMapLevel", mipmapLevel);
 
         if (version >= VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING) {
             ar & ::boost::serialization::make_nvp("ZoomOrPanSinceFit", zoomOrPanSinceLastFit);

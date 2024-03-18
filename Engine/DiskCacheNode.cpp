@@ -221,7 +221,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         if (!srcImg) {
             return eStatusFailed;
         }
-        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
+        if ( srcImg->getMipmapLevel() != output.second->getMipmapLevel() ) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
         if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {

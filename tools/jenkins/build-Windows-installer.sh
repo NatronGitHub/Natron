@@ -131,14 +131,27 @@ $GSED -e "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}
 cp "$INC_PATH/config/"*.png "$INSTALLER_PATH/config/"
 
 # make sure we have mt and qtifw
-if [ ! -f "$SDK_HOME/bin/mt.exe" ] || [ ! -f "$SDK_HOME/bin/binarycreator.exe" ]; then
-    if [ ! -d "$SRC_PATH/natron-windows-installer" ]; then
-        ( cd "$SRC_PATH";
-          $CURL "$THIRD_PARTY_BIN_URL/natron-windows-installer.zip" --output "$SRC_PATH/natron-windows-installer.zip"
-          unzip natron-windows-installer.zip
-        )
+
+if ! which mt.exe; then
+    # Add Windows SDK to path so that mt.exe is available.
+    WIN_SDK_MAJOR_VERSION=10
+    WIN_SDK_BASE_PATH="/c/Program Files (x86)/Windows Kits/${WIN_SDK_MAJOR_VERSION}/bin"
+    WIN_SDK_VERSION=$(ls "${WIN_SDK_BASE_PATH}" | grep "${WIN_SDK_MAJOR_VERSION}." | sort -n | tail -1)
+    PATH="${WIN_SDK_BASE_PATH}/${WIN_SDK_VERSION}/x64/":${PATH}
+
+    if ! which mt.exe; then
+        echo "Failed to find mt.exe"
+        exit 1
     fi
-    cp "$SRC_PATH/natron-windows-installer/mingw$BITS/bin/"{archivegen.exe,binarycreator.exe,installerbase.exe,installerbase.manifest,repogen.exe,mt.exe} "$SDK_HOME/bin/"
+fi
+
+if ! which binarycreator.exe && [ ! -f "/Setup.exe" ]; then
+    pacman -S mingw-w64-x86_64-qt-installer-framework
+
+    if ! which binarycreator.exe; then
+        echo "Failed to find binarycreator.exe"
+        exit 1
+    fi
 fi
 
 function installPlugin() {

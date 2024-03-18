@@ -189,7 +189,7 @@ public:
     Image(const ImagePlaneDesc& components,
           const RectD & regionOfDefinition,    //!< rod in canonical coordinates
           const RectI & bounds,    //!< bounds in pixel coordinates
-          unsigned int mipMapLevel,
+          unsigned int mipmapLevel,
           double par,
           ImageBitDepthEnum bitdepth,
           ImagePremultiplicationEnum premult,
@@ -222,7 +222,7 @@ public:
                             bool fullScaleWithDownscaleInputs);
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const double par,
-                                                     unsigned int mipMapLevel,
+                                                     unsigned int mipmapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImagePlaneDesc& components,
                                                      ImageBitDepthEnum bitdepth,
@@ -233,7 +233,7 @@ public:
     static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
                                                      const double par,
-                                                     unsigned int mipMapLevel,
+                                                     unsigned int mipmapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImagePlaneDesc& components,
                                                      ImageBitDepthEnum bitdepth,
@@ -289,7 +289,7 @@ public:
 
     /**
      * @brief Returns the bounds where data is in the image.
-     * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
+     * This is equivalent to calling getRoD().mipmapLevel(getMipmapLevel());
      * but slightly faster since it is stored as a member of the image.
      **/
     RectI getBounds() const
@@ -317,14 +317,9 @@ public:
         return size();
     }
 
-    unsigned int getMipMapLevel() const
+    unsigned int getMipmapLevel() const
     {
-        return this->_params->getMipMapLevel();
-    }
-
-    double getScale() const
-    {
-        return getScaleFromMipMapLevel( getMipMapLevel() );
+        return this->_params->getMipmapLevel();
     }
 
     unsigned int getComponentsCount() const;
@@ -753,7 +748,7 @@ public:
      * given mipmap level,
      * and then computes the mipmap of the given level of that rectangle.
      **/
-    void downscaleMipMap(const RectD& rod,
+    void downscaleMipmap(const RectD& rod,
                          const RectI & roi,
                          unsigned int fromLevel, unsigned int toLevel,
                          bool copyBitMap,
@@ -763,10 +758,9 @@ public:
      * @brief Upscales a portion of this image into output.
      * If the upscaled roi does not fit into output's bounds, it is cropped first.
      **/
-    void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
+    void upscaleMipmap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
 
-    static double getScaleFromMipMapLevel(unsigned int level);
     static unsigned int getLevelFromScale(double s);
 
     /**
@@ -983,7 +977,7 @@ private:
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-    void buildMipMapLevel(const RectD& dstRoD, const RectI & roiCanonical, unsigned int level, bool copyBitMap,
+    void buildMipmapLevel(const RectD& dstRoD, const RectI & roiCanonical, unsigned int level, bool copyBitMap,
                           Image* output) const;
 
 
@@ -1009,7 +1003,7 @@ private:
     void halve1DImageForDepth(const RectI & roi, Image* output) const;
 
     template <typename PIX, int maxValue>
-    void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
+    void upscaleMipmapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
     template<typename PIX>
     void pasteFromForDepth(const Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);

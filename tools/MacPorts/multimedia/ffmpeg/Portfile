@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.4
-revision            1
+revision            4
 epoch               1
 
 license             LGPL-2.1+
@@ -120,6 +120,12 @@ patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 # https://trac.macports.org/ticket/67327
 # Fixed via upstream commit: 031f1561cd286596cdb374da32f8aa816ce3b135
 patchfiles-append   patch-libavcodec-libsvtav1-ten_bit_format.diff
+
+# Patch for building docs with texinfo >= 7
+# https://trac.macports.org/ticket/68747
+# https://trac.ffmpeg.org/ticket/10636
+# Fixed via upstream commit: f01fdedb69e4accb1d1555106d8f682ff1f1ddc7
+patchfiles-append   patch-texinfo-7.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
@@ -308,15 +314,20 @@ platform darwin {
                     port:svt-av1
     }
 
-    # Available on 10.6+
-    if {(${os.major} >= 10) && (${configure.build_arch} ne "ppc")} {
-        # Only enable 'rav1e', for non-slim installation
-        if {![variant_isset slim]} {
-            configure.args-append \
-                    --enable-librav1e
-            depends_lib-append \
-                    port:rav1e
+    # rav1e available on 10.6+
+    if {(${os.major} < 10) || (${configure.build_arch} eq "ppc")} {
+        if {[variant_isset rav1e]} {
+            error "Variant rav1e not supported for macOS 10.5 and earlier, or PPC"
         }
+    }
+
+    # due to the new linker (which was introduced in Xcode 15: https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes),
+    # this port requires '-ld_classic' to build successfully with the toolchains from Xcode 15 or Command Line Tools 15.
+    #
+    # TODO: This is a temporary solution, the classic linker will be removed in a future release by Apple.
+    if { ( [vercmp ${xcodeversion} 15 ] >= 0 ) || ( [vercmp ${xcodecltversion} 15 ] >= 0 ) } {
+        configure.ldflags-append \
+                    -Wl,-ld_classic
     }
 }
 
@@ -576,50 +587,44 @@ variant nonfree description {enable nonfree code, libraries and binaries will no
                     port:libfdk-aac
 }
 
-variant slim description {Trim dependencies slightly, without significantly impacting overall feature set} {}
+variant rav1e description {Enable codec rav1e} {
+    configure.args-append \
+                    --enable-librav1e
+    depends_lib-append \
+                    port:rav1e
+}
+
+if {![variant_isset rav1e]} {
+    notes-append "Support for rav1e now disabled by default; enable via +rav1e"
+}
 
 if {[variant_isset nonfree]} {
-notes "
+notes-append "
 This build of ${name} includes nonfree code as follows:
   libfdk-aac
 The following libraries and binaries may not be redistributed:
-  ffmpeg
-  libavcodec
-  libavdevice
-  libavfilter
-  libavformat
-  libavutil
+  ffmpeg libavcodec libavdevice libavfilter libavformat libavutil
 To remove this restriction remove the variant +nonfree
 "
 } elseif {[variant_isset gpl3]} {
-notes "
-This build of ${name} includes GPLed code and is therefore licensed under GPL v3 or later.
+notes-append "
+This build of ${name} includes GPLed code and is therefore licensed under GPL v3 or later.\
 The following modules are GPLed:
-  postproc
-  libsambaclient
-  libvidstab
-  libx264
-  libx265
-  libxvid
-To include all nonfree, GPLed and LGPL code use variant +nonfree.
+  libsambaclient libvidstab libx264 libx265 libxvid postproc
+To include all nonfree, GPLed and LGPL code use variant +nonfree.\
 To remove nonfree and GPLed code leaving only LGPL code remove the +gpl2 and +gpl3 variants.
 "
 } elseif {[variant_isset gpl2]} {
-notes "
-This build of ${name} includes GPLed code and is therefore licensed under GPL v2 or later.
+notes-append "
+This build of ${name} includes GPLed code and is therefore licensed under GPL v2 or later.\
 The following modules are GPLed:
-  postproc
-  libvidstab
-  libx264
-  libx265
-  libxvid
-To include all nonfree, GPLed and LGPL code use variant +nonfree.
+  libvidstab libx264 libx265 libxvid postproc
+To include all nonfree, GPLed and LGPL code use variant +nonfree.\
 To remove nonfree and GPLed code leaving only LGPL code remove the +gpl2 variant.
 "
 } else {
-notes "
-This build of ${name} includes no GPLed or nonfree code\
-and is therefore licensed under LGPL v2.1 or later.
+notes-append "
+This build of ${name} includes no GPLed or nonfree code and is therefore licensed under LGPL v2.1 or later.
 "
 }
 

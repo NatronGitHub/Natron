@@ -1069,7 +1069,6 @@ public:
     virtual double getScreenPixelRatio() const OVERRIDE = 0;
 #endif
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
     virtual RectD getViewportRect() const OVERRIDE = 0;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;

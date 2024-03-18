@@ -1,5 +1,5 @@
---- Portfile.orig	2023-07-03 17:37:19.000000000 -0700
-+++ Portfile	2023-04-04 12:02:53.000000000 -0700
+--- Portfile.orig	2023-11-28 15:57:54.000000000 +0100
++++ Portfile	2023-11-04 17:46:40.000000000 +0100
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -23,7 +23,7 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 -
--    version             16.0.6
+-    version             17.0.3
 -    revision            0
 -
      if { ${subport} eq "libomp-devel" } {
@@ -48,18 +48,18 @@
 -
 -    checksums \
 -        openmp-${version}.src.tar.xz \
--        rmd160  de7bc41e8207077aee79e3ff45c782f489f8f383 \
--        sha256  a2536f06373774f2829d892b72eea5f97bab20e69b26b03042d947f992eb8e38 \
--        size    1278072 \
+-                    rmd160  a79350f38202f4e9819373a433b1b19cef631eb2 \
+-                    sha256  e04172c067f256d06cd8112abb49bc65f4e1d986a4b49b36cd837dfee3cdd274 \
+-                    size    1273276 \
 -        cmake-${version}.src.tar.xz \
--        rmd160  94ead500d749de031894e9a14c51ed17951c8fd7 \
--        sha256  39d342a4161095d2f28fb1253e4585978ac50521117da666e2b1f6f28b62f514 \
--        size    9008
+-                    rmd160  2f419efae4d3f8c9d87943cf1873031468a19bd7 \
+-                    sha256  54fc534f0da09088adbaa6c3bfc9899a500153b96e60c2fb9322a7aa37b1027a \
+-                    size    8712
 +    revision            0
  
      if {${os.major} <= 12} {
          # kmp_alloc.c includes <atomic> but libc++ is not the default on
-@@ -62,34 +53,40 @@
+@@ -62,40 +53,40 @@
  
      # Build requires std::atomic
      configure.cxxflags-append -std=c++11
@@ -106,8 +106,14 @@
 -        worksrcdir      openmp-${version}/final/runtime
 -        version         3.8.1
 -        checksums       rmd160  a41054068a127ef84610afef8090109078cb6c46 \
--                        sha256  4c46b5946fe9b2a701661746d11c7c85c51a7f18673194a7ebd2a43470948a34
+-                        sha256  4c46b5946fe9b2a701661746d11c7c85c51a7f18673194a7ebd2a43470948a34 \
+-                        size    5587986
 -        set rtpath      "./"
+-
+-        # use cmake-bootstrap to minimize dependencies.
+-        depends_build-replace  \
+-                        path:bin/cmake:cmake port:cmake-bootstrap
+-        configure.cmd   ${prefix}/libexec/cmake-bootstrap/bin/cmake
 +        worksrcdir              openmp-${version}/final/runtime
 +        version                 3.8.1
 +        checksums \
@@ -120,7 +126,26 @@
  }
  
  depends_build-append    port:perl5
-@@ -115,14 +112,8 @@
+@@ -104,18 +95,6 @@
+ # According to documentation builds with clang >= 3.3
+ compiler.blacklist-append {clang < 500} *gcc*
+ 
+-# https://trac.macports.org/ticket/68490#
+-# Use clang-11-bootstrap on OSX10.11 and older
+-if {${os.major} <= 15} {
+-    configure.compiler.add_deps no
+-    depends_build-append port:clang-11-bootstrap
+-    depends_skip_archcheck-append clang-11-bootstrap
+-    pre-configure {
+-        configure.cc    ${prefix}/libexec/clang-11-bootstrap/bin/clang
+-        configure.cxx   ${prefix}/libexec/clang-11-bootstrap/bin/clang++
+-    }
+-}
+-
+ if {${os.major} <= 17} {
+     default_variants    +universal
+ }
+@@ -133,14 +112,8 @@
  # With this, cmake sets the correct library name in the dylibs for the
  # final destination we move them to
  configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
@@ -137,7 +162,7 @@
  
  variant top_level description \
      "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
-@@ -131,30 +122,22 @@
+@@ -149,30 +122,22 @@
      # Patch tool for build with CMAKE_INSTALL_PREFIX
      reinplace "/bulk.*compatibility/s/s\+/s+.*/" \
          ${rtpath}tools/check-depends.pl
@@ -172,7 +197,7 @@
          foreach p {libiomp5.dylib libomp.dylib libgomp.dylib} {
              system -W ${instdest}/lib/ \
                "ln -s libomp/${p}"
-@@ -162,8 +145,8 @@
+@@ -180,8 +145,8 @@
      }
  
      set fpath ${worksrcpath}/${rtpath}

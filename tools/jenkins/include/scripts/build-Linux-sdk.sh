@@ -194,7 +194,7 @@ EOF
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -222,7 +222,7 @@ EOF
             ARCH=x86_64
         fi
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
+RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
@@ -368,7 +368,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install alsa-lib-devel libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXtst-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install alsa-lib-devel libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXtst-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
         error=true
     fi
 

@@ -203,7 +203,7 @@ ViewerGL::resizeGL(int w,
     bool zoomSinceLastFit;
     double oldWidth, oldHeight;
     {
-        QMutexLocker(&_imp->zoomCtxMutex);
+        QMutexLocker l(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
         _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight, /*alignTop=*/ true, /*alignRight=*/ false);
@@ -404,7 +404,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWhole, true);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, eDrawPolygonModeWhole, true);
                 }
                 break;
             }
@@ -412,16 +412,16 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackUnder: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipmapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
 
@@ -431,17 +431,17 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackOver: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipmapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
 
                 break;
@@ -450,17 +450,17 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackMinus: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipmapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
                 break;
@@ -469,17 +469,17 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackOnionSkin: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipmapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     //glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipmapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
                 break;
@@ -490,7 +490,7 @@ ViewerGL::paintGL()
                 const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
                 RectI texRect(r.x1, r.y1, r.x2, r.y2);
                 const double par = r.par;
-                const RectD canonicalTexRect = texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par);
+                const RectD canonicalTexRect = texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipmapLevel, par);
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
@@ -511,7 +511,7 @@ ViewerGL::paintGL()
 
         glCheckError();
         if (_imp->overlay) {
-            drawOverlay( getCurrentRenderScale() );
+            drawOverlay(getCurrentMipmapLevel());
         } else {
             const QFont& f = font();
             QFontMetrics fm(f);
@@ -603,7 +603,7 @@ ViewerGL::centerWipe()
 }
 
 void
-ViewerGL::drawOverlay(unsigned int mipMapLevel)
+ViewerGL::drawOverlay(unsigned int mipmapLevel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -722,13 +722,12 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
         glCheckError();
         glColor4f(1., 1., 1., 1.);
-        double scale = 1. / (1 << mipMapLevel);
 
         /*
            Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
          */
         double time = getCurrentlyDisplayedTime();
-        _imp->viewerTab->drawOverlays( time, RenderScale(scale) );
+        _imp->viewerTab->drawOverlays( time, RenderScale::fromMipmapLevel(mipmapLevel) );
 
         glCheckErrorIgnoreOSXBug();
 
@@ -1077,10 +1076,10 @@ ViewerGL::drawPickerPixel(double screenPixelRatio)
         }
 
         QPointF pos = _imp->lastPickerPos;
-        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
+        unsigned int mipmapLevel = getInternalNode()->getMipmapLevel();
 
-        if (mipMapLevel != 0) {
-            pos *= (1 << mipMapLevel);
+        if (mipmapLevel != 0) {
+            pos *= (1 << mipmapLevel);
         }
         glColor3f(0.9, 0.7, 0.);
         glPointSize(zoomFactor * screenPixelRatio);
@@ -1295,7 +1294,7 @@ ViewerGL::getZoomFactor() const
 RectI
 ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel coordinates
                                      const double par,
-                                     unsigned int mipMapLevel)
+                                     unsigned int mipmapLevel)
 {
     // MT-SAFE
     RectD visibleArea;
@@ -1313,9 +1312,9 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
             visibleArea.y1 = bottomRight.y();
         }
 
-        if (mipMapLevel != 0) {
+        if (mipmapLevel != 0) {
             // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-            ret = visibleArea.toPixelEnclosing(mipMapLevel, par);
+            ret = visibleArea.toPixelEnclosing(mipmapLevel, par);
         } else {
             ret.x1 = std::floor(visibleArea.x1 / par);
             ret.x2 = std::ceil(visibleArea.x2 / par);
@@ -1338,7 +1337,7 @@ ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel co
     }
     if (userRoiEnabled) {
         ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-        const RectI userRoIpixel = userRoI.toPixelEnclosing(mipMapLevel, par);
+        const RectI userRoIpixel = userRoI.toPixelEnclosing(mipmapLevel, par);
 
         ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
         ret = ret.intersect(userRoIpixel);
@@ -1351,19 +1350,19 @@ RectI
 ViewerGL::getExactImageRectangleDisplayed(int texIndex,
                                           const RectD & rod,
                                           const double par,
-                                          unsigned int mipMapLevel)
+                                          unsigned int mipmapLevel)
 {
     bool clipToFormat = isClippingImageToFormat();
     const RectD clippedRod = clipToFormat ? rod.intersect(_imp->displayTextures[texIndex].format) : rod;
-    const RectI bounds = clippedRod.toPixelEnclosing(mipMapLevel, par);
-    return getImageRectangleDisplayed(bounds, par, mipMapLevel);
+    const RectI bounds = clippedRod.toPixelEnclosing(mipmapLevel, par);
+    return getImageRectangleDisplayed(bounds, par, mipmapLevel);
 }
 
 RectI
 ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
                                                       const RectD & rod,
                                                       const double par,
-                                                      unsigned int mipMapLevel,
+                                                      unsigned int mipmapLevel,
                                                       std::vector<RectI>* tiles,
                                                       std::vector<RectI>* tilesRounded,
                                                       int *viewerTileSize,
@@ -1371,8 +1370,8 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
 {
     bool clipToProject = isClippingImageToFormat();
     const RectD clippedRod = clipToProject ? rod.intersect(_imp->displayTextures[texIndex].format) : rod;
-    const RectI bounds = clippedRod.toPixelEnclosing(mipMapLevel, par);
-    const RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
+    const RectI bounds = clippedRod.toPixelEnclosing(mipmapLevel, par);
+    const RectI roi = getImageRectangleDisplayed(bounds, par, mipmapLevel);
 
     ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     ////factor taken into account.
@@ -1509,7 +1508,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                                         const RectD& rod,
                                         double par,
                                         ImageBitDepthEnum depth,
-                                        unsigned int mipMapLevel,
+                                        unsigned int mipmapLevel,
                                         ImagePremultiplicationEnum premult,
                                         double gain,
                                         double gamma,
@@ -1532,7 +1531,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         info.gain = gain;
         info.gamma = gamma;
         info.offset = offset;
-        info.mipMapLevel = mipMapLevel;
+        info.mipmapLevel = mipmapLevel;
         info.premult = premult;
         info.time = time;
         info.memoryHeldByLastRenderedImages = 0;
@@ -1548,7 +1547,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
         _imp->displayTextures[textureIndex].offset = offset;
-        _imp->displayTextures[textureIndex].mipMapLevel = mipMapLevel;
+        _imp->displayTextures[textureIndex].mipmapLevel = mipmapLevel;
         _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
         _imp->displayTextures[textureIndex].premult = premult;
         _imp->displayTextures[textureIndex].time = time;
@@ -1563,7 +1562,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
             {
                 QMutexLocker k(&_imp->lastRenderedImageMutex);
-                _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] = image;
+                _imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] = image;
             }
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
@@ -1571,7 +1570,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] ) {
+            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] ) {
                 Q_EMIT imageChanged(textureIndex, false);
             } else {
                 Q_EMIT imageChanged(textureIndex, true);
@@ -1881,9 +1880,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
-        unsigned int mipMapLevel = getCurrentRenderScale();
-        double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2083,9 +2080,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    unsigned int mipMapLevel = getCurrentRenderScale();
-    double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2508,10 +2503,8 @@ ViewerGL::penMotionInternal(int x,
     }; break;
     default: {
         QPointF localPos(x, y);
-        unsigned int mipMapLevel = getCurrentRenderScale();
-        double scale = 1. / (1 << mipMapLevel);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale(scale), localPos, zoomPos, pressure, timestamp) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp)) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -2539,15 +2532,12 @@ ViewerGL::penMotionInternal(int x,
 void
 ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    unsigned int mipMapLevel = getCurrentRenderScale();
     QPointF pos_opengl;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    double scale = 1. / (1 << mipMapLevel);
-
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), pos_opengl) ) {
         update();
     }
     QOpenGLWidget::mouseDoubleClickEvent(e);
@@ -2722,13 +2712,13 @@ bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
 
-    unsigned int mipMapLevel = (unsigned int)std::max((int)getInternalNode()->getMipMapLevelFromZoomFactor(), (int)getInternalNode()->getViewerMipMapLevel());
-    int closestPo2 = 1 << mipMapLevel;
+    unsigned int mipmapLevel = std::max(getInternalNode()->getMipmapLevelFromZoomFactor(), getInternalNode()->getMipmapLevel());
+    int closestPo2 = 1 << mipmapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {
         return false;
     }
     RectI roiNotRounded;
-    RectI roi = getImageRectangleDisplayedRoundedToTileSize(texIndex, _imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0, 0, 0, &roiNotRounded);
+    RectI roi = getImageRectangleDisplayedRoundedToTileSize(texIndex, _imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipmapLevel, 0, 0, 0, &roiNotRounded);
     const RectI& currentTexRoi = _imp->displayTextures[texIndex].texture->getTextureRect();
     if (!currentTexRoi.contains(roi)) {
         return false;
@@ -2815,7 +2805,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     gui->selectNode(nodeGui);
 
     double zoomFactor;
-    unsigned int oldMipMapLevel, newMipMapLevel;
+    unsigned int oldMipmapLevel, newMipmapLevel;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
 #else
@@ -2830,14 +2820,14 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 #endif
 
         zoomFactor = _imp->zoomCtx.factor();
-        //oldMipMapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
-        oldMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
+        //oldMipmapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+        oldMipmapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
         _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
         zoomFactor = _imp->zoomCtx.factor();
     }
-    //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
-    newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
+    //newMipmapLevel = std::log( zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
+    newMipmapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
     _imp->zoomOrPannedSinceLastFit = true;
     int zoomValue = (int)(100 * zoomFactor);
     if (zoomValue == 0) {
@@ -2855,7 +2845,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    if (oldMipMapLevel != newMipMapLevel) {
+    if (oldMipmapLevel != newMipmapLevel) {
         _imp->viewerTab->clearTimelineCacheLine();
     }
     update();
@@ -2875,15 +2865,15 @@ ViewerGL::zoomSlot(int v)
 
     assert(v > 0);
     double newZoomFactor = v / 100.;
-    unsigned int oldMipMapLevel, newMipMapLevel;
-    //newMipMapLevel = std::log( newZoomFactor >= 1 ? 1 :
+    unsigned int oldMipmapLevel, newMipmapLevel;
+    //newMipmapLevel = std::log( newZoomFactor >= 1 ? 1 :
     //                           std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
-    newMipMapLevel = newZoomFactor >= 1 ? 0 : -std::ceil(std::log(newZoomFactor) / M_LN2);
+    newMipmapLevel = newZoomFactor >= 1 ? 0 : -std::ceil(std::log(newZoomFactor) / M_LN2);
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-        //oldMipMapLevel = std::log( _imp->zoomCtx.factor() >= 1 ? 1 :
+        //oldMipmapLevel = std::log( _imp->zoomCtx.factor() >= 1 ? 1 :
         //                           std::pow( 2, -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2) ) ) / M_LN2;
-        oldMipMapLevel = _imp->zoomCtx.factor() >= 1 ? 0 : -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2);
+        oldMipmapLevel = _imp->zoomCtx.factor() >= 1 ? 0 : -std::ceil(std::log( _imp->zoomCtx.factor() ) / M_LN2);
         double scale = newZoomFactor / _imp->zoomCtx.factor();
         double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
@@ -2892,7 +2882,7 @@ ViewerGL::zoomSlot(int v)
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
-    if (newMipMapLevel != oldMipMapLevel) {
+    if (newMipmapLevel != oldMipmapLevel) {
         _imp->viewerTab->clearTimelineCacheLine();
     }
 
@@ -2919,13 +2909,13 @@ ViewerGL::fitImageToFormat()
 
     double old_zoomFactor;
     double zoomFactor;
-    unsigned int oldMipMapLevel, newMipMapLevel;
+    unsigned int oldMipmapLevel, newMipmapLevel;
     {
-        QMutexLocker(&_imp->zoomCtxMutex);
+        QMutexLocker l(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
-        //oldMipMapLevel = std::log( old_zoomFactor >= 1 ? 1 :
+        //oldMipmapLevel = std::log( old_zoomFactor >= 1 ? 1 :
         //                           std::pow( 2, -std::ceil(std::log(old_zoomFactor) / M_LN2) ) ) / M_LN2;
-        oldMipMapLevel = old_zoomFactor >= 1 ? 0 : -std::ceil(std::log(old_zoomFactor) / M_LN2);
+        oldMipmapLevel = old_zoomFactor >= 1 ? 0 : -std::ceil(std::log(old_zoomFactor) / M_LN2);
 
         // set the PAR first
         //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
@@ -2934,9 +2924,9 @@ ViewerGL::fitImageToFormat()
         zoomFactor = _imp->zoomCtx.factor();
     }
     _imp->zoomOrPannedSinceLastFit = false;
-    //newMipMapLevel = std::log( zoomFactor >= 1 ? 1 :
+    //newMipmapLevel = std::log( zoomFactor >= 1 ? 1 :
     //                           std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
-    newMipMapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
+    newMipmapLevel = zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 
     _imp->oldClick = QPoint(); // reset mouse posn
 
@@ -2952,7 +2942,7 @@ ViewerGL::fitImageToFormat()
         _imp->viewerTab->synchronizeOtherViewersProjection();
     }
 
-    if (newMipMapLevel != oldMipMapLevel) {
+    if (newMipmapLevel != oldMipmapLevel) {
         ///Clear green cached line so the user doesn't expect to see things in the cache
         ///since we're changing the zoom factor
         _imp->viewerTab->clearTimelineCacheLine();
@@ -3139,8 +3129,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    double scale = 1. / ( 1 << getCurrentRenderScale() );
-    if ( _imp->viewerTab->notifyOverlaysFocusGained( RenderScale(scale) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusGained(RenderScale::fromMipmapLevel(getCurrentMipmapLevel())) ) {
         update();
     }
     QOpenGLWidget::focusInEvent(e);
@@ -3156,8 +3145,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
         return;
     }
 
-    double scale = 1. / ( 1 << getCurrentRenderScale() );
-    if ( _imp->viewerTab->notifyOverlaysFocusLost( RenderScale(scale) ) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusLost(RenderScale::fromMipmapLevel(getCurrentMipmapLevel())) ) {
         update();
     }
     QOpenGLWidget::focusOutEvent(e);
@@ -3479,7 +3467,7 @@ ViewerGL::setUserRoIEnabled(bool b)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     {
-        QMutexLocker(&_imp->userRoIMutex);
+        QMutexLocker l(&_imp->userRoIMutex);
         _imp->userRoIEnabled = b;
     }
     if (!b) {
@@ -3580,7 +3568,7 @@ bool
 ViewerGL::isUserRegionOfInterestEnabled() const
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
 
     return _imp->userRoIEnabled;
 }
@@ -3589,7 +3577,7 @@ RectD
 ViewerGL::getUserRegionOfInterest() const
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
 
     return _imp->userRoI;
 }
@@ -3598,7 +3586,7 @@ void
 ViewerGL::setUserRoI(const RectD & r)
 {
     // MT-SAFE
-    QMutexLocker(&_imp->userRoIMutex);
+    QMutexLocker l(&_imp->userRoIMutex);
     _imp->userRoI = r;
 }
 
@@ -4199,8 +4187,8 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
 }
 
 ImagePtr
-ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
-                                            unsigned int mipMapLevel) const
+ViewerGL::getLastRenderedImageByMipmapLevel(int textureIndex,
+                                            unsigned int mipmapLevel) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4210,16 +4198,16 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     }
 
     QMutexLocker l(&_imp->lastRenderedImageMutex);
-    assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipMapLevel);
+    assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipmapLevel);
 
-    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel];
+    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel];
     if (mipmap) {
         return mipmap;
     }
 
     //Find an image at higher scale
-    if (mipMapLevel > 0) {
-        for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
+    if (mipmapLevel > 0) {
+        for (int i = (int)mipmapLevel - 1; i >= 0; --i) {
             mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
             if (mipmap) {
                 return mipmap;
@@ -4228,7 +4216,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     }
 
     //Find an image at lower scale
-    for (U32 i = mipMapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
+    for (U32 i = mipmapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
         mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
         if (mipmap) {
             return mipmap;
@@ -4241,13 +4229,13 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
-int
-ViewerGL::getMipMapLevelCombinedToZoomFactor() const
+unsigned int
+ViewerGL::getMipmapLevelCombinedToZoomFactor() const
 {
     if (!getInternalNode()) {
         return 0;
     }
-    int mmLvl = getInternalNode()->getMipMapLevel();
+    unsigned int mmLvl = getInternalNode()->getMipmapLevel();
     double factor = getZoomFactor();
 
     if (factor > 1) {
@@ -4259,9 +4247,9 @@ ViewerGL::getMipMapLevelCombinedToZoomFactor() const
 }
 
 unsigned int
-ViewerGL::getCurrentRenderScale() const
+ViewerGL::getCurrentMipmapLevel() const
 {
-    return getMipMapLevelCombinedToZoomFactor();
+    return getMipmapLevelCombinedToZoomFactor();
 }
 
 template <typename PIX, int maxValue>
@@ -4351,8 +4339,8 @@ ViewerGL::getColorAt(double x,
     assert(textureIndex == 0 || textureIndex == 1);
 
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
+    unsigned int mipmapLevel = (unsigned int)getMipmapLevelCombinedToZoomFactor();
+    ImagePtr image = getLastRenderedImageByMipmapLevel(textureIndex, mipmapLevel);
 
 
     if (!image) {
@@ -4394,7 +4382,7 @@ ViewerGL::getColorAt(double x,
     }
 
     const double par = image->getPixelAspectRatio();
-    double scale = 1. / ( 1 << image->getMipMapLevel() );
+    double scale = 1. / ( 1 << image->getMipmapLevel() );
 
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale / par);
@@ -4429,7 +4417,7 @@ ViewerGL::getColorAt(double x,
         gotval = false;
         break;
     }
-    *imgMmlevel = image->getMipMapLevel();
+    *imgMmlevel = image->getMipmapLevel();
 
     return gotval;
 } // getColorAt
@@ -4449,20 +4437,20 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
+    unsigned int mipmapLevel = (unsigned int)getMipmapLevelCombinedToZoomFactor();
+    ImagePtr image = getLastRenderedImageByMipmapLevel(textureIndex, mipmapLevel);
 
     if (image) {
-        mipMapLevel = image->getMipMapLevel();
-        *imgMm = mipMapLevel;
+        mipmapLevel = image->getMipmapLevel();
+        *imgMm = mipmapLevel;
     }
 
     ///Convert to pixel coords
     RectI rectPixel;
-    rectPixel.x1 = int( std::floor( rect.left() ) ) >> mipMapLevel;
-    rectPixel.y1 = int( std::floor( rect.bottom() ) ) >> mipMapLevel;
-    rectPixel.x2 = int( std::floor( rect.right() ) ) >> mipMapLevel;
-    rectPixel.y2 = int( std::floor( rect.top() ) ) >> mipMapLevel;
+    rectPixel.x1 = int( std::floor( rect.left() ) ) >> mipmapLevel;
+    rectPixel.y1 = int( std::floor( rect.bottom() ) ) >> mipmapLevel;
+    rectPixel.x2 = int( std::floor( rect.right() ) ) >> mipmapLevel;
+    rectPixel.y2 = int( std::floor( rect.top() ) ) >> mipmapLevel;
     assert( rect.bottom() <= rect.top() && rect.left() <= rect.right() );
     assert( rectPixel.y1 <= rectPixel.y2 && rectPixel.x1 <= rectPixel.x2 );
     double rSum = 0.;

@@ -609,8 +609,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
     }
 
 
-    if ( originalImage && ( getMipMapLevel() != originalImage->getMipMapLevel() ) ) {
-        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipMapLevel";
+    if ( originalImage && ( getMipmapLevel() != originalImage->getMipmapLevel() ) ) {
+        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipmapLevel";
 
         return;
     }

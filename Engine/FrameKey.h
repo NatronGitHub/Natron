@@ -52,7 +52,7 @@ public:
              int channels,
              ViewIdx view,
              const TextureRect & textureRect,
-             unsigned int mipMapLevel,
+             unsigned int mipmapLevel,
              const std::string & inputName,
              const ImagePlaneDesc& layer,
              const std::string& alphaChannelFullName,
@@ -103,9 +103,9 @@ public:
         return _view;
     }
 
-    unsigned int getMipMapLevel() const
+    unsigned int getMipmapLevel() const
     {
-        return _mipMapLevel;
+        return _mipmapLevel;
     }
 
     const std::string & getInputName() const WARN_UNUSED_RETURN
@@ -132,7 +132,7 @@ private:
                    // picks a new value in dropdown on the GUI
     int /*ViewIdx*/ _view; // The view of the frame, store it locally as an int for easier serialization
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
-    unsigned int _mipMapLevel; // The scale of the image from which this texture was made
+    unsigned int _mipmapLevel; // The scale of the image from which this texture was made
     std::string _inputName; // The name of the input node used (to not mix up input 1, 2, 3 etc...)
     ImagePlaneDesc _layer; // The Layer of the image
     std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A

@@ -694,7 +694,7 @@ CurveWidget::paintGL()
             //GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
             GLProtectAttrib a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-            RenderScale scale(1.);
+            const OfxPointD scale = {1., 1.};
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
             glCheckErrorIgnoreOSXBug();

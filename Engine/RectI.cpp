@@ -135,7 +135,7 @@ RectI::toCanonical_noClipping(unsigned int thisLevel,
 }
 
 RectI
-RectI::toNewMipMapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const
+RectI::toNewMipmapLevel(unsigned int fromLevel, unsigned int toLevel, double par, const RectD& rod) const
 {
     return toCanonical(fromLevel, par, rod).toPixelEnclosing(toLevel, par);
 }

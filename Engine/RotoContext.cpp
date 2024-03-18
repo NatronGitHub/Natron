@@ -2546,7 +2546,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
     ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
     ImagePremultiplicationEnum premult = node->getEffectInstance()->getPremult();
     bool copyFromImage = false;
-    bool mipMapLevelChanged = false;
+    bool mipmapLevelChanged = false;
     if (!source) {
         source.reset( new Image(components,
                                 pointsBbox,
@@ -2559,11 +2559,11 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
                                 false) );
         *image = source;
     } else {
-        if ( (*image)->getMipMapLevel() > mipmapLevel ) {
-            mipMapLevelChanged = true;
+        if ( (*image)->getMipmapLevel() > mipmapLevel ) {
+            mipmapLevelChanged = true;
 
             RectD otherRoD = (*image)->getRoD();
-            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par);
+            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipmapLevel(), par);
             RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
             const RectI mergeBounds = mergeRoD.toPixelEnclosing(mipmapLevel, par);
@@ -2579,13 +2579,13 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
                                     fielding,
                                     false) );
             source->fillZero(pixelPointsBbox);
-            (*image)->upscaleMipMap( oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get() );
+            (*image)->upscaleMipmap( oldBounds, (*image)->getMipmapLevel(), source->getMipmapLevel(), source.get() );
             *image = source;
-        } else if ( (*image)->getMipMapLevel() < mipmapLevel ) {
-            mipMapLevelChanged = true;
+        } else if ( (*image)->getMipmapLevel() < mipmapLevel ) {
+            mipmapLevelChanged = true;
 
             RectD otherRoD = (*image)->getRoD();
-            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipMapLevel(), par );
+            const RectI oldBounds = otherRoD.toPixelEnclosing( (*image)->getMipmapLevel(), par );
             RectD mergeRoD = pointsBbox;
             mergeRoD.merge(otherRoD);
             const RectI mergeBounds = mergeRoD.toPixelEnclosing(mipmapLevel, par);
@@ -2601,7 +2601,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
                                     fielding,
                                     false) );
             source->fillZero(pixelPointsBbox);
-            (*image)->downscaleMipMap( pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get() );
+            (*image)->downscaleMipmap( pointsBbox, oldBounds, (*image)->getMipmapLevel(), source->getMipmapLevel(), false, source.get() );
             *image = source;
         } else {
             RectD otherRoD = (*image)->getRoD();
@@ -2676,7 +2676,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
 
     QMutexLocker k(&_imp->strokeDotPatternsMutex);
     std::vector<cairo_pattern_t*> dotPatterns = getPatternCache();
-    if (mipMapLevelChanged) {
+    if (mipmapLevelChanged) {
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
                 cairo_pattern_destroy(dotPatterns[i]);

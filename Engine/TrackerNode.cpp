@@ -2217,9 +2217,8 @@ TrackerNode::onOverlayPenMotion(double time,
             if (prevDist != 0) {
                 double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                 double ratio = dist / prevDist;
-                _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = MathUtils::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
-                _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
+
+                _imp->ui->selectedMarkerScale = MathUtils::clamp(_imp->ui->selectedMarkerScale * ratio, 0.05, 1.);
                 didSomething = true;
             }
             break;
@@ -2235,8 +2234,8 @@ TrackerNode::onOverlayPenMotion(double time,
             }
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
-            double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
-            double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
+            double dx = delta.x * _imp->ui->selectedMarkerScale;
+            double dy = delta.y * _imp->ui->selectedMarkerScale;
             x += dx;
             y += dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);

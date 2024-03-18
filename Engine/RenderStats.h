@@ -73,8 +73,8 @@ public:
     void addIdentityRectangle(const NodePtr& identity, const RectI& rectangle);
     std::list<std::pair<RectI, NodePtr> > getIdentityRectangles() const;
 
-    void addMipMapLevelRendered(unsigned int level);
-    const std::set<unsigned int>& getMipMapLevelsRendered() const;
+    void addMipmapLevelRendered(unsigned int level);
+    const std::set<unsigned int>& getMipmapLevelsRendered() const;
 
     void addPlaneRendered(const std::string& plane);
     const std::set<std::string>& getPlanesRendered() const;
