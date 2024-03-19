@@ -1155,7 +1155,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList filesList;
 
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = QtCompat::toLocalFileUrlFixed( urls.at(i) );
+        const QUrl rl = urls.at(i);
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__

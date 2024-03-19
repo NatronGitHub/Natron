@@ -87,7 +87,7 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = QtCompat::toLocalFileUrlFixed( urls.at(0) ).toLocalFile();
+        path = urls.at(0).toLocalFile();
     }
     if ( !path.isEmpty() ) {
         setText(path);

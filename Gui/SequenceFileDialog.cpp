@@ -142,7 +142,7 @@ static void removeTrailingSlash(QString& str) {
 }
 
 static QString urlToPathString(const QUrl& url) {
-    return QtCompat::toLocalFileUrlFixed(url).toLocalFile();
+    return url.toLocalFile();
 }
 
 static QString bookmarkToUrlPath(const QUrl& bookmark) {

@@ -486,9 +486,3 @@ for(name, ENGINE_GENERATED_SOURCES) {
 
 OTHER_FILES += \
     typesystem_engine.xml
-
-macx {
-
-OBJECTIVE_SOURCES += \
-    QUrlFix.mm
-}
