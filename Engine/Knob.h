@@ -37,9 +37,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QCoreApplication>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 #include <QtCore/QRecursiveMutex>
-#endif
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h" // for AppManager::createKnob
@@ -2245,11 +2243,8 @@ private:
     typedef std::shared_ptr<QueuedSetValueAtTime> QueuedSetValueAtTimePtr;
 
     ///Here is all the stuff we couldn't get rid of the template parameter
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     mutable QRecursiveMutex _valueMutex;
-#else
-    mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
-#endif
+
     std::vector<T> _values, _guiValues;
 
     struct DefaultValue
@@ -2263,19 +2258,13 @@ private:
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     mutable QRecursiveMutex _setValuesQueueMutex;
-#else
-    mutable QMutex _setValuesQueueMutex;
-#endif
+
     std::list<std::shared_ptr<QueuedSetValue> > _setValuesQueue;
 
     ///this flag is to avoid recursive setValue calls
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     mutable QRecursiveMutex _setValueRecursionLevelMutex;
-#else
-    mutable QMutex _setValueRecursionLevelMutex;
-#endif
+
     int _setValueRecursionLevel;
 };
 

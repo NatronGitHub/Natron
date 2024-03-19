@@ -769,11 +769,7 @@ Qt::ItemFlags
 FileSystemModel::flags(const QModelIndex &index) const
 {
     if ( !index.isValid() ) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         return Qt::ItemFlags();
-#else
-        return 0;
-#endif
     }
 
     // Our model is read only.

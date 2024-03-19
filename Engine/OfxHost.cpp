@@ -1122,12 +1122,9 @@ OfxHost::clearPluginsLoadedCache()
     if ( QFile::exists(oldOfxCache) ) {
         QFile::remove(oldOfxCache);
     }
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QtCompat::removeRecursively( getOFXCacheDirPath() );
-#else
+
     QDir OFXCacheDir( getOFXCacheDirPath() );
     OFXCacheDir.removeRecursively();
-#endif
 }
 
 void
@@ -1535,11 +1532,8 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 
     // suite functions should not throw
     try {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QRecursiveMutex* m = new QRecursiveMutex();
-#else
-        QMutex* m = new QMutex(QMutex::Recursive);
-#endif
+
         for (int i = 0; i < lockCount; ++i) {
             m->lock();
         }

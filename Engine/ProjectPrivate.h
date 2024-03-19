@@ -68,12 +68,7 @@ public:
     QDateTime projectCreationTime; //< the project creation time
     std::list<Format> builtinFormats;
     std::list<Format> additionalFormats; //< added by the user
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     mutable QRecursiveMutex formatMutex;
-#else
-    mutable QMutex formatMutex; //< protects builtinFormats & additionalFormats
-#endif
-
 
     ///Project parameters (settings)
     KnobPathPtr envVars;

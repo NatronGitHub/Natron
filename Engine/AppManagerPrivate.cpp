@@ -282,10 +282,8 @@ AppManagerPrivate::AppManagerPrivate()
 
     runningThreadsCount = 0;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && defined(__NATRON_LINUX__)
+#if defined(__NATRON_LINUX__)
     onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY") && !qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND");
-#else
-    onWayland = false;
 #endif
 }
 
@@ -607,13 +605,10 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
 
     QDir cacheFolder(cachePath);
 
-#   if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QtCompat::removeRecursively(cachePath);
-#   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
     }
-#endif
+
     if ( !cacheFolder.exists() ) {
         bool success = cacheFolder.mkpath( QChar::fromLatin1('.') );
         if (!success) {

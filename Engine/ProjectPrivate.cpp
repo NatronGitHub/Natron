@@ -64,11 +64,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , projectCreationTime(ageSinceLastSave)
     , builtinFormats()
     , additionalFormats()
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     , formatMutex()
-#else
-    , formatMutex(QMutex::Recursive)
-#endif
     , envVars()
     , projectName()
     , projectPath()
