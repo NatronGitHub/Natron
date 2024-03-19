@@ -1,0 +1,66 @@
+diff -Nur ffmpeg-6.1-orig/libavcodec/vulkan_av1.c ffmpeg-6.1/libavcodec/vulkan_av1.c
+--- ffmpeg-6.1-orig/libavcodec/vulkan_av1.c	2023-11-11 01:25:17.000000000 +0100
++++ ffmpeg-6.1/libavcodec/vulkan_av1.c	2023-11-11 10:45:06.826832600 +0100
+@@ -180,7 +180,7 @@
+         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
+         .pNext = &av1_params,
+         .videoSession = ctx->common.session,
+-        .videoSessionParametersTemplate = NULL,
++        .videoSessionParametersTemplate = VK_NULL_HANDLE,
+     };
+ 
+     err = ff_vk_decode_create_params(buf, avctx, ctx, &session_params_create);
+diff -Nur ffmpeg-6.1-orig/libavcodec/vulkan_decode.c ffmpeg-6.1/libavcodec/vulkan_decode.c
+--- ffmpeg-6.1-orig/libavcodec/vulkan_decode.c	2023-11-11 01:25:17.000000000 +0100
++++ ffmpeg-6.1/libavcodec/vulkan_decode.c	2023-11-11 10:47:06.921322700 +0100
+@@ -187,10 +187,10 @@
+     if (vkpic->img_view_ref)
+         return 0;
+ 
+-    vkpic->dpb_frame     = NULL;
+-    vkpic->img_view_ref  = NULL;
+-    vkpic->img_view_out  = NULL;
+-    vkpic->img_view_dest = NULL;
++    vkpic->dpb_frame     = VK_NULL_HANDLE;
++    vkpic->img_view_ref  = VK_NULL_HANDLE;
++    vkpic->img_view_out  = VK_NULL_HANDLE;
++    vkpic->img_view_dest = VK_NULL_HANDLE;
+ 
+     vkpic->destroy_image_view = vk->DestroyImageView;
+     vkpic->wait_semaphores = vk->WaitSemaphores;
+diff -Nur ffmpeg-6.1-orig/libavcodec/vulkan_h264.c ffmpeg-6.1/libavcodec/vulkan_h264.c
+--- ffmpeg-6.1-orig/libavcodec/vulkan_h264.c	2023-11-11 01:25:17.000000000 +0100
++++ ffmpeg-6.1/libavcodec/vulkan_h264.c	2023-11-11 10:45:57.371334900 +0100
+@@ -315,7 +315,7 @@
+         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
+         .pNext = &h264_params,
+         .videoSession = ctx->common.session,
+-        .videoSessionParametersTemplate = NULL,
++        .videoSessionParametersTemplate = VK_NULL_HANDLE,
+     };
+ 
+     /* SPS list */
+diff -Nur ffmpeg-6.1-orig/libavcodec/vulkan_hevc.c ffmpeg-6.1/libavcodec/vulkan_hevc.c
+--- ffmpeg-6.1-orig/libavcodec/vulkan_hevc.c	2023-11-11 01:25:17.000000000 +0100
++++ ffmpeg-6.1/libavcodec/vulkan_hevc.c	2023-11-11 10:46:24.663058100 +0100
+@@ -653,7 +653,7 @@
+         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
+         .pNext = &h265_params,
+         .videoSession = ctx->common.session,
+-        .videoSessionParametersTemplate = NULL,
++        .videoSessionParametersTemplate = VK_NULL_HANDLE,
+     };
+ 
+     HEVCHeaderSet *hdr;
+diff -Nur ffmpeg-6.1-orig/libavcodec/vulkan_video.c ffmpeg-6.1/libavcodec/vulkan_video.c
+--- ffmpeg-6.1-orig/libavcodec/vulkan_video.c	2023-11-11 01:25:17.000000000 +0100
++++ ffmpeg-6.1/libavcodec/vulkan_video.c	2023-11-11 10:47:38.629188400 +0100
+@@ -287,7 +287,7 @@
+     if (common->session) {
+         vk->DestroyVideoSessionKHR(s->hwctx->act_dev, common->session,
+                                    s->hwctx->alloc);
+-        common->session = NULL;
++        common->session = VK_NULL_HANDLE;
+     }
+ 
+     if (common->nb_mem && common->mem)
