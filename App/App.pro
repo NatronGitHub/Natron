@@ -40,8 +40,7 @@ CONFIG += moc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
+QT += gui core opengl network widgets concurrent
 
 !noexpat: CONFIG += expat
 

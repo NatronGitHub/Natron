@@ -89,32 +89,7 @@ function catDll() {
 INIT_VAR=1
 DLL_VAR_PREFIX="NATRON"
 BIN_PATH="$SDK_HOME_BIN"
-if [ "$QT_VERSION_MAJOR" = "4" ]; then
-    # all Qt libraries are necessary for PySide
-    catDll Qt3Support4
-    catDll QtCLucene4
-    catDll QtCore4
-    catDll QtDBus4
-    catDll QtDeclarative4
-    catDll QtDesigner4
-    catDll QtDesignerComponents4
-    catDll QtGui4
-    catDll QtHelp4
-    catDll QtMultimedia4
-    catDll QtNetwork4
-    catDll QtOpenGL4
-    catDll QtScript4
-    catDll QtScriptTools4
-    catDll QtSql4
-    catDll QtSvg4
-    catDll QtTest4
-    catDll QtXml4
-    catDll QtXmlPatterns4
-
-    catDll phonon4
-    catDll libmng-
-    catDll libpcre-
-elif [ "$QT_VERSION_MAJOR" = "5" ]; then
+if [ "$QT_VERSION_MAJOR" = "5" ]; then
     catDll Qt5Concurrent
     catDll Qt5Core
     catDll Qt5DBus

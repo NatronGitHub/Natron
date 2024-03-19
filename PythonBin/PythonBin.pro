@@ -17,9 +17,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-QT       += core network
+QT       += core network concurrent
 QT       -= gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 TARGET = natron-python
 CONFIG += console
