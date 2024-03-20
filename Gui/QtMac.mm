@@ -88,18 +88,6 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 
 NATRON_NAMESPACE_ENTER
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-qreal
-QtMac::devicePixelRatioInternal(const QWidget* w) {
-    CGFloat scaleFactor = 1.0;
-    NSView* view = reinterpret_cast<NSView*>(w->winId());
-    if ([[view window] respondsToSelector: @selector(backingScaleFactor)])
-        scaleFactor = [[view window] backingScaleFactor];
-
-    return qreal(scaleFactor);
-}
-#endif
-
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void
 QtMac::setupDockClickHandler(void (*dockClickHandler)(void)) {

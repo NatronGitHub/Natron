@@ -42,12 +42,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 #include <QActionGroup>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
 #include <QOpenGLShaderProgram>
-#else
-#include "Gui/QGLExtrasCompat.h"
-#endif
 
 #include "Engine/HistogramCPU.h"
 #include "Engine/Image.h"
@@ -72,9 +68,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ZoomContext.h"
 #include "Gui/ticks.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -290,11 +284,7 @@ public:
 
 Histogram::Histogram(Gui* gui,
                      const QOpenGLWidget* shareWidget)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     : QOpenGLWidget(gui)
-#else
-    : QOpenGLWidget(gui, shareWidget)
-#endif
     , PanelWidget(this, gui)
     , _imp( new HistogramPrivate(this) )
 {
@@ -1251,11 +1241,9 @@ Histogram::resizeGL(int width,
     glViewport (0, 0, width, height);
     double zoomWidth = width;
     double zoomHeight = height;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double screenPixelRatio = getScreenPixelRatio();
     zoomWidth /= screenPixelRatio;
     zoomHeight /= screenPixelRatio;
-#endif
 
     _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight);
     if (!_imp->hasBeenModifiedSinceResize) {
@@ -1401,11 +1389,7 @@ Histogram::wheelEvent(QWheelEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     if (e->angleDelta().x() != 0) {
-#else
-    if (e->orientation() != Qt::Vertical) {
-#endif
         return;
     }
     const double zoomFactor_min = 0.000001;
@@ -1414,13 +1398,8 @@ Histogram::wheelEvent(QWheelEvent* e)
     const double par_max = 1000000.;
     double zoomFactor;
     double par;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
-#else
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
-    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-#endif
 
     if ( modCASIsControlShift(e) ) {
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
@@ -1588,11 +1567,7 @@ Histogram::onCPUHistogramComputed()
 double
 Histogram::getScreenPixelRatio() const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return devicePixelRatio();
-#else
-    return getGui() ? getGui()->devicePixelRatio() : 1.;
-#endif
 }
 
 void
@@ -1639,11 +1614,7 @@ HistogramPrivate::drawScale()
             ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
             const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
             const double largestTickSize = range * largestTickSizePixel / rangePixel;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
             const double minTickSizeTextPixel = ( (axis == 0) ? fm.horizontalAdvance( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio;
-#else
-            const double minTickSizeTextPixel = ( (axis == 0) ? fm.width( QLatin1String("00") ) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
-#endif
             const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
             for (int i = m1; i <= m2; ++i) {
                 double value = i * smallTickSize + offset;
@@ -1667,11 +1638,7 @@ HistogramPrivate::drawScale()
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
                     const QString s = QString::number(value);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
                     const double sSizePixel = ( (axis == 0) ? fm.horizontalAdvance(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
-#else
-                    const double sSizePixel = ( (axis == 0) ? fm.width(s) : fm.height() ) / _screenPixelRatio; // AXIS-SPECIFIC
-#endif
                     if (tickSizePixel > sSizePixel) {
                         const double sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                         double alphaText = 1.0; //alpha;
@@ -1706,11 +1673,7 @@ HistogramPrivate::drawWarnings()
     if (mipmapLevel > 0) {
         QFontMetrics fm(*_textFont);
         QString str( tr("Image downscaled") );
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         double strWidth = fm.horizontalAdvance(str) / _screenPixelRatio;
-#else
-        double strWidth = fm.width(str) / _screenPixelRatio;
-#endif
         double strHeight = fm.height() / _screenPixelRatio;
         QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 5 * strHeight + 30);
         glCheckError();
@@ -1742,11 +1705,7 @@ HistogramPrivate::drawMissingImage()
     }
     QString txt( tr("Missing image") );
     QFontMetrics fm(*_textFont);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int strWidth = fm.horizontalAdvance(txt) / _screenPixelRatio;
-#else
-    int strWidth = fm.width(txt) / _screenPixelRatio;
-#endif
     QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., fm.height() / _screenPixelRatio + 10);
 
     glCheckError();
@@ -1844,11 +1803,7 @@ HistogramPrivate::drawPicker()
 
     glCheckError();
     QFontMetrics fm(*_textFont, 0);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     double strWidth = std::max( std::max( std::max( fm.horizontalAdvance(rValueStr), fm.horizontalAdvance(gValueStr) ), fm.horizontalAdvance(bValueStr) ), fm.horizontalAdvance(xCoordinateStr) ) / _screenPixelRatio;
-#else
-    double strWidth = std::max( std::max( std::max( fm.width(rValueStr), fm.width(gValueStr) ), fm.width(bValueStr) ), fm.width(xCoordinateStr) ) / _screenPixelRatio;
-#endif
     double strHeight = fm.height() / _screenPixelRatio;
     QPointF xPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, strHeight + 10);
     QPointF rPos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 2 * strHeight + 15);

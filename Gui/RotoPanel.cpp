@@ -674,11 +674,7 @@ RotoPanel::RotoPanel(const NodeGuiPtr&  n,
     _imp->treeHeader->setIcon( COL_OPERATOR, QIcon(pixmerge) );
     _imp->tree->setHeaderItem(_imp->treeHeader);
     _imp->tree->setMinimumHeight( TO_DPIY(350) );
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->buttonContainer = new QWidget(this);
     _imp->buttonLayout = new QHBoxLayout(_imp->buttonContainer);
     _imp->buttonLayout->setContentsMargins(0, 0, 0, 0);
@@ -2517,17 +2513,9 @@ RotoPanel::onSettingsPanelClosed(bool closed)
 void
 RotoPanel::onOperatorColMinimumSizeChanged(const QSize& size)
 {
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->tree->header()->setResizeMode(QHeaderView::Fixed);
-#else
     _imp->tree->header()->setSectionResizeMode(QHeaderView::Fixed);
-#endif
     _imp->tree->setColumnWidth( COL_OPERATOR, size.width() );
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->tree->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
 }
 
 //////////////////////////////

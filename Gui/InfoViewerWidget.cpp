@@ -98,32 +98,20 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
         descriptionText.append( QString::fromUtf8("</font>") );
         descriptionLabel->setText(descriptionText);
         QFontMetrics fm = descriptionLabel->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("A:") );
-#else
-        int width = fm.width( QString::fromUtf8("A:") );
-#endif
         descriptionLabel->setMinimumWidth(width);
     }
     imageFormat = new Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("backward.motion32f") );
-#else
-        int width = fm.width( QString::fromUtf8("backward.motion32f") );
-#endif
         imageFormat->setMinimumWidth(width);
     }
 
     resolution = new Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("2K_Super_35(full-ap) 00000x00000:0.00") );
-#else
-        int width = fm.width( QString::fromUtf8("2K_Super_35(full-ap) 00000x00000:0.00") );
-#endif
         resolution->setMinimumWidth(width);
     }
 
@@ -131,11 +119,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordDispWindow = new Label(this);
     {
         QFontMetrics fm = coordDispWindow->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("RoD: 000 000 0000 0000") );
-#else
-        int width = fm.width( QString::fromUtf8("RoD: 000 000 0000 0000") );
-#endif
         coordDispWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         coordDispWindow->setMinimumWidth(width);
     }
@@ -143,11 +127,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     _fpsLabel = new Label(this);
     {
         QFontMetrics fm = _fpsLabel->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("100 fps") );
-#else
-        int width = fm.width( QString::fromUtf8("100 fps") );
-#endif
         _fpsLabel->setMinimumWidth(width);
         _fpsLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         _fpsLabel->hide();
@@ -156,22 +136,14 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordMouse = new Label(this);
     {
         QFontMetrics fm = coordMouse->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("x=00000 y=00000") );
-#else
-        int width = fm.width( QString::fromUtf8("x=00000 y=00000") );
-#endif
         coordMouse->setMinimumWidth(width);
     }
 
     rgbaValues = new Label(this);
     {
         QFontMetrics fm = rgbaValues->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("0.00000 0.00000 0.00000 ~ ") );
-#else
-        int width = fm.width( QString::fromUtf8("0.00000 0.00000 0.00000 ~ ") );
-#endif
         rgbaValues->setMinimumWidth(width);
     }
 
@@ -181,11 +153,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     hvl_lastOption = new Label(this);
     {
         QFontMetrics fm = hvl_lastOption->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int width = fm.horizontalAdvance( QString::fromUtf8("H:000 S:0.00 V:0.00 L:0.00000") );
-#else
-        int width = fm.width( QString::fromUtf8("H:000 S:0.00 V:0.00 L:0.00000") );
-#endif
         hvl_lastOption->setMinimumWidth(width);
     }
 

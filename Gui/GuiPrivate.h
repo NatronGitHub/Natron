@@ -152,11 +152,8 @@ public:
     Splitter* _leftRightSplitter;
 
     ///a list of ptrs to all the viewer tabs.
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     mutable QRecursiveMutex _viewerTabsMutex;
-#else
-    mutable QMutex _viewerTabsMutex;
-#endif
+
     std::list<ViewerTab*> _viewerTabs;
 
     ///Used when all viewers are synchronized to determine which one triggered the sync

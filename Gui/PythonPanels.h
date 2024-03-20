@@ -103,11 +103,9 @@ public:
 
     void addWidget(QWidget* widget);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
-#endif
 
     DialogParamHolder* getKnobsHolder() const;
 

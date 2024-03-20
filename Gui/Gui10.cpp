@@ -32,11 +32,7 @@
 #include <stdexcept>
 
 #include <QApplication> // qApp
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
-#else
-#include <QDesktopWidget>
-#endif
 
 #include "Global/FStreamsSupport.h"
 #include "Global/MathUtils.h"
@@ -200,13 +196,8 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         QScreen* desktop = QGuiApplication::primaryScreen();
         QRect screen = desktop->availableGeometry();
-#else
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
-#endif
 
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();

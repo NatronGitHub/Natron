@@ -33,11 +33,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QStyleOption>
 #include <QApplication>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
-#else
-#include <QDesktopWidget>
-#endif
 
 CLANG_DIAG_ON(deprecated)
 
@@ -81,15 +77,6 @@ SplashScreen::SplashScreen(const QString & filePath)
 
     _pixmap.load(filePath);
     _scale = 1.;
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#if defined(Q_OS_WIN)
-    // code from Gui::devicePixelRatio()
-    HDC wscreen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
-    ReleaseDC(0, wscreen);
-    _scale = static_cast<qreal>(horizontalDPI) / 96.;
-#endif
-#endif
     if (_scale != 1.) {
         _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -102,13 +89,8 @@ SplashScreen::SplashScreen(const QString & filePath)
         show();
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     QScreen* desktop = QGuiApplication::primaryScreen();
     QRect screen = desktop->availableGeometry();
-#else
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
-#endif
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
@@ -153,15 +135,6 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     _pixmap.load( QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png") );
 
     _scale = 1.;
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#if defined(Q_OS_WIN)
-    // code from Gui::devicePixelRatio()
-    HDC wscreen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
-    ReleaseDC(0, wscreen);
-    _scale = static_cast<qreal>(horizontalDPI) / 96.;
-#endif
-#endif
     if (_scale != 1.) {
         _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
                                  Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -169,13 +142,8 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     resize( _pixmap.width(), _pixmap.height() );
     show();
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     QScreen* desktop = QGuiApplication::primaryScreen();
     QRect screen = desktop->availableGeometry();
-#else
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
-#endif
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
@@ -209,11 +177,7 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
     QString loadString( tr("Loading ") );
     QFontMetrics fm = p.fontMetrics();
     QPointF loadStrPos(300 * _scale, _pixmap.height() / 2.);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     p.drawText(QPointF(loadStrPos.x() + (fm.horizontalAdvance(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
-#else
-    p.drawText(QPointF(loadStrPos.x() + (fm.width(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
-#endif
     p.setPen( QColor(243, 137, 0) );
     p.drawText(loadStrPos, loadString);
 }

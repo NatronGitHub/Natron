@@ -99,9 +99,7 @@ class QWheelEvent;
 class QWidget;
 typedef std::shared_ptr<QUndoStack> QUndoStackPtr;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 class QOpenGLShaderProgram;
-#endif
 
 // Natron Gui
 NATRON_NAMESPACE_ENTER
@@ -241,9 +239,6 @@ class KnobPageGui;
 #ifdef Q_OS_DARWIN
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-qreal devicePixelRatioInternal(const QWidget* w);
-#endif
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif

@@ -917,21 +917,12 @@ ExpandingLineEdit::updateMinimumWidth()
 {
     int left, right;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     QMargins textMargin = textMargins();
     int width = textMargin.left() + textMargin.right() + 4;
     QMargins contentMargin = contentsMargins();
     width += contentMargin.left() + contentMargin.right();
 
     QStyleOptionFrame opt;
-#else
-    getTextMargins(&left, 0, &right, 0);
-    int width = left + right + 4 /*horizontalMargin in qlineedit.cpp*/;
-    getContentsMargins(&left, 0, &right, 0);
-    width += left + right;
-
-    QStyleOptionFrameV2 opt;
-#endif
     initStyleOption(&opt);
 
     int minWidth = style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(width, 0).
@@ -949,11 +940,7 @@ ExpandingLineEdit::resizeToContents()
     }
     if ( QWidget * parent = parentWidget() ) {
         QPoint position = pos();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int hintWidth = minimumWidth() + fontMetrics().horizontalAdvance( displayText() );
-#else
-        int hintWidth = minimumWidth() + fontMetrics().width( displayText() );
-#endif
         int parentWidth = parent->width();
         int maxWidth = isRightToLeft() ? position.x() + oldWidth : parentWidth - position.x();
         int newWidth = qBound(originalWidth, hintWidth, maxWidth);
@@ -967,15 +954,9 @@ ExpandingLineEdit::resizeToContents()
     }
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-QWidget*
-TableItemEditorFactory::createEditor(QVariant::Type userType,
-                                     QWidget *parent) const
-#else
 QWidget*
 TableItemEditorFactory::createEditor(int userType,
                                      QWidget *parent) const
-#endif
 {
     switch (userType) {
     case QVariant::UInt: {
@@ -1020,13 +1001,8 @@ TableItemEditorFactory::createEditor(int userType,
     return 0;
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-QByteArray
-TableItemEditorFactory::valuePropertyName(QVariant::Type userType) const
-#else
 QByteArray
 TableItemEditorFactory::valuePropertyName(int userType) const
-#endif
 {
     switch (userType) {
     case QVariant::UInt:

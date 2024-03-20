@@ -48,18 +48,10 @@ public:
 
     Label(const QString &text,
           QWidget *parent = 0,
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
           Qt::WindowFlags f = Qt::WindowFlags());
-#else
-          Qt::WindowFlags f = 0);
-#endif
 
     Label(QWidget *parent = 0,
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
           Qt::WindowFlags f = Qt::WindowFlags());
-#else
-          Qt::WindowFlags f = 0);
-#endif
 
     bool getAltered() const;
 

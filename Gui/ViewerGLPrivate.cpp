@@ -34,11 +34,7 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QApplication> // qApp
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLShaderProgram>
-#else
-#include "Gui/QGLExtrasCompat.h"
-#endif
 
 #include "Engine/Lut.h" // Color
 #include "Engine/Settings.h"
@@ -49,9 +45,7 @@
 #include "Gui/Menu.h"
 #include "Gui/ViewerTab.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -572,11 +566,8 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd11 * crossProd21 < 0) {
         QLineF e(texRectClipped.x1, texRectClipped.y1, texRectClipped.x2, texRectClipped.y1);
         QPointF p;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QLineF::IntersectionType t = inter.intersects(e, &p);
-#else
-        QLineF::IntersectType t = inter.intersect(e, &p);
-#endif
+
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -587,11 +578,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd21 * crossProd22 < 0) {
         QLineF e(texRectClipped.x2, texRectClipped.y1, texRectClipped.x2, texRectClipped.y2);
         QPointF p;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QLineF::IntersectionType t = inter.intersects(e, &p);
-#else
-        QLineF::IntersectType t = inter.intersect(e, &p);
-#endif
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -602,11 +589,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd22 * crossProd12 < 0) {
         QLineF e(texRectClipped.x2, texRectClipped.y2, texRectClipped.x1, texRectClipped.y2);
         QPointF p;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QLineF::IntersectionType t = inter.intersects(e, &p);
-#else
-        QLineF::IntersectType t = inter.intersect(e, &p);
-#endif
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -617,11 +600,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd12 * crossProd11 < 0) {
         QLineF e(texRectClipped.x1, texRectClipped.y2, texRectClipped.x1, texRectClipped.y1);
         QPointF p;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QLineF::IntersectionType t = inter.intersects(e, &p);
-#else
-        QLineF::IntersectType t = inter.intersect(e, &p);
-#endif
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }

@@ -36,9 +36,7 @@
 #include <QtCore/QThread>
 #include <QToolButton>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
-#endif
 
 // Natron includes
 #include "Engine/Curve.h"
@@ -76,9 +74,7 @@
 #include "Gui/ZoomContext.h"
 #include "Gui/TabWidget.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 #define NATRON_DOPESHEET_MIN_RANGE_FIT 10
 
@@ -427,11 +423,7 @@ DopeSheetView::getWidgetFontHeight() const
 int
 DopeSheetView::getStringWidthForCurrentFont(const std::string& string) const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
-#else
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
-#endif
 }
 
 /*
@@ -814,9 +806,6 @@ DopeSheetViewPrivate::generateKeyframeTextures()
             kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
-        kfTexturesImages[i] = QOpenGLWidget::convertToGLFormat(kfTexturesImages[i]);
-#endif
         glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -933,11 +922,7 @@ DopeSheetViewPrivate::drawScale() const
 
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         const double minTickSizeTextPixel = fm.horizontalAdvance( QString::fromUtf8("00") ) / _screenPixelRatio;
-#else
-        const double minTickSizeTextPixel = fm.width( QString::fromUtf8("00") ) / _screenPixelRatio;
-#endif
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
 
         glCheckError();
@@ -962,11 +947,7 @@ DopeSheetViewPrivate::drawScale() const
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = QString::number(value);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
                 const int sSizePixel = fm.horizontalAdvance(s) / _screenPixelRatio;
-#else
-                const int sSizePixel = fm.width(s) / _screenPixelRatio;
-#endif
 
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
@@ -1256,11 +1237,8 @@ DopeSheetViewPrivate::drawRange(const DSNodePtr &dsNode) const
             double fontHeight = fm.height() / _screenPixelRatio;
             QString leftText = QString::number(range.first);
             QString rightText = QString::number(range.second - 1);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
             double rightTextW = fm.horizontalAdvance(rightText) / _screenPixelRatio;
-#else
-            double rightTextW = fm.width(rightText) / _screenPixelRatio;
-#endif
+
             QPointF textLeftPos( zoomContext.toZoomCoordinates(zoomContext.toWidgetCoordinates(range.first, 0).x() + 3, 0).x(),
                                  zoomContext.toZoomCoordinates(0, zoomContext.toWidgetCoordinates(0, clipRectCenterY).y() + fontHeight / 2.).y() );
 
@@ -2690,12 +2668,7 @@ DopeSheetView::swapOpenGLBuffers()
 {
     running_in_main_thread();
 
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     update();
-#else
-    swapBuffers();
-#endif
 }
 
 /**
@@ -2745,11 +2718,7 @@ DopeSheetView::getPixelScale(double &xScale,
 double
 DopeSheetView::getScreenPixelRatio() const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return devicePixelRatio();
-#else
-    return _imp->gui ? _imp->gui->devicePixelRatio() : 1.;
-#endif
 }
 #endif
 
@@ -3230,11 +3199,10 @@ DopeSheetView::resizeGL(int w,
     glViewport(0, 0, w, h);
     double zoomWidth = w;
     double zoomHeight = h;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double screenPixelRatio = getScreenPixelRatio();
     zoomWidth /= screenPixelRatio;
     zoomHeight /= screenPixelRatio;
-#endif
+
     _imp->zoomContext.setScreenSize(zoomWidth, zoomHeight);
 
     // Don't do the following when the height of the widget is irrelevant
@@ -3674,21 +3642,12 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     running_in_main_thread();
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     if (e->angleDelta().x() != 0) {
-#else
-    if (e->orientation() != Qt::Vertical) {
-#endif
         return;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
     QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->position().x(), e->position().y() );
-#else
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    QPointF zoomCenter = _imp->zoomContext.toZoomCoordinates( e->x(), e->y() );
-#endif
 
     _imp->zoomOrPannedSinceLastFit = true;
 

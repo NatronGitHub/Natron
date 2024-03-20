@@ -36,21 +36,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QWaitCondition>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QUndoCommand>
 #include <QtWidgets/QApplication>
-#else
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QHeaderView>
-#include <QtGui/QCheckBox>
-#include <QtGui/QStyledItemDelegate>
-#include <QtGui/QUndoCommand>
-#include <QtGui/QApplication>
-#endif
 
 #include <QtGui/QPixmap>
 #include <QtGui/QPainter>
@@ -551,11 +542,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->view->setUniformRowHeights(true);
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
 
 

@@ -64,15 +64,6 @@ AboutWindow::AboutWindow(QWidget* parent)
     : QDialog(parent)
 {
     _scale = 1.;
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#if defined(Q_OS_WIN)
-    // code from Gui::devicePixelRatio()
-    HDC wscreen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(wscreen, LOGPIXELSX);
-    ReleaseDC(0, wscreen);
-    _scale = static_cast<qreal>(horizontalDPI) / 96.;
-#endif
-#endif
 
     setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _mainLayout = new QVBoxLayout(this);
@@ -498,11 +489,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     _view->setUniformRowHeights(true);
     _view->setSelectionMode(QAbstractItemView::SingleSelection);
     _view->header()->close();
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _view->header()->setStretchLastSection(true);
     splitter->addWidget(_view);
 

@@ -1521,11 +1521,7 @@ TabBar::makePixmapForDrag(int index)
     addTab(tabs[index].second, tabs[index].first);
 
     QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QPixmap tabBarPixmap = QPixmap::grabWidget(this);
-#else
     QPixmap tabBarPixmap = grab();
-#endif
 
     ///re-insert all the tabs into the tab bar
     removeTab(0);
@@ -1537,15 +1533,6 @@ TabBar::makePixmapForDrag(int index)
 
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
-
-#if defined(Q_OS_DARWIN) && (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
-    ///Prevent a bug with grabWidget and retina display on Qt4
-    qreal devicePixelRatio = _tabWidget->getGui()->devicePixelRatio();
-    if (devicePixelRatio > 1) {
-        tabBarImg = tabBarImg.scaled(tabBarImg.width() / devicePixelRatio, tabBarImg.height() / devicePixelRatio);
-        currentTabImg = currentTabImg.scaled(currentTabImg.width() / devicePixelRatio, currentTabImg.height() / devicePixelRatio);
-    }
-#endif
 
     //now we just put together the 2 pixmaps and set it with mid transparency
     QImage ret(currentTabImg.width(), currentTabImg.height() + tabBarImg.height(), QImage::Format_ARGB32_Premultiplied);

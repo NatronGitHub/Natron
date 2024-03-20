@@ -33,9 +33,7 @@
 #include <QMouseEvent>
 #include <QtCore/QByteArray>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
-#endif
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -47,9 +45,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/TimeLine.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 
 NATRON_NAMESPACE_ENTER
@@ -175,11 +171,7 @@ CustomParamInteract::sizeHint() const
 void
 CustomParamInteract::swapOpenGLBuffers()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     update();
-#else
-    swapBuffers();
-#endif
 }
 
 void
@@ -208,12 +200,7 @@ CustomParamInteract::getPixelScale(double & xScale,
 double
 CustomParamInteract::getScreenPixelRatio() const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return devicePixelRatio();
-#else
-    KnobGuiPtr k = _imp->knob.lock();
-    return (k && k->getGui()) ? k->getGui()->devicePixelRatio() : 1.;
-#endif
 }
 #endif
 
@@ -299,11 +286,7 @@ CustomParamInteract::getWidgetFontHeight() const
 int
 CustomParamInteract::getStringWidthForCurrentFont(const std::string& string) const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
-#else
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
-#endif
 }
 
 RectD

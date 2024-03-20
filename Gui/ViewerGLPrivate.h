@@ -42,11 +42,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
-#include "Gui/QGLExtrasCompat.h"
-#endif
-
-
 #define WIPE_MIX_HANDLE_LENGTH 50.
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30

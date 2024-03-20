@@ -42,9 +42,7 @@
 #include <QtCore/QTimer>
 #include <QTextEdit>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QScreen>
-#endif
 #include <QUndoGroup>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -54,10 +52,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QGraphicsScene>
 #include <QApplication>
 #include <QMenuBar>
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-#include <QDesktopWidget>
-#endif
 
 #include <QToolBar>
 #include <QKeySequence>
@@ -192,11 +186,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _lastPluginDir()
     , _nextViewerTabPlace(0)
     , _leftRightSplitter(0)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     , _viewerTabsMutex()
-#else
-    , _viewerTabsMutex(QMutex::Recursive) // Gui::createNodeViewerInterface() may cause a resizeEvent, which calls Gui:redrawAllViewers()
-#endif
     , _viewerTabs()
     , _masterSyncViewer(0)
     , _activeViewer(0)
@@ -641,13 +631,8 @@ GuiPrivate::restoreGuiGeometry()
         _gui->resize(size);
     } else {
         ///No window size serialized, give some appropriate default value according to the screen size
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         QScreen* desktop = QGuiApplication::primaryScreen();
         QRect screen = desktop->availableGeometry();
-#else
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
-#endif
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
     if ( settings.contains( QString::fromUtf8("maximized")) ) {

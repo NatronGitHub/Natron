@@ -900,12 +900,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->view->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->setUniformRowHeights(true);
     _imp->view->setSortingEnabled(true);

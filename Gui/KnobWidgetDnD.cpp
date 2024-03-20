@@ -285,11 +285,7 @@ KnobWidgetDnD::startDrag()
         textThirdLine = tr("Drag it to a dimension of another parameter of the same type");
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int textWidth = std::max( std::max( fmetrics.horizontalAdvance(textFirstLine), fmetrics.horizontalAdvance(knobLine) ), fmetrics.horizontalAdvance(textThirdLine) );
-#else
-    int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(knobLine) ), fmetrics.width(textThirdLine) );
-#endif
     QImage dragImg(textWidth, (fmetrics.height() + 5) * 3, QImage::Format_ARGB32);
     dragImg.fill( QColor(0, 0, 0, 200) );
     QPainter p(&dragImg);

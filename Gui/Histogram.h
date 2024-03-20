@@ -34,11 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSize>
 CLANG_DIAG_ON(uninitialized)
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLWidget>
-#else
-#include "Gui/QGLWidgetCompat.h"
-#endif
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"

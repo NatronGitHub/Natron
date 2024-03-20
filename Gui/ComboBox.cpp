@@ -139,11 +139,7 @@ ComboBox::sizeForWidth(int w) const
     int hextra = DROP_DOWN_ICON_SIZE * 2, vextra = 0;
 
     ///Indent of 1 character
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int indent = fm.horizontalAdvance( QLatin1Char('x') );
-#else
-    int indent = fm.width( QLatin1Char('x') );
-#endif
 
     if (indent > 0) {
         if ( (align & Qt::AlignLeft) || (align & Qt::AlignRight) ) {
@@ -243,11 +239,7 @@ ComboBox::layoutRect() const
 {
     QRect cr = contentsRect();
     Qt::Alignment align = QStyle::visualAlignment( Qt::LeftToRight, QFlag(_align) );
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int indent = fontMetrics().horizontalAdvance( QLatin1Char('x') ) / 2;
-#else
-    int indent = fontMetrics().width( QLatin1Char('x') ) / 2;
-#endif
 
     if (indent > 0) {
         if (align & Qt::AlignLeft) {
@@ -414,11 +406,7 @@ ComboBox::wheelEvent(QWheelEvent *e)
         return;
     }
     // a standard wheel click is 120
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     _currentDelta += e->angleDelta().y();
-#else
-    _currentDelta += e->delta();
-#endif
 
     if ( (_currentDelta <= -120) || (120 <= _currentDelta) ) {
         int c = count();
@@ -733,11 +721,7 @@ ComboBox::setCurrentText_internal(const QString & text)
     }
 
     if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int w = m.horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
-#else
-        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
-#endif
         setMinimumWidth(w);
     }
 
@@ -757,11 +741,7 @@ ComboBox::setMaximumWidthFromText(const QString & str)
     if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
         return;
     }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int w = fontMetrics().horizontalAdvance(str);
-#else
-    int w = fontMetrics().width(str);
-#endif
     setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
 
@@ -771,12 +751,7 @@ ComboBox::growMaximumWidthFromText(const QString & str)
     if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
         return;
     }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int w = fontMetrics().horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
-#else
-    int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
-#endif
-
     if ( w > maximumWidth() ) {
         setMaximumWidth(w);
     }
@@ -865,11 +840,7 @@ ComboBox::setCurrentIndex_internal(int index)
 
     if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
         QFontMetrics m = fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int w = m.horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
-#else
-        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
-#endif
         setMinimumWidth(w);
     }
 

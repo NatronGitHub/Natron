@@ -222,12 +222,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 
     _imp->table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     _imp->table->setAttribute(Qt::WA_MacShowFocusRect, 0);
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->table->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->table->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->table->setDragDropMode(QAbstractItemView::InternalMove);
     _imp->table->header()->setStretchLastSection(true);
     _imp->table->setUniformRowHeights(true);

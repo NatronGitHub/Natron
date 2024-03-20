@@ -54,12 +54,7 @@
 #include <QColor>
 #include <QApplication>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLWidget>
-#else
-#include "Gui/QGLWidgetCompat.h"
-#endif
-
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288419717

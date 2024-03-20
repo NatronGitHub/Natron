@@ -1011,11 +1011,7 @@ NodeGui::resize(int width,
     QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
     metrics = QFontMetrics(f, 0);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int pMWidth = metrics.horizontalAdvance(persistentMessage);
-#else
-    int pMWidth = metrics.width(persistentMessage);
-#endif
     int midNodeX = topLeft.x() + iconWidth + (width - iconWidth) / 2;
     QPointF bitDepthPos(midNodeX, 0);
     _streamIssuesWarning->refreshPosition(bitDepthPos);
@@ -1898,11 +1894,7 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
         edgeLine.setP1( (*it)->mapToScene( edgeLine.p1() ) );
         edgeLine.setP2( (*it)->mapToScene( edgeLine.p2() ) );
         for (int j = 0; j < 4; ++j) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
             QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
-#else
-            QLineF::IntersectType intersectType = edgeLine.intersect(rectEdges[j], &intersection);
-#endif
             if (intersectType == QLineF::BoundedIntersection) {
                 if (!closest) {
                     closest = *it;
@@ -1930,11 +1922,7 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
             edgeLine.setP1( (_outputEdge)->mapToScene( edgeLine.p1() ) );
             edgeLine.setP2( (_outputEdge)->mapToScene( edgeLine.p2() ) );
             for (int j = 0; j < 4; ++j) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
                 QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
-#else
-                QLineF::IntersectType intersectType = edgeLine.intersect(rectEdges[j], &intersection);
-#endif
                 if (intersectType == QLineF::BoundedIntersection) {
                     return _outputEdge;
                 }
@@ -2913,11 +2901,7 @@ struct NodeGuiIndicatorPrivate
 
         textItem->setBrush(textColor);
         textItem->setZValue(depth);
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-        textItem->scale(0.8, 0.8);
-#else
         textItem->setScale(0.8);
-#endif
     }
 };
 
