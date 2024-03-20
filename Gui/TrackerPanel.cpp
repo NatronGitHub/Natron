@@ -468,11 +468,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
 
     _imp->mainLayout->addWidget(_imp->view);

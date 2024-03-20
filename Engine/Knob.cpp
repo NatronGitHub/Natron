@@ -4902,11 +4902,7 @@ struct KnobHolder::KnobHolderPrivate
         , isDequeingValuesSet(false)
         , paramsEditLevel(eMultipleParamsEditOff)
         , paramsEditRecursionLevel(0)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         , evaluationBlockedMutex()
-#else
-        , evaluationBlockedMutex(QMutex::Recursive)
-#endif
         , evaluationBlocked(0)
         , canCurrentlySetValue(true)
         , knobChanged()
@@ -4934,11 +4930,7 @@ struct KnobHolder::KnobHolderPrivate
     , isDequeingValuesSet(other.isDequeingValuesSet)
     , paramsEditLevel(other.paramsEditLevel)
     , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     , evaluationBlockedMutex()
-#else
-    , evaluationBlockedMutex(QMutex::Recursive)
-#endif
     , evaluationBlocked(0)
     , canCurrentlySetValue(other.canCurrentlySetValue)
     , knobChanged()

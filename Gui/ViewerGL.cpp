@@ -34,17 +34,11 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
 #include <QScreen>
 #include <QWindow>
-#else
-#include <QtGui/QMenu>
-#include <QtGui/QToolButton>
-#include <QtGui/QApplication> // qApp
-#endif
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -54,11 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QTreeWidget>
 #include <QTabBar>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLShaderProgram>
-#else
-#include "Gui/QGLExtrasCompat.h"
-#endif
 
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -91,9 +81,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
@@ -126,11 +114,7 @@ NATRON_NAMESPACE_ENTER
 
 ViewerGL::ViewerGL(ViewerTab* parent,
                    const QOpenGLWidget* shareWidget)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     : QOpenGLWidget(parent)
-#else
-    : QOpenGLWidget(parent, shareWidget)
-#endif
     , _imp( new Implementation(this, parent) )
 {
     // always running in the main thread
@@ -194,11 +178,7 @@ ViewerGL::resizeGL(int w,
     glViewport (0, 0, w, h);
     double zoomWidth = w;
     double zoomHeight = h;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
-    double screenPixelRatio = getScreenPixelRatio();
-    zoomWidth /= screenPixelRatio;
-    zoomHeight /= screenPixelRatio;
-#endif
+
     assert( zoomWidth == width() && zoomHeight == height() ); // if this crashes here, then the viewport size has to be stored to compute glShadow
     bool zoomSinceLastFit;
     double oldWidth, oldHeight;
@@ -585,11 +565,6 @@ ViewerGL::centerWipe()
     QPoint pos = mapFromGlobal( QCursor::pos() );
     int x = pos.x();
     int y = pos.y();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0) && QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
-    double screenPixelRatio = getScreenPixelRatio();
-    x *= screenPixelRatio;
-    y *= screenPixelRatio;
-#endif
 
     QPointF zoomPos = toZoomCoordinates( QPointF(x, y) );
 
@@ -1136,11 +1111,7 @@ wordWrap(const QFontMetrics& fm,
 
     for (int i = 0; i < words.size(); ++i) {
         QString word = words[i];
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int wordPixels = fm.horizontalAdvance(word);
-#else
-        int wordPixels = fm.width(word);
-#endif
 
         // If adding the new word to the current line would be too long,
         // then put it on a new line (and split it up if it's too long).
@@ -1167,11 +1138,7 @@ wordWrap(const QFontMetrics& fm,
                     stringL.push_back(curString);
                     curString.clear();
                 }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
                 wordPixels = fm.horizontalAdvance(word);
-#else
-                wordPixels = fm.width(word);
-#endif
                 //tmp.append('\n');
             }
 
@@ -1753,11 +1720,7 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#define QMouseEventLocalPos(e) ( e->posF() )
-#else
 #define QMouseEventLocalPos(e) ( e->localPos() )
-#endif
 
 void
 ViewerGL::mousePressEvent(QMouseEvent* e)
@@ -2768,11 +2731,8 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if ( modCASIsControl(e) ) {
         const int delta_max = 28;
         // threshold delta to the range -delta_max..delta_max
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         int delta = std::max( -delta_max, std::min(e->angleDelta().y(), delta_max) );
-#else
-        int delta = std::max( -delta_max, std::min(e->delta(), delta_max) );
-#endif
+
         _imp->wheelDeltaSeekFrame += delta;
         if (_imp->wheelDeltaSeekFrame <= -delta_max) {
             _imp->wheelDeltaSeekFrame += delta_max;
@@ -2785,11 +2745,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     if (e->angleDelta().x() != 0) {
-#else
-    if (e->orientation() != Qt::Vertical) {
-#endif
         // we only handle vertical motion for zooming
         return QOpenGLWidget::wheelEvent(e);
     }
@@ -2806,18 +2762,10 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     double zoomFactor;
     unsigned int oldMipmapLevel, newMipmapLevel;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
-#else
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
-#endif
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
-#else
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-#endif
 
         zoomFactor = _imp->zoomCtx.factor();
         //oldMipmapLevel = std::log( zoomFactor >= 1 ? 1 : ipow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) ) ) / M_LN2;
@@ -3598,12 +3546,8 @@ ViewerGL::swapOpenGLBuffers()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     // calls glSwapBuffers in the widget stack as described in https://doc.qt.io/qt-5/qopenglwidget.html#threading
     update();
-#else
-    swapBuffers();
-#endif
 }
 
 /**
@@ -3622,11 +3566,7 @@ ViewerGL::redrawNow()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     update();
-#else
-    updateGL();
-#endif
 }
 
 /**
@@ -3661,11 +3601,7 @@ ViewerGL::getPixelScale(double & xScale,
 double
 ViewerGL::getScreenPixelRatio() const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return devicePixelRatio();
-#else
-    return (_imp->viewerTab && _imp->viewerTab->getGui()) ? _imp->viewerTab->getGui()->devicePixelRatio() : 1.;
-#endif
 }
 #endif
 
@@ -3699,11 +3635,7 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
-#else
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
-#endif
 }
 
 void
@@ -4636,14 +4568,11 @@ ViewerGL::getViewerFrameRange(int* first,
 double
 ViewerGL::currentTimeForEvent(QInputEvent* e)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     // timestamp() is usually in milliseconds
     if ( e->timestamp() ) {
         return (double)e->timestamp() / 1000000;
     }
-#else
-    Q_UNUSED(e);
-#endif
+
     // Qt 4 has no event timestamp, use gettimeofday (defined in Timer.cpp for windows)
     struct timeval now;
     gettimeofday(&now, 0);

@@ -50,20 +50,10 @@ if [ "$PKGOS" = "Linux" ]; then
     fi
     export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
-# https://github.com/msys2/MINGW-packages/issues/10761
-# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70129
-#elif [ "$PKGOS" = "Windows" ]; then
-#    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
-#    export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 fi
 QMAKE="$QTDIR/bin/qmake"
 
 cd "$TMP_PATH"
-
-# kill git if idle for too long
-#"$KILLSCRIPT" $PID &
-#KILLBOT=$! 
-
 
 # OpenColorIO-Configs setup
 OCIO_CONFIGS_VERSION=${OCIO_CONFIGS_VERSION:-}
@@ -79,7 +69,7 @@ fi
 
 if [ "$OCIO_CONFIGS_VERSION" = "" ]; then
     OCIO_CONFIGS_VERSION="3.0"
-    echo "Warnning: No OCIO config version found, setting to $OCIO_CONFIGS_VERSION"
+    echo "Warning: No OCIO config version found, setting to $OCIO_CONFIGS_VERSION"
 fi
 
 OCIO_CONFIGS_URL=https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIGS_VERSION}.tar.gz
@@ -137,14 +127,6 @@ if [ "$NATRON_VERSION_MAJOR" -ge "3" ]; then
     cat "$INC_PATH/natron/${PKGOS}_natron3.pri" > config.pri
 else
     cat "$INC_PATH/natron/${PKGOS}.pri" > config.pri
-fi
-
-if [ "$NO_BUILD" != "1" ] && ([ "${SDK_VERSION:-}" = "CY2016" ] || [ "${SDK_VERSION:-}" = "CY2017" ]); then
-    cat "$INC_PATH/natron/${SDK_VERSION}.pri" > config.pri
-    rm -f Engine/NatronEngine/* Gui/NatronGui/*
-    shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths="../Engine:../Global:${SDK_HOME}/include:${SDK_HOME}/include/PySide2"  --typesystem-paths="${SDK_HOME}/share/PySide2/typesystems" --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-    shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths="../Engine:../Gui:../Global:${SDK_HOME}/include:${SDK_HOME}/include/PySide2"  --typesystem-paths="${SDK_HOME}/share/PySide2/typesystems:Engine" --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-    sh tools/utils/runPostShiboken.sh
 fi
 
 echo "*** config.pri:"
@@ -267,11 +249,7 @@ QMAKE_FLAGS_EXTRA+=(CONFIG+=enable-osmesa OSMESA_PATH="$OSMESA_PATH" LLVM_PATH="
 # mac compiler
 if [ "$PKGOS" = "OSX" ]; then
     if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
-        if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-            SPEC=unsupported/macx-clang
-        else
-            SPEC=macx-clang
-        fi
+        SPEC=macx-clang
     else
         SPEC=macx-g++
     fi

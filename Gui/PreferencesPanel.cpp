@@ -32,11 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
-#else
-#include <QDesktopWidget>
-#endif
 
 #include <QApplication>
 #include <QKeyEvent>
@@ -520,11 +516,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     treeHeader->setText( COL_GL_ENABLED, tr("OpenGL") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->pluginsView->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->pluginsView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->pluginsView->setSortingEnabled(true);
     const PluginsMap& plugins = appPTR->getPluginsList();
 
@@ -765,11 +757,7 @@ PreferencesPanel::createGui()
             uiTabTreeItem = _imp->tabs[i].treeItem;
         }
         QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         int w = fm.horizontalAdvance(label);
-#else
-        int w = fm.width(label);
-#endif
         maxLength = std::max(w, maxLength);
     }
     assert(pluginsFrameLayout);
@@ -1212,13 +1200,8 @@ PreferencesPanel::saveChangesAndClose()
 void
 PreferencesPanel::showEvent(QShowEvent* /*e*/)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     QScreen* desktop = QGuiApplication::primaryScreen();
     const QRect rect = desktop->availableGeometry();
-#else
-    QDesktopWidget* desktop = QApplication::desktop();
-    const QRect rect = desktop->screenGeometry();
-#endif
 
     move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
 

@@ -62,9 +62,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 #include "Gui/ticks.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -546,11 +544,7 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         const double minTickSizeTextPixel = ( _imp->isTimeFormatFrames ? fm.horizontalAdvance( QLatin1String("00000") ) : fm.horizontalAdvance( QLatin1String("00:00:00:00") ) ) / _imp->_screenPixelRatio;
-#else
-        const double minTickSizeTextPixel = ( _imp->isTimeFormatFrames ? fm.width( QLatin1String("00000") ) : fm.width( QLatin1String("00:00:00:00") ) ) / _imp->_screenPixelRatio; // AXIS-SPECIFIC
-#endif
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -574,11 +568,7 @@ TimeLineGui::paintGL()
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = _imp->isTimeFormatFrames ? QString::number(value) : timecodeString(value, fps);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
                 const int sSizePixel =  fm.horizontalAdvance(s) / _imp->_screenPixelRatio;
-#else
-                const int sSizePixel =  fm.width(s) / _imp->_screenPixelRatio;
-#endif
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                     double alphaText = 1.0; //alpha;
@@ -1093,28 +1083,17 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
 void
 TimeLineGui::wheelEvent(QWheelEvent* e)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     if (e->angleDelta().x() != 0) {
         return;
     }
     const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
-#else
-    if (e->orientation() != Qt::Vertical) {
-        return;
-    }
-    const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
-#endif
     double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
         newZoomFactor = 100.;
     }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     QPointF zoomCenter = toTimeLineCoordinates( e->position().x(), e->position().y() );
-#else
-    QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
-#endif
     double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
     _imp->tlZoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->tlZoomCtx.left) * zoomRatio;
     _imp->tlZoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->tlZoomCtx.bottom) * zoomRatio;

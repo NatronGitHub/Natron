@@ -38,15 +38,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QThread>
 #include <QApplication>
 #include <QToolButton>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
-#else
-#include <QDesktopWidget>
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QWindow>
-#endif
 
 #include "Engine/Bezier.h"
 #include "Engine/PyParameter.h" // IntParam
@@ -71,9 +64,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLContext>
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -122,11 +113,7 @@ CurveWidget::CurveWidget(Gui* gui,
                          TimeLinePtr timeline,
                          QWidget* parent,
                          const QOpenGLWidget* shareWidget)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     : QOpenGLWidget(parent)
-#else
-    : QOpenGLWidget(parent, shareWidget)
-#endif
     , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
@@ -444,11 +431,7 @@ CurveWidget::swapOpenGLBuffers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
     update();
-#else
-    swapBuffers();
-#endif
 }
 
 /**
@@ -498,11 +481,7 @@ CurveWidget::getScreenPixelRatio() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return devicePixelRatio();
-#else
-    return _imp->_gui ? _imp->_gui->devicePixelRatio() : 1.;
-#endif
 }
 #endif
 
@@ -607,11 +586,9 @@ CurveWidget::resizeGL(int width,
     glViewport (0, 0, width, height);
     double zoomWidth = width;
     double zoomHeight = height;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double screenPixelRatio = getScreenPixelRatio();
     zoomWidth /= screenPixelRatio;
     zoomHeight /= screenPixelRatio;
-#endif
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
@@ -823,13 +800,9 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if (selectedText) {
         EditKeyFrameDialog* dialog = new EditKeyFrameDialog(mode, this, selectedText, this);
         int dialogW = dialog->sizeHint().width();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
         QScreen* desktop = QGuiApplication::primaryScreen();
         QRect screen = desktop->availableGeometry();
-#else
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
-#endif
+
         QPoint gP = e->globalPos();
         if ( gP.x() > (screen.width() - dialogW) ) {
             gP.rx() -= dialogW;
@@ -1443,21 +1416,12 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     if (e->angleDelta().x() != 0) {
-#else
-    if (e->orientation() != Qt::Vertical) {
-#endif
         return;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
-#else
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
-#endif
 
     if ( modCASIsControlShift(e) ) {
         _imp->zoomOrPannedSinceLastFit = true;
@@ -1548,11 +1512,7 @@ CurveWidget::getWidgetFontHeight() const
 int
 CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
-#else
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
-#endif
 }
 
 QSize
@@ -1598,18 +1558,10 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
-#else
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-#endif
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
-#else
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
-#endif
         wheelEvent(&e);
     } else {
         accept = false;

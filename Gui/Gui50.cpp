@@ -1061,35 +1061,6 @@ Gui::ddeOpenFile(const QString& filePath)
 
 #endif
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-/**
- * @brief Returns 1.0 on a 96 DPI screen, and 2.0 on a Retina  Display.
- **/
-qreal Gui::devicePixelRatio() const
-{
-#if defined(Q_OS_WIN)
-    HDC screen = GetDC(winId());
-    FLOAT horizontalDPI = GetDeviceCaps(screen, LOGPIXELSX);
-    ReleaseDC(0, screen);
-
-    return static_cast<qreal>(horizontalDPI) / 96.;
-#elif defined(Q_OS_DARWIN)
-    return QtMac::devicePixelRatioInternal(this);
-#elif defined(Q_WS_X11)
-    // Use the Xft.dpi X resource, as described there:
-    // - https://github.com/glfw/glfw/blob/84f95a7d7fa454ca99efcdd49da89472294b16bf/src/x11_init.c#L971
-    // - https://wiki.archlinux.org/title/HiDPI#X_Resources
-
-    // QX11Info uses it to set appDpiX() and appDpiY(), see the code:
-    // - https://github.com/qt/qt/blob/0a2f2382541424726168804be2c90b91381608c6/src/gui/kernel/qapplication_x11.cpp#L2203
-
-    return x11Info().appDpiX(x11Info().appScreen()) / 96.;
-#else
-    return 1.;
-#endif
-}
-#endif
-
 bool
 Gui::isFocusStealingPossible()
 {
@@ -1155,7 +1126,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList filesList;
 
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = QtCompat::toLocalFileUrlFixed( urls.at(i) );
+        const QUrl rl = urls.at(i);
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__

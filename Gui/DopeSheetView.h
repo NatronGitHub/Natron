@@ -33,11 +33,7 @@
 
 #include <QTreeWidget>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLWidget>
-#else
-#include "Gui/QGLWidgetCompat.h"
-#endif
 
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"

@@ -231,11 +231,4 @@ public:
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
 
-#if defined(PYSIDE_H) && defined(PYSIDE_OLD)
-namespace PySide {
-PYSIDE_API PyObject* getWrapperForQObject(QObject* cppSelf, SbkObjectType* sbk_type);
-}
-#endif
-
-
 #endif // GLOBALFUNCTIONSWRAPPER_H

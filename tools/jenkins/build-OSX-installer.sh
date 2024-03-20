@@ -357,17 +357,15 @@ elif [ -e "/opt/homebrew" ]; then
     HOMEBREW="/opt/homebrew"
 fi
 SBKVER="1.2"
-QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-4}
+QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
+if [ "${QT_VERSION_MAJOR}" -lt 5 ]; then
+    echo "QT_VERSION_MAJOR ${QT_VERSION_MAJOR} not supported."
+    exit 1
+fi
 QTDIR=${QTDIR:-${SDK_HOME}/libexec/qt${QT_VERSION_MAJOR}}
 PYTHON_HOME=${PYTHON_HOME:-${SDK_HOME}/Library/Frameworks/Python.framework/Versions/${PYVER}}
 ## all Qt frameworks:
 case "${QT_VERSION_MAJOR}" in
-4)
-    qt_libs=( Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns )
-    ## Qt frameworks used by Natron + PySide + Qt plugins:
-    #qt_libs=( Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns )
-    qt_frameworks_dir="${QTDIR}/Library/Frameworks"
-    ;;
 5)
     qt_libs=( Qt3DAnimation Qt3DCore Qt3DExtras Qt3DInput Qt3DLogic Qt3DQuick Qt3DQuickAnimation Qt3DQuickExtras Qt3DQuickInput Qt3DQuickRender Qt3DQuickScene2D Qt3DRender QtBluetooth QtCharts QtConcurrent QtCore QtDBus QtDataVisualization QtDesigner QtDesignerComponents QtGamepad QtGui QtHelp QtLocation QtMacExtras QtMultimedia QtMultimediaQuick QtMultimediaWidgets QtNetwork QtNetworkAuth QtNfc QtOpenGL QtPdf QtPdfWidgets QtPositioning QtPositioningQuick QtPrintSupport QtQml QtQmlModels QtQmlWorkerScript QtQuick QtQuickControls2 QtQuickParticles QtQuickShapes QtQuickTemplates2 QtQuickTest QtQuickWidgets QtRemoteObjects QtRepParser QtScript QtScriptTools QtScxml QtSensors QtSerialBus QtSerialPort QtSql QtSvg QtTest QtTextToSpeech QtUiPlugin QtWebChannel QtWebEngine QtWebEngineCore QtWebEngineWidgets QtWebSockets QtWidgets QtXml QtXmlPatterns )
     qt_frameworks_dir="${QTDIR}/lib"
@@ -383,9 +381,8 @@ app_for_macdeployqt="$(dirname "${package}")/Natron.app"
 # make a temporary link to Natron.app
 ln -sf "${package}" "${app_for_macdeployqt}"
 MACDEPLOYQT_OPTS=( -no-strip )
-if [ "${QT_VERSION_MAJOR}" -ge 5 ]; then
-    MACDEPLOYQT_OPTS+=( -libpath="${SDK_HOME}/lib/nss" -libpath="${SDK_HOME}/lib/nspr" )
-fi
+MACDEPLOYQT_OPTS+=( -libpath="${SDK_HOME}/lib/nss" -libpath="${SDK_HOME}/lib/nspr" )
+
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
     if [ ! -e "${binary}" ] && [ -e "${SDK_HOME}/bin/${bin}" ]; then
@@ -395,15 +392,15 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         MACDEPLOYQT_OPTS+=( -executable="${binary}" )
     fi
 done
-if [ "${QT_VERSION_MAJOR}" -ge 5 ]; then
-    if [ -n "${CODE_SIGN_IDENTITY}" ]; then
-        echo "* executing macdeployqt without code signing"
-        #MACDEPLOYQT_OPTS+=( -codesign="${CODE_SIGN_IDENTITY}" )
-    fi
-    #if [ "${macosx}" -ge 18 ]; then
-    #    MACDEPLOYQT_OPTS+=( -hardened-runtime )
-    #fi
+
+if [ -n "${CODE_SIGN_IDENTITY}" ]; then
+    echo "* executing macdeployqt without code signing"
+    #MACDEPLOYQT_OPTS+=( -codesign="${CODE_SIGN_IDENTITY}" )
 fi
+#if [ "${macosx}" -ge 18 ]; then
+#    MACDEPLOYQT_OPTS+=( -hardened-runtime )
+#fi
+
 echo Executing: "${QTDIR}"/bin/macdeployqt "${app_for_macdeployqt}" "${MACDEPLOYQT_OPTS[@]}"
 #echo "********** DISABLED! press return"
 #read
@@ -558,61 +555,6 @@ for qtlib in "${qt_libs[@]}"; do
     fi
 done
 
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    echo "*** Repairing Qt4 frameworks"
-    # macdeployqt from Qt4 forgets the Info.plist (necessary for code signing)
-    # For the correct Framework Bundle structure, see https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/FrameworkAnatomy.html
-    for f in "${qt_libs[@]}"; do
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework" ]; then
-            echo "Error: ${f}.framework is missing"
-            exit 1
-            #continue
-        fi
-        echo "fixing ${f}.framework"
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current" ]; then
-            echo "fixing ${f}.framework/Versions/Current"
-            (cd "${package}/Contents/Frameworks/${f}.framework/Versions"; ln -sf "${QT_VERSION_MAJOR}" Current)
-        fi
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources" ]; then
-            echo "adding ${f}.framework/Versions/Current/Resources"
-            if [ -d "${package}/Contents/Frameworks/${f}.framework/Resources" ]; then
-                echo "moving  ${f}.framework/Resources to ${f}.framework/Versions/Current/Resources"
-                mv "${package}/Contents/Frameworks/${f}.framework/Resources" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources"
-            else
-                echo "creating ${f}.framework/Versions/Current/Resources"
-                mkdir "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources"
-            fi
-        fi
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-            echo "adding ${f}.framework/Versions/Current/Resources/Info.plist"
-            if [ -e "${qt_frameworks_dir}/${f}.framework/Contents/Info.plist" ]; then
-                echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${qt_frameworks_dir}/${f}.framework/Contents/Info.plist"
-                cp "${qt_frameworks_dir}/${f}.framework/Contents/Info.plist" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
-            fi
-            if [ -e "${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-                echo "copying ${f}.framework/Versions/Current/Resources/Info.plist from ${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist"
-                cp "${qt_frameworks_dir}/${f}.framework/Versions/Current/Resources/Info.plist" "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist"
-            fi
-            if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Versions/Current/Resources/Info.plist" ]; then
-                echo "Error: couldn't find Info.plist for ${qt_frameworks_dir}/${f}.framework"
-                exit 1
-            fi
-        fi
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/${f}" ]; then
-            echo "creating link ${f}.framework/${f}"
-            (cd "${package}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/${f}" .)
-        fi
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Resources" ]; then
-            echo "creating link ${f}.framework/Resources"
-            (cd "${package}/Contents/Frameworks/${f}.framework"; ln -sf "Versions/Current/Resources" .)
-        fi
-        if [ ! -e "${package}/Contents/Frameworks/${f}.framework/Resources/Info.plist" ]; then
-            echo "Error: ${f}.framework/Resources/Info.plist is missing"
-            exit 1
-        fi
-    done
-fi
-
 if [ "${LIBGCC}" = "1" ]; then
     echo "*** Copying and fixing GCC libs"
     for l in ${gcclibs}; do
@@ -678,9 +620,7 @@ cp -a "${SDK_HOME}/share/poppler" "${package}/Contents/Resources/"
 
 
 # install PySide in site-packages
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    PYSIDE_PKG="PySide"
-elif [ "${QT_VERSION_MAJOR}" = 5 ]; then
+if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     PYSIDE_PKG="PySide2"
 else
     PYSIDE_PKG="PySide${QT_VERSION_MAJOR}"
@@ -701,31 +641,7 @@ PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
 rm -rf "${package}/Contents/Frameworks/${PYSIDE}"
 cp -a "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    PYSHIBOKEN="${PYLIB}/site-packages/shiboken.so"
-    rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}"
-    cp "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
-    # fix shiboken.so
-    lib_shiboken="shiboken${pypart}.${SBKVER}"
-    dylib_shiboken="lib${lib_shiboken}.dylib"
-    lib_pyside="pyside${pypart}.${SBKVER}"
-    dylib_pyside="lib${l}.dylib"
-    binary="${package}/Contents/Frameworks/${PYSHIBOKEN}"
-    install_name_tool -change "${SDK_HOME}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
-    install_name_tool -change "${SDK_HOME}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
-    # install pyside and shiboken libs, and fix deps from Qt
-    for l in  "${lib_shiboken}" "${lib_pyside}"; do
-        dylib="lib${l}.dylib"
-        binary="${package}/Contents/Frameworks/${dylib}"
-        cp "${SDK_HOME}/lib/${dylib}" "${binary}"
-        install_name_tool -id "@executable_path/../Frameworks/${dylib}" "${binary}"
-        install_name_tool -change "${SDK_HOME}/lib/${dylib_shiboken}" "@executable_path/../Frameworks/${dylib_shiboken}" "${binary}"
-        install_name_tool -change "${SDK_HOME}/lib/${dylib_pyside}" "@executable_path/../Frameworks/${dylib_pyside}" "${binary}"
-        for f in "${qt_libs[@]}"; do
-            install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"
-        done
-    done
-elif [ "${QT_VERSION_MAJOR}" = 5 ]; then
+if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
     cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
@@ -852,10 +768,9 @@ while [ ${#bins[@]} -gt 0 ]; do
         for f in Python; do
             install_name_tool -change "${SDK_HOME}/Library/Frameworks/${f}.framework/Versions/${PYVER}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${PYVER}/${f}" "${bin}" || true
         done
-        if [ "${QT_VERSION_MAJOR}" -ge 5 ]; then
-            install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${bin}" || true
-            install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${bin}" || true
-        fi
+        
+        install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${bin}" || true
+        install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${bin}" || true
     done
     if [ ${#more_bins[@]} -gt 0 ]; then
         bins=( "${more_bins[@]}" )
@@ -1285,14 +1200,8 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${PY_EXE}" get-pip.py --target "${PYDIR}/site-packages"
     rm get-pip.py
     # Install qtpy
-    if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-        # Qt4 support was dropped after QtPy 1.11.2
-        "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
-        # qtpy bug fix for Qt4
-        ${GSED} -i "s/^except ImportError:/except (ImportError, PythonQtError):/" "${PYDIR}/site-packages/qtpy/__init__.py"
-    else
-        "${PY_EXE}" -m pip install qtpy --upgrade --target "${PYDIR}/site-packages"
-    fi
+    "${PY_EXE}" -m pip install qtpy --upgrade --target "${PYDIR}/site-packages"
+
     # Useful Python packages
     "${PY_EXE}" -m pip install future six --upgrade --target "${PYDIR}/site-packages"
     # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
@@ -1327,18 +1236,7 @@ fi
 
 echo "*** Signing frameworks"
 pushd "${package}/Contents/Frameworks"
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    for f in "${qt_libs[@]}"; do
-        if [ -e "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" ]; then
-            "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}"
-        fi
-    done
-    for f in *.framework; do
-        "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "$f" || true # fails on Qt4 frameworks
-    done
-else
-    "${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
-fi
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" ./*.framework
 popd
 
 echo "*** Signing libraries"

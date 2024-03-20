@@ -249,13 +249,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->inputEdit = new InputScriptTextEdit(gui, this);
     QObject::connect( _imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()) );
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     _imp->inputEdit->setTabStopDistance(fm.horizontalAdvance( QLatin1Char(' ') ) * 4);
     _imp->outputEdit->setTabStopDistance(fm.horizontalAdvance( QLatin1Char(' ') ) * 4);
-#else
-    _imp->inputEdit->setTabStopWidth(fm.width( QLatin1Char(' ') ) * 4);
-    _imp->outputEdit->setTabStopWidth(fm.width( QLatin1Char(' ') ) * 4);
-#endif
 
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
     splitter->addWidget(_imp->outputEdit);

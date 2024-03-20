@@ -36,11 +36,7 @@
 
 #include <QtCore/QSize>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
 #include <QOpenGLWidget>
-#else
-#include "Gui/QGLWidgetCompat.h"
-#endif
 
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/ViewIdx.h"

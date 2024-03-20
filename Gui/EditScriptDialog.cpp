@@ -226,11 +226,7 @@ EditScriptDialog::create(const QString& initialScript,
         _imp->resultEdit->setFont(font);
     }
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     _imp->expressionEdit->setTabStopDistance( 4 * fm.horizontalAdvance( QLatin1Char(' ') ) );
-#else
-    _imp->expressionEdit->setTabStopWidth( 4 * fm.width( QLatin1Char(' ') ) );
-#endif
 } // EditScriptDialog::create
 
 void

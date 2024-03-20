@@ -43,8 +43,7 @@ win32 {
 
 CONFIG += moc
 CONFIG += qt
-QT       += core network gui opengl
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core network gui opengl widgets
 CONFIG += static-breakpadclient
 
 include(../global.pri)

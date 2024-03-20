@@ -49,15 +49,16 @@
 #undef isalnum
 
 #include <QtCore/QtGlobal>
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#include <QtCore/QForeachContainer>
-#endif
 #include <QtCore/QString>
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 3)
+#error "Qt versions earlier than 5.15.3 are not supported."
+#endif
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach

@@ -229,21 +229,12 @@ DocumentationManager::handler(QHttpRequest *req,
     // get options
     QStringList options;
     if ( page.contains( QString::fromUtf8("?") ) ) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QStringList split = page.split(QString::fromUtf8("?"), Qt::SkipEmptyParts);
         page = split.takeFirst();
         if (split.length() > 0) {
             QString rawOptions = split.takeLast();
             options = rawOptions.split(QString::fromUtf8("&"), Qt::SkipEmptyParts);
         }
-#else
-        QStringList split = page.split(QString::fromUtf8("?"), QString::SkipEmptyParts);
-        page = split.takeFirst();
-        if (split.length() > 0) {
-            QString rawOptions = split.takeLast();
-            options = rawOptions.split(QString::fromUtf8("&"), QString::SkipEmptyParts);
-        }
-#endif
     }
 
     // default page
@@ -377,11 +368,8 @@ DocumentationManager::handler(QHttpRequest *req,
                                               "</div>");
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
                 QStringList split = options.at(i).split(QString::fromUtf8("="), Qt::SkipEmptyParts);
-#else
-                QStringList split = options.at(i).split(QString::fromUtf8("="), QString::SkipEmptyParts);
-#endif
+
                 if (split.length() > 0) {
                     QString groupID = split.takeLast();
                     group = groupID;

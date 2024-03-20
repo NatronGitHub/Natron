@@ -33,11 +33,7 @@
 #include <QHBoxLayout>
 #include <QApplication> // qApp
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 #include <QScreen>
-#else
-#include <QDesktopWidget>
-#endif
 
 #include <QScrollArea>
 #include "Engine/Project.h"
@@ -122,15 +118,10 @@ FloatingWidget::setWidget(QWidget* w)
     w->setVisible(true);
     w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     QScreen* desktop = QGuiApplication::primaryScreen();
     assert(desktop != nullptr);
     QRect geom = desktop->availableGeometry();
-#else
-    QDesktopWidget* dw = qApp->desktop();
-    assert(dw);
-    QRect geom = dw->screenGeometry();
-#endif
+
     widgetSize.setWidth( std::min( widgetSize.width(), geom.width() ) );
     widgetSize.setHeight( std::min( widgetSize.height(), geom.height() ) );
     resize(widgetSize);

@@ -138,11 +138,7 @@ protected:
     /**
      * reimpl as DDE events come as windows events and are not translated by Qt.
      */
-    #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     virtual bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-    #else
-    virtual bool winEvent(MSG *msg, long *result);
-    #endif
 
     // —— helpers for the file registration ——————————————————
     /**
