@@ -3,8 +3,8 @@
 _realname=breakpad
 pkgbase=mingw-w64-natron_dump_syms
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_dump_syms"
-gitcommit=1a92fe4a44c954577dd678e22252848e5fc714c2
-pkgver=2156.1a92fe4a
+gitcommit=aa833ca824b1cd5915995bf1fb6bc377c421bd07
+pkgver=2159.aa833ca8
 pkgrel=1
 pkgdesc="Dump win32 dwarf symbols"
 arch=('any')

@@ -11,6 +11,7 @@ url="http://www.openimageio.org/"
 license=("BSD-3")
 depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-fmt"
          "${MINGW_PACKAGE_PREFIX}-jasper"
          "${MINGW_PACKAGE_PREFIX}-giflib"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
