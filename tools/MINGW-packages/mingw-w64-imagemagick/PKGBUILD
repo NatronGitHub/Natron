@@ -41,6 +41,7 @@ source=(
 	ImageMagick-6-mingw.patch
 	ImageMagick-6.9.11-disable-ltdl.diff
 	ImageMagick-6.9.10-gimp210.diff
+	fix-compiler-errors.patch
        )
 sha256sums=(
             'SKIP'
@@ -50,6 +51,7 @@ sha256sums=(
             'c5066995e3cc5fe81cc36b194a4a70fb2bc6ff6e5808062a09d6e767e4bd23eb'
             'eb83e383f720c109b3ef7fb8c774cf108aec6ac6e71722ac5292b60feaaf3dd6'
             '98f5da106e24f49fff16020ceae375c4f46108ad9a786002c1895b1c17f3dbeb'
+            '775b28eb46c81a243ce2eff450e3339433c993e6acf6c0340b23aac62e836dd1'
            )
 
 prepare() {
@@ -69,6 +71,8 @@ prepare() {
     # support gimp 2.10 (until we move to v7)
     patch -p0 -i ${srcdir}/ImageMagick-6.9.10-gimp210.diff
   fi
+
+  patch -p1 -i ${srcdir}/fix-compiler-errors.patch
 
   # fix linker
   sed -i 's#$(MAGICK_DEP_LIBS)#$(MAGICK_DEP_LIBS) -lws2_32#g' ${MCORE}/MakeFile.am

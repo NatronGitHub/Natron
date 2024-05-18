@@ -15,14 +15,17 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              )
 depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs" "${MINGW_PACKAGE_PREFIX}-libmad")
 source=("https://downloads.sourceforge.net/sourceforge/${_realname}/${_realname}-$pkgver.tar.bz2"
-        "remove-libssp-detection.patch")
+        "remove-libssp-detection.patch"
+        "include-math-header.patch")
 sha256sums=('81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c'
-            '57d8fe423a97b554d4f34a9952a9827974ecc5f706ac602c4dd77d32bae2afd6')
+            '57d8fe423a97b554d4f34a9952a9827974ecc5f706ac602c4dd77d32bae2afd6'
+            '2a1612b9755147cab4f3113bc804d485cf51d032f05c5da2496e99382d9b3681')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
 
   patch -Np1 -i "${srcdir}/remove-libssp-detection.patch"
+  patch -Np1 -i "${srcdir}/include-math-header.patch"
 
   autoreconf -fiv
 }

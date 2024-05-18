@@ -1,0 +1,39 @@
+diff -ru a/magick/utility-private.h b/magick/utility-private.h
+--- a/magick/utility-private.h	2024-05-16 16:18:24.863994300 -0700
++++ b/magick/utility-private.h	2024-05-16 16:18:57.352206600 -0700
+@@ -273,7 +273,7 @@
+    path_wide=create_wchar_path(path);
+    if (path_wide == (WCHAR *) NULL)
+      return(-1);
+-   status=wstat(path_wide,attributes);
++   status=_wstati64(path_wide,attributes);
+    path_wide=(WCHAR *) RelinquishMagickMemory(path_wide);
+    return(status);
+ #endif
+
+diff -ru a/magick/utility.c b/magick/utility.c
+--- a/magick/utility.c  2020-05-31 09:04:03.000000000 -0700
++++ b/magick/utility.c 2024-05-17 08:05:06.523764900 -0700
+@@ -67,6 +67,9 @@
+ #if defined(MAGICKCORE_HAVE_PROCESS_H)
+ #include <process.h>
+ #endif
++#if defined(MAGICKCORE_HAVE_GETPAGESIZE)
++int getpagesize();
++#endif
+ #if defined(MAGICKCORE_HAVE_MACH_O_DYLD_H)
+ #include <mach-o/dyld.h>
+ #end
+
+ diff -ru a/wand/mogrify.c b/wand/mogrify.c
+--- a/wand/mogrify.c    2020-05-31 09:04:03.000000000 -0700
++++ b/wand/mogrify.c   2024-05-17 08:33:23.368934800 -0700
+@@ -3983,7 +3983,7 @@
+                 "preserve-timestamp"));
+               if (preserve_timestamp != MagickFalse)
+                 {
+-                  struct utimbuf
++                  struct _utimbuf
+                     timestamp;
+
+                   timestamp.actime=properties.st_atime;
