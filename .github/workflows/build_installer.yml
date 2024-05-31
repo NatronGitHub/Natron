@@ -67,6 +67,12 @@ jobs:
         run: |
           pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
       - name: Verify plugin loading
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
@@ -75,11 +81,6 @@ jobs:
             PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
           done
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
-          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
 
   win-installer-breakpad:
     name: Windows Installer (with Breakpad crash reporting)
@@ -149,14 +150,6 @@ jobs:
         run: |
           pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
-      - name: Verify plugin loading
-        run: |
-          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
-          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
-            echo "Testing $(basename ${x}) ..."
-            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
-          done
-
       - name: Upload installer
         uses: actions/upload-artifact@v4.3.1
         with:
@@ -168,3 +161,11 @@ jobs:
         with:
           name:  ${{ steps.build.outputs.SYMBOLS_NAME }}
           path:  ${{ steps.build.outputs.SYMBOLS_DIR }}
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done

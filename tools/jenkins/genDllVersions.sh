@@ -194,6 +194,7 @@ catDll libmodplug-
 catDll libmp3lame-
 catDll libnettle-
 catDll libnghttp2-
+catDll libnghttp3-
 catDll libogg-
 catDll libopenal-
 catDll libOpenColorIO
