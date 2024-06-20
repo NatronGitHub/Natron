@@ -322,9 +322,9 @@ CRASHGUI="NatronCrashReporter"
 CRASHCLI="NatronRendererCrashReporter"
 if [ "$PKGOS" = "Windows" ]; then
     WIN_BIN_TYPE=release
-    #if [ "${COMPILE_TYPE}" = "debug" ]; then
-    #    WIN_BIN_TYPE=debug
-    #fi
+    if [ "${COMPILE_TYPE}" = "debug" ]; then
+       WIN_BIN_TYPE=debug
+    fi
     NATRON_CONVERTER="$WIN_BIN_TYPE/${NATRON_CONVERTER}.exe"
     NATRON_PYTHON_BIN="$WIN_BIN_TYPE/${NATRON_PYTHON_BIN}.exe"
     NATRON_TEST="$WIN_BIN_TYPE/${NATRON_TEST}.exe"
