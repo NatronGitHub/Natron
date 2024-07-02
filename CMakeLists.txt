@@ -31,8 +31,15 @@ set(CMAKE_CXX_STANDARD 14)
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
+set(IS_DEBUG_BUILD OFF)
 if(CMAKE_BUILD_TYPE MATCHES "^(debug|Debug|DEBUG)$")
+    set(IS_DEBUG_BUILD ON)
     add_definitions(-DDEBUG)
+
+    if(WIN32)
+        # Debug builds need minimal optimizations to avoid excessive link times and link errors related to Eigen.
+        add_compile_options(-O)
+    endif()
 else()
     add_definitions(-DQT_NO_DEBUG_OUTPUT)
 endif()
@@ -49,7 +56,21 @@ if(WIN32)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
+
+if(IS_DEBUG_BUILD AND WIN32)
+    # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
+    # link errors on Windows debug builds.
+    set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
+endif()
 find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
+
+if(IS_DEBUG_BUILD AND WIN32)
+    # Remove NDEBUG from Shiboken2 INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
+    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+    list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
+    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
+endif()
+
 find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
 set(QT_VERSION_MAJOR 5)
 get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
