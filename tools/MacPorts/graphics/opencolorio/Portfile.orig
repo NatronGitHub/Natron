@@ -8,6 +8,7 @@ PortGroup           boost 1.0
 boost.depends_type  build
 
 github.setup        AcademySoftwareFoundation OpenColorIO 2.2.0 v
+revision            1
 name                opencolorio
 categories          graphics
 maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -35,7 +36,7 @@ configure.args-append \
 # keep in mind that openimageio had the same pin
 if {${os.platform} eq "darwin" && ${os.major} < 20} {
     github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
-    revision            3
+    revision            4
 
     checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
                         sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \

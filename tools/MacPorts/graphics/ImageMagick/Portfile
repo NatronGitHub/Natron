@@ -2,7 +2,11 @@
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
+PortGroup                   legacysupport 1.1
 PortGroup                   compiler_blacklist_versions 1.0
+
+# TARGET_OS_IOS, TARGET_OS_WATCH, TARGET_OS_TV missing in TargetConditionals.h:
+legacysupport.newest_darwin_requires_legacy 10
 
 # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
 
@@ -10,20 +14,16 @@ PortGroup                   compiler_blacklist_versions 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-# 6.9.11-61 changes the major version of libMagickCore which will
-# require increasing the revision of all ports that link with it.
-version                     6.9.11-60
-revision                    11
-checksums                   rmd160  1c293ba06fd43833be35efb4476e559bf137ccef \
-                            sha256  ba0fa683b0721d1f22b0ccb364e4092e9a7a34ffd3bd6348c82b50fd93b1d7ba \
-                            size    9167220
+version                     6.9.13-7
+revision                    0
+checksums                   rmd160  9025e38a212d8cfe5706f07c4f900a96b708c016 \
+                            sha256  2a521f7992b3dd32469b7b7254a81df8a0045cb0b963372e3ba6404b0a4efeae \
+                            size    9604796
 
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
 license                     Apache-2
 use_xz                      yes
-platforms                   darwin
-use_parallel_build          yes
 
 description                 Tools and libraries to manipulate images in many formats
 
@@ -70,11 +70,8 @@ depends_lib                 port:bzip2 \
                             port:libxml2 \
                             port:libheif
 
-patchfiles \
-    ImageMagick-6.9.10-gimp210.diff
-
 # Magick-config etc. use pkg-config
-depends_lib-append          port:pkgconfig
+depends_lib-append          path:bin/pkg-config:pkgconfig
 
 depends_run                 port:urw-fonts
 

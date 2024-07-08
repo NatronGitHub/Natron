@@ -38,6 +38,8 @@ patchfiles-append   patch-yaml-cpp-0.7.diff
 
 patchfiles-append   patch-CMakeLists.txt.diff
 
+patchfiles-append   patch-Werror.diff
+
 set my_prefix       ${prefix}/libexec/${name}
 
 configure.pre_args  -DCMAKE_INSTALL_PREFIX=${my_prefix}

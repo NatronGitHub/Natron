@@ -1,5 +1,5 @@
---- Portfile.orig	2023-11-28 15:57:54.000000000 +0100
-+++ Portfile	2023-11-04 17:46:40.000000000 +0100
+--- Portfile.orig	2024-04-03 11:44:59
++++ Portfile	2023-10-31 23:51:09
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -18,13 +18,13 @@
                          components required to build an executing OpenMP\
                          program that are outside the compiler itself. \
                          This port works with MacPorts' clang-3.7+ (optionally \
-@@ -29,30 +29,21 @@
+@@ -29,31 +29,22 @@
  subport                 libomp-devel {}
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 -
--    version             17.0.3
--    revision            0
+-    version             18.1.2
+-    revision            1
 -
      if { ${subport} eq "libomp-devel" } {
 -        # Marked obsolete 10/25/2022
@@ -45,20 +45,21 @@
  
 -    distname        openmp-${version}.src
 -    distfiles       ${distname}.tar.xz cmake-${version}.src.tar.xz
--
--    checksums \
--        openmp-${version}.src.tar.xz \
--                    rmd160  a79350f38202f4e9819373a433b1b19cef631eb2 \
--                    sha256  e04172c067f256d06cd8112abb49bc65f4e1d986a4b49b36cd837dfee3cdd274 \
--                    size    1273276 \
--        cmake-${version}.src.tar.xz \
--                    rmd160  2f419efae4d3f8c9d87943cf1873031468a19bd7 \
--                    sha256  54fc534f0da09088adbaa6c3bfc9899a500153b96e60c2fb9322a7aa37b1027a \
--                    size    8712
 +    revision            0
  
+-    checksums \
+-        openmp-${version}.src.tar.xz \
+-                    rmd160  f2cb436ddf5fef965cab48b28f44c3899b9a713e \
+-                    sha256  742dce34394d26f0916b5d3041cc737d4e41f5ee821d9fb054057f6f71cf9a2b \
+-                    size    1318944 \
+-        cmake-${version}.src.tar.xz \
+-                    rmd160  ab9ff8018440bc7c494813e231c65c9ae470c6ac \
+-                    sha256  b55a1eed9fe9c5d86c9f73c8aabde3e2407e603e737e1555545c3d136655955b \
+-                    size    8704
+-
      if {${os.major} <= 12} {
          # kmp_alloc.c includes <atomic> but libc++ is not the default on
+         # these systems. https://trac.macports.org/ticket/52554
 @@ -62,40 +53,40 @@
  
      # Build requires std::atomic
@@ -145,23 +146,24 @@
  if {${os.major} <= 17} {
      default_variants    +universal
  }
-@@ -133,14 +112,8 @@
+@@ -133,15 +112,9 @@
  # With this, cmake sets the correct library name in the dylibs for the
  # final destination we move them to
  configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
 -                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp
--
++                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
++                        -DLIBOMP_OMPT_SUPPORT=FALSE
+ 
 -if {${os.major} <= 10} {
 -    set hnames              {omp.h}
 -    configure.args-append   -DLIBOMP_OMPT_SUPPORT=FALSE
 -} else {
--    set hnames              {omp-tools.h omp.h ompt.h}
+-    set hnames              {omp-tools.h omp.h ompt.h ompx.h}
 -}
-+                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib/libomp \
-+                        -DLIBOMP_OMPT_SUPPORT=FALSE
- 
+-
  variant top_level description \
      "Install (links to) omp.h and libs into ${prefix}/(include|lib)" {}
+ 
 @@ -149,30 +122,22 @@
      # Patch tool for build with CMAKE_INSTALL_PREFIX
      reinplace "/bulk.*compatibility/s/s\+/s+.*/" \

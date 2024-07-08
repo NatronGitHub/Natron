@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.4
-revision            4
+revision            6
 epoch               1
 
 license             LGPL-2.1+
@@ -81,7 +81,7 @@ depends_lib-append \
                     path:lib/pkgconfig/gnutls.pc:gnutls \
                     path:lib/pkgconfig/harfbuzz.pc:harfbuzz \
                     port:lame \
-                    port:libass \
+                    path:lib/pkgconfig/libass.pc:libass \
                     port:libbluray \
                     port:libiconv \
                     port:libmodplug \
@@ -592,6 +592,13 @@ variant rav1e description {Enable codec rav1e} {
                     --enable-librav1e
     depends_lib-append \
                     port:rav1e
+}
+
+variant flite description {Enable flite audio source} {
+    configure.args-append \
+                    --enable-libflite
+    depends_lib-append \
+                    port:flite
 }
 
 if {![variant_isset rav1e]} {

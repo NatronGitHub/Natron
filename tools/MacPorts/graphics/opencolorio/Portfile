@@ -7,7 +7,8 @@ PortGroup           boost 1.0
 
 boost.depends_type  build
 
-github.setup        AcademySoftwareFoundation OpenColorIO 2.2.1 v
+github.setup        AcademySoftwareFoundation OpenColorIO 2.3.2 v
+revision            0
 name                opencolorio
 categories          graphics
 maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -21,18 +22,15 @@ long_description    OpenColorIO (OCIO) is a complete color management solution \
 
 # please remove "stealth update" workaround on next version update
 dist_subdir         ${name}/${version}_1
-checksums           rmd160  f9369157eeeca1bbce00594b82d00118924816bc \
-                    sha256  daf215acddf1c3ed443e6c159e369f2c623b015fa07f11fcc76aae9ede665084 \
-                    size    11342273
+checksums           rmd160  297c061816895bd4d02a9450c0415d8769e188ab \
+                    sha256  6e437aa8c09f5d870212847af7788d92c3a5c34c739b212a9947a4ef3e8542b8 \
+                    size    11444813
 
 # Exclude pre-releases from livecheck
 github.livecheck.regex  {([0-9.]+)}
 
 configure.args-append \
     -DCMAKE_CONFIGURATION_TYPES=MacPorts
-
-patchfiles-append \
-    patch-OCIOZArchive.diff
 
 # source assumes C++11 compiler
 compiler.cxx_standard 2011

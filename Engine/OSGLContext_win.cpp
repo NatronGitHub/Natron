@@ -57,6 +57,18 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 NATRON_NAMESPACE_ENTER
 
+namespace {
+
+bool makeDCAndContextCurrent(HDC dc, HGLRC context)
+{
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+
+    assert(wglInfo);
+    return wglInfo->MakeCurrent(dc, context);
+}
+
+}  // namespace
+
 bool
 OSGLContext_win::extensionSupported(const char* extension,
                                     OSGLContext_wgl_data* data)
@@ -96,6 +108,7 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     wglInfo->CreateContext = (WGLCREATECONTEXT_T)GetProcAddress(wglInfo->instance, "wglCreateContext");
     wglInfo->DeleteContext = (WGLDELETECONTEXT_T)GetProcAddress(wglInfo->instance, "wglDeleteContext");
     wglInfo->GetCurrentContext = (WGLGETCURRENTCONTEXT_T)GetProcAddress(wglInfo->instance, "wglGetCurrentContext");
+    wglInfo->GetCurrentDC = (WGLGETCURRENTDC_T)GetProcAddress(wglInfo->instance, "wglGetCurrentDC");
     wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
     wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
     wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
@@ -606,18 +619,16 @@ OSGLContext_win::~OSGLContext_win()
 bool
 OSGLContext_win::makeContextCurrent(const OSGLContext_win* context)
 {
-    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
-
-    assert(wglInfo);
     if (context) {
-        return wglInfo->MakeCurrent(context->_dc, context->_handle);
+        return makeDCAndContextCurrent(context->_dc, context->_handle);
     } else {
-        return wglInfo->MakeCurrent(0, 0);
+        return makeDCAndContextCurrent(0, 0);
     }
 }
 
 bool
-OSGLContext_win::threadHasACurrentContext() {
+OSGLContext_win::threadHasACurrentContext()
+{
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
     assert(wglInfo);
     return wglInfo->GetCurrentContext() != nullptr;
@@ -722,7 +733,11 @@ namespace {
 class ScopedGLContext {
 public:
     ScopedGLContext(const GLRendererID& gid) {
-        assert(!OSGLContext_win::threadHasACurrentContext());
+        const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+        assert(wglInfo);
+        _oldDc = wglInfo->GetCurrentDC();
+        _oldContext = wglInfo->GetCurrentContext();
+
         try {
             _context = std::make_unique<OSGLContext_win>(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, gid, nullptr);
         } catch (const std::exception& e) {
@@ -737,7 +752,7 @@ public:
 
     ~ScopedGLContext() {
         if (_context) {
-            OSGLContext_win::makeContextCurrent(nullptr);
+            makeDCAndContextCurrent(_oldDc, _oldContext);
         }
     }
 
@@ -745,6 +760,8 @@ public:
 
 private:
     std::unique_ptr<OSGLContext_win> _context;
+    HDC _oldDc = nullptr;
+    HGLRC _oldContext = nullptr;
 };
 } // namespace
 

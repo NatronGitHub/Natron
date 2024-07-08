@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.5.0
-checksums                       rmd160  47b80f4a164c18d95a9af6ffc42576ebe546ea85 \
-                                sha256  42ab8db9e20d8290a3b633e7fbb3cec15db34df65fd1015ef8ac1e4723750eeb \
-                                size    2658520
+version                         8.7.1
+checksums                       rmd160  9744fc15c2e9f903a845f960ba3f32acd3aaadca \
+                                sha256  6fea2aac6a4610fbd0400afb0bcddbe7258a64c63f1f68e5855ebc0c659710cd \
+                                size    2707016
 
 categories                      net www
 platforms                       darwin freebsd
@@ -37,15 +37,13 @@ if {${name} eq ${subport}} {
 
     revision                    0
 
-    depends_build               port:pkgconfig
+    depends_build               path:bin/pkg-config:pkgconfig
 
     depends_lib                 port:brotli \
                                 port:libidn2 \
                                 port:libpsl \
                                 port:zlib \
                                 port:zstd
-
-    patchfiles                  configure.patch
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -56,6 +54,8 @@ if {${name} eq ${subport}} {
                                 --without-libssh2 \
                                 --without-mbedtls \
                                 --without-nghttp2 \
+                                --without-nghttp3 \
+                                --without-ngtcp2 \
                                 --without-openssl \
                                 --without-ssl \
                                 --without-secure-transport \
@@ -101,6 +101,7 @@ if {${name} eq ${subport}} {
 
     test.run                    yes
     test.target                 test-full
+    test.args                   -j${build.jobs} TFLAGS=-j${build.jobs}
 
     global merger_dont_diff
     set merger_dont_diff "${prefix}/include/curl/curlbuild.h"
@@ -230,8 +231,8 @@ if {${name} eq ${subport}} {
     variant http3 requires gnutls description {Support HTTP/3 with nghttp3 and ngtcp2} {
         depends_lib-append      port:nghttp3 \
                                 port:ngtcp2
-        configure.args-append   --with-nghttp3=${prefix} \
-                                --with-ngtcp2=${prefix}
+        configure.args-replace  --without-nghttp3 --with-nghttp3=${prefix} \
+                                --without-ngtcp2 --with-ngtcp2=${prefix}
     }
 
     variant openldap description {Support performing Lightweight Directory Access Protocol queries with OpenLDAP} {
@@ -260,6 +261,13 @@ if {${name} eq ${subport}} {
 
     if {![variant_isset darwinssl] && ![variant_isset gnutls] && ![variant_isset mbedtls] && ![variant_isset wolfssl]} {
         default_variants-append +ssl
+    }
+
+    if {[variant_isset darwinssl] || [variant_isset mbedtls]} {
+        notes-append {
+            The selected TLS library does not support TLS 1.3; you may want to\
+            use one that does by choosing the +ssl, +gnutls, or +wolfssl variant.
+        }
     }
 
     livecheck.type              regex
@@ -297,11 +305,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1690233032
+    set certdata_updated        1711566911
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         60b731ed0b92d1f2f7d80dfc54f71fcfecb8ff49
+    set certdata_commit         bfb3a675d0569b740fe865ad6d2ac70f22163e98
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20230721
+    set certdata_date           20240215
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -322,9 +330,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  1102ce76dd1bf44a153cc6cae3a790dcae9e9fda \
-                                sha256  c4c7820155d24950586d71cdf9a1bdf9ec868116aee5c87c0389d082d0173572 \
-                                size    286425
+                                rmd160  3194caff79a4773853d478e84287ed7f36e80485 \
+                                sha256  3e7d59004501c3fa85cd504544edc23c7544766a783f14bc3c5fa6216ea58abf \
+                                size    284455
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/Makefile \

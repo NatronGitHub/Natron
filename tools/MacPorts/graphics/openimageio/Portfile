@@ -14,7 +14,6 @@ maintainers             {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                         related classes, utilities, and applications.
-platforms               darwin
 
 github.setup        OpenImageIO oiio 2.4.17.0 v
 revision            100
@@ -24,14 +23,17 @@ checksums           rmd160  e593d35b8a4d62c0277622267c43911836eebd61 \
 
 github.tarball_from     archive
 
-depends_lib-append  port:imath \
-                    port:openexr
-
 patchfiles-append oiio-2.0.8-invalidatespec.patch
 patchfiles-append oiio-2.0.8-atomic-load.patch
 patchfiles-append oiio-2.3.20-strnlen.patch
 patchfiles-append oiio-2.4.6-sysutil.patch
 patchfiles-append oiio-2.4.6-filesystem.patch
+
+patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
+
+depends_lib-append  port:imath \
+                    port:openexr
+ 
 
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html

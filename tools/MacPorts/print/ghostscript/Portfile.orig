@@ -4,8 +4,8 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             10.02.1
-revision            1
+version             10.03.0
+revision            0
 
 categories          print
 license             AGPL-3 BSD
@@ -34,9 +34,9 @@ distfiles           ${distname}.tar.gz:source \
                     ${mappingresources_commit}.zip:misc
 
 checksums           ${distname}.tar.gz \
-                    rmd160  4a8dd188fe10e5f16f4a7f3c5866e2923e3d7b3c \
-                    sha256  25399af0ef5bb94f2a13c91dc785c128d14f16744c4c92fa7c86e011c23151d8 \
-                    size    98194756 \
+                    rmd160  860ee86af90acf551b31244f8adebc0e4754c258 \
+                    sha256  10849e8039d526ea490f3ead1f2aba7b2b9d5d4f13bfdfc8b9fe654948e70a44 \
+                    size    98222723 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -72,6 +72,7 @@ post-extract {
 
 patchfiles-append   patch-base_unix-dll.mak.diff
 patchfiles-append   patch-base_unixinst.mak.diff
+patchfiles-append   pdf_sec.c.diff
 
 post-patch {
     reinplace "s|__PREFIX__|${prefix}|" \

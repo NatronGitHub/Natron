@@ -857,8 +857,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   U32 textureTarget)
 {
 #ifdef DEBUG
-    RectI pixelRod;
-    rod.toPixelEnclosing(mipmapLevel, par, &pixelRod);
+    const RectI pixelRod = rod.toPixelEnclosing(mipmapLevel, par);
     assert( bounds.left() >= pixelRod.left() && bounds.right() <= pixelRod.right() &&
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif

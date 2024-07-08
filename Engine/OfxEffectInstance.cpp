@@ -2046,8 +2046,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         // check the dimensions of output images
         const RectI & dstBounds = firstPlane.second->getBounds();
         const RectD & dstRodCanonical = firstPlane.second->getRoD();
-        RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(args.mappedScale, firstPlane.second->getPixelAspectRatio(), &dstRod);
+        const RectI dstRod = dstRodCanonical.toPixelEnclosing( args.mappedScale, firstPlane.second->getPixelAspectRatio() );
 
         if ( !supportsTiles() && !isDuringPaintStrokeCreationThreadLocal() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles

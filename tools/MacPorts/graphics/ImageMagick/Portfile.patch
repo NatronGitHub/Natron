@@ -1,24 +1,14 @@
---- Portfile.orig	2021-02-13 18:25:46.000000000 -0800
-+++ Portfile	2021-02-14 09:09:09.000000000 -0800
-@@ -2,6 +2,7 @@
- 
+--- Portfile.orig	2024-04-03 11:45:38
++++ Portfile	2024-04-03 12:55:41
+@@ -3,6 +3,7 @@
  PortSystem                  1.0
  PortGroup                   conflicts_build 1.0
+ PortGroup                   legacysupport 1.1
 +PortGroup                   compiler_blacklist_versions 1.0
  
- # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
- 
-@@ -69,6 +70,9 @@
-                             port:libxml2 \
-                             port:libheif
- 
-+patchfiles \
-+    ImageMagick-6.9.10-gimp210.diff
-+
- # Magick-config etc. use pkg-config
- depends_lib-append          port:pkgconfig
- 
-@@ -85,11 +89,13 @@
+ # TARGET_OS_IOS, TARGET_OS_WATCH, TARGET_OS_TV missing in TargetConditionals.h:
+ legacysupport.newest_darwin_requires_legacy 10
+@@ -85,11 +86,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -32,7 +22,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -122,6 +128,60 @@
+@@ -122,6 +125,60 @@
      }
  }
  
@@ -93,7 +83,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -129,6 +189,23 @@
+@@ -129,6 +186,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -117,7 +107,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -163,6 +240,11 @@
+@@ -163,6 +237,11 @@
  
  default_variants            +x11
  
