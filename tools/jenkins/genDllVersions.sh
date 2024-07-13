@@ -178,6 +178,7 @@ catDll libOpenEXRCore
 catDll libOpenImageIO
 catDll libOpenImageIO_Util
 catDll libopenjp2-
+catDll libopenjph-
 catDll libopus-
 catDll libp11-kit-
 catDll libpango-
