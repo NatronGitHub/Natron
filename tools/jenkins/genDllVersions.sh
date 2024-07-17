@@ -175,8 +175,8 @@ catDll libopenal-
 catDll libOpenColorIO
 catDll libOpenEXR-
 catDll libOpenEXRCore
-catDll libOpenImageIO
-catDll libOpenImageIO_Util
+catDll libOpenImageIO-
+catDll libOpenImageIO_Util-
 catDll libopenjp2-
 catDll libopenjph-
 catDll libopus-

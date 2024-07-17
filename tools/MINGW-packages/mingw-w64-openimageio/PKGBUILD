@@ -3,56 +3,74 @@
 _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-pkgver=2.4.13.0
+pkgver=2.5.13.1
 pkgrel=99.1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
-url="http://www.openimageio.org/"
-license=("BSD-3")
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+url="https://www.openimageio.org/"
+msys2_repository_url="https://github.com/AcademySoftwareFoundation/OpenImageIO"
+msys2_references=(
+  'archlinux: openimageio'
+  'gentoo: media-libs/openimageio'
+  "cpe: cpe:/a:openimageio:openimageio"
+)
+license=('spdx:Apache-2.0')
 depends=("${MINGW_PACKAGE_PREFIX}-boost"
+         "${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-freetype"
-         "${MINGW_PACKAGE_PREFIX}-fmt"
-         "${MINGW_PACKAGE_PREFIX}-jasper"
          "${MINGW_PACKAGE_PREFIX}-giflib"
+         "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2"
-         "${MINGW_PACKAGE_PREFIX}-libwebp"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
+         "${MINGW_PACKAGE_PREFIX}-libwebp"
          "${MINGW_PACKAGE_PREFIX}-natron_opencolorio-git"
          "${MINGW_PACKAGE_PREFIX}-natron_openexr"
-         "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-zlib")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-             "${MINGW_PACKAGE_PREFIX}-boost"
-             "${MINGW_PACKAGE_PREFIX}-cc"
-             "git")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-fmt"
+             "${MINGW_PACKAGE_PREFIX}-robin-map")
 options=('strip' 'buildflags' '!debug')
-source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/v${pkgver}.tar.gz
-        git+https://github.com/OpenImageIO/oiio-images.git
-        oiio-2.1.10-boost.diff
+source=(https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz
+        0000-workaround-ansidecl-h-PTR-define-conflict.patch
+        0001-Fix-building-on-mingw-w64-aarch64.patch
         oiio-2.0.8-invalidatespec.patch
         oiio-2.2.14-libraw.diff
-        oiio-2.4.13.0-thread-shutdown.patch # Remove when updating to a future 2.5 release that has these changes.
        )
-sha256sums=('bb10a7ab6dff5dae2c6d854e9da38136546232235913237e8b1b3c99abb7dd0b'
-            'SKIP'
-            'e8aec185fd20a6e5cdf77a7155fcaedb301c07bd806f73bd30dfc75af721ac83'
+sha256sums=('0fbaec6c15215e11cf4545128c4d64eaa97b461cb9b5fb8a76f9a7d35c99e3df'
+            '9e4e21333676268a91c0f4e7676aeab7658e5f748e7e5cfe43a92f0fd7931229'
+            '91bd9a6a07f448a6dd8d1ff9a1c8cefaedb8cdd77029b84b6fc02fe9a7cf71f0'
             'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
-            '89e21326d6445304293bcedc3a52bfa1dfec9b769b397f6a312ca27d1de93423'
-            '3847eba62ac7a689c4c70b814461583d9c6e921259dd0343b17509d8b35d6f0f'
+            '59d8b06e11945fd703c1db354457ca2aedda3d48402d89e47f376ff90a17255e'
            )
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
 
 prepare() {
   cd ${srcdir}/OpenImageIO-${pkgver}
-  #patch -p0 -i ${srcdir}/oiio-2.1.10-boost.diff
-  patch -p1 -i ${srcdir}/oiio-2.0.8-invalidatespec.patch
-  patch -p0 -i ${srcdir}/oiio-2.2.14-libraw.diff
-  patch -p1 -i ${srcdir}/oiio-2.4.13.0-thread-shutdown.patch
+  apply_patch_with_msg \
+    0000-workaround-ansidecl-h-PTR-define-conflict.patch \
+    0001-Fix-building-on-mingw-w64-aarch64.patch \
+    oiio-2.0.8-invalidatespec.patch \
+    oiio-2.2.14-libraw.diff
 }
 
 build() {
+  [[ -d "${srcdir}"/build-${MSYSTEM} ]] && rm -rf "${srcdir}"/build-${MSYSTEM}
+  mkdir -p "${srcdir}"/build-${MSYSTEM} && cd "${srcdir}"/build-${MSYSTEM}
+
   declare -a extra_config
   if check_option "debug" "n"; then
     extra_config+=("-DCMAKE_BUILD_TYPE=Release")
@@ -60,46 +78,44 @@ build() {
     extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
   fi
 
-  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
-  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
-
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   PKG_CONFIG_PATH="${MINGW_PREFIX}/libraw-gpl2/lib/pkgconfig:${PKG_CONFIG_PATH}" \
   ${MINGW_PREFIX}/bin/cmake.exe \
     -Wno-dev \
-    -G"MSYS Makefiles" \
+    -G"Ninja" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DUSE_FFMPEG=OFF \
-    -DUSE_OPENJPEG=ON \
+    -DCMAKE_DLL_NAME_WITH_SOVERSION=ON \
+    -DCMAKE_CXX_STANDARD=14 \
     -DUSE_FREETYPE=ON \
     -DUSE_OPENCV=OFF \
-    -DUSE_FIELD3D=OFF \
-    -DUSE_OPENSSL=OFF \
+    -DUSE_OPENGL=OFF \
+    -DUSE_QT=OFF \
+    -DUSE_FFMPEG=OFF \
+    -DUSE_EXTERNAL_PUGIXML=OFF \
+    -DOIIO_BUILD_TESTS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DSTOP_ON_WARNING=OFF \
     -DUSE_GIF=ON \
     -DUSE_HEIF=ON \
+    -DUSE_OPENJPEG=ON \
     -DUSE_LIBRAW=ON \
     -DUSE_NUKE=OFF \
-    -DSTOP_ON_WARNING=OFF \
     -DLibRaw_ROOT="${MINGW_PREFIX}/libraw-gpl2" \
     -DBOOST_ROOT=${MINGW_PREFIX} \
     -DOpenJPEG_ROOT=${MINGW_PREFIX} \
     -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
-    -DUSE_QT=OFF \
     -DUSE_PYTHON=OFF \
-    -DUSE_PYTHON3=OFF \
     -DUSE_PTEX=OFF \
-    -DUSE_EXTERNAL_PUGIXML=OFF \
-    -DOIIO_BUILD_TESTS=OFF \
-    -DCMAKE_CXX_STANDARD=14 \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     ${extra_config} \
     ../OpenImageIO-${pkgver}
-  make
+
+  ${MINGW_PREFIX}/bin/cmake --build .
 }
 
 package() {
-  cd "${srcdir}"/build-${MINGW_CHOST}
-  #make DESTDIR=${pkgdir} install
+  cd "${srcdir}"/build-${MSYSTEM}
+
   DESTDIR="${pkgdir}" ${MINGW_PREFIX}/bin/cmake --install .
 
   local PREFIX_WIN=$(cygpath -wm ${MINGW_PREFIX})
@@ -112,4 +128,6 @@ package() {
     sed -e "s|${PREFIX_WIN}|\$\{_IMPORT_PREFIX\}|g" -i ${_f}
     sed -e "s|${MINGW_PREFIX}|\$\{_IMPORT_PREFIX\}|g" -i ${_f}
   done
+
+  install -Dm644 ${srcdir}/OpenImageIO-${pkgver}/LICENSE.md "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE.md"
 }
