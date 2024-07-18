@@ -27,7 +27,7 @@ jobs:
         with:
           msystem: mingw64
           update: true
-          install: git mingw-w64-x86_64-wget unzip
+          install: git mingw-w64-x86_64-wget unzip diffutils
 
       - name: Install Natron pacman repository
         run: |
@@ -42,12 +42,11 @@ jobs:
 
           cd tools/jenkins
 
-          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 ./launchBuildMain.sh
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
 
           ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
           INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*Windows-x86_64.zip)
 
-          set -x
           # Unzip installer zip for artifact upload so we don't get a zipped zip file.
           cd ${ARCHIVE_DIR}
           INSTALLER_DIR="${ARCHIVE_DIR}/i"
@@ -59,6 +58,16 @@ jobs:
           echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
 
+          TEST_RESULTS_FILE="${ARCHIVE_DIR}/${INSTALLER_NAME}-tests.txt"
+          TEST_RESULTS_NAME="${INSTALLER_NAME}-tests"
+          echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
+          echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
+
+          TEST_FAILURES_DIR="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures"
+          TEST_FAILURES_NAME="${INSTALLER_NAME}-unit_tests_failures"
+          echo "TEST_FAILURES_NAME=${TEST_FAILURES_NAME}" >> $GITHUB_OUTPUT
+          echo "TEST_FAILURES_DIR=$(cygpath -m ${TEST_FAILURES_DIR})" >> $GITHUB_OUTPUT
+
       - name: Build verify_plugin_loads binary
         run: |
           g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
@@ -67,11 +76,23 @@ jobs:
         run: |
           pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
 
-      - name: Upload artifacts
+      - name: Upload installer
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
+          path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+
+      - name: Upload test failures
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
+          path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
 
       - name: Verify plugin loading
         run: |
@@ -81,6 +102,14 @@ jobs:
             PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
           done
 
+      - name: Verify passing tests match 2.5.0 release
+        run: |
+          wget https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
+          if diff Natron-2.5.0-Windows-x86_64-tests.txt ${{ steps.build.outputs.TEST_RESULTS_FILE }}; then
+            echo "Test results match 2.5.0 release : PASS"
+          else
+            echo "Test results match 2.5.0 release : FAILED"
+          fi
 
   win-installer-breakpad:
     name: Windows Installer (with Breakpad crash reporting)

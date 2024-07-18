@@ -132,14 +132,14 @@ cp "$INC_PATH/config/"*.png "$INSTALLER_PATH/config/"
 
 # make sure we have mt and qtifw
 
-if ! which mt.exe; then
+MT_BIN=mt.exe
+if ! which ${MT_BIN}; then
     # Add Windows SDK to path so that mt.exe is available.
     WIN_SDK_MAJOR_VERSION=10
     WIN_SDK_BASE_PATH="/c/Program Files (x86)/Windows Kits/${WIN_SDK_MAJOR_VERSION}/bin"
-    WIN_SDK_VERSION=$(ls "${WIN_SDK_BASE_PATH}" | grep "${WIN_SDK_MAJOR_VERSION}." | sort -n | tail -1)
-    PATH="${WIN_SDK_BASE_PATH}/${WIN_SDK_VERSION}/x64/":${PATH}
+    MT_BIN=$(find "${WIN_SDK_BASE_PATH}" -name mt.exe | grep x64 | sort -n | tail -1)
 
-    if ! which mt.exe; then
+    if [[ -z "${MT_BIN}" ]]; then
         echo "Failed to find mt.exe"
         exit 1
     fi
@@ -222,7 +222,7 @@ function installPlugin() {
         done
         echo "</assembly>" >> "$PLUGIN_MANIFEST"
         for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
-            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; mt -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
+            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; "${MT_BIN}" -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
         done
 
     fi
