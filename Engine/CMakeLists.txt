@@ -32,7 +32,7 @@ set(PYENGINE_HEADER PySide2_Engine_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
 
 set(shiboken_args
-    "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
+    "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
     "-I." "-I.." "-I../Global" "-I../libs/OpenFX/include" ${PYENGINE_INCS}
     "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYENGINE_OUT}"

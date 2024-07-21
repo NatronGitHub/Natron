@@ -20,13 +20,13 @@
 cmake_minimum_required(VERSION 3.16.7)
 
 project(Natron
-    VERSION "2.5.0"
+    VERSION "2.6.0"
     DESCRIPTION "Open Source Compositing Software"
     HOMEPAGE_URL "https://natrongithub.github.io/"
     LANGUAGES CXX C
 )
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)

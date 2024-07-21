@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-CONFIG += c++11 c++14
+CONFIG += c++11 c++17
 
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
@@ -201,9 +201,6 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
       # see https://github.com/MrKepzie/Natron/issues/1659
       # -fpermissive turns it into a warning
       QMAKE_CXXFLAGS += -fpermissive
-      # GCC 6 and later are C++14 by default, but Qt 4 is C++98
-      # Note: disabled, because qmake should put the right flags anyway
-      #lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98
 
       # clear some Eigen3 warnings
       QMAKE_CFLAGS += -Wno-int-in-bool-context
@@ -309,10 +306,10 @@ macx-clang-libc++ {
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     c++11 {
-      c++14 {
-        QMAKE_OBJECTIVE_CXXFLAGS += -std=c++14
+      c++17 {
+        QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
       }
-      !c++14 {
+      !c++17 {
         QMAKE_OBJECTIVE_CXXFLAGS += -std=c++11
       }
     }
@@ -323,10 +320,10 @@ macx-clang {
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     c++11 {
-      c++14 {
-        QMAKE_OBJECTIVE_CXXFLAGS += -std=c++14
+      c++17 {
+        QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
       }
-      !c++14 {
+      !c++17 {
         QMAKE_OBJECTIVE_CXXFLAGS += -std=c++11
       }
     }
@@ -528,13 +525,13 @@ unix {
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
   c++11 {
-    c++14 {
-      QMAKE_CXXFLAGS += -std=c++14
-      enable_cxx14.name = CLANG_CXX_LANGUAGE_STANDARD
-      enable_cxx14.value = c++14
-      QMAKE_MAC_XCODE_SETTINGS += enable_cxx14
+    c++17 {
+      QMAKE_CXXFLAGS += -std=c++17
+      enable_cxx17.name = CLANG_CXX_LANGUAGE_STANDARD
+      enable_cxx17.value = c++17
+      QMAKE_MAC_XCODE_SETTINGS += enable_cxx17
     }
-    !c++14 {
+    !c++17 {
       QMAKE_CXXFLAGS += -std=c++11
       enable_cxx11.name = CLANG_CXX_LANGUAGE_STANDARD
       enable_cxx11.value = c++0x
@@ -547,10 +544,10 @@ unix {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
   c++11 {
-    c++14 {
-      QMAKE_CXXFLAGS += -std=c++14
+    c++17 {
+      QMAKE_CXXFLAGS += -std=c++17
     }
-    !c++14 {
+    !c++17 {
       QMAKE_CXXFLAGS += -std=c++11
     }
   }

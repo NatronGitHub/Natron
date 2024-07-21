@@ -32,7 +32,7 @@ set(PYGUI_HEADER PySide2_Gui_Python.h)
 set(POST_SHIBOKEN ../tools/utils/runPostShiboken2.sh)
 
 set(shiboken_args
-    "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
+    "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
     ${PYGUI_INCS}
     "-T../Engine" "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"
