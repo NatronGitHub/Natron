@@ -1006,41 +1006,6 @@ PositionInteract::draw(double time,
         glTranslated(direction * shadow.x, -direction * shadow.y, 0);
         glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
-#warning TODO
-#if 0
-        int numKeys = knob->get;
-
-        if (numKeys > 0) {
-            const double darken = 0.5;
-            glColor3f(pR * l * darken, pG * l * darken, pB * l * darken);
-
-            glPointSize(pointSize() * screenPixelRatio);
-            glBegin(GL_POINTS);
-            for (int i=0; i < numKeys; ++i) {
-                double time = p->getKeyTime(i);
-                OfxPointD pt;
-                p->getValueAtTime(time, pt.x, pt.y);
-                glVertex2d(pt.x, pt.y);
-
-            }
-            glEnd();
-            glLineWidth(1.5 * screenPixelRatio);
-            glBegin(GL_LINE_STRIP);
-            double time = p->getKeyTime(0);
-            for (int i = 1; i < numKeys; ++i) {
-                double timeNext = p->getKeyTime(i);
-                for (int j = (i == 1 ? 0 : 1); j <= steps; ++j) {
-                    double timeStep = time + j * (timeNext - time) / steps;
-                    OfxPointD pt;
-                    p->getValueAtTime(timeStep, pt.x, pt.y);
-                    glVertex2d(pt.x, pt.y);
-                }
-                time = timeNext;
-            }
-            glEnd();
-        }
-#endif
-
         glColor3f(pR * l, pG * l, pB * l);
         glPointSize(pointSize() * screenPixelRatio);
         glBegin(GL_POINTS);

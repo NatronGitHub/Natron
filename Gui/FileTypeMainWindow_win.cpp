@@ -45,7 +45,8 @@
 #include <stdexcept>
 
 // —— general includes —————————————————————————
-#include <windows.h>
+#include <Dde.h>
+
 #include <QMessageBox>
 #include <QApplication>
 #include <QtCore/QDir>

@@ -1938,12 +1938,6 @@ public:
                                                   ViewSpec view,
                                                   int dimension);
 
-    /**
-     * @brief This is called by the plugin when a set value call would happen during  an interact action.
-     **/
-    void requestSetValueOnUndoStack(const T & value,
-                                    ViewSpec view,
-                                    int dimension);
 
     /**
      * @brief Calls setValueAtTime with a reason of eValueChangedReasonNatronInternalEdited.
@@ -2146,8 +2140,6 @@ private:
     }
 
     void makeKeyFrame(Curve* curve, double time, ViewSpec view, const T& v, KeyFrame* key);
-
-    void queueSetValue(const T& v, ViewSpec view, int dimension);
 
     virtual void clearExpressionsResults(int dimension) OVERRIDE FINAL
     {

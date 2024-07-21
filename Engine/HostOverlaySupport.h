@@ -26,6 +26,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <string>
+
 #include "Global/Macros.h"
 
 #include "Engine/EngineFwd.h"

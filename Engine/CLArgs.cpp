@@ -31,6 +31,10 @@
 #include <cassert>
 #include <stdexcept>
 
+#ifdef __NATRON_WIN32__
+#include <shellapi.h>  // CommandLineToArgvW
+#endif
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QFile>

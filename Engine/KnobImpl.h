@@ -2588,9 +2588,10 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
-            if (_values[i] != v[i]) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
+            const T convertedV = static_cast<T>(v[i]);
+            if (_values[i] != convertedV) {
+                _values[i] = convertedV;
+                _guiValues[i] = convertedV;
                 ret = true;
             }
         }

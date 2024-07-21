@@ -33,6 +33,17 @@
 
 NATRON_NAMESPACE_USING
 
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
+namespace {
+
+// Define nullptr_t operator since MSVC dosn't appear to have one by default.
+std::ostream& operator<<(std::ostream& os, const std::nullptr_t p) {
+    return os << "<nullptr>";
+}
+
+}  // namespace
+#endif
+
 TEST(OSGLContext, Basic)
 {
     if (!appPTR->isOpenGLLoaded()) {

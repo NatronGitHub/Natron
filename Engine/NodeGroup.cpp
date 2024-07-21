@@ -2836,12 +2836,12 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE(NATRON_PYPLUG_MAGIC);
     QString descline = QString( QString::fromUtf8(NATRON_PYPLUG_GENERATED "%1 PyPlug exporter version %2.") ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg(NATRON_PYPLUG_EXPORTER_VERSION);
     WRITE_STRING(descline);
-    WRITE_STATIC_LINE();
+    WRITE_STATIC_LINE("");
     QString handWrittenStr = QString::fromUtf8("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
     WRITE_STRING(handWrittenStr);
     WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/devel/groups.html#adding-hand-written-code-callbacks-etc");
     WRITE_STATIC_LINE("# Note that Viewers are never exported");
-    WRITE_STATIC_LINE();
+    WRITE_STATIC_LINE("");
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
     WRITE_STATIC_LINE("import sys");
     WRITE_STATIC_LINE("");

@@ -38,6 +38,10 @@
 #include <string.h> // strdup
 #endif
 
+#ifdef __NATRON_WIN32__
+#include <shellapi.h>  // CommandLineToArgvW
+#endif
+
 #include "StrUtils.h"
 
 NATRON_NAMESPACE_ENTER
@@ -499,7 +503,7 @@ ProcInfo::getenv_wrapper(const char *varName)
     std::vector<char> buffer;
     getenv_s(&requiredSize, 0, 0, varName);
     if (requiredSize == 0)
-        return buffer;
+        return std::string();
     buffer.resize(requiredSize);
     getenv_s(&requiredSize, &buffer[0], requiredSize, varName);
     // requiredSize includes the terminating null, which we don't want.

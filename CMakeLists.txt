@@ -83,7 +83,11 @@ set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 add_compile_definitions(QT_NO_CAST_FROM_ASCII)
 
-if (NOT MSVC)
+if (MSVC)
+    # Allow __cplusplus to properly reflect the c++ standard version.
+    add_compile_options(/Zc:__cplusplus)
+    add_compile_definitions(__STDC_LIMIT_MACROS WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES)
+else()
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes" )
     add_compile_options(-Wall -Wextra -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
                         -Wvla -Wdate-time -Wshift-overflow=2

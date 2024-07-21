@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include "Node.h"
+#include "Timer.h" // gettimeofday()
 
 #include <QtCore/QWaitCondition>
 #include <QtCore/QReadWriteLock>

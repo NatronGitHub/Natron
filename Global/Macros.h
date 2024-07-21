@@ -455,6 +455,9 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 /* COMPILER() - the compiler being used to build the project */
+#ifdef COMPILER
+#undef COMPILER
+#endif
 #define COMPILER(NATRON_FEATURE) (NATRON_COMPILER_ ## NATRON_FEATURE)
 
 /* COMPILER_SUPPORTS() - whether the compiler being used to build the project supports the given feature. */
