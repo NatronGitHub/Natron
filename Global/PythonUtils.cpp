@@ -150,13 +150,7 @@ void setupPythonEnv(const std::string& binPath)
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
 #     endif
-#     if PY_MAJOR_VERSION >= 3
-        // Python 3
         Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#     else
-        // Python 2
-        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#     endif
     }
 
 
@@ -217,18 +211,7 @@ void setupPythonEnv(const std::string& binPath)
             pythonPath = toPrependStr + pathSep + pythonPath;
         }
         // Py_SetPath() sets the whole path, but setting PYTHONPATH still keeps the system's python path
-#     if 0 // PY_MAJOR_VERSION >= 3 // commented for the reason above
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16(pythonPath);
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#     else
-#      if 0//def __NATRON_WIN32__
-        // qputenv on mingw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath).c_str());
-#      else
         ProcInfo::putenv_wrapper( "PYTHONPATH", pythonPath.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#      endif
-#     endif
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "PYTHONPATH set to %s\n", pythonPath.c_str() );
 #     endif
@@ -236,11 +219,7 @@ void setupPythonEnv(const std::string& binPath)
 
 } // setupPythonEnv
 
-#if PY_MAJOR_VERSION >= 3
 PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
-#else
-PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
-#endif
 {
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
@@ -264,14 +243,7 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     // Must be done before Py_Initialize (see doc of Py_Initialize)
     //
 
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     Py_SetProgramName(commandLineArgsWide[0]);
-#else
-    // Python 2
-    printf( "Py_SetProgramName(\"%s\")\n", commandLineArgsUtf8[0] );
-    Py_SetProgramName(commandLineArgsUtf8[0]);
-#endif
 
     /////////////////////////////////////////
     // Py_Initialize
@@ -284,7 +256,6 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
-#if PY_MAJOR_VERSION >= 3
     // Py_SetPath clears sys.prefix and sys.exec_prefix
     // https://github.com/NatronGitHub/Natron/issues/696
     PyObject *prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
@@ -293,19 +264,12 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     PyObject *exec_prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
     PySys_SetObject(const_cast<char*>("exec_prefix"), exec_prefix);
     Py_XDECREF(exec_prefix);
-#endif
 
     /////////////////////////////////////////
     // PySys_SetArgv
     /////////////////////////////////////////
     //
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     PySys_SetArgv( commandLineArgsWide.size(), const_cast<wchar_t**>(&commandLineArgsWide[0]) ); /// relative module import
-#else
-    // Python 2
-    PySys_SetArgv( commandLineArgsUtf8.size(), const_cast<char**>(&commandLineArgsUtf8[0]) ); /// relative module import
-#endif
 
     PyObject* mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
 
@@ -340,32 +304,13 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
         printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
         printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-#if PY_MAJOR_VERSION < 3
-        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
-#endif
         printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-#if PY_MAJOR_VERSION < 3
-        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
-        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
-#else
         printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
         printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
         printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
-#endif
         printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-#if PY_MAJOR_VERSION < 3
-        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
-#endif
         printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
         printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-#if PY_MAJOR_VERSION < 3
-        printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %s\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
-#else // PY_MAJOR_VERSION >= 3
         printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
         printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
         printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
@@ -418,7 +363,6 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         if (v) {
             Py_DECREF(v);
         }
-#endif // PY_MAJOR_VERSION >= 3
     }
 #endif
 

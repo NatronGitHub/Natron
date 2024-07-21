@@ -2710,7 +2710,7 @@ KnobHelper::validateExpression(const std::string& expression,
                 if ( PyFloat_Check(ret) ) {
                     index = std::floor( (double)PyFloat_AsDouble(ret) + 0.5 );
                 } else if ( PyLong_Check(ret) ) {
-                    index = (int)PyInt_AsLong(ret);
+                    index = (int)PyLong_AsLong(ret);
                 } else if (PyObject_IsTrue(ret) == 1) {
                     index = 1;
                 }

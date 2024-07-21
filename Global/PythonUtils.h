@@ -61,11 +61,7 @@ void setupPythonEnv(const std::string& binPath);
  * @brief Must be called after setupPythonEnv(), calls Py_SetProgramName and Py_Initialize, PySys_SetArgv
  * @returns A pointer to the main module
  **/
-#if PY_MAJOR_VERSION >= 3
 PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide);
-#else
-PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8);
-#endif
 
 std::string PyStringToStdString(PyObject* obj);
 

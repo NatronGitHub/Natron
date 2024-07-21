@@ -40,14 +40,6 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 
-// clang-format off
-CLANG_DIAG_OFF(mismatched-tags)
-GCC_DIAG_OFF(unused-parameter)
-#include <shiboken.h>
-CLANG_DIAG_ON(mismatched-tags)
-GCC_DIAG_ON(unused-parameter)
-// clang-format on
-
 #include "Global/PythonUtils.h"
 
 #include "Engine/Curve.h"
@@ -346,9 +338,7 @@ template <>
 int
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    if (PyInt_Check(o)) {
-        return (int)PyInt_AsLong(o);
-    } else if (PyLong_Check(o)) {
+    if (PyLong_Check(o)) {
         return (int)PyLong_AsLong(o);
     } else if (PyFloat_Check(o)) {
         return (int)PyFloat_AsDouble(o);
@@ -371,9 +361,7 @@ template <>
 double
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    if (PyInt_Check(o)) {
-        return (double)PyInt_AsLong(o);
-    } else if (PyLong_Check(o)) {
+    if (PyLong_Check(o)) {
         return (double)PyLong_AsLong(o);
     } else if (PyFloat_Check(o)) {
         return PyFloat_AsDouble(o);
@@ -462,8 +450,6 @@ Knob<T>::evaluateExpression_pod(double time,
 
     if ( PyFloat_Check(ret) ) {
         *value =  PyFloat_AsDouble(ret);
-    } else if ( PyInt_Check(ret) ) {
-        *value = (double)PyInt_AsLong(ret);
     } else if ( PyLong_Check(ret) ) {
         *value = (double)PyLong_AsLong(ret);
     } else if (PyObject_IsTrue(ret) == 1) {

@@ -30,8 +30,6 @@
 
 #include <vector>
 
-#if PY_MAJOR_VERSION >= 3
-
 // OSX 10.6 Snow Leopard is missing wcsdup
 #if (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
 #include <sys/cdefs.h>
@@ -50,7 +48,6 @@ wcsdup(const wchar_t *s)
     }
 	return wmemcpy(copy, s, len);
 }
-#endif
 #endif
 
 
@@ -77,8 +74,6 @@ extern "C" {
     NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath);
 
 
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     std::vector<wchar_t*> wideArgs(argc);
     for (int i = 0; i < argc; ++i) {
         std::wstring utf16 = NATRON_NAMESPACE::StrUtils::utf8_to_utf16(commandLineArgsUtf8[i]);
@@ -86,14 +81,6 @@ extern "C" {
     }
     int ret = Py_Main(commandLineArgsUtf8.size(), &wideArgs[0]);
     return ret;
-#else
-    std::vector<char*> utf8Args(argc);
-    for (int i = 0; i < argc; ++i) {
-        utf8Args[i] = strdup(commandLineArgsUtf8[i].c_str());
-    }
-    int ret = Py_Main(commandLineArgsUtf8.size(), &utf8Args[0]);
-    return ret;
-#endif
 } //main
 #ifdef __NATRON_WIN32__
 } // extern "C"
