@@ -44,9 +44,9 @@ if [ "$PKGOS" = "OSX" ]; then
             9|10|11|12)
                 # GXX should be an openmp-capable compiler (to compile CImg.ofx)
 
-                # older version, using clang-3.4
-                CC=clang-mp-3.4
-                CXX="clang++-mp-3.4 -std=c++1z"
+                # older version, using clang-5.0
+                CC=clang-mp-5.0
+                CXX="clang++-mp-5.0 -std=c++1z"
                 GXX=g++-mp-4.9
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
@@ -60,9 +60,6 @@ if [ "$PKGOS" = "OSX" ]; then
                 ;;
         esac
     elif [ "$COMPILER" = "clang-omp" ]; then
-        # newer version (testing) using clang-4.0
-        CC=clang-mp-4.0
-        CXX="clang++-mp-4.0 -stdlib=libc++ -std=c++1z"
         # newer version (testing) using clang
         # if a recent clang-mp is available
         if command -v clang-mp-6.0 >/dev/null 2>&1; then
@@ -71,9 +68,6 @@ if [ "$PKGOS" = "OSX" ]; then
         elif command -v clang-mp-5.0 >/dev/null 2>&1; then
             CC=clang-mp-5.0
             CXX="clang++-mp-5.0 -stdlib=libc++ -std=c++17"
-        elif command -v clang-mp-4.0 >/dev/null 2>&1; then
-            CC=clang-mp-4.0
-            CXX="clang++-mp-4.0 -stdlib=libc++ -std=c++1z"
         elif command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
             CC=/usr/local/opt/llvm@11/bin/clang
             CXX="/usr/local/opt/llvm@11/bin/clang++ -std=c++17"

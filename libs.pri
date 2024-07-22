@@ -49,16 +49,8 @@ DEFINES += OPENMVG_NO_SERIALIZATION
 # Use this to use OsiMskSolverInterface.cpp
 #DEFINES += OPENMVG_HAVE_MOSEK
 
-c++11 {
-   DEFINES += OPENMVG_STD_UNORDERED_MAP
-   DEFINES += OPENMVG_STD_SHARED_PTR
-} else {
-   # Use boost::shared_ptr and boost::unordered_map
-   CONFIG += boost
-   DEFINES += OPENMVG_BOOST_UNORDERED_MAP
-   DEFINES += OPENMVG_BOOST_SHARED_PTR
-   DEFINES += OPENMVG_NO_UNIQUE_PTR
-}
+DEFINES += OPENMVG_STD_UNORDERED_MAP
+DEFINES += OPENMVG_STD_SHARED_PTR
 
 INCLUDEPATH += $$PWD/libs/openMVG/openMVG
 INCLUDEPATH += $$PWD/libs/openMVG
@@ -85,15 +77,9 @@ openmp {
 #If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
 DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
 DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
-c++11 {
-   DEFINES += CERES_STD_UNORDERED_MAP
-   DEFINES += CERES_STD_SHARED_PTR
-} else {
-   # Use boost::shared_ptr and boost::unordered_map
-   CONFIG += boost
-   DEFINES += CERES_BOOST_SHARED_PTR
-   DEFINES += CERES_BOOST_UNORDERED_MAP
-}
+DEFINES += CERES_STD_UNORDERED_MAP
+DEFINES += CERES_STD_SHARED_PTR
+
 INCLUDEPATH += $$PWD/libs/ceres/config
 INCLUDEPATH += $$PWD/libs/ceres/include
 INCLUDEPATH += $$PWD/libs/ceres/internal
