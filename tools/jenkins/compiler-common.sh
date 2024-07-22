@@ -92,15 +92,18 @@ if [ "$PKGOS" = "OSX" ]; then
         #"___atomic_load", referenced from:
         #_.omp_outlined..468 in CImgExpression.o
         #_.omp_outlined..608 in CImgExpression.o
+        #
+        # clang 17 and 18 with -fopenmp links with @rpath/libc++.1.dylib instead
+        # of /usr/lib/libc++.1.dylib, so let's use clang 16 for now.
         case "$osxver" in
             #9.*|10.*)
             #    true;;
             *)
-                if command -v clang-mp-17 >/dev/null 2>&1; then
-                    CC=clang-mp-17
-                    CXX="clang++-mp-17 -stdlib=libc++ -std=c++14"
-                    CXX17="clang++-mp-17 -stdlib=libc++ -std=c++17"
-                elif command -v clang-mp-16 >/dev/null 2>&1; then
+                # if command -v clang-mp-17 >/dev/null 2>&1; then
+                #     CC=clang-mp-17
+                #     CXX="clang++-mp-17 -stdlib=libc++ -std=c++14"
+                #     CXX17="clang++-mp-17 -stdlib=libc++ -std=c++17"
+                if command -v clang-mp-16 >/dev/null 2>&1; then
                     CC=clang-mp-16
                     CXX="clang++-mp-16 -stdlib=libc++ -std=c++14"
                     CXX17="clang++-mp-16 -stdlib=libc++ -std=c++17"
@@ -137,7 +140,7 @@ if [ "$PKGOS" = "OSX" ]; then
         esac
         case "$osxver" in
         2[123].*)
-            # clangg-mp can't compile QtMac.mm on Monterey
+            # clang-mp can't compile QtMac.mm on Monterey
             OBJECTIVE_CC=clang
             OBJECTIVE_CXX=clang++
             ;;
@@ -188,7 +191,13 @@ if [ "$PKGOS" = "OSX" ]; then
         22.*)
             MACOSX_DEPLOYMENT_TARGET=13
             ;;
-    esac
+        23.*)
+            MACOSX_DEPLOYMENT_TARGET=14
+            ;;
+        24.*)
+            MACOSX_DEPLOYMENT_TARGET=15
+            ;;
+   esac
     export MACOSX_DEPLOYMENT_TARGET
     export MACOSX_SYSROOT="${MACOSX_SDK_ROOT}/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk"
 

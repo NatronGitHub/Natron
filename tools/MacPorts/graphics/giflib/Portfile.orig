@@ -1,46 +1,38 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem                      1.0
-PortGroup                       makefile 1.0
 
 name                            giflib
-version                         5.2.1
+version                         4.2.3
+revision                        1
 set major                       [lindex [split ${version} .] 0]
 categories                      graphics
 maintainers                     {ryandesign @ryandesign} openmaintainer
 license                         MIT
-platforms                       darwin
 homepage                        https://sourceforge.net/projects/giflib/
-master_sites                    sourceforge:project/giflib
+master_sites                    sourceforge:project/giflib/giflib-${major}.x
+use_bzip2                       yes
 
 description                     GIF library using patented LZW algorithm
 
 long_description                GIF loading and saving shared library. \
                                 Uses the LZW algorithm.
 
-checksums           rmd160  bc4be3ddaef877e4fd546b1240fe94dec8ef3e27 \
-                    sha256  31da5562f44c5f15d63340a09a4fd62b48c45620cd302f77a6d9acf0077879bd \
-                    size    444187
+checksums                       rmd160  34c30ace20155a61446d1561af44e3ad6329b49a \
+                                sha256  0ac8d56726f77c8bc9648c93bbb4d6185d32b15ba7bdb702415990f96f3cb766 \
+                                size    560968
 
-patchfiles                      Makefile.patch
+patchfiles                      patch-gif_lib.h.diff \
+                                patch-lib-gif_hash.c.diff
 
-build.args		PREFIX="${prefix}"  CC="${configure.cc}" \
-                CFLAGS="${configure.cppflags} ${configure.cflags} [get_canonical_archflags cc]" \
-                LDFLAGS="${configure.ldflags} [get_canonical_archflags ld]"
-
-destroot.args	PREFIX="${prefix}"
-
-variant universal {
-    build.args-append   "CFLAGS+=\"${configure.universal_cflags}\"" \
-                        "LDFLAGS+=\"${configure.universal_ldflags}\""
-}
+configure.args                  --disable-x11
 
 use_parallel_build              yes
 
 set docdir ${prefix}/share/doc/${name}
 post-destroot {
     xinstall -d ${destroot}${docdir}
-    xinstall -W ${worksrcpath}-m 0644 COPYING NEWS README TODO history.adoc ${destroot}${docdir}
+    xinstall -W ${worksrcpath} -m 0644 AUTHORS BUGS COPYING NEWS README TODO api.txt history.txt ${destroot}${docdir}
     xinstall -m 0444 {*}[glob ${worksrcpath}/doc/*.1] ${destroot}${prefix}/share/man/man1
 }
 
@@ -50,6 +42,17 @@ variant doc description {Install HTML documentation} {
         xinstall -d ${destroot}${docdir}/html
         xinstall -m 0644 {*}[glob ${worksrcpath}/doc/*.html] ${destroot}${docdir}/html
     }
+}
+
+if {![variant_isset doc]} {
+    patchfiles-append           patch-no-docs.diff
+}
+
+variant x11 description {Include gif2x11 tool for displaying GIF files in an X window} {
+    depends_lib-append          port:xorg-libsm \
+                                port:xorg-libX11
+    
+    configure.args-delete       --disable-x11
 }
 
 livecheck.regex                 /${name}-(${major}\\.\[0-9.\]+)${extract.suffix}

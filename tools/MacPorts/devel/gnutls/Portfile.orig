@@ -9,7 +9,7 @@ PortGroup       legacysupport 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.7.10
+version         3.7.11
 revision        0
 categories      devel security
 # yes, some of the libs are GPL only
@@ -23,27 +23,27 @@ long_description \
                 Lesser General Public License (LGPL).
 homepage        http://www.gnutls.org/
 
-checksums       rmd160  e221dc4200d30b8644cfe1f2c8d5e7bccac8aca0 \
-                sha256  b6e4e8bac3a950a3a1b7bdb0904979d4ab420a81e74de8636dd50b467d36f5a9 \
-                size    6407852
+checksums       rmd160  b8a3b948b2cfd504f72e04a31fce31a79b4316b1 \
+                sha256  90e337504031ef7d3077ab1a52ca8bac9b2f72bc454c95365a1cd1e0e81e06e9 \
+                size    6406420
 
 subport ${name} {
     conflicts   ${name}-devel
 
-    patchfiles      patch-lib-system-certs.c.old.diff
+    patchfiles  patch-lib-system-certs.c.old.diff
 }
 
 subport ${name}-devel {
     conflicts   ${name}
     
-    version     3.8.4
+    version     3.8.6
     revision    0
 
-    checksums   rmd160  42eea662a17b646f78f3dd423200c9d17f9e3943 \
-                sha256  2bea4e154794f3f00180fa2a5c51fe8b005ac7a31cd58bd44cdfa7f36ebc3a9b \
-                size    6487520
+    checksums   rmd160  fa7d5faf5359e6de786eacb369b8c4077b15fd99 \
+                sha256  2e1588aae53cb32d43937f1f4eca28febd9c0c7aa1734fc5dd61a7e81e0ebcdd \
+                size    6517476
 
-    patchfiles      patch-lib-system-certs.c.diff
+    patchfiles  patch-lib-system-certs.c.diff
 }
 
 if {${build_arch} ne "ppc" || ${build_arch} ne "ppc64"} {

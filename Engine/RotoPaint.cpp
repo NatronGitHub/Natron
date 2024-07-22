@@ -2727,6 +2727,22 @@ RotoPaint::onOverlayPenMotion(double time,
         cursorSet = true;
     }
 
+    switch (_imp->ui->selectedTool) {
+    case eRotoToolSolidBrush:
+    case eRotoToolEraserBrush:
+    case eRotoToolClone:
+    case eRotoToolReveal:
+    case eRotoToolBlur:
+    case eRotoToolSharpen:
+    case eRotoToolSmear:
+    case eRotoToolDodge:
+    case eRotoToolBurn: {
+        redraw = true; // Those tools use the overlay to draw the tool
+    }
+    default:
+        break;
+    } // switch
+
     if ( !cursorSet && _imp->ui->showCpsBbox && (_imp->ui->state != eEventStateDraggingControlPoint) && (_imp->ui->state != eEventStateDraggingSelectedControlPoints)
          && ( _imp->ui->state != eEventStateDraggingLeftTangent) &&
          ( _imp->ui->state != eEventStateDraggingRightTangent) ) {
@@ -2751,8 +2767,10 @@ RotoPaint::onOverlayPenMotion(double time,
         } else if (lastHoverState != eHoverStateNothing) {
             newState = eHoverStateNothing;
         }
-        redraw = _imp->ui->hoverState != newState;
-        _imp->ui->hoverState = newState;
+        if (_imp->ui->hoverState != newState) {
+            redraw = true;
+            _imp->ui->hoverState = newState;
+        }
     }
     const bool featherVisible = _imp->ui->isFeatherVisible();
 
@@ -3161,7 +3179,15 @@ RotoPaint::onOverlayPenUp(double /*time*/,
          **/
         setCurrentCursor(eCursorBusy);
         context->evaluateNeatStrokeRender();
-        setCurrentCursor(eCursorDefault);
+        if ( context->isRotoPaint() &&
+         ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||
+           ( _imp->ui->selectedRole == eRotoRoleCloneBrush) ||
+           ( _imp->ui->selectedRole == eRotoRolePaintBrush) ||
+           ( _imp->ui->selectedRole == eRotoRoleEffectBrush) ) ) {
+            setCurrentCursor(eCursorCross);
+        } else {
+            setCurrentCursor(eCursorDefault);
+        }
         _imp->ui->strokeBeingPaint->setStrokeFinished();
         ret = true;
     }

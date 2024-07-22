@@ -116,7 +116,7 @@ if [ "$QT_VERSION_MAJOR" = "5" ]; then
     catDll libpcre2-16-
     catDll libmd4c
 else
-    echo "Unsupported QT_MAJOR_VERSION" ${QT_VERSION_MAJOR}
+    echo "Unsupported QT_VERSION_MAJOR" ${QT_VERSION_MAJOR}
     exit 1
 fi
 

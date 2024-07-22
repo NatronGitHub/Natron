@@ -39,7 +39,7 @@ popd () {
 
 updateBuildOptions
 
-echo "*** macOS version:"
+echo "* macOS version:"
 macosx=$(uname -r | sed 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|')
 case "${macosx}" in
 23) echo "macOS 14.x    Sonoma";;
@@ -149,36 +149,19 @@ fi
 DUMP_SYMS=/usr/local/bin/dump_syms
 DSYMUTIL=dsymutil
 if [ "${COMPILER}" = "clang" ] || [ "${COMPILER}" = "clang-omp" ]; then
-    if [ -x /opt/local/bin/llvm-dsymutil-mp-3.9 ]; then
-        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-3.9
-    fi
-    if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
-        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
-    fi
-    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
-        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
-    fi
-    if [ -x /opt/local/bin/llvm-dsymutil-mp-6.0 ]; then
-        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-6.0
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-11 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-11
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-14 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-14
-    fi
-    if [ -x /opt/local/bin/dsymutil-mp-15 ]; then
-        DSYMUTIL=/opt/local/bin/dsymutil-mp-15
-    fi
+    for v in 6.0 5.0 4.0 3.9; do
+        if [ -x /opt/local/bin/llvm-dsymutil-mp-${v} ]; then
+            DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-${v}
+            break
+        fi
+    done
+    for v in 17 16 15 14 11 9.0 8.0 7.0; do
+        if [ -x /opt/local/bin/dsymutil-mp-${v} ]; then
+            DSYMUTIL=/opt/local/bin/dsymutil-mp-${v}
+            break
+        fi
+    done
+    echo "* Using ${DSYMUTIL}"
 fi
 
 # the list of libs in /opt/local/lib/libgcc
@@ -369,6 +352,7 @@ case "${QT_VERSION_MAJOR}" in
 5)
     qt_libs=( Qt3DAnimation Qt3DCore Qt3DExtras Qt3DInput Qt3DLogic Qt3DQuick Qt3DQuickAnimation Qt3DQuickExtras Qt3DQuickInput Qt3DQuickRender Qt3DQuickScene2D Qt3DRender QtBluetooth QtCharts QtConcurrent QtCore QtDBus QtDataVisualization QtDesigner QtDesignerComponents QtGamepad QtGui QtHelp QtLocation QtMacExtras QtMultimedia QtMultimediaQuick QtMultimediaWidgets QtNetwork QtNetworkAuth QtNfc QtOpenGL QtPdf QtPdfWidgets QtPositioning QtPositioningQuick QtPrintSupport QtQml QtQmlModels QtQmlWorkerScript QtQuick QtQuickControls2 QtQuickParticles QtQuickShapes QtQuickTemplates2 QtQuickTest QtQuickWidgets QtRemoteObjects QtRepParser QtScript QtScriptTools QtScxml QtSensors QtSerialBus QtSerialPort QtSql QtSvg QtTest QtTextToSpeech QtUiPlugin QtWebChannel QtWebEngine QtWebEngineCore QtWebEngineWidgets QtWebSockets QtWidgets QtXml QtXmlPatterns )
     qt_frameworks_dir="${QTDIR}/lib"
+    SBKVER="${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}"
     ;;
 esac
 STRIP=1
@@ -421,17 +405,39 @@ fi
 LIBGCC=0
 if otool -L "${natron_binary}" | grep -F -q "${SDK_HOME}/lib/libgcc"; then
     LIBGCC=1
+    echo "* Binaries use libgcc"
 fi
 COPY_LIBCXX=0
 if otool -L "${natron_binary}" | grep -F -q "/usr/lib/libc++"; then
     # libc++ appeared in on Lion 10.7 (osmajor=11)
     if [ "${macosx}" -lt 11 ]; then
         COPY_LIBCXX=1
+        COPY_LIBCXX_FROM="/usr/lib"
     fi
 fi
+if otool -L "${natron_binary}" | grep -F -q "@rpath/libc++"; then
+    rpath=( $(otool -l "${natron_binary}" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }') )
+    if [ ${#rpath[@]} -gt 0 ]; then
+        for r in "${rpath[@]}"; do
+            case "$r" in
+                "${SDK_HOME}"/libexec/llvm-*/lib)
+                    # compiled with LLVM and OpenMP: uses LLVM's libc++
+                    COPY_LIBCXX=1
+                    COPY_LIBCXX_FROM="$r"
+                    ;;
+            esac
+        done
+    fi
+fi
+if [ "${COPY_LIBCXX}" = 1 ]; then
+    echo "* Will copy lib++ from ${COPY_LIBCXX_FROM}"
+else
+    echo "* Will not copy lib++"
+fi
+
 if [ -f "${pkglib}/libc++.1.dylib" ] || [ -f "${pkglib}/libc++abi.1.dylib" ]; then
-    echo "Error: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by macdeployqt"
-    exit 1
+    echo "Warning: ${pkglib}/libc++.1.dylib or ${pkglib}/libc++abi.1.dylib was copied by macdeployqt"
+    rm "${pkglib}/libc++.1.dylib" "${pkglib}/libc++abi.1.dylib" || true
 fi
 
 echo "*** Copy and change exec_path of the whole Python framework with libraries..."
@@ -646,9 +652,9 @@ if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
-    #install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
+    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYSIDE}/libpyside2"*.dylib .)
-    #install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
+    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
     for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"
@@ -807,6 +813,7 @@ for deplib in "${pkglib}/"*.framework/Versions/*/* "${pkglib}/"lib*.dylib; do
 done
 
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
+    echo "*** Fixing rpath in ${bin}..."
     binary="${package}/Contents/MacOS/${bin}"
     if [ -f "${binary}" ]; then
         if otool -L "${binary}" | grep -F "${MACPORTS}"; then
@@ -831,9 +838,19 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
         # remove remnants of llvm path (libraries were copied already)
         if [ ${#rpath[@]} -gt 0 ]; then
             for r in "${rpath[@]}"; do
-                case "$r" in
-                    "${SDK_HOME}"/libexec/llvm-*/lib|"${SDK_HOME}"/lib)
-                        install_name_tool -delete_rpath "$r" "${binary}"
+                case "${r}" in
+                    "${SDK_HOME}"/libexec/llvm-*/lib)
+                        if [ "${COPY_LIBCXX}" = 1 ] && [ "${COPY_LIBCXX_FROM}" = "${r}" ]; then
+                            echo "* Changing rpath ${r} to @loader_path/../${libdir}/libcxx in ${binary}"
+                            install_name_tool -rpath "${r}" "@loader_path/../${libdir}/libcxx" "${binary}"
+                        else
+                            echo "* Removing rpath ${r} from ${binary}"
+                            install_name_tool -delete_rpath "${r}" "${binary}"
+                        fi
+                        ;;
+                    "${SDK_HOME}"/lib)
+                        echo "* Removing rpath ${r} from ${binary}"
+                        install_name_tool -delete_rpath "${r}" "${binary}"
                         ;;
                 esac
             done
@@ -1142,6 +1159,7 @@ fi
 
 # put links to the GCC libs in a separate directory, and compile the launcher which sets DYLD_LIBRARY_PATH to that directory
 if [ "${LIBGCC}" = 1 ]; then
+    echo "*** Linking GCC libraries to ${package}/Contents/Frameworks/libgcc"
     mkdir -p "${package}/Contents/Frameworks/libgcc"
     for l in ${gcclibs}; do
         lib="lib${l}.dylib"
@@ -1152,6 +1170,7 @@ if [ "${LIBGCC}" = 1 ]; then
     mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
     mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-driver"
     # MACOSX_DEPLOYMENT_TARGET set in common.sh
+    echo "*** Compiling and installing NatronDyLd.c -DLIBGCC"
     if [ "${BITS}" = "Universal" ]; then
         ${CC} -DLIBGCC -arch i386 -arch x86_64 -mmacosx-version-min=10.6 -isysroot /Developer/SDKs/MacOSX10.6.sdk "${INC_PATH}/natron/NatronDyLd.c" -s -o "${package}/Contents/MacOS/Natron"
     else
@@ -1163,19 +1182,23 @@ fi
 # copy libc++ if necessary (on OSX 10.6 Snow Leopard with libc++ only)
 # DYLD_LIBRARY_PATH should be set by NatronDyLd.c
 if [ "$COPY_LIBCXX" = 1 ]; then
+    echo "*** Copying libc++ and libc++abi from ${COPY_LIBCXX_FROM} to ${package}/Contents/Frameworks/libcxx"
     mkdir -p "${package}/Contents/Frameworks/libcxx"
-    cp /usr/lib/libc++.1.dylib "${package}/Contents/Frameworks/libcxx"
-    cp /usr/lib/libc++abi.dylib "${package}/Contents/Frameworks/libcxx"
-    mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
-    mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-driver"
-    # MACOSX_DEPLOYMENT_TARGET set in common.sh
-    if [ "${BITS}" = "Universal" ]; then
-        ${CC} -DLIBCXX -arch i386 -arch x86_64 -mmacosx-version-min=10.6 -isysroot /Developer/SDKs/MacOSX10.6.sdk "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
-    else
-        ${CC} -DLIBCXX "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
+    cp "${COPY_LIBCXX_FROM}/libc++.1.dylib" "${package}/Contents/Frameworks/libcxx"
+    cp "${COPY_LIBCXX_FROM}/libc++abi.1.dylib" "${package}/Contents/Frameworks/libcxx"
+    if [ "${COPY_LIBCXX_FROM}" = "/usr/lib" ]; then 
+        mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
+        mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-driver"
+        # MACOSX_DEPLOYMENT_TARGET set in common.sh
+        echo "*** Compiling and installing NatronDyLd.c -DLIBCXX"
+        if [ "${BITS}" = "Universal" ]; then
+            ${CC} -DLIBCXX -arch i386 -arch x86_64 -mmacosx-version-min=10.6 -isysroot /Developer/SDKs/MacOSX10.6.sdk "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
+        else
+            ${CC} -DLIBCXX "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
+        fi
+        strip "${package}/Contents/MacOS/Natron"
+        cp "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/NatronRenderer"
     fi
-    strip "${package}/Contents/MacOS/Natron"
-    cp "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/NatronRenderer"
 fi
 
 

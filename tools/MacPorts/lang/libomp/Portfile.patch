@@ -1,5 +1,5 @@
---- Portfile.orig	2024-04-03 11:44:59
-+++ Portfile	2023-10-31 23:51:09
+--- Portfile.orig	2024-07-19 15:38:48
++++ Portfile	2024-05-07 15:19:22
 @@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -23,8 +23,8 @@
  
  if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
 -
--    version             18.1.2
--    revision            1
+-    version             18.1.8
+-    revision            0
 -
      if { ${subport} eq "libomp-devel" } {
 -        # Marked obsolete 10/25/2022
@@ -49,13 +49,13 @@
  
 -    checksums \
 -        openmp-${version}.src.tar.xz \
--                    rmd160  f2cb436ddf5fef965cab48b28f44c3899b9a713e \
--                    sha256  742dce34394d26f0916b5d3041cc737d4e41f5ee821d9fb054057f6f71cf9a2b \
--                    size    1318944 \
+-                    rmd160  91b09cda3e4761a97d03468462dbb385d8b407c4 \
+-                    sha256  60ed57245e73894e4a2a89b15889f367bd906abfe6d3f92e1718223d4b496150 \
+-                    size    1320200 \
 -        cmake-${version}.src.tar.xz \
--                    rmd160  ab9ff8018440bc7c494813e231c65c9ae470c6ac \
--                    sha256  b55a1eed9fe9c5d86c9f73c8aabde3e2407e603e737e1555545c3d136655955b \
--                    size    8704
+-                    rmd160  dcadde4be6110d1753e88cc0c9d5f452203355c2 \
+-                    sha256  59badef592dd34893cd319d42b323aaa990b452d05c7180ff20f23ab1b41e837 \
+-                    size    8708
 -
      if {${os.major} <= 12} {
          # kmp_alloc.c includes <atomic> but libc++ is not the default on

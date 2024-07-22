@@ -19,7 +19,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             4.4.4
-revision            6
+revision            8
 epoch               1
 
 license             LGPL-2.1+
@@ -317,6 +317,13 @@ platform darwin {
         configure.ldflags-append \
                     -Wl,-ld_classic
     }
+}
+
+# libavcodec/pcm-bluray.c:172:45: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
+# libavcodec/pcm-dvd.c:155:37: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
+if {[string match *gcc* ${configure.compiler}]} {
+    configure.cflags-append \
+                    -Wno-error=incompatible-pointer-types
 }
 
 platform powerpc {

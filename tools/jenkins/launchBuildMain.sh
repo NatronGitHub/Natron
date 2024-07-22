@@ -153,6 +153,13 @@ source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 
+echo "CC                                : \"${CC:-}\""
+echo "CXX                               : \"${CXX:-}\""
+echo "CXX17                             : \"${CXX17:-}\""
+echo "OBJECTIVE_CC                      : \"${OBJECTIVE_CC:-}\""
+echo "OBJECTIVE_CXX                     : \"${OBJECTIVE_CXX:-}\""
+echo "-----------------------------------------------------------------------"
+
 # Source known git repositories
 source gitRepositories.sh
 

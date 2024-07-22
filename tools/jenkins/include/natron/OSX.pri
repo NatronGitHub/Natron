@@ -1,6 +1,7 @@
 boost {
-  INCLUDEPATH += /opt/local/include
-  LIBS += -lboost_serialization-mt
+  BOOST_VERSION = 1.76
+  INCLUDEPATH += /opt/local/libexec/boost/$$BOOST_VERSION/include
+  LIBS += -L/opt/local/libexec/boost/$$BOOST_VERSION/lib -lboost_serialization-mt
 }
 equals(QT_MAJOR_VERSION, 5) {
   shiboken:  SHIBOKEN=shiboken2-$$PYVER
@@ -17,13 +18,15 @@ equals(QT_MAJOR_VERSION, 5) {
 }
 
 macx:openmp {
-  # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
-  # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
+  # libomp 12+ has a bug on macOS when lanching tasks from a background thread,
+  # see tools/MacPorts/lang/libomp/README.md
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
   # These are set on the command-line, do not try to override it
   # search for 'printStatusMessage "Building Natron..."' in build-natron.sh
-  #QMAKE_CC = /opt/local/bin/clang-mp-14
-  #QMAKE_CXX = /opt/local/bin/clang++-mp-14
+  # clang 17 and 18 with -fopenmp links with @rpath/libc++.1.dylib instead
+  # of /usr/lib/libc++.1.dylib, so let's use clang 16 for now.
+  #QMAKE_CC = /opt/local/bin/clang-mp-16
+  #QMAKE_CXX = /opt/local/bin/clang++-mp-16
   # Recent clang cannot compile QtMac.mm
   #QMAKE_OBJECTIVE_CC = clang
   #QMAKE_OBJECTIVE_CXX = clang++

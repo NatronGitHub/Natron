@@ -1,61 +1,14 @@
---- Portfile.orig	2023-11-28 15:59:17.000000000 +0100
-+++ Portfile	2023-11-28 16:02:49.000000000 +0100
-@@ -7,7 +7,7 @@
+--- Portfile.orig	2024-05-07 15:29:13
++++ Portfile	2024-05-07 15:34:19
+@@ -32,6 +32,7 @@
  
- boost.depends_type  build
+ # Keep this condition the same in the opencolorio, openimageio, and osl ports.
+ set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
++set port_latest 1
  
--github.setup        AcademySoftwareFoundation OpenColorIO 2.2.0 v
-+github.setup        AcademySoftwareFoundation OpenColorIO 2.2.1 v
- name                opencolorio
- categories          graphics
- maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
-@@ -21,9 +21,9 @@
- 
- # please remove "stealth update" workaround on next version update
- dist_subdir         ${name}/${version}_1
--checksums           rmd160  3f2ab794c6f4df2e8cec24f8d04478f2fe590c73 \
--                    sha256  646171b8c9d3941da2bf59fcab99f979626f908b6c6fa4d8fe95bda9eec0407b \
--                    size    11314927
-+checksums           rmd160  f9369157eeeca1bbce00594b82d00118924816bc \
-+                    sha256  daf215acddf1c3ed443e6c159e369f2c623b015fa07f11fcc76aae9ede665084 \
-+                    size    11342273
- 
- # Exclude pre-releases from livecheck
- github.livecheck.regex  {([0-9.]+)}
-@@ -31,30 +31,8 @@
- configure.args-append \
-     -DCMAKE_CONFIGURATION_TYPES=MacPorts
- 
--# pin the used version before macOS 11
--# keep in mind that openimageio had the same pin
--if {${os.platform} eq "darwin" && ${os.major} < 20} {
--    github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
--    revision            3
--
--    checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
--                        sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
--                        size    13830493
--
--    # see https://github.com/imageworks/OpenColorIO/commit/c43cc918c3e79e324f11ca47e95bfe36e9e0dd15
--    patchfiles-append   patch-upstream.diff
--
--    # see https://gitweb.gentoo.org/repo/gentoo.git/tree/media-libs/opencolorio/files/opencolorio-1.1.0-yaml-cpp-0.6.patch
--    patchfiles-append   patch-yaml-cpp.diff
--
--    patchfiles-append   patch-yaml-cpp-0.7.diff
--
--    patchfiles-append   patch-fix-endianness.diff
--
--    patchfiles-append   patch-CMakeLists.txt.diff
--
--    livecheck.type      none
--}
-+patchfiles-append \
-+    patch-OCIOZArchive.diff
- 
- # source assumes C++11 compiler
- compiler.cxx_standard 2011
-@@ -93,6 +71,9 @@
+ if {!${port_latest}} {
+     github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
+@@ -96,6 +97,9 @@
      port:tinyxml
  
  configure.args-append \
@@ -65,21 +18,10 @@
      -DUSE_EXTERNAL_YAML=ON \
      -DUSE_EXTERNAL_TINYXML=ON \
      -DUSE_EXTERNAL_LCMS=ON
-@@ -107,8 +88,9 @@
+@@ -110,8 +114,9 @@
  # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
  
- variant python27 description {Build the Python 2.7 bindings} conflicts python38 python39 python310 python311 {
--    depends_lib-append port:python27
-+    depends_lib-append port:python27 port:py27-pybind11
-     configure.args-append \
-+        -DOCIO_PYTHON_VERSION=2.7 \
-         -DPYTHON=${prefix}/bin/python2.7
-     post-destroot {
-         xinstall -d -m 0755 \
-@@ -120,8 +102,9 @@
- }
- 
- variant python38 description {Build the Python 3.8 bindings} conflicts python27 python39 python310 python311 {
+ variant python38 description {Build the Python 3.8 bindings} conflicts python39 python310 python311 python312 {
 -    depends_lib-append port:python38
 +    depends_lib-append port:python38 port:py38-pybind11
      configure.args-append \
@@ -87,10 +29,10 @@
          -DPYTHON=${prefix}/bin/python3.8
      post-destroot {
          xinstall -d -m 0755 \
-@@ -133,8 +116,9 @@
+@@ -123,8 +128,9 @@
  }
  
- variant python39 description {Build the Python 3.9 bindings} conflicts python27 python38 python310 python311 {
+ variant python39 description {Build the Python 3.9 bindings} conflicts python38 python310 python311 python312 {
 -    depends_lib-append port:python39
 +    depends_lib-append port:python39 port:py39-pybind11
      configure.args-append \
@@ -98,10 +40,10 @@
          -DPYTHON=${prefix}/bin/python3.9
      post-destroot {
          xinstall -d -m 0755 \
-@@ -146,8 +130,9 @@
+@@ -136,34 +142,36 @@
  }
  
- variant python310 description {Build the Python 3.10 bindings} conflicts python27 python38 python39 python311 {
+ variant python310 description {Build the Python 3.10 bindings} conflicts python38 python39 python311 python312 {
 -    depends_lib-append port:python310
 +    depends_lib-append port:python310 port:py310-pybind11
      configure.args-append \
@@ -109,10 +51,16 @@
          -DPYTHON=${prefix}/bin/python3.10
      post-destroot {
          xinstall -d -m 0755 \
-@@ -160,8 +145,9 @@
+             ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages
+         ln -s \
+-            ${prefix}/lib/python3.10/site-packages/PyOpenColorIO.so \
++            ${prefix}/lib/python3.9/site-packages/PyOpenColorIO.so \
+             ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages/
+     }
+ }
  
  
- variant python311 description {Build the Python 3.11 bindings} conflicts python27 python38 python39 python310 {
+ variant python311 description {Build the Python 3.11 bindings} conflicts python38 python39 python310 python312 {
 -    depends_lib-append port:python311
 +    depends_lib-append port:python311 port:py311-pybind11
      configure.args-append \
@@ -120,9 +68,23 @@
          -DPYTHON=${prefix}/bin/python3.11
      post-destroot {
          xinstall -d -m 0755 \
-@@ -178,6 +164,7 @@
+             ${destroot}${frameworks_dir}/Python.framework/Versions/3.11/lib/python3.11/site-packages
+         ln -s \
+-            ${prefix}/lib/python3.11/site-packages/PyOpenColorIO.so \
++            ${prefix}/lib/python3.9/site-packages/PyOpenColorIO.so \
+             ${destroot}${frameworks_dir}/Python.framework/Versions/3.11/lib/python3.11/site-packages/
+     }
+ }
  
- if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
+ variant python312 description {Build the Python 3.12 bindings} conflicts python38 python39 python310 python311 {
+-    depends_lib-append port:python312
++    depends_lib-append port:python312 port:py312-pybind11
+     configure.args-append \
+         -DPYTHON=${prefix}/bin/python3.12
+     post-destroot {
+@@ -181,6 +189,7 @@
+ 
+ if {![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] && ![variant_isset python312]} {
      configure.args-append \
 +        -DOCIO_BUILD_PYTHON=OFF \
          -DOCIO_BUILD_PYGLUE=OFF

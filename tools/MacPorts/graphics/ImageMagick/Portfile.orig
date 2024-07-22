@@ -13,11 +13,11 @@ legacysupport.newest_darwin_requires_legacy 10
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.13-7
+version                     6.9.13-12
 revision                    0
-checksums                   rmd160  9025e38a212d8cfe5706f07c4f900a96b708c016 \
-                            sha256  2a521f7992b3dd32469b7b7254a81df8a0045cb0b963372e3ba6404b0a4efeae \
-                            size    9604796
+checksums                   rmd160  b3696f5a09d6a89ee66fd128abb95f83401bca1c \
+                            sha256  cc6189a5999c00f2fb8a0cdd2cddd8207c64bac5146639b8106e56e277c763bf \
+                            size    9617108
 
 categories                  graphics devel
 maintainers                 {ryandesign @ryandesign}
@@ -26,7 +26,11 @@ use_xz                      yes
 
 description                 Tools and libraries to manipulate images in many formats
 
-long_description            ImageMagick is a robust collection of tools and \
+long_description            This is the legacy ImageMagick version 6.  For the \
+                            modern ImageMagick version 7, please go to port \
+                            ImageMagick7. \
+                            \
+                            ImageMagick is a robust collection of tools and \
                             libraries to create, edit and compose bitmap images \
                             in a wide variety of formats. You can crop, resize, \
                             rotate, sharpen, color reduce or add effects or text \
@@ -106,6 +110,7 @@ configure.args              --enable-shared \
                             --without-rsvg \
                             --without-lqr \
                             --without-pango \
+                            --without-raqm \
                             --without-x \
                             --without-zstd \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts \
@@ -121,6 +126,9 @@ if {${os.platform} eq "darwin" && ${os.major} < 11} {
         conflicts_build         cryptlib
     }
 }
+
+# https://trac.macports.org/wiki/WimplicitFunctionDeclaration#strchr
+configure.checks.implicit_function_declaration.whitelist-append strchr
 
 test.run                    yes
 test.target                 check

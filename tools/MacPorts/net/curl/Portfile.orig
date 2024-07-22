@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.7.1
-checksums                       rmd160  9744fc15c2e9f903a845f960ba3f32acd3aaadca \
-                                sha256  6fea2aac6a4610fbd0400afb0bcddbe7258a64c63f1f68e5855ebc0c659710cd \
-                                size    2707016
+version                         8.8.0
+checksums                       rmd160  d8494c0468d2a775d45ecb9f1e7c260d085689f3 \
+                                sha256  0f58bb95fc330c8a46eeb3df5701b0d90c9d9bfcc42bd1cd08791d12551d4400 \
+                                size    2748860
 
 categories                      net www
 platforms                       darwin freebsd
@@ -35,15 +35,19 @@ checksums-prepend               ${curl_distfile}
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               path:bin/pkg-config:pkgconfig
 
     depends_lib                 port:brotli \
                                 port:libidn2 \
                                 port:libpsl \
+                                port:nghttp2 \
                                 port:zlib \
                                 port:zstd
+
+    patchfiles-append           patch-docs-Makefile.in.diff
+    patchfiles-append           x509asn1.patch
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -53,7 +57,6 @@ if {${name} eq ${subport}} {
                                 --without-librtmp \
                                 --without-libssh2 \
                                 --without-mbedtls \
-                                --without-nghttp2 \
                                 --without-nghttp3 \
                                 --without-ngtcp2 \
                                 --without-openssl \
@@ -65,6 +68,7 @@ if {${name} eq ${subport}} {
                                 --disable-ldaps \
                                 --with-brotli \
                                 --with-libidn2=${prefix} \
+                                --with-nghttp2=${prefix} \
                                 --with-zlib=${prefix} \
                                 --with-zstd \
                                 ac_cv_prog_AWK=/usr/bin/awk
@@ -138,7 +142,7 @@ if {${name} eq ${subport}} {
             HTTP-COOKIES.md \
             INTERNALS.md \
             KNOWN_BUGS \
-            MAIL-ETIQUETTE \
+            MAIL-ETIQUETTE.md \
             PARALLEL-TRANSFERS.md \
             ROADMAP.md \
             SECURITY-ADVISORY.md \
@@ -210,22 +214,6 @@ if {${name} eq ${subport}} {
         # This needs to use the system's Kerberos, not MacPorts' gss or kerberos5.
         conflicts-append        gss kerberos5
         configure.args-replace  --without-gssapi --with-gssapi
-    }
-
-    variant http2 description {Support HTTP/2 with nghttp2} {
-        depends_lib-append      port:nghttp2
-        configure.args-replace  --without-nghttp2 --with-nghttp2=${prefix}
-    }
-
-    # HTTP/2 support is desirable but nghttp2 requires C++14. Some users
-    # use a bootstrap MacPorts installation to provide a newer curl for
-    # a primary MacPorts installation and requiring those users to build
-    # a C++14 compiler for that is undesirable. Also, newer clangs use
-    # cmake, which uses curl, so it would introduce a dependency cycle.
-    # So enable this variant by default only on systems that have a
-    # suitable compiler in Xcode.
-    if {${os.platform} ne "darwin" || ${os.major} >= 14} {
-        default_variants-append +http2
     }
 
     variant http3 requires gnutls description {Support HTTP/3 with nghttp3 and ngtcp2} {

@@ -39,7 +39,6 @@ fi
 
 # Setup env
 if [ "$PKGOS" = "Linux" ]; then
-    export BOOST_ROOT="$SDK_HOME"
     #export PYTHONHOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$SDK_HOME/qt${QT_VERSION_MAJOR}/lib"
     export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/qt${QT_VERSION_MAJOR}/bin:$HOME/.cabal/bin:$PATH"

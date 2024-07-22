@@ -63,7 +63,6 @@ fi
 # Setup env
 CXXFLAGS_EXTRA=
 if [ "$PKGOS" = "Linux" ]; then
-    export BOOST_ROOT="$SDK_HOME"
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib"
@@ -77,7 +76,6 @@ if [ "$PKGOS" = "Linux" ]; then
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
 elif [ "$PKGOS" = "Windows" ]; then
-    export BOOST_ROOT="$SDK_HOME"
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export GIT_SSL_NO_VERIFY="true"

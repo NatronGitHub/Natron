@@ -7,8 +7,8 @@ PortGroup           boost 1.0
 
 boost.depends_type  build
 
-github.setup        AcademySoftwareFoundation OpenColorIO 2.2.0 v
-revision            1
+github.setup        AcademySoftwareFoundation OpenColorIO 2.3.2 v
+revision            0
 name                opencolorio
 categories          graphics
 maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -20,11 +20,9 @@ long_description    OpenColorIO (OCIO) is a complete color management solution \
                     geared towards motion picture production with an emphasis on \
                     visual effects and computer animation.
 
-# please remove "stealth update" workaround on next version update
-dist_subdir         ${name}/${version}_1
-checksums           rmd160  3f2ab794c6f4df2e8cec24f8d04478f2fe590c73 \
-                    sha256  646171b8c9d3941da2bf59fcab99f979626f908b6c6fa4d8fe95bda9eec0407b \
-                    size    11314927
+checksums           rmd160  297c061816895bd4d02a9450c0415d8769e188ab \
+                    sha256  6e437aa8c09f5d870212847af7788d92c3a5c34c739b212a9947a4ef3e8542b8 \
+                    size    11444813
 
 # Exclude pre-releases from livecheck
 github.livecheck.regex  {([0-9.]+)}
@@ -32,15 +30,19 @@ github.livecheck.regex  {([0-9.]+)}
 configure.args-append \
     -DCMAKE_CONFIGURATION_TYPES=MacPorts
 
-# pin the used version before macOS 11
-# keep in mind that openimageio had the same pin
-if {${os.platform} eq "darwin" && ${os.major} < 20} {
+# Keep this condition the same in the opencolorio, openimageio, and osl ports.
+set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
+
+if {!${port_latest}} {
     github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
     revision            4
 
     checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
                         sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
                         size    13830493
+
+    # workaround for stealth update
+    dist_subdir         ${name}/${version}_1
 
     # see https://github.com/imageworks/OpenColorIO/commit/c43cc918c3e79e324f11ca47e95bfe36e9e0dd15
     patchfiles-append   patch-upstream.diff
@@ -55,19 +57,19 @@ if {${os.platform} eq "darwin" && ${os.major} < 20} {
     patchfiles-append   patch-CMakeLists.txt.diff
 
     livecheck.type      none
+
+    # see https://github.com/imageworks/OpenColorIO/issues/563
+    # https://trac.macports.org/ticket/67904
+    if {[string match *clang* ${configure.compiler}]} {
+        configure.cxxflags-append \
+            -Wno-error=self-assign-field
+    }
 }
 
 # source assumes C++11 compiler
 compiler.cxx_standard 2011
 configure.cxxflags-append \
     -std=c++11
-
-# see https://github.com/imageworks/OpenColorIO/issues/563
-# https://trac.macports.org/ticket/67904
-if {[string match *clang* ${configure.compiler}]} {
-    configure.cxxflags-append \
-        -Wno-error=self-assign-field
-}
 
 # src/core/ExponentOps.cpp: error: 'OpenColorIO::v1::{anonymous}::ExponentOp::~ExponentOp()'
 # defined but not used [-Werror=unused-function]
@@ -104,23 +106,10 @@ if {${configure.build_arch} in [list ppc ppc64]} {
         -DOCIO_USE_SSE=OFF
 }
 
-# OpenColorIO intentially installs Python module in lib
+# OpenColorIO intentionally installs Python module in lib
 # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
 
-variant python27 description {Build the Python 2.7 bindings} conflicts python38 python39 python310 python311 {
-    depends_lib-append port:python27
-    configure.args-append \
-        -DPYTHON=${prefix}/bin/python2.7
-    post-destroot {
-        xinstall -d -m 0755 \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/2.7/lib/python2.7/site-packages
-        ln -s \
-            ${prefix}/lib/python2.7/site-packages/PyOpenColorIO.so \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/2.7/lib/python2.7/site-packages/
-    }
-}
-
-variant python38 description {Build the Python 3.8 bindings} conflicts python27 python39 python310 python311 {
+variant python38 description {Build the Python 3.8 bindings} conflicts python39 python310 python311 python312 {
     depends_lib-append port:python38
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.8
@@ -133,7 +122,7 @@ variant python38 description {Build the Python 3.8 bindings} conflicts python27 
     }
 }
 
-variant python39 description {Build the Python 3.9 bindings} conflicts python27 python38 python310 python311 {
+variant python39 description {Build the Python 3.9 bindings} conflicts python38 python310 python311 python312 {
     depends_lib-append port:python39
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.9
@@ -146,7 +135,7 @@ variant python39 description {Build the Python 3.9 bindings} conflicts python27 
     }
 }
 
-variant python310 description {Build the Python 3.10 bindings} conflicts python27 python38 python39 python311 {
+variant python310 description {Build the Python 3.10 bindings} conflicts python38 python39 python311 python312 {
     depends_lib-append port:python310
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.10
@@ -154,13 +143,13 @@ variant python310 description {Build the Python 3.10 bindings} conflicts python2
         xinstall -d -m 0755 \
             ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages
         ln -s \
-            ${prefix}/lib/python3.9/site-packages/PyOpenColorIO.so \
+            ${prefix}/lib/python3.10/site-packages/PyOpenColorIO.so \
             ${destroot}${frameworks_dir}/Python.framework/Versions/3.10/lib/python3.10/site-packages/
     }
 }
 
 
-variant python311 description {Build the Python 3.11 bindings} conflicts python27 python38 python39 python310 {
+variant python311 description {Build the Python 3.11 bindings} conflicts python38 python39 python310 python312 {
     depends_lib-append port:python311
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.11
@@ -168,16 +157,29 @@ variant python311 description {Build the Python 3.11 bindings} conflicts python2
         xinstall -d -m 0755 \
             ${destroot}${frameworks_dir}/Python.framework/Versions/3.11/lib/python3.11/site-packages
         ln -s \
-            ${prefix}/lib/python3.9/site-packages/PyOpenColorIO.so \
+            ${prefix}/lib/python3.11/site-packages/PyOpenColorIO.so \
             ${destroot}${frameworks_dir}/Python.framework/Versions/3.11/lib/python3.11/site-packages/
     }
 }
 
-if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
-    default_variants +python311
+variant python312 description {Build the Python 3.12 bindings} conflicts python38 python39 python310 python311 {
+    depends_lib-append port:python312
+    configure.args-append \
+        -DPYTHON=${prefix}/bin/python3.12
+    post-destroot {
+        xinstall -d -m 0755 \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.12/lib/python3.12/site-packages
+        ln -s \
+            ${prefix}/lib/python3.12/site-packages/PyOpenColorIO.so \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.12/lib/python3.12/site-packages/
+    }
 }
 
-if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311]} {
+if {![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] && ![variant_isset python312]} {
+    default_variants +python312
+}
+
+if {![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] && ![variant_isset python312]} {
     configure.args-append \
         -DOCIO_BUILD_PYGLUE=OFF
 }
@@ -185,9 +187,14 @@ if {![variant_isset python27] && ![variant_isset python38] && ![variant_isset py
 # make neither x11 nor quartz default since openimageio depends on opencolorio
 
 variant x11 {
+    if {${port_latest}} {
+        depends_lib-append  port:openexr
+    } else {
+        depends_lib-append  port:openimageio
+    }
+
     depends_lib-append \
         port:lcms2 \
-        port:openimageio \
         port:mesa \
         port:libGLU \
         port:freeglut \
@@ -205,9 +212,14 @@ variant x11 {
 }
 
 variant quartz {
+    if {${port_latest}} {
+        depends_lib-append  port:openexr
+    } else {
+        depends_lib-append  port:openimageio
+    }
+
     depends_lib-append \
         port:lcms2 \
-        port:openimageio \
         port:glew
     configure.args-append \
         -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework

@@ -15,11 +15,25 @@ description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                         related classes, utilities, and applications.
 
-github.setup        OpenImageIO oiio 2.4.17.0 v
-revision            100
-checksums           rmd160  e593d35b8a4d62c0277622267c43911836eebd61 \
-                    sha256  7fe81d8e5bce30cc4a212f020ac3cc4344e6b7c1c0842475e3a048515099c65c \
-                    size    47900800
+# Keep this condition the same in the opencolorio, openimageio, and osl ports.
+set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
+set port_latest 1
+
+if {${port_latest}} {
+    github.setup        AcademySoftwareFoundation OpenImageIO 2.5.10.1 v
+    revision            1
+    checksums           rmd160  acca3794870850f6d39e41e62e9370bf6ff9565b \
+                        sha256  8f6a547f6a5d510737ba436f867043db537def65f0fdb14ec30e5a185b619f93 \
+                        size    52061055
+} else {
+    github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
+    revision            15
+    checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
+                        sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
+                        size    29116032
+
+    livecheck.type      none
+}
 
 github.tarball_from     archive
 
@@ -31,9 +45,20 @@ patchfiles-append oiio-2.4.6-filesystem.patch
 
 patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
 
-depends_lib-append  port:imath \
-                    port:openexr
- 
+if {${port_latest}} {
+    depends_lib-append  port:imath \
+                        port:openexr
+} else {
+    patchfiles-append   patch-FindOpenJpeg.cmake.diff
+    patchfiles-append   patch-libraw-0.21.0.diff
+    patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
+
+    depends_lib-append  port:field3d \
+                        port:openexr2
+
+    configure.pkg_config_path-prepend \
+                        ${prefix}/libexec/openexr2/lib/pkgconfig
+}
 
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
@@ -48,8 +73,13 @@ compiler.thread_local_storage yes
 
 configure.cxxflags-append \
                         -Wno-deprecated-declarations \
-                        -Wno-error=unknown-warning-option \
                         -Wno-unknown-warning-option
+
+if {[string match *clang* ${configure.compiler}]} {
+    # This is a clang-specific flag:
+    configure.cxxflags-append \
+                        -Wno-error=unknown-warning-option
+}
 
 # NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
 set port_libfmt         libfmt9
@@ -137,21 +167,34 @@ configure.args-append \
     -DUSE_LIBRAW:BOOL=TRUE \
     -DUSE_OPENGL:BOOL=FALSE \
     -DUSE_WEBP:BOOL=TRUE \
+    -DUSE_JXL:BOOL=FALSE \
     -DBUILD_FMT_FORCE:BOOL=TRUE \
     -DSTOP_ON_WARNING:BOOL=FALSE
-
+ 
 # optional components
+
+if {${os.platform} eq "darwin" && ${os.major} < 11} {
+    configure.args-append \
+                        -DUSE_QT=OFF
+    # configure.args-append -DUSE_OPENGL=OFF
+}
+
+if {[string match *gcc* ${configure.compiler}] \
+    && ${configure.build_arch} in [list i386 ppc]} {
+    configure.ldflags-append \
+                        -latomic
+}
 
 default_variants    +opencolorio +openjpeg +freetype
 
-variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
+variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype jxl description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
     }
 }
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38 39 310 311}
+set pythons_suffixes    {38 39 310 311 312}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -185,15 +228,27 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 if {${set_python_default}} {
-    default_variants        +python311
+    default_variants        +python312
 }
 
 #configure.args-append       -DUSE_FFMPEG=OFF
 variant ffmpeg description {Add FFmpeg support.} {
-depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
     configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
     configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
+if {${port_latest}} {
+    set ffmpeg_ver 6
+
+    #configure.args-append       -DUSE_FFMPEG=OFF
+    depends_lib-append          port:ffmpeg${ffmpeg_ver}
+
+    configure.pkg_config_path-prepend \
+                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
+} else {
+    #configure.args-append       -DUSE_FFMPEG=OFF
+    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
 }
+}
+
 
 #configure.args-append       -DUSE_JPEGTURBO=OFF
 depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
@@ -213,12 +268,16 @@ depends_lib-append          port:opencolorio
     configure.args-append       -DUSE_OCIO:BOOL=TRUE
 }
 
-#configure.args-append       -DUSE_OPENCV=OFF
 variant opencv description {Use OpenCV.} {
 set opencv_ver 4
-depends_lib-append          path:lib/opencv${opencv_ver}/libopencv_core.dylib:opencv${opencv_ver}
-configure.args-append       -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+if {${os.platform} eq "darwin" && ${os.major} < 11} {
+    # opencv4 does not build on 10.6 and earlier.
+    configure.args-append   -DUSE_OPENCV=OFF
+} else {
+    depends_lib-append      path:lib/opencv${opencv_ver}/libopencv_core.dylib:opencv${opencv_ver}
+    configure.args-append   -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
                             -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
+}
     configure.args-delete -DUSE_OPENCV:BOOL=FALSE
     configure.args-append -DUSE_OPENCV:BOOL=TRUE
 }
@@ -246,18 +305,30 @@ depends_lib-append          port:ptex
 #configure.args-append       -DUSE_LIBRAW=OFF
 depends_lib-append          port:libraw
 
-#configure.args-append       -DUSE_TBB=OFF \
-#                            -DUSE_OPENVDB=OFF
 variant openvdb description {Use OpenVDB.} {
-depends_lib-append          port:tbb \
-                            port:openvdb
+    if {${port_latest}} {
+        depends_lib-append          port:openvdb \
+                                    port:onetbb
+        configure.args-append       -DTBB_ROOT=${prefix}/libexec/onetbb
+        configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
+        configure.args-append -DUSE_OPENVDB:BOOL=TRUE
+    } else {
+        depends_lib-append          port:openvdb \
+                                    port:tbb
+        # https://trac.macports.org/ticket/69842
+        #configure.args-append       -DUSE_OPENVDB=OFF
+
+        configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+    }
     configure.args-delete -DUSE_TBB:BOOL=FALSE
     configure.args-append -DUSE_TBB:BOOL=TRUE
-    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
-    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
 }
 
-configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+variant jxl description {Use JPEG-XL.} {
+depends_lib-append          port:libjxl
+    configure.args-delete -DUSE_JXL:BOOL=FALSE
+    configure.args-append -DUSE_JXL:BOOL=TRUE
+}
 
 # not in MacPorts
 configure.args-append       -DUSE_NUKE=OFF

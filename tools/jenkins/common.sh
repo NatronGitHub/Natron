@@ -62,7 +62,7 @@ Darwin)
     PKGOS=${PKGOS:-OSX}
     if [ "$(uname -m)" = "arm64" ]; then
         # No Qt4 on apple Silicon
-        QT_VERSION_MAJOR=${QT_MAJOR_VERSION:-5}
+        QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
     fi
     ;;
 *)
@@ -403,6 +403,8 @@ else
 fi
 export QTDIR
 
+BOOST_ROOT="$SDK_HOME"
+
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
     PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
@@ -415,7 +417,14 @@ elif [ "$PKGOS" = "Windows" ]; then
 elif [ "$PKGOS" = "OSX" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi
-export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
+export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
+
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    QT_VERSION=$(pkg-config --modversion QtCore)
+else
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+fi
+QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 
 # Load compiler related stuff
 source $CWD/compiler-common.sh
