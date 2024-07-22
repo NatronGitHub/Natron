@@ -2767,8 +2767,10 @@ RotoPaint::onOverlayPenMotion(double time,
         } else if (lastHoverState != eHoverStateNothing) {
             newState = eHoverStateNothing;
         }
-        redraw = _imp->ui->hoverState != newState;
-        _imp->ui->hoverState = newState;
+        if (_imp->ui->hoverState != newState) {
+            redraw = true;
+            _imp->ui->hoverState = newState;
+        }
     }
     const bool featherVisible = _imp->ui->isFeatherVisible();
 
