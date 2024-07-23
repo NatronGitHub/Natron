@@ -38,8 +38,8 @@
 #endif
 
 #ifdef __cplusplus
-#if __cplusplus < 201402L
-#error "Natron 2.5+ requires C++14"
+#if __cplusplus < 201703L
+#error "Natron 2.6+ requires C++17"
 #endif
 // Establish the name space.
 namespace Natron { }
