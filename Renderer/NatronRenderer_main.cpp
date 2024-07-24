@@ -94,8 +94,9 @@ extern "C" {
 
     CLArgs args(argc, argv, true);
 
-    if (args.getError() > 0) {
-        return 1;
+    const auto error = args.getError();
+    if (error) {
+        return error.value();
     }
 
     AppManager manager;

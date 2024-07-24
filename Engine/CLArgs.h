@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <optional>
 #include <string>
 #include <vector>
 #include <utility>
@@ -99,7 +100,7 @@ public:
     static void printBackGroundWelcomeMessage();
     static void printUsage(const std::string& programName);
 
-    int getError() const;
+    const std::optional<int>& getError() const;
 
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
     const std::list<CLArgs::ReaderArg>& getReaderArgs() const;

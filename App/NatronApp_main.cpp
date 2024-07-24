@@ -139,8 +139,9 @@ int main(int argc, char *argv[])
     CLArgs::printBackGroundWelcomeMessage();
     CLArgs args(argc, argv, false);
 
-    if (args.getError() > 0) {
-        return 1;
+    const auto error = args.getError();
+    if (error) {
+        return error.value();
     }
 
     if ( args.isBackgroundMode() ) {
