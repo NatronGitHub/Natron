@@ -37,6 +37,7 @@ multiprocessing
 pydoc_data
 re
 sqlite3
+tomllib
 unittest
 urllib
 wsgiref
