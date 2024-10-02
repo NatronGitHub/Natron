@@ -125,9 +125,7 @@ catDll fbclient
 catDll libass-
 catDll libbluray-
 catDll libboost_filesystem-mt
-catDll libboost_regex-mt
 catDll libboost_serialization-mt
-catDll libboost_system-mt
 catDll libboost_thread-mt
 catDll libbz2-
 catDll libcaca-
