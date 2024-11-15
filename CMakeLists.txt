@@ -26,7 +26,7 @@ project(Natron
     LANGUAGES CXX C
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
@@ -55,29 +55,29 @@ if(WIN32)
     set(Python3_FIND_REGISTRY NEVER)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
-find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
+find_package(Qt6 6.7.3 CONFIG REQUIRED COMPONENTS Core Gui Network Widgets Concurrent)
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
     # link errors on Windows debug builds.
     set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
 endif()
-find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
+find_package(Shiboken6 6.7.3 CONFIG REQUIRED COMPONENTS libshiboken6 shiboken6)
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Remove NDEBUG from Shiboken2 INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
-    get_property(ShibokenInterfaceDefs TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+    get_property(ShibokenInterfaceDefs TARGET Shiboken6::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS)
     list(REMOVE_ITEM ShibokenInterfaceDefs NDEBUG)
-    set_property(TARGET Shiboken2::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
+    set_property(TARGET Shiboken6::libshiboken PROPERTY INTERFACE_COMPILE_DEFINITIONS ShibokenInterfaceDefs)
 endif()
 
-find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
-set(QT_VERSION_MAJOR 5)
-get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
-string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt5_INCLUDE_DIR ${Qt5Core_INCLUDE_DIRS})
-set(QTCORE_INCLUDE_DIRS ${Qt5_INCLUDE_DIR} ${Qt5Core_INCLUDE_DIRS})
-set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
-set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
+find_package(PySide6 6.7.3 CONFIG REQUIRED COMPONENTS pyside6)
+set(QT_VERSION_MAJOR 6)
+get_target_property(PYSIDE_INCLUDE_DIRS PySide6::pyside6 INTERFACE_INCLUDE_DIRECTORIES)
+string(REGEX REPLACE "(.*)QtCore$" "\\1" Qt6_INCLUDE_DIR ${Qt6Core_INCLUDE_DIRS})
+set(QTCORE_INCLUDE_DIRS ${Qt6_INCLUDE_DIR} ${Qt6Core_INCLUDE_DIRS})
+set(QTGUI_INCLUDE_DIRS ${Qt6Gui_INCLUDE_DIRS})
+set(QTWIDGETS_INCLUDE_DIRS ${Qt6Widgets_INCLUDE_DIRS})
 
 #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
 #for QString(const char*) assumes ASCII strings, we may run into troubles

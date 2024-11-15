@@ -46,7 +46,7 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py types
     OUTPUT_VARIABLE PyEngine_SOURCES)
 set_property(SOURCE ${PyEngine_SOURCES} PROPERTY SKIP_AUTOGEN ON)
 add_custom_command(OUTPUT ${PyEngine_SOURCES}
-    COMMAND Shiboken2::shiboken2 ${shiboken_args}
+    COMMAND Shiboken6::shiboken6 ${shiboken_args}
     COMMAND bash ${POST_SHIBOKEN} ${PYENGINE_OUT}/NatronEngine natronengine
     DEPENDS ${PYENGINE_HEADER} ${NatronEngine_HEADERS} ${POST_SHIBOKEN} typesystem_engine.xml
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -59,6 +59,11 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
+find_package(Boost REQUIRED serialization)
+
+if(Boost_FOUND)
+   include_directories(${Boost_INCLUDE_DIRS})
+endif()
 
 list(APPEND NatronEngine_SOURCES
     ${NatronEngine_SOURCES}
@@ -74,15 +79,14 @@ add_library(NatronEngine STATIC ${NatronEngine_HEADERS} ${NatronEngine_SOURCES})
 target_link_libraries(NatronEngine
     PUBLIC
         HostSupport
-        Boost::headers
-        Boost::serialization
+        ${Boost_LIBRARIES}
         PkgConfig::Cairo
     PRIVATE
-        Shiboken2::libshiboken
-        PySide2::pyside2
-        Qt5::Core
-        Qt5::Concurrent
-        Qt5::Network
+        Shiboken6::libshiboken
+        PySide6::pyside6
+        Qt6::Core
+        Qt6::Concurrent
+        Qt6::Network
         Python3::Module
         ${XDG_LIBS}
         ceres

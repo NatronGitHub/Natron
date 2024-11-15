@@ -46,7 +46,7 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py types
     OUTPUT_VARIABLE PyGui_SOURCES)
 set_property(SOURCE ${PyGui_SOURCES} PROPERTY SKIP_AUTOGEN ON)
 add_custom_command(OUTPUT ${PyGui_SOURCES}
-    COMMAND Shiboken2::shiboken2 ${shiboken_args}
+    COMMAND Shiboken6::shiboken6 ${shiboken_args}
     COMMAND bash ${POST_SHIBOKEN} ${PYGUI_OUT}/NatronGui natrongui
     DEPENDS ${PYGUI_HEADER} ${NatronEngine_HEADERS} ${NatronGui_HEADERS} ${POST_SHIBOKEN} typesystem_natronGui.xml
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -63,13 +63,13 @@ list(APPEND NatronGui_SOURCES
 add_library(NatronGui STATIC ${NatronGui_HEADERS} ${NatronGui_SOURCES})
 target_link_libraries(NatronGui
     PUBLIC
-        Shiboken2::libshiboken
-        PySide2::pyside2
-        Qt5::Core
-        Qt5::Concurrent
-        Qt5::Network
-        Qt5::Gui
-        Qt5::Widgets
+        Shiboken6::libshiboken
+        PySide6::pyside6
+        Qt6::Core
+        Qt6::Concurrent
+        Qt6::Network
+        Qt6::Gui
+        Qt6::Widgets
         Python3::Module
         NatronEngine
     PRIVATE
