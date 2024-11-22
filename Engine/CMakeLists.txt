@@ -59,11 +59,9 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
-find_package(Boost REQUIRED serialization)
-
-if(Boost_FOUND)
-   include_directories(${Boost_INCLUDE_DIRS})
-endif()
+find_package(
+	Boost 1.85 REQUIRED
+	COMPONENTS serialization system)
 
 list(APPEND NatronEngine_SOURCES
     ${NatronEngine_SOURCES}
