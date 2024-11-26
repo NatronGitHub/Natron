@@ -23,7 +23,6 @@ concurrent
 ctypes
 curses
 dbm
-distutils
 email
 encodings
 html
@@ -43,6 +42,7 @@ urllib
 wsgiref
 xml
 xmlrpc
+zipfile
 zoneinfo
 "
 

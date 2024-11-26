@@ -43,6 +43,7 @@ depends=(
   "unzip"
   "${MINGW_PACKAGE_PREFIX}-firebird"
   "${MINGW_PACKAGE_PREFIX}-breakpad-git"
+  "${MINGW_PACKAGE_PREFIX}-pkgconf"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"
   "${MINGW_PACKAGE_PREFIX}-natron-setup"

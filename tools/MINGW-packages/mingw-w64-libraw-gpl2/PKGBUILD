@@ -39,7 +39,6 @@ prepare() {
   patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
   patch -Np1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
 
-  export ACLOCAL_PATH="/msys64/usr/share/aclocal/"
   autoreconf -ifv
 }
 
