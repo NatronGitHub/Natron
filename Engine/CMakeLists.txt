@@ -70,12 +70,17 @@ list(APPEND NatronEngine_SOURCES
     ../Global/StrUtils.cpp
     ../libs/SequenceParsing/SequenceParsing.cpp
 )
+
+find_package(Boost REQUIRED serialization)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 add_library(NatronEngine STATIC ${NatronEngine_HEADERS} ${NatronEngine_SOURCES})
 target_link_libraries(NatronEngine
     PUBLIC
         HostSupport
-        Boost::headers
-        Boost::serialization
+        ${Boost_LIBRARIES}
         PkgConfig::Cairo
     PRIVATE
         Shiboken2::libshiboken
