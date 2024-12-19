@@ -459,7 +459,7 @@ ENGINE_GENERATED_SOURCES = \
     intparam_wrapper \
     itembase_wrapper \
     layer_wrapper \
-    natron_enum_wrapper \
+    natron_wrapper \
     nodecreationproperty_wrapper \
     outputfileparam_wrapper \
     pageparam_wrapper \
