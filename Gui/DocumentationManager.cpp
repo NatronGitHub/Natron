@@ -197,7 +197,7 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     }
     if ( !staticPage.isEmpty() ) {
-        QFileInfo staticFileInfo = docDir + staticPage;
+        QFileInfo staticFileInfo(docDir + staticPage);
         if ( ( isStatic && !staticFileInfo.exists() ) ||
              ( !isStatic && staticFileInfo.exists() ) ) {
             // must redirect
@@ -510,9 +510,9 @@ DocumentationManager::handler(QHttpRequest *req,
         QFileInfo staticFileInfo;
 
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") );
+            staticFileInfo = QFileInfo(page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") ));
         } else {
-            staticFileInfo = docDir + page;
+            staticFileInfo = QFileInfo(docDir + page);
         }
 #ifdef DEBUG
         qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();

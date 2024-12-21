@@ -946,7 +946,11 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(&GuiApplicationManagerPrivate::updateFontConfigCache, _imp.get()) );
+#else
     _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(_imp.get(), &GuiApplicationManagerPrivate::updateFontConfigCache) );
+#endif
 
     Gui::loadStyleSheet();
 

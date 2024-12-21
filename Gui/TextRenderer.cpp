@@ -179,7 +179,7 @@ TextRendererPrivate::createCharacter(QChar c)
     image.fill(Qt::transparent);
     QPainter painter;
     painter.begin(&image);
-    painter.setRenderHints(QPainter::HighQualityAntialiasing
+    painter.setRenderHints(QPainter::Antialiasing
                            | QPainter::TextAntialiasing);
     painter.setFont(_font);
     painter.setPen(Qt::white);

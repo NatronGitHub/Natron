@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QKeyEvent>
 #include <QDesktopServices>
+#include <QRegularExpression>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QStyledItemDelegate>
@@ -819,7 +820,8 @@ PreferencesPanel::filterPlugins(const QString & txt)
             pattern.push_back(txt[i]);
         }
         pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        QRegularExpression expr(QRegularExpression::wildcardToRegularExpression(pattern));
+        expr.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {

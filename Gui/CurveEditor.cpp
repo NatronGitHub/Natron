@@ -1559,7 +1559,11 @@ CurveEditor::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+CurveEditor::enterEvent(QEnterEvent* e)
+#else
 CurveEditor::enterEvent(QEvent* e)
+#endif
 {
     enterEventBase();
     QWidget::enterEvent(e);

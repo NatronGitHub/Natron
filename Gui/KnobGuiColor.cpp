@@ -106,7 +106,11 @@ ColorPickerLabel::mousePressEvent(QMouseEvent*)
 }
 
 void
-ColorPickerLabel::enterEvent(QEvent*)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+ColorPickerLabel::enterEvent(QEnterEvent* e)
+#else
+ColorPickerLabel::enterEvent(QEvent* e)
+#endif
 {
     QToolTip::showText( QCursor::pos(), toolTip() );
 }

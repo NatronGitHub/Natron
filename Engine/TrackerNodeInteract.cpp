@@ -1099,7 +1099,11 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
 
     imageGetterWatcher = std::make_shared<TrackWatcher>();
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    imageGetterWatcher->setFuture( QtConcurrent::run(&TrackMarker::getMarkerImage, marker.get(), time, roi) );
+#else
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
+#endif
 }
 
 void
@@ -1130,7 +1134,11 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
         TrackWatcherPtr watcher( new TrackWatcher() );
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
         trackRequestsMap[k] = watcher;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        watcher->setFuture( QtConcurrent::run(&TrackMarker::getMarkerImage, track.get(), time, k.roi) );
+#else
         watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
+#endif
     }
 }
 

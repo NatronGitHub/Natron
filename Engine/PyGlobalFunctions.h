@@ -172,7 +172,11 @@ public:
 
     inline int getBuildNumber() const
     {
+#ifdef NATRON_BUILD_NUMBER
         return NATRON_BUILD_NUMBER;
+#else
+        return 0;
+#endif
     }
 
     inline bool is64Bit() const

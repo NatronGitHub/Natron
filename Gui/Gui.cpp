@@ -281,7 +281,11 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        activateWindow();
+#else
         qApp->setActiveWindow(this);
+#endif
         activeWin = this;
     }
 
@@ -409,7 +413,12 @@ Gui::createGui()
     setupUi();
 
     ///post a fake event so the qt handlers are called and the proper widget receives the focus
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    QPointF pos(QCursor::pos());
+    QMouseEvent e(QEvent::MouseMove, mapFromGlobal(pos), pos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+#else
     QMouseEvent e(QEvent::MouseMove, QCursor::pos(), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+#endif
     qApp->sendEvent(this, &e);
 }
 

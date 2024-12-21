@@ -537,7 +537,11 @@ PyPanel::mousePressEvent(QMouseEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+PyPanel::enterEvent(QEnterEvent* e)
+#else
 PyPanel::enterEvent(QEvent* e)
+#endif
 {
     enterEventBase();
     QWidget::enterEvent(e);

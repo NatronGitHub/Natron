@@ -264,7 +264,11 @@ DopeSheetEditor::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-DopeSheetEditor::enterEvent(QEvent *e)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+DopeSheetEditor::enterEvent(QEnterEvent* e)
+#else
+DopeSheetEditor::enterEvent(QEvent* e)
+#endif
 {
     enterEventBase();
     QWidget::enterEvent(e);

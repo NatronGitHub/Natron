@@ -180,7 +180,11 @@ KnobClickableLabel::~KnobClickableLabel()
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+KnobClickableLabel::enterEvent(QEnterEvent* e)
+#else
 KnobClickableLabel::enterEvent(QEvent* e)
+#endif
 {
     _dnd->mouseEnter(e);
     ClickableLabel::enterEvent(e);

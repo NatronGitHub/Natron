@@ -791,9 +791,9 @@
         <modify-function signature="renderInternal(bool,std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)" remove="all"/>
         <modify-function signature="renderInternal(bool,Effect*,int,int,int)" remove="all"/>
         <modify-function signature="render(std::list&lt;Effect*&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;,std::list&lt;int&gt;)">
-            <modify-argument index="1">
+            <!--<modify-argument index="1"> This conversion fails to compile in PySide6, luckily Shiboken is smart enough to do it for ourselves
                 <replace-type modified-type="PyList"/>
-            </modify-argument>
+            </modify-argument>-->
             <modify-argument index="2">
                 <remove-argument/>
             </modify-argument>

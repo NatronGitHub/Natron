@@ -404,12 +404,12 @@ TableItemDelegate::paint(QPainter * painter,
     QRect r;
     QString data;
     QVariant var = item->data(Qt::DisplayRole);
-    if ( var.canConvert(QVariant::String) ) {
+    if ( var.canConvert<QString>() ) {
         data = var.toString();
-    } else if ( var.canConvert(QVariant::Double) ) {
+    } else if ( var.canConvert<double>() ) {
         double d = var.toDouble();
         data = QString::number(d);
-    } else if ( var.canConvert(QVariant::Int) ) {
+    } else if ( var.canConvert<int>() ) {
         int i = var.toInt();
         data = QString::number(i);
     }

@@ -30,7 +30,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextStream>
-#include <QRegExp>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -79,7 +79,7 @@ QString
 Markdown::parseCustomLinksForHTML(const QString& markdown)
 {
     QString result = markdown;
-    QRegExp rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
+    QRegularExpression rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
     result.replace( rx, QString::fromUtf8("\\1") );
 
     return result;
@@ -105,10 +105,9 @@ Markdown::fixSettingsHTML(const QString &html)
     QStringList list = html.split( QString::fromUtf8("\n") );
     Q_FOREACH(const QString &line, list) {
         if ( line.startsWith(QString::fromUtf8("<h2>")) ) {
-            QRegExp rx( QString::fromUtf8("<h2>(.*)</h2>") );
-            rx.indexIn(line);
-            QString header = rx.cap(1);
-            QString headerLink = header.toLower();
+            QRegularExpression rx( QString::fromUtf8("<h2>(.*)</h2>") );
+            QString header(rx.match(line).captured(1));
+            QString headerLink(header.toLower());
             headerLink.replace( QString::fromUtf8(" "), QString::fromUtf8("-") );
             result.append(QString::fromUtf8("<h2 id=\"%1\">%2</h2>").arg(headerLink).arg(header));
         } else {

@@ -34,7 +34,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelectionModel>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
@@ -1010,12 +1010,14 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
-        QRegExp nameExpr(nameFilter, Qt::CaseInsensitive, QRegExp::Wildcard);
+        QRegularExpression nameExpr(QRegularExpression::wildcardToRegularExpression(nameFilter));
+        nameExpr.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
         if ( !nameExpr.isValid() ) {
             return;
         }
 
-        QRegExp idExpr(pluginIDFilter, Qt::CaseInsensitive, QRegExp::Wildcard);
+        QRegularExpression idExpr(QRegularExpression::wildcardToRegularExpression(pluginIDFilter));
+        idExpr.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
         if ( !idExpr.isValid() ) {
             return;
         }
@@ -1028,8 +1030,8 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
                 continue;
             }
 
-            if ( ( nameFilter.isEmpty() || nameExpr.exactMatch( QString::fromUtf8( node->getLabel().c_str() ) ) ) &&
-                 ( pluginIDFilter.isEmpty() || idExpr.exactMatch( QString::fromUtf8( node->getPluginID().c_str() ) ) ) ) {
+            if ( ( nameFilter.isEmpty() || nameExpr.match( QString::fromUtf8( node->getLabel().c_str() ) ).hasMatch() ) &&
+                 ( pluginIDFilter.isEmpty() || idExpr.match( QString::fromUtf8( node->getPluginID().c_str() ) ).hasMatch() ) ) {
                 if ( view->isRowHidden(i, rootIdx) ) {
                     view->setRowHidden(i, rootIdx, false);
                 }

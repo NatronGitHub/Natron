@@ -277,7 +277,11 @@ ScaleSliderQWidget::zoomRange()
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+ScaleSliderQWidget::enterEvent(QEnterEvent* e)
+#else
 ScaleSliderQWidget::enterEvent(QEvent* e)
+#endif
 {
     if ( Gui::isFocusStealingPossible() ) {
         setFocus();
@@ -448,7 +452,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     ///fill the background with the appropriate style color
     QStyleOption opt;
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
     p.setOpacity(1);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);

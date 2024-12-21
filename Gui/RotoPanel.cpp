@@ -301,7 +301,11 @@ private:
         if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
             Q_EMIT itemClicked( item, index.column() );
         } else if ( triggerButtonIsRight(e) && index.isValid() ) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            _panel->showItemMenu( item, e->globalPosition().toPoint() );
+#else
             _panel->showItemMenu( item, e->globalPos() );
+#endif
         } else {
             QTreeWidget::mouseReleaseEvent(e);
         }
@@ -1959,7 +1963,11 @@ TreeWidget::dragMoveEvent(QDragMoveEvent* e)
 {
     const QMimeData* mime = e->mimeData();
     std::list<DroppedTreeItemPtr> droppedItems;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool ret = dragAndDropHandler(mime, e->position().toPoint(), droppedItems);
+#else
     bool ret = dragAndDropHandler(mime, e->pos(), droppedItems);
+#endif
     QTreeWidget::dragMoveEvent(e);
 
     if (!ret) {
@@ -2142,7 +2150,11 @@ TreeWidget::dropEvent(QDropEvent* e)
 {
     std::list<DroppedTreeItemPtr> droppedItems;
     const QMimeData* mime = e->mimeData();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool accepted = dragAndDropHandler(mime, e->position().toPoint(), droppedItems);
+#else
     bool accepted = dragAndDropHandler(mime, e->pos(), droppedItems);
+#endif
 
     e->setAccepted(accepted);
 
@@ -2235,17 +2247,17 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     deleteAct->setShortcut( QKeySequence(Qt::Key_Backspace) );
     QObject::connect( deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()) );
     QAction* cutAct = menu.addAction( tr("Cut") );
-    cutAct->setShortcut( QKeySequence(Qt::Key_X + Qt::CTRL) );
+    cutAct->setShortcut( QKeySequence(Qt::Key_X | Qt::CTRL) );
     QObject::connect( cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()) );
     QAction* copyAct = menu.addAction( tr("Copy") );
-    copyAct->setShortcut( QKeySequence(Qt::Key_C + Qt::CTRL) );
+    copyAct->setShortcut( QKeySequence(Qt::Key_C | Qt::CTRL) );
     QObject::connect( copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()) );
     QAction* pasteAct = menu.addAction( tr("Paste") );
-    pasteAct->setShortcut( QKeySequence(Qt::Key_V + Qt::CTRL) );
+    pasteAct->setShortcut( QKeySequence(Qt::Key_V | Qt::CTRL) );
     QObject::connect( pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()) );
     pasteAct->setEnabled( !_imp->clipBoard.empty() );
     QAction* duplicateAct = menu.addAction( tr("Duplicate") );
-    duplicateAct->setShortcut( QKeySequence(Qt::Key_C + Qt::ALT) );
+    duplicateAct->setShortcut( QKeySequence(Qt::Key_C | Qt::ALT) );
     QObject::connect( duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()) );
 
     ///The base layer cannot be duplicated

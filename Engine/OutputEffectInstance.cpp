@@ -35,7 +35,7 @@
 #include <QReadWriteLock>
 #include <QCoreApplication>
 #include <QThread>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
@@ -268,7 +268,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         std::size_t foundHash = pattern.find_first_of("#");
         if (foundHash == std::string::npos) {
             // Look for printf style numbering
-            QRegExp exp(QString::fromUtf8("%[0-9]*d"));
+            QRegularExpression exp(QString::fromUtf8("%[0-9]*d"));
             QString qp(QString::fromUtf8(pattern.c_str()));
             if (!qp.contains(exp)) {
                 QString message = tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(first).arg(last);

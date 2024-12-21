@@ -523,7 +523,11 @@ private:
         }
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    virtual void enterEvent(QEnterEvent* e) OVERRIDE FINAL
+#else
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL
+#endif
     {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>( _gui->getToolButtonMenuOpened() );
 

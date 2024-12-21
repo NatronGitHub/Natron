@@ -783,13 +783,13 @@ SequenceFileDialog::createMenuActions()
 {
     QAction *goHomeAction =  new QAction(this);
 
-    goHomeAction->setShortcut(Qt::CTRL + Qt::Key_H + Qt::SHIFT);
+    goHomeAction->setShortcut(QKeySequence(Qt::CTRL, Qt::SHIFT, Qt::Key_H));
     QObject::connect( goHomeAction, SIGNAL(triggered()), this, SLOT(goHome()) );
     addAction(goHomeAction);
 
 
     QAction *goToParent =  new QAction(this);
-    goToParent->setShortcut(Qt::CTRL + Qt::UpArrow);
+    goToParent->setShortcut(QKeySequence(Qt::CTRL, Qt::Key_Up));
     QObject::connect( goToParent, SIGNAL(triggered()), this, SLOT(parentFolder()) );
     addAction(goToParent);
 
@@ -1892,7 +1892,11 @@ UrlModel::setData(const QModelIndex &index,
                   const QVariant &value,
                   int role)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (value.metaType().id() == QMetaType::QUrl) {
+#else
     if (value.type() == QVariant::Url) {
+#endif
         QUrl url = value.toUrl();
         QModelIndex dirIndex = fileSystemModel->index( urlToPathString(url) );
         QStandardItemModel::setData(index, QDir::toNativeSeparators( fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString() ), Qt::ToolTipRole);

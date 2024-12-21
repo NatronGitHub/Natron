@@ -32,7 +32,6 @@
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QSplitter>
-#include <QDesktopWidget>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -1266,7 +1265,11 @@ Histogram::mousePressEvent(QMouseEvent* e)
         _imp->state = eEventStateDraggingView;
         _imp->oldClick = e->pos();
     } else if ( buttonDownIsRight(e) ) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        _imp->showMenu( e->globalPosition().toPoint() );
+#else
         _imp->showMenu( e->globalPos() );
+#endif
     } else if ( ( (e->buttons() & Qt::MiddleButton) &&
                   ( ( buttonMetaAlt(e) == Qt::AltModifier) || (e->buttons() & Qt::LeftButton) ) ) ||
                 ( (e->buttons() & Qt::LeftButton) &&
@@ -1285,7 +1288,11 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
     QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+#endif
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );
 
 
@@ -1302,12 +1309,20 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
         computeHistogramAndRefresh();
         break;
     case eEventStateZoomingView: {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        int delta = 2 * ( ( e->position().x() - _imp->oldClick.x() ) - ( e->position().y() - _imp->oldClick.y() ) );
+#else
         int delta = 2 * ( ( e->x() - _imp->oldClick.x() ) - ( e->y() - _imp->oldClick.y() ) );
+#endif
         const double zoomFactor_min = 0.000001;
         const double zoomFactor_max = 1000000.;
         double zoomFactor;
         double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta); // no need to use ipow() here, because the result is not cast to int
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+#endif
 
 
         // Wheel: zoom values and time, keep point under mouse
@@ -1483,7 +1498,11 @@ Histogram::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+Histogram::enterEvent(QEnterEvent* e)
+#else
 Histogram::enterEvent(QEvent* e)
+#endif
 {
     enterEventBase();
     QOpenGLWidget::enterEvent(e);

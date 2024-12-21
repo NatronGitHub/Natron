@@ -54,7 +54,11 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+PropertiesBinWrapper::enterEvent(QEnterEvent* e)
+#else
 PropertiesBinWrapper::enterEvent(QEvent* e)
+#endif
 {
     QWidget::enterEvent(e);
 }

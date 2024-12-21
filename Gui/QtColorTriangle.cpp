@@ -215,7 +215,7 @@ void QtColorTriangle::genBackground()
     // Create an image of the same size as the contents rect.
     bg = QImage(contentsRect().size(), QImage::Format_RGB32);
     QPainter p(&bg);
-    p.setRenderHint(QPainter::HighQualityAntialiasing);
+    p.setRenderHint(QPainter::Antialiasing);
     p.fillRect(bg.rect(), palette().mid());
 
     QConicalGradient gradient(bg.rect().center(), 90);

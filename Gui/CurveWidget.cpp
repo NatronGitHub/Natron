@@ -803,7 +803,11 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         QScreen* desktop = QGuiApplication::primaryScreen();
         QRect screen = desktop->availableGeometry();
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QPoint gP = e->globalPosition().toPoint();
+#else
         QPoint gP = e->globalPos();
+#endif
         if ( gP.x() > (screen.width() - dialogW) ) {
             gP.rx() -= dialogW;
         }
@@ -1252,7 +1256,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
+#else
     QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+#endif
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->_lastMousePos.x(), _imp->_lastMousePos.y() );
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
@@ -1294,7 +1302,11 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         }
         break;
     case eEventStateSelecting:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        _imp->refreshSelectionRectangle( (double)e->position().x(), (double)e->position().y() );
+#else
         _imp->refreshSelectionRectangle( (double)e->x(), (double)e->y() );
+#endif
         break;
 
     case eEventStateDraggingTangent:
@@ -1313,8 +1325,13 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
             _imp->zoomOrPannedSinceLastFit = true;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            int deltaX = 2 * ( e->position().x() - _imp->_lastMousePos.x() );
+            int deltaY = -2 * ( e->position().y() - _imp->_lastMousePos.y() );
+#else
             int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
             int deltaY = -2 * ( e->y() - _imp->_lastMousePos.y() );
+#endif
             // Wheel: zoom values and time, keep point under mouse
             double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
             double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
@@ -1592,7 +1609,11 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
 } // keyPressEvent
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+CurveWidget::enterEvent(QEnterEvent* e)
+#else
 CurveWidget::enterEvent(QEvent* e)
+#endif
 {
     setFocus();
     QOpenGLWidget::enterEvent(e);

@@ -37,8 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QListView>
 #include <QSettings>
-#include <QDesktopWidget>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
@@ -151,12 +150,14 @@ CompleterLineEdit::filterText(const QString & txt)
             pattern.push_back(txt[i]);
         }
         pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        QRegularExpression expr(QRegularExpression::wildcardToRegularExpression(pattern));
+        expr.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( expr.exactMatch(it->second.first) ) {
+            bool isMatch = expr.match(it->second.first).hasMatch();
+            if ( isMatch ) {
                 QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
                 matchedForLength.push_front(it->second.second);
             }
@@ -182,14 +183,6 @@ CompleterLineEdit::filterText(const QString & txt)
     }
 
     QPoint p = mapToGlobal( QPoint( 0, height() ) );
-    //QDesktopWidget* desktop = QApplication::desktop();
-    //QRect screen = desktop->screenGeometry();
-    //double maxHeight = ( screen.height() - p.y() ) * 0.8;
-    //QFontMetrics fm = _imp->listView->fontMetrics();
-    //maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
-
-    // Position the text edit
-    //   _imp->listView->setFixedSize(width(),maxHeight);
 
     _imp->listView->move(p);
     _imp->listView->show();

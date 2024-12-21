@@ -81,6 +81,7 @@ class QPoint;
 class QPointF;
 class QProgressDialog;
 class QRectF;
+class QRegularExpression;
 class QScrollArea;
 class QSplitter;
 class QStyleOptionViewItem;

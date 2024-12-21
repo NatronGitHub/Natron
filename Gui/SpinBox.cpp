@@ -826,7 +826,11 @@ SpinBox::mouseMoveEvent(QMouseEvent *e)
              isReadOnly() ||
              !hasFocus() ) {
             // Multiply by some amount to resemble a wheel event
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            int delta = ( e->position().x() - _imp->lastMousePos.x() ) * 3;
+#else
             int delta = ( e->x() - _imp->lastMousePos.x() ) * 3;
+#endif
             int shift = 0;
             if ( modCASIsShift(e) ) {
                 shift = 1;
@@ -1000,7 +1004,11 @@ KnobSpinBox::~KnobSpinBox()
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+KnobSpinBox::enterEvent(QEnterEvent* e)
+#else
 KnobSpinBox::enterEvent(QEvent* e)
+#endif
 {
     _dnd->mouseEnter(e);
     SpinBox::enterEvent(e);

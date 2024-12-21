@@ -657,7 +657,11 @@ extractKeySequence(const QKeySequence & seq,
     ///The nativeSeqStr now contains only the symbol
     QKeySequence newSeq(nativeSeqStr, QKeySequence::NativeText);
     if (newSeq.count() > 0) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        symbol = newSeq[0].key();
+#else
         symbol = (Qt::Key)newSeq[0];
+#endif
     } else {
         symbol = (Qt::Key)0;
     }

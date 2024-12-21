@@ -240,8 +240,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             int ih = _imp->unlockIcon.height();
             int w = width();
             int offset = 20;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            if ( ( e->position().x() >= (w - iw - 10 - offset) ) && ( e->position().x() <= (w - 10 + offset) ) &&
+                 ( e->position().y() >= (10 - offset) ) && ( e->position().y() <= (10 + ih + offset) ) ) {
+#else
             if ( ( e->x() >= (w - iw - 10 - offset) ) && ( e->x() <= (w - 10 + offset) ) &&
                  ( e->y() >= (10 - offset) ) && ( e->y() <= (10 + ih + offset) ) ) {
+#endif
                 assert(isGroup);
                 isGroup->getNode()->setPyPlugEdited(true);
                 NodesList nodes = isGroup->getNodes();

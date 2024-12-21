@@ -139,7 +139,11 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 } // connectCurrentViewerToSelection
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+NodeGraph::enterEvent(QEnterEvent* e)
+#else
 NodeGraph::enterEvent(QEvent* e)
+#endif
 {
     enterEventBase();
     QGraphicsView::enterEvent(e);

@@ -39,6 +39,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
@@ -1139,10 +1140,10 @@ CLArgsPrivate::parse()
         // A clean solution would be to separate the scriptName and the fileName with a comma.
         if ( it != args.end() && !it->startsWith( QChar::fromLatin1('-') ) ) {
             // Check that it's neither a python script, a natron project, nor a frame range.
-            QRegExp re( QString::fromUtf8("[0-9\\-,]*") ); // Matches frame ranges.
+            QRegularExpression re( QString::fromUtf8("[0-9\\-,]*") ); // Matches frame ranges.
             if (!it->endsWith(QString::fromUtf8(".py"), Qt::CaseInsensitive) &&
                 !it->endsWith(QString::fromUtf8(".ntp"), Qt::CaseInsensitive) &&
-                !re.exactMatch(*it)) {
+                !re.match(*it).hasMatch()) {
                 w.filename = *it;
 #ifdef __NATRON_UNIX__
                 w.filename = AppManager::qt_tildeExpansion(w.filename);

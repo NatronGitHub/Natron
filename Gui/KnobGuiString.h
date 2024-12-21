@@ -109,7 +109,11 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    virtual void enterEvent(QEnterEvent* e) OVERRIDE FINAL;
+#else
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+#endif
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -140,7 +144,11 @@ private:
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    virtual void enterEvent(QEnterEvent* e) OVERRIDE FINAL;
+#else
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+#endif
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;

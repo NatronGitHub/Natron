@@ -37,12 +37,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QVBoxLayout>
 #include <QTabWidget>
 #include <QFile>
-#include <QTextCodec>
 #include <QItemSelectionModel>
 #include <QHeaderView>
 #include <QDir>
 CLANG_DIAG_ON(deprecated)
-#include <qhttpserver.h>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
@@ -130,7 +128,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         QString licenseStr;
         QFile license( QString::fromUtf8(":LICENSE_SHORT.txt") );
         license.open(QIODevice::ReadOnly | QIODevice::Text);
-        licenseStr = NATRON_NAMESPACE::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ), NATRON_NAMESPACE::WhiteSpaceNormal);
+        licenseStr = NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( license.readAll() ), NATRON_NAMESPACE::WhiteSpaceNormal);
         aboutText.append(licenseStr);
     }
     {
@@ -445,7 +443,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     {
         QFile changelogFile( QString::fromUtf8(":CHANGELOG.md") );
         changelogFile.open(QIODevice::ReadOnly | QIODevice::Text);
-        _changelogText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( changelogFile.readAll() ) );
+        _changelogText->setText( QString::fromUtf8( changelogFile.readAll() ) );
     }
     _tabWidget->addTab( _changelogText, tr("Changelog") );
 
@@ -460,7 +458,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     {
         QFile team_file( QString::fromUtf8(":CONTRIBUTORS.txt") );
         team_file.open(QIODevice::ReadOnly | QIODevice::Text);
-        _teamText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( team_file.readAll() ) );
+        _teamText->setText( QString::fromUtf8( team_file.readAll() ) );
     }
     _tabWidget->addTab( _teamText, tr("Contributors") );
 
@@ -469,7 +467,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     {
         QFile license( QString::fromUtf8(":LICENSE.txt") );
         license.open(QIODevice::ReadOnly | QIODevice::Text);
-        _licenseText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ) );
+        _licenseText->setText( QString::fromUtf8( license.readAll() ) );
     }
     _tabWidget->addTab( _licenseText, tr("License") );
 
@@ -563,7 +561,7 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
         fileName += ( item->text() == QString::fromUtf8("README") ) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
         QFile file(fileName);
         if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-            QString content = QTextCodec::codecForName("UTF-8")->toUnicode( file.readAll() );
+            QString content = QString::fromUtf8( file.readAll() );
             _thirdPartyBrowser->setText(content);
         }
     }

@@ -33,7 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QScrollBar>
 #include <QTextBlock>
 #include <QPainter>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QMimeData>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -58,13 +58,13 @@ struct PyHighLightRule
                     const QTextCharFormat &matchingFormat)
     {
         originalRuleStr = patternStr;
-        pattern = QRegExp(patternStr);
+        pattern = QRegularExpression(patternStr);
         nth = n;
         format = matchingFormat;
     }
 
     QString originalRuleStr;
-    QRegExp pattern;
+    QRegularExpression pattern;
     int nth;
     QTextCharFormat format;
 };
@@ -77,8 +77,8 @@ struct PySyntaxHighlighterPrivate
     QStringList braces;
     QHash<QString, QTextCharFormat> basicStyles;
     QList<PyHighLightRule> rules;
-    QRegExp triSingleQuote;
-    QRegExp triDoubleQuote;
+    QRegularExpression triSingleQuote;
+    QRegularExpression triDoubleQuote;
 
     PySyntaxHighlighterPrivate(PySyntaxHighlighter* publicInterface)
         : publicInterface(publicInterface)
@@ -125,13 +125,15 @@ void
 PySyntaxHighlighter::highlightBlock(const QString &text)
 {
     for (QList<PyHighLightRule>::Iterator it = _imp->rules.begin(); it != _imp->rules.end(); ++it) {
-        int idx = it->pattern.indexIn(text, 0);
+        QRegularExpressionMatch match(it->pattern.match(text));
+        int idx = match.capturedStart();
         while (idx >= 0) {
             // Get index of Nth match
-            idx = it->pattern.pos(it->nth);
-            int length = it->pattern.cap(it->nth).length();
+            idx = match.capturedStart(it->nth);
+            int length = match.captured(it->nth).length();
             setFormat(idx, length, it->format);
-            idx = it->pattern.indexIn(text, idx + length);
+            match = it->pattern.match(text, idx + length);
+            idx = match.capturedStart();
         }
     }
 
@@ -186,7 +188,7 @@ PySyntaxHighlighterPrivate::initializeRules()
 
 bool
 PySyntaxHighlighter::matchMultiline(const QString &text,
-                                    const QRegExp &delimiter,
+                                    const QRegularExpression &delimiter,
                                     const int inState,
                                     const QTextCharFormat &style)
 {
@@ -201,18 +203,20 @@ PySyntaxHighlighter::matchMultiline(const QString &text,
         start = 0;
         add = 0;
     } else {
-        start = delimiter.indexIn(text);
+        QRegularExpressionMatch match(delimiter.match(text));
+        start = match.capturedStart();
         // Move past this match
-        add = delimiter.matchedLength();
+        add = match.capturedLength();
     }
 
     // As long as there's a delimiter match on this line...
     while (start >= 0) {
         // Look for the ending delimiter
-        end = delimiter.indexIn(text, start + add);
+        QRegularExpressionMatch match(delimiter.match(text, start + add));
+        end = match.capturedStart();
         // Ending delimiter on this line?
         if (end >= add) {
-            length = end - start + add + delimiter.matchedLength();
+            length = end - start + add + match.capturedLength();
             setCurrentBlockState(0);
         } else {
             // No= multi-line string
@@ -221,7 +225,8 @@ PySyntaxHighlighter::matchMultiline(const QString &text,
         }
         // Apply formatting and look for next
         setFormat(start, length, style);
-        start = delimiter.indexIn(text, start + length);
+        match = delimiter.match(text, start + length);
+        start = match.capturedStart();
     }
     // Return True if still inside a multi-line string, False otherwise
     if (currentBlockState() == inState) {
@@ -497,7 +502,11 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+InputScriptTextEdit::enterEvent(QEnterEvent* /*e*/)
+#else
 InputScriptTextEdit::enterEvent(QEvent* /*e*/)
+#endif
 {
     if ( acceptDrops() && (cursor().shape() != Qt::OpenHandCursor) ) {
         setCursor(Qt::OpenHandCursor);

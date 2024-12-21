@@ -596,7 +596,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
                         vit->setKeyFrame == wit->setKeyFrame) {
                         //qDebug() << "mergeWith: update value for dim" << vit->dimension << "of knob" << foundExistinKnob->first.lock()->getKnob()->getName().c_str();
                         if (vit->oldValue != wit->newValue) {
-                            qDebug() << "mergeWith: warning: old=" << vit->oldValue << "!= new=" << wit->newValue;
+                            qDebug() << "mergeWith: warning: old=" << QVariant(vit->oldValue) << "!= new=" << QVariant(wit->newValue);
                         }
                         if (wit->newValue != vit->newValue) {
                             //qDebug() << "mergeWith: update newValue" << wit->newValue << "->" << vit->newValue << "oldValue remains" << wit->oldValue;

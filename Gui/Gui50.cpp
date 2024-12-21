@@ -1287,7 +1287,11 @@ Gui::dropEvent(QDropEvent* e)
 
     QList<QUrl> urls = e->mimeData()->urls();
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    handleOpenFilesFromUrls( urls, mapToGlobal( e->position().toPoint() ) );
+#else
     handleOpenFilesFromUrls( urls, mapToGlobal( e->pos() ) );
+#endif
 } // dropEvent
 
 NATRON_NAMESPACE_EXIT

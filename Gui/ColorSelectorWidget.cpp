@@ -646,8 +646,13 @@ ColorSelectorWidget::ColorSelectorWidget(bool withAlpha, QWidget *parent)
                          this, SLOT( handleSliderAMoved(double) ) );
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QObject::connect( _buttonColorGroup, SIGNAL( buttonClicked(QAbstractButton*) ),
+                      this, SLOT( handleButtonColorClicked(QAbstractButton*) ) );
+#else
     QObject::connect( _buttonColorGroup, SIGNAL( buttonClicked(int) ),
                       this, SLOT( handleButtonColorClicked(int) ) );
+#endif
 
     QObject::connect( paletteAddColorButton, SIGNAL( clicked(bool) ),
                       this, SLOT( setPaletteButtonColor(bool) ) );
@@ -1106,8 +1111,12 @@ void ColorSelectorWidget::handleHexChanged()
         value.prepend( QString::fromUtf8("#") );
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QColor color( QColor::fromString(_hex->text()) );
+#else
     QColor color;
     color.setNamedColor( _hex->text() );
+#endif
     if ( !color.isValid() ) {
         return;
     }
@@ -1222,6 +1231,16 @@ ColorSelectorWidget::setSliderVColor()
     _slideV->setUseLineColor(true, color);
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void
+ColorSelectorWidget::handleButtonColorClicked(QAbstractButton *button)
+{
+    QVariant var = button->property(COLOR_SELECTOR_BUTTON_PROPERTY);
+    if ( var.isValid() ) {
+        _stack->setCurrentIndex( var.toInt() );
+    }
+}
+#else
 void
 ColorSelectorWidget::handleButtonColorClicked(int /*id*/)
 {
@@ -1230,6 +1249,7 @@ ColorSelectorWidget::handleButtonColorClicked(int /*id*/)
         _stack->setCurrentIndex( var.toInt() );
     }
 }
+#endif
 
 void
 ColorSelectorWidget::setPaletteButtonColor(bool /*clicked*/)

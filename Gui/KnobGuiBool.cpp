@@ -113,7 +113,11 @@ Bool_CheckBox::getBackgroundColor(double *r,
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+Bool_CheckBox::enterEvent(QEnterEvent* e)
+#else
 Bool_CheckBox::enterEvent(QEvent* e)
+#endif
 {
     _dnd->mouseEnter(e);
     AnimatedCheckBox::enterEvent(e);

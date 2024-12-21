@@ -1451,7 +1451,11 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
     }
 
     if ( _tabWidget->getGui()->isDraggingPanel() ) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QPoint globalPos(e->globalPosition().toPoint());
+#else
         const QPoint & globalPos = e->globalPos();
+#endif
         QWidget* widgetUnderMouse = qApp->widgetAt(globalPos);
         if (widgetUnderMouse) {
             TabWidget* topLvlTabWidget = findTabWidgetRecursive(widgetUnderMouse);
@@ -1496,7 +1500,11 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
         _tabWidget->startDragTab(selectedTabIndex);
 
         _dragPix = new DragPixmap( pixmap, e->pos() );
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        _dragPix->update( e->globalPosition().toPoint() );
+#else
         _dragPix->update( e->globalPos() );
+#endif
         _dragPix->show();
         grabMouse();
     }
@@ -1567,7 +1575,11 @@ TabBar::mouseReleaseEvent(QMouseEvent* e)
 
     if ( _tabWidget->getGui()->isDraggingPanel() ) {
         releaseMouse();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QPoint p(e->globalPosition().toPoint());
+#else
         const QPoint & p = e->globalPos();
+#endif
         hasClosedTabWidget = _tabWidget->stopDragTab(p);
         _dragPix->hide();
         delete _dragPix;
@@ -2040,7 +2052,11 @@ TabWidget::mouseMoveEvent(QMouseEvent* e)
 {
     if (!_imp->tabBarVisible) {
         QSize size = _imp->header->sizeHint();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        if ( e->position().y() <= (size.height() * 1.2) ) {
+#else
         if ( e->y() <= (size.height() * 1.2) ) {
+#endif
             if ( !_imp->header->isVisible() ) {
                 _imp->header->setVisible(true);
             }
@@ -2051,7 +2067,11 @@ TabWidget::mouseMoveEvent(QMouseEvent* e)
         }
     }
     if ( _imp->gui && _imp->gui->isLeftToolBarDisplayedOnMouseHoverOnly() ) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        _imp->gui->refreshLeftToolBarVisibility( e->globalPosition().toPoint() );
+#else
         _imp->gui->refreshLeftToolBarVisibility( e->globalPos() );
+#endif
     }
     QFrame::mouseMoveEvent(e);
 }
@@ -2064,7 +2084,11 @@ TabWidget::leaveEvent(QEvent* e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+TabWidget::enterEvent(QEnterEvent* e)
+#else
 TabWidget::enterEvent(QEvent* e)
+#endif
 {
     if (_imp->gui) {
         _imp->gui->setLastEnteredTabWidget(this);

@@ -116,7 +116,11 @@ KnobComboBox::wheelEvent(QWheelEvent *e)
 }
 
 void
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+KnobComboBox::enterEvent(QEnterEvent* e)
+#else
 KnobComboBox::enterEvent(QEvent* e)
+#endif
 {
     _dnd->mouseEnter(e);
     ComboBox::enterEvent(e);

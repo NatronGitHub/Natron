@@ -97,7 +97,11 @@ Q_SIGNALS:
 
 private:
 
-    virtual void enterEvent(QEvent*) OVERRIDE FINAL;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    virtual void enterEvent(QEnterEvent* e) OVERRIDE FINAL;
+#else
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+#endif
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
 

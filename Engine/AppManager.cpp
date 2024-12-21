@@ -88,7 +88,6 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
-#include <QTextCodec>
 #include <QCoreApplication>
 #include <QSettings>
 #include <QThreadPool>
