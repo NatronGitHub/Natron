@@ -119,9 +119,10 @@ if (MSVC)
 else()
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes" )
     add_compile_options(-Wall -Wextra -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-                        -Wvla -Wdate-time -Wshift-overflow=2
-                        -Wduplicated-cond -Wno-stringop-overflow -Wno-format-overflow
-                        -Wno-deprecated-copy)
+                        -Wvla -Wdate-time -Wno-format-overflow -Wno-deprecated-copy)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        add_compile_options(-Wshift-overflow=2 -Wduplicated-cond -Wno-stringop-overflow)
+    endif()
 endif()
 
 if(NATRON_SYSTEM_LIBS)
@@ -141,7 +142,10 @@ elseif(WIN32)
     add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
     add_compile_definitions(COMPILED_FROM_DSP XML_STATIC) # for expat
     if (NOT MSVC)
-        add_compile_options(-mwindows -municode -mthreads)
+        add_compile_options(-municode)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            add_compile_options(-mwindows -mthreads)
+        endif()
         add_link_options(-mwindows -municode)
         set(CMAKE_RC_COMPILER_INIT windres)
         set(CMAKE_RC_COMPILE_OBJECT
