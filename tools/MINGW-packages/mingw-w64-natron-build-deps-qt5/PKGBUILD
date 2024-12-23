@@ -1,7 +1,7 @@
 # Maintainer: The Natron developers
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5"
-pkgver=2023.4
+pkgver=2025.5
 pkgrel=1
 pkgdesc="Minimal package set for building Natron installer with QT5"
 url="https://natrongithub.github.io/"
@@ -22,35 +22,10 @@ depends=(
   # https://github.com/msys2/MINGW-packages/commit/c21027404c9d8776ad7dad94973a209bdc3aede2
   "${MINGW_PACKAGE_PREFIX}-clang"
   "${MINGW_PACKAGE_PREFIX}-python-qtpy"
-  # openfx-misc deps
-  "${MINGW_PACKAGE_PREFIX}-osmesa"
-  # openfx-io deps
-  "${MINGW_PACKAGE_PREFIX}-natron_openimageio"
-  "${MINGW_PACKAGE_PREFIX}-natron_seexpr-git"
-  "${MINGW_PACKAGE_PREFIX}-natron_poppler"
-  "${MINGW_PACKAGE_PREFIX}-natron_imagemagick"
-  "${MINGW_PACKAGE_PREFIX}-natron_ffmpeg-gpl2"
-  # openfx-arena deps
-  "${MINGW_PACKAGE_PREFIX}-librevenge"
-  "${MINGW_PACKAGE_PREFIX}-libzip"
-  "${MINGW_PACKAGE_PREFIX}-libcdr"
-  "${MINGW_PACKAGE_PREFIX}-natron_sox"
-  # openfx-gmic
-  "${MINGW_PACKAGE_PREFIX}-curl"
-  "${MINGW_PACKAGE_PREFIX}-fftw"
-  # installer
-  "zip"
-  "unzip"
-  "${MINGW_PACKAGE_PREFIX}-firebird"
-  "${MINGW_PACKAGE_PREFIX}-breakpad-git"
-  "${MINGW_PACKAGE_PREFIX}-pkgconf"
-  "${MINGW_PACKAGE_PREFIX}-python-sphinx"
-  "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"
-  "${MINGW_PACKAGE_PREFIX}-natron-setup"
-  "${MINGW_PACKAGE_PREFIX}-natron_dump_syms"
+  "${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
 )
 
 # these should be empty, but saneman in CI complains, so we keep them here
 # until that is fixed:
 source=("README.md")
-sha256sums=("b23b3460644d9446c3db719c68db14a93a437f19419fd8661d2f53daee258b81")
+sha256sums=("066a158dde169063073775500ad298baef704a8e0a39f3d6ab8fdba06012fda5")

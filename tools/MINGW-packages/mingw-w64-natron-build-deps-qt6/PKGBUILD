@@ -1,0 +1,32 @@
+# Maintainer: The Natron developers
+
+pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt6"
+pkgver=2025.5
+pkgrel=1
+pkgdesc="Minimal package set for building Natron installer with Qt6"
+url="https://natrongithub.github.io/"
+arch=("any")
+license=("GPL")
+depends=(
+  "git"
+  "base-devel"
+  "${MINGW_PACKAGE_PREFIX}-cc"
+  # Natron deps
+  "${MINGW_PACKAGE_PREFIX}-qt6-base"
+  "${MINGW_PACKAGE_PREFIX}-qt6-5compat"
+  "${MINGW_PACKAGE_PREFIX}-pyside6"
+  "${MINGW_PACKAGE_PREFIX}-shiboken6"
+  # Clang is needed by shiboken6 for now because shiboken6 can't seem to find g++. It appears
+  # shiboken6 includes hard-coded paths to the g++ binary that is used when shiboken2 is built for msys2.
+  # Remove this dependency when the shiboken6 package is fixed so it works w/o clang or updates its pkg deps.
+  # The following change to msys2 made adding this clang dependency necessary.
+  # https://github.com/msys2/MINGW-packages/commit/c21027404c9d8776ad7dad94973a209bdc3aede2
+  "${MINGW_PACKAGE_PREFIX}-clang"
+  "${MINGW_PACKAGE_PREFIX}-python-qtpy"
+  "${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
+)
+
+# these should be empty, but saneman in CI complains, so we keep them here
+# until that is fixed:
+source=("README.md")
+sha256sums=("4b0beca0e04ffe6ba6e9723cdfcfbedfbd4a6da449100025990b401f8b45865a")

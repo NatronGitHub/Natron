@@ -1,0 +1,1 @@
+This meta package depends on all the common packages needed for building Natron with any version of Qt, the openfx plugins, and the Natron installer.
