@@ -842,7 +842,7 @@ FileSystemModel::data(const QModelIndex &index,
         data = item->fileExtension();
         break;
     case DateModified:
-        data = item->getLastModified().toString(Qt::LocalDate);
+        data = QLocale().toString(item->getLastModified(), QLocale::ShortFormat);
         break;
     default:
         break;

@@ -242,7 +242,7 @@ addSpacer(QBoxLayout* layout)
     line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Raised);
     QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
+    palette.setColor(QPalette::WindowText, Qt::black);
     line->setPalette(palette);
     layout->addWidget(line);
     layout->addSpacing( TO_DPIX(5) );

@@ -159,12 +159,12 @@ public:
 
     inline QColor backgroundColor() const
     {
-        return qvariant_cast<QColor>( data(Qt::BackgroundColorRole) );
+        return qvariant_cast<QColor>( data(Qt::BackgroundRole) );
     }
 
     inline void setBackgroundColor(const QColor &color)
     {
-        setData(Qt::BackgroundColorRole, color);
+        setData(Qt::BackgroundRole, color);
     }
 
     inline QBrush background() const
@@ -179,12 +179,12 @@ public:
 
     inline QColor textColor() const
     {
-        return qvariant_cast<QColor>( data(Qt::TextColorRole) );
+        return qvariant_cast<QColor>( data(Qt::ForegroundRole) );
     }
 
     inline void setTextColor(const QColor &color)
     {
-        setData(Qt::TextColorRole, color);
+        setData(Qt::ForegroundRole, color);
     }
 
     inline QBrush foreground() const

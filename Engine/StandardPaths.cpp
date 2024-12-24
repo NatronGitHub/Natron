@@ -110,7 +110,7 @@ load(const wchar_t *libraryName,
         // This code is windows-only anyway, but this is here for consistency with other parts of the source
         const QChar pathSep = QChar::fromLatin1(':');
 #     endif
-        searchOrder << PATH.split(pathSep, QString::SkipEmptyParts);
+        searchOrder << PATH.split(pathSep, Qt::SkipEmptyParts);
     }
     QString fileName = QString::fromWCharArray(libraryName);
     fileName.append( QLatin1String(".dll") );
@@ -317,7 +317,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
         path = QStandardPaths::HomeLocation;
         break;
     case StandardPaths::eStandardLocationData:
-        path = QStandardPaths::DataLocation;
+        path = QStandardPaths::AppLocalDataLocation;
         break;
     case StandardPaths::eStandardLocationCache:
         path = QStandardPaths::CacheLocation;

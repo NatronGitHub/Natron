@@ -226,7 +226,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
 
             QString tt = toolTip();
             tt.append( QString::fromUtf8("\n\nLast modified: ") );
-            tt.append( dateTime.toString(Qt::SystemLocaleShortDate) );
+            tt.append( QLocale().toString(dateTime, QLocale::ShortFormat));
             _lineEdit->setToolTip(tt);
         }
     }
