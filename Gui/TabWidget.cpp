@@ -1061,7 +1061,7 @@ TabWidget::insertTab(int index,
     insertTab(index, QIcon(), widget, object);
 }
 
-PanelWidget*
+void
 TabWidget::removeTab(int index,
                      bool userAction)
 {
@@ -1070,12 +1070,13 @@ TabWidget::removeTab(int index,
 
     tabAt(index, &tab, &obj);
     if (!tab || !obj) {
-        return 0;
+        return;
     }
 
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
     NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    Natron::Python::PyPanel* isPyPanel = dynamic_cast<Natron::Python::PyPanel*>(tab);
     int newIndex = -1;
     if (isGraph) {
         /*
@@ -1142,8 +1143,17 @@ TabWidget::removeTab(int index,
         //tab->setParent(_imp->gui);
     }
 
-
+    // Note: The tab may get destroyed inside this call if the python variable on the app
+    // object that removeTabToPython() deletes is the only reference to the tab and the
+    // tab is a PyPanel created by Python code.
     _imp->removeTabToPython( tab, obj->getScriptName() );
+
+    if (isPyPanel) {
+        // At this point tab might have been destroyed if it was a PyPanel
+        // and no other python code has a reference to it.
+        // tab, w, and obj are all likely invalid now so just return.
+        return;
+    }
 
     if (userAction) {
         if (isViewer && _imp->gui) {
@@ -1154,7 +1164,7 @@ TabWidget::removeTab(int index,
             _imp->gui->removeHistogram(isHisto);
 
             //Return because at this point isHisto is invalid
-            return tab;
+            return;
         } else {
             ///Do not delete unique widgets such as the properties bin, node graph or curve editor
             w->setVisible(false);
@@ -1167,8 +1177,6 @@ TabWidget::removeTab(int index,
     }
     w->setParent(_imp->gui);
 
-
-    return tab;
 } // TabWidget::removeTab
 
 void
@@ -1188,9 +1196,7 @@ TabWidget::removeTab(PanelWidget* widget,
     }
 
     if (index != -1) {
-        PanelWidget* tab = removeTab(index, userAction);
-        assert(tab == widget);
-        Q_UNUSED(tab);
+        removeTab(index, userAction);
     }
 }
 
