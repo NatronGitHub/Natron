@@ -434,7 +434,7 @@ ViewerGL::Implementation::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _this->makeCurrent();
+    //_this->makeCurrent();
     initAndCheckGlExtensions();
 
     int format, internalFormat, glType;
