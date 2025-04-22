@@ -18,10 +18,13 @@
 # ***** END LICENSE BLOCK *****
 
 set(Natron_SOURCES NatronApp_main.cpp)
-if(WINDOWS)
-    list(APPEND Natron_SOURCES ../Natron.rc)
-endif()
+
 add_executable(Natron ${Natron_SOURCES})
+
+if(WIN32)
+    target_sources(Natron PRIVATE ../Natron.rc)
+endif()
+
 if(APPLE)
     set_target_properties(Natron PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -59,3 +62,39 @@ install(FILES ../Gui/Resources/Images/natronIcon256_linux.png
     DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
 install(FILES ../Gui/Resources/Images/natronProjectIcon_linux.png
     DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
+
+IF(WIN32)
+    SET(CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/install_deps_${CMAKE_BUILD_TYPE}.cmake)
+
+    # Find and install needed DLLs
+    file(GENERATE OUTPUT
+    "${CONFIG_FILE}" CONTENT 
+    [[
+        EXECUTE_PROCESS(COMMAND ${MINGWPATH}/windeployqt.exe ${INSTALL_BINPATH}/Natron.exe)
+        SET(TARGET_APP $<TARGET_FILE:Natron>)
+        FILE(GET_RUNTIME_DEPENDENCIES
+            RESOLVED_DEPENDENCIES_VAR deps_resolved
+            UNRESOLVED_DEPENDENCIES_VAR deps_unresolved
+            LIBRARIES ${TARGET_APP}
+            DIRECTORIES ${CMAKELIBPATH}
+            PRE_EXCLUDE_REGEXES "api-ms-*" "ext-ms-*"
+            POST_EXCLUDE_REGEXES ".*system32/.*\\.dll" "${INSTALL_BINPATH}"
+        )
+        MESSAGE(STATUS "Resolving runtime dependencies for ${TARGET_APP}")
+        FOREACH(dep ${deps_resolved})
+        FILE(INSTALL ${dep} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+        MESSAGE(STATUS "Installing ${dep}")
+        ENDFOREACH()
+        FOREACH(dep ${deps_unresolved})
+        MESSAGE(WARNING "Runtime dependency ${dep} could not be resolved.")
+        ENDFOREACH()
+        ]]
+        )
+        
+    GET_FILENAME_COMPONENT(MINGW_CC_PATH  ${CMAKE_C_COMPILER} PATH)
+    SET(MINGWPATH "${MINGW_CC_PATH}")
+    INSTALL(CODE "set(CMAKELIBPATH \"${CMAKE_SYSTEM_LIBRARY_PATH};${CMAKE_MINGW_SYSTEM_LIBRARY_PATH};${MINGWPATH}\")")
+    INSTALL(CODE "SET(MINGWPATH ${MINGWPATH})")
+    INSTALL(CODE "SET(INSTALL_BINPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})")
+    INSTALL(SCRIPT ${CONFIG_FILE})
+ENDIF()
