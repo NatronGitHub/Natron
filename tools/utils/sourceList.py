@@ -15,7 +15,7 @@ def list_typesystem_cpp_sources(typesystem, out):
     sources = [f"{package.lower()}_module_wrapper.cpp"]
     sources.extend([f"{typename.lower()}_wrapper.cpp" for typename in types])
 
-    return [os.path.normpath(os.path.join(out, package, f)) for f in sources]
+    return [os.path.normpath(os.path.join(out, package, f)).replace("\\", "/") for f in sources]
 
 
 if __name__ == "__main__":

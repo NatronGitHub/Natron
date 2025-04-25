@@ -30,7 +30,7 @@ set(gflags_SOURCES
     src/gflags_completions.cc
     src/gflags_reporting.cc
 )
-if(WINDOWS)
+if(WIN32)
     set(gflags_HEADERS ${gflags_HEADERS} src/windows_port.h)
     set(gflags_SOURCES ${gflags_SOURCES} src/windows_port.cc)
 endif()

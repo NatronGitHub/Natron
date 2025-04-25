@@ -18,10 +18,10 @@
 # ***** END LICENSE BLOCK *****
 
 set(Natron_SOURCES NatronApp_main.cpp)
-if(WINDOWS)
-    list(APPEND Natron_SOURCES ../Natron.rc)
-endif()
 add_executable(Natron ${Natron_SOURCES})
+if(WIN32)
+    target_sources(Natron PRIVATE ../Natron.rc)
+endif()
 if(APPLE)
     set_target_properties(Natron PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -59,3 +59,40 @@ install(FILES ../Gui/Resources/Images/natronIcon256_linux.png
     DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
 install(FILES ../Gui/Resources/Images/natronProjectIcon_linux.png
     DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
+
+IF(WIN32 AND DEPLOYQT_FOUND)
+    SET(CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/install_deps_${CMAKE_BUILD_TYPE}.cmake)
+
+    # Find and install needed DLLs
+    file(GENERATE OUTPUT
+    "${CONFIG_FILE}" CONTENT 
+    [[
+        EXECUTE_PROCESS(COMMAND del ${INSTALL_BINPATH}/*.dll)
+        SET(TARGET_APP $<TARGET_FILE:Natron>)
+            FILE(GET_RUNTIME_DEPENDENCIES
+            RESOLVED_DEPENDENCIES_VAR deps_resolved
+            UNRESOLVED_DEPENDENCIES_VAR deps_unresolved
+            EXECUTABLES ${TARGET_APP}
+            DIRECTORIES ${CMAKELIBPATH}
+            PRE_EXCLUDE_REGEXES "api-ms-*" "ext-ms-*"
+            POST_EXCLUDE_REGEXES ".*system32/.*\\.dll" 
+        )
+        MESSAGE(STATUS "Resolving runtime dependencies for ${TARGET_APP}")
+        FOREACH(dep ${deps_resolved})
+            FILE(INSTALL ${dep} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+            MESSAGE(STATUS "Installing ${dep}")
+        ENDFOREACH()
+        FOREACH(dep ${deps_unresolved})
+            MESSAGE(WARNING "Runtime dependency ${dep} could not be resolved.")
+        ENDFOREACH()
+        EXECUTE_PROCESS(COMMAND ${DEPLOYQT_EXE} --no-angle --compiler-runtime ${INSTALL_BINPATH}/Natron.exe)
+    ]])
+        
+    INSTALL(CODE "SET(INSTALL_BINPATH \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")")
+    INSTALL(CODE "SET(DEPLOYQT_EXE \"${DEPLOYQT_EXE}\")")
+    INSTALL(CODE "SET(CMAKELIBPATH \"${CMAKE_SYSTEM_LIBRARY_PATH};${CMAKE_MINGW_SYSTEM_LIBRARY_PATH};${MINGWPATH}\")")
+    INSTALL(SCRIPT ${CONFIG_FILE})
+    INSTALL(DIRECTORY ${Python3_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}
+            DESTINATION lib
+            PATTERN "*.pyc" EXCLUDE)
+ENDIF()
