@@ -59,6 +59,17 @@ if(WIN32)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
 
+if(WIN32)
+    # Search qtdeploy executable
+    find_program(DEPLOYQT_EXE windeployqt.exe)
+    if(NOT ${DEPLOYQT_EXE} STREQUAL "")
+        set(DEPLOYQT_FOUND 1)
+    else()
+        set(DEPLOYQT_FOUND 0)
+        message(STATUS "windeployqt.exe not found, will not deploy Qt dependencies")
+    endif()
+endif()
+
 if(IS_DEBUG_BUILD AND WIN32)
     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
     # link errors on Windows debug builds.
