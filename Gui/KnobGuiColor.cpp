@@ -106,7 +106,7 @@ ColorPickerLabel::mousePressEvent(QMouseEvent*)
 }
 
 void
-ColorPickerLabel::enterEvent(QEvent*)
+ColorPickerLabel::enterEvent(QtCompat::QEnterEvent*)
 {
     QToolTip::showText( QCursor::pos(), toolTip() );
 }

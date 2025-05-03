@@ -30,6 +30,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h" // Key
+#include "Global/QtCompat.h"
 
 #include "Engine/RenderStats.h"
 #include "Engine/ViewIdx.h"
@@ -467,7 +468,7 @@ private:
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;

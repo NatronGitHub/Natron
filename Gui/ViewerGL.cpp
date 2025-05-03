@@ -3100,7 +3100,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
 }
 
 void
-ViewerGL::enterEvent(QEvent* e)
+ViewerGL::enterEvent(QtCompat::QEnterEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

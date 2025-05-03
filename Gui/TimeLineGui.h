@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <QOpenGLWidget>
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -166,7 +167,7 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 

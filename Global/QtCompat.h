@@ -46,6 +46,15 @@ removeFileExtension(QString & filename)
     return extension;
 }
 
+// Define compatibility typedefs so code builds with Qt5 & Qt6
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef QEnterEvent QEnterEvent;
+#elif QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+typedef QEvent QEnterEvent;
+#else
+#error "Unsupported version of QT"
+#endif
+
 } // namespace QtCompat
 
 NATRON_NAMESPACE_EXIT

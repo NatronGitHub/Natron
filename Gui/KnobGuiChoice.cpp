@@ -116,7 +116,7 @@ KnobComboBox::wheelEvent(QWheelEvent *e)
 }
 
 void
-KnobComboBox::enterEvent(QEvent* e)
+KnobComboBox::enterEvent(QtCompat::QEnterEvent* e)
 {
     _dnd->mouseEnter(e);
     ComboBox::enterEvent(e);

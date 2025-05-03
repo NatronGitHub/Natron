@@ -497,7 +497,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
 }
 
 void
-InputScriptTextEdit::enterEvent(QEvent* /*e*/)
+InputScriptTextEdit::enterEvent(QtCompat::QEnterEvent* /*e*/)
 {
     if ( acceptDrops() && (cursor().shape() != Qt::OpenHandCursor) ) {
         setCursor(Qt::OpenHandCursor);

@@ -34,6 +34,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h"
+
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
@@ -111,7 +113,7 @@ private:
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
