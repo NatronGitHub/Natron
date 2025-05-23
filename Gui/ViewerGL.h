@@ -394,6 +394,8 @@ public:
 
     void setLut(int lut);
 
+    void setDither(bool dither);
+
     bool isWipeHandleVisible() const;
 
     void setZoomOrPannedSinceLastFit(bool enabled);

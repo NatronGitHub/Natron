@@ -159,6 +159,8 @@
         <file>Resources/Images/curve.png</file>
         <file>Resources/Images/cuspPoints.png</file>
         <file>Resources/Images/diskcache_icon.png</file>
+        <file>Resources/Images/dither_enabled.png</file>
+        <file>Resources/Images/dither_disabled.png</file>
         <file>Resources/Images/dot_icon.png</file>
         <file>Resources/Images/ellipse.png</file>
         <file>Resources/Images/enter_group.png</file>

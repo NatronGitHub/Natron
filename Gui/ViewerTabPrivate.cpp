@@ -97,6 +97,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , gammaSlider(NULL)
     , viewerColorSpace(NULL)
     , checkerboardButton(NULL)
+    , ditherButton(NULL)
     , pickerButton(NULL)
     , viewsComboBox(NULL)
     , currentViewIndex(0)

@@ -115,6 +115,7 @@ struct ViewerTabPrivate
     ScaleSliderQWidget* gammaSlider;
     ComboBox* viewerColorSpace;
     Button* checkerboardButton;
+    Button* ditherButton;
     Button* pickerButton;
     ComboBox* viewsComboBox;
     ViewIdx currentViewIndex;
@@ -192,6 +193,7 @@ struct ViewerTabPrivate
     bool isFileDialogViewer;
     mutable QMutex checkerboardMutex;
     bool checkerboardEnabled;
+    bool ditherEnabled;
     mutable QMutex fpsMutex;
     double fps;
 
