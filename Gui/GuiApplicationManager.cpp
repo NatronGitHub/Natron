@@ -790,6 +790,12 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             path = NATRON_IMAGES_PATH "interp_curve_z.png";
             break;
             // DON'T add a default: case here
+        case NATRON_PIXMAP_VIEWER_DITHER_ENABLED:
+            path = NATRON_IMAGES_PATH "dither_enabled.png";
+            break;
+        case NATRON_PIXMAP_VIEWER_DITHER_DISABLED:
+            path = NATRON_IMAGES_PATH "dither_disabled.png";
+            break;
         } // switch
         if ( path.empty() ) {
             assert(!"Missing image.");

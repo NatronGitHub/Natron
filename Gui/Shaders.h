@@ -32,6 +32,7 @@ NATRON_NAMESPACE_ENTER
 
 extern const char* fragRGB;
 extern const char* vertRGB;
+extern const char* fragDither;
 
 /*There's a black texture used for when the user disconnect the viewer
    It's not just a shader,because we still need coordinates feedback.
