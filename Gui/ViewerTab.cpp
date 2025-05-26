@@ -535,7 +535,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->ditherButton->setCheckable(true);
     _imp->ditherButton->setChecked(false);
     _imp->ditherButton->setDown(false);
-    _imp->ditherButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black (disabled under the wipe area and in stack modes)."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->ditherButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked, it will activate a dithering filter to avoid banding artifacts (needs 32 bits floating point rendering)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->ditherButton->setFixedSize(buttonSize);
     _imp->ditherButton->setIconSize(buttonIconSize);
     QObject::connect( _imp->ditherButton, SIGNAL(clicked(bool)), this, SLOT(onDitherButtonClicked()) );
