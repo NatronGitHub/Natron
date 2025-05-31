@@ -362,6 +362,7 @@ TimeLineGui::paintGL()
         if (screenPixelRatio != _imp->_screenPixelRatio) {
             _imp->_screenPixelRatio = screenPixelRatio;
             _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+            _imp->_textFont->setBold(true);
         }
     }
     assert(_imp->_textFont);
