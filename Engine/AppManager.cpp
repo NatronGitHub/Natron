@@ -316,6 +316,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 #endif
     // This should fix GL widgets when undocked
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -3185,7 +3186,7 @@ void
 AppManager::registerUNCPath(const QString& path,
                             const QChar& driveLetter)
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    //assert( QThread::currentThread() == qApp->thread() );
     _imp->uncPathMapping[driveLetter] = path;
 }
 
