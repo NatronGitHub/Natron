@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 set(NatronRenderer_SOURCES NatronRenderer_main.cpp)
-if(WINDOWS)
+if(WIN32)
     list(APPEND NatronRenderer_SOURCES ../Natron.rc)
 endif()
 add_executable(NatronRenderer ${NatronRenderer_SOURCES})

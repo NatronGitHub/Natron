@@ -524,6 +524,24 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->checkerboardButton, SIGNAL(clicked(bool)), this, SLOT(onCheckerboardButtonClicked()) );
     _imp->secondRowLayout->addWidget(_imp->checkerboardButton);
 
+    QPixmap ditheringEnabled, ditheringDisabled;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_DITHER_ENABLED, pixmapIconSize, &ditheringEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_DITHER_DISABLED, pixmapIconSize, &ditheringDisabled);
+    QIcon icDthr;
+    icDthr.addPixmap(ditheringEnabled, QIcon::Normal, QIcon::On);
+    icDthr.addPixmap(ditheringDisabled, QIcon::Normal, QIcon::Off);
+    _imp->ditherButton = new Button(icDthr, QString(), _imp->secondSettingsRow);
+    _imp->ditherButton->setFocusPolicy(Qt::NoFocus);
+    _imp->ditherButton->setCheckable(true);
+    _imp->ditherButton->setChecked(false);
+    _imp->ditherButton->setDown(false);
+    _imp->ditherButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black (disabled under the wipe area and in stack modes)."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->ditherButton->setFixedSize(buttonSize);
+    _imp->ditherButton->setIconSize(buttonIconSize);
+    QObject::connect( _imp->ditherButton, SIGNAL(clicked(bool)), this, SLOT(onDitherButtonClicked()) );
+    _imp->secondRowLayout->addWidget(_imp->ditherButton);
+
+
     _imp->viewsComboBox = new ComboBox(_imp->secondSettingsRow);
     _imp->viewsComboBox->setToolTip( QString::fromUtf8("<p><b>") + tr("Active view:") + QString::fromUtf8("</b></p>") + tr(
                                          "Tells the viewer what view should be displayed.") );

@@ -675,6 +675,15 @@ ViewerTab::onCheckerboardButtonClicked()
     _imp->viewer->redraw();
 }
 
+void
+ViewerTab::onDitherButtonClicked()
+{
+    _imp->ditherEnabled = !_imp->ditherEnabled;
+    _imp->ditherButton->setDown(_imp->ditherEnabled);
+    _imp->viewer->setDither(_imp->ditherEnabled);
+    _imp->viewer->redraw();
+}
+
 bool
 ViewerTab::isCheckerboardEnabled() const
 {
