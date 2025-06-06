@@ -260,12 +260,11 @@ ViewerGL::paintGL()
     }
     glCheckError();
 
-
     {
         double screenPixelRatio = getScreenPixelRatio();
         if (screenPixelRatio != _imp->_screenPixelRatio) {
             _imp->_screenPixelRatio = screenPixelRatio;
-            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio, QFont::Bold));
         }
     }
     assert(_imp->_textFont);
