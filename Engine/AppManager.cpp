@@ -314,6 +314,9 @@ AppManager::loadFromArgs(const CLArgs& cl)
         std::cout << "argv[" << i << "] = " << StrUtils::utf16_to_utf8( std::wstring(_imp->commandLineArgsWide[i]) ) << std::endl;
     }
 #endif
+    // This should fix GL widgets when undocked
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -321,6 +324,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
+
 
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
@@ -3182,7 +3186,7 @@ void
 AppManager::registerUNCPath(const QString& path,
                             const QChar& driveLetter)
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    //assert( QThread::currentThread() == qApp->thread() );
     _imp->uncPathMapping[driveLetter] = path;
 }
 

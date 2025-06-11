@@ -59,6 +59,18 @@ if(WIN32)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
 
+if(WIN32)
+    # Search qtdeploy executable
+    find_program(DEPLOYQT_EXE windeployqt.exe)
+    if(NOT ${DEPLOYQT_EXE} STREQUAL "")
+        set(DEPLOYQT_FOUND 1)
+        message(STATUS "windeployqt.exe found : ${DEPLOYQT_EXE}")
+    else()
+        set(DEPLOYQT_FOUND 0)
+        message(STATUS "windeployqt.exe not found, will not deploy Qt dependencies")
+    endif()
+endif()
+
 if(IS_DEBUG_BUILD AND WIN32)
     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
     # link errors on Windows debug builds.
@@ -84,7 +96,7 @@ if(NATRON_QT6)
     set(SHIBOKEN_LIB Shiboken6::libshiboken)
     set(PYSIDE_LIB PySide6::pyside6)
 else()
-    find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS} NO_SYSTEM_ENVIRONMENT_PATH)
     find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
 
     find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
@@ -100,6 +112,8 @@ else()
     set(SHIBOKEN_LIB Shiboken2::libshiboken)
     set(PYSIDE_LIB PySide2::pyside2)
 endif()
+
+message(STATUS ">>> qt dirs ${Qt5Gui_INCLUDE_DIRS}")
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Remove NDEBUG from Shiboken INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.

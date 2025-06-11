@@ -130,7 +130,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
                                             QItemSelection *selection) const
 {
     int row = 0;
-    QModelIndex childIndex = index.model()->index(row, 0);
+    QModelIndex childIndex = index.model()->index(row, 0, index);
 
     while ( childIndex.isValid() ) {
         if ( !selection->contains(childIndex) ) {
@@ -143,7 +143,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
         }
 
         ++row;
-        childIndex = index.model()->index(row, 0);
+        childIndex = index.model()->index(row, 0, index);
     }
 }
 

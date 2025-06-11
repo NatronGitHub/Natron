@@ -260,12 +260,11 @@ ViewerGL::paintGL()
     }
     glCheckError();
 
-
     {
         double screenPixelRatio = getScreenPixelRatio();
         if (screenPixelRatio != _imp->_screenPixelRatio) {
             _imp->_screenPixelRatio = screenPixelRatio;
-            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio, QFont::Bold));
         }
     }
     assert(_imp->_textFont);
@@ -1719,6 +1718,14 @@ ViewerGL::setLut(int lut)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
+
+void
+ViewerGL::setDither(bool dither)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->enableDisplayDither = dither;
+}   
 
 #define QMouseEventLocalPos(e) ( e->localPos() )
 

@@ -397,6 +397,7 @@ public Q_SLOTS:
     void hideAllToolbars();
 
     void onCheckerboardButtonClicked();
+    void onDitherButtonClicked();
 
     void onPickerButtonClicked(bool);
 
