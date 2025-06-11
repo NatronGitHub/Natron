@@ -305,6 +305,8 @@ catDll libfftw3-
 catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
+catDll libngtcp2-
+catDll libngtcp2_crypto_ossl
 #catDll libbrotlidec
 #catDll libbrotlicommon
 
