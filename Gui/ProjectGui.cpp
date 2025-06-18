@@ -261,10 +261,18 @@ AddFormatDialog::getFormat() const
     return Format(0, 0, w, h, name.toStdString(), pa);
 }
 
-// Version is handled in ProjectGuiSerialization
-template<>
+template
 void
-ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const
+ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const;
+
+template
+void
+ProjectGui::save<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & archive) const;
+
+// Version is handled in ProjectGuiSerialization
+template<class Archive>
+void
+ProjectGui::save(Archive & archive) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
@@ -430,9 +438,15 @@ loadNodeGuiSerialization(Gui* gui,
     }
 } // loadNodeGuiSerialization
 
-template<>
+template void
+ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive);
+
+template void
+ProjectGui::load<boost::archive::binary_iarchive>(bool isAutosave,  boost::archive::binary_iarchive & archive);
+
+template<class Archive>
 void
-ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive)
+ProjectGui::load(bool isAutosave,  Archive & archive)
 {
     ProjectGuiSerialization obj;
 
