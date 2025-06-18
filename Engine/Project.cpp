@@ -287,11 +287,6 @@ Project::loadProjectInternal(const QString & path,
     }
 
     bool ret = false;
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open( &ifile, filePath.toStdString() );
-    if (!ifile) {
-        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
-    }
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -315,21 +310,28 @@ Project::loadProjectInternal(const QString & path,
     }
 
     LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
+    bool xml_loaded = false;
 
     try {
-        bool bgProject;
-        boost::archive::xml_iarchive iArchive(ifile);
-        {
-            FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
+        // XML loading tests first, then binary loading
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open( &ifile, filePath.toStdString());
+        if (ifile) {
+            bool bgProject;
+            boost::archive::xml_iarchive iArchive(ifile);
+            {
+                FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
 
-            iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-            ret = load(projectSerializationObj, name, path, mustSave);
-        } // __raii_loadingProjectInternal__
+                iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
+                ProjectSerialization projectSerializationObj( getApp() );
+                iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
+                ret = load(projectSerializationObj, name, path, mustSave);
+            } // __raii_loadingProjectInternal__
 
-        if (!bgProject) {
-            getApp()->loadProjectGui(isAutoSave, iArchive);
+            if (!bgProject) {
+                getApp()->loadProjectGui(isAutoSave, iArchive);
+            }
+            xml_loaded = true;
         }
     } catch (const std::exception &e) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
@@ -339,7 +341,6 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
-        throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -348,7 +349,48 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
-        throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
+    }
+
+    if (!xml_loaded){
+        try {
+            FStreamsSupport::ifstream ifile;
+            FStreamsSupport::open( &ifile, filePath.toStdString(), std::ios::in | std::ios::binary );
+            if (!ifile) {
+                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+            }
+            bool bgProject;
+            boost::archive::binary_iarchive iArchive(ifile);
+            {
+                FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
+
+                iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
+                ProjectSerialization projectSerializationObj( getApp() );
+                iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
+                ret = load(projectSerializationObj, name, path, mustSave);
+            } // __raii_loadingProjectInternal__
+
+            if (!bgProject) {
+                getApp()->loadProjectGui(isAutoSave, iArchive);
+            }
+        } catch (const std::exception &e) {
+            const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+            if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+                QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+                throw std::runtime_error(message.toStdString());
+            }
+            throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
+        } catch (...) {
+            const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+            if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+                QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+                throw std::runtime_error(message.toStdString());
+            }
+            throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
+        }
     }
 
     Format f;
@@ -599,12 +641,6 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
-        FStreamsSupport::ofstream ofile;
-        FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
-        if (!ofile) {
-            throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
-        }
-
         ///Fix file paths before saving.
         QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
 
@@ -615,27 +651,62 @@ Project::saveProjectInternal(const QString & path,
             _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
         }
 
-        try {
-            boost::archive::xml_oarchive oArchive(ofile);
-            bool bgProject = getApp()->isBackground();
-            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            save(&projectSerializationObj);
-            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-            if (!bgProject) {
-                AppInstancePtr app = getApp();
-                if (app) {
-                    app->saveProjectGui(oArchive);
+        if (!appPTR->getCurrentSettings()->saveAsBinary()){
+            try {
+                FStreamsSupport::ofstream ofile;
+                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios::out);
+                if (!ofile) {
+                    throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
                 }
+                boost::archive::xml_oarchive oArchive(ofile);
+                bool bgProject = getApp()->isBackground();
+                oArchive << boost::serialization::make_nvp("Background_project", bgProject);
+                ProjectSerialization projectSerializationObj( getApp() );
+                save(&projectSerializationObj);
+                oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
+                if (!bgProject) {
+                    AppInstancePtr app = getApp();
+                    if (app) {
+                        app->saveProjectGui(oArchive);
+                    }
+                }
+            } catch (...) {
+                if (!autoSave && updateProjectProperties) {
+                    ///Reset the old project path in case of failure.
+                    _imp->autoSetProjectDirectory(oldProjectPath);
+                }
+                throw;
             }
-        } catch (...) {
-            if (!autoSave && updateProjectProperties) {
-                ///Reset the old project path in case of failure.
-                _imp->autoSetProjectDirectory(oldProjectPath);
-            }
-            throw;
         }
-    } // ofile
+        else
+        {
+            try {
+                FStreamsSupport::ofstream ofile;
+                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios::out | std::ios::binary);
+                if (!ofile) {
+                    throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+                }
+                boost::archive::binary_oarchive oArchive(ofile);
+                bool bgProject = getApp()->isBackground();
+                oArchive << boost::serialization::make_nvp("Background_project", bgProject);
+                ProjectSerialization projectSerializationObj( getApp() );
+                save(&projectSerializationObj);
+                oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
+                if (!bgProject) {
+                    AppInstancePtr app = getApp();
+                    if (app) {
+                        app->saveProjectGui(oArchive);
+                    }
+                }
+            } catch (...) {
+                if (!autoSave && updateProjectProperties) {
+                    ///Reset the old project path in case of failure.
+                    _imp->autoSetProjectDirectory(oldProjectPath);
+                }
+                throw;
+            }
+        }
+    }
 
     if (!autoSave) {
         // rotate backups

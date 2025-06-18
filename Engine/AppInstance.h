@@ -218,7 +218,15 @@ public:
     {
     }
 
+    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::binary_iarchive & /*archive*/) const
+    {
+    }
+
     virtual void saveProjectGui(boost::archive::xml_oarchive & /*archive*/)
+    {
+    }
+
+    virtual void saveProjectGui(boost::archive::binary_oarchive & /*archive*/)
     {
     }
 

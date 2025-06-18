@@ -39,6 +39,8 @@ namespace boost {
 namespace archive {
 class xml_iarchive;
 class xml_oarchive;
+class binary_iarchive;
+class binary_oarchive;
 }
 namespace serialization {
 class access;

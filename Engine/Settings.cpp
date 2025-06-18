@@ -207,6 +207,12 @@ Settings::initializeKnobsGeneral()
                                       "last saved), *.~2~ (third last saved).") );
     _generalTab->addKnob(_saveVersions);
 
+    _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary") );
+    _saveAsBinary->setName("saveAsBinary");
+    _saveAsBinary->setHintToolTip( tr("When checked, %1 will save projects in a binary format which is faster to load and save. "
+                                      "When unchecked, projects will be saved in a human-readable text format. "
+                                      "Note that the text format is not guaranteed to be stable across versions of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
     _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
@@ -1469,6 +1475,7 @@ Settings::setDefaultValues()
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _saveVersions->setDefaultValue(1);
+    _saveAsBinary->setDefaultValue(false);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 
@@ -2910,6 +2917,12 @@ int
 Settings::saveVersions() const
 {
     return _saveVersions->getValue();
+}
+
+bool
+Settings::saveAsBinary() const
+{
+    return _saveAsBinary->getValue();
 }
 
 

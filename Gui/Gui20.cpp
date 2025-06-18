@@ -1466,7 +1466,21 @@ Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
 }
 
 void
+Gui::loadProjectGui(bool isAutosave, boost::archive::binary_iarchive & obj) const
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->load(isAutosave, obj);
+}
+
+void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->save(archive);
+}
+
+void
+Gui::saveProjectGui(boost::archive::binary_oarchive & archive)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->save(archive);
