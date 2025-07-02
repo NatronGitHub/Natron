@@ -4189,7 +4189,7 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
 #endif
     std::stringstream ss;
     ss << "import inspect\n";
-    ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
+    ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
     std::string output;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);
