@@ -419,12 +419,16 @@ elif [ "$PKGOS" = "OSX" ]; then
 fi
 export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
 
-if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    QT_VERSION=$(pkg-config --modversion QtCore)
-else
-    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
-fi
-QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
+# [Troy] This is unnecessary and breaks the linux build because pkg-config
+# is used to find the Qt5 version before Qt5 is actually built/installed into
+# $SDK_HOME.
+#
+#if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+#    QT_VERSION=$(pkg-config --modversion QtCore)
+#else
+#    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+#fi
+#QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 
 # Load compiler related stuff
 source $CWD/compiler-common.sh

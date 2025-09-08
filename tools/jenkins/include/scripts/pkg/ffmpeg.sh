@@ -2,9 +2,11 @@
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=6.0
+#FFMPEG_VERSION=6.0
+FFMPEG_VERSION=6.1.3
 # see https://ffmpeg.org/download.html
-FFMPEG_VERSION_LIBAVCODEC=60.3.100
+#FFMPEG_VERSION_LIBAVCODEC=60.3.100
+FFMPEG_VERSION_LIBAVCODEC=60.31.102
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"
 if download_step; then

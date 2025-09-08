@@ -104,7 +104,7 @@ EOF
     LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
     CPATH=\"\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
     PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
-    PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
+    PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW/bin:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
     GIT_BRANCH=RB-2.5 \\
@@ -222,7 +222,7 @@ EOF
             ARCH=x86_64
         fi
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
+RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip python3 python3-dev libshiboken2-dev libpyside2-dev && rm -rf /var/lib/apt/lists/*"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
@@ -618,7 +618,10 @@ if dobuild; then
     export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME
 fi
 
-if [ "${UBUNTU:-0}" = 20.04 ]; then
+if [ "${UBUNTU:-0}" = 24.04 ]; then
+    GCC_VERSION=13.2.0
+    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
+elif [ "${UBUNTU:-0}" = 20.04 ]; then
     GCC_VERSION=9.3.0
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ "${UBUNTU:-0}" = 18.04 ]; then
@@ -783,6 +786,7 @@ build libraw
 checkpoint
 
 build ilmbase
+build imath
 build openexr
 build pixman
 build cairo

@@ -25,9 +25,21 @@ if build_step && { force_build || { [ ! -x "$SDK_HOME/lib/python{PY3_VERSION_SHO
         pushd _build
         # It's OK to install in $SDK_HOME and not $QT5PREFIX, even if it's qt5-specific,
         # because PySide2 only works with Qt5 anyway.
-        cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  \
-        -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DPYTHON_EXECUTABLE="$PY3_EXE" -GNinja
+        # [TROY] Building using cmake directly failed to compile shiboken2 because of this error: https://bugs.gentoo.org/show_bug.cgi?id=913096
+        # I gave up on this approach and tried using setuptools method below.
+        cmake .. \
+          -DCMAKE_INSTALL_PREFIX="$SDK_HOME" \
+          -DCMAKE_C_FLAGS="$BF" \
+          -DCMAKE_CXX_FLAGS="$BF"  \
+          -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" \
+          -DPYTHON_EXECUTABLE="$PY3_EXE" \
+          -DPYTHON_LIMITED_API=ON \
+          -DFORCE_LIMITED_API=yes \
+          -DLLVM_CONFIG="${LLVM_PATH}/bin/llvm-config" \
+          -GNinja
         ninja install
+        # [TROY] Building using `setup.py install` was slightly more successful, but failed to build pyside2.
+        #python3 setup.py install --qmake=/opt/Natron-sdk/qt5/bin/qmake --parallel=8 --limited-api=yes --build-tests
         popd
         popd
         rm -rf "pyside-setup-opensource-src-${PYSIDE2_VERSION}"

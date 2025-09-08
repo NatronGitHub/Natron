@@ -3,7 +3,8 @@
 # Install gcc
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gcc.html
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=9.3.0
+GCC_VERSION=13.2.0
+#GCC_VERSION=9.3.0
 #GCC_VERSION=8.1.0
 #GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
@@ -12,24 +13,26 @@ GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
 GCC_SITE="http://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}"
 
 # Install gcc
-MPC_VERSION=1.1.0
+MPC_VERSION=1.3.1
 MPC_TAR="mpc-${MPC_VERSION}.tar.gz"
 MPC_SITE="https://ftp.gnu.org/gnu/mpc"
 
-# MPFR_VERSION=4.0.1 # gcc 8.2.0
-MPFR_VERSION=4.0.2 # gcc 9.1.0-9.3.0
+#MPFR_VERSION=4.0.1 # gcc 8.2.0
+#MPFR_VERSION=4.0.2 # gcc 9.1.0-9.3.0
+MPFR_VERSION=4.2.1 # gcc 13.2.0
 MPFR_TAR="mpfr-${MPFR_VERSION}.tar.bz2"
 MPFR_SITE="http://www.mpfr.org/mpfr-${MPFR_VERSION}"
 
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gmp.html
-GMP_VERSION=6.2.0 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
+#GMP_VERSION=6.2.0 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
+GMP_VERSION=6.3.0
 if [ "${DTS:-0}" -le 3 ] && [ "${CENTOS:-7}" -le 7 ]; then
     GMP_VERSION=6.1.2 # 6.2.0 fails when buiding gcc: requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 fi
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
 GMP_SITE="https://gmplib.org/download/gmp"
 
-ISL_VERSION=0.14.1
+ISL_VERSION=0.26.1
 if version_gt "$GCC_VERSION" 4.8.5; then
     ISL_VERSION=0.19
 fi
