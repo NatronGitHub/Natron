@@ -96,7 +96,8 @@ if [ "$PKGOS" = "Linux" ]; then
     else
         exit 1
     fi
-    SDK_HOME="/opt/Natron-$SDK_VERSION"
+    #SDK_HOME="/opt/Natron-$SDK_VERSION"
+    SDK_HOME="/usr"
     # Path where GPL builds are stored
     CUSTOM_BUILDS_PATH="$SDK_HOME"
 
@@ -330,21 +331,8 @@ if [ "$PKGOS" = "Windows" ]; then
         LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
     fi
 elif [ "$PKGOS" = "Linux" ]; then
-    if [ "${NATRON_LICENSE:-}" = "GPL" ]; then
-        if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl" ]; then
-            FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl"
-        elif [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl2" ]; then
-            FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl2"
-        else
-            (>&2 echo "FFmpeg cannot be found in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2")
-            (>&2 echo "Info: Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2")
-            FFMPEG_PATH="$SDK_HOME/ffmpeg-gpl2"
-        fi
-        LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"
-    elif [ -z "${NATRON_LICENSE+x}" ] || [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
-        FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"
-        LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
-    fi
+    FFMPEG_PATH="/usr"
+    LIBRAW_PATH="/usr"
 elif [ "$PKGOS" = "OSX" ]; then
     LIBRAW_PATH="$SDK_HOME"
     FFMPEG_PATH="$SDK_HOME"
@@ -371,13 +359,17 @@ if [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
+elif [ "$PKGOS" = "Linux" ]; then
+    OSMESA_PATH="/usr"
 else
     (>&2 echo "Warning: OSMesa cannot be found in $SDK_HOME/osmesa or /opt/osmesa")
     (>&2 echo "Info: Setting OSMESA_PATH=$SDK_HOME/osmesa")
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
 
-if [ -n "${LLVM_PREFIX:-}" ]; then
+if [ "$PKGOS" = "Linux" ]; then
+    LLVM_PATH="/usr"
+elif [ -n "${LLVM_PREFIX:-}" ]; then
     LLVM_PATH="${LLVM_PREFIX}"
 elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
@@ -396,6 +388,8 @@ elif [ -d "$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}"
 elif [ -x "$SDK_HOME/bin/qmake" ] || [ -x "$SDK_HOME/bin/qmake.exe" ]; then
     QTDIR="$SDK_HOME"
+elif [ "$PKGOS" = "Linux" ]; then
+    QTDIR="/usr"
 else
     (>&2 echo "Warning: Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}")
     (>&2 echo "Info: setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}")
@@ -407,11 +401,12 @@ BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
-    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    echo "skipping using Natron SDK, deferring to ubuntu system libraries"
+    #PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
+    #LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    #LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    #PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "OSX" ]; then

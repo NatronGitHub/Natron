@@ -42,17 +42,17 @@ popd () {
     command popd "$@" > /dev/null
 }
 
-LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
-PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
+#LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
+#PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
 export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
-if [ "${ARCH}" = "x86_64" ]; then
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-else
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-fi
-export LD_LIBRARY_PATH
+#if [ "${ARCH}" = "x86_64" ]; then
+#    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+#else
+#    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+#fi
+#export LD_LIBRARY_PATH
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
 PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
