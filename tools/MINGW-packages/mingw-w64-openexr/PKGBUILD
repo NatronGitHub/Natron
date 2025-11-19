@@ -3,11 +3,11 @@
 _realname=openexr
 pkgbase=mingw-w64-natron_${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
-pkgver=3.3.2
+pkgver=3.4.3
 pkgrel=99.1
 pkgdesc='A high dynamic-range image file format library (mingw-w64)'
 arch=('any')
-mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
+mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clangarm64')
 url="https://www.openexr.com/"
 msys2_repository_url='https://github.com/AcademySoftwareFoundation/openexr'
 msys2_references=(
@@ -16,9 +16,11 @@ msys2_references=(
   "cpe: cpe:/a:openexr:openexr"
 )
 license=('spdx:BSD-3-Clause')
-depends=("${MINGW_PACKAGE_PREFIX}-natron_imath"
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
+         "${MINGW_PACKAGE_PREFIX}-natron_imath"
          "${MINGW_PACKAGE_PREFIX}-libdeflate"
-         "${MINGW_PACKAGE_PREFIX}-libwinpthread-git")
+         "${MINGW_PACKAGE_PREFIX}-libwinpthread-git"
+         "${MINGW_PACKAGE_PREFIX}-openjph")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-ninja")
@@ -34,7 +36,7 @@ replaces=(
 source=("https://github.com/openexr/openexr/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
         0006-cmake-soversion.patch
         0007-export-TypedAttribute-value.patch)
-sha256sums=('5013e964de7399bff1dd328cbf65d239a989a7be53255092fa10b85a8715744d'
+sha256sums=('db0c3f9a6bbfc6853d5ee21164ef151e616f07d6f2bac80339b3a0698d13fcc0'
             '5653da878ebbf5f3087bb529213931b48e151aef082b34e19d189e22be0411e7'
             '204777b48cde1c4d390789f10c5e429d5295be701f68a7937a90d0ecf271c048')
 
