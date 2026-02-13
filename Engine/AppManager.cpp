@@ -480,6 +480,9 @@ AppManager::~AppManager()
 
     // After this line, everything is cleaned-up (should be) and the process may resume in the main and could in theory be able to re-create a new AppManager
     _imp->_qApp.reset();
+
+    // Fast cleanup
+    TerminateProcess(GetCurrentProcess(), 0);
 }
 
 class QuitInstanceArgs
