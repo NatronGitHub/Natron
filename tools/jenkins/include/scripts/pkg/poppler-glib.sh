@@ -4,7 +4,8 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/poppler.html
 POPPLER_VERSION=23.05.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
-POPPLER_SITE="https://poppler.freedesktop.org"
+#POPPLER_SITE="https://poppler.freedesktop.org"
+POPPLER_SITE="https://web.archive.org/web/20250503140523/https://poppler.freedesktop.org/"
 if download_step; then
     download "$POPPLER_SITE" "$POPPLER_TAR"
 fi

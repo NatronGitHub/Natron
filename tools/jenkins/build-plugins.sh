@@ -4,7 +4,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-#set -x # Print commands and their arguments as they are executed.
+set -x # Print commands and their arguments as they are executed.
 
 source common.sh
 source manageBuildOptions.sh
@@ -63,18 +63,18 @@ fi
 # Setup env
 CXXFLAGS_EXTRA=
 if [ "$PKGOS" = "Linux" ]; then
-    export OPENJPEG_HOME="$SDK_HOME"
-    export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
-    export LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib"
-    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/cmake/bin:$PATH"
-    if [ "$ARCH" = "x86_64" ]; then
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
-    else
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
-    fi
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
-    export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
-
+    echo "skipping setting env vars for linux"
+    #export OPENJPEG_HOME="$SDK_HOME"
+    #export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
+    #export LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib"
+    #export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/cmake/bin:$PATH"
+    #if [ "$ARCH" = "x86_64" ]; then
+    #    export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
+    #else
+    #    export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
+    #fi
+    #export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    #export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
@@ -161,7 +161,9 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     if [ -s "$OSMESA_PATH/lib/libMangledOSMesa32.a" ]; then
         MESALIB="-lMangledOSMesa32"
     fi
-    GLULIB="-lMangledGLU"
+    if [ "$PKGOS" != "Linux" ]; then
+        GLULIB="-lMangledGLU"
+    fi
 
     # Build static on Windows so that openfx-misc are usable on other hosts without DLL's and manifests (note Shadertoy will require osmesa dll)
     # Could/Should also be done on OSX?
@@ -212,7 +214,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
             HAVE_CIMG=0 \
             ${OMP} \
-            CXXFLAGS_EXTRA="-DHAVE_OSMESA ${CXXFLAGS_EXTRA}" \
+            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
             make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
         set +x
 
@@ -319,7 +321,8 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
             BITS="${BITS}" \
             LDFLAGS_ADD="${BUILDID:-}" \
             CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} \
+            SUBDIRS_NOMULTI="EXR FFmpeg OCIO OIIO PFM PNG" nomulti # Skip SeExpr2 which doesn't support Qt5
         ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         set +x
         echo "Info: build openfx-io using make... done!"

@@ -4,20 +4,39 @@ expat: PKGCONFIG -= expat
 INCLUDEPATH+=/opt/Natron-sdk/include
 LIBS+="-L/opt/Natron-sdk/lib"
 
-pyside {
-PKGCONFIG -= pyside
-PKGCONFIG -= pyside-py$$PYV
-INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)
-INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtCore
-INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtGui
-INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-LIBS += $$system(pkg-config --libs pyside-py$$PYV)
+equals(QT_MAJOR_VERSION, 5) {
+  pyside {
+    #PKGCONFIG -= pyside
+    #PKGCONFIG -= pyside-py$$PYV
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside2)
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside2)/QtCore
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside2)/QtGui
+    #INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+    LIBS += $$system(pkg-config --libs pyside2)
+  }
+  shiboken {
+    #PKGCONFIG -= shiboken
+    #PKGCONFIG -= shiboken-py$$PYV
+    INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken2)
+    LIBS += $$system(pkg-config --libs shiboken2)
+  }
 }
-shiboken {
-PKGCONFIG -= shiboken
-PKGCONFIG -= shiboken-py$$PYV
-INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken-py$$PYV)
-LIBS += $$system(pkg-config --libs shiboken-py$$PYV)
+equals(QT_MAJOR_VERSION, 4) {
+  pyside {
+    PKGCONFIG -= pyside
+    PKGCONFIG -= pyside-py$$PYV
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtCore
+    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py$$PYV)/QtGui
+    INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
+    LIBS += $$system(pkg-config --libs pyside-py$$PYV)
+  }
+  shiboken {
+    PKGCONFIG -= shiboken
+    PKGCONFIG -= shiboken-py$$PYV
+    INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken-py$$PYV)
+    LIBS += $$system(pkg-config --libs shiboken-py$$PYV)
+  }
 }
 
 QMAKE_LFLAGS += -Wl,-rpath,\\\$\$ORIGIN/../lib
