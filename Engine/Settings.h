@@ -181,6 +181,8 @@ public:
 
     int saveVersions() const;
 
+    bool saveAsBinary() const;
+
     bool isSnapToNodeEnabled() const;
 
     bool isCheckForUpdatesEnabled() const;
@@ -434,6 +436,7 @@ private:
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
     KnobIntPtr _saveVersions;
+    KnobBoolPtr _saveAsBinary;
     KnobChoicePtr _hostName;
     KnobStringPtr _customHostName;
 

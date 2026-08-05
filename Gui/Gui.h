@@ -305,8 +305,10 @@ public:
     static QPixmap screenShot(QWidget* w);
 
     void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
+    void loadProjectGui(bool isAutosave, boost::archive::binary_iarchive & obj) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
+    void saveProjectGui(boost::archive::binary_oarchive & archive);
 
     void setColorPickersColor(double r, double g, double b, double a);
 
