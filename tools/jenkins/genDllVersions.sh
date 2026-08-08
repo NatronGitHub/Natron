@@ -64,6 +64,15 @@ function findDll() {
     fi
 }
 
+function emitDll() {
+    if [ "$INIT_VAR" = "1" ]; then
+    	echo "${DLL_VAR_PREFIX}_DLL="'('"${BIN_PATH}/$1"')' >> "$OUTPUT_FILE_NAME"
+	INIT_VAR=0
+    else
+        echo "${DLL_VAR_PREFIX}_DLL="'('"\"\${${DLL_VAR_PREFIX}_DLL[@]}\" ${BIN_PATH}/$1"')' >> "$OUTPUT_FILE_NAME"
+    fi
+}
+
 function catDll() {
     DLL_NAME=""
     findDll $1
@@ -78,12 +87,23 @@ function catDll() {
 	return 1
     fi
 #    echo "Found DLL: $DLL_NAME"
-    if [ "$INIT_VAR" = "1" ]; then
-    	echo "${DLL_VAR_PREFIX}_DLL="'('"${BIN_PATH}/${DLL_NAME}"')' >> "$OUTPUT_FILE_NAME"
-	INIT_VAR=0
-    else
-        echo "${DLL_VAR_PREFIX}_DLL="'('"\"\${${DLL_VAR_PREFIX}_DLL[@]}\" ${BIN_PATH}/${DLL_NAME}"')' >> "$OUTPUT_FILE_NAME"
+    emitDll "$DLL_NAME"
+}
+
+# For libraries that ship several ABI-versioned DLLs side by side, where more
+# than one match is expected rather than ambiguous. x264 is one: ffmpeg links
+# libx264-164.dll while libheif links libx264-165.dll, and both get bundled.
+function catAllDlls() {
+    DLL_NAME=""
+    findDll $1
+    if [ "$(echo "$DLL_NAME" | wc -w)" = "0" ]; then
+        echo "WARNING, dll $1 was not found!"
+	return 1
     fi
+    local dll
+    for dll in $DLL_NAME; do
+        emitDll "$dll"
+    done
 }
 
 INIT_VAR=1
@@ -260,7 +280,7 @@ else
 fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-    catDll libx264-
+    catAllDlls libx264-
     #catDll libx265
     #catDll libx265_main
     catDll xvidcore
