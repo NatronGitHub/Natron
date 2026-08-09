@@ -268,8 +268,17 @@ if [ "$PYV" = 2 ]; then
     catDll libpyside-python${PYVER}
     catDll libshiboken-python${PYVER}
 else
-    catDll libpyside
-    catDll libshiboken
+    # PySide2 goes with Qt5 and PySide6 with Qt6, so the binding major does not
+    # track QT_VERSION_MAJOR. Name it explicitly: an unqualified libpyside also
+    # matches libpyside6 and libpyside6qml once Qt6 is installed alongside Qt5,
+    # which natron-build-deps-qt6 does.
+    if [ "$QT_VERSION_MAJOR" = 5 ]; then
+        PYSIDE_MAJOR=2
+    else
+        PYSIDE_MAJOR="$QT_VERSION_MAJOR"
+    fi
+    catDll libpyside${PYSIDE_MAJOR}
+    catDll libshiboken${PYSIDE_MAJOR}
 fi
 
 # gcc
