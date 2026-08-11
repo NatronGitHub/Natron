@@ -48,6 +48,16 @@ function checkoutRepository() {
         # slow version:
         if "$deep" && [ -z "$REPO_COMMIT" ]; then
             $TIMEOUT 1800 $GIT clone "$REPO_URL" -b "${REPO_BRANCH}" "$REPO_LOCAL_DIRNAME"
+        elif [ -n "$REPO_COMMIT" ]; then
+            # A commit is not a ref, so it cannot be given to clone -b: git fails
+            # with "Remote branch <sha> not found in upstream origin". Clone the
+            # branch, or the default branch when none was given, and fetch the
+            # commit itself below.
+            if [ -n "$REPO_BRANCH" ]; then
+                $TIMEOUT 1800 $GIT clone --depth 1 -b "${REPO_BRANCH#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+            else
+                $TIMEOUT 1800 $GIT clone --depth 1 "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+            fi
         else
             # fast version (depth=1):
             $TIMEOUT 1800 $GIT clone --depth 1 -b "${branch#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
@@ -60,6 +70,10 @@ function checkoutRepository() {
         REPO_COMMIT=$(git rev-parse HEAD)
         echo "done, got commit $REPO_COMMIT"
     else
+        # The clone is shallow and holds only the branch tip, so ask for the
+        # pinned commit before checking it out. Needs the full 40 character sha:
+        # GitHub rejects an abbreviated one with "not our ref".
+        $TIMEOUT 1800 $GIT fetch --depth 1 origin "$REPO_COMMIT"
         $GIT checkout "$REPO_COMMIT"
     fi
 
