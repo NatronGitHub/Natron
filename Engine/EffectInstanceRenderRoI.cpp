@@ -1517,7 +1517,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///locks belongs to an instance)
 
 
-        std::unique_ptr<QMutexLocker> locker;
+        std::unique_ptr<QtCompat::MutexLock> locker;
 
 
         EffectInstancePtr renderInstance;
@@ -1535,11 +1535,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         assert(renderInstance);
 
         if (safety == eRenderSafetyInstanceSafe) {
-            locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
+            locker.reset( new QtCompat::MutexLock( &getNode()->getRenderInstancesSharedMutex() ) );
         } else if (safety == eRenderSafetyUnsafe) {
             const Plugin* p = getNode()->getPlugin();
             assert(p);
-            locker.reset( new QMutexLocker( p->getPluginLock() ) );
+            locker.reset( new QtCompat::MutexLock( p->getPluginLock() ) );
         } else {
             // no need to lock
             Q_UNUSED(locker);
