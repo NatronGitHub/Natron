@@ -54,6 +54,7 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QHostInfo>
+#include <QRegularExpression>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <ofxhXml.h> // OFX::XML::escape
@@ -504,7 +505,7 @@ findBackups(const QString & filePath)
         ret.append(filePath);
     }
     // find files matching filePath.~[0-9]+~
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~$") );
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QDirIterator it(fileInfo.dir());
@@ -518,7 +519,11 @@ findBackups(const QString & filePath)
 
         // If the filename contains target string - put it in the hitlist
         QString fn = file.fileName();
-        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) == fileName.size()) {
+        // The pattern ends with $, so there is at most one match and
+        // lastIndexIn() is just that match.
+        QRegularExpressionMatch backupMatch = rx.match(fn);
+        if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
+             ( backupMatch.capturedStart() == fileName.size() ) ) {
             ret.append(file.filePath());
         }
     }
@@ -532,11 +537,11 @@ findBackups(const QString & filePath)
 static QString
 nextBackup(const QString & filePath)
 {
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
-    int pos = rx.lastIndexIn(filePath);
-    if (pos >= 0) {
-        int i = rx.cap(1).toInt();
-        return filePath.left(pos) + QString::fromUtf8(".~%1~").arg(i+1);
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~$") );
+    QRegularExpressionMatch match = rx.match(filePath);
+    if ( match.hasMatch() ) {
+        int i = match.captured(1).toInt();
+        return filePath.left( match.capturedStart() ) + QString::fromUtf8(".~%1~").arg(i+1);
     } else {
         return filePath + QString::fromUtf8(".~1~");
     }

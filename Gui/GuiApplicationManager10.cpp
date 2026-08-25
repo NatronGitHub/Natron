@@ -41,7 +41,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSettings>
 #include <QFileInfo>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -299,9 +300,11 @@ GuiApplicationManager::initializeQApp(int &argc,
 #endif
         app = new Application(this, argc, argv);
     }
-    QDesktopWidget* desktop = app->desktop();
-    int dpiX = desktop->logicalDpiX();
-    int dpiY = desktop->logicalDpiY();
+    // QDesktopWidget is gone in Qt6; QScreen carries the same values and exists
+    // in Qt 5.15. Keep the int truncation the QDesktopWidget accessors did.
+    QScreen* screen = QGuiApplication::primaryScreen();
+    int dpiX = screen->logicalDotsPerInchX();
+    int dpiY = screen->logicalDotsPerInchY();
 
     setCurrentLogicalDPI(dpiX, dpiY);
 

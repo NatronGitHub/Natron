@@ -51,7 +51,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QFileInfo>
-#include <QRegExp>
+#include <QRegularExpression>
 
 NATRON_NAMESPACE_ENTER
 
@@ -283,9 +283,10 @@ DocumentWindow::ddeExecute(MSG* message,
         return true;
     }
 
-    QRegExp regCommand( QString::fromUtf8("^\\[(\\w+)\\((.*)\\)\\]$") );
-    if ( regCommand.exactMatch(command) ) {
-        executeDdeCommand( regCommand.cap(1), regCommand.cap(2) );
+    QRegularExpression regCommand( QString::fromUtf8("^\\[(\\w+)\\((.*)\\)\\]$") );
+    const QRegularExpressionMatch commandMatch = regCommand.match(command);
+    if ( commandMatch.hasMatch() ) {
+        executeDdeCommand( commandMatch.captured(1), commandMatch.captured(2) );
     }
 
     *result = 0;
@@ -345,15 +346,16 @@ void
 DocumentWindow::executeDdeCommand(const QString& command,
                                   const QString& params)
 {
-    QRegExp regCommand( QString::fromUtf8("^\"(.*)\"$") );
-    bool singleCommand = regCommand.exactMatch(params);
+    QRegularExpression regCommand( QString::fromUtf8("^\"(.*)\"$") );
+    const QRegularExpressionMatch paramsMatch = regCommand.match(params);
+    bool singleCommand = paramsMatch.hasMatch();
 
     if ( ( 0 == command.compare(QString::fromUtf8("open"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddeOpenFile( regCommand.cap(1) );
+        ddeOpenFile( paramsMatch.captured(1) );
     } else if ( ( 0 == command.compare(QString::fromUtf8("new"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddeNewFile( regCommand.cap(1) );
+        ddeNewFile( paramsMatch.captured(1) );
     } else if ( ( 0 == command.compare(QString::fromUtf8("print"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddePrintFile( regCommand.cap(1) );
+        ddePrintFile( paramsMatch.captured(1) );
     } else {
         executeUnknownDdeCommand(command, params);
     }
