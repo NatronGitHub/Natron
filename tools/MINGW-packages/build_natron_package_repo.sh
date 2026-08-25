@@ -59,7 +59,22 @@ for pkg_dir in ${PKGS}; do
 
       # Remove any package files from previous builds.
       rm -f mingw-w64-x86_64-*-any.pkg.tar.*
-      time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm
+
+      # Some upstream source hosts are unreliable; ffmpeg.org in particular has
+      # aborted this build repeatedly with connection timeouts. A second attempt
+      # normally succeeds, so do not lose an hour of work to one bad download.
+      build_attempts=2
+      for attempt in $(seq 1 ${build_attempts}); do
+        if time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm; then
+          break
+        fi
+        if [[ ${attempt} -eq ${build_attempts} ]]; then
+          echo "Building ${PACKAGE_NAME} failed after ${build_attempts} attempts."
+          exit 1
+        fi
+        echo "Building ${PACKAGE_NAME} failed, retrying (${attempt}/${build_attempts})..."
+        sleep 15
+      done
 
       echo "Build complete."
     fi

@@ -8,6 +8,19 @@ set -u # Treat unset variables as an error when substituting.
 
 GIT_UNIT=https://github.com/MrKepzie/Natron-Tests.git
 
+# Pin the unit tests instead of tracking master, so a reference image changing
+# upstream cannot turn the build red without a commit landing here.
+#
+# This is the commit before b326d1d, "TestImageCR2: regenerate reference for
+# OpenImageIO 3.x RAW decode". OIIO 3.x decodes the Canon .cr2 about 10% darker
+# than 2.x, and Natron builds OIIO 2.5 because it pins LibRaw 0.18.13 for the
+# GPL2 and GPL3 demosaic packs, which LibRaw dropped after 0.18 and which
+# OIIO 3.x cannot use (it needs LibRaw 0.20+). So the 3.x reference cannot be
+# matched without giving up AHD-Mod, AFD, VCD, Mixed, LMMSE and AMaZE.
+#
+# Bump this deliberately. Moving to the current tip requires OIIO 3.x first.
+NATRON_TESTS_COMMIT=5dcdda8514c25df24a6b746b5163afc338674e3c
+
 
 FAIL=0
 
@@ -37,7 +50,7 @@ fi
 
 CACHEDIR="$TMP_PATH/NatronTmpCacheDir"
 
-checkoutRepository "$GIT_URL_NATRON_TESTS_GITHUB" "$TESTDIR" "master" "" "" "0" || FAIL=$?
+checkoutRepository "$GIT_URL_NATRON_TESTS_GITHUB" "$TESTDIR" "master" "$NATRON_TESTS_COMMIT" "" "0" || FAIL=$?
 
 if [ "$FAIL" != "0" ]; then
     printStatusMessage "Failed to clone/update unit tests repository!"

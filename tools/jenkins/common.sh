@@ -390,18 +390,47 @@ else
 fi
 
 
+# Print the qmake binary of a Qt prefix, if there is one.
+# MSYS2 renamed Qt5's qmake to qmake-qt5 when it made Qt6 the default Qt
+# (msys2/MINGW-packages 389f888c), so an unsuffixed qmake is now either absent
+# or belongs to a different Qt major version. Probe the suffixed names first.
+find_qmake() {
+    local prefix="$1"
+    local name exe
+    for name in "qmake-qt${QT_VERSION_MAJOR}" "qmake${QT_VERSION_MAJOR}" qmake; do
+        for exe in "$prefix/bin/$name" "$prefix/bin/$name.exe"; do
+            if [ -x "$exe" ]; then
+                echo "$exe"
+                return 0
+            fi
+        done
+    done
+    return 1
+}
+
+QMAKE_IN_SDK_HOME=
 if [ -d "$SDK_HOME/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 elif [ -d "$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}"
-elif [ -x "$SDK_HOME/bin/qmake" ] || [ -x "$SDK_HOME/bin/qmake.exe" ]; then
+elif QMAKE_IN_SDK_HOME=$(find_qmake "$SDK_HOME"); then
     QTDIR="$SDK_HOME"
 else
     (>&2 echo "Warning: Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}")
     (>&2 echo "Info: setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}")
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 fi
-export QTDIR
+
+# Allow the caller to override the qmake binary, e.g. to build against a Qt
+# that does not follow any of the layouts probed above.
+if [ -z "${QMAKE:-}" ]; then
+    if [ -n "$QMAKE_IN_SDK_HOME" ]; then
+        QMAKE="$QMAKE_IN_SDK_HOME"
+    else
+        QMAKE=$(find_qmake "$QTDIR") || QMAKE="$QTDIR/bin/qmake"
+    fi
+fi
+export QTDIR QMAKE
 
 BOOST_ROOT="$SDK_HOME"
 

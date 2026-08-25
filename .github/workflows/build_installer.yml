@@ -29,6 +29,13 @@ jobs:
           update: true
           install: git mingw-w64-x86_64-wget unzip diffutils
 
+      # Needed only when install_natron_pacman_repo.sh cannot fetch a prebuilt
+      # repo and falls back to building it: the natron-setup package invokes
+      # Inno Setup's ISCC.exe.
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+        shell: pwsh
+
       - name: Install Natron pacman repository
         run: |
           ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
@@ -131,6 +138,13 @@ jobs:
           msystem: mingw64
           update: true
           install: git mingw-w64-x86_64-wget unzip
+
+      # Needed only when install_natron_pacman_repo.sh cannot fetch a prebuilt
+      # repo and falls back to building it: the natron-setup package invokes
+      # Inno Setup's ISCC.exe.
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+        shell: pwsh
 
       - name: Install Natron pacman repository
         run: |

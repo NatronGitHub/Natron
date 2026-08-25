@@ -50,7 +50,8 @@ if [ "$PKGOS" = "Linux" ]; then
     export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 fi
-QMAKE="$QTDIR/bin/qmake"
+# QMAKE is resolved by common.sh, which knows about version-suffixed qmake names.
+QMAKE="${QMAKE:-$QTDIR/bin/qmake}"
 
 cd "$TMP_PATH"
 
