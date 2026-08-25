@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-CONFIG += c++17
+CONFIG += c++20
 
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
@@ -289,14 +289,14 @@ macx-clang-libc++ {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++20
 }
 
 macx-clang {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++20
 }
 
 CONFIG(debug) {
@@ -489,16 +489,16 @@ unix {
   symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
-  QMAKE_CXXFLAGS += -std=c++17
-  enable_cxx17.name = CLANG_CXX_LANGUAGE_STANDARD
-  enable_cxx17.value = c++17
-  QMAKE_MAC_XCODE_SETTINGS += enable_cxx17
+  QMAKE_CXXFLAGS += -std=c++20
+  enable_cxx20.name = CLANG_CXX_LANGUAGE_STANDARD
+  enable_cxx20.value = c++20
+  QMAKE_MAC_XCODE_SETTINGS += enable_cxx20
 }
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
-  QMAKE_CXXFLAGS += -std=c++17
+  QMAKE_CXXFLAGS += -std=c++20
 }
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/
