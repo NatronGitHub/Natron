@@ -618,6 +618,10 @@ Gui::createMenuActions()
     QObject::connect( _imp->actionExportLayout, SIGNAL(triggered()), this, SLOT(exportLayout()) );
 
     _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionDefaultLayout, kShortcutDescActionDefaultLayout, this);
+    // Plain QAction rather than ActionWithShortcut: no shortcut needs registering
+    // in ActionShortcuts.h for this one.
+    _imp->actionShowAIChatPanel = new QAction(tr("AI Assistant"), this);
+    QObject::connect( _imp->actionShowAIChatPanel, SIGNAL(triggered()), this, SLOT(ensureAIChatPanelVisible()) );
     QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL(triggered()), this, SLOT(restoreDefaultLayout()) );
 
     _imp->actionPrevTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionPrevTab, kShortcutDescActionPrevTab, this);
@@ -662,6 +666,7 @@ Gui::createMenuActions()
     _imp->menuLayout->addAction(_imp->actionImportLayout);
     _imp->menuLayout->addAction(_imp->actionExportLayout);
     _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
+    _imp->menuLayout->addAction(_imp->actionShowAIChatPanel);
     _imp->menuLayout->addAction(_imp->actionPrevTab);
     _imp->menuLayout->addAction(_imp->actionNextTab);
     _imp->menuLayout->addAction(_imp->actionCloseTab);

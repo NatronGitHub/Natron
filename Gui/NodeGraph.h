@@ -275,6 +275,18 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+public:
+
+    /**
+     * @brief This graph's undo stack.
+     *
+     * PanelWidget declares this protected, but NodeGraph publishes it: grouping
+     * several agent-issued mutations into one QUndoStack macro (see
+     * AIMcpServer::beginAgentTransaction) requires calling beginMacro/endMacro
+     * on this exact stack from outside the panel. Widening access in the derived
+     * class is checked against the static type, so nothing else is affected.
+     **/
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:

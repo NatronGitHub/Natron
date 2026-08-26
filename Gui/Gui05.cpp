@@ -120,6 +120,7 @@ Gui::setupUi()
     _imp->createCurveEditorGui();
     _imp->createDopeSheetGui();
     _imp->createScriptEditorGui();
+    _imp->createAIChatPanelGui();
     _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();

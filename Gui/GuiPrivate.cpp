@@ -107,6 +107,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RightClickableWidget.h"
+#include "Gui/AIChatPanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SpinBox.h"
@@ -171,6 +172,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , actionImportLayout(0)
     , actionExportLayout(0)
     , actionRestoreDefaultLayout(0)
+    , actionShowAIChatPanel(0)
     , actionNextTab(0)
     , actionPrevTab(0)
     , actionCloseTab(0)
@@ -240,6 +242,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _aboutToClose(false)
     , leftToolBarDisplayedOnHoverOnly(false)
     , _scriptEditor(0)
+    , _aiChatPanel(0)
     , _lastEnteredTabWidget(0)
     , pythonCommands()
     , statsDialog(0)
@@ -426,6 +429,17 @@ GuiPrivate::createScriptEditorGui()
     _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
     _gui->registerTab(_scriptEditor, _scriptEditor);
+}
+
+void
+GuiPrivate::createAIChatPanelGui()
+{
+    _aiChatPanel = new AIChatPanel(_gui);
+    // The script name keys this panel in the saved layout: it must stay stable.
+    _aiChatPanel->setScriptName("aiChatPanel");
+    _aiChatPanel->setLabel( tr("AI Assistant").toStdString() );
+    _aiChatPanel->setVisible(false);
+    _gui->registerTab(_aiChatPanel, _aiChatPanel);
 }
 
 void

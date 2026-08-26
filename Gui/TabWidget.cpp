@@ -74,6 +74,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/AIChatPanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/ViewerTab.h"
@@ -439,6 +440,7 @@ TabWidget::createMenu()
     menu.addAction( tr("Properties bin here"), this, SLOT(movePropertiesBinHere()) );
     menu.addAction( tr("Script editor here"), this, SLOT(moveScriptEditorHere()) );
     menu.addAction( tr("Progress Panel here"), this, SLOT(moveProgressPanelHere()) );
+    menu.addAction( tr("AI Assistant here"), this, SLOT(moveAIChatPanelHere()) );
 
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> userPanels = _imp->gui->getPythonPanels();
@@ -866,6 +868,12 @@ void
 TabWidget::moveScriptEditorHere()
 {
     moveTab(_imp->gui->getScriptEditor(), _imp->gui->getScriptEditor(), this);
+}
+
+void
+TabWidget::moveAIChatPanelHere()
+{
+    moveTab(_imp->gui->getAIChatPanel(), _imp->gui->getAIChatPanel(), this);
 }
 
 void
