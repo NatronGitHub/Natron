@@ -111,7 +111,7 @@ jobs:
         run: exit 1
 
   win-test:
-    name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
+    name: Test ${{ matrix.os }} Qt${{ matrix.qt }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -127,6 +127,9 @@ jobs:
       matrix:
         os: [ windows-latest]
         python-version: ['3.10']
+        # Build against both toolkits so the Qt6 port cannot regress unnoticed
+        # while Qt5 is still the shipping one.
+        qt: [5, 6]
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -143,7 +146,7 @@ jobs:
       - name: Install Natron pacman repository
         run: |
           ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
-          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt${{ matrix.qt }}
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -154,7 +157,9 @@ jobs:
       - name: Build Windows
         run: |
           mkdir build && cd build
-          cmake ../
+          # Name the interpreter for the Qt6 build or CMake picks up the
+          # runner's Windows Python instead of the one shiboken6 was built for.
+          cmake ${{ matrix.qt == 6 && '-DNATRON_QT6=ON -DPython_EXECUTABLE=/mingw64/bin/python.exe' || '' }} ../
           ninja
 
       - name: Run Windows Tests
@@ -171,10 +176,12 @@ jobs:
 
           PYTHONHOME=/mingw64 OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
-      - name: Upload ${{ matrix.os }} Test Log artifacts
+      - name: Upload ${{ matrix.os }} Qt${{ matrix.qt }} Test Log artifacts
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: ${{ matrix.os }} Test Logs
+          # The Qt version has to be in the name: upload-artifact v4 rejects
+          # two matrix legs uploading under one name.
+          name: ${{ matrix.os }} Qt${{ matrix.qt }} Test Logs
           path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures

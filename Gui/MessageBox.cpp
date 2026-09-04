@@ -38,7 +38,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QTextEdit>
 #include <QApplication>
-#include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -183,7 +182,7 @@ MessageBox::init(const QString & title,
     // -- leave space for information label --
     grid->addWidget(_imp->buttonBox, 2, 0, 1, 2);
 #else
-    grid->setMargin(0);
+    grid->setContentsMargins(0, 0, 0, 0);
     grid->setVerticalSpacing(8);
     grid->setHorizontalSpacing(0);
     setContentsMargins(24, 15, 24, 20);

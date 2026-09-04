@@ -82,6 +82,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 
 #include <QOpenGLContext>
+#include <QRegularExpression>
 
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
@@ -1069,7 +1070,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 static QStringList
 explode(const QString& str)
 {
-    QRegExp rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+    QRegularExpression rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
     QStringList ret;
     int startIndex = 0;
 
@@ -2064,6 +2065,16 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     }
 } // mouseMoveEvent
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+static constexpr QPointingDevice::PointerType kTabletPointerCursor = QPointingDevice::PointerType::Cursor;
+static constexpr QPointingDevice::PointerType kTabletPointerEraser = QPointingDevice::PointerType::Eraser;
+static constexpr QPointingDevice::PointerType kTabletPointerPen = QPointingDevice::PointerType::Pen;
+#else
+static constexpr QTabletEvent::PointerType kTabletPointerCursor = QTabletEvent::Cursor;
+static constexpr QTabletEvent::PointerType kTabletPointerEraser = QTabletEvent::Eraser;
+static constexpr QTabletEvent::PointerType kTabletPointerPen = QTabletEvent::Pen;
+#endif
+
 void
 ViewerGL::tabletEvent(QTabletEvent* e)
 {
@@ -2076,13 +2087,13 @@ ViewerGL::tabletEvent(QTabletEvent* e)
     switch ( e->type() ) {
     case QEvent::TabletPress: {
         switch ( e->pointerType() ) {
-        case QTabletEvent::Cursor:
+        case kTabletPointerCursor:
             _imp->pointerTypeOnPress  = ePenTypeCursor;
             break;
-        case QTabletEvent::Eraser:
+        case kTabletPointerEraser:
             _imp->pointerTypeOnPress  = ePenTypeEraser;
             break;
-        case QTabletEvent::Pen:
+        case kTabletPointerPen:
         default:
             _imp->pointerTypeOnPress  = ePenTypePen;
             break;

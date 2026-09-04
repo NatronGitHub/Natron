@@ -38,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QApplication>
 #include <QCheckBox>
+#include <QRegularExpression>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -368,14 +369,17 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-    QRegExp exp(_imp->matchWhole->isChecked() ? filter :
-                ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ),
-                sensitivity,
-                QRegExp::Wildcard);
+    // wildcardToRegularExpression() anchors, which is what exactMatch() did.
+    QRegularExpression exp(QRegularExpression::wildcardToRegularExpression(
+                               _imp->matchWhole->isChecked() ? filter :
+                               ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ) ),
+                           sensitivity == Qt::CaseInsensitive ?
+                           QRegularExpression::CaseInsensitiveOption :
+                           QRegularExpression::NoPatternOption);
 
     if ( exp.isValid() ) {
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ( (*it)->isVisible() && exp.exactMatch( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ) ) {
+            if ( (*it)->isVisible() && exp.match( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ).hasMatch() ) {
                 _imp->nodeResults.push_back(*it);
             }
         }

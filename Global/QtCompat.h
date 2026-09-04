@@ -22,9 +22,16 @@
 #include "Global/Macros.h"
 
 #include <QtGlobal> // for Q_OS_*
+#include <QMutex>
+#include <QRecursiveMutex>
 #include <QString>
 #include <QUrl>
 #include <QFileInfo>
+
+// Qt6 declares QWidget::enterEvent(QEnterEvent*) where Qt5 used QEvent*. Only
+// Gui ever needs the definition and Engine does not link QtGui, so forward
+// declare it the way EngineFwd.h handles the rest of Qt.
+class QEnterEvent;
 
 NATRON_NAMESPACE_ENTER
 
@@ -48,12 +55,53 @@ removeFileExtension(QString & filename)
 
 // Define compatibility typedefs so code builds with Qt5 & Qt6
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-typedef QEnterEvent QEnterEvent;
+typedef ::QEnterEvent QEnterEvent;
 #elif QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 typedef QEvent QEnterEvent;
 #else
 #error "Unsupported version of QT"
 #endif
+
+/*Holds a lock on either kind of mutex for the duration of a scope.
+
+  Qt5 derived QRecursiveMutex from QMutex, so a single QMutexLocker could hold
+  whichever one a code path happened to pick. Qt6 made the two types unrelated
+  and turned QMutexLocker into a template on the mutex type, which leaves no
+  one type able to hold both. Deferred locking is the point here: these lockers
+  are declared unlocked and only engaged on some branches.*/
+class MutexLock
+{
+public:
+    explicit MutexLock(QMutex* mutex)
+        : _mutex(mutex)
+        , _recursiveMutex(0)
+    {
+        _mutex->lock();
+    }
+
+    explicit MutexLock(QRecursiveMutex* mutex)
+        : _mutex(0)
+        , _recursiveMutex(mutex)
+    {
+        _recursiveMutex->lock();
+    }
+
+    ~MutexLock()
+    {
+        if (_mutex) {
+            _mutex->unlock();
+        }
+        if (_recursiveMutex) {
+            _recursiveMutex->unlock();
+        }
+    }
+
+private:
+    Q_DISABLE_COPY(MutexLock)
+
+    QMutex* _mutex;
+    QRecursiveMutex* _recursiveMutex;
+};
 
 } // namespace QtCompat
 

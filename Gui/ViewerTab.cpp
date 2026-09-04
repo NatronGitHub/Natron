@@ -319,7 +319,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->refreshButton->setFixedSize(buttonSize);
     _imp->refreshButton->setIconSize(buttonIconSize);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> refreshActions;
         refreshActions.push_back(kShortcutIDActionRefresh);
         refreshActions.push_back(kShortcutIDActionRefreshWithStats);
@@ -338,7 +337,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->pauseButton->setChecked(false);
     _imp->pauseButton->setDown(false);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPauseViewerInputA);
         actions.push_back(kShortcutIDActionPauseViewer);

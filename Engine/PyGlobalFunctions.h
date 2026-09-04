@@ -39,6 +39,13 @@
 
 #include "Engine/EngineFwd.h"
 
+// Both build systems pass this on the command line, where it wins over the
+// fallback below. shiboken parses this header without those defines, so give
+// it a value rather than failing binding generation.
+#ifndef NATRON_BUILD_NUMBER
+#define NATRON_BUILD_NUMBER 0
+#endif
+
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
