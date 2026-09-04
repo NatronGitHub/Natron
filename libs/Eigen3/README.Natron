@@ -1,10 +1,15 @@
 Project: Eigen, template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms
-URL: http://eigen.tuxfamily.org/index.php?title=Main_Page
+URL: https://eigen.tuxfamily.org/
+Repository: https://gitlab.com/libeigen/eigen
 License: MPL2
-Upstream version: 3.3.7
-Local modifications:
-- OpenMP fix for MSVC2015, see http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1131
+Upstream version: 3.4.0
+Local modifications: none
 
-Extracted from Blender git repository under the extern/ folder.
-Git URL=https://git.blender.org/blender.git
-Git HEAD version=b19c437eff7f822e68244fd5a48819ebe0506c90 (2019-08-21)
+The tree under Eigen/ is upstream 3.4.0 with the per-directory CMakeLists.txt
+files removed, nothing else. Run eigen-update.sh to refresh it.
+
+Earlier revisions were taken from Blender's extern/ folder and carried a
+patches/blender.diff plus a note about an OpenMP fix for MSVC2015. Neither was
+present in the tree: comparing the vendored 3.3.7 against upstream 3.3.7 found
+no differing file, and the patch did not apply to that version either. Both
+have been dropped rather than carried forward as something they were not.
