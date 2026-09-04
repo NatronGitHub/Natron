@@ -30,9 +30,7 @@ list(APPEND PYGUI_INCLUDE_DIRS ${QTCORE_INCLUDE_DIRS} ${QTGUI_INCLUDE_DIRS}
 list(TRANSFORM PYGUI_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYGUI_INCS)
 set(PYGUI_HEADER PySide${PYSIDE_VERSION_MAJOR}_Gui_Python.h)
 
-if(NATRON_QT6)
-    set(QT_OPENGLWIDGETS Qt::OpenGLWidgets)
-endif()
+set(QT_OPENGLWIDGETS Qt::OpenGLWidgets)
 
 set(shiboken_args
     "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"

@@ -657,7 +657,9 @@ extractKeySequence(const QKeySequence & seq,
     ///The nativeSeqStr now contains only the symbol
     QKeySequence newSeq(nativeSeqStr, QKeySequence::NativeText);
     if (newSeq.count() > 0) {
-        symbol = (Qt::Key)newSeq[0];
+        // The modifiers were stripped from the string above, so the key is the
+        // whole of this combination.
+        symbol = newSeq[0].key();
     } else {
         symbol = (Qt::Key)0;
     }

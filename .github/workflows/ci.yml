@@ -48,10 +48,40 @@ jobs:
         run: |
           sudo apt update
           sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
-            qt5-qmake qtbase5-dev qtdeclarative5-dev \
-            python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
+            libgl-dev libegl-dev \
+            python3-dev python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang
+            extra-cmake-modules clang llvm
+      # Ubuntu ships Qt 6.4 and the PySide6 wheels are built against 6.11, whose
+      # headers they include; qtclasshelpermacros.h alone is 6.7 and later. Take
+      # the toolkit from Qt too so the two cannot disagree.
+      - name: Install Qt6
+        if: contains(matrix.os, 'ubuntu')
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.1'
+          cache: true
+
+      - name: Install PySide6 and Shiboken6
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          # No Ubuntu release packages these; Qt's own wheels ship the CMake
+          # config packages that find_package(Shiboken6/PySide6) needs.
+          python3 -m pip install --break-system-packages \
+            PySide6==6.11.1 shiboken6==6.11.1 shiboken6-generator==6.11.1
+          {
+            echo -n "PYSIDE_PREFIX="
+            python3 -c "import PySide6, shiboken6, shiboken6_generator, os; \
+              print(';'.join(os.path.dirname(m.__file__) for m in (PySide6, shiboken6, shiboken6_generator)))"
+          } >> "$GITHUB_ENV"
+          # The generator links its own libclang but ships none of the
+          # compiler builtin headers it needs to parse Python.h, and it
+          # looks for them only through LLVM_INSTALL_DIR, CLANG_INSTALL_DIR
+          # or llvm-config. Point it at the system clang, or every wrapper
+          # fails with "'stddef.h' file not found".
+          echo "LLVM_INSTALL_DIR=$(llvm-config --prefix)" >> "$GITHUB_ENV"
+
       - name: Install Macos system packages
         if: contains(matrix.os, 'macos')
         shell: bash
@@ -75,7 +105,7 @@ jobs:
       - name: Build Unix (debug)
         run: |
           mkdir debug && cd debug
-          cmake -DCMAKE_BUILD_TYPE=Debug ../
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR:+$QT_ROOT_DIR;}${PYSIDE_PREFIX:-}" ../
           make -j2
 
       - name: Run Unix Tests (debug)
@@ -89,7 +119,7 @@ jobs:
       - name: Build Unix (release)
         run: |
           mkdir release && cd release
-          cmake ../
+          cmake -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR:+$QT_ROOT_DIR;}${PYSIDE_PREFIX:-}" ../
           make -j2
 
       - name: Run Unix Tests (release)
@@ -143,7 +173,7 @@ jobs:
       - name: Install Natron pacman repository
         run: |
           ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
-          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt6
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -154,7 +184,9 @@ jobs:
       - name: Build Windows
         run: |
           mkdir build && cd build
-          cmake ../
+          # Name the interpreter or CMake picks up the runner's Windows
+          # Python instead of the one shiboken6 was built for.
+          cmake -DPython_EXECUTABLE=/mingw64/bin/python.exe ../
           ninja
 
       - name: Run Windows Tests

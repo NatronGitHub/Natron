@@ -52,7 +52,12 @@
             </target-to-native>
         </conversion-rule>
     </primitive-type>
-    
+
+    <!--PySide2 declared the CPython types it used in typesystem_core_common.xml
+        and shiboken2 knew PyList on top of those. PySide6 declares none of them,
+        so the ones this typesystem names have to be declared here. -->
+    <custom-type name="PyList" check-function="PyList_Check"/>
+
     <!--std::pair from/to Python pair-->
     <container-type name="std::pair" type="pair">
         <include file-name="utility" location="global"/>

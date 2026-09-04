@@ -35,8 +35,10 @@ true ? (void) 0 : google::LogMessageVoidify() & LOG(severity)
 #endif
 
 #define LG LIBMV_LOG(INFO)
-#define V0 LIBMV_LOG(INFO)
-#define V1 LIBMV_LOG(INFO)
-#define V2 LIBMV_LOG(INFO)
+
+// V0, V1 and V2 used to be defined here as aliases for LG. Nothing in libmv or
+// in Natron ever used them, and Qt6 names a template parameter V2 in
+// qnumeric.h, so any translation unit including this header before QtCore
+// failed to compile.
 
 #endif  // LIBMV_LOGGING_LOGGING_H

@@ -798,7 +798,8 @@ HierarchyView::drawRow(QPainter *painter,
         painter->fillRect(itemRect.adjusted(-1, 0, 0, 0), fillColor);
 
         // Draw the item text
-        QStyleOptionViewItem newOpt = viewOptions();
+        QStyleOptionViewItem newOpt;
+        initViewItemOption(&newOpt);
 
         newOpt.rect = itemRect;
 
@@ -849,7 +850,8 @@ HierarchyView::drawBranches(QPainter *painter,
         painter->fillRect(rectForDull, nodeColorDull);
 
         // Draw the branch indicator
-        QStyleOptionViewItem option = viewOptions();
+        QStyleOptionViewItem option;
+        initViewItemOption(&option);
 
         option.rect = _imp->getParentArrowRect(item, rect);
         option.displayAlignment = Qt::AlignCenter;

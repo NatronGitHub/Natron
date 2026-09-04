@@ -30,7 +30,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 include(GNUInstallDirs)
 
-option(NATRON_QT6 "use Qt6" OFF)
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
@@ -65,47 +64,39 @@ if(IS_DEBUG_BUILD AND WIN32)
     set(SHIBOKEN_PYTHON_LIBRARIES ${Python3_LIBRARIES})
 endif()
 
-set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
-if(NATRON_QT6)
-    list(APPEND QT_COMPONENTS OpenGLWidgets)
-    find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
-    find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
-    find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
-    find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
-    set(QT_VERSION_MAJOR 6)
-    set(PYSIDE_VERSION_MAJOR 6)
+set(QT_COMPONENTS Core Gui Network Widgets Concurrent OpenGLWidgets)
+find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
+find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
+find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
+set(QT_VERSION_MAJOR 6)
+set(PYSIDE_VERSION_MAJOR 6)
 
-    get_target_property(PYSIDE_INCLUDE_DIRS PySide6::pyside6 INTERFACE_INCLUDE_DIRECTORIES)
-    set(QTCORE_INCLUDE_DIRS ${Qt6Core_INCLUDE_DIRS})
-    set(QTGUI_INCLUDE_DIRS ${Qt6Gui_INCLUDE_DIRS})
-    set(QTWIDGETS_INCLUDE_DIRS ${Qt6Widgets_INCLUDE_DIRS})
+get_target_property(PYSIDE_INCLUDE_DIRS PySide6::pyside6 INTERFACE_INCLUDE_DIRECTORIES)
+set(QTCORE_INCLUDE_DIRS ${Qt6Core_INCLUDE_DIRS})
+set(QTGUI_INCLUDE_DIRS ${Qt6Gui_INCLUDE_DIRS})
+set(QTWIDGETS_INCLUDE_DIRS ${Qt6Widgets_INCLUDE_DIRS})
 
-    set(SHIBOKEN_EXE Shiboken6::shiboken6)
-    set(SHIBOKEN_LIB Shiboken6::libshiboken)
-    set(PYSIDE_LIB PySide6::pyside6)
-else()
-    find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
-    find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
-
-    find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
-    set(QT_VERSION_MAJOR 5)
-    set(PYSIDE_VERSION_MAJOR 2)
-
-    get_target_property(PYSIDE_INCLUDE_DIRS PySide2::pyside2 INTERFACE_INCLUDE_DIRECTORIES)
-    set(QTCORE_INCLUDE_DIRS ${Qt5Core_INCLUDE_DIRS})
-    set(QTGUI_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS})
-    set(QTWIDGETS_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS})
-
-    set(SHIBOKEN_EXE Shiboken2::shiboken2)
-    set(SHIBOKEN_LIB Shiboken2::libshiboken)
-    set(PYSIDE_LIB PySide2::pyside2)
-endif()
+set(SHIBOKEN_EXE Shiboken6::shiboken6)
+set(SHIBOKEN_LIB Shiboken6::libshiboken)
+set(PYSIDE_LIB PySide6::pyside6)
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Remove NDEBUG from Shiboken INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
     get_property(SHIBOKEN_DEFS TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
     list(REMOVE_ITEM SHIBOKEN_DEFS NDEBUG)
     set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS SHIBOKEN_DEFS)
+endif()
+
+# Qt's PySide6 wheels are built for the stable ABI, and their imported target
+# passes Py_LIMITED_API on to everything that links it. The limited API does not
+# expose PyTuple_GET_ITEM, PyList_SET_ITEM or PyRun_String, all of which the
+# typesystem glue in Engine and Gui calls directly, so drop the definition and
+# build the bindings against the full API as a source build of shiboken gives.
+get_property(_shiboken_defs TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+if(_shiboken_defs)
+    list(FILTER _shiboken_defs EXCLUDE REGEX "^Py_LIMITED_API")
+    set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS ${_shiboken_defs})
 endif()
 
 #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
