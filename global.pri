@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-CONFIG += c++17
+CONFIG += c++23
 
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
@@ -289,14 +289,14 @@ macx-clang-libc++ {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++23
 }
 
 macx-clang {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++23
 }
 
 CONFIG(debug) {
@@ -380,23 +380,15 @@ win32-g++ {
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo fontconfig
-    equals(QT_MAJOR_VERSION, 5) {
-      shiboken:  INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken2)
-      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
-      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR
-      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
-      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
-      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
-      shiboken:  PKGCONFIG += shiboken2
-      pyside:    PKGCONFIG += pyside2
-    }
-    equals(QT_MAJOR_VERSION, 4) {
-      shiboken:  PKGCONFIG += shiboken-py$$PYV
-    	pyside:    PKGCONFIG += pyside-py$$PYV
-      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside-py$$PYV)
-   	  pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
-      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
-    }
+    shiboken:  INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken6)
+    PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside6)
+    pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR
+    pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+    pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+    pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+    shiboken:  PKGCONFIG += shiboken6
+    pyside:    PKGCONFIG += pyside6
+  
     python:    PKGCONFIG += python-$$PYVER$$PY_PKG_SUFFIX
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
@@ -434,48 +426,17 @@ unix {
           INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
-    equals(QT_MAJOR_VERSION, 5) {
-        system(pkg-config --exists pyside2) {
-            shiboken: PKGCONFIG += shiboken2
-            pyside:   PKGCONFIG += pyside2
-            # add QtCore to includes
-            PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
-            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
-            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
-            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
-        }
-    }
+      system(pkg-config --exists pyside6) {
+          shiboken: PKGCONFIG += shiboken6
+          pyside:   PKGCONFIG += pyside6
+          # add QtCore to includes
+          PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside6)
+          pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+          pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+          pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+      }
+  
 
-     equals(QT_MAJOR_VERSION, 4) {
-         # There may be different pyside.pc/shiboken.pc for different versions of python.
-         # pkg-config will probably give a bad answer, unless python2 is the system default.
-         # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
-         # using a custom config.pri
-         shiboken: PKGCONFIG += shiboken
-         pyside:   PKGCONFIG += pyside
-         # The following hack also works with Homebrew if pyside is installed with option --with-python3
-         macx {
-           QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
-           shiboken {
-             PKGCONFIG -= shiboken
-             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG $$PYTHON_CONFIG_FLAGS --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
-             # the sed stuff is to work around an Xcode generator bug
-             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
-           }
-           pyside {
-             PKGCONFIG -= pyside
-             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG $$PYTHON_CONFIG_FLAGS --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-             PYSIDE_INCLUDEDIR = $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
-             INCLUDEPATH += $$PYSIDE_INCLUDEDIR
-             INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
-             # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
-             # qtextdocument.h in the QtGui module.
-             INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
-             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
-             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
-           }
-         }
      }
 } #unix
 
@@ -489,16 +450,16 @@ unix {
   symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
-  QMAKE_CXXFLAGS += -std=c++17
-  enable_cxx17.name = CLANG_CXX_LANGUAGE_STANDARD
-  enable_cxx17.value = c++17
-  QMAKE_MAC_XCODE_SETTINGS += enable_cxx17
+  QMAKE_CXXFLAGS += -std=c++23
+  enable_cxx23.name = CLANG_CXX_LANGUAGE_STANDARD
+  enable_cxx23.value = c++23
+  QMAKE_MAC_XCODE_SETTINGS += enable_cxx23
 }
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
-  QMAKE_CXXFLAGS += -std=c++17
+  QMAKE_CXXFLAGS += -std=c++23
 }
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/

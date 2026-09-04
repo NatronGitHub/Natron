@@ -28,6 +28,10 @@
 
 #include "Global/Macros.h"
 
+// QStringList is a class in Qt5 but an alias for QList<QString> in Qt6, so it
+// cannot be forward declared by hand. This header spells it correctly on both.
+#include <QtCore/qcontainerfwd.h>
+
 #include <memory>
 #include <list>
 #include <vector>
@@ -61,7 +65,6 @@ class QNetworkRequest;
 class QProcess;
 class QSettings;
 class QString;
-class QStringList;
 class QThread;
 class QTimer;
 class QUrl;

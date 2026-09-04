@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextEdit>
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -59,7 +60,7 @@ public:
 private:
 
     virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
-    bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
+    bool matchMultiline(const QString &text, const QRegularExpression &delimiter, const int inState, const QTextCharFormat &style);
 
     std::unique_ptr<PySyntaxHighlighterPrivate> _imp;
 };

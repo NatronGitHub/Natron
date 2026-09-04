@@ -2235,17 +2235,17 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     deleteAct->setShortcut( QKeySequence(Qt::Key_Backspace) );
     QObject::connect( deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()) );
     QAction* cutAct = menu.addAction( tr("Cut") );
-    cutAct->setShortcut( QKeySequence(Qt::Key_X + Qt::CTRL) );
+    cutAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_X) );
     QObject::connect( cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()) );
     QAction* copyAct = menu.addAction( tr("Copy") );
-    copyAct->setShortcut( QKeySequence(Qt::Key_C + Qt::CTRL) );
+    copyAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_C) );
     QObject::connect( copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()) );
     QAction* pasteAct = menu.addAction( tr("Paste") );
-    pasteAct->setShortcut( QKeySequence(Qt::Key_V + Qt::CTRL) );
+    pasteAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_V) );
     QObject::connect( pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()) );
     pasteAct->setEnabled( !_imp->clipBoard.empty() );
     QAction* duplicateAct = menu.addAction( tr("Duplicate") );
-    duplicateAct->setShortcut( QKeySequence(Qt::Key_C + Qt::ALT) );
+    duplicateAct->setShortcut( QKeySequence(Qt::ALT | Qt::Key_C) );
     QObject::connect( duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()) );
 
     ///The base layer cannot be duplicated

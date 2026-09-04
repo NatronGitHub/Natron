@@ -82,6 +82,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 
 #include <QOpenGLContext>
+#include <QRegularExpression>
 
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
@@ -1069,7 +1070,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 static QStringList
 explode(const QString& str)
 {
-    QRegExp rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+    QRegularExpression rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
     QStringList ret;
     int startIndex = 0;
 
@@ -2076,13 +2077,13 @@ ViewerGL::tabletEvent(QTabletEvent* e)
     switch ( e->type() ) {
     case QEvent::TabletPress: {
         switch ( e->pointerType() ) {
-        case QTabletEvent::Cursor:
+        case QPointingDevice::PointerType::Cursor:
             _imp->pointerTypeOnPress  = ePenTypeCursor;
             break;
-        case QTabletEvent::Eraser:
+        case QPointingDevice::PointerType::Eraser:
             _imp->pointerTypeOnPress  = ePenTypeEraser;
             break;
-        case QTabletEvent::Pen:
+        case QPointingDevice::PointerType::Pen:
         default:
             _imp->pointerTypeOnPress  = ePenTypePen;
             break;
