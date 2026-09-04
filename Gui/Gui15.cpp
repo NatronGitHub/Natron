@@ -250,13 +250,13 @@ Gui::updateViewsActions(int viewsCount)
     if (viewsCount == 2) {
         QAction* left = new QAction(this);
         left->setCheckable(false);
-        left->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_1) );
+        left->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_1) );
         _imp->viewersViewMenu->addAction(left);
         left->setText( tr("Display Left View") );
         QObject::connect( left, SIGNAL(triggered()), this, SLOT(showView0()) );
         QAction* right = new QAction(this);
         right->setCheckable(false);
-        right->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_2) );
+        right->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_2) );
         _imp->viewersViewMenu->addAction(right);
         right->setText( tr("Display Right View") );
         QObject::connect( right, SIGNAL(triggered()), this, SLOT(showView1()) );

@@ -189,20 +189,20 @@ CurveWidgetPrivate::createMenu()
 
     QAction* copyKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy,
                                                           kShortcutDescActionCurveEditorCopy, editMenu);
-    copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_C) );
+    copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_C) );
 
     QObject::connect( copyKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(copySelectedKeyFramesToClipBoard()) );
     editMenu->addAction(copyKeyFramesAction);
 
     QAction* pasteKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste,
                                                            kShortcutDescActionCurveEditorPaste, editMenu);
-    pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_V) );
+    pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_V) );
     QObject::connect( pasteKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()) );
     editMenu->addAction(pasteKeyFramesAction);
 
     QAction* selectAllAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll,
                                                       kShortcutDescActionCurveEditorSelectAll, editMenu);
-    selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
+    selectAllAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_A) );
     QObject::connect( selectAllAction, SIGNAL(triggered()), _widget, SLOT(selectAllKeyFrames()) );
     editMenu->addAction(selectAllAction);
 
