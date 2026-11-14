@@ -19,22 +19,26 @@ if [ "$PKGOS" = "OSX" ]; then
     # 16 -> 10.12
     osxver=$(uname -r)
 
-    # if clang-mp-5.0 or clang-mp-4.0 is available
-    if command -v clang-mp-19 >/dev/null 2>&1 || \
-       command -v clang-mp-18 >/dev/null 2>&1 || \
-       command -v clang-mp-17 >/dev/null 2>&1 || \
-       command -v clang-mp-16 >/dev/null 2>&1 || \
-       command -v clang-mp-15 >/dev/null 2>&1 || \
-       command -v clang-mp-14 >/dev/null 2>&1 || \
-       command -v clang-mp-13 >/dev/null 2>&1 || \
-       command -v clang-mp-12 >/dev/null 2>&1 || \
-       command -v clang-mp-11 >/dev/null 2>&1 || \
-       command -v clang-mp-9.0 >/dev/null 2>&1 || \
-       command -v clang-mp-8.0 >/dev/null 2>&1 || \
-       command -v clang-mp-7.0 >/dev/null 2>&1 || \
-       command -v clang-mp-6.0 >/dev/null 2>&1 || \
-       command -v clang-mp-5.0 >/dev/null 2>&1 || \
-       command -v clang-mp-4.0 >/dev/null 2>&1; then
+    # Never use a clang newer than the MacPorts default for this OS, so that
+    # older systems (e.g. macOS 10.15) keep building with clang <= 17 exactly as before.
+    darwin_major=${osxver%%.*}
+    if [ "$darwin_major" -ge 25 ]; then
+        clang_max=22
+    elif [ "$darwin_major" -ge 24 ]; then
+        clang_max=18
+    else
+        clang_max=17
+    fi
+
+    # use a MacPorts clang (with OpenMP) if one not newer than clang_max is available
+    clang_mp_found=0
+    for v in 22 21 20 19 18 17 16 15 14 13 12 11 9.0 8.0 7.0 6.0 5.0 4.0; do
+        if [ "${v%%.*}" -le "$clang_max" ] && command -v "clang-mp-$v" >/dev/null 2>&1; then
+            clang_mp_found=1
+            break
+        fi
+    done
+    if [ "$clang_mp_found" = 1 ]; then
         COMPILER=clang-omp
         if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
             true
@@ -92,19 +96,35 @@ if [ "$PKGOS" = "OSX" ]; then
         #_.omp_outlined..468 in CImgExpression.o
         #_.omp_outlined..608 in CImgExpression.o
         #
-        # clang 17 and 18 with -fopenmp links with @rpath/libc++.1.dylib instead
-        # of /usr/lib/libc++.1.dylib, so let's use clang 16 for now.
+        # The newest installed MacPorts clang up to the MacPorts default for the OS
+        # is used: clang-22 on macOS 26+ (Darwin >= 25), clang-18 on macOS 15, clang-17 before.
+        # Two former reasons to avoid clang >= 17 are resolved (verified on macOS 26):
+        # - clang 17/18 with -fopenmp linked @rpath/libc++.1.dylib instead of
+        #   /usr/lib/libc++.1.dylib; it now links /usr/lib/libc++.1.dylib.
+        # - clang >= 19 emits __kmpc_dispatch_deinit, missing from the pinned
+        #   libomp 11.1.0; it is now backported in tools/MacPorts/lang/libomp.
+        # Sanity check on a new OS/compiler:
+        #   printf 'int main(){}\n' > t.cpp; clang++-mp-N -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t
         case "$osxver" in
             #9.*|10.*)
             #    true;;
             *)
-                # if command -v clang-mp-19 >/dev/null 2>&1; then
-                #     CC=clang-mp-19
-                #     CXX="clang++-mp-19 -stdlib=libc++ -std=c++20"
-                # elif command -v clang-mp-18 >/dev/null 2>&1; then
-                #     CC=clang-mp-18
-                #     CXX="clang++-mp-18 -stdlib=libc++ -std=c++20"
-                if command -v clang-mp-17 >/dev/null 2>&1; then
+                if [ "$clang_max" -ge 22 ] && command -v clang-mp-22 >/dev/null 2>&1; then
+                    CC=clang-mp-22
+                    CXX="clang++-mp-22 -stdlib=libc++ -std=c++20"
+                elif [ "$clang_max" -ge 21 ] && command -v clang-mp-21 >/dev/null 2>&1; then
+                    CC=clang-mp-21
+                    CXX="clang++-mp-21 -stdlib=libc++ -std=c++20"
+                elif [ "$clang_max" -ge 20 ] && command -v clang-mp-20 >/dev/null 2>&1; then
+                    CC=clang-mp-20
+                    CXX="clang++-mp-20 -stdlib=libc++ -std=c++20"
+                elif [ "$clang_max" -ge 19 ] && command -v clang-mp-19 >/dev/null 2>&1; then
+                    CC=clang-mp-19
+                    CXX="clang++-mp-19 -stdlib=libc++ -std=c++20"
+                elif [ "$clang_max" -ge 18 ] && command -v clang-mp-18 >/dev/null 2>&1; then
+                    CC=clang-mp-18
+                    CXX="clang++-mp-18 -stdlib=libc++ -std=c++20"
+                elif command -v clang-mp-17 >/dev/null 2>&1; then
                     CC=clang-mp-17
                     CXX="clang++-mp-17 -stdlib=libc++ -std=c++20"
                 elif command -v clang-mp-16 >/dev/null 2>&1; then
@@ -134,6 +154,10 @@ if [ "$PKGOS" = "OSX" ]; then
                 fi
                 ;;
         esac
+        if [ -z "${CC:-}" ]; then
+            echo "Error: no usable MacPorts clang-mp-N (N <= $clang_max) found" >&2
+            exit 1
+        fi
         case "$osxver" in
         2[123].*)
             # clang-mp can't compile QtMac.mm on Monterey

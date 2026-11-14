@@ -402,6 +402,44 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
         ISWIN=1
     fi
 
+    # gmic.eu may refuse downloads (HTTP 403 seen in 2026), and the Makefile's curl saves the
+    # error page as the tarball. Pre-fetch the G'MIC sources (official site, then the MacPorts
+    # distfiles mirror), verifying the checksum when the version is known.
+    GMICVER=$(sed -n 's/^GMICVER *= *//p' Makefile | head -1)
+    GMICSRC=$(sed -n 's/^GMICSRC *= *//p' Makefile | head -1 | sed "s/\$(GMICVER)/${GMICVER}/")
+    GMIC_SHA256=
+    case "$GMICSRC" in
+        gmic_2.8.4.tar.gz) GMIC_SHA256=b2a279bdf981595b30d8d7828fabf9a620cde06eae8db345a8cddf2160c25379 ;; # MacPorts gmic 2.8.4
+    esac
+    gmic_src_ok() { # file
+        gzip -t "$1" 2>/dev/null || return 1
+        [ -n "$GMIC_SHA256" ] || return 0
+        if command -v sha256sum >/dev/null 2>&1; then
+            [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
+        elif command -v shasum >/dev/null 2>&1; then
+            [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
+        else
+            echo "Warning: neither sha256sum nor shasum found, cannot verify $1"
+            return 1
+        fi
+    }
+    if [ -n "$GMICSRC" ] && ! gmic_src_ok "$GMICSRC"; then
+        rm -f "$GMICSRC"
+        for url in "https://gmic.eu/files/source/$GMICSRC" ${GMIC_SHA256:+"https://distfiles.macports.org/gmic/$GMICSRC"}; do
+            if curl -f --retry 3 -L -s -S -o "$GMICSRC.tmp" "$url" && gmic_src_ok "$GMICSRC.tmp"; then
+                mv "$GMICSRC.tmp" "$GMICSRC"
+                echo "Info: fetched $GMICSRC from $url"
+                break
+            fi
+            echo "Warning: could not fetch a valid $GMICSRC from $url"
+            rm -f "$GMICSRC.tmp"
+        done
+        if [ -n "$GMIC_SHA256" ] && [ ! -f "$GMICSRC" ]; then
+            echo "Error: could not download $GMICSRC"
+            exit 1
+        fi
+    fi
+
     echo "Info: build openfx-gmic using make..."
 
     # build GMIC.ofx
