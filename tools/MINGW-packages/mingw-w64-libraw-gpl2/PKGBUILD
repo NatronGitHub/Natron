@@ -6,12 +6,12 @@ pkgname="${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2"
 provides=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2")
 replaces=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2")
 conflicts=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2" "${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
-pkgver=0.18.13
-pkgrel=6
+pkgver=0.22.3
+pkgrel=1
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
 url="https://www.libraw.org/"
-license=("LGPL")
+license=("GPL2")   # LGPL + CDDL, but GPL-2+ with the GPL2 demosaic pack
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-autotools")
@@ -19,26 +19,21 @@ depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-jasper")
 options=('staticlibs' 'strip')
+# LibRaw 0.19+ dropped the GPL demosaic packs: patch-libraw-0.22.3-gpl-demosaic-packs.diff restores them
+# (from https://github.com/devernay/LibRaw/commit/56970694). Only the GPL2 pack is built (no GPL3 in Natron).
+# The old LibRaw_force-openmp/obsolete-macros/wsock32 patches are no longer needed with 0.22.3.
 source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
         "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL2-0.18.8.tar.gz"
-        "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL3-0.18.8.tar.gz"
-        "LibRaw_wsock32.patch"
-        "LibRaw_obsolete-macros.patch"
+        "patch-libraw-0.22.3-gpl-demosaic-packs.diff"
 	)
-sha256sums=('cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca'
+sha256sums=('789f3c33466210a1a0907f747a97c715d21bbf4af712f257fcbbd90111b227e4'
             '0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da'
-            'ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701'
-            '4bd077917fb8f37fa736e3a8bf32fabe3df3ff5438b684acbb5adff8a6c2a73b'
-            '4a31c0ee066f43915beff6f7959b6b2cd246d390720df379bfc047d4cedb6a8f'
+            '5ef23708e76501d3d63bc47cd6cc25029dc9635204c242c704ff87912c541822'
 	    )
 
 prepare() {
-  mv "${srcdir}/${_realname}-demosaic-pack-GPL2-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
-  mv "${srcdir}/${_realname}-demosaic-pack-GPL3-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
   cd "${srcdir}/${_realname}-${pkgver}"
-  patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
-  patch -Np1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
-
+  patch -Np1 -i "${srcdir}/patch-libraw-0.22.3-gpl-demosaic-packs.diff"
   autoreconf -ifv
 }
 
@@ -54,10 +49,15 @@ build() {
       --host=${MINGW_CHOST} \
       --enable-jasper \
       --enable-lcms \
-      --enable-demosaic-pack-gpl2 \
-      --disable-demosaic-pack-gpl3
+      --enable-demosaic-pack-gpl2="${srcdir}/${_realname}-demosaic-pack-GPL2-0.18.8"
 
   make -j${MKJOBS}
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  # tests/demosaic_test must report "GPL2: yes, GPL3: no"
+  make check
 }
 
 package() {

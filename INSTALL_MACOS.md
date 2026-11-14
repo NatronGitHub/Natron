@@ -88,7 +88,7 @@ sudo port selfupdate
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick and openimageio and the `+natronmini` variant of ffmpeg; ffmpeg pinned to 8.1.2; libraw pinned to 0.18.13 with the GPL demosaic packs; libomp pinned to 11.1.0. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick and openimageio and the `+natronmini` variant of ffmpeg; ffmpeg pinned to 8.1.2; libraw 0.22.3 with the GPL demosaic packs restored by a patch; libomp pinned to 11.1.0. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -273,7 +273,7 @@ If `check.sh` reports obsolete Portfiles, reintegrate upstream into the overlay 
 | port | pinned version | reason |
 |---|---|---|
 | `lang/libomp` | 11.1.0 | OpenMP regression affecting Natron |
-| `graphics/libraw` | 0.18.13 | the GPL demosaic packs (`+gpl2`) only exist for 0.18 |
+| `graphics/libraw` | 0.22.3 + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch; keep it when reintegrating upstream |
 | `multimedia/ffmpeg` | 8.1.2 | FFmpeg 9 removed `AVCodec::pix_fmts`, which openfx-io uses |
 | `graphics/opencolorio` | 2.6.0 (ahead of upstream) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
 

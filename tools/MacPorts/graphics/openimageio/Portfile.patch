@@ -1,6 +1,6 @@
---- Portfile.orig	2026-11-15 17:34:25
-+++ Portfile	2026-11-15 21:56:30
-@@ -16,10 +16,11 @@
+--- Portfile.orig	2026-11-16 09:36:12
++++ Portfile	2026-11-16 09:36:38
+@@ -16,10 +16,12 @@
  
  # Keep this condition the same in the opencolorio, openimageio, and osl ports.
  set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
@@ -9,11 +9,12 @@
  if {${port_latest}} {
      github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
 -    revision            3
-+    revision            4   ;# Natron: rebuild against OpenColorIO 2.6 (libOpenColorIO.2.6.dylib)
++    # Natron: revision bumped to rebuild against OpenColorIO 2.6 (4) and libraw 0.22.3 +gpl2 (5)
++    revision            5
      checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
                          sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
                          size    56133013
-@@ -36,10 +37,19 @@
+@@ -36,10 +38,19 @@
  github.tarball_from     archive
  
  if {${port_latest}} {
@@ -34,7 +35,7 @@
                          port:onetbb \
                          port:OpenJPH \
                          port:tcp_wrappers \
-@@ -125,15 +135,54 @@
+@@ -125,15 +136,54 @@
                          port:libpng \
                          port:tiff
  
@@ -92,7 +93,7 @@
  }
  
  if {[string match *gcc* ${configure.compiler}] \
-@@ -142,7 +191,27 @@
+@@ -142,7 +192,27 @@
                          -latomic
  }
  
@@ -120,7 +121,7 @@
  
  set pythons_suffixes    {310 311 312 313 314}
  
-@@ -181,16 +250,38 @@
+@@ -181,16 +251,38 @@
      default_variants        +python314
  }
  
@@ -159,7 +160,7 @@
  set opencv_ver 4
  if {${os.platform} eq "darwin" && ${os.major} < 11} {
      # opencv4 does not build on 10.6 and earlier.
-@@ -200,9 +291,16 @@
+@@ -200,9 +292,16 @@
      configure.args-append   -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
                              -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
  }
@@ -176,7 +177,7 @@
  
  configure.args-append       -DUSE_GIF=OFF
  # depends_lib-append          port:giflib
-@@ -211,16 +309,49 @@
+@@ -211,16 +310,49 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
