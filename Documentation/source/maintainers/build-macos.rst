@@ -36,8 +36,10 @@ Prerequisites
 - **macOS packaging tools**, verified early by ``launchBuildMain.sh`` and
   documented in ``INSTALL_MACOS.md``:
 
-  - ``dmgbuild`` — ``python3 -m pip install dmgbuild`` (writes the DMG
-    ``.DS_Store`` layout without Finder/TCC).
+  - ``dmgbuild`` — ``sudo port install py310-dmgbuild`` and
+    ``sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild`` (or
+    ``python3 -m pip install dmgbuild``); writes the DMG ``.DS_Store`` layout
+    without Finder/TCC.
   - ``oiiotool`` — from the ``openimageio`` port (DMG background processing).
   - ``identify`` — from the ``ImageMagick`` port (DMG background dimensions).
 
@@ -69,20 +71,11 @@ C++17 remains the language *minimum* enforced by ``Global/Macros.h``.
 The MacPorts overlay
 --------------------
 
-Register the overlay so ``port`` sees Natron's custom ports. Two options:
-
-**A. Point MacPorts directly at the source tree** — edit
-``/opt/local/etc/macports/sources.conf`` and add, *before* the last line
-(note the three slashes after ``file:``)::
-
-    file:///Users/your_username/path_to_sources/Natron/tools/MacPorts
-
-then build the index::
-
-    (cd .../Natron/tools/MacPorts; portindex)
-
-**B. Rsync to a stable location** (what the official builder uses), so the live
-overlay is decoupled from your working tree::
+Register the overlay so ``port`` sees Natron's custom ports. Rsync it to a
+stable location (what the official builder uses), so that the live overlay is
+decoupled from your working tree. (Pointing ``sources.conf`` at the source tree
+itself only works if the unprivileged MacPorts user can read it, which is
+usually not the case for a home directory.)::
 
     sudo mkdir -p /opt/MacPorts-Natron
     sudo chown "$(id -un):staff" /opt/MacPorts-Natron
@@ -92,9 +85,9 @@ overlay is decoupled from your working tree::
 
 ``tools/MacPorts/sync.sh`` wraps the rsync + ``portindex`` step.
 
-It is also recommended to add to ``/opt/local/etc/macports/variants.conf``::
-
-    -x11 +no_x11 +bash_completion +no_gnome +quartz +natron
+The variants are passed explicitly on each ``port install`` command, so no
+global ``variants.conf`` is needed (a global ``+quartz`` would conflict with the
+``-quartz`` installs).
 
 Installing the dependencies is a long ``sudo port install ...`` sequence; it is
 maintained in ``INSTALL_MACOS.md`` — follow it there rather than duplicating it.
@@ -131,7 +124,7 @@ When upstream MacPorts moves, re-synchronise carefully:
    (``tools/MacPorts/skills`` includes a helper to regenerate every
    ``Portfile.patch`` at once.)
 
-#. **Re-sync the overlay** (option B above) so the changes reach the live
+#. **Re-sync the overlay** (``tools/MacPorts/sync.sh``) so the changes reach the live
    ports tree, then ``portindex``.
 
 #. **Upgrade the installed ports.** Either:
@@ -149,9 +142,8 @@ Running the build
 ::
 
     workspace=$HOME/Development/workspace
-    srcdir=$HOME/Documents/third_party/Natron
     mkdir -p "$workspace"
-    cd "$srcdir/tools/jenkins"
+    cd "$NATRON_SRC/tools/jenkins"     # NATRON_SRC: your Natron checkout
 
     NOUPDATE=1 WORKSPACE="$workspace" DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
       GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
