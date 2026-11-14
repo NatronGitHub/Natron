@@ -1,6 +1,6 @@
 --- Portfile.orig	2026-07-13 21:35:09
-+++ Portfile	2026-07-15 14:50:39
-@@ -1,120 +1,101 @@
++++ Portfile	2026-11-14 12:09:12
+@@ -1,7 +1,7 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
  PortSystem              1.0
@@ -9,10 +9,7 @@
  if {${os.major} <= 17} {
      PortGroup           muniversal 1.0
  }
- PortGroup               clang_dependency 1.0
-+PortGroup               compiler_blacklist_versions 1.0
- 
- name                    libomp
+@@ -11,110 +11,90 @@
  maintainers             {eborisch @eborisch} openmaintainer
  homepage                https://openmp.llvm.org
  description             The OpenMP subproject of LLVM
@@ -172,7 +169,7 @@
  if {${os.major} <= 17} {
      default_variants    +universal
  }
-@@ -132,53 +113,41 @@
+@@ -132,53 +112,41 @@
  # With this, cmake sets the correct library name in the dylibs for the
  # final destination we move them to
  configure.args-append   -DCMAKE_INSTALL_RPATH=${prefix}/lib/libomp \
@@ -240,7 +237,7 @@
  
  }
  
-@@ -192,3 +161,4 @@
+@@ -192,3 +160,4 @@
  
  test.run                yes
  test.target             libomp-micro-tests

@@ -1,5 +1,5 @@
---- Portfile.orig	2026-07-13 21:35:34
-+++ Portfile	2026-07-13 21:41:54
+--- Portfile.orig	2026-11-14 19:31:33
++++ Portfile	2026-11-14 19:32:04
 @@ -16,6 +16,7 @@
  
  # Keep this condition the same in the opencolorio, openimageio, and osl ports.
@@ -7,22 +7,29 @@
 +set port_latest 1
  
  if {${port_latest}} {
-     github.setup        AcademySoftwareFoundation OpenImageIO 3.1.12.1 v
-@@ -35,6 +36,13 @@
- 
+     github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+@@ -36,10 +37,19 @@
  github.tarball_from     archive
  
-++patchfiles-append oiio-2.0.8-invalidatespec.patch
-++patchfiles-append oiio-2.0.8-atomic-load.patch
-++patchfiles-append oiio-2.3.20-strnlen.patch
-++patchfiles-append oiio-2.4.6-sysutil.patch
-++patchfiles-append oiio-2.4.6-filesystem.patch
-++patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
-+
  if {${port_latest}} {
++    # Natron: do not clear subimages in invalidate_spec() (thread safety)
++    patchfiles-append   oiio-3.1-invalidatespec.patch
++    # The OIIO 2.x Natron patches (oiio-2.0.8-*, oiio-2.3.20-strnlen,
++    # oiio-2.4.6-*, patch-2.4.5-cmake-disable-wall-werror) are not applied to 3.1:
++    # the legacy-macOS ones only matter below macOS 10.13 (10.9 for atomic-load) and do not apply,
++    # and STOP_ON_WARNING already defaults to OFF on OIIO release branches.
++}
++
++if {${port_latest}} {
++    # Natron: openvdb is only pulled in by the openvdb variant (+natron conflicts with it)
      depends_lib-append  port:imath \
                          port:libxml2 \
-@@ -125,15 +133,54 @@
+                         port:openexr \
+-                        port:openvdb \
+                         port:onetbb \
+                         port:OpenJPH \
+                         port:tcp_wrappers \
+@@ -125,15 +135,54 @@
                          port:libpng \
                          port:tiff
  
@@ -80,7 +87,7 @@
  }
  
  if {[string match *gcc* ${configure.compiler}] \
-@@ -142,6 +189,13 @@
+@@ -142,7 +191,16 @@
                          -latomic
  }
  
@@ -92,9 +99,12 @@
 +}
 +
  configure.args-append   -DUSE_PYTHON=OFF
++# Natron: OpenVDB off unless the openvdb variant is selected (don't pick it up just because it is installed)
++configure.args-append   -DUSE_OPENVDB:BOOL=FALSE
  
  set pythons_suffixes    {310 311 312 313 314}
-@@ -179,18 +233,46 @@
+ 
+@@ -179,18 +237,46 @@
  #    in the python PortGroup
  if {${set_python_default}} {
      default_variants        +python314
@@ -141,7 +151,7 @@
  set opencv_ver 4
  if {${os.platform} eq "darwin" && ${os.major} < 11} {
      # opencv4 does not build on 10.6 and earlier.
-@@ -200,9 +282,16 @@
+@@ -200,9 +286,16 @@
      configure.args-append   -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
                              -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
  }
@@ -158,7 +168,7 @@
  
  configure.args-append       -DUSE_GIF=OFF
  # depends_lib-append          port:giflib
-@@ -211,16 +300,49 @@
+@@ -211,16 +304,49 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF

@@ -1,6 +1,32 @@
---- Portfile.orig	2026-07-13 21:28:33
-+++ Portfile	2026-07-13 21:31:49
-@@ -97,6 +97,8 @@
+--- Portfile.orig	2026-11-14 19:31:33
++++ Portfile	2026-11-14 19:32:04
+@@ -17,8 +17,10 @@
+ conflicts           ffmpeg-devel
+ 
+ # Please increase the revision of mpv whenever ffmpeg's version is updated.
+-version             9.0.2
+-revision            2
++# Natron: pinned to 8.1.x. FFmpeg 9 removed AVCodec::pix_fmts, which openfx-io uses.
++# Keep this Portfile when reintegrating upstream (only Portfile.orig follows upstream).
++version             8.1.2
++revision            0
+ epoch               1
+ 
+ license             LGPL-2.1+
+@@ -61,9 +63,9 @@
+ dist_subdir         ${my_name}
+ use_xz              yes
+ 
+-checksums           rmd160  e4eb22bca3395ecb499dd6fd256e16e7d74cd4ce \
+-                    sha256  8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e \
+-                    size    12040788
++checksums           rmd160  7b6b2b982a22338f38022a0149f7c9f15f6df4ff \
++                    sha256  464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c \
++                    size    11710924
+ 
+ depends_build-append \
+                     port:cctools \
+@@ -97,6 +99,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
                      port:openjpeg \
@@ -9,27 +35,48 @@
                      port:soxr \
                      path:lib/libspeex.dylib:speex \
                      port:webp \
-@@ -141,6 +143,11 @@
- # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
+@@ -106,6 +110,7 @@
+                     port:zvbi
+ 
+ patchfiles-append   patch-libavcodec-audiotoolboxenc.c.diff
++patchfiles-append   patch-avutil-builtin-available.diff
+ 
+ # Additional fixes related to use of '__builtin_available'
+ # TODO: Submit patches to upstream
+@@ -126,7 +131,7 @@
+ }
+ 
+ # error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
+-patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
++patchfiles-append   patch-ibavcodec-videotoolboxenc.c.diff
+ 
+ # enable auto configure of asm optimizations
+ # requires Xcode 3.1 or better on Leopard
+@@ -141,6 +146,11 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 900}
-+
+ 
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 +# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 +compiler.blacklist-append \
 +                    *gcc-4.0 *gcc-4.2
- 
++
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
-@@ -164,6 +171,7 @@
- set port_docdir     ${port_sharedir}/doc
+ default_variants-append +gpl2
+@@ -160,9 +170,10 @@
+                     ${configure.cppflags}
+ 
+ set port_sharedir   ${prefix}/share
+-set port_docdir     ${port_sharedir}/doc/${my_name}
++set port_docdir     ${port_sharedir}/doc
  
  configure.pre_args-append \
 +                    --cxx="${configure.cxx}" \
                      --cc="${configure.cc}"
  
  configure.args-append \
-@@ -194,6 +202,8 @@
+@@ -193,6 +204,8 @@
                      --enable-libmodplug \
                      --enable-libmp3lame \
                      --enable-libopenjpeg \
@@ -38,7 +85,7 @@
                      --enable-libopus \
                      --enable-librsvg \
                      --enable-libsoxr \
-@@ -343,7 +353,16 @@
+@@ -342,7 +355,16 @@
                      --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
@@ -55,18 +102,17 @@
          set merger_host($arch) ""
          lappend merger_configure_args($arch) \
                      --arch=${arch}
-@@ -377,7 +396,25 @@
- test.run            yes
+@@ -377,6 +399,24 @@
  
  destroot.env-append V=1
-+
+ 
 +post-extract {
 +    if {${configure.cxx_stdlib} eq "libc++"} {
 +        # fix configure, which contains many references to libstdc++
 +        reinplace -E {s|-lstdc|-lc|g} ${worksrcpath}/configure
 +    }
 +}
- 
++
 +post-configure {
 +    if {[variant_isset universal]} {
 +        # fix *.pc for universal build (i386 version may miss these extra bits on Leopard)
@@ -81,10 +127,12 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -387,6 +424,46 @@
+@@ -384,6 +424,46 @@
+     foreach f [glob ${worksrcpath}/doc/*.txt] {
+         file copy $f ${destroot}${port_docdir}
      }
- }
- 
++}
++
 +variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 +
 +    depends_lib-delete \
@@ -123,12 +171,10 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
-+}
-+
+ }
+ 
  variant x11 {
-     # enable x11grab_xcb input device
-     depends_lib-append \
-@@ -449,6 +526,14 @@
+@@ -448,6 +528,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -143,3 +189,20 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
+@@ -502,16 +590,6 @@
+                     port:flite
+ }
+ 
+-variant vmaf description {Enable VMAF perceptual video quality assessment} {
+-    configure.args-append \
+-                    --enable-libvmaf
+-    depends_lib-append \
+-                    port:libvmaf
+-}
+-
+-default_variants-append \
+-                    +vmaf
+-
+ if {![variant_isset rav1e]} {
+     notes-append "Support for rav1e now disabled by default; enable via +rav1e"
+ }

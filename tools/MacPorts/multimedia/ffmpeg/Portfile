@@ -17,6 +17,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
+# Natron: pinned to 8.1.x. FFmpeg 9 removed AVCodec::pix_fmts, which openfx-io uses.
+# Keep this Portfile when reintegrating upstream (only Portfile.orig follows upstream).
 version             8.1.2
 revision            0
 epoch               1

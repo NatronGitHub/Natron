@@ -34,7 +34,7 @@ Key tooling in `tools/MacPorts/` (run from that dir):
 
 Layout facts:
 - Overlay MacPorts reads: `/opt/MacPorts-Natron` (declared first in `/opt/local/etc/macports/sources.conf`).
-- Upstream ports tree (what `check.sh` diffs against): under `/opt/local/var/macports/sources/rsync.macports.org/.../tarballs/ports` — `check.sh` locates it as `$ports`.
+- Upstream ports tree (what `check.sh` diffs against): the tree of the `[default]` source in `sources.conf`, i.e. `/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports` (rsync) or `/opt/local/var/macports/sources/distfiles.macports.org/ports` (https) — `check.sh` locates it as `$ports`.
 
 ## CRITICAL constraint — libomp is pinned
 
@@ -48,12 +48,23 @@ The freeze applies **only to the effective `lang/libomp/Portfile`** — its `Por
 - Because `Portfile.orig` then matches upstream, `check.sh` stops flagging libomp. If you leave `Portfile.orig` stale instead, `check.sh` will keep reporting libomp as obsolete.
 - libomp patchfiles **SHOULD** keep a version-specific name (e.g. `patch-libomp11-...diff`) so upstream syncs cannot overwrite them.
 
+## Other pinned ports (same rules as libomp)
+
+These overlay ports are also deliberately older than upstream. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change:
+
+| port | pinned | why |
+|---|---|---|
+| `graphics/libraw` | 0.18.13 | the GPL demosaic packs (`+gpl2`) only exist for 0.18. Note: OIIO 3.x requires LibRaw >= 0.20, so OIIO's RAW reader is not built against this pin |
+| `multimedia/ffmpeg` | 8.1.2 | FFmpeg 9 removed `AVCodec::pix_fmts`, which openfx-io uses (until openfx-io switches to `avcodec_get_supported_config()`) |
+
+MacPorts never downgrades: if a pinned port was installed in a newer version, `sudo port -f uninstall <port>` and install it again with the same variants.
+
 ## Compiler pin (clang)
 
-Natron's app build (`tools/jenkins/compiler-common.sh`) auto-selects a MacPorts `clang-mp-*`. The right version depends on the macOS version — **verify, don't assume the howto**:
+Natron's app build (`tools/jenkins/compiler-common.sh`) auto-selects a MacPorts `clang-mp-*`. The right version depends on the macOS version — **verify, don't assume older notes**:
 
-- **Legacy (howto text):** older macOS pinned `clang_version=16` (`11` on 10.6) for two reasons — clang-17/18 once mis-linked `-fopenmp` against `@rpath/libc++.1.dylib`, and clang-19+ emits `__kmpc_dispatch_deinit`, which was absent from the pinned libomp 11.1.0.
-- **Current (macOS 26 / Darwin 25 — verified):** both reasons are resolved. `clang++-mp-17 -stdlib=libc++ -fopenmp` links against `/usr/lib/libc++.1.dylib` correctly (no `@rpath`), and the missing OpenMP symbol is now backported into libomp 11.1.0 (`files/patch-libomp11-add-kmpc_dispatch_deinit.diff`). So the jenkins default (**clang-mp-17**, the top uncommented entry in `compiler-common.sh`) builds correctly, and clang-16 (no longer in the Darwin≥25 fallback, and possibly not installed) need not be forced.
+- **Legacy:** older macOS pinned `clang_version=16` (`11` on 10.6) for two reasons — clang-17/18 once mis-linked `-fopenmp` against `@rpath/libc++.1.dylib`, and clang-19+ emits `__kmpc_dispatch_deinit`, which was absent from the pinned libomp 11.1.0.
+- **Current (macOS 26 / Darwin 25 — verified):** both reasons are resolved. `clang++-mp-17 -stdlib=libc++ -fopenmp` links against `/usr/lib/libc++.1.dylib` correctly (no `@rpath`), and the missing OpenMP symbol is now backported into libomp 11.1.0 (`files/patch-libomp11-add-kmpc_dispatch_deinit.diff`). `compiler-common.sh` therefore picks the **newest installed** `clang-mp-*` capped at the MacPorts default for the OS (≤22 on Darwin ≥25, ≤18 on Darwin 24, ≤17 otherwise, so macOS 10.15 behaves as before); clang-16 need not be forced.
 - **Verify on the running OS before trusting a pin:**
   ```bash
   printf 'int main(){}\n' > /tmp/t.cpp
@@ -161,7 +172,7 @@ The failure is almost always a **context mismatch**: the patch was written for a
 
 The full macOS build (Natron + OpenFX plugins, bundled into a `.dmg`) is driven by `tools/jenkins/launchBuildMain.sh`, which runs 6 steps: (1) checkout sources, (2) build plugins, (3) build Natron, (4) build installer/DMG, (5) unit tests, (6) archive/cleanup.
 
-**Prerequisites** (installed into `/opt/local` via MacPorts — sudo; see the howto's install list):
+**Prerequisites** (installed into `/opt/local` via MacPorts — sudo; see the MacPorts section of `INSTALL_MACOS.md`):
 - Full SDK: qt5, python310, **py310-pyside2** (provides the shiboken2 generator), openimageio, ffmpeg, cairo, librsvg, boost, openexr, seexpr/seexpr211, ImageMagick, etc.
 - **OSMesa** at `/opt/osmesa` (or `$SDK_HOME/osmesa`), built separately via `osmesa-install.sh`.
 - Symlinks the build checks (else it hard-exits): `…/site-packages/shiboken2_generator/shiboken2-<PYVER>` **must resolve to a real file**, `/opt/local/bin/shiboken2 → shiboken2-<PYVER>`, and `${SDK_HOME}/Library/lib → Frameworks`.
@@ -179,8 +190,8 @@ nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
 ```
 `set -e` means it stops at the first error; the log tail shows the failing step. Monitor with `tail -f /tmp/natron-build.log`.
 
-- **arch:** on Apple Silicon it targets arm64 natively (no flag needed; the howto's `BITS=Universal` is for older/Intel setups).
-- **compiler:** auto-selected by `compiler-common.sh` (clang-mp-17 on macOS 26 — see Compiler pin).
+- **arch:** on Apple Silicon it targets arm64 natively (no flag needed; `BITS=Universal` is for older/Intel setups).
+- **compiler:** auto-selected by `compiler-common.sh` (newest installed `clang-mp-*`, clang-22 on macOS 26+ — see Compiler pin).
 - **output DMG:** under `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER/` (`build-OSX-installer.sh` writes `<INSTALLER_BASENAME>.dmg`).
 - **partial runs:** `BUILD_FROM`/`BUILD_TO` restrict which of the 6 steps run; `DEBUG_SCRIPTS=1` keeps prior binaries to resume.
 - **release build:** set `RELEASE_TAG=x.y.z NATRON_DEV_STATUS=STABLE NATRON_BUILD_NUMBER=1` instead of a branch CI build.
