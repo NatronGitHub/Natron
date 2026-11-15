@@ -2256,63 +2256,9 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 std::string
 Project::escapeXML(const std::string &istr)
 {
-    std::string str( istr );
-
-    for (size_t i = 0; i < str.size(); ++i) {
-        switch (str[i]) {
-        case '<':
-            str.replace(i, 1, "&lt;");
-            i += 3;
-            break;
-
-        case '>':
-            str.replace(i, 1, "&gt;");
-            i += 3;
-            break;
-        case '&':
-            str.replace(i, 1, "&amp;");
-            i += 4;
-            break;
-        case '"':
-            str.replace(i, 1, "&quot;");
-            i += 5;
-            break;
-        case '\'':
-            str.replace(i, 1, "&apos;");
-            i += 5;
-            break;
-        default: {
-            unsigned char c = (unsigned char)(str[i]);
-            // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-            // XML, because they would be converted to space when re-read.
-            // See http://www.w3.org/TR/xml/#AVNormalize
-            if ( ( ( 0x01 <= c) && ( c <= 0x1f) ) || ( ( 0x7F <= c) && ( c <= 0x9F) ) ) {
-                // these characters must be escaped in XML 1.1
-                // http://www.w3.org/TR/xml/#sec-references
-                std::string ns = "&#x";
-                if (c > 0xf) {
-                    int d = c / 0x10;
-                    ns += ('0' + d);     // d cannot be more than 9 (because c <= 0x9F)
-                }
-                int d = c & 0xf;
-                ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                ns += ';';
-                str.replace(i, 1, ns);
-                i += ns.size() + 1;
-            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
-                i += 1;
-            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
-                i += 2;
-            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
-                i += 3;
-            }
-
-            break;
-        }
-        }
-    }
-    assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport
-    return str;
+    // Same escaping as OFX HostSupport (UTF-8 aware, '\t' '\n' '\r' kept as character references,
+    // characters that are illegal in XML 1.0 replaced by U+FFFD)
+    return OFX::XML::escape(istr);
 } // Project::escapeXML
 
 std::string
