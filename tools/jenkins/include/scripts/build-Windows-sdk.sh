@@ -577,8 +577,9 @@ fi # if false
 # TODO: modify to checkout the right commit, not HEAD
 build_package opencolorio-git
 
-# Install libraw (only the GPL2 build is packaged: tools/MINGW-packages/mingw-w64-libraw-gpl2)
+# Install libraw: GPL2 demosaic pack for GPL builds, no pack (LGPL) for COMMERCIAL builds
 build_package libraw-gpl2
+build_package libraw-lgpl
 
 # Install ilmbase (adds ilmbase-2.2.0-threadpool_release_lock_single_thread.patch)
 build_package ilmbase

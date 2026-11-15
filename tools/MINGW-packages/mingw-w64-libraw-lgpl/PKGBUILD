@@ -1,0 +1,64 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=LibRaw
+pkgbase=mingw-w64-natron_libraw-lgpl
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_libraw-lgpl"
+provides=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl")
+replaces=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl")
+conflicts=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl" "${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl")
+pkgver=0.22.3
+pkgrel=1
+pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
+arch=('any')
+url="https://www.libraw.org/"
+license=("LGPL2.1" "CDDL")   # no demosaic pack: for COMMERCIAL builds
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-autotools")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-jasper")
+options=('staticlibs' 'strip')
+# LGPL build of LibRaw for COMMERCIAL Natron builds (NATRON_LICENSE=COMMERCIAL uses $MINGW_PREFIX/libraw-lgpl).
+# Same tree as natron_libraw-gpl2 (patch-libraw-0.22.3-gpl-demosaic-packs.diff, from
+# https://github.com/devernay/LibRaw/commit/56970694), but with no demosaic pack enabled.
+# The old LibRaw_force-openmp/obsolete-macros/wsock32 patches are no longer needed with 0.22.3.
+source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
+        "patch-libraw-0.22.3-gpl-demosaic-packs.diff"
+	)
+sha256sums=('789f3c33466210a1a0907f747a97c715d21bbf4af712f257fcbbd90111b227e4'
+            '5ef23708e76501d3d63bc47cd6cc25029dc9635204c242c704ff87912c541822'
+	    )
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -Np1 -i "${srcdir}/patch-libraw-0.22.3-gpl-demosaic-packs.diff"
+  autoreconf -ifv
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  CPPFLAGS+=" -DLIBRAW_BUILDLIB -D__STDC_LIMIT_MACROS"
+  ../${_realname}-${pkgver}/configure \
+      --prefix=${MINGW_PREFIX}/libraw-lgpl \
+      --build=${MINGW_CHOST} \
+      --host=${MINGW_CHOST} \
+      --enable-jasper \
+      --enable-lcms
+
+  make -j${MKJOBS}
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  # tests/demosaic_test must report "GPL2: no, GPL3: no"
+  make check
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}
