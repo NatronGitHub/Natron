@@ -11,7 +11,14 @@ The baseline for distribution is **macOS 15 Sequoia** (base image `ghcr.io/cirru
 
 ## Requirements
 
-- An Apple Silicon Mac with `tart` (`brew install cirruslabs/cli/tart`).
+**The host must be a Mac with Apple Silicon.** tart is a thin layer over Apple's Virtualization.framework, so it does not run on Intel Macs, Linux or Windows. The guests it can run are macOS 12 or later (arm64) and arm64 Linux. That means:
+
+- These scripts only produce **arm64 macOS** builds. Intel/universal macOS builds, and builds or tests on macOS 11 or older (e.g. 10.15), need an Intel Mac or a VM on one (see the notes for older systems in `INSTALL_MACOS.md`).
+- Linux and Windows releases are not built here: use `tools/docker` (Linux) and the MSYS2 builds (Windows).
+
+Other requirements:
+
+- `tart` (`brew install cirruslabs/cli/tart`).
 - rsync 3 (`brew install rsync` or `sudo port install rsync`). macOS's own `/usr/bin/rsync` (openrsync) can't copy to IPv6 addresses.
 - `sshpass`, used once to install the SSH key (`brew install hudochenkov/sshpass/sshpass`).
 - About 70 GB to download the base image the first time, plus up to `VM_DISK` (250 GB, sparse) per VM.
