@@ -266,6 +266,7 @@ If `check.sh` reports obsolete Portfiles, reintegrate upstream into the overlay 
 | `lang/libomp` | 11.1.0 | OpenMP regression affecting Natron |
 | `graphics/libraw` | 0.18.13 | the GPL demosaic packs (`+gpl2`) only exist for 0.18 |
 | `multimedia/ffmpeg` | 8.1.2 | FFmpeg 9 removed `AVCodec::pix_fmts`, which openfx-io uses |
+| `graphics/opencolorio` | 2.6.0 (ahead of upstream) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
 
 Then publish the overlay and upgrade:
 
