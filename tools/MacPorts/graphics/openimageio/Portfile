@@ -20,7 +20,7 @@ set port_latest 1
 
 if {${port_latest}} {
     github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
-    revision            3
+    revision            4   ;# Natron: rebuild against OpenColorIO 2.6 (libOpenColorIO.2.6.dylib)
     checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
                         sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
                         size    56133013

@@ -1,6 +1,6 @@
---- Portfile.orig	2026-11-14 19:31:33
-+++ Portfile	2026-11-14 19:32:04
-@@ -16,6 +16,7 @@
+--- Portfile.orig	2026-11-15 17:34:25
++++ Portfile	2026-11-15 18:23:08
+@@ -16,10 +16,11 @@
  
  # Keep this condition the same in the opencolorio, openimageio, and osl ports.
  set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
@@ -8,6 +8,11 @@
  
  if {${port_latest}} {
      github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+-    revision            3
++    revision            4   ;# Natron: rebuild against OpenColorIO 2.6 (libOpenColorIO.2.6.dylib)
+     checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                         sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                         size    56133013
 @@ -36,10 +37,19 @@
  github.tarball_from     archive
  
@@ -104,12 +109,10 @@
  
  set pythons_suffixes    {310 311 312 313 314}
  
-@@ -179,18 +237,46 @@
- #    in the python PortGroup
- if {${set_python_default}} {
+@@ -181,16 +239,44 @@
      default_variants        +python314
-+}
-+
+ }
+ 
 +#configure.args-append       -DUSE_FFMPEG=OFF
 +variant ffmpeg description {Add FFmpeg support.} {
 +    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
@@ -125,9 +128,9 @@
 +} else {
 +    #configure.args-append       -DUSE_FFMPEG=OFF
 +    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
- }
 +}
- 
++}
++
 +
  #configure.args-append       -DUSE_JPEGTURBO=OFF
  depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
