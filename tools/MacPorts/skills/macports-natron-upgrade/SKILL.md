@@ -1,6 +1,6 @@
 ---
 name: macports-natron-upgrade
-description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that lang/libomp stays pinned.
+description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that the pinned ports (libraw, ffmpeg) keep their Portfile.
 version: 1.0.0
 tags: [skill, macports, natron, portfile, upgrade]
 ---
@@ -36,21 +36,13 @@ Layout facts:
 - Overlay MacPorts reads: `/opt/MacPorts-Natron` (declared first in `/opt/local/etc/macports/sources.conf`).
 - Upstream ports tree (what `check.sh` diffs against): the tree of the `[default]` source in `sources.conf`, i.e. `/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports` (rsync) or `/opt/local/var/macports/sources/distfiles.macports.org/ports` (https) — `check.sh` locates it as `$ports`.
 
-## CRITICAL constraint — libomp is pinned
+## libomp is no longer pinned
 
-`lang/libomp` is deliberately pinned to **11.1.0** (see `lang/libomp/README.md`) because of an OpenMP regression affecting Natron.
+From 2021 to 2026-11-15, `lang/libomp` was pinned to 11.1.0. Both upstream bugs behind the pin are fixed: the foreign-thread crash was fixed in 13.0.0 and the Debug-only exit crash in 18.1.0 (see `lang/libomp/README.md` and https://github.com/devernay/libomp-repro). The overlay no longer has a `lang/libomp/Portfile`, so MacPorts uses the upstream port and `check.sh` ignores libomp. The old pinned Portfile is kept as `lang/libomp/Portfile~20261115` (MacPorts ignores it), with its `files/patch-libomp11-*.diff` and `files/reviews.llvm.org_D88252.diff`.
 
-The freeze applies **only to the effective `lang/libomp/Portfile`** — its `Portfile.orig` still mirrors upstream like every other port.
+## Pinned ports
 
-- You **MUST NOT** modify the effective `lang/libomp/Portfile` (keep it pinned to 11.1.0) unless the user explicitly says it is OK to upgrade libomp. That means: skip the `cp upstream → Portfile` copy and the re-patch step for libomp.
-- **Exception — syntax/compatibility fixes are allowed.** You **MAY** edit the pinned `Portfile` when a MacPorts change requires it to keep parsing/building (e.g. a bumped `PortGroup` version, a renamed or removed Tcl command, a changed/deprecated keyword). This is not a version upgrade — the goal is to keep the 11.1.0 pin working on the current MacPorts base. Make the minimal syntax change; do **not** change `version`, `checksums`, `master_sites`, or the fetched sources. When the source itself is unchanged, prefer copying just the needed syntax fix from upstream's Portfile rather than adopting the whole file.
-- You **SHOULD** still update `lang/libomp/Portfile.orig` to the current upstream version (Portfile.orig always represents upstream), and regenerate `lang/libomp/Portfile.patch` in Step 7. That patch becomes the intentional "downgrade" diff (upstream → pinned 11.1.0), which is expected and correct.
-- Because `Portfile.orig` then matches upstream, `check.sh` stops flagging libomp. If you leave `Portfile.orig` stale instead, `check.sh` will keep reporting libomp as obsolete.
-- libomp patchfiles **SHOULD** keep a version-specific name (e.g. `patch-libomp11-...diff`) so upstream syncs cannot overwrite them.
-
-## Other pinned ports (same rules as libomp)
-
-These overlay ports are also deliberately older than upstream. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change:
+These overlay ports are deliberately older than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change:
 
 | port | pinned | why |
 |---|---|---|
@@ -63,8 +55,8 @@ MacPorts never downgrades: if a pinned port was installed in a newer version, `s
 
 Natron's app build (`tools/jenkins/compiler-common.sh`) auto-selects a MacPorts `clang-mp-*`. The right version depends on the macOS version — **verify, don't assume older notes**:
 
-- **Legacy:** older macOS pinned `clang_version=16` (`11` on 10.6) for two reasons — clang-17/18 once mis-linked `-fopenmp` against `@rpath/libc++.1.dylib`, and clang-19+ emits `__kmpc_dispatch_deinit`, which was absent from the pinned libomp 11.1.0.
-- **Current (macOS 26 / Darwin 25 — verified):** both reasons are resolved. `clang++-mp-17 -stdlib=libc++ -fopenmp` links against `/usr/lib/libc++.1.dylib` correctly (no `@rpath`), and the missing OpenMP symbol is now backported into libomp 11.1.0 (`files/patch-libomp11-add-kmpc_dispatch_deinit.diff`). `compiler-common.sh` therefore picks the **newest installed** `clang-mp-*` capped at the MacPorts default for the OS (≤22 on Darwin ≥25, ≤18 on Darwin 24, ≤17 otherwise, so macOS 10.15 behaves as before); clang-16 need not be forced.
+- **Legacy:** older macOS pinned `clang_version=16` (`11` on 10.6) for two reasons — clang-17/18 once mis-linked `-fopenmp` against `@rpath/libc++.1.dylib`, and clang-19+ emits `__kmpc_dispatch_deinit`, which was absent from the then-pinned libomp 11.1.0.
+- **Current (macOS 26 / Darwin 25 — verified):** both reasons are resolved. `clang++-mp-17 -stdlib=libc++ -fopenmp` links against `/usr/lib/libc++.1.dylib` correctly (no `@rpath`), and libomp is no longer pinned (upstream libomp has `__kmpc_dispatch_deinit`). `compiler-common.sh` therefore picks the **newest installed** `clang-mp-*` capped at the MacPorts default for the OS (≤22 on Darwin ≥25, ≤18 on Darwin 24, ≤17 otherwise, so macOS 10.15 behaves as before); clang-16 need not be forced.
 - **Verify on the running OS before trusting a pin:**
   ```bash
   printf 'int main(){}\n' > /tmp/t.cpp
@@ -82,8 +74,8 @@ Natron's app build (`tools/jenkins/compiler-common.sh`) auto-selects a MacPorts 
 ```mermaid
 graph TD
     A[selfupdate: sudo] --> B[./check.sh]
-    B --> C[Reintegrate upstream per port<br/>skip libomp]
-    C --> D{check.sh clean<br/>except libomp?}
+    B --> C[Reintegrate upstream per port<br/>keep pinned Portfiles]
+    C --> D{check.sh clean?}
     D -- no --> C
     D -- yes --> E[./sync.sh]
     E --> F[upgrade outdated: sudo,<br/>redirect to log]
@@ -119,7 +111,7 @@ cp "$ports/$P/Portfile" "$P/Portfile"        # start from new upstream
 - If hunks reject (`.rej` files), open each `.rej`, merge the change into `Portfile` by hand to fit the new upstream context, then delete the `.rej` (and any `.orig` left by `patch`).
 - Copy any `files/*` that `check.sh` reported as missing or updated.
 
-**libomp exception:** for `lang/libomp` do the first line only (`cp upstream → Portfile.orig`); **skip** the second `cp` and the re-patch so the pinned `Portfile` (11.1.0) is preserved. See the libomp constraint above.
+**Pinned-port exception:** for the pinned ports above, do the first line only (`cp upstream → Portfile.orig`); **skip** the second `cp` and the re-patch so the pinned `Portfile` is preserved.
 
 Re-run `./check.sh` and repeat Step 3 until it reports nothing obsolete.
 
@@ -155,7 +147,7 @@ Rewrite every `Portfile.patch` as the unified diff of its `Portfile.orig` → `P
 ```bash
 skills/macports-natron-upgrade/scripts/regen-portfile-patches.sh .
 ```
-This is safe for `lang/libomp`: it only rewrites `Portfile.patch`, never the pinned `Portfile`. Review `git status`/`git diff`, then commit per-package (each port dir is its own change) if the user asks.
+This is safe for pinned ports: it only rewrites `Portfile.patch`, never `Portfile`. Review `git status`/`git diff`, then commit per-package (each port dir is its own change) if the user asks.
 
 ## Fixing a failing patchfile
 The failure is almost always a **context mismatch**: the patch was written for a different source version than the Portfile pins/fetches.
@@ -212,7 +204,7 @@ nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
 | Per-port build log | `/opt/local/var/macports/logs/<mangled-path>/<port>/main.log` |
 
 ## Common mistakes
-- **Upgrading the libomp Portfile.** Never bump the libomp *version* (change `version`/`checksums`/sources) without explicit user approval. Syntax/compatibility edits required by a MacPorts change are allowed. Its `Portfile.orig` still tracks upstream and its `Portfile.patch` is regenerated normally.
+- **Upgrading a pinned Portfile.** Never bump a pinned port's *version* (change `version`/`checksums`/sources) without explicit user approval. Syntax/compatibility edits required by a MacPorts change are allowed. Its `Portfile.orig` still tracks upstream and its `Portfile.patch` is regenerated normally.
 - **Running sudo yourself.** The agent cannot sudo — always hand sudo commands to the user.
 - **Leaving `.rej`/`.orig` litter.** After resolving rejects, delete leftover `*.rej` and `patch`-created `*.orig` files before regenerating `Portfile.patch`.
 - **Regenerating patches before reintegration.** Do Step 7 last, after `Portfile`/`Portfile.orig` are settled, or the diffs will be wrong.

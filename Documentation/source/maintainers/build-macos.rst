@@ -97,7 +97,7 @@ maintained in ``INSTALL_MACOS.md`` — follow it there rather than duplicating i
 Keeping the local MacPorts up to date
 -------------------------------------
 
-Natron pins several ports in the overlay (e.g. ``libomp`` is frozen at 11.1.0).
+Natron pins several ports in the overlay (e.g. ``ffmpeg`` is frozen at 8.1.2).
 When upstream MacPorts moves, re-synchronise carefully:
 
 #. **Update MacPorts itself**::

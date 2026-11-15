@@ -265,7 +265,7 @@ step_sync() {
 
 # Ports pinned in the overlay (older than upstream): MacPorts never downgrades by itself,
 # so reinstall them (same variants) when the installed version differs from the overlay's.
-PINNED_PORTS="ffmpeg libraw libomp"
+PINNED_PORTS="ffmpeg libraw"
 step_pins() {
     local p want have variants vfile
     for p in $PINNED_PORTS; do

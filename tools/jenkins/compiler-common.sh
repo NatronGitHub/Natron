@@ -107,8 +107,8 @@ if [ "$PKGOS" = "OSX" ]; then
         # Two former reasons to avoid clang >= 17 are resolved (verified on macOS 26):
         # - clang 17/18 with -fopenmp linked @rpath/libc++.1.dylib instead of
         #   /usr/lib/libc++.1.dylib; it now links /usr/lib/libc++.1.dylib.
-        # - clang >= 19 emits __kmpc_dispatch_deinit, missing from the pinned
-        #   libomp 11.1.0; it is now backported in tools/MacPorts/lang/libomp.
+        # - clang >= 19 emits __kmpc_dispatch_deinit, missing from libomp 11.1.0;
+        #   libomp is no longer pinned to 11.1.0 (see tools/MacPorts/lang/libomp).
         # Sanity check on a new OS/compiler:
         #   printf 'int main(){}\n' > t.cpp; clang++-mp-N -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t
         case "$osxver" in
