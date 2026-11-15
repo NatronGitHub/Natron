@@ -15,10 +15,6 @@ on:
     paths-ignore:
       - Documentation
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   unix_test:
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
@@ -200,6 +196,10 @@ jobs:
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
           unzip openfx-io-build-windows_latest-testing.zip
           cd ..
+
+          # TEMPORARY diagnostic: show why the embedded interpreter cannot import shiboken2.
+          printf '%s\n' 'import sys, traceback' 'try:' '    import shiboken2' 'except BaseException:' '    traceback.print_exc()' > sitecustomize.py
+          cp sitecustomize.py Tests/
 
           PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
