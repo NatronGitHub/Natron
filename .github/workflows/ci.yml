@@ -198,9 +198,9 @@ jobs:
           cd ..
 
           # TEMPORARY diagnostic: show why the embedded interpreter cannot import shiboken2.
-          printf '%s\n' 'import sys, traceback' 'print("sitecustomize: python", sys.version, "flags", sys.flags, file=sys.stderr)' 'try:' '    import PySide2.QtCore' '    print("sitecustomize: PySide2.QtCore OK", file=sys.stderr)' 'except BaseException:' '    traceback.print_exc()' > sitecustomize.py
+          printf '%s\n' 'import sys, os, traceback' 'print("sitecustomize: python", sys.version, sys.executable, sys.path, os.environ.get("PATH"), file=sys.stderr)' 'try:' '    import PySide2.QtCore' '    print("sitecustomize: PySide2.QtCore OK", file=sys.stderr)' 'except BaseException:' '    traceback.print_exc()' > sitecustomize.py
           cat sitecustomize.py
-          cp sitecustomize.py Tests/
+          cp sitecustomize.py ${MINGW_PREFIX}/lib/python3.14/site-packages/
 
           PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
