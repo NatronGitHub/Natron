@@ -18,7 +18,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             9.0.2
-revision            2
+revision            3
 epoch               1
 
 license             LGPL-2.1+

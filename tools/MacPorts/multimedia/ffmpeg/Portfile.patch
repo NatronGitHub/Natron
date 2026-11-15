@@ -1,11 +1,11 @@
---- Portfile.orig	2026-11-14 19:31:33
-+++ Portfile	2026-11-14 19:32:04
+--- Portfile.orig	2026-11-15 21:55:16
++++ Portfile	2026-11-15 17:34:25
 @@ -17,8 +17,10 @@
  conflicts           ffmpeg-devel
  
  # Please increase the revision of mpv whenever ffmpeg's version is updated.
 -version             9.0.2
--revision            2
+-revision            3
 +# Natron: pinned to 8.1.x. FFmpeg 9 removed AVCodec::pix_fmts, which openfx-io uses.
 +# Keep this Portfile when reintegrating upstream (only Portfile.orig follows upstream).
 +version             8.1.2

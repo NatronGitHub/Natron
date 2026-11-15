@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 # (e.g. rsync://rsync.macports.org/macports/release/tarballs/ports.tar.gz or
 # https://distfiles.macports.org/ports.tar.gz), else the first one found
 ports=
-default_src=$(awk '/\[default\]/ {print $1; exit}' /opt/local/etc/macports/sources.conf 2>/dev/null || true)
+default_src=$(awk '!/^[[:space:]]*#/ && /\[default/ {print $1; exit}' /opt/local/etc/macports/sources.conf 2>/dev/null || true)
 if [ -n "$default_src" ]; then
     d="/opt/local/var/macports/sources/$(echo "$default_src" | sed -e 's@^[a-z]*://@@' -e 's@\.tar\.gz$@@')"
     [ -d "$d" ] && ports="$d"
