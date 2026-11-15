@@ -384,7 +384,11 @@ jobs:
           python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt5
           python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt5
 
+          # Natron is built with the system (Xcode) clang, which fully supports C++20 on
+          # macOS 15; MacPorts only provides the libraries (see #1134).
+          /usr/bin/clang++ --version
           $QTDIR/bin/qmake -r -spec macx-clang CONFIG+=release CONFIG+=python3 CONFIG-=openmp \
+            QMAKE_CC=/usr/bin/clang QMAKE_CXX=/usr/bin/clang++ QMAKE_LINK=/usr/bin/clang++ \
             CONFIG-=enable-breakpad CONFIG+=enable-cairo PYTHON_CONFIG=python${PYVER}-config Project.pro
           make -j$(sysctl -n hw.ncpu)
           make -j$(sysctl -n hw.ncpu) -C Tests
