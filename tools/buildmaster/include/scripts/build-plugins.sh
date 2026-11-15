@@ -221,7 +221,19 @@ if [ "$BUILD_MISC" = "1" ]; then
             llvmsystemlibs="--system-libs"
             ;;
     esac
-    LLVM_LIB="$(${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler ${llvmsystemlibs}| tr '\n' ' ')"
+    llvmcomponents="engine mcjit mcdisassembler"
+    llvmlinkstatic=""
+    case "$llvmversion" in
+        [2-9].*|1[0-4].*)
+            ;;
+        *)
+            # LLVM >= 15 (Mesa 25.0.7 OSMesa): link the LLVM components used by llvmpipe (llvm_modules
+            # in Mesa's meson.build), and the static libraries even if LLVM's default is shared.
+            llvmcomponents="bitwriter engine mcdisassembler mcjit core executionengine scalaropts transformutils instcombine coroutines native passes"
+            llvmlinkstatic="--link-static"
+            ;;
+    esac
+    LLVM_LIB="$(${LLVM_PATH}/bin/llvm-config ${llvmlinkstatic} --ldflags --libs ${llvmcomponents} ${llvmsystemlibs}| tr '\n' ' ')"
     MESALIB=""
     GLULIB=""
     MESALIB="-lOSMesa"

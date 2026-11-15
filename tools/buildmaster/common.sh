@@ -301,7 +301,9 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-if [ -d "$SDK_HOME/osmesa" ]; then
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    OSMESA_PATH="${OSMESA_PREFIX}"
+elif [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
