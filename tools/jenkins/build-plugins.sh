@@ -404,7 +404,8 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
 
     # gmic.eu may refuse downloads (HTTP 403 seen in 2026), and the Makefile's curl saves the
     # error page as the tarball. Pre-fetch the G'MIC sources (official site, then the MacPorts
-    # distfiles mirror), verifying the checksum when the version is known.
+    # distfiles mirror), verifying the checksum. Only for versions whose checksum is known here:
+    # for others, the openfx-gmic Makefile downloads and verifies the sources itself.
     GMICVER=$(sed -n 's/^GMICVER *= *//p' Makefile | head -1)
     GMICSRC=$(sed -n 's/^GMICSRC *= *//p' Makefile | head -1 | sed "s/\$(GMICVER)/${GMICVER}/")
     GMIC_SHA256=
@@ -423,7 +424,7 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             return 1
         fi
     }
-    if [ -n "$GMICSRC" ] && ! gmic_src_ok "$GMICSRC"; then
+    if [ -n "$GMICSRC" ] && [ -n "$GMIC_SHA256" ] && ! gmic_src_ok "$GMICSRC"; then
         rm -f "$GMICSRC"
         for url in "https://gmic.eu/files/source/$GMICSRC" ${GMIC_SHA256:+"https://distfiles.macports.org/gmic/$GMICSRC"}; do
             if curl -f --retry 3 -L -s -S -o "$GMICSRC.tmp" "$url" && gmic_src_ok "$GMICSRC.tmp"; then

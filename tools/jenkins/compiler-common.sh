@@ -19,8 +19,9 @@ if [ "$PKGOS" = "OSX" ]; then
     # 16 -> 10.12
     osxver=$(uname -r)
 
-    # Never use a clang newer than the MacPorts default for this OS, so that
-    # older systems (e.g. macOS 10.15) keep building with clang <= 17 exactly as before.
+    # Never use a clang newer than MacPorts' unconditional default compiler for this OS
+    # (ports with C++14+ requirements may get a newer one), so that older systems
+    # (e.g. macOS 10.15) keep building with clang <= 17 exactly as before.
     darwin_major=${osxver%%.*}
     if [ "$darwin_major" -ge 25 ]; then
         clang_max=22
@@ -32,12 +33,16 @@ if [ "$PKGOS" = "OSX" ]; then
 
     # use a MacPorts clang (with OpenMP) if one not newer than clang_max is available
     clang_mp_found=0
-    for v in 22 21 20 19 18 17 16 15 14 13 12 11 9.0 8.0 7.0 6.0 5.0 4.0; do
+    for v in 22 21 20 19 18 17 16 15 14 13 12 11 10 9.0 8.0 7.0 6.0 5.0 4.0; do
         if [ "${v%%.*}" -le "$clang_max" ] && command -v "clang-mp-$v" >/dev/null 2>&1; then
             clang_mp_found=1
             break
         fi
     done
+    if [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
+        echo "Warning: only MacPorts clang-mp-N newer than clang-mp-$clang_max found:" \
+             "building with Apple clang, without OpenMP. Install clang-$clang_max (see INSTALL_MACOS.md)." >&2
+    fi
     if [ "$clang_mp_found" = 1 ]; then
         COMPILER=clang-omp
         if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
@@ -78,6 +83,7 @@ if [ "$PKGOS" = "OSX" ]; then
                 ;;
         esac
     elif [ "$COMPILER" = "clang-omp" ]; then
+        unset CC CXX  # chosen below; don't silently use a compiler from the environment
         # newer version (testing) using clang
         # if a recent clang-mp is available
         if command -v clang-mp-6.0 >/dev/null 2>&1; then
