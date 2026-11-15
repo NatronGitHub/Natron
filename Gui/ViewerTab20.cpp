@@ -32,12 +32,18 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include <QDebug>
+#include <QCursor>
+#include <QFile>
+#include <QFileInfo>
+#include <QMap>
+#include <QPixmap>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -460,7 +466,6 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    _imp->viewer->releaseOverlayCursorUnlessNodeIn(nodes);
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
@@ -474,6 +479,90 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     getGui()->getApp()->clearOverlayRedrawRequests();
 
     return didSomething;
+}
+
+static bool
+makeCustomOverlayCursor(const NodePtr& node,
+                        const std::string& image,
+                        int hotSpotX,
+                        int hotSpotY,
+                        qreal devicePixelRatio,
+                        QCursor* cursor)
+{
+    // a PNG file, absolute or relative to the plug-in resources, with an optional @2x version
+    QString filePath = QString::fromUtf8( image.c_str() );
+    if ( !QFileInfo(filePath).isAbsolute() ) {
+        QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
+        if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+            resourcesPath += QLatin1Char('/');
+        }
+        filePath.prepend(resourcesPath);
+    }
+    bool hiDpi = devicePixelRatio > 1.;
+    QString key = filePath + QString::fromUtf8(hiDpi ? "@2x:" : ":") + QString::number(hotSpotX) + QLatin1Char(',') + QString::number(hotSpotY);
+    // loading the PNG on every pen motion would be too slow
+    static QMap<QString, QCursor> cache;
+    QMap<QString, QCursor>::const_iterator found = cache.constFind(key);
+    if ( found != cache.constEnd() ) {
+        *cursor = found.value();
+
+        return true;
+    }
+    QPixmap pix;
+    if (hiDpi) {
+        QFileInfo fi(filePath);
+        QString hiDpiPath = fi.path() + QLatin1Char('/') + fi.completeBaseName() + QString::fromUtf8("@2x.") + fi.suffix();
+        if ( QFile::exists(hiDpiPath) && pix.load(hiDpiPath) ) {
+            pix.setDevicePixelRatio(2.);
+        }
+    }
+    if ( pix.isNull() && !pix.load(filePath) ) {
+        return false;
+    }
+    // the hot spot is in pixels of the 1x image
+    *cursor = QCursor(pix, hotSpotX, hotSpotY);
+    cache.insert(key, *cursor);
+
+    return true;
+}
+
+bool
+ViewerTab::getOverlaysCursor(QCursor* cursor)
+{
+    if ( !getGui() || !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+        return false;
+    }
+    NodesList nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( _imp->hasInactiveNodeViewerContext(*it) ) {
+            continue;
+        }
+        EffectInstancePtr effect = (*it)->getEffectInstance();
+        if (!effect) {
+            continue;
+        }
+        CursorEnum c;
+        std::string image;
+        int hx = 0, hy = 0;
+        if ( !effect->getOverlayCursor(&c, &image, &hx, &hy) ) {
+            continue;
+        }
+        if ( !image.empty() ) {
+            if ( makeCustomOverlayCursor(*it, image, hx, hy, _imp->viewer->devicePixelRatioF(), cursor) ) {
+                return true;
+            }
+            continue;
+        }
+        Qt::CursorShape shape;
+        if ( QtEnumConvert::toQtCursor(c, &shape) ) {
+            *cursor = QCursor(shape);
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool

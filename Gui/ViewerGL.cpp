@@ -1847,6 +1847,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         if (overlaysCaught) {
             mustRedraw = true;
         }
+        updateOverlayCursor();
     }
 
     if ( !overlaysCaught &&
@@ -2046,6 +2047,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
+    updateOverlayCursor();
     if (mustRedraw) {
         update();
     }
@@ -2487,6 +2489,10 @@ ViewerGL::penMotionInternal(int x,
             unsetCursor();
             _imp->setColorPickerCursor = false;
         }
+        updateOverlayCursor();
+    } else {
+        // the viewer shows its own cursor (wipe or user RoI handle)
+        _imp->setOverlayCursor = false;
     }
 
     return true;
@@ -4581,44 +4587,23 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
 }
 
 void
-ViewerGL::setOverlayCursor(const void* owner,
-                           const NodePtr& node,
-                           const QCursor& cursor)
+ViewerGL::updateOverlayCursor()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->overlayCursorOwner = owner;
-    _imp->overlayCursorNode = node;
-    _imp->setColorPickerCursor = false;
-    setCursor(cursor);
-}
-
-void
-ViewerGL::releaseOverlayCursor(const void* owner)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( !_imp->overlayCursorOwner || (owner != _imp->overlayCursorOwner) ) {
-        // another interact owns the cursor, or the viewer shows its own cursor
+    if ( _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->hasPickers() ) {
+        // the color picker cursor has priority
         return;
     }
-    _imp->overlayCursorOwner = NULL;
-    _imp->overlayCursorNode.reset();
-    unsetCursor();
-}
-
-void
-ViewerGL::releaseOverlayCursorUnlessNodeIn(const NodesList& nodes)
-{
-    if (!_imp->overlayCursorOwner) {
-        return;
+    QCursor cursor;
+    if ( _imp->viewerTab->getOverlaysCursor(&cursor) ) {
+        setCursor(cursor);
+        _imp->setOverlayCursor = true;
+        _imp->setColorPickerCursor = false;
+    } else if (_imp->setOverlayCursor) {
+        unsetCursor();
+        _imp->setOverlayCursor = false;
     }
-    NodePtr node = _imp->overlayCursorNode.lock();
-    if ( node && ( std::find(nodes.begin(), nodes.end(), node) != nodes.end() ) ) {
-        return;
-    }
-    // the node was deleted, or its overlay is no longer shown on this viewer
-    releaseOverlayCursor(_imp->overlayCursorOwner);
 }
 
 NATRON_NAMESPACE_EXIT

@@ -50,6 +50,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 // clang-format on
 
 #include <tuttle/ofxReadWrite.h>
+#include <ofxInteract.h>
 #include <ofxNatron.h>
 #include <nuke/fnOfxExtensions.h>
 
@@ -2449,6 +2450,50 @@ bool
 OfxEffectInstance::hasOverlay() const
 {
     return _imp->overlayInteract != NULL;
+}
+
+bool
+OfxEffectInstance::getOverlayCursor(CursorEnum* cursor,
+                                    std::string* customImage,
+                                    int* hotSpotX,
+                                    int* hotSpotY) const
+{
+#ifdef OFX_EXTENSIONS_NATRON
+    if (!_imp->overlayInteract) {
+        return false;
+    }
+    std::string ofxCursor, image;
+    int hx = 0, hy = 0;
+    _imp->overlayInteract->getCursor(ofxCursor, image, hx, hy);
+    if (ofxCursor == kOfxInteractCursorCustom) {
+        if ( image.empty() ) {
+            return false;
+        }
+        *cursor = eCursorDefault;
+        *customImage = image;
+        *hotSpotX = hx;
+        *hotSpotY = hy;
+
+        return true;
+    }
+    CursorEnum c;
+    // "An unsupported value should be displayed as kOfxInteractCursorDefault"
+    if ( !OfxImageEffectInstance::ofxCursorToNatronCursor(ofxCursor, &c) || (c == eCursorDefault) ) {
+        return false;
+    }
+    *cursor = c;
+    customImage->clear();
+    *hotSpotX = *hotSpotY = 0;
+
+    return true;
+#else
+    Q_UNUSED(cursor);
+    Q_UNUSED(customImage);
+    Q_UNUSED(hotSpotX);
+    Q_UNUSED(hotSpotY);
+
+    return false;
+#endif
 }
 
 void

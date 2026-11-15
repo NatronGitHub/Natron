@@ -41,8 +41,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QCursor>
 #include <QFile>
-#include <QFileInfo>
-#include <QPixmap>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -4055,78 +4053,6 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     isViewer->setCursor(c);
 
     return true;
-}
-
-void
-NodeGui::setOverlayCursor(const void* owner,
-                          CursorEnum cursor,
-                          const QString& customImage,
-                          int hotSpotX,
-                          int hotSpotY)
-{
-    NodePtr node = getNode();
-
-    if (!node) {
-        return;
-    }
-    ViewerGL* viewer = dynamic_cast<ViewerGL*>( node->getEffectInstance()->getCurrentViewportForOverlays() );
-    if (!viewer) {
-        return;
-    }
-
-    QCursor qcursor;
-    bool ok = false;
-    if ( !customImage.isEmpty() ) {
-        // a PNG file, absolute or relative to the plug-in resources, with an optional @2x version
-        QString filePath = customImage;
-        if ( !QFileInfo(filePath).isAbsolute() ) {
-            QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
-            if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
-                resourcesPath += QLatin1Char('/');
-            }
-            filePath.prepend(resourcesPath);
-        }
-        QPixmap pix;
-        if (viewer->devicePixelRatioF() > 1.) {
-            QFileInfo fi(filePath);
-            QString hiDpiPath = fi.path() + QLatin1Char('/') + fi.completeBaseName() + QString::fromUtf8("@2x.") + fi.suffix();
-            if ( QFile::exists(hiDpiPath) && pix.load(hiDpiPath) ) {
-                pix.setDevicePixelRatio(2.);
-            }
-        }
-        if ( pix.isNull() ) {
-            pix.load(filePath);
-        }
-        if ( !pix.isNull() ) {
-            // the hot spot is in pixels of the 1x image
-            qcursor = QCursor(pix, hotSpotX, hotSpotY);
-            ok = true;
-        }
-    } else if (cursor != eCursorDefault) {
-        Qt::CursorShape shape;
-        ok = QtEnumConvert::toQtCursor(cursor, &shape);
-        if (ok) {
-            qcursor = QCursor(shape);
-        }
-    }
-    if (ok) {
-        viewer->setOverlayCursor(owner, node, qcursor);
-    } else {
-        // "default", or a cursor that cannot be displayed
-        viewer->releaseOverlayCursor(owner);
-    }
-}
-
-void
-NodeGui::releaseOverlayCursor(const void* owner)
-{
-    if ( !getDagGui() || !getDagGui()->getGui() ) {
-        return;
-    }
-    const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->getViewer()->releaseOverlayCursor(owner);
-    }
 }
 
 class GroupKnobDialog

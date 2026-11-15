@@ -126,23 +126,11 @@ public:
                        int bitDepthPerComponent,
                        bool hasAlpha);
 
-    virtual ~OfxOverlayInteract();
+    virtual ~OfxOverlayInteract()
+    {
+    }
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-#ifdef OFX_EXTENSIONS_NATRON
-    // interact cursors (NatronGitHub/openfx#4)
-    virtual void cursorChanged(OfxStatus actionStatus,
-                               const std::string &cursor,
-                               const std::string &image,
-                               int hotSpotX,
-                               int hotSpotY) OVERRIDE FINAL;
-#endif
-
-private:
-    NodeGuiIPtr getNodeGui() const;
-
-public:
 
     /*Swaps the buffer of the attached viewer*/
     virtual OfxStatus swapBuffers() OVERRIDE FINAL WARN_UNUSED_RETURN
