@@ -4,6 +4,9 @@ on:
   workflow_dispatch: {}
   push:
 
+permissions:
+  contents: read
+
 env:
   NATRON_BUILD_WORKSPACE: 'D:/nbw'
   CI: 'True'
