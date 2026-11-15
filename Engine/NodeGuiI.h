@@ -169,6 +169,25 @@ public:
     virtual bool setCurrentCursor(const QString& customCursorFilePath) = 0;
 
     /**
+     * @brief Set the cursor requested by an OpenFX overlay interact (owner) on the viewer
+     * currently used for overlays (OFX interact cursors, NatronGitHub/openfx#4).
+     * If customImage is not empty, it is a PNG file (absolute, or relative to the plug-in
+     * resources), with the hot spot in pixels of the 1x image, and cursor is ignored.
+     * eCursorDefault with an empty customImage releases the owner's cursor.
+     * Note: this can only be called during an overlay interact action.
+     **/
+    virtual void setOverlayCursor(const void* owner,
+                                  CursorEnum cursor,
+                                  const QString& customImage,
+                                  int hotSpotX,
+                                  int hotSpotY) = 0;
+
+    /**
+     * @brief Release the cursor set by owner on all viewers (e.g. when the interact is destroyed).
+     **/
+    virtual void releaseOverlayCursor(const void* owner) = 0;
+
+    /**
      * @brief Make up a dialog with the content of the group
      **/
     virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;

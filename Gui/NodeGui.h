@@ -405,6 +405,12 @@ public:
      **/
     virtual void setCurrentCursor(CursorEnum defaultCursor) OVERRIDE FINAL;
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
+    virtual void setOverlayCursor(const void* owner,
+                                  CursorEnum cursor,
+                                  const QString& customImage,
+                                  int hotSpotX,
+                                  int hotSpotY) OVERRIDE FINAL;
+    virtual void releaseOverlayCursor(const void* owner) OVERRIDE FINAL;
     virtual void showGroupKnobAsDialog(KnobGroup* group) OVERRIDE FINAL;
 
 protected:

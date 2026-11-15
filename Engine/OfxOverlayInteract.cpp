@@ -28,6 +28,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <ofxInteract.h>
 #include <ofxNatron.h>
 
 #include "Engine/OfxImageEffectInstance.h"
@@ -36,6 +37,8 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGuiI.h"
+#include "Engine/Project.h"
 #include "Engine/AppInstance.h"
 
 
@@ -60,6 +63,65 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     , NatronOverlayInteractSupport()
 {
 }
+
+OfxOverlayInteract::~OfxOverlayInteract()
+{
+#ifdef OFX_EXTENSIONS_NATRON
+    // the viewers must not keep the cursor of a destroyed interact
+    NodeGuiIPtr nodeGui = getNodeGui();
+    if (nodeGui) {
+        nodeGui->releaseOverlayCursor(this);
+    }
+#endif
+}
+
+NodeGuiIPtr
+OfxOverlayInteract::getNodeGui() const
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    if (!effect) {
+        return NodeGuiIPtr();
+    }
+    OfxEffectInstancePtr natronEffect = effect->getOfxEffectInstance();
+    if (!natronEffect) {
+        return NodeGuiIPtr();
+    }
+    NodePtr node = natronEffect->getNode();
+    if ( !node || !node->getApp() || !node->getApp()->getProject() || node->getApp()->getProject()->isProjectClosing() ) {
+        // no cursor to update while the project is closing (the viewers may be gone)
+        return NodeGuiIPtr();
+    }
+
+    return node->getNodeGui();
+}
+
+#ifdef OFX_EXTENSIONS_NATRON
+void
+OfxOverlayInteract::cursorChanged(OfxStatus /*actionStatus*/,
+                                  const std::string &cursor,
+                                  const std::string &image,
+                                  int hotSpotX,
+                                  int hotSpotY)
+{
+    NodeGuiIPtr nodeGui = getNodeGui();
+    if (!nodeGui) {
+        return;
+    }
+    // The viewer arbitrates between its interacts: the last non-default request wins,
+    // and only the interact that owns the cursor can release it.
+    if (cursor == kOfxInteractCursorCustom) {
+        nodeGui->setOverlayCursor(this, eCursorDefault, QString::fromUtf8( image.c_str() ), hotSpotX, hotSpotY);
+
+        return;
+    }
+    CursorEnum c;
+    if ( !OfxImageEffectInstance::ofxCursorToNatronCursor(cursor, &c) ) {
+        // "An unsupported value should be displayed as kOfxInteractCursorDefault"
+        c = eCursorDefault;
+    }
+    nodeGui->setOverlayCursor(this, c, QString(), 0, 0);
+}
+#endif
 
 bool
 OfxOverlayInteract::isColorPickerRequired() const

@@ -4580,6 +4580,47 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     return now.tv_sec + now.tv_usec / 1000000.0;
 }
 
+void
+ViewerGL::setOverlayCursor(const void* owner,
+                           const NodePtr& node,
+                           const QCursor& cursor)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->overlayCursorOwner = owner;
+    _imp->overlayCursorNode = node;
+    _imp->setColorPickerCursor = false;
+    setCursor(cursor);
+}
+
+void
+ViewerGL::releaseOverlayCursor(const void* owner)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( !_imp->overlayCursorOwner || (owner != _imp->overlayCursorOwner) ) {
+        // another interact owns the cursor, or the viewer shows its own cursor
+        return;
+    }
+    _imp->overlayCursorOwner = NULL;
+    _imp->overlayCursorNode.reset();
+    unsetCursor();
+}
+
+void
+ViewerGL::releaseOverlayCursorUnlessNodeIn(const NodesList& nodes)
+{
+    if (!_imp->overlayCursorOwner) {
+        return;
+    }
+    NodePtr node = _imp->overlayCursorNode.lock();
+    if ( node && ( std::find(nodes.begin(), nodes.end(), node) != nodes.end() ) ) {
+        return;
+    }
+    // the node was deleted, or its overlay is no longer shown on this viewer
+    releaseOverlayCursor(_imp->overlayCursorOwner);
+}
+
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING

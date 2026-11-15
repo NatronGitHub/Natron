@@ -190,7 +190,6 @@ struct OfxEffectInstancePrivate
     std::unique_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     std::unique_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
-    KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
     KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
     KnobBoolWPtr undoRedoStateKnob;
@@ -247,7 +246,6 @@ struct OfxEffectInstancePrivate
         : effect()
         , natronPluginID()
         , overlayInteract()
-        , cursorKnob()
         , selectionRectangleStateKnob()
         , undoRedoTextKnob()
         , undoRedoStateKnob()
@@ -469,14 +467,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->initializeInputs();
             getNode()->initializeKnobs(serialization != 0);
 
-            {
-                KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
-                if (foundCursorKnob) {
-                    KnobStringPtr isStringKnob = std::dynamic_pointer_cast<KnobString>(foundCursorKnob);
-                    _imp->cursorKnob = isStringKnob;
-                }
-            }
-            
             {
 
                 KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
@@ -2560,18 +2550,6 @@ OfxEffectInstance::knobChanged(KnobI* k,
     }
 
     {
-        // Handle cursor knob
-        KnobStringPtr cursorKnob = _imp->cursorKnob.lock();
-        if (k == cursorKnob.get()) {
-            CursorEnum c;
-            std::string cursorStr = cursorKnob->getValue();
-            if (OfxImageEffectInstance::ofxCursorToNatronCursor(cursorStr, &c)) {
-                setCurrentCursor(c);
-            } else {
-                setCurrentCursor(QString::fromUtf8(cursorStr.c_str()));
-            }
-            return true;
-        }
         KnobStringPtr undoRedoText = _imp->undoRedoTextKnob.lock();
         if (k == undoRedoText.get()) {
             KnobBoolPtr undoRedoState = _imp->undoRedoStateKnob.lock();

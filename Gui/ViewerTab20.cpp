@@ -460,6 +460,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->viewer->releaseOverlayCursorUnlessNodeIn(nodes);
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {

@@ -462,6 +462,17 @@ public:
         Q_EMIT selectionCleared();
     }
 
+public:
+    /**
+     * @brief Cursors requested by OpenFX overlay interacts (NatronGitHub/openfx#4).
+     * The last request wins, and only the interact that owns the cursor (owner) can release it.
+     * node is the node of the interact: the cursor is released when that node no longer has
+     * an overlay on this viewer (see releaseOverlayCursorUnlessNodeIn()).
+     **/
+    void setOverlayCursor(const void* owner, const NodePtr& node, const QCursor& cursor);
+    void releaseOverlayCursor(const void* owner);
+    void releaseOverlayCursorUnlessNodeIn(const NodesList& nodes);
+
 Q_SIGNALS:
 
     /**

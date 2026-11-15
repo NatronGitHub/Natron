@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 //for parametric params properties
 #include <ofxParametricParam.h>
 
+#include <ofxInteract.h>
 #include <ofxNatron.h>
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
@@ -1467,57 +1468,59 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      */
 }
 
+namespace {
+struct OfxCursorMapping
+{
+    const char* ofxCursor;
+    CursorEnum cursor;
+};
+
+// OFX interact cursors (CSS names, NatronGitHub/openfx#4) that Natron can display
+const OfxCursorMapping ofxCursors[] = {
+    { kOfxInteractCursorDefault, eCursorDefault },
+    { kOfxInteractCursorNone, eCursorBlank },
+    { kOfxInteractCursorPointer, eCursorPointingHand },
+    { kOfxInteractCursorCrosshair, eCursorCross },
+    { kOfxInteractCursorText, eCursorIBeam },
+    { kOfxInteractCursorWait, eCursorWait },
+    { kOfxInteractCursorProgress, eCursorBusy },
+    { kOfxInteractCursorNotAllowed, eCursorForbidden },
+    { kOfxInteractCursorHelp, eCursorWhatsThis },
+    { kOfxInteractCursorMove, eCursorSizeAll },
+    { kOfxInteractCursorAllScroll, eCursorSizeAll },
+    { kOfxInteractCursorGrab, eCursorOpenHand },
+    { kOfxInteractCursorGrabbing, eCursorClosedHand },
+    { kOfxInteractCursorColResize, eCursorSplitH },
+    { kOfxInteractCursorRowResize, eCursorSplitV },
+    { kOfxInteractCursorEWResize, eCursorSizeHor },
+    { kOfxInteractCursorNSResize, eCursorSizeVer },
+    { kOfxInteractCursorNESWResize, eCursorBDiag },
+    { kOfxInteractCursorNWSEResize, eCursorFDiag },
+    { NULL, eCursorDefault }
+};
+} // anonymous namespace
+
 bool
 OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor,
                                                 CursorEnum* cursor)
 {
-    bool ret = true;
+    for (const OfxCursorMapping* m = ofxCursors; m->ofxCursor; ++m) {
+        if (ofxCursor == m->ofxCursor) {
+            *cursor = m->cursor;
 
-    if (ofxCursor == kNatronOfxDefaultCursor) {
-        *cursor = eCursorDefault;
-    } else if (ofxCursor == kNatronOfxBlankCursor) {
-        *cursor =  eCursorBlank;
-    } else if (ofxCursor == kNatronOfxArrowCursor) {
-        *cursor =  eCursorArrow;
-    } else if (ofxCursor == kNatronOfxUpArrowCursor) {
-        *cursor =  eCursorUpArrow;
-    } else if (ofxCursor == kNatronOfxCrossCursor) {
-        *cursor =  eCursorCross;
-    } else if (ofxCursor == kNatronOfxIBeamCursor) {
-        *cursor =  eCursorIBeam;
-    } else if (ofxCursor == kNatronOfxWaitCursor) {
-        *cursor =  eCursorWait;
-    } else if (ofxCursor == kNatronOfxBusyCursor) {
-        *cursor =  eCursorBusy;
-    } else if (ofxCursor == kNatronOfxForbiddenCursor) {
-        *cursor =  eCursorForbidden;
-    } else if (ofxCursor == kNatronOfxPointingHandCursor) {
-        *cursor =  eCursorPointingHand;
-    } else if (ofxCursor == kNatronOfxWhatsThisCursor) {
-        *cursor =  eCursorWhatsThis;
-    } else if (ofxCursor == kNatronOfxSizeVerCursor) {
-        *cursor =  eCursorSizeVer;
-    } else if (ofxCursor == kNatronOfxSizeHorCursor) {
-        *cursor =  eCursorSizeHor;
-    } else if (ofxCursor == kNatronOfxSizeBDiagCursor) {
-        *cursor =  eCursorBDiag;
-    } else if (ofxCursor == kNatronOfxSizeFDiagCursor) {
-        *cursor =  eCursorFDiag;
-    } else if (ofxCursor == kNatronOfxSizeAllCursor) {
-        *cursor =  eCursorSizeAll;
-    } else if (ofxCursor == kNatronOfxSplitVCursor) {
-        *cursor =  eCursorSplitV;
-    } else if (ofxCursor == kNatronOfxSplitHCursor) {
-        *cursor =  eCursorSplitH;
-    } else if (ofxCursor == kNatronOfxOpenHandCursor) {
-        *cursor =  eCursorOpenHand;
-    } else if (ofxCursor == kNatronOfxClosedHandCursor) {
-        *cursor =  eCursorClosedHand;
-    } else {
-        ret = false;
+            return true;
+        }
     }
 
-    return ret;
-} // OfxImageEffectInstance::ofxCursorToNatronCursor
+    return false;
+}
+
+void
+OfxImageEffectInstance::getSupportedOfxCursors(std::vector<std::string>* cursors)
+{
+    for (const OfxCursorMapping* m = ofxCursors; m->ofxCursor; ++m) {
+        cursors->push_back(m->ofxCursor);
+    }
+}
 
 NATRON_NAMESPACE_EXIT
