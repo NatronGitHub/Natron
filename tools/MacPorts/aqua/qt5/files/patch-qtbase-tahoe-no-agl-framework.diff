@@ -1,0 +1,23 @@
+macOS Tahoe no longer has AGL.framework, remove it
+
+--- ./mkspecs/common/mac.conf.orig      2025-09-17 21:42:08
++++ ./mkspecs/common/mac.conf   2025-09-17 23:13:58
+@@ -18,8 +18,7 @@
+
+ # sdk.prf will prefix the proper SDK sysroot
+ QMAKE_INCDIR_OPENGL     = \
+-    /System/Library/Frameworks/OpenGL.framework/Headers \
+-    /System/Library/Frameworks/AGL.framework/Headers/
++    /System/Library/Frameworks/OpenGL.framework/Headers
+
+ QMAKE_FIX_RPATH         = install_name_tool -id
+
+@@ -30,7 +29,7 @@
+ QMAKE_REL_RPATH_BASE    = @loader_path
+
+ QMAKE_LIBS_DYNLOAD      =
+-QMAKE_LIBS_OPENGL       = -framework OpenGL -framework AGL
++QMAKE_LIBS_OPENGL       = -framework OpenGL
+ QMAKE_LIBS_THREAD       =
+
+ QMAKE_INCDIR_WAYLAND    =
