@@ -198,7 +198,8 @@ jobs:
           cd ..
 
           # TEMPORARY diagnostic: show why the embedded interpreter cannot import shiboken2.
-          printf '%s\n' 'import sys, traceback' 'try:' '    import shiboken2' 'except BaseException:' '    traceback.print_exc()' > sitecustomize.py
+          printf '%s\n' 'import sys, traceback' 'print("sitecustomize: python", sys.version, "flags", sys.flags, file=sys.stderr)' 'try:' '    import PySide2.QtCore' '    print("sitecustomize: PySide2.QtCore OK", file=sys.stderr)' 'except BaseException:' '    traceback.print_exc()' > sitecustomize.py
+          cat sitecustomize.py
           cp sitecustomize.py Tests/
 
           PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
@@ -337,7 +338,8 @@ jobs:
           rm -rf ~/macports-cache
           port installed $MACPORTS_PORTS
           python3 --version
-          command -v python3 pkg-config shiboken2-$PYVER
+          command -v python3 pkg-config
+          test -x /opt/local/Library/Frameworks/Python.framework/Versions/$PYVER/lib/python$PYVER/site-packages/shiboken2_generator/shiboken2
           if command -v brew; then echo "::error::Homebrew is still in PATH"; exit 1; fi
 
       - name: Download OpenColorIO-Configs
@@ -355,11 +357,14 @@ jobs:
           cp tools/jenkins/include/natron/OSX.pri config.pri
 
           # Generate the Python bindings (from tools/jenkins/build-natron.sh).
+          # Call the generator binary directly: the shiboken2-3.10 wrapper
+          # looks for a shiboken2-3.10 link that the port doesn't install.
+          SHIBOKEN=$SITE/shiboken2_generator/shiboken2
           SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PY}/include/python${PYVER} -I${SITE}/PySide2/include -I${SITE}/PySide2/include/QtCore -I${SITE}/PySide2/include/QtGui"
           SHIBOKEN_TYPESYSTEM_PATHS="-T${SITE}/PySide2/typesystems"
-          shiboken2-$PYVER -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} \
+          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} \
             --output-directory=Engine/Qt5 Engine/Pyside2_Engine_Python.h Engine/typesystem_engine.xml
-          shiboken2-$PYVER -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken \
+          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken \
             --output-directory=Gui/Qt5 Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
           python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt5
           python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt5
