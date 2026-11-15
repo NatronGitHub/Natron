@@ -117,7 +117,7 @@ jobs:
   win-test:
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # Known failure, tracked in an issue: the embedded Python 3.14 of Tests.exe
+    # Known failure (#1147): the embedded Python 3.14 of Tests.exe
     # cannot import shiboken2 on UCRT64. Don't turn RB-2.6 red until it's fixed.
     continue-on-error: true
     defaults:
