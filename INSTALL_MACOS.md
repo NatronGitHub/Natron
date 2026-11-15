@@ -104,7 +104,7 @@ grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf ||
     sudo perl -0pi -e 's|^(rsync://\S+ \[default\])|file:///opt/MacPorts-Natron\n$1|m' /opt/local/etc/macports/sources.conf
 ```
 
-Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change.
+Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change, including after a `git pull` or a branch switch, and before installing or upgrading ports: an out-of-date `PortIndex` makes MacPorts resolve the overlay ports with stale versions.
 
 If `./check.sh` (in the same directory) reports obsolete Portfiles after a `port selfupdate`, the overlay has to be reintegrated with upstream first. See `tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`.
 
