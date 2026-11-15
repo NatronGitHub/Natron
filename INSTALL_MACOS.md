@@ -133,7 +133,21 @@ env LLVM_BUILD=1 MKJOBS=8 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, 
 sudo port select --set python none
 ```
 
-With recent macOS SDKs and Xcode versions (verified with Xcode 27.2), use an osmesa-install version that includes the `regex_impl-include-guard.patch` and `sancov-explicit-string.patch` LLVM patches, the HTTPS Mesa download URLs, and the Xcode ≥ 20 compiler detection fix. Older versions fail with `unknown type name 'regex_t'`, `chosen constructor is explicit`, FTP download errors, or `GLhandleARB` conversion errors in `glapi_dispatch.c`.
+Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2).
+
+**Mesa 25.0.7 (optional).** osmesa-install also builds Mesa 25.0.7 with LLVM 19.1.7, which gives thread-safe OSMesa and OpenGL 4.5 compatibility contexts to the Shadertoy plugin; Mesa 18.3.6 remains the default. It needs meson, ninja and a Python 3 with mako and PyYAML instead of Python 2.7 and gsed. Install it next to the default one, and select it for the Natron build with `OSMESA_PREFIX` and `LLVM_PREFIX`:
+
+```Shell
+sudo port -v -N install meson ninja py310-mako py310-yaml
+sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
+sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
+cd osmesa-install/build
+env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
+    PYTHON=/opt/local/bin/python3.10 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
+# then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
+```
+
+Don't use a MacPorts or Homebrew LLVM (`LLVM_SYSTEM=1`) for release builds: the Shadertoy plugin would then depend on their dylibs.
 
 #### 5. Compiler
 
