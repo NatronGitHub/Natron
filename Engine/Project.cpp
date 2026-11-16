@@ -2288,7 +2288,7 @@ Project::unescapeXML(const std::string &istr)
             } else if ( !str.compare(i + 1, 1, "#") ) {
                 size_t end = str.find_first_of(";", i + 2);
                 if (end == std::string::npos) {
-                    // malformed XML
+                    // malformed XML: keep the rest as is
                     return str;
                 }
                 char *tail = NULL;
@@ -2299,13 +2299,33 @@ Project::unescapeXML(const std::string &istr)
 
                 errno = 0;
                 unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0x10ffff;
                 errno = errno_save;
                 if (fail) {
-                    return str;
+                    // not a valid character reference: leave it, and go on with the rest of the string
+                    continue;
                 }
-                // replace from '&' to ';' (thus the +1)
-                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                if (cp <= 0xff) {
+                    // 0x01-0xff: the byte itself (how Natron wrote these, see escapeXML)
+                    // replace from '&' to ';' (thus the +1)
+                    str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                } else {
+                    // e.g. &#xFFFD; written by OFX::XML::escape: UTF-8 encode the code point
+                    std::string utf8;
+                    if (cp < 0x800) {
+                        utf8 += (char)(0xC0 | (cp >> 6));
+                    } else if (cp < 0x10000) {
+                        utf8 += (char)(0xE0 | (cp >> 12));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    } else {
+                        utf8 += (char)(0xF0 | (cp >> 18));
+                        utf8 += (char)(0x80 | ( (cp >> 12) & 0x3F ));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    }
+                    utf8 += (char)(0x80 | (cp & 0x3F));
+                    str.replace(i, tail - head + 1 + prefix, utf8);
+                    i += utf8.size() - 1; // the loop's ++i skips the last byte
+                }
             }
         }
     }
