@@ -132,8 +132,8 @@ typedef QEvent QEnterEvent;
   Qt5 derived QRecursiveMutex from QMutex, so a single QMutexLocker could hold
   whichever one a code path happened to pick. Qt6 made the two types unrelated
   and turned QMutexLocker into a template on the mutex type, which leaves no
-  one type able to hold both. Deferred locking is the point here: these lockers
-  are declared unlocked and only engaged on some branches.*/
+  one type able to hold both. Callers hold it in a std::unique_ptr that is only
+  set on some branches, and a null mutex locks nothing, as with QMutexLocker.*/
 class MutexLock
 {
 public:
@@ -141,14 +141,19 @@ public:
         : _mutex(mutex)
         , _recursiveMutex(0)
     {
-        _mutex->lock();
+        // like QMutexLocker, a null mutex means "don't lock"
+        if (_mutex) {
+            _mutex->lock();
+        }
     }
 
     explicit MutexLock(QRecursiveMutex* mutex)
         : _mutex(0)
         , _recursiveMutex(mutex)
     {
-        _recursiveMutex->lock();
+        if (_recursiveMutex) {
+            _recursiveMutex->lock();
+        }
     }
 
     ~MutexLock()
