@@ -2,16 +2,24 @@ name: Tests
 
 on:
   workflow_dispatch: {}
+  # nightly macOS build of the default branch, skipped if it didn't change in the last 25 hours
+  schedule:
+  - cron: '17 3 * * *'
+  # one run per change: push only on the main and release branches and on tags,
+  # feature branches run through their pull request
   push:
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
+    tags:
+    - 'v*'
     paths-ignore:
       - 'Documentation/**'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
     paths-ignore:
       - 'Documentation/**'
 
@@ -19,11 +27,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unix_test:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -71,8 +81,8 @@ jobs:
       - name: Download Plugins
         run: |
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
-          unzip openfx-io-build-ubuntu_22-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+          unzip openfx-io-build-ubuntu_24-testing.zip
           cd ..
 
       - name: Build Unix (debug)
@@ -115,6 +125,8 @@ jobs:
         run: exit 1
 
   win-test:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     # Known failure (#1147): the embedded Python 3.14 of Tests.exe
@@ -203,8 +215,8 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
-          unzip openfx-io-build-windows_latest-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+          unzip openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
           PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
@@ -220,12 +232,38 @@ jobs:
         if: steps.run-windows-tests.outcome == 'failure'
         run: exit 1
 
+  changes:
+    # nightly runs only: did the default branch change in the last 25 hours?
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Check for recent commits
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
+          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   macos-test:
     # Built with MacPorts (as the official macOS binaries), never Homebrew.
     # The Natron-only dependencies come from MacPorts binary archives; the
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
+    # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
+    # Windows: its tests are allowed to fail until #1147 is fixed, so only require that it ran.
+    needs: [changes, unix_test, win-test]
+    if: >-
+      !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result != 'cancelled' && needs.win-test.result != 'skipped' &&
+       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.10
     runs-on: macos-15
     timeout-minutes: 360
