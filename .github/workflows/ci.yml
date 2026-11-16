@@ -9,7 +9,7 @@ on:
     - master
     - 'RB-*'
     tags:
-    - '*'
+    - 'v*'
     paths-ignore:
       - 'Documentation/**'
   pull_request:
