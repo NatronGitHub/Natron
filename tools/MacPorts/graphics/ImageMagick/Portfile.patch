@@ -1,14 +1,6 @@
---- Portfile.orig	2025-04-30 10:46:09.000000000 +0200
-+++ Portfile	2025-04-30 10:51:50.000000000 +0200
-@@ -3,6 +3,7 @@
- PortSystem                  1.0
- PortGroup                   conflicts_build 1.0
- PortGroup                   legacysupport 1.1
-+PortGroup                   compiler_blacklist_versions 1.0
- 
- # TARGET_OS_IOS, TARGET_OS_WATCH, TARGET_OS_TV missing in TargetConditionals.h:
- legacysupport.newest_darwin_requires_legacy 10
-@@ -95,6 +96,7 @@
+--- Portfile.orig	2026-11-14 12:04:17
++++ Portfile	2026-11-14 12:09:12
+@@ -102,6 +102,7 @@
                              --with-jbig \
                              --with-jpeg \
                              --with-lcms \
@@ -16,7 +8,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -131,6 +133,60 @@
+@@ -139,6 +140,60 @@
  # https://trac.macports.org/wiki/WimplicitFunctionDeclaration#strchr
  configure.checks.implicit_function_declaration.whitelist-append strchr
  
@@ -77,7 +69,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -138,6 +194,23 @@
+@@ -146,6 +201,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -101,15 +93,3 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -172,6 +245,11 @@
- 
- default_variants            +x11
- 
-+variant xquartz {
-+    configure.args-append   --with-x --x-includes=/opt/X11/include --x-librari=/opt/X11/lib
-+    configure.args-delete   --without-x
-+}
-+
- livecheck.type              regex
- livecheck.url               [lindex ${master_sites} 0]
- livecheck.regex             ${name}-(6(?:\\.\\d+)+(?:-\\d+)?)\.tar

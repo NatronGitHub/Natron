@@ -1,0 +1,29 @@
+--- runtime/src/kmp_dispatch.cpp.orig
++++ runtime/src/kmp_dispatch.cpp
+@@ -2495,6 +2495,16 @@
+ void __kmpc_dispatch_fini_8u(ident_t *loc, kmp_int32 gtid) {
+   __kmp_dispatch_finish<kmp_uint64>(gtid, loc);
+ }
++
++/*!
++See @ref __kmpc_dispatch_fini_4
++
++Backport stub. clang >= 19 emits a call to __kmpc_dispatch_deinit at the
++end of dynamically-scheduled loops. Upstream libomp (LLVM 19+) defines it
++as a no-op; libomp 11.1.0 predates the symbol. Provide the same empty stub
++so objects built with newer clang link against this pinned libomp.
++*/
++void __kmpc_dispatch_deinit(ident_t *loc, kmp_int32 gtid) {}
+ /*! @} */
+ 
+ //-----------------------------------------------------------------------------
+--- runtime/src/kmp.h.orig
++++ runtime/src/kmp.h
+@@ -3242,6 +3242,7 @@
+ extern void __kmpc_dispatch_fini_8(ident_t *loc, kmp_int32 gtid);
+ extern void __kmpc_dispatch_fini_4u(ident_t *loc, kmp_int32 gtid);
+ extern void __kmpc_dispatch_fini_8u(ident_t *loc, kmp_int32 gtid);
++extern void __kmpc_dispatch_deinit(ident_t *loc, kmp_int32 gtid);
+ 
+ #ifdef KMP_GOMP_COMPAT
+ 

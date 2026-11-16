@@ -1,0 +1,10 @@
+--- Source/WebCore/xml/XPathGrammar.y.orig	2017-06-16 14:46:36.000000000 +0200
++++ Source/WebCore/xml/XPathGrammar.y	2020-09-18 23:36:10.000000000 +0200
+@@ -53,6 +53,7 @@
+ 
+ %pure_parser
+ %parse-param { WebCore::XPath::Parser* parser }
++%define api.header.include { "XPathGrammar.h" }
+ 
+ %union
+ {

@@ -1,0 +1,29 @@
+--- Source/WebCore/css/makegrammar.pl.orig	2017-06-16 14:46:36.000000000 +0200
++++ Source/WebCore/css/makegrammar.pl	2020-09-18 22:59:10.000000000 +0200
+@@ -73,23 +73,7 @@
+ }
+ 
+ my $fileBase = File::Spec->join($outputDir, $filename);
+-system("$bison -d -p $symbolsPrefix $grammarFilePath -o $fileBase.cpp");
+-
+-open HEADER, ">$fileBase.h" or die;
+-print HEADER << "EOF";
+-#ifndef CSSGRAMMAR_H
+-#define CSSGRAMMAR_H
+-EOF
+-
+-open HPP, "<$fileBase.cpp.h" or open HPP, "<$fileBase.hpp" or die;
+-while (<HPP>) {
+-    print HEADER;
+-}
+-close HPP;
+-
+-print HEADER "#endif\n";
+-close HEADER;
+-
+-unlink("$fileBase.cpp.h");
+-unlink("$fileBase.hpp");
++my @bisonCommand = ($bison, "--defines=$fileBase.h", "-p", $symbolsPrefix, $grammarFilePath, "-o", "$fileBase.cpp");
++push @bisonCommand, "--no-lines" if $^O eq "MSWin32"; # Work around bug in bison >= 3.0 on Windows where it puts backslashes into #line directives.
++system(@bisonCommand) == 0 or die;
+ 

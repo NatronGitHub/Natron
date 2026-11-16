@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Natron'
-copyright = '2013-2023 The Natron documentation authors, licensed under CC BY-SA 4.0'
+copyright = '2013-2026 The Natron documentation authors, licensed under CC BY-SA 4.0'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -54,11 +54,12 @@ version_22 = '2.2.10'
 version_23 = '2.3.16'
 version_24 = '2.4.4'
 version_25 = '2.5.0'
+version_26 = '2.6.0'
 version_30 = '3.0.0'
 
 # The version for this branch
 # The full version, including alpha/beta/rc tags.
-release = version_25
+release = version_26
 #
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])

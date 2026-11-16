@@ -63,6 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 #ifdef OFX_EXTENSIONS_NUKE
 #include <nuke/fnOfxExtensions.h>
 #endif
+#include <ofxInteract.h>
 #include <ofxNatron.h>
 
 //ofx host support
@@ -177,6 +178,11 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
+    // Plug-in writes to properties that are read-only for plug-ins (e.g. a clip's
+    // kOfxImageClipPropDepth in contexts where Natron can't handle multiple depths) were
+    // silently accepted before openfx #91: warn instead of failing the action, so that
+    // existing third-party plug-ins keep working.
+    OFX::Host::Property::setPluginReadOnlyPolicy(OFX::Host::Property::ePluginReadOnlyWarn);
     _imp->imageEffectPluginCache = std::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
@@ -331,26 +337,16 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxUpArrowCursor, 1);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxCrossCursor, 2);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxIBeamCursor, 3);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWaitCursor, 4);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBusyCursor, 5);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxForbiddenCursor, 6);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxPointingHandCursor, 7);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWhatsThisCursor, 8);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeVerCursor, 9);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeHorCursor, 10);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeBDiagCursor, 11);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeFDiagCursor, 12);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeAllCursor, 13);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitVCursor, 14);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitHCursor, 15);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxOpenHandCursor, 16);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxClosedHandCursor, 17);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBlankCursor, 18);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxDefaultCursor, 19);
+    // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
+    // plus custom PNG cursors from the plug-in resources
+    {
+        std::vector<std::string> cursors;
+        OfxImageEffectInstance::getSupportedOfxCursors(&cursors);
+        cursors.push_back(kOfxInteractCursorCustom);
+        for (std::size_t i = 0; i < cursors.size(); ++i) {
+            _properties.setStringProperty(kOfxInteractHostPropSupportedCursors, cursors[i], (int)i);
+        }
+    }
 #endif
 } // OfxHost::setProperties
 
@@ -868,7 +864,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
+    // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
+    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );

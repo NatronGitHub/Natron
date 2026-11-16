@@ -3,9 +3,8 @@
 PortSystem              1.0
 PortGroup               github 1.0
 PortGroup               cmake 1.1
+PortGroup               ffmpeg 1.0
 PortGroup               active_variants 1.1
-PortGroup               compiler_blacklist_versions 1.0
-PortGroup               boost 1.0
 
 name                    openimageio
 categories              graphics
@@ -19,14 +18,14 @@ long_description        OpenImageIO is a library for reading and writing images,
 set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 
 if {${port_latest}} {
-    github.setup        AcademySoftwareFoundation OpenImageIO 2.5.10.1 v
-    revision            2
-    checksums           rmd160  acca3794870850f6d39e41e62e9370bf6ff9565b \
-                        sha256  8f6a547f6a5d510737ba436f867043db537def65f0fdb14ec30e5a185b619f93 \
-                        size    52061055
+    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+    revision            3
+    checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                        sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                        size    56133013
 } else {
     github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
-    revision            16
+    revision            21
     checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
                         sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
                         size    29116032
@@ -38,26 +37,30 @@ github.tarball_from     archive
 
 if {${port_latest}} {
     depends_lib-append  port:imath \
+                        port:libxml2 \
                         port:openexr \
                         port:openvdb \
-                        port:onetbb
-    #configure.args-append       -DUSE_TBB=OFF
-    configure.args-append       -DTBB_ROOT=${prefix}/libexec/onetbb
+                        port:onetbb \
+                        port:OpenJPH \
+                        port:tcp_wrappers \
+                        path:lib/libssl.dylib:openssl
 
-    set ffmpeg_ver 6
+    ffmpeg.version      8
 
-    #configure.args-append       -DUSE_FFMPEG=OFF
-    depends_lib-append          port:ffmpeg${ffmpeg_ver}
-
-    configure.pkg_config_path-prepend \
-                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
+    set port_libfmt         libfmt12
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    depends_lib-append      port:${port_libfmt}
 } else {
+    PortGroup           boost 1.0
+
     patchfiles-append   patch-FindOpenJpeg.cmake.diff
     patchfiles-append   patch-libraw-0.21.0.diff
     patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
 
     depends_lib-append  port:field3d \
                         port:openexr2 \
+                        port:squish \
                         port:tbb
 
     configure.pkg_config_path-prepend \
@@ -71,6 +74,13 @@ if {${port_latest}} {
 
     #configure.args-append       -DUSE_FFMPEG=OFF
     depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
+
+    # NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
+    set port_libfmt         libfmt9
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
+    depends_lib-append      port:${port_libfmt}
 }
 
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
@@ -84,6 +94,9 @@ configure.args-append   -DCMAKE_CXX_STANDARD=17
 
 compiler.thread_local_storage yes
 
+# Use OpenGL framework instead of mesa
+configure.pre_args-delete   -DCMAKE_FIND_FRAMEWORK=LAST
+
 configure.cxxflags-append \
                         -Wno-deprecated-declarations \
                         -Wno-unknown-warning-option
@@ -93,12 +106,6 @@ if {[string match *clang* ${configure.compiler}]} {
     configure.cxxflags-append \
                         -Wno-error=unknown-warning-option
 }
-
-# NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
-set port_libfmt         libfmt9
-cmake.module_path-prepend \
-                        ${prefix}/lib/${port_libfmt}/cmake
-configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
 
 # Don't treat clang warnings as errors
 configure.args-append   -DSTOP_ON_WARNINGS=OFF
@@ -111,13 +118,12 @@ configure.args-append   -DUSE_CCACHE=OFF
 configure.args-append   -DBUILD_MISSING_DEPS=OFF \
                         -DBUILD_MISSING_FMT=OFF
 
-depends_lib-append      port:robin-map \
-                        port:zlib \
+depends_build-append    port:robin-map
+
+depends_lib-append      port:zlib \
                         port:bzip2 \
                         port:libpng \
-                        port:tiff \
-                        port:squish \
-                        port:${port_libfmt}
+                        port:tiff
 
 # optional components
 
@@ -126,9 +132,8 @@ if {${os.platform} eq "darwin" && ${os.major} < 11} {
                         -DUSE_QT=OFF
     # configure.args-append -DUSE_OPENGL=OFF
 } else {
-    PortGroup           qt5 1.0
+    PortGroup           qt6 1.0
 
-    qt5.min_version     5.6
 }
 
 if {[string match *gcc* ${configure.compiler}] \
@@ -139,7 +144,7 @@ if {[string match *gcc* ${configure.compiler}] \
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {39 310 311 312}
+set pythons_suffixes    {310 311 312 313 314}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -173,7 +178,7 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 if {${set_python_default}} {
-    default_variants        +python312
+    default_variants        +python314
 }
 
 #configure.args-append       -DUSE_JPEGTURBO=OFF
@@ -199,8 +204,8 @@ if {${os.platform} eq "darwin" && ${os.major} < 11} {
 #configure.args-append       -DUSE_FREETYPE=OFF
 depends_lib-append          port:freetype
 
-#configure.args-append       -DUSE_GIF=OFF
-depends_lib-append          port:giflib
+configure.args-append       -DUSE_GIF=OFF
+# depends_lib-append          port:giflib
 
 #configure.args-append       -DUSE_HEIF=OFF
 depends_lib-append          port:libheif
@@ -217,7 +222,10 @@ configure.args-append       -DUSE_NUKE=OFF
 #configure.args-append       -DUSE_DICOM=OFF
 depends_lib-append          port:dcmtk
 
-#configure.args-append       -DUSE_WEBP=OFF
-depends_lib-append          port:webp
+configure.args-append       -DUSE_WEBP=OFF
+# depends_lib-append          port:webp
 
-github.livecheck.regex      {([0-9.]+)}
+# TODO: Add this functionality to github portgroup
+livecheck.url               https://api.github.com/repos/${github.author}/${github.project}/tags?per_page=200
+livecheck.curloptions
+livecheck.regex             "\"name\": \"v(\[0-9\.\]+)\","

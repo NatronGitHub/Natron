@@ -99,6 +99,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , lastDragStartPos()
     , hasMovedSincePress(false)
     , setColorPickerCursor(false)
+    , setOverlayCursor(false)
     , currentViewerInfo_btmLeftBBOXoverlay()
     , currentViewerInfo_topRightBBOXoverlay()
     , currentViewerInfo_resolutionOverlay()

@@ -3,51 +3,44 @@
 PortSystem      1.0
 
 PortGroup       active_variants 1.1
-PortGroup       compiler_blacklist_versions 1.0
 PortGroup       conflicts_build 1.0
 PortGroup       legacysupport 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.7.11
+version         3.8.13
 revision        1
+
 categories      devel security
 # yes, some of the libs are GPL only
 license         LGPL-2.1+ GPL-3+
 maintainers     {mps @Schamschula} openmaintainer
 description     GNU Transport Layer Security Library
 long_description \
-                GnuTLS is a portable ANSI C based library which implements the TLS 1.2, \
-                TLS 1.1, TLS 1.0, SSL 3.0, and Datagram TLS protocols. The library does \
+                GnuTLS is a portable ANSI C based library which implements the TLS 1.0-1.3, \
+                SSL 3.0, and Datagram TLS protocols. The library does \
                 not include any patented algorithms and is available under the GNU \
                 Lesser General Public License (LGPL).
 homepage        http://www.gnutls.org/
 
-checksums       rmd160  b8a3b948b2cfd504f72e04a31fce31a79b4316b1 \
-                sha256  90e337504031ef7d3077ab1a52ca8bac9b2f72bc454c95365a1cd1e0e81e06e9 \
-                size    6406420
+checksums       rmd160  df5b24dc2bdd26321bb1e2a89a3aaff83a2bef3d \
+                sha256  ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e \
+                size    7275324
 
 subport ${name} {
     conflicts   ${name}-devel
-
-    patchfiles  patch-lib-system-certs.c.old.diff
 }
 
 subport ${name}-devel {
+    # Currently there is no newer upstream branch
     conflicts   ${name}
 
-    version     3.8.9
+    version     3.8.13
     revision    0
 
-    checksums   rmd160  4c8333aa2bd9d611a134ed39c0130782abdb5995 \
-                sha256  69e113d802d1670c4d5ac1b99040b1f2d5c7c05daec5003813c049b5184820ed \
-                size    6847364
-
-   depends_lib-append \
-                port:brotli \
-                port:zstd
-
-    patchfiles  patch-lib-system-certs.c.diff
+    checksums   rmd160  df5b24dc2bdd26321bb1e2a89a3aaff83a2bef3d \
+                sha256  ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e \
+                size    7275324
 }
 
 if {${build_arch} ne "ppc" || ${build_arch} ne "ppc64"} {
@@ -73,9 +66,10 @@ conflicts_build autogen
 
 depends_build-append \
                 port:gettext \
-                port:pkgconfig
+                path:bin/pkg-config:pkgconfig
 
 depends_lib-append \
+                port:brotli \
                 port:gettext-runtime \
                 port:gmp \
                 port:libidn2 \
@@ -83,10 +77,13 @@ depends_lib-append \
                 port:libunistring \
                 port:p11-kit \
                 port:nettle \
-                port:zlib
+                port:zlib \
+                port:zstd
 
 patchfiles-append \
-                implicit.patch
+                CRAU_MAYBE_UNUSED.patch \
+                implicit.patch \
+                patch-lib-system-certs.c.diff
 
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
@@ -106,37 +103,6 @@ configure.args-append \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
                 --with-default-trust-store-pkcs11=pkcs11: \
                 ac_cv_prog_AWK=/usr/bin/awk
-
-subport ${name} {
-    # Note: configure script detects zstd, but flags it as missing anyway
-    # the guile variant is only available for gnutls
-    configure.args-append \
-                --without-brotli \
-                --disable-guile \
-                --without-zstd \
-
-    variant brotli description {Build brotli support} {
-        depends_lib-append \
-                port:brotli
-
-        configure.args-delete \
-                --without-brotli
-    }
-
-    variant guile description {Build guile-2.2 bindings} {
-    # there currently is a build issue with the guile variant
-    # the workaround is to first install guile w/o guile and then with +guile
-        depends_lib-append      port:guile-2.2
-        configure.args-replace  --disable-guile --enable-guile
-        # It should not be this hard :/
-        configure.env-append    guile_snarf=${prefix}/bin/guile-snarf-2.2
-        configure.env-append    GUILD=${prefix}/bin/guild-2.2
-        configure.env-append    GUILE=${prefix}/bin/guile-2.2
-        configure.env-append    GUILE_CONFIG=${prefix}/bin/guile-config-2.2
-        configure.env-append    GUILE_TOOLS=${prefix}/bin/guile-tools-2.2
-        configure.env-append    GUILE_EFFECTIVE_VERSION=2.2
-    }
-}
 
 # https://trac.macports.org/wiki/WimplicitFunctionDeclaration#strchr
 configure.checks.implicit_function_declaration.whitelist-append strchr

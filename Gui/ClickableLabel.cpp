@@ -180,7 +180,7 @@ KnobClickableLabel::~KnobClickableLabel()
 }
 
 void
-KnobClickableLabel::enterEvent(QEvent* e)
+KnobClickableLabel::enterEvent(QtCompat::QEnterEvent* e)
 {
     _dnd->mouseEnter(e);
     ClickableLabel::enterEvent(e);

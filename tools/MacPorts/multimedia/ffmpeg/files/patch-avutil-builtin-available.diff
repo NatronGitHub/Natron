@@ -1,0 +1,135 @@
+# =============================================================================
+# Source: https://www.mail-archive.com/ffmpeg-devel@ffmpeg.org/msg127034.html
+# -----------------------------------------------------------------------------
+# From: Limin Wang <lance.lmw...@gmail.com>
+#
+# OSX version: 10.11.6
+# Apple LLVM version 8.0.0 (clang-800.0.42.1)
+# Target: x86_64-apple-darwin15.6.0
+# =============================================================================
+--- libavutil/hwcontext_videotoolbox.c.old	2022-01-14 13:45:40.000000000 -0500
++++ libavutil/hwcontext_videotoolbox.c	2022-03-27 12:26:48.000000000 -0400
+@@ -415,12 +415,13 @@
+ {
+     switch (space) {
+     case AVCOL_SPC_BT2020_CL:
+     case AVCOL_SPC_BT2020_NCL:
+ #if HAVE_KCVIMAGEBUFFERYCBCRMATRIX_ITU_R_2020
+-        if (__builtin_available(macOS 10.11, iOS 9, *))
+-            return kCVImageBufferYCbCrMatrix_ITU_R_2020;
++        return kCVImageBufferYCbCrMatrix_ITU_R_2020;
++#else
++        return CFSTR("ITU_R_2020");
+ #endif
+         return CFSTR("ITU_R_2020");
+     case AVCOL_SPC_BT470BG:
+     case AVCOL_SPC_SMPTE170M:
+         return kCVImageBufferYCbCrMatrix_ITU_R_601_4;
+@@ -428,12 +429,13 @@
+         return kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+     case AVCOL_SPC_SMPTE240M:
+         return kCVImageBufferYCbCrMatrix_SMPTE_240M_1995;
+     default:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+-        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+-            return CVYCbCrMatrixGetStringForIntegerCodePoint(space);
++        return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
++#else
++        return CFSTR("ITU_R_2100_HLG");
+ #endif
+     case AVCOL_SPC_UNSPECIFIED:
+         return NULL;
+     }
+ }
+@@ -441,24 +443,25 @@
+ CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pri)
+ {
+     switch (pri) {
+     case AVCOL_PRI_BT2020:
+ #if HAVE_KCVIMAGEBUFFERCOLORPRIMARIES_ITU_R_2020
+-        if (__builtin_available(macOS 10.11, iOS 9, *))
+-            return kCVImageBufferColorPrimaries_ITU_R_2020;
+-#endif
++        return kCVImageBufferColorPrimaries_ITU_R_2020;
++#else
+         return CFSTR("ITU_R_2020");
++#endif
+     case AVCOL_PRI_BT709:
+         return kCVImageBufferColorPrimaries_ITU_R_709_2;
+     case AVCOL_PRI_SMPTE170M:
+         return kCVImageBufferColorPrimaries_SMPTE_C;
+     case AVCOL_PRI_BT470BG:
+         return kCVImageBufferColorPrimaries_EBU_3213;
+     default:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+-        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+-            return CVColorPrimariesGetStringForIntegerCodePoint(pri);
++        return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
++#else   
++        return CFSTR("ITU_R_2100_HLG");
+ #endif
+     case AVCOL_PRI_UNSPECIFIED:
+         return NULL;
+     }
+ }
+@@ -467,45 +470,46 @@
+ {
+ 
+     switch (trc) {
+     case AVCOL_TRC_SMPTE2084:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_2084_PQ
+-        if (__builtin_available(macOS 10.13, iOS 11, *))
+-            return kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
+-#endif
++        return kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
++#else
+         return CFSTR("SMPTE_ST_2084_PQ");
++#endif
+     case AVCOL_TRC_BT2020_10:
+     case AVCOL_TRC_BT2020_12:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2020
+-        if (__builtin_available(macOS 10.11, iOS 9, *))
+-            return kCVImageBufferTransferFunction_ITU_R_2020;
+-#endif
++        return kCVImageBufferTransferFunction_ITU_R_2020;
++#else
+         return CFSTR("ITU_R_2020");
++#endif
+     case AVCOL_TRC_BT709:
+         return kCVImageBufferTransferFunction_ITU_R_709_2;
+     case AVCOL_TRC_SMPTE240M:
+         return kCVImageBufferTransferFunction_SMPTE_240M_1995;
+     case AVCOL_TRC_SMPTE428:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_SMPTE_ST_428_1
+-        if (__builtin_available(macOS 10.12, iOS 10, *))
+-            return kCVImageBufferTransferFunction_SMPTE_ST_428_1;
+-#endif
++        return kCVImageBufferTransferFunction_SMPTE_ST_428_1;
++#else
+         return CFSTR("SMPTE_ST_428_1");
++#endif
+     case AVCOL_TRC_ARIB_STD_B67:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+-        if (__builtin_available(macOS 10.13, iOS 11, *))
+-            return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
+-#endif
++        return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
++#else
+         return CFSTR("ITU_R_2100_HLG");
++#endif
+     case AVCOL_TRC_GAMMA22:
+         return kCVImageBufferTransferFunction_UseGamma;
+     case AVCOL_TRC_GAMMA28:
+         return kCVImageBufferTransferFunction_UseGamma;
+     default:
+ #if HAVE_KCVIMAGEBUFFERTRANSFERFUNCTION_ITU_R_2100_HLG
+-        if (__builtin_available(macOS 10.13, iOS 11, tvOS 11, watchOS 4, *))
+-            return CVTransferFunctionGetStringForIntegerCodePoint(trc);
++        return kCVImageBufferTransferFunction_ITU_R_2100_HLG;
++#else
++        return CFSTR("ITU_R_2100_HLG");
+ #endif
+     case AVCOL_TRC_UNSPECIFIED:
+         return NULL;
+     }
+ }

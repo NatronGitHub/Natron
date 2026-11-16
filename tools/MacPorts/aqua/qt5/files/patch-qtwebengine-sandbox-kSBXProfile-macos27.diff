@@ -1,0 +1,19 @@
+macOS 27 SDK: declare the kSBXProfile* constants removed from <sandbox.h> (still exported by libsystem_sandbox).
+
+--- src/3rdparty/chromium/sandbox/mac/seatbelt.cc.orig	2026-11-15 17:34:10
++++ src/3rdparty/chromium/sandbox/mac/seatbelt.cc	2026-11-15 17:34:11
+@@ -19,6 +19,14 @@
+ // 1 if sandboxed. Note `type` is actually a sandbox_filter_type enum value, but
+ // it is unused currently.
+ int sandbox_check(pid_t pid, const char* operation, int type, ...);
++
++// The macOS 27 SDK no longer declares the deprecated kSBXProfile* constants in
++// <sandbox.h>, but libsystem_sandbox still exports them.
++extern const char kSBXProfileNoInternet[];
++extern const char kSBXProfileNoNetwork[];
++extern const char kSBXProfileNoWrite[];
++extern const char kSBXProfileNoWriteExceptTemporary[];
++extern const char kSBXProfilePureComputation[];
+ }
+ 
+ namespace sandbox {

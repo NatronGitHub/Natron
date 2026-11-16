@@ -36,6 +36,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h"
+
 #include "Engine/PyNode.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
@@ -157,7 +159,7 @@ protected:
 
     void onUserDataChanged();
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
-    virtual void enterEvent(QEvent* e) OVERRIDE;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE;
     virtual void leaveEvent(QEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 

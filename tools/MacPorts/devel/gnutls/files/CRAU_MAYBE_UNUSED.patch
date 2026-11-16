@@ -1,0 +1,30 @@
+Fix build failure with clang < 17:
+
+./crau/crau.h:263:60: error: expected ')'
+void crau_push_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
+                                                           ^
+./crau/crau.h:263:23: note: to match this '('
+void crau_push_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
+                      ^
+
+https://gitlab.com/gnutls/gnutls/-/work_items/1880
+--- lib/crau/crau.h.orig	2026-04-29 09:33:25.000000000 -0500
++++ lib/crau/crau.h	2026-04-30 21:06:11.000000000 -0500
+@@ -255,10 +255,16 @@
+ #    if __has_c_attribute (__maybe_unused__)
+ #     define CRAU_MAYBE_UNUSED [[__maybe_unused__]]
+ #    endif
+-#   elif defined(__GNUC__)
++#   endif
++#  endif /* CRAU_MAYBE_UNUSED */
++#  ifndef CRAU_MAYBE_UNUSED
++#   ifdef __GNUC__
+ #    define CRAU_MAYBE_UNUSED __attribute__((__unused__))
+ #   endif
+ #  endif /* CRAU_MAYBE_UNUSED */
++#  ifndef CRAU_MAYBE_UNUSED
++#   define CRAU_MAYBE_UNUSED
++#  endif /* CRAU_MAYBE_UNUSED */
+ 
+ void crau_push_context(struct crau_context_stack_st *stack CRAU_MAYBE_UNUSED,
+ 		       long context CRAU_MAYBE_UNUSED)

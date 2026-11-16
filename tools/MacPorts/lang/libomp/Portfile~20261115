@@ -6,7 +6,6 @@ if {${os.major} <= 17} {
     PortGroup           muniversal 1.0
 }
 PortGroup               clang_dependency 1.0
-PortGroup               compiler_blacklist_versions 1.0
 
 name                    libomp
 maintainers             {eborisch @eborisch} openmaintainer
@@ -65,8 +64,9 @@ if {${os.platform} eq "darwin" && ${configure.cxx_stdlib} ne "libstdc++"} {
     set rtpath              "runtime/"
     
     # D88252 is to enable arm64 support
-    patchfiles-append       patch-libomp-use-gettid-on-Leopard.diff \
-                            reviews.llvm.org_D88252.diff
+    patchfiles-append       patch-libomp11-use-gettid-on-Leopard.diff \
+                            reviews.llvm.org_D88252.diff \
+                            patch-libomp11-add-kmpc_dispatch_deinit.diff
 
     livecheck.url           https://api.github.com/repos/llvm/llvm-project/tags
 } else {

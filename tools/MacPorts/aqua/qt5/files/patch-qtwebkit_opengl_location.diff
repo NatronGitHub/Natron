@@ -1,0 +1,15 @@
+--- Source/WebCore/platform/graphics/surfaces/mac/GraphicsSurfaceMac.cpp.orig	2017-06-16 05:46:36.000000000 -0700
++++ Source/WebCore/platform/graphics/surfaces/mac/GraphicsSurfaceMac.cpp	2019-02-09 19:09:04.000000000 -0700
+@@ -23,9 +23,9 @@
+ #if USE(GRAPHICS_SURFACE) && OS(DARWIN)
+ #include "TextureMapperGL.h"
+ #include <CoreFoundation/CFNumber.h>
+-#include <CGLContext.h>
+-#include <CGLCurrent.h>
+-#include <CGLIOSurface.h>
++#include <OpenGL/CGLContext.h>
++#include <OpenGL/CGLCurrent.h>
++#include <OpenGL/CGLIOSurface.h>
+ #include <IOSurface/IOSurface.h>
+ #include <OpenGL/OpenGL.h>
+ #include <OpenGL/gl.h>

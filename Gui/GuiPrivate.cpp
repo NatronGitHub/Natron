@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <cairo/cairo.h>
 
 #include "Global/ProcInfo.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
@@ -523,7 +524,7 @@ private:
         }
     }
 
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL
     {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>( _gui->getToolButtonMenuOpened() );
 

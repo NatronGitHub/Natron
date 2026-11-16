@@ -277,7 +277,7 @@ ScaleSliderQWidget::zoomRange()
 }
 
 void
-ScaleSliderQWidget::enterEvent(QEvent* e)
+ScaleSliderQWidget::enterEvent(QtCompat::QEnterEvent* e)
 {
     if ( Gui::isFocusStealingPossible() ) {
         setFocus();

@@ -37,6 +37,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -98,7 +100,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent *event) OVERRIDE FINAL;
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
 private:

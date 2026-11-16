@@ -41,6 +41,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
@@ -97,7 +98,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void enterEvent(QEvent*) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent*) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
 
