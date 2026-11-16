@@ -26,6 +26,31 @@ Branches
   request against the appropriate branch (usually the current ``RB-x.y`` for
   fixes, or ``master`` for new development).
 
+Qt 5 and Qt 6 across the release branches
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Natron moves from Qt 5 to Qt 6 in three steps:
+
+- **RB-2.6** (current release) builds with Qt 5, and gets as much Qt 6 support
+  as possible, **as long as Qt 5 keeps working exactly as before**: same
+  behaviour, same build. A change that adds Qt 6 functionality but breaks,
+  degrades or removes anything under Qt 5 does not go into RB-2.6: open it
+  against RB-2.7 instead.
+- **RB-2.7** is the Qt 6 branch. While RB-2.6 is maintained, RB-2.7 keeps as
+  much Qt 5 support as possible (builds, version guards, ``Global/QtCompat.h``
+  shims), so that changes made on RB-2.6 keep merging into it cleanly.
+- **RB-2.8** drops Qt 5 entirely: Qt 5 code paths, ``QT_VERSION_CHECK``
+  guards, Qt 5 shims and the Qt 5 build configurations go away there.
+
+Every change merged into RB-2.6 that isn't Qt 5-specific is also merged into
+RB-2.7. This happens automatically: a workflow keeps a "Merge RB-2.6 into
+RB-2.7" pull request open, so pull requests only need to target RB-2.6.
+
+When a pull request mixes both kinds of changes, split it. Changes that keep
+Qt 5 working go to RB-2.6, changes that need Qt 6 and break Qt 5 go to RB-2.7,
+and changes that drop Qt 5 wait for RB-2.8. Smaller pull requests, one topic
+each, are much easier to review and test on both Qt versions.
+
 Follow the existing pull-request template
 (``.github/PULL_REQUEST_TEMPLATE.md``) and reference the issue(s) your change
 addresses.
