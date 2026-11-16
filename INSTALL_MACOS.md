@@ -141,7 +141,7 @@ Use osmesa-install master: it has the LLVM and Mesa build fixes needed with rece
 sudo port -v -N install meson ninja py310-mako py310-yaml
 sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
-cd osmesa-install/build
+cd $NATRON_SRC/../osmesa-install/build   # the osmesa-install checkout of the step above
 env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
     PYTHON=/opt/local/bin/python3.10 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
 # then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
