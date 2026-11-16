@@ -400,9 +400,9 @@ NATRON_DLL=(
     zlib1.dll
 )
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-    cp "${SDK_HOME}/libraw-gpl2/bin/libraw_r-16.dll" "$CLIBS_PATH/data/bin/"
+    cp "${SDK_HOME}/libraw-gpl2/bin/libraw_r-25.dll" "$CLIBS_PATH/data/bin/"
 else
-    cp "${SDK_HOME}/libraw-lgpl/bin/libraw_r-16.dll" "$CLIBS_PATH/data/bin/"
+    cp "${SDK_HOME}/libraw-lgpl/bin/libraw_r-25.dll" "$CLIBS_PATH/data/bin/"
 fi
 
 # FFmpeg dependencies

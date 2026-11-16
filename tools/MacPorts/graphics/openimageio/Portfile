@@ -19,14 +19,15 @@ set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 set port_latest 1
 
 if {${port_latest}} {
-    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.12.1 v
-    revision            3
-    checksums           rmd160  53e7b27aff76d04581d3381067231d4cbef8c56b \
-                        sha256  1083e8cd219f02d1d9baeeeb79edcc253cabdf318f57da40895acb2eef557cf9 \
-                        size    54775625
+    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+    # Natron: revision bumped to rebuild against OpenColorIO 2.6 (4) and libraw 0.22.3 +gpl2 (5)
+    revision            5
+    checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                        sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                        size    56133013
 } else {
     github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
-    revision            18
+    revision            21
     checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
                         sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
                         size    29116032
@@ -36,18 +37,20 @@ if {${port_latest}} {
 
 github.tarball_from     archive
 
-+patchfiles-append oiio-2.0.8-invalidatespec.patch
-+patchfiles-append oiio-2.0.8-atomic-load.patch
-+patchfiles-append oiio-2.3.20-strnlen.patch
-+patchfiles-append oiio-2.4.6-sysutil.patch
-+patchfiles-append oiio-2.4.6-filesystem.patch
-+patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
+if {${port_latest}} {
+    # Natron: do not clear subimages in invalidate_spec() (thread safety)
+    patchfiles-append   oiio-3.1-invalidatespec.patch
+    # The OIIO 2.x Natron patches (oiio-2.0.8-*, oiio-2.3.20-strnlen,
+    # oiio-2.4.6-*, patch-2.4.5-cmake-disable-wall-werror) are not applied to 3.1:
+    # the legacy-macOS ones only matter below macOS 10.13 (10.9 for atomic-load) and do not apply,
+    # and STOP_ON_WARNING already defaults to OFF on OIIO release branches.
+}
 
 if {${port_latest}} {
+    # Natron: openvdb is only pulled in by the openvdb variant (+natron conflicts with it)
     depends_lib-append  port:imath \
                         port:libxml2 \
                         port:openexr \
-                        port:openvdb \
                         port:onetbb \
                         port:OpenJPH \
                         port:tcp_wrappers \
@@ -197,6 +200,19 @@ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolori
 }
 
 configure.args-append   -DUSE_PYTHON=OFF
+# Natron: OpenVDB off unless the openvdb variant is selected (don't pick it up just because it is installed)
+configure.args-append   -DUSE_OPENVDB:BOOL=FALSE
+# Natron: likewise FFmpeg (the ffmpeg PortGroup always adds port:ffmpeg8, a second FFmpeg next to the
+# port:ffmpeg that openfx-io uses), OpenCV, Ptex, DICOM and JPEG XL: off unless their variant is selected
+configure.args-append   -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE -DUSE_PTEX:BOOL=FALSE \
+                        -DUSE_DICOM:BOOL=FALSE -DUSE_JXL:BOOL=FALSE
+# the ffmpeg PortGroup (re)adds its dependency in a callback, so remove it in a later one
+proc natron_no_ffmpeg {} {
+    if {![variant_isset ffmpeg]} {
+        depends_lib-delete  port:ffmpeg[option ffmpeg.version]
+    }
+}
+port::register_callback natron_no_ffmpeg
 
 set pythons_suffixes    {310 311 312 313 314}
 
@@ -240,13 +256,7 @@ variant ffmpeg description {Add FFmpeg support.} {
     configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
     configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
 if {${port_latest}} {
-    set ffmpeg_ver 6
-
-    #configure.args-append       -DUSE_FFMPEG=OFF
-    depends_lib-append          port:ffmpeg${ffmpeg_ver}
-
-    configure.pkg_config_path-prepend \
-                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
+    # the ffmpeg PortGroup (ffmpeg.version above) provides port:ffmpeg8 and its paths
 } else {
     #configure.args-append       -DUSE_FFMPEG=OFF
     depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
@@ -347,4 +357,7 @@ depends_lib-append          port:dcmtk
 configure.args-append       -DUSE_WEBP=OFF
 # depends_lib-append          port:webp
 
-github.livecheck.regex      {([0-9.]+)}
+# TODO: Add this functionality to github portgroup
+livecheck.url               https://api.github.com/repos/${github.author}/${github.project}/tags?per_page=200
+livecheck.curloptions
+livecheck.regex             "\"name\": \"v(\[0-9\.\]+)\","

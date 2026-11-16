@@ -1848,6 +1848,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         if (overlaysCaught) {
             mustRedraw = true;
         }
+        updateOverlayCursor();
     }
 
     if ( !overlaysCaught &&
@@ -2047,6 +2048,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
+    updateOverlayCursor();
     if (mustRedraw) {
         update();
     }
@@ -2488,6 +2490,10 @@ ViewerGL::penMotionInternal(int x,
             unsetCursor();
             _imp->setColorPickerCursor = false;
         }
+        updateOverlayCursor();
+    } else {
+        // the viewer shows its own cursor (wipe or user RoI handle): reset it when nobody asks for one
+        _imp->setOverlayCursor = true;
     }
 
     return true;
@@ -4579,6 +4585,35 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     gettimeofday(&now, 0);
 
     return now.tv_sec + now.tv_usec / 1000000.0;
+}
+
+void
+ViewerGL::updateOverlayCursor()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->hasPickers() ) {
+        // the color picker cursor has priority
+        return;
+    }
+    QCursor cursor;
+    if (!_imp->overlay) {
+        // overlays hidden: their cursor must not stay
+        if (_imp->setOverlayCursor) {
+            unsetCursor();
+            _imp->setOverlayCursor = false;
+        }
+
+        return;
+    }
+    if ( _imp->viewerTab->getOverlaysCursor(&cursor) ) {
+        setCursor(cursor);
+        _imp->setOverlayCursor = true;
+        _imp->setColorPickerCursor = false;
+    } else if (_imp->setOverlayCursor) {
+        unsetCursor();
+        _imp->setOverlayCursor = false;
+    }
 }
 
 NATRON_NAMESPACE_EXIT

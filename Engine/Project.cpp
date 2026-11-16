@@ -2261,63 +2261,9 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 std::string
 Project::escapeXML(const std::string &istr)
 {
-    std::string str( istr );
-
-    for (size_t i = 0; i < str.size(); ++i) {
-        switch (str[i]) {
-        case '<':
-            str.replace(i, 1, "&lt;");
-            i += 3;
-            break;
-
-        case '>':
-            str.replace(i, 1, "&gt;");
-            i += 3;
-            break;
-        case '&':
-            str.replace(i, 1, "&amp;");
-            i += 4;
-            break;
-        case '"':
-            str.replace(i, 1, "&quot;");
-            i += 5;
-            break;
-        case '\'':
-            str.replace(i, 1, "&apos;");
-            i += 5;
-            break;
-        default: {
-            unsigned char c = (unsigned char)(str[i]);
-            // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-            // XML, because they would be converted to space when re-read.
-            // See http://www.w3.org/TR/xml/#AVNormalize
-            if ( ( ( 0x01 <= c) && ( c <= 0x1f) ) || ( ( 0x7F <= c) && ( c <= 0x9F) ) ) {
-                // these characters must be escaped in XML 1.1
-                // http://www.w3.org/TR/xml/#sec-references
-                std::string ns = "&#x";
-                if (c > 0xf) {
-                    int d = c / 0x10;
-                    ns += ('0' + d);     // d cannot be more than 9 (because c <= 0x9F)
-                }
-                int d = c & 0xf;
-                ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                ns += ';';
-                str.replace(i, 1, ns);
-                i += ns.size() + 1;
-            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
-                i += 1;
-            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
-                i += 2;
-            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
-                i += 3;
-            }
-
-            break;
-        }
-        }
-    }
-    assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport
-    return str;
+    // Same escaping as OFX HostSupport (UTF-8 aware, '\t' '\n' '\r' kept as character references,
+    // characters that are illegal in XML 1.0 replaced by U+FFFD)
+    return OFX::XML::escape(istr);
 } // Project::escapeXML
 
 std::string
@@ -2347,7 +2293,7 @@ Project::unescapeXML(const std::string &istr)
             } else if ( !str.compare(i + 1, 1, "#") ) {
                 size_t end = str.find_first_of(";", i + 2);
                 if (end == std::string::npos) {
-                    // malformed XML
+                    // malformed XML: keep the rest as is
                     return str;
                 }
                 char *tail = NULL;
@@ -2358,13 +2304,33 @@ Project::unescapeXML(const std::string &istr)
 
                 errno = 0;
                 unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0x10ffff;
                 errno = errno_save;
                 if (fail) {
-                    return str;
+                    // not a valid character reference: leave it, and go on with the rest of the string
+                    continue;
                 }
-                // replace from '&' to ';' (thus the +1)
-                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                if (cp <= 0xff) {
+                    // 0x01-0xff: the byte itself (how Natron wrote these, see escapeXML)
+                    // replace from '&' to ';' (thus the +1)
+                    str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                } else {
+                    // e.g. &#xFFFD; written by OFX::XML::escape: UTF-8 encode the code point
+                    std::string utf8;
+                    if (cp < 0x800) {
+                        utf8 += (char)(0xC0 | (cp >> 6));
+                    } else if (cp < 0x10000) {
+                        utf8 += (char)(0xE0 | (cp >> 12));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    } else {
+                        utf8 += (char)(0xF0 | (cp >> 18));
+                        utf8 += (char)(0x80 | ( (cp >> 12) & 0x3F ));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    }
+                    utf8 += (char)(0x80 | (cp & 0x3F));
+                    str.replace(i, tail - head + 1 + prefix, utf8);
+                    i += utf8.size() - 1; // the loop's ++i skips the last byte
+                }
             }
         }
     }

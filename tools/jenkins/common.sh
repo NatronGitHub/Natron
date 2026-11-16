@@ -367,7 +367,15 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-if [ -d "$SDK_HOME/osmesa" ]; then
+if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
+    # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
+    (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")
+    exit 1
+fi
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    # e.g. OSMESA_PREFIX=/opt/osmesa-25.0.7 (with LLVM_PREFIX=/opt/llvm-19.1.7)
+    OSMESA_PATH="${OSMESA_PREFIX}"
+elif [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"

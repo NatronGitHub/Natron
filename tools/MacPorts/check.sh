@@ -2,9 +2,24 @@
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 cd "$(dirname "$0")"
-for d in /opt/local/var/macports/sources/rsync.macports.org/release/tarballs/ports /opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports; do
+# upstream ports tree: the one of the [default] source in sources.conf
+# (e.g. rsync://rsync.macports.org/macports/release/tarballs/ports.tar.gz or
+# https://distfiles.macports.org/ports.tar.gz), else the first one found
+ports=
+default_src=$(awk '!/^[[:space:]]*#/ && /\[default/ {print $1; exit}' /opt/local/etc/macports/sources.conf 2>/dev/null || true)
+if [ -n "$default_src" ]; then
+    d="/opt/local/var/macports/sources/$(echo "$default_src" | sed -e 's@^[a-z]*://@@' -e 's@\.tar\.gz$@@')"
     [ -d "$d" ] && ports="$d"
-done
+fi
+if [ -z "$ports" ]; then
+    for d in /opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports /opt/local/var/macports/sources/rsync.macports.org/release/tarballs/ports /opt/local/var/macports/sources/distfiles.macports.org/ports; do
+        if [ -d "$d" ]; then ports="$d"; break; fi
+    done
+fi
+if [ -z "$ports" ]; then
+    echo "Error: upstream MacPorts ports tree not found (run 'sudo port selfupdate' or 'sudo port sync')" >&2
+    exit 1
+fi
 
 find . -name Portfile | \
 while read -r p; do

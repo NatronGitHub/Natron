@@ -1,5 +1,5 @@
---- Portfile.orig	2026-07-13 21:28:33
-+++ Portfile	2026-07-13 21:31:49
+--- Portfile.orig	2026-11-16 10:49:37
++++ Portfile	2026-11-16 11:50:10
 @@ -97,6 +97,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
@@ -9,7 +9,7 @@
                      port:soxr \
                      path:lib/libspeex.dylib:speex \
                      port:webp \
-@@ -141,6 +143,11 @@
+@@ -140,6 +142,11 @@
  # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 900}
@@ -21,15 +21,15 @@
  
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
-@@ -164,6 +171,7 @@
- set port_docdir     ${port_sharedir}/doc
+@@ -163,6 +170,7 @@
+ set port_docdir     ${port_sharedir}/doc/${my_name}
  
  configure.pre_args-append \
 +                    --cxx="${configure.cxx}" \
                      --cc="${configure.cc}"
  
  configure.args-append \
-@@ -194,6 +202,8 @@
+@@ -193,6 +201,8 @@
                      --enable-libmodplug \
                      --enable-libmp3lame \
                      --enable-libopenjpeg \
@@ -38,7 +38,7 @@
                      --enable-libopus \
                      --enable-librsvg \
                      --enable-libsoxr \
-@@ -343,7 +353,16 @@
+@@ -342,7 +352,16 @@
                      --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
@@ -55,7 +55,7 @@
          set merger_host($arch) ""
          lappend merger_configure_args($arch) \
                      --arch=${arch}
-@@ -377,7 +396,25 @@
+@@ -376,7 +395,25 @@
  test.run            yes
  
  destroot.env-append V=1
@@ -81,11 +81,13 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -387,6 +424,46 @@
+@@ -384,6 +421,46 @@
+     foreach f [glob ${worksrcpath}/doc/*.txt] {
+         file copy $f ${destroot}${port_docdir}
      }
- }
- 
-+variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++}
++
++variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 +
 +    depends_lib-delete \
 +                    port:libiconv \
@@ -123,12 +125,10 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
-+}
-+
+ }
+ 
  variant x11 {
-     # enable x11grab_xcb input device
-     depends_lib-append \
-@@ -449,6 +526,14 @@
+@@ -448,6 +525,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -143,3 +143,16 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
+@@ -509,8 +594,11 @@
+                     port:libvmaf
+ }
+ 
+-default_variants-append \
++# Natron: +natronmini doesn't bundle libvmaf
++if {![variant_isset natronmini]} {
++    default_variants-append \
+                     +vmaf
++}
+ 
+ if {![variant_isset rav1e]} {
+     notes-append "Support for rav1e now disabled by default; enable via +rav1e"
