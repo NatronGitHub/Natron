@@ -1166,6 +1166,11 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
     const RectI& outputFormat = metadata.getOutputFormat();
     outArgs.setIntPropertyN( kOfxImageClipPropFormat, (const int*)&outputFormat.x1, 4);
 
+    /// the plug-in may set the clip depths iff the host and the plug-in both support multiple clip depths
+    const bool pluginMaySetDepths =
+        OFX::Host::ImageEffect::gImageEffectHost->getProperties().getIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths) != 0 &&
+        supportsMultipleClipDepths();
+
     /// now add the clip gubbins to the out args
     for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
          it != _clips.end();
@@ -1203,9 +1208,12 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         outArgs.setStringProperty( componentParamName.c_str(), ofxClipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
         const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) );
-        // always writable: the plug-in "must set [it] to one of the pixel depths both the host and plugin supports"
-        // (OFX spec); a read-only property made plug-ins fail with openfx #91
-        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, false, bitDepthStr.c_str()};
+        // The plug-in may only set the clip depths if both the host and the plug-in support multiple clip
+        // depths (ofxClipPreferences.rst: "If both the plugin and host set this to 1, then the plugin can [...]
+        // specify how the host is to map each clip, including the output clip. Note that this is the only
+        // case where a plugin may set the output depth."), as in HostSupport. Otherwise it is read-only:
+        // with the ePluginReadOnlyWarn policy (OfxHost.cpp), a write is still accepted, with a warning.
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !pluginMaySetDepths, bitDepthStr.c_str()};
         outArgs.createProperty(specDep);
 
         OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,          "1"};
