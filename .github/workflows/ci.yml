@@ -278,9 +278,9 @@ jobs:
       CI: 'True'
       OCIO_CONFIG_VERSION: 2.5
       MACPORTS_VERSION: 2.12.7
-      MACPORTS_CACHE_VERSION: 1
+      MACPORTS_CACHE_VERSION: 2
       MACPORTS_PORTS: >-
-        pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
+        cmake pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
       PYVER: '3.10'
     steps:
       - name: Checkout branch
@@ -395,7 +395,8 @@ jobs:
           rm -rf ~/macports-cache
           port installed $MACPORTS_PORTS
           python3 --version
-          command -v python3 pkg-config
+          command -v python3 pkg-config cmake
+          cmake --version
           test -x /opt/local/Library/Frameworks/Python.framework/Versions/$PYVER/lib/python$PYVER/site-packages/shiboken2_generator/shiboken2
           if command -v brew; then echo "::error::Homebrew is still in PATH"; exit 1; fi
 
@@ -404,36 +405,18 @@ jobs:
           curl -fsSL --retry 5 https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz | tar xzf -
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Natron (qmake)
+      - name: Build Natron (CMake)
         run: |
-          # The MacPorts PySide2 has no CMake config files, so this uses the
-          # qmake build, like tools/jenkins/build-natron.sh does on macOS.
-          PY=/opt/local/Library/Frameworks/Python.framework/Versions/$PYVER
-          SITE=$PY/lib/python$PYVER/site-packages
-          QTDIR=/opt/local/libexec/qt5
-          cp tools/jenkins/include/natron/OSX.pri config.pri
-
-          # Generate the Python bindings (from tools/jenkins/build-natron.sh).
-          # Call the generator binary directly: the shiboken2-3.10 wrapper
-          # looks for a shiboken2-3.10 link that the port doesn't install.
-          SHIBOKEN=$SITE/shiboken2_generator/shiboken2
-          SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PY}/include/python${PYVER} -I${SITE}/PySide2/include -I${SITE}/PySide2/include/QtCore -I${SITE}/PySide2/include/QtGui"
-          SHIBOKEN_TYPESYSTEM_PATHS="-T${SITE}/PySide2/typesystems"
-          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} \
-            --output-directory=Engine/Qt5 Engine/Pyside2_Engine_Python.h Engine/typesystem_engine.xml
-          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken \
-            --output-directory=Gui/Qt5 Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
-          python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt5
-          python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt5
-
+          # The MacPorts PySide2 has no CMake config files: CMake finds Shiboken2
+          # and PySide2 through Python3_EXECUTABLE (cmake/PySide2FromPython.cmake).
           # Natron is built with the system (Xcode) clang, which fully supports C++20 on
           # macOS 15; MacPorts only provides the libraries (see #1134).
           /usr/bin/clang++ --version
-          $QTDIR/bin/qmake -r -spec macx-clang CONFIG+=release CONFIG+=python3 CONFIG-=openmp \
-            QMAKE_CC=/usr/bin/clang QMAKE_CXX=/usr/bin/clang++ QMAKE_LINK=/usr/bin/clang++ \
-            CONFIG-=enable-breakpad CONFIG+=enable-cairo PYTHON_CONFIG=python${PYVER}-config Project.pro
-          make -j$(sysctl -n hw.ncpu)
-          make -j$(sysctl -n hw.ncpu) -C Tests
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
+            -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+            -DPython3_EXECUTABLE=/opt/local/bin/python${PYVER}
+          cmake --build build -j$(sysctl -n hw.ncpu)
 
       - name: Run macOS Tests
         id: run-macos-tests
@@ -442,15 +425,15 @@ jobs:
           # There is no prebuilt openfx-io for macOS (the Linux and Windows
           # jobs download one), so the tests that need the IO plug-ins
           # (BaseTest.*) are skipped.
-          cd Tests
-          OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ./Tests --gtest_filter='-BaseTest.*' 2>&1 | tee LastTest.log
+          cd build
+          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload macOS Test Log artifacts
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
           name: macos-15 Test Logs
-          path: ${{ github.workspace }}/Tests/LastTest.log
+          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
         if: steps.run-macos-tests.outcome == 'failure'
