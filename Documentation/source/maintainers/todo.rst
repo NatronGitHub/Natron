@@ -21,9 +21,9 @@ Toolkit and build modernization
 This is a first-class goal with its own chapter, :ref:`maint-qt6`, which is the
 single source of truth for the audited work items and counts. In short: the
 CMake build already has a ``NATRON_QT6`` switch and the viewer already uses
-``QOpenGLWidget``, so the remaining work is bounded — modernize the removed Qt
-APIs (``QRegExp`` → ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``,
-``setMargin``), bring the qmake build to Qt6 parity, and regenerate the
+``QOpenGLWidget``, and the removed Qt APIs (``QRegExp``, ``QDesktopWidget``,
+``setMargin``) have been replaced (PR #1084), so the remaining work is bounded:
+bring the qmake build to Qt6 parity, and regenerate the
 PySide6/Shiboken6 bindings (resolving the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_). Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
@@ -96,11 +96,10 @@ Recommendation: add regression tests that load a corpus of old ``.ntp`` files
 and assert they still open; require a ``BOOST_CLASS_VERSION`` bump review for any
 ``*Serialization`` change. This directly protects users from data loss.
 
-**Replace deprecated/removed Qt string and regex APIs (P1).**
-Beyond Qt 6 compatibility, ``QRegExp`` and the ``QDesktopWidget`` family are the
-concrete deprecated APIs in use; migrating them (details in :ref:`maint-qt6`)
-improves the Qt 5 build immediately and is low-risk since the replacements exist
-in Qt 5.15.
+**Replace deprecated/removed Qt string and regex APIs (done).**
+``QRegExp`` and the ``QDesktopWidget`` family, the concrete deprecated APIs that
+were in use, were replaced in PR #1084 with APIs that exist in Qt 5.15 (details
+in :ref:`maint-qt6`).
 
 **Reduce the size of the largest translation units (P3).**
 Several files are enormous (``Node.cpp``, ``EffectInstance.cpp`` and

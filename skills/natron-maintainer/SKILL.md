@@ -105,11 +105,14 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
 ## Qt 6 Migration Status (as of 2026)
 
 - **Done:** GL widgets already use ``QOpenGLWidget``; CMake has ``NATRON_QT6``
-  option (Qt6.3/Shiboken6/PySide6); ``QtCompat.h`` has version shims.
-- **To do:** ``QRegExp`` → ``QRegularExpression`` (~16 files);
-  ``QDesktopWidget``/``QApplication::desktop()`` → ``QScreen`` (~6 files);
-  ``setMargin`` → ``setContentsMargins``; regenerate PySide6/Shiboken6 bindings
-  (fixes enum/flag issue #854); bring qmake build to Qt6 parity.
+  option (Qt6.3/Shiboken6/PySide6); ``QtCompat.h`` has version shims;
+  ``QRegExp`` → ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``,
+  ``setMargin`` → ``setContentsMargins`` (PR #1084). For wildcards use
+  ``QtCompat::wildcardToRegularExpression()`` (``*`` matches ``/``), not Qt's
+  path-aware ``QRegularExpression::wildcardToRegularExpression()``; add
+  ``UseUnicodePropertiesOption`` when a pattern uses ``\w``/``\b``/``\d``.
+- **To do:** regenerate PySide6/Shiboken6 bindings (fixes enum/flag issue
+  #854); bring qmake build to Qt6 parity.
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in
   ``QtCompat.h``; else guard with ``#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)``.
 - Full plan: ``Documentation/source/maintainers/qt6-migration.rst``.

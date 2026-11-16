@@ -41,7 +41,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSettings>
 #include <QFileInfo>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -299,9 +300,16 @@ GuiApplicationManager::initializeQApp(int &argc,
 #endif
         app = new Application(this, argc, argv);
     }
-    QDesktopWidget* desktop = app->desktop();
-    int dpiX = desktop->logicalDpiX();
-    int dpiY = desktop->logicalDpiY();
+    // QDesktopWidget is gone in Qt6. Its logicalDpiX()/logicalDpiY() rounded
+    // the primary screen's QScreen values, and returned 72 when there was no
+    // screen. Keep both, so that Qt5 builds behave exactly as before.
+    double dpiX = 72.;
+    double dpiY = 72.;
+    if ( QScreen* screen = QGuiApplication::primaryScreen() ) {
+        // rounded, as QDesktopWidget::logicalDpiX()/Y() did
+        dpiX = qRound( screen->logicalDotsPerInchX() );
+        dpiY = qRound( screen->logicalDotsPerInchY() );
+    }
 
     setCurrentLogicalDPI(dpiX, dpiY);
 
