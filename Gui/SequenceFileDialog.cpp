@@ -1892,7 +1892,7 @@ UrlModel::setData(const QModelIndex &index,
                   const QVariant &value,
                   int role)
 {
-    if (value.type() == QVariant::Url) {
+    if (value.userType() == QMetaType::QUrl) {
         QUrl url = value.toUrl();
         QModelIndex dirIndex = fileSystemModel->index( urlToPathString(url) );
         QStandardItemModel::setData(index, QDir::toNativeSeparators( fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString() ), Qt::ToolTipRole);
