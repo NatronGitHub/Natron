@@ -22,7 +22,8 @@ if [ "$PYV" = 3 ]; then
         # 3.10.12 and later don't have embedded zips
         PYVERFULL=3.10.11
     fi
-    wget "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
+    # curl (unlike wget) honors ALL_PROXY, e.g. a SOCKS proxy in a build VM; -f: fail on HTTP errors
+    curl -f -L -sS --retry 5 --connect-timeout 30 -O "https://www.python.org/ftp/python/${PYVERFULL}/python-${PYVERFULL}-embed-amd64.zip"
     unzip "python-${PYVERFULL}-embed-amd64.zip" "python${PYVERNODOT}.zip"
     rm "python-${PYVERFULL}-embed-amd64.zip"
     rm -rf python${PYVER}

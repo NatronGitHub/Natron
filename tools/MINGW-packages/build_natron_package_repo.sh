@@ -8,6 +8,7 @@ mingw-w64-natron-setup
 mingw-w64-imath
 mingw-w64-openexr
 mingw-w64-libraw-gpl2
+mingw-w64-libraw-lgpl
 mingw-w64-opencolorio2-git
 mingw-w64-openimageio
 mingw-w64-seexpr-git

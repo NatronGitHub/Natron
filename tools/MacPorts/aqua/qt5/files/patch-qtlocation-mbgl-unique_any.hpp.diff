@@ -1,0 +1,11 @@
+--- src/3rdparty/mapbox-gl-native/include/mbgl/util/unique_any.hpp.orig	2023-05-13 13:07:39.000000000 -0400
++++ src/3rdparty/mapbox-gl-native/include/mbgl/util/unique_any.hpp	2023-05-13 13:08:21.000000000 -0400
+@@ -3,6 +3,8 @@
+ #include <typeinfo>
+ #include <type_traits>
+ #include <stdexcept>
++#include <utility> // std::move
++
+ namespace mbgl {
+ namespace util {
+ 

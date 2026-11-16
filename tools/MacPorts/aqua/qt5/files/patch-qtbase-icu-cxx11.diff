@@ -1,0 +1,19 @@
+icu config test: require C++11 (actually C++17)
+
+ICU headers now require C++17, and while the Portfile already sets
+`QMAKE_CXXFLAGS_GNUCXX11=-std=c++17`, the config test does not actually add
+`-std=${QMAKE_CXXFLAGS_GNUCXX11}` unless the project file declares that C++11
+is required.
+
+--- ./src/corelib/configure.json.orig   2025-09-18 11:39:50
++++ ./src/corelib/configure.json        2025-09-18 11:40:27
+@@ -102,7 +102,8 @@
+                     "UCollator *collator = ucol_open(\"ru_RU\", &status);",
+                     "if (!U_FAILURE(status))",
+                     "    ucol_close(collator);"
+-                ]
++                ],
++                "qmake": "CONFIG += c++11"
+             },
+             "headers": [ "unicode/utypes.h", "unicode/ucol.h", "unicode/ustring.h" ],
+             "sources": [

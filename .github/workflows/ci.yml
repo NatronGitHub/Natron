@@ -2,26 +2,43 @@ name: Tests
 
 on:
   workflow_dispatch: {}
+  # nightly macOS build of the default branch, skipped if it didn't change in the last 25 hours
+  schedule:
+  - cron: '17 3 * * *'
+  # one run per change: push only on the main and release branches and on tags,
+  # feature branches run through their pull request
   push:
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
+    tags:
+    - 'v*'
     paths-ignore:
-      - Documentation
+      - 'Documentation/**'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
     paths-ignore:
-      - Documentation
+      - 'Documentation/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unix_test:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: ${{ matrix.special-invocation }}bash -l {0}
+        shell: ${{ matrix.special-invocation }}bash -leo pipefail {0}
     env:
       CI: 'True'
       PYTHON_VERSION: ${{ matrix.python-version }}
@@ -31,33 +48,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #macos-latest
-        python-version: ['3.10']
+        # Pinned to 24.04: ubuntu-latest became Ubuntu 26.04, which no longer
+        # ships PySide2/Shiboken2 (libshiboken2-dev, libpyside2-dev,
+        # python3-pyside2.*). Noble has PySide2 5.15.13 and Python 3.12.
+        os: [ubuntu-24.04]
+        python-version: ['3.12']
         include:
-        - os: ubuntu-latest
+        - os: ubuntu-24.04
           special-invocation: 'xvfb-run --auto-servernum '
-          python-version: '3.10'
+          python-version: '3.12'
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
       - name: Install Linux system packages
-        if: contains(matrix.os, 'ubuntu')
         shell: bash
         run: |
-          sudo apt update
-          sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+          sudo apt-get update
+          sudo apt-get install -y build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
             qt5-qmake qtbase5-dev qtdeclarative5-dev \
             python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
             extra-cmake-modules clang
-      - name: Install Macos system packages
-        if: contains(matrix.os, 'macos')
-        shell: bash
-        run: |
-          brew install xctool python@2 boost giflib jpeg libpng libtiff libxml2 openssl pcre readline sqlite expat cairo \
-            gnu-sed glew openssl ilmbase openexr freetype fontconfig ffmpeg openjpeg libraw libheif openvdb
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -68,15 +81,15 @@ jobs:
       - name: Download Plugins
         run: |
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
-          unzip openfx-io-build-ubuntu_22-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+          unzip openfx-io-build-ubuntu_24-testing.zip
           cd ..
 
       - name: Build Unix (debug)
         run: |
           mkdir debug && cd debug
           cmake -DCMAKE_BUILD_TYPE=Debug ../
-          make -j2
+          make -j$(nproc)
 
       - name: Run Unix Tests (debug)
         id: run-unix-tests-debug
@@ -90,7 +103,7 @@ jobs:
         run: |
           mkdir release && cd release
           cmake ../
-          make -j2
+          make -j$(nproc)
 
       - name: Run Unix Tests (release)
         id: run-unix-tests-release
@@ -101,6 +114,7 @@ jobs:
           OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
+        if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
@@ -111,8 +125,13 @@ jobs:
         run: exit 1
 
   win-test:
-    name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 240
+    name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    # Known failure (#1147): the embedded Python 3.14 of Tests.exe
+    # cannot import shiboken2 on UCRT64. Don't turn RB-2.6 red until it's fixed.
+    continue-on-error: true
     defaults:
       run:
         shell: msys2 {0}
@@ -125,25 +144,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest]
-        python-version: ['3.10']
+        os: [windows-latest]
+        python-version: ['3.14']
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
 
-      - name: Install Windows system packages
+      # MSYS2 dropped pyside2, shiboken2 and python-qtpy from the deprecated
+      # MINGW64 environment (they are only built for UCRT64/CLANG64 now), so
+      # this job uses UCRT64 with the stock MSYS2 packages. The Natron pacman
+      # repository (tools/MINGW-packages) is only needed to build the plug-ins
+      # and the installer, not Natron itself.
+      - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: mingw64
+          msystem: UCRT64
           update: true
-          install: git mingw-w64-x86_64-wget unzip mingw-w64-x86_64-ninja mingw-w64-x86_64-cmake
+          install: git unzip
 
-      - name: Install Natron pacman repository
+      - name: Install Natron build dependencies
         run: |
-          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
-          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          pkgs=(
+            git unzip
+            ${MINGW_PACKAGE_PREFIX}-cc ${MINGW_PACKAGE_PREFIX}-cmake ${MINGW_PACKAGE_PREFIX}-ninja
+            ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-wget
+            ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
+            ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
+            ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
+            ${MINGW_PACKAGE_PREFIX}-python-qtpy
+            # shiboken2 needs clang and llvm-tools, see tools/MINGW-packages/mingw-w64-natron-build-deps-qt5
+            ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
+          )
+          # mirror.msys2.org sometimes stalls ("Operation too slow"): retry the
+          # database sync and the download a few times before giving up.
+          for i in 1 2 3 4 5; do
+            if pacman -Syu --needed --noconfirm "${pkgs[@]}"; then
+              break
+            fi
+            if [ $i = 5 ]; then
+              echo "::error::pacman failed to install the build dependencies"
+              exit 1
+            fi
+            echo "pacman failed (attempt $i), retrying in 30s..."
+            sleep 30
+          done
+          # Fail loudly here rather than later with "No CMAKE_CXX_COMPILER could be found".
+          pacman -Q "${pkgs[@]}"
+          command -v g++ cmake ninja shiboken2 python
+          python -c 'import shiboken2; import PySide2.QtCore; print("PySide2", PySide2.__version__, "Qt", PySide2.QtCore.qVersion())'
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -165,13 +215,14 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
-          unzip openfx-io-build-windows_latest-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+          unzip openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
-          PYTHONHOME=/mingw64 OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
+        if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
           name: ${{ matrix.os }} Test Logs
@@ -179,4 +230,225 @@ jobs:
 
       - name: Check for test failures
         if: steps.run-windows-tests.outcome == 'failure'
+        run: exit 1
+
+  changes:
+    # nightly runs only: did the default branch change in the last 25 hours?
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Check for recent commits
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
+          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  macos-test:
+    # Built with MacPorts (as the official macOS binaries), never Homebrew.
+    # The Natron-only dependencies come from MacPorts binary archives; the
+    # resulting /opt/local is cached, keyed on the MacPorts version, the
+    # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
+    # port list below changes).
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
+    # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
+    # Windows: its tests are allowed to fail until #1147 is fixed, so only require that it ran.
+    needs: [changes, unix_test, win-test]
+    if: >-
+      !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result != 'cancelled' && needs.win-test.result != 'skipped' &&
+       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    name: Test macos-15 arm64 MacPorts Python 3.10
+    runs-on: macos-15
+    timeout-minutes: 360
+    defaults:
+      run:
+        # bash -eo pipefail
+        shell: bash
+    env:
+      CI: 'True'
+      OCIO_CONFIG_VERSION: 2.5
+      MACPORTS_VERSION: 2.12.7
+      MACPORTS_CACHE_VERSION: 1
+      MACPORTS_PORTS: >-
+        pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
+      PYVER: '3.10'
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Restore MacPorts from cache
+        id: macports-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/macports-cache
+          key: macports-${{ env.MACPORTS_CACHE_VERSION }}-macos15-arm64-${{ env.MACPORTS_VERSION }}-${{ hashFiles('tools/MacPorts/*/*/Portfile', 'tools/MacPorts/*/*/files/**') }}-${{ env.MACPORTS_PORTS }}
+          restore-keys: |
+            macports-${{ env.MACPORTS_CACHE_VERSION }}-macos15-arm64-${{ env.MACPORTS_VERSION }}-
+
+      - name: Hide Homebrew
+        run: |
+          # GitHub runners come with Homebrew; keep it out of the build so
+          # that only MacPorts dependencies are found.
+          newpath=
+          IFS=: read -ra entries <<< "$PATH"
+          for e in "${entries[@]}"; do
+            skip=0
+            for p in /opt/homebrew /usr/local; do
+              if [ -x "$p/bin/brew" ]; then
+                case "$e" in "$p"/*) skip=1 ;; esac
+              fi
+            done
+            [ $skip = 1 ] || newpath="${newpath:+$newpath:}$e"
+          done
+          echo "PATH=/opt/local/bin:/opt/local/sbin:$newpath" >> "$GITHUB_ENV"
+          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do
+            echo "$v=" >> "$GITHUB_ENV"
+          done
+          echo "New PATH: /opt/local/bin:/opt/local/sbin:$newpath"
+
+      - name: Install MacPorts
+        run: |
+          curl -fsSL --retry 5 -o MacPorts.pkg \
+            "https://github.com/macports/macports-base/releases/download/v${MACPORTS_VERSION}/MacPorts-${MACPORTS_VERSION}-15-Sequoia.pkg"
+          sudo installer -pkg MacPorts.pkg -target /
+          rm MacPorts.pkg
+          if [ -f ~/macports-cache/opt-local.tar ]; then
+            echo "Restoring /opt/local from the cache"
+            sudo tar -xpf ~/macports-cache/opt-local.tar -C /
+            rm -rf ~/macports-cache
+            if [ "${{ steps.macports-cache.outputs.cache-hit }}" != true ]; then
+              # partial hit (restore-keys): the restored ports are brought up to date
+              # once the overlay is in place (its sources.conf already lists it)
+              echo "UPGRADE_OUTDATED=1" >> "$GITHUB_ENV"
+            fi
+          else
+            for i in 1 2 3; do sudo port -N selfupdate && break; [ $i = 3 ] && exit 1; sleep 30; done
+          fi
+          port version
+
+      - name: Add Natron MacPorts overlay
+        run: |
+          # As in INSTALL_MACOS.md, step 3.
+          sudo mkdir -p /opt/MacPorts-Natron
+          sudo chown "$(id -un):staff" /opt/MacPorts-Natron
+          (cd tools/MacPorts && ./sync.sh) | tee portindex.log
+          # Overlay ports that fail to parse are left out of the PortIndex (the
+          # upstream port is used instead). The Natron-only dependencies
+          # installed below don't need the broken ones, so only warn.
+          failed=$(sed -n 's/^Ports failed:[[:space:]]*//p' portindex.log)
+          if [ "${failed:-unknown}" != 0 ]; then
+            echo "::warning::portindex of the Natron MacPorts overlay: ${failed} ports failed to parse"
+          fi
+          grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf ||
+            sudo perl -0pi -e 's|^(rsync://\S+ \[default\])|file:///opt/MacPorts-Natron\n$1|m' /opt/local/etc/macports/sources.conf
+          grep -v '^#' /opt/local/etc/macports/sources.conf
+          grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf || {
+            echo "::error::the Natron overlay could not be added to sources.conf"; exit 1; }
+
+      - name: Install MacPorts dependencies
+        if: steps.macports-cache.outputs.cache-hit != 'true'
+        run: |
+          # -N: non-interactive. Binary archives are used when available
+          # (all of these have one for macOS 15 arm64 with default variants).
+          if [ "${UPGRADE_OUTDATED:-0}" = 1 ]; then
+            for i in 1 2 3; do sudo port -N selfupdate && break; [ $i = 3 ] && exit 1; sleep 30; done
+            sudo port -N upgrade outdated || { echo "::error::port upgrade outdated failed"; exit 1; }
+          fi
+          for i in 1 2 3; do
+            sudo port -N install $MACPORTS_PORTS && break
+            [ $i = 3 ] && exit 1
+            sleep 30
+          done
+          sudo port select --set python3 python310
+          sudo port -N clean --work --dist installed || true
+
+      - name: Save MacPorts to cache
+        if: steps.macports-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/macports-cache
+          sudo tar -cpf ~/macports-cache/opt-local.tar -C / \
+            --exclude opt/local/var/macports/build --exclude opt/local/var/macports/distfiles \
+            opt/local
+          ls -lh ~/macports-cache
+
+      - name: Upload MacPorts cache
+        if: steps.macports-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/macports-cache
+          key: ${{ steps.macports-cache.outputs.cache-primary-key }}
+
+      - name: Check MacPorts installation
+        run: |
+          rm -rf ~/macports-cache
+          port installed $MACPORTS_PORTS
+          python3 --version
+          command -v python3 pkg-config
+          test -x /opt/local/Library/Frameworks/Python.framework/Versions/$PYVER/lib/python$PYVER/site-packages/shiboken2_generator/shiboken2
+          if command -v brew; then echo "::error::Homebrew is still in PATH"; exit 1; fi
+
+      - name: Download OpenColorIO-Configs
+        run: |
+          curl -fsSL --retry 5 https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz | tar xzf -
+          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
+
+      - name: Build Natron (qmake)
+        run: |
+          # The MacPorts PySide2 has no CMake config files, so this uses the
+          # qmake build, like tools/jenkins/build-natron.sh does on macOS.
+          PY=/opt/local/Library/Frameworks/Python.framework/Versions/$PYVER
+          SITE=$PY/lib/python$PYVER/site-packages
+          QTDIR=/opt/local/libexec/qt5
+          cp tools/jenkins/include/natron/OSX.pri config.pri
+
+          # Generate the Python bindings (from tools/jenkins/build-natron.sh).
+          # Call the generator binary directly: the shiboken2-3.10 wrapper
+          # looks for a shiboken2-3.10 link that the port doesn't install.
+          SHIBOKEN=$SITE/shiboken2_generator/shiboken2
+          SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PY}/include/python${PYVER} -I${SITE}/PySide2/include -I${SITE}/PySide2/include/QtCore -I${SITE}/PySide2/include/QtGui"
+          SHIBOKEN_TYPESYSTEM_PATHS="-T${SITE}/PySide2/typesystems"
+          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} \
+            --output-directory=Engine/Qt5 Engine/Pyside2_Engine_Python.h Engine/typesystem_engine.xml
+          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken \
+            --output-directory=Gui/Qt5 Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
+          python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt5
+          python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt5
+
+          # Natron is built with the system (Xcode) clang, which fully supports C++20 on
+          # macOS 15; MacPorts only provides the libraries (see #1134).
+          /usr/bin/clang++ --version
+          $QTDIR/bin/qmake -r -spec macx-clang CONFIG+=release CONFIG+=python3 CONFIG-=openmp \
+            QMAKE_CC=/usr/bin/clang QMAKE_CXX=/usr/bin/clang++ QMAKE_LINK=/usr/bin/clang++ \
+            CONFIG-=enable-breakpad CONFIG+=enable-cairo PYTHON_CONFIG=python${PYVER}-config Project.pro
+          make -j$(sysctl -n hw.ncpu)
+          make -j$(sysctl -n hw.ncpu) -C Tests
+
+      - name: Run macOS Tests
+        id: run-macos-tests
+        continue-on-error: true
+        run: |
+          # There is no prebuilt openfx-io for macOS (the Linux and Windows
+          # jobs download one), so the tests that need the IO plug-ins
+          # (BaseTest.*) are skipped.
+          cd Tests
+          OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ./Tests --gtest_filter='-BaseTest.*' 2>&1 | tee LastTest.log
+
+      - name: Upload macOS Test Log artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: macos-15 Test Logs
+          path: ${{ github.workspace }}/Tests/LastTest.log
+
+      - name: Check for test failures
+        if: steps.run-macos-tests.outcome == 'failure'
         run: exit 1

@@ -1,0 +1,15 @@
+--- Tools/qmake/mkspecs/features/configure.prf.orig	2017-06-16 05:46:36.000000000 -0700
++++ Tools/qmake/mkspecs/features/configure.prf	2020-03-21 10:06:53.000000000 -0700
+@@ -130,9 +130,9 @@
+         addReasonForSkippingBuild("Build not supported on Android.")
+     }
+     QT_FOR_CONFIG += gui-private
+-    production_build:qtConfig(mirclient) {
+-        addReasonForSkippingBuild("Build not supported on Ubuntu Touch.")
+-    }
++    #production_build:qtConfig(mirclient) {
++    #    addReasonForSkippingBuild("Build not supported on Ubuntu Touch.")
++    #}
+     !gnu_thin_archives:!win32-msvc2013:!mingw:qtConfig(static) {
+         addReasonForSkippingBuild("QtWebKit cannot be built as a static library on this platform. Check your configuration in qtbase/config.summary.")
+     }

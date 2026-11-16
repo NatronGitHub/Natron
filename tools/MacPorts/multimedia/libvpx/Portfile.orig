@@ -1,12 +1,16 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
+PortGroup           legacysupport 1.1
 PortGroup           muniversal 1.0
+
+# clock_gettime
+legacysupport.newest_darwin_requires_legacy 16
 
 name                libvpx
 conflicts           libvpx-devel
 set my_name         libvpx
-version             1.15.0
+version             1.17.0
 revision            0
 
 categories          multimedia
@@ -22,7 +26,7 @@ long_description    The WebM VP8/VP9 codecs are being developed \
                     codec and includes a number of enhancements and new \
                     coding tools that have been added to improve coding efficiency. \
                     The VP9 encoder in this release is not, as yet, feature complete.
-homepage            http://webmproject.org/tools/
+homepage            https://webmproject.org/tools/
 
 distname            ${my_name}-${version}
 dist_subdir         ${my_name}
@@ -39,8 +43,11 @@ patchfiles-append   patch-Makefile.diff
 patchfiles-append   patch-configure.sh.diff
 patchfiles-append   patch-vpx_ports.diff
 
-# requires c++11 https://trac.macports.org/ticket/67038
-compiler.cxx_standard 2011
+# Requires c11/c++11 https://trac.macports.org/ticket/67038
+# However, embedded gtest requires c++17
+compiler.c_standard   2011
+compiler.cxx_standard 2017
+
 # Requires MacPorts -stdlib flag added to ldflags.
 # https://trac.macports.org/ticket/67038
 configure.ldflags-append \
@@ -65,18 +72,25 @@ compiler.blacklist-append \
 configure.args-append \
                     --disable-debug-libs \
                     --disable-install-docs \
+                    --disable-unit-tests \
                     --enable-examples \
                     --enable-experimental \
                     --enable-multithread \
                     --enable-pic \
                     --enable-postproc \
-                    --enable-unit-tests \
                     --enable-vp8 \
                     --enable-vp9 \
                     --enable-vp9-highbitdepth
 
 platform darwin {
-    configure.args-append   --enable-shared
+    configure.args-append \
+                    --enable-shared
+
+    if {${os.major} <= [option legacysupport.newest_darwin_requires_legacy]} {
+        # While LDFLAGS is used, we must pass compiler flags to configure script
+        configure.args-append \
+                    --extra-cflags="[legacysupport::get_cpp_flags]"
+    }
 }
 
 platform darwin 8 {
@@ -179,8 +193,14 @@ post-destroot {
     }
 }
 
-test.run        yes
-test.target     test
+variant tests description {Enable tests} {
+    configure.args-replace \
+                    --disable-unit-tests \
+                    --enable-unit-tests
+
+    test.run        yes
+    test.target     test
+}
 
 livecheck.type  regex
 livecheck.url   https://chromium.googlesource.com/webm/${my_name}

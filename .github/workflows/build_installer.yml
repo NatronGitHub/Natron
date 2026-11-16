@@ -1,8 +1,18 @@
 name: Build Installer
 
+# Installers are release artifacts: built on demand or for (pre-)release tags only.
 on:
   workflow_dispatch: {}
   push:
+    tags:
+    - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
 
 env:
   NATRON_BUILD_WORKSPACE: 'D:/nbw'
@@ -12,6 +22,7 @@ jobs:
   win-installer:
     name: Windows Installer
     runs-on: windows-2022
+    timeout-minutes: 300
     defaults:
       run:
         shell: msys2 {0}
@@ -33,6 +44,12 @@ jobs:
         run: |
           ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
           pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          # With --noconfirm, pacman silently skips a target whose dependencies
+          # cannot be resolved and exits 0: check that it was really installed.
+          if ! pacman -Q mingw-w64-x86_64-natron-build-deps-qt5; then
+            echo "::error::mingw-w64-x86_64-natron-build-deps-qt5 could not be installed (unresolvable dependencies, see above)"
+            exit 1
+          fi
 
       - name: Build
         id: build
@@ -115,6 +132,7 @@ jobs:
   win-installer-breakpad:
     name: Windows Installer (with Breakpad crash reporting)
     runs-on: windows-2022
+    timeout-minutes: 300
     defaults:
       run:
         shell: msys2 {0}
@@ -136,6 +154,12 @@ jobs:
         run: |
           ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
           pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          # With --noconfirm, pacman silently skips a target whose dependencies
+          # cannot be resolved and exits 0: check that it was really installed.
+          if ! pacman -Q mingw-w64-x86_64-natron-build-deps-qt5; then
+            echo "::error::mingw-w64-x86_64-natron-build-deps-qt5 could not be installed (unresolvable dependencies, see above)"
+            exit 1
+          fi
 
       - name: Build
         id: build

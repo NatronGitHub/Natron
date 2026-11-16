@@ -6,8 +6,8 @@ boost: INCLUDEPATH += $$HOMEBREW/include
 boost: LIBS += -L$$HOMEBREW/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 
 openmp {
-  # clang 12+ is OK to build Natron, but libomp 12+ has a bug on macOS when
-  # lanching tasks from a background thread, see https://bugs.llvm.org/show_bug.cgi?id=50579
+  # llvm@11 was chosen because libomp 12-15 had bugs with OpenMP on non-OpenMP threads; they are
+  # fixed since libomp 13/16/18 (see tools/MacPorts/lang/libomp/README.md), so a current llvm works too.
   LIBS += -L$$HOMEBREW/opt/llvm@11/lib -lomp
   QMAKE_CC = $$HOMEBREW/opt/llvm@11/bin/clang
   QMAKE_CXX = $$HOMEBREW/opt/llvm@11/bin/clang++

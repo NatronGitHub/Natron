@@ -18,14 +18,14 @@ long_description        OpenImageIO is a library for reading and writing images,
 set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 
 if {${port_latest}} {
-    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.12.1 v
+    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
     revision            3
-    checksums           rmd160  53e7b27aff76d04581d3381067231d4cbef8c56b \
-                        sha256  1083e8cd219f02d1d9baeeeb79edcc253cabdf318f57da40895acb2eef557cf9 \
-                        size    54775625
+    checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                        sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                        size    56133013
 } else {
     github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
-    revision            18
+    revision            21
     checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
                         sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
                         size    29116032
@@ -225,4 +225,7 @@ depends_lib-append          port:dcmtk
 configure.args-append       -DUSE_WEBP=OFF
 # depends_lib-append          port:webp
 
-github.livecheck.regex      {([0-9.]+)}
+# TODO: Add this functionality to github portgroup
+livecheck.url               https://api.github.com/repos/${github.author}/${github.project}/tags?per_page=200
+livecheck.curloptions
+livecheck.regex             "\"name\": \"v(\[0-9\.\]+)\","
