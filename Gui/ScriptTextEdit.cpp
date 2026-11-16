@@ -58,7 +58,10 @@ struct PyHighLightRule
                     const QTextCharFormat &matchingFormat)
     {
         originalRuleStr = patternStr;
-        pattern = QRegularExpression(patternStr);
+        // \w, \b and \d are ASCII-only in PCRE unless Unicode properties
+        // are used, and they were Unicode in QRegExp (Python 3 identifiers may
+        // contain non-ASCII letters).
+        pattern = QRegularExpression(patternStr, QRegularExpression::UseUnicodePropertiesOption);
         nth = n;
         format = matchingFormat;
     }

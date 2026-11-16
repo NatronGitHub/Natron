@@ -410,7 +410,9 @@ Node::makeDocumentation(bool genHTML) const
             pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
 
             // replace URLs with links
-            QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
+            // (UseUnicodePropertiesOption: \w is ASCII-only in PCRE, it was Unicode in QRegExp)
+            QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)"),
+                                   QRegularExpression::UseUnicodePropertiesOption );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
             pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
