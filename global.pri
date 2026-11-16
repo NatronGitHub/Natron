@@ -17,7 +17,15 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-CONFIG += c++17
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7 is Qt6-only and C++20).
+# Qt 5 qmake doesn't know CONFIG+=c++20, but both Qt 5 and Qt 6 accept c++2a.
+greaterThan(QT_MAJOR_VERSION, 5) {
+  NATRON_CXXSTD = c++20
+  CONFIG += c++2a
+} else {
+  NATRON_CXXSTD = c++17
+  CONFIG += c++17
+}
 
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
@@ -289,14 +297,14 @@ macx-clang-libc++ {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=$$NATRON_CXXSTD
 }
 
 macx-clang {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
     QMAKE_OBJECTIVE_CXXFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
-    QMAKE_OBJECTIVE_CXXFLAGS += -std=c++17
+    QMAKE_OBJECTIVE_CXXFLAGS += -std=$$NATRON_CXXSTD
 }
 
 CONFIG(debug) {
@@ -489,16 +497,16 @@ unix {
   symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
-  QMAKE_CXXFLAGS += -std=c++17
-  enable_cxx17.name = CLANG_CXX_LANGUAGE_STANDARD
-  enable_cxx17.value = c++17
-  QMAKE_MAC_XCODE_SETTINGS += enable_cxx17
+  QMAKE_CXXFLAGS += -std=$$NATRON_CXXSTD
+  enable_cxxstd.name = CLANG_CXX_LANGUAGE_STANDARD
+  enable_cxxstd.value = $$NATRON_CXXSTD
+  QMAKE_MAC_XCODE_SETTINGS += enable_cxxstd
 }
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
   QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
-  QMAKE_CXXFLAGS += -std=c++17
+  QMAKE_CXXFLAGS += -std=$$NATRON_CXXSTD
 }
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/

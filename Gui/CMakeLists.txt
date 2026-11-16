@@ -35,7 +35,7 @@ if(NATRON_QT6)
 endif()
 
 set(shiboken_args
-    "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
+    "-std=c++${CMAKE_CXX_STANDARD}" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
     ${PYGUI_INCS}
     "-T../Engine" "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"

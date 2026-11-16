@@ -18,10 +18,13 @@ kept working; which one you use depends on your platform and taste.
 
 .. note::
 
-   **C++17 is required for every build**, not just the CMake one:
-   ``Global/Macros.h`` fails compilation with ``#error "Natron 2.6+ requires
-   C++17"`` if the standard is older. Configure your toolchain accordingly
-   regardless of which build system you use.
+   **C++ standard:** RB-2.6 builds with **C++17 for Qt5 and C++20 for Qt6**,
+   and so do the plug-ins built with it, so the code must compile with both.
+   CMake (``NATRON_QT6``), qmake (``QT_MAJOR_VERSION``, in ``global.pri``) and
+   ``tools/jenkins/compiler-common.sh`` (``QT_VERSION_MAJOR``) pick the
+   standard from the Qt version. ``Global/Macros.h`` fails compilation with
+   ``#error "Natron 2.6+ requires C++17"`` if the standard is older.
+   RB-2.7 is Qt6-only and uses C++20 everywhere.
 
 .. note::
 

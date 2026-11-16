@@ -312,9 +312,11 @@ mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
 cd ~/src/openfx-misc
 env SEEXPR_HOME=/opt/local OSMESA=1 OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++" \
-    CXXFLAGS_EXTRA="-DGL_SILENCE_DEPRECATION -isysroot $(xcrun --sdk macosx --show-sdk-path) -std=c++14" \
+    CXXFLAGS_EXTRA="-DGL_SILENCE_DEPRECATION -isysroot $(xcrun --sdk macosx --show-sdk-path) -std=c++17" \
     CONFIG=release make -j8
 ```
+
+Use `-std=c++17` with a Qt5 Natron and `-std=c++20` with a Qt6 Natron (RB-2.6 policy; the packaging scripts do this automatically).
 
 Bundles are written to `<Plugin>/Darwin-64-<config>/*.ofx.bundle`. To use them, symlink them into a directory and point `OFX_PLUGIN_PATH` at it (or use `/Library/OFX/Plugins`):
 

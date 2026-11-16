@@ -65,8 +65,10 @@ Sanity-check a new OS/compiler combination::
     clang++-mp-<v> -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t | grep -E 'libc\+\+|libomp'
     # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 
-The Natron packaging build compiles with ``-std=c++20`` (poppler requires it);
-C++17 remains the language *minimum* enforced by ``Global/Macros.h``.
+The packaging build compiles Natron and the plug-ins with ``-std=c++17`` for Qt5
+and ``-std=c++20`` for Qt6 (``CXXSTD`` in ``tools/jenkins/compiler-common.sh``,
+from ``QT_VERSION_MAJOR``). openfx-arena compiles its poppler-based reader with
+C++20 in any case (``POPPLER_CXXSTD``), because recent poppler headers require it.
 
 The MacPorts overlay
 --------------------
