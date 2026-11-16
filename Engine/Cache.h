@@ -602,7 +602,11 @@ public:
             // when their last tile is freed (see freeTile()).
             for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end();) {
                 if ( !(*it)->hasUsedTiles() ) {
-                    (*it)->file->remove();
+                    try {
+                        (*it)->file->remove();
+                    } catch (const std::exception& e) {
+                        qDebug() << "Cache: could not delete an unused tile file:" << e.what();
+                    }
                     _cacheFiles.erase(it++);
                 } else {
                     ++it;
@@ -790,7 +794,16 @@ private:
 
             std::size_t nTilesPerFile = std::floor(((double)NATRON_TILE_CACHE_FILE_SIZE_BYTES) / _tileByteSize);
             std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
-            foundAvailableFile->file->resize(cacheFileSize);
+            try {
+                foundAvailableFile->file->resize(cacheFileSize);
+            } catch (...) {
+                // e.g. disk full: don't leave an unlisted file behind
+                try {
+                    foundAvailableFile->file->remove();
+                } catch (...) {
+                }
+                throw;
+            }
             foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
             *dataOffset = 0;
             foundTileIndex = 0;
@@ -837,7 +850,11 @@ private:
             // The tile size changed since this file was created: its tiles can not be reused.
             // Delete the file once none of its tiles is used anymore.
             if ( !(*foundTileFile)->hasUsedTiles() ) {
-                (*foundTileFile)->file->remove();
+                try {
+                    (*foundTileFile)->file->remove();
+                } catch (const std::exception& e) {
+                    qDebug() << "Cache: could not delete an old tile file:" << e.what();
+                }
                 _cacheFiles.erase(foundTileFile);
             }
 
@@ -979,8 +996,9 @@ private:
                 *returnValue = EntryTypePtr();
             }
 
-            // For a tiled cache, all entries must have the same size
-            assert(!_isTiled || (*returnValue)->getSizeInBytesFromParams() == _tileByteSize);
+            // For a tiled cache, entries normally have the cache's tile size. A render that started before a change of
+            // the tile size (see setTiled()) may still create an entry of the previous size: allocateTileCache() then
+            // gives the tile back and stores the entry in RAM if it does not fit (#1126).
 
             if (*returnValue) {
 
