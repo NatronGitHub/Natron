@@ -1,0 +1,14 @@
+--- Source/WTF/wtf/Platform.h.orig
++++ Source/WTF/wtf/Platform.h
+@@ -186,6 +186,11 @@
+ 
+ #endif
+ 
++/* CPU(ARM64) - Apple */
++#if (defined(__arm64__) && defined(__APPLE__)) || defined(__aarch64__)
++#define WTF_CPU_ARM64 1
++#endif
++
+ /* CPU(ARM) - ARM, any version*/
+ #define WTF_ARM_ARCH_AT_LEAST(N) (CPU(ARM) && WTF_ARM_ARCH_VERSION >= N)
+ 

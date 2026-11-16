@@ -6,7 +6,6 @@ if {${os.major} <= 17} {
     PortGroup           muniversal 1.0
 }
 PortGroup               clang_dependency 1.0
-PortGroup               compiler_blacklist_versions 1.0
 
 name                    libomp
 maintainers             {eborisch @eborisch} openmaintainer

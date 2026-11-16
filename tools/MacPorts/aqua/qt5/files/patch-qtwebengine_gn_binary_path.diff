@@ -1,0 +1,37 @@
+--- configure.pri.orig
++++ configure.pri
+@@ -171,9 +171,10 @@
+ }
+ 
+ defineTest(qtConfTest_detectGn) {
+-    gn = $$qtConfFindInPath("gn$$EXE_SUFFIX")
++    gn = "@@GN_BINARY@@"
+     !isEmpty(gn) {
+-        qtRunLoggedCommand("$$gn --version", version)|return(false)
++        #bundled GN does not print version info, print something else instead
++        qtRunLoggedCommand("$$gn --nocolor help switches", version)|return(false)
+         #accept all for now
+         contains(version, ".*"): return(true)
+         qtLog("Gn version too old")
+--- src/core/gn_run.pro.orig
++++ src/core/gn_run.pro
+@@ -25,7 +25,7@@
+ QT_TOOL_ENV =
+ 
+ build_pass|!debug_and_release {
+-    gn_binary = gn
++    gn_binary = "@@GN_BINARY@@"
+ 
+     runninja.target = run_ninja
+     QMAKE_EXTRA_TARGETS += runninja
+--- src/pdf/gn_run.pro.orig
++++ src/pdf/gn_run.pro
+@@ -24,7 +24,7@@
+ QT_TOOL_ENV =
+ 
+ build_pass|!debug_and_release {
+-    gn_binary = gn
++    gn_binary = "@@GN_BINARY@@"
+ 
+     runninja.target = run_ninja
+     QMAKE_EXTRA_TARGETS += runninja

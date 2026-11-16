@@ -1,0 +1,13 @@
+--- qmake/Makefile.unix.macos.orig	2017-06-28 02:54:29.000000000 -0700
++++ qmake/Makefile.unix.macos	2017-08-27 13:44:44.000000000 -0700
+@@ -2,8 +2,8 @@
+ CARBON_LFLAGS = -framework ApplicationServices
+ CARBON_CFLAGS = -fconstant-cfstrings
+ 
+-EXTRA_CXXFLAGS = $(CARBON_CFLAGS)
+-EXTRA_LFLAGS = $(COCOA_LFLAGS) $(CARBON_LFLAGS)
++EXTRA_CXXFLAGS = __MACPORTS_CXX_ARCH_FLAGS__ $(CARBON_CFLAGS)
++EXTRA_LFLAGS = __MACPORTS_LD_ARCH_FLAGS__ $(COCOA_LFLAGS) $(CARBON_LFLAGS)
+ 
+ QTOBJS2 = \
+     qsettings_mac.o \

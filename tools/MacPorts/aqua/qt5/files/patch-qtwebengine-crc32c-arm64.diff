@@ -1,0 +1,20 @@
+See: https://chromium-review.googlesource.com/c/chromium/src/+/4137218
+
+Fixes:
+../../3rdparty/chromium/third_party/crc32c/src/src/crc32c_arm64.cc:87:20:
+
+error: always_inline function 'vmull_p64' requires target feature 'aes', but would be inlined into function 'ExtendArm64' that is compiled without support for 'aes'
+
+--- src/3rdparty/chromium/third_party/crc32c/BUILD.gn.orig	2025-04-23 12:00:55
++++ src/3rdparty/chromium/third_party/crc32c/BUILD.gn	2025-09-22 22:17:28
+@@ -122,6 +122,10 @@
+         "-target-feature",
+         "-Xclang",
+         "+crypto",
++        "-Xclang",
++        "-target-feature",
++        "-Xclang",
++        "+aes",
+       ]
+     } else {
+       cflags = [ "-march=armv8-a+crc+crypto" ]

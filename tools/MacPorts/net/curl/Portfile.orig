@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.21.0
-checksums                       rmd160  df939533d1123463686413c87b4c5c4079466536 \
-                                sha256  aa1b66a70eace83dc624508745646c08ae561de512ab403adffb93ac87fc72e6 \
-                                size    2882336
+version                         8.23.0
+checksums                       rmd160  3cfb4da5138fecb8483582adea9c024d3765bf41 \
+                                sha256  8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5 \
+                                size    2990916
 
 categories                      net www
 platforms                       darwin freebsd
@@ -35,7 +35,7 @@ checksums-prepend               ${curl_distfile}
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               path:bin/pkg-config:pkgconfig
 
@@ -49,7 +49,6 @@ if {${name} eq ${subport}} {
                                 --without-libgsasl \
                                 --without-libidn2 \
                                 --without-libpsl \
-                                --without-librtmp \
                                 --without-libssh2 \
                                 --without-mbedtls \
                                 --without-nghttp2 \
@@ -125,6 +124,7 @@ if {${name} eq ${subport}} {
             CODE_OF_CONDUCT.md \
             CONTRIBUTE.md \
             CURL-DISABLE.md \
+            DEPENDENCIES.md \
             DEPRECATE.md \
             FAQ.md \
             FEATURES.md \
@@ -132,7 +132,6 @@ if {${name} eq ${subport}} {
             HELP-US.md \
             HISTORY.md \
             HTTP-COOKIES.md \
-            INTERNALS.md \
             KNOWN_BUGS.md \
             MAIL-ETIQUETTE.md \
             ROADMAP.md \
@@ -181,7 +180,12 @@ if {${name} eq ${subport}} {
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-delete   --without-ssl
         configure.args-replace  --without-gnutls --with-gnutls
-        configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        if {[variant_isset sectrust]} {
+            # curl tries a CA bundle before SecTrust, so leave it out.
+            configure.args-append   --without-ca-bundle
+        } else {
+            configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        }
     }
 
     variant mbedtls conflicts darwinssl gnutls ssl wolfssl description {Allow secure connections using mbed TLS (formerly PolarSSL)} {
@@ -241,11 +245,6 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-libpsl --with-libpsl
     }
 
-    variant rtmp description {Support RTMP media streams} {
-        depends_lib-append      port:rtmpdump
-        configure.args-replace  --without-librtmp --with-librtmp
-    }
-
     variant sftp_scp description {Support SFTP/SCP connections via libssh2} {
         depends_lib-append      port:libssh2
         configure.args-replace  --without-libssh2 --with-libssh2
@@ -256,7 +255,12 @@ if {${name} eq ${subport}} {
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-delete   --without-ssl
         configure.args-replace  --without-openssl --with-openssl
-        configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        if {[variant_isset sectrust]} {
+            # curl tries a CA bundle before SecTrust, so leave it out.
+            configure.args-append   --without-ca-bundle
+        } else {
+            configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        }
     }
 
     variant zstd description {Support zstd compression} {
@@ -305,7 +309,7 @@ if {${name} eq ${subport}} {
 
 subport curl-ca-bundle {
     # Also increase the revision of privoxy-pki-bundle whenever curl-ca-bundle contents change.
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -331,11 +335,11 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1783270248
+    set certdata_updated        1792667555
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         ae3b4f24dc1b54f8b7770eea1e44d7123ebdb131
+    set certdata_commit         fee2fc492a7d62689a724c01c2b810cd49f43212
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20260612
+    set certdata_date           20261022
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
@@ -356,9 +360,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  2a5e1e82fbac7c14e7739db74efc880682a820b7 \
-                                sha256  fae8fabae99a59fe9fc8d6e1599fd8a173b17e357ed51b80b44a4b620f4f6ac6 \
-                                size    279727
+                                rmd160  8e3f5ffa6337bbfef0d89028b7788079944a258f \
+                                sha256  c59677cf2cd03854bf491a5f41ecb02cedec179338ad702ad19d5cef3d08cb6b \
+                                size    285559
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/scripts/mk-ca-bundle.pl

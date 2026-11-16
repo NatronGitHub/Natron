@@ -1,17 +1,17 @@
---- Portfile.orig	2026-06-18 13:37:56
-+++ Portfile	2026-07-16 09:01:49
-@@ -3,50 +3,70 @@
+--- Portfile.orig	2026-11-14 12:04:17
++++ Portfile	2026-11-14 12:04:34
+@@ -3,51 +3,70 @@
  PortSystem          1.0
  
  name                libraw
--version             0.21.4
+-version             0.22.2
 -revision            0
 +version             0.18.13
 +set demosaicversion 0.18.8
  
--checksums           rmd160  17e00654b27c95f537e320a6ba2579fab5a17fa4 \
--                    sha256  6be43f19397e43214ff56aab056bf3ff4925ca14012ce5a1538a172406a09e63 \
--                    size    1383350
+-checksums           rmd160  67d0d08c93eca06d84b401d8ab1698e8b36f2abf \
+-                    sha256  de86b035655accff8d4010f1a221fdf50d353cb7b1422ba26f14a0db92612cfa \
+-                    size    1682962
 -
  description         Library for RAW image manipulation
  long_description    A library for reading RAW files obtained from digital photo \
@@ -19,9 +19,11 @@
  
  categories          graphics
 -license             {LGPL-2.1 CDDL}
+-maintainers         {@Dave-Allured noaa.gov:dave.allured} \
+-                    openmaintainer
 +platforms           darwin
 +license             LGPL-2.1 CDDL GPL-2+ GPL-3+
- maintainers         nomaintainer
++maintainers         nomaintainer
  
  homepage            https://www.libraw.org
  master_sites        ${homepage}/data/

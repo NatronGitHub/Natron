@@ -1,0 +1,16 @@
+diff --git a/openmp/runtime/src/kmp_wrapper_getpid.h b/openmp/runtime/src/kmp_wrapper_getpid.h
+index 32ede3ed715b..3ae9947299e3 100644
+--- runtime/src/kmp_wrapper_getpid.h.orig
++++ runtime/src/kmp_wrapper_getpid.h
+@@ -22,7 +22,11 @@
+ #include <unistd.h>
+ #if KMP_OS_DARWIN
+ // OS X
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+ #define __kmp_gettid() pthread_mach_thread_np(pthread_self())
++#else
++#define __kmp_gettid() syscall(SYS_gettid)
++#endif
+ #elif KMP_OS_FREEBSD || KMP_OS_DRAGONFLY
+ #include <pthread_np.h>
+ #define __kmp_gettid() pthread_getthreadid_np()

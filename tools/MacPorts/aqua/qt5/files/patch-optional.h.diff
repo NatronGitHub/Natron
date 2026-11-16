@@ -1,0 +1,38 @@
+--- src/3rdparty/chromium/base/optional.h.orig
++++ src/3rdparty/chromium/base/optional.h
+@@ -358,8 +358,14 @@
+ };
+ 
+ // Helper to conditionally enable converting constructors and assign operators.
++// The U == T case is excluded up front (and short-circuited by conjunction):
++// the converting constructors/assignments are never meant to apply to
++// Optional<T> itself, and evaluating std::is_constructible<T, Optional<T>&>
++// here can recurse back into this very check for some T (e.g. a T with
++// implicit conversion operators), which newer libc++/clang reject.
+ template <typename T, typename U>
+-using IsConvertibleFromOptional =
++using IsConvertibleFromOptional = conjunction<
++    negation<std::is_same<T, U>>,
+     disjunction<std::is_constructible<T, Optional<U>&>,
+                 std::is_constructible<T, const Optional<U>&>,
+                 std::is_constructible<T, Optional<U>&&>,
+@@ -367,15 +373,16 @@
+                 std::is_convertible<Optional<U>&, T>,
+                 std::is_convertible<const Optional<U>&, T>,
+                 std::is_convertible<Optional<U>&&, T>,
+-                std::is_convertible<const Optional<U>&&, T>>;
++                std::is_convertible<const Optional<U>&&, T>>>;
+ 
+ template <typename T, typename U>
+-using IsAssignableFromOptional =
++using IsAssignableFromOptional = conjunction<
++    negation<std::is_same<T, U>>,
+     disjunction<IsConvertibleFromOptional<T, U>,
+                 std::is_assignable<T&, Optional<U>&>,
+                 std::is_assignable<T&, const Optional<U>&>,
+                 std::is_assignable<T&, Optional<U>&&>,
+-                std::is_assignable<T&, const Optional<U>&&>>;
++                std::is_assignable<T&, const Optional<U>&&>>>;
+ 
+ // Forward compatibility for C++17.
+ // Introduce one more deeper nested namespace to avoid leaking using std::swap.
