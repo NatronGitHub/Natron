@@ -76,6 +76,10 @@ target_link_libraries(NatronGui
     PRIVATE
         qhttpserver
 )
+if(NATRON_USE_OPENMP)
+    # for the OpenMP version shown in the About window
+    target_link_libraries(NatronGui PRIVATE OpenMP::OpenMP_CXX)
+endif()
 target_include_directories(NatronGui
     PRIVATE
         ${PYSIDE_INCLUDE_DIRS}/QtCore
@@ -91,7 +95,5 @@ target_include_directories(NatronGui
 )
 target_compile_definitions(NatronGui
     PRIVATE
-        NATRON_CUSTOM_BUILD_USER_TOKEN="${BUILD_USER_NAME}"
-        NATRON_BUILD_NUMBER=0
         QT_NO_KEYWORDS
 )

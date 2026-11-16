@@ -173,4 +173,8 @@ target_compile_definitions(openMVG
         OPENMVG_STD_SHARED_PTR
 )
 target_link_libraries(openMVG PUBLIC Ceres::ceres)
+if(NATRON_USE_OPENMP)
+    target_compile_definitions(openMVG PUBLIC OPENMVG_USE_OPENMP)
+    target_link_libraries(openMVG PUBLIC OpenMP::OpenMP_CXX)
+endif()
 set_target_properties(openMVG PROPERTIES POSITION_INDEPENDENT_CODE ON)
