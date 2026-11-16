@@ -283,7 +283,11 @@ DocumentWindow::ddeExecute(MSG* message,
         return true;
     }
 
-    QRegularExpression regCommand( QString::fromUtf8("^\\[(\\w+)\\((.*)\\)\\]$") );
+    // \A...\z and DotMatchesEverythingOption: QRegExp::exactMatch() matched
+    // the whole string and its '.' matched newlines; PCRE's '.' does not,
+    // and its '$' also matches before a final newline.
+    QRegularExpression regCommand( QString::fromUtf8("\\A\\[(\\w+)\\((.*)\\)\\]\\z"),
+                                   QRegularExpression::DotMatchesEverythingOption );
     const QRegularExpressionMatch commandMatch = regCommand.match(command);
     if ( commandMatch.hasMatch() ) {
         executeDdeCommand( commandMatch.captured(1), commandMatch.captured(2) );
@@ -346,7 +350,8 @@ void
 DocumentWindow::executeDdeCommand(const QString& command,
                                   const QString& params)
 {
-    QRegularExpression regCommand( QString::fromUtf8("^\"(.*)\"$") );
+    QRegularExpression regCommand( QString::fromUtf8("\\A\"(.*)\"\\z"),
+                                   QRegularExpression::DotMatchesEverythingOption );
     const QRegularExpressionMatch paramsMatch = regCommand.match(params);
     bool singleCommand = paramsMatch.hasMatch();
 

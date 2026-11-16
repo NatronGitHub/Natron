@@ -505,7 +505,7 @@ findBackups(const QString & filePath)
         ret.append(filePath);
     }
     // find files matching filePath.~[0-9]+~
-    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~$") );
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z") );
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QDirIterator it(fileInfo.dir());
@@ -519,8 +519,9 @@ findBackups(const QString & filePath)
 
         // If the filename contains target string - put it in the hitlist
         QString fn = file.fileName();
-        // The pattern ends with $, so there is at most one match and
-        // lastIndexIn() is just that match.
+        // The pattern ends with \z (PCRE's $ would also match before a final
+        // newline), so there is at most one match and lastIndexIn() is just
+        // that match.
         QRegularExpressionMatch backupMatch = rx.match(fn);
         if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
              ( backupMatch.capturedStart() == fileName.size() ) ) {
@@ -537,7 +538,7 @@ findBackups(const QString & filePath)
 static QString
 nextBackup(const QString & filePath)
 {
-    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~$") );
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z") );
     QRegularExpressionMatch match = rx.match(filePath);
     if ( match.hasMatch() ) {
         int i = match.captured(1).toInt();
