@@ -300,11 +300,15 @@ GuiApplicationManager::initializeQApp(int &argc,
 #endif
         app = new Application(this, argc, argv);
     }
-    // QDesktopWidget is gone in Qt6; QScreen carries the same values and exists
-    // in Qt 5.15. Keep the int truncation the QDesktopWidget accessors did.
-    QScreen* screen = QGuiApplication::primaryScreen();
-    int dpiX = screen->logicalDotsPerInchX();
-    int dpiY = screen->logicalDotsPerInchY();
+    // QDesktopWidget is gone in Qt6. Its logicalDpiX()/logicalDpiY() rounded
+    // the primary screen's QScreen values, and returned 72 when there was no
+    // screen. setCurrentLogicalDPI() takes doubles, so pass them unrounded.
+    double dpiX = 72.;
+    double dpiY = 72.;
+    if ( QScreen* screen = QGuiApplication::primaryScreen() ) {
+        dpiX = screen->logicalDotsPerInchX();
+        dpiY = screen->logicalDotsPerInchY();
+    }
 
     setCurrentLogicalDPI(dpiX, dpiY);
 
