@@ -129,12 +129,12 @@ When upstream MacPorts moves, re-synchronise carefully:
 
 #. **Upgrade the installed ports.** Either:
 
-   - ``sudo port -v upgrade outdated`` — quickest, but **risky**: it can pull
-     upstream revisions that conflict with the pins or trigger long rebuilds of
-     the whole dependency graph; or
-   - **(preferred)** re-run the full ``sudo port install ...`` sequence from
-     ``INSTALL_MACOS.md``. It is idempotent, re-asserts the exact variants and
-     pins, and is the closest match to how the official binaries are built.
+   - ``sudo port -v upgrade outdated``, after ``./sync.sh`` (it can trigger long
+     rebuilds of the dependency graph; upgrade port by port if it fails); then
+   - reinstall the pinned ports that came out newer (``sudo port -f uninstall
+     <port>`` and install it again with the same variants), as
+     ``tools/tart/provision.sh`` does in its ``update`` and ``pins`` steps.
+     Re-running ``sudo port install ...`` does not upgrade installed ports.
 
 Running the build
 ------------------
