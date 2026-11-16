@@ -44,6 +44,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
+#include "Global/QtCompat.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -144,22 +145,23 @@ CompleterLineEdit::filterText(const QString & txt)
             sl.push_front(it->second.second);
         }
     } else {
-        // Match the typed characters in order, with anything in between:
-        // "grd" gives "g.*r.*d".
-        QString pattern;
+        // Match the typed characters in order, with anything in between, as the
+        // QRegExp::WildcardUnix pattern "*g*r*d*" did: the typed characters are
+        // themselves wildcards ('*', '?', "[...]").
+        QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            if (i > 0) {
-                pattern += QLatin1String(".*");
-            }
-            pattern += QRegularExpression::escape( QString(txt[i]) );
+            wildcard.push_back( QLatin1Char('*') );
+            wildcard.push_back(txt[i]);
         }
+        wildcard.push_back( QLatin1Char('*') );
+        // anchored: matching the whole label is the same as the old contains()
+        const QString pattern = QtCompat::wildcardToRegularExpression(wildcard);
         QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
 
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
         // exactMatch() used to match the whole name.
-        const QRegularExpression exprWhole( QRegularExpression::anchoredPattern( QLatin1String(".*") + pattern + QLatin1String(".*") ),
-                                            QRegularExpression::CaseInsensitiveOption );
+        const QRegularExpression& exprWhole = expr; // already anchored
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
             QRegularExpressionMatch match = exprWhole.match(it->second.first);
             if ( match.hasMatch() ) {

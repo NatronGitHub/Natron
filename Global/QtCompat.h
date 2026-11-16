@@ -108,7 +108,8 @@ wildcardToRegularExpression(const QString & wildcard)
     }
     rx += QRegularExpression::escape(literal);
 
-    return QRegularExpression::anchoredPattern(rx);
+    // "(?s)": '.' matches newlines too, as '*' and '?' did with QRegExp
+    return QRegularExpression::anchoredPattern(QLatin1String("(?s)") + rx);
 }
 
 // Define compatibility typedefs so code builds with Qt5 & Qt6

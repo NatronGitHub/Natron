@@ -287,7 +287,7 @@ DocumentWindow::ddeExecute(MSG* message,
     // the whole string and its '.' matched newlines; PCRE's '.' does not,
     // and its '$' also matches before a final newline.
     QRegularExpression regCommand( QString::fromUtf8("\\A\\[(\\w+)\\((.*)\\)\\]\\z"),
-                                   QRegularExpression::DotMatchesEverythingOption );
+                                   QRegularExpression::DotMatchesEverythingOption | QRegularExpression::UseUnicodePropertiesOption );
     const QRegularExpressionMatch commandMatch = regCommand.match(command);
     if ( commandMatch.hasMatch() ) {
         executeDdeCommand( commandMatch.captured(1), commandMatch.captured(2) );

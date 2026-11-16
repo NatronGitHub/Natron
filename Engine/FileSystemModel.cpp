@@ -34,6 +34,7 @@
 #endif
 
 #include "Global/Macros.h"
+#include "Global/QtCompat.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -1042,7 +1043,7 @@ FileSystemModel::setRegexpFilters(const QString& filters)
                 ++i;
             }
             if ( regExp != QString( QLatin1Char('*') ) ) {
-                QRegularExpression rx(QRegularExpression::wildcardToRegularExpression(regExp),
+                QRegularExpression rx(QtCompat::wildcardToRegularExpression(regExp),
                                       QRegularExpression::CaseInsensitiveOption);
                 if ( rx.isValid() ) {
                     _imp->regexps.push_back(rx);

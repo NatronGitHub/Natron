@@ -506,7 +506,7 @@ findBackups(const QString & filePath)
         ret.append(filePath);
     }
     // find files matching filePath.~[0-9]+~
-    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z") );
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QDirIterator it(fileInfo.dir());
@@ -539,7 +539,7 @@ findBackups(const QString & filePath)
 static QString
 nextBackup(const QString & filePath)
 {
-    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z") );
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
     QRegularExpressionMatch match = rx.match(filePath);
     if ( match.hasMatch() ) {
         int i = match.captured(1).toInt();
