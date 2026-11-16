@@ -48,8 +48,8 @@
 NATRON_NAMESPACE_ENTER
 
 // QWidget::nativeEvent hands back a long* on Qt5 and a qintptr* on Qt6. Those
-// are distinct types on 64 bit Windows, so an override naming the wrong one
-// quietly becomes a new virtual instead of failing to compile.
+// are distinct types on Windows, so an override naming the wrong one would
+// quietly become a new virtual; OVERRIDE makes that a compile error.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 typedef qintptr NativeEventResult;
 #else
@@ -147,7 +147,7 @@ protected:
     /**
      * reimpl as DDE events come as windows events and are not translated by Qt.
      */
-    virtual bool nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result);
+    virtual bool nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result) OVERRIDE;
 
     // —— helpers for the file registration ——————————————————
     /**
