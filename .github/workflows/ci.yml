@@ -2,16 +2,21 @@ name: Tests
 
 on:
   workflow_dispatch: {}
+  # one run per change: push only on the main and release branches and on tags,
+  # feature branches run through their pull request
   push:
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
+    tags:
+    - '*'
     paths-ignore:
       - 'Documentation/**'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
     paths-ignore:
       - 'Documentation/**'
 
@@ -19,11 +24,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   unix_test:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -115,6 +122,8 @@ jobs:
         run: exit 1
 
   win-test:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     # Known failure (#1147): the embedded Python 3.14 of Tests.exe
@@ -226,6 +235,7 @@ jobs:
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Test macos-15 arm64 MacPorts Python 3.10
     runs-on: macos-15
     timeout-minutes: 360
