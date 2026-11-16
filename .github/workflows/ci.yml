@@ -129,9 +129,6 @@ jobs:
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # Known failure (#1147): the embedded Python 3.14 of Tests.exe
-    # cannot import shiboken2 on UCRT64. Don't turn RB-2.6 red until it's fixed.
-    continue-on-error: true
     defaults:
       run:
         shell: msys2 {0}
@@ -264,12 +261,11 @@ jobs:
     # port list below changes).
     # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
     # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
-    # Windows: its tests are allowed to fail until #1147 is fixed, so only require that it ran.
     needs: [changes, unix_test, win-test]
     if: >-
       !cancelled() && (
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result != 'cancelled' && needs.win-test.result != 'skipped' &&
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.10
     runs-on: macos-15
