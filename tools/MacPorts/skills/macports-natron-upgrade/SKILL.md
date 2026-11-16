@@ -47,7 +47,6 @@ These overlay ports are deliberately older than upstream, or carry patches that 
 | port | pinned | why |
 |---|---|---|
 | `graphics/libraw` | 0.22.3 + `patch-libraw-0.22.3-gpl-demosaic-packs.diff` | upstream LibRaw dropped the GPL demosaic packs in 0.19; the patch restores them (`+gpl2`: AHD-Mod, AFD, VCD, Mixed, LMMSE; `+gpl3`: AMaZE, not shipped). When bumping the version, check that the patch still applies and that `make check` (tests/demosaic_test) reports the packs; rev-bump openimageio so it rebuilds against the same libraw |
-| `multimedia/ffmpeg` | 8.1.2 | FFmpeg 9 removed `AVCodec::pix_fmts`, which openfx-io uses (until openfx-io switches to `avcodec_get_supported_config()`) |
 
 MacPorts never downgrades: if a pinned port was installed in a newer version, `sudo port -f uninstall <port>` and install it again with the same variants.
 
