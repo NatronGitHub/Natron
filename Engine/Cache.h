@@ -524,6 +524,10 @@ private:
     // When set these are used for fast search of a free tile
     TileCacheFileWPtr _nextAvailableCacheFile;
     int _nextAvailableCacheFileIndex;
+
+    // Index used to name the next tile cache file, protected by _tileCacheMutex.
+    // It only increases, so that a new file never reuses the name of an existing one.
+    int _nextCacheFileIndex;
 public:
 
 
@@ -557,6 +561,7 @@ public:
         , _cacheFiles()
         , _nextAvailableCacheFile()
         , _nextAvailableCacheFileIndex(-1)
+        , _nextCacheFileIndex(0)
     {
         _signalEmitter = std::make_shared<CacheSignalEmitter>();
     }
@@ -590,6 +595,22 @@ public:
     void setTiled(bool tiled, std::size_t tileByteSize)
     {
         QMutexLocker k(&_tileCacheMutex);
+        if (tileByteSize != _tileByteSize) {
+            // Tiles of the previous size can no longer be allocated (see allocTile()).
+            // Delete the files that have no tile in use. The files that still have tiles used by
+            // live entries are kept, so that these entries remain valid, and they are deleted
+            // when their last tile is freed (see freeTile()).
+            for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end();) {
+                if ( !(*it)->hasUsedTiles() ) {
+                    (*it)->file->remove();
+                    _cacheFiles.erase(it++);
+                } else {
+                    ++it;
+                }
+            }
+            _nextAvailableCacheFile.reset();
+            _nextAvailableCacheFileIndex = -1;
+        }
         _isTiled = tiled;
         _tileByteSize = tileByteSize;
     }
@@ -637,11 +658,16 @@ private:
         }
         for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
             if ((*it)->file->path() == filepath) {
-                int index = dataOffset / _tileByteSize;
+                std::size_t index = dataOffset / (*it)->tileByteSize;
 
-                // The dataOffset should be a multiple of the tile size
-                assert(_tileByteSize * index == dataOffset);
-                assert(!(*it)->usedTiles[index]);
+                // The dataOffset should be a multiple of the tile size, and the tile
+                // must not be used by another entry (this could happen with a cache
+                // written by an older version, where two files could share a name).
+                if ( (*it)->tileByteSize * index != dataOffset ||
+                     index >= (*it)->usedTiles.size() ||
+                     (*it)->usedTiles[index] ) {
+                    return TileCacheFilePtr();
+                }
                 (*it)->usedTiles[index] = true;
                 return *it;
             }
@@ -649,16 +675,22 @@ private:
         if (!fileExists(filepath)) {
             return TileCacheFilePtr();
         } else {
-            TileCacheFilePtr ret = std::make_shared<TileCacheFile>();
-            ret->file = std::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
             std::size_t nTilesPerFile = std::floor( ( (double)NATRON_TILE_CACHE_FILE_SIZE_BYTES ) / _tileByteSize );
-            ret->usedTiles.resize(nTilesPerFile, false);
-            int index = dataOffset / _tileByteSize;
+            std::size_t index = dataOffset / _tileByteSize;
 
             // The dataOffset should be a multiple of the tile size
-            assert(_tileByteSize * index == dataOffset);
-            assert(index >= 0 && index < (int)ret->usedTiles.size());
-            assert(!ret->usedTiles[index]);
+            if (_tileByteSize * index != dataOffset || index >= nTilesPerFile) {
+                return TileCacheFilePtr();
+            }
+            TileCacheFilePtr ret = std::make_shared<TileCacheFile>();
+            ret->file = std::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
+            ret->tileByteSize = _tileByteSize;
+            // Make sure that all tiles of the file are mapped, since any of them may be handed out by allocTile()
+            std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
+            if (ret->file->size() < cacheFileSize) {
+                ret->file->resize(cacheFileSize);
+            }
+            ret->usedTiles.resize(nTilesPerFile, false);
             ret->usedTiles[index] = true;
             _cacheFiles.insert(ret);
             return ret;
@@ -690,7 +722,10 @@ private:
         int foundTileIndex = -1;
         {
             foundAvailableFile = _nextAvailableCacheFile.lock();
-            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
+            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile &&
+                foundAvailableFile->tileByteSize == _tileByteSize &&
+                _nextAvailableCacheFileIndex < (int)foundAvailableFile->usedTiles.size() &&
+                !foundAvailableFile->usedTiles[_nextAvailableCacheFileIndex]) {
                 foundTileIndex = _nextAvailableCacheFileIndex;
                 *dataOffset = foundTileIndex * _tileByteSize;
                 _nextAvailableCacheFileIndex = -1;
@@ -698,10 +733,17 @@ private:
             } else {
                 foundTileIndex = -1;
                 foundAvailableFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+                _nextAvailableCacheFile.reset();
             }
         }
         if (foundTileIndex == -1) {
             for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                // Files with tiles of another size (the tile size changed) are only kept
+                // until their last tile is freed: never allocate in them.
+                if ( (*it)->tileByteSize != _tileByteSize ) {
+                    continue;
+                }
                 for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
                     if (!(*it)->usedTiles[i])  {
                         foundTileIndex = i;
@@ -719,11 +761,32 @@ private:
         if (!foundAvailableFile) {
             // Create a file if all space is taken
             foundAvailableFile = std::make_shared<TileCacheFile>();
-            int nCacheFiles = (int)_cacheFiles.size();
-            std::stringstream cacheFilePathSs;
-            cacheFilePathSs << getCachePath().toStdString() << "/CachePart" << nCacheFiles;
-            std::string cacheFilePath = cacheFilePathSs.str();
-            foundAvailableFile->file = std::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate);
+            foundAvailableFile->tileByteSize = _tileByteSize;
+            // Pick a name that is not used by any file of the cache nor by any file on disk:
+            // reopening an existing file would hand out tiles that are still used by
+            // other entries. The number of files cannot be used as an index, since
+            // there may be gaps in the numbering (files are removed individually).
+            // The file is created exclusively, so it fails if the file exists.
+            std::string cachePath = getCachePath().toStdString();
+            for (;;) {
+                std::stringstream cacheFilePathSs;
+                cacheFilePathSs << cachePath << "/CachePart" << _nextCacheFileIndex;
+                ++_nextCacheFileIndex;
+                std::string cacheFilePath = cacheFilePathSs.str();
+                bool nameUsed = false;
+                for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                    if ( (*it)->file->path() == cacheFilePath ) {
+                        nameUsed = true;
+                        break;
+                    }
+                }
+                if ( nameUsed || fileExists(cacheFilePath) ) {
+                    continue;
+                }
+                // This throws if the file could not be created; allocateTileCache() then falls back on RAM
+                foundAvailableFile->file = std::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate);
+                break;
+            }
 
             std::size_t nTilesPerFile = std::floor(((double)NATRON_TILE_CACHE_FILE_SIZE_BYTES) / _tileByteSize);
             std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
@@ -757,13 +820,29 @@ private:
         if (foundTileFile == _cacheFiles.end()) {
             return;
         }
-        int index = dataOffset / _tileByteSize;
+        // Use the tile size of the file, which may differ from the current tile size of the cache
+        const std::size_t fileTileByteSize = (*foundTileFile)->tileByteSize;
+        int index = dataOffset / fileTileByteSize;
 
         // The dataOffset should be a multiple of the tile size
-        assert(_tileByteSize * index == dataOffset);
+        assert(fileTileByteSize * index == dataOffset);
         assert(index >= 0 && index < (int)(*foundTileFile)->usedTiles.size());
         assert((*foundTileFile)->usedTiles[index]);
+        if ( index < 0 || index >= (int)(*foundTileFile)->usedTiles.size() ) {
+            return;
+        }
         (*foundTileFile)->usedTiles[index] = false;
+
+        if (fileTileByteSize != _tileByteSize) {
+            // The tile size changed since this file was created: its tiles can not be reused.
+            // Delete the file once none of its tiles is used anymore.
+            if ( !(*foundTileFile)->hasUsedTiles() ) {
+                (*foundTileFile)->file->remove();
+                _cacheFiles.erase(foundTileFile);
+            }
+
+            return;
+        }
 
         // If the file does not have any tile associated, remove it
         // A use_count of 2 means that the tile file is only referenced by the cache itself and the entry calling
@@ -775,7 +854,7 @@ private:
                 _cacheFiles.erase(foundTileFile);
             } else {
                 // Invalidate this portion of the cache
-                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, _tileByteSize);
+                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, fileTileByteSize);
             }
         } else {
             _nextAvailableCacheFile = *foundTileFile;
