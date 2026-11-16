@@ -1,6 +1,6 @@
 ---
 name: macports-natron-upgrade
-description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that the pinned ports (libraw, ffmpeg) keep their Portfile.
+description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that the pinned port (libraw) keeps its Portfile.
 version: 1.0.0
 tags: [skill, macports, natron, portfile, upgrade]
 ---

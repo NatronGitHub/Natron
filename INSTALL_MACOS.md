@@ -298,7 +298,7 @@ sudo port -v upgrade outdated
 
 `upgrade outdated` can pull in new dependencies or variants. If it fails or picks up unwanted changes, upgrade port by port, or re-run the install steps above (see `Documentation/source/maintainers/build-macos.rst`).
 
-FFmpeg 9 enables `+vmaf` by default, except with `+natronmini`. An ffmpeg upgraded from an older install keeps its variants, so if `port installed ffmpeg` shows `+vmaf`, reinstall it: `sudo port -f uninstall ffmpeg && sudo port install ffmpeg +gpl2 +highbitdepth +natronmini`.
+FFmpeg 9 enables `+vmaf` by default, except with `+natronmini`. An ffmpeg 9 installed before this overlay change may have `+vmaf`: if `port installed ffmpeg` shows it, reinstall it: `sudo port -f uninstall ffmpeg && sudo port install ffmpeg +gpl2 +highbitdepth +natronmini`.
 
 MacPorts never downgrades a port. If a pinned port was installed in a newer version, uninstall it (`sudo port -f uninstall libraw`) and install it again with the same variants. To reclaim disk space afterwards: `sudo port reclaim`, or `sudo port clean --all installed`. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
 
