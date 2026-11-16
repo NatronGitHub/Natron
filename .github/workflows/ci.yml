@@ -288,8 +288,8 @@ jobs:
             sudo tar -xpf ~/macports-cache/opt-local.tar -C /
             rm -rf ~/macports-cache
             if [ "${{ steps.macports-cache.outputs.cache-hit }}" != true ]; then
-              # partial hit (restore-keys): bring the restored ports up to date
-              for i in 1 2 3; do sudo port -N selfupdate && break; [ $i = 3 ] && exit 1; sleep 30; done
+              # partial hit (restore-keys): the restored ports are brought up to date
+              # once the overlay is in place (its sources.conf already lists it)
               echo "UPGRADE_OUTDATED=1" >> "$GITHUB_ENV"
             fi
           else
@@ -322,6 +322,7 @@ jobs:
           # -N: non-interactive. Binary archives are used when available
           # (all of these have one for macOS 15 arm64 with default variants).
           if [ "${UPGRADE_OUTDATED:-0}" = 1 ]; then
+            for i in 1 2 3; do sudo port -N selfupdate && break; [ $i = 3 ] && exit 1; sleep 30; done
             sudo port -N upgrade outdated || { echo "::error::port upgrade outdated failed"; exit 1; }
           fi
           for i in 1 2 3; do
