@@ -47,7 +47,6 @@ build() {
       --prefix=${MINGW_PREFIX}/libraw-gpl2 \
       --build=${MINGW_CHOST} \
       --host=${MINGW_CHOST} \
-      --enable-jasper \
       --enable-lcms \
       --enable-demosaic-pack-gpl2="${srcdir}/${_realname}-demosaic-pack-GPL2-0.18.8"
 
@@ -58,6 +57,7 @@ check() {
   cd "${srcdir}/build-${MINGW_CHOST}"
   # tests/demosaic_test must report "GPL2: yes, GPL3: no"
   make check
+  grep -q "GPL2: yes, GPL3: no" tests/demosaic_test.log || { cat tests/demosaic_test.log; return 1; }
 }
 
 package() {

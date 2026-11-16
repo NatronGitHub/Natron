@@ -273,7 +273,7 @@ If `check.sh` reports obsolete Portfiles, reintegrate upstream into the overlay 
 | port | pinned version | reason |
 |---|---|---|
 | `lang/libomp` | 11.1.0 | OpenMP regression affecting Natron |
-| `graphics/libraw` | 0.22.3 + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch; keep it when reintegrating upstream |
+| `graphics/libraw` | 0.22.3 (upstream: 0.22.2) + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch; keep it when reintegrating upstream |
 | `multimedia/ffmpeg` | 8.1.2 | FFmpeg 9 removed `AVCodec::pix_fmts`, which openfx-io uses |
 | `graphics/opencolorio` | 2.6.0 (ahead of upstream) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
 

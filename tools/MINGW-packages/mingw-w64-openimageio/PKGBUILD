@@ -4,7 +4,8 @@ _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgver=2.5.13.1
-pkgrel=99.2   # rebuilt against natron_libraw-gpl2 0.22.3
+# pkgrel 99.2: rebuilt against natron_libraw-gpl2 0.22.3
+pkgrel=99.2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
@@ -23,7 +24,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
          "${MINGW_PACKAGE_PREFIX}-libpng"
-         "${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2"
+         "${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2>=0.22.3"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
          "${MINGW_PACKAGE_PREFIX}-libwebp"
          "${MINGW_PACKAGE_PREFIX}-natron_opencolorio-git"
