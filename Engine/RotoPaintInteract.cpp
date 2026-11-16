@@ -753,8 +753,13 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
     if ( (selectedRole == eRotoRoleBezierEdition) &&
          ( ( selectedTool == eRotoToolDrawBezier) || ( selectedTool == eRotoToolOpenBezier) ) &&
          builtBezier &&
+         !builtBezier->isCurveFinished() &&
          ( tool != selectedTool ) ) {
         builtBezier->setCurveFinished(true);
+        // The curve is finished: it is not being built anymore. Keeping it would make the next tool change
+        // (e.g. from an undo/redo command) evaluate the node again, and the next click with a bezier tool
+        // switch to the selection tool instead of starting a new curve.
+        builtBezier.reset();
         clearSelection();
 
         // The curve is now finished, so it has to be rendered. Changing the tool alone does not evaluate the node
