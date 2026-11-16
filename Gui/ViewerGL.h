@@ -462,6 +462,14 @@ public:
         Q_EMIT selectionCleared();
     }
 
+public:
+    /**
+     * @brief Show the cursor requested by the OpenFX overlays (see ViewerTab::getOverlaysCursor()),
+     * or restore the viewer's cursor if they all request the default one.
+     * Called after each pen event dispatched to the overlays, unless the viewer shows its own cursor.
+     **/
+    void updateOverlayCursor();
+
 Q_SIGNALS:
 
     /**

@@ -93,6 +93,19 @@ public:
 
     bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
+    /**
+     * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
+     * cursors), from the current requests of the overlays that received the last pen or key
+     * event: the overlay that caught the event wins, else the first non-default request in
+     * dispatch order. Returns false for the default (viewer) cursor.
+     **/
+    bool getOverlaysCursor(QCursor* cursor);
+
+private:
+    bool getOverlayCursorFor(const NodePtr& node, QCursor* cursor);
+
+public:
+
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
     bool notifyOverlaysKeyUp(const RenderScale & renderScale, QKeyEvent* e);

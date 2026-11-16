@@ -249,7 +249,12 @@ public:
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
+    /// convert an OFX interact cursor name (kOfxInteractCursor*, CSS names) to a Natron cursor
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
+
+    /// the OFX interact cursor names Natron can display (kOfxInteractHostPropSupportedCursors),
+    /// not including kOfxInteractCursorCustom
+    static void getSupportedOfxCursors(std::vector<std::string>* cursors);
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:
