@@ -176,6 +176,7 @@ public:
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex()
         , knobsAge(0)
+        , knobsAgeIsUniqueToSession(false)
         , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
@@ -363,6 +364,11 @@ public:
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the effect has its evaluate() function called.
+    // False while knobsAge is a value that was loaded (from a project, a clipboard or a master node) or the initial 0:
+    // that value may also have been reached in another session with different parameter values (see #1124).
+    // The first increment after that jumps to a random value, so that the ages (and hashes) reached by edits in this
+    // session can never be those of another session, which matters for the persistent disk and viewer caches.
+    bool knobsAgeIsUniqueToSession;
     mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
     Hash64 hash; //< recomputed every time knobsAge is changed.
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
