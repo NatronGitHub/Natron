@@ -47,6 +47,15 @@
 
 NATRON_NAMESPACE_ENTER
 
+// QWidget::nativeEvent hands back a long* on Qt5 and a qintptr* on Qt6. Those
+// are distinct types on 64 bit Windows, so an override naming the wrong one
+// quietly becomes a new virtual instead of failing to compile.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef qintptr NativeEventResult;
+#else
+typedef long NativeEventResult;
+#endif
+
 // —— local includes —————————————————————————-
 // —— pre defines ——————————————————————————-
 
@@ -138,7 +147,7 @@ protected:
     /**
      * reimpl as DDE events come as windows events and are not translated by Qt.
      */
-    virtual bool nativeEvent(const QByteArray& eventType, void* message, long* result);
+    virtual bool nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result);
 
     // —— helpers for the file registration ——————————————————
     /**
@@ -243,17 +252,17 @@ private:
     /**
      * implementation of the WM_DDE_INITIATE windows message
      */
-    bool ddeInitiate(MSG* message, long* result);
+    bool ddeInitiate(MSG* message, NativeEventResult* result);
 
     /**
      * implementation of the WM_DDE_EXECUTE windows message
      */
-    bool ddeExecute(MSG* message, long* result);
+    bool ddeExecute(MSG* message, NativeEventResult* result);
 
     /**
      * implementation of the WM_DDE_TERMINATE windows message
      */
-    bool ddeTerminate(MSG* message, long* result);
+    bool ddeTerminate(MSG* message, NativeEventResult* result);
 
     /**
      * Sets specified value in the registry under HKCU\Software\Classes, which is mapped to HKCR then.
