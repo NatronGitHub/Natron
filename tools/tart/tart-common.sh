@@ -32,13 +32,22 @@ GUEST_PROXY_ALLOW=${GUEST_PROXY_ALLOW:-"*:80 *:443"}
 # per-user runtime files (sockets, address cache, logs): not in the shared /tmp
 TART_RUN=${TART_RUN:-${TMPDIR:-/tmp}/natron-tart}
 mkdir -p "$TART_RUN" && chmod 700 "$TART_RUN"
+# ssh control sockets: a Unix socket path is limited to 104 bytes, and macOS's $TMPDIR
+# (/var/folders/xx/.../T/) is too long for "<dir>/<vm>.sock" plus ssh's temporary suffix.
+TART_SOCK=${TART_SOCK:-/tmp/natron-tart-$(id -u)}
+mkdir -p -m 700 "$TART_SOCK"
+if [ -L "$TART_SOCK" ] || [ ! -O "$TART_SOCK" ]; then
+    echo "error: $TART_SOCK is not a directory owned by $(id -un)" >&2
+    exit 1
+fi
+chmod 700 "$TART_SOCK"
 
 # cloned VMs share host keys and get new addresses: don't pin host keys (host-only network).
 # -F /dev/null: the user's ~/.ssh/config (agent forwarding, ProxyCommand...) never applies to the guest
 tart_sshopts() { # vm
     echo "-F /dev/null -i $TART_KEY -o IdentitiesOnly=yes -o ForwardAgent=no -o ForwardX11=no" \
          "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
-         "-o ServerAliveInterval=60 -o ControlPath=$TART_RUN/$1.sock"
+         "-o ServerAliveInterval=60 -o ControlPath=$TART_SOCK/$1.sock"
 }
 
 # one run at a time: clones share their IPv6 link-local address, and a WIP must not be provisioned twice
@@ -150,7 +159,7 @@ vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master c
         sleep 5
     done
     [ "$ok" = 1 ] || die "cannot log into $vm at $addr"
-    sock=$TART_RUN/$vm.sock
+    sock=$TART_SOCK/$vm.sock
     if ! ssh $(tart_sshopts "$vm") -O check admin@"$addr" 2>/dev/null; then
         rm -f "$sock"   # stale socket of a killed master
         ssh $(tart_sshopts "$vm") -fN -M -o ExitOnForwardFailure=yes \
