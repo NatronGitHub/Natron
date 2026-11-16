@@ -1,0 +1,20 @@
+--- src/assistant/assistant/assistant.pro.orig	2016-02-26 03:07:22.000000000 -0700
++++ src/assistant/assistant/assistant.pro	2016-05-04 16:32:44.000000000 -0700
+@@ -1,8 +1,4 @@
+-qtHaveModule(webkitwidgets):!contains(QT_CONFIG, static) {
+-    BROWSER = qtwebkit
+-} else {
+     BROWSER = qtextbrowser
+-}
+ 
+ QT += widgets network help sql
+ qtHaveModule(printsupport): QT += printsupport
+--- src/designer/src/plugins/plugins.pro.orig	2016-02-26 03:07:22.000000000 -0700
++++ src/designer/src/plugins/plugins.pro	2016-05-04 16:32:21.000000000 -0700
+@@ -1,6 +1,5 @@
+ TEMPLATE = subdirs
+ 
+ # qtHaveModule(opengl): SUBDIRS += tools/view3d
+-qtHaveModule(webkitwidgets): SUBDIRS += qwebview
+ win32: qtHaveModule(axcontainer): SUBDIRS += activeqt
+ qtHaveModule(quickwidgets): SUBDIRS += qquickwidget

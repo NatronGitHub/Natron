@@ -1,0 +1,27 @@
+--- src/3rdparty/chromium/v8/src/base/bit-field.h.orig
++++ src/3rdparty/chromium/v8/src/base/bit-field.h
+@@ -6,6 +6,7 @@
+ #define V8_BASE_BIT_FIELD_H_
+ 
+ #include <stdint.h>
++#include <type_traits>
+ 
+ #include "src/base/macros.h"
+ 
+@@ -40,7 +41,15 @@
+   static constexpr U kNumValues = U{1} << kSize;
+ 
+   // Value for the field with all bits set.
+-  static constexpr T kMax = static_cast<T>(kNumValues - 1);
++  // For plain (unscoped) enums, static_cast<T>(kNumValues - 1) may be outside
++  // the range of the enum, which is not a constant expression (clang rejects
++  // it as a hard error). Those enums convert implicitly to integers anyway, so
++  // use the storage type U for them. All other types (integers, bool, enum
++  // class) keep T.
++  static constexpr bool kMaxIsStorageType =
++      std::is_enum<T>::value && std::is_convertible<T, int>::value;
++  using MaxType = typename std::conditional<kMaxIsStorageType, U, T>::type;
++  static constexpr MaxType kMax = static_cast<MaxType>(kNumValues - 1);
+ 
+   template <class T2, int size2>
+   using Next = BitField<T2, kShift + kSize, size2, U>;

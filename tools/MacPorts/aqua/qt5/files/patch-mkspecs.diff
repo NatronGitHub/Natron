@@ -1,0 +1,75 @@
+diff --git mkspecs/common/clang-mac.conf mkspecs/common/clang-mac.conf
+index 14340630..a98aa869 100644
+--- mkspecs/common/clang-mac.conf
++++ mkspecs/common/clang-mac.conf
+@@ -7,8 +7,8 @@ QMAKE_OBJCXXFLAGS_USE_PRECOMPILE = $$QMAKE_CFLAGS_USE_PRECOMPILE
+ QMAKE_XCODE_GCC_VERSION = com.apple.compilers.llvm.clang.1_0
+ QMAKE_LFLAGS_LTCG_SEPARATE_DEBUG_INFO = -Wl,-object_path_lto,${OBJECTS_DIR}/${TARGET}_lto.o
+ 
+-QMAKE_CXXFLAGS += -stdlib=libc++
+-QMAKE_LFLAGS   += -stdlib=libc++
++QMAKE_CXXFLAGS += -stdlib=__MACPORTS_CXX_STDLIB__
++QMAKE_LFLAGS   += -stdlib=__MACPORTS_CXX_STDLIB__
+ QMAKE_AR_LTCG  = libtool -static -o
+ 
+ QMAKE_CFLAGS_APPLICATION_EXTENSION  = -fapplication-extension
+diff --git mkspecs/common/clang.conf mkspecs/common/clang.conf
+index dad15a22..8a30113e 100644
+--- mkspecs/common/clang.conf
++++ mkspecs/common/clang.conf
+@@ -4,8 +4,8 @@
+ 
+ QMAKE_COMPILER          = gcc clang llvm   # clang pretends to be gcc
+ 
+-QMAKE_CC                = $${CROSS_COMPILE}clang
+-QMAKE_CXX               = $${CROSS_COMPILE}clang++
++QMAKE_CC                = __MACPORTS_CC__
++QMAKE_CXX               = __MACPORTS_CXX__
+ 
+ QMAKE_LINK_C            = $$QMAKE_CC
+ QMAKE_LINK_C_SHLIB      = $$QMAKE_CC
+diff --git mkspecs/common/gcc-base.conf mkspecs/common/gcc-base.conf
+index 99d77156..2e124369 100644
+--- mkspecs/common/gcc-base.conf
++++ mkspecs/common/gcc-base.conf
+@@ -34,7 +34,7 @@
+ QMAKE_CFLAGS_OPTIMIZE      = -O2
+ QMAKE_CFLAGS_OPTIMIZE_FULL = -O3
+ QMAKE_CFLAGS_OPTIMIZE_DEBUG = -Og
+-QMAKE_CFLAGS_OPTIMIZE_SIZE = -Os
++QMAKE_CFLAGS_OPTIMIZE_SIZE = __MACPORTS_OPTFLAGS__
+ 
+ !equals(QMAKE_HOST.os, Windows): QMAKE_CFLAGS += -pipe
+ QMAKE_CFLAGS_DEPS          += -M
+diff --git mkspecs/common/macx.conf mkspecs/common/macx.conf
+index 4ba0a8ea..5f75283f 100644
+--- mkspecs/common/macx.conf
++++ mkspecs/common/macx.conf
+@@ -3,9 +3,10 @@
+ #
+ 
+ QMAKE_PLATFORM         += macos osx macx
+-QMAKE_MAC_SDK           = macosx
++QMAKE_MAC_SDK           = __MACPORTS_MAC_SDK__
+ 
+-QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.13
++QMAKE_MACOSX_DEPLOYMENT_TARGET = __MACPORTS_DEPLOYMENT_TARGET__
++QMAKE_APPLE_DEVICE_ARCHS = __MACPORTS_DEVICE_ARCHS__
+ 
+ # Should be 10.15, but as long as the CI builds with
+ # older SDKs we have to keep this.
+diff --git mkspecs/macx-clang/qmake.conf mkspecs/macx-clang/qmake.conf
+index 0cf1f31b..73752938 100644
+--- mkspecs/macx-clang/qmake.conf
++++ mkspecs/macx-clang/qmake.conf
+@@ -21,8 +21,8 @@
+ # and X11, OpenGL is currently not supported.
+ 
+ QMAKE_LIBS_X11 = -lX11 -lXext -lm
+-QMAKE_LIBDIR_X11 = /opt/X11/lib
+-QMAKE_INCDIR_X11 = /opt/X11/include
++QMAKE_LIBDIR_X11 = __MACPORTS_PREFIX__/lib
++QMAKE_INCDIR_X11 = __MACPORTS_PREFIX__/include
+ 
+ include(../common/macx.conf)
+ include(../common/gcc-base-mac.conf)

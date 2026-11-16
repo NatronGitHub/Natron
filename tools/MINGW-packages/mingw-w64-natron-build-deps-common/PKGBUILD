@@ -19,6 +19,7 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-osmesa"
   # openfx-io deps
   "${MINGW_PACKAGE_PREFIX}-natron_openimageio"
+  "${MINGW_PACKAGE_PREFIX}-natron_libraw-lgpl"   # for COMMERCIAL builds (common.sh)
   "${MINGW_PACKAGE_PREFIX}-natron_seexpr-git"
   "${MINGW_PACKAGE_PREFIX}-natron_poppler"
   "${MINGW_PACKAGE_PREFIX}-natron_imagemagick"

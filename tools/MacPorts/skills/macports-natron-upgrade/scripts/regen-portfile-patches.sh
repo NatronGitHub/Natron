@@ -1,7 +1,7 @@
 #!/bin/bash
 # Regenerate every Portfile.patch as the unified diff between Portfile.orig and Portfile.
 #
-# Safe for the pinned lang/libomp: this only (re)writes Portfile.patch and never
+# Safe for pinned ports: this only (re)writes Portfile.patch and never
 # modifies Portfile or Portfile.orig.
 #
 # Usage: regen-portfile-patches.sh [MACPORTS_ROOT]

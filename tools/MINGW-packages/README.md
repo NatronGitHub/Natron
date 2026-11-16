@@ -159,3 +159,8 @@ bash build-snapshot.sh
 The result will be in ``$HOME/NatronCI-workspace``.
 
 This was just an example, see ``launchBuildMain.sh`` for more information/options.
+
+
+## Rebuilding and publishing the package repository
+
+The "Build pacman repo" workflow runs only when started by hand (Actions → Build pacman repo → Run workflow) or on a `v*` tag. Run it after changing anything under `tools/MINGW-packages`, check that it passes, and upload the resulting `natron_package_repo-<version>.zip` to the `windows-mingw-package-repo` release. Then bump `windows_pacman_repo_version.txt` to that version, so that the installer and CI builds download the new repository.

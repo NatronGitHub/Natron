@@ -5,7 +5,6 @@ PortGroup               github 1.0
 #PortGroup               qt5 1.0
 PortGroup               cmake 1.1
 PortGroup               active_variants 1.1
-PortGroup               compiler_blacklist_versions 1.0
 PortGroup               boost 1.0
 
 github.setup            OpenImageIO oiio 2.2.18.0

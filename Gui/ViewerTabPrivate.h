@@ -28,11 +28,13 @@
 
 #include "Global/Macros.h"
 
+#include <list>
 #include <map>
 #include <set>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QCursor>
 #include <QMutex>
 #include <QTimer>
 CLANG_DIAG_ON(deprecated)
@@ -223,6 +225,22 @@ struct ViewerTabPrivate
 
     // Returns true if this node has a viewer context but it is not active
     bool hasInactiveNodeViewerContext(const NodePtr& node);
+
+    // OFX interact cursors: the overlays that received the last pen/key event (in dispatch order)
+    // and the one that caught it, so that only their current requests are considered
+    std::list<NodeWPtr> overlayEventNodes;
+    NodeWPtr overlayEventCatcher;
+    void beginOverlayEvent() { overlayEventNodes.clear(); overlayEventCatcher.reset(); }
+    void recordOverlayEvent(const NodePtr& node, bool caught)
+    {
+        overlayEventNodes.push_back(node);
+        if (caught && !overlayEventCatcher.lock()) {
+            overlayEventCatcher = node;
+        }
+    }
+    // custom cursor images (PNG files from the plug-in resources), and the ones that failed to load
+    std::map<QString, QCursor> overlayCursorCache;
+    std::set<QString> overlayCursorFailures;
 };
 
 NATRON_NAMESPACE_EXIT
