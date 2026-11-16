@@ -11,12 +11,15 @@ Investigation and minimal reproducers: https://github.com/devernay/libomp-repro
 The overlay no longer has a libomp `Portfile`, so MacPorts uses the upstream port
 (libomp 21.1.7 at the time of writing). The pinned 11.1.0 Portfile is kept as
 `Portfile~20261115` (MacPorts ignores it) together with its patchfiles
-(`files/patch-libomp11-*.diff`, `files/reviews.llvm.org_D88252.diff`). To restore the pin,
-rename it back to `Portfile`.
+(`files/patch-libomp11-*.diff`, `files/reviews.llvm.org_D88252.diff`). To restore the pin:
+rename it back to `Portfile`, copy the upstream Portfile to `Portfile.orig` and regenerate
+`Portfile.patch` (`diff -u Portfile.orig Portfile`), add `libomp` back to `PINNED_PORTS`
+in `tools/tart/provision.sh`, and on an existing install force the downgrade
+(`sudo port -f uninstall libomp && sudo port install libomp`): MacPorts never downgrades.
 
 ## Findings
 
-Two separate bugs, both fixed upstream, neither specific to x86_64:
+Three separate bugs, all fixed upstream, none specific to x86_64:
 
 1. **Foreign threads using OpenMP (the bug that affected Natron).** Plain pthreads that
    are created and destroyed while each runs `#pragma omp parallel` make libomp 12.x
@@ -38,9 +41,16 @@ Two separate bugs, both fixed upstream, neither specific to x86_64:
    [35fdf8d70329](https://github.com/llvm/llvm-project/commit/35fdf8d70329b2b067cb9433a5891f2a57e2f4ed)
    ("[OpenMP] Fix a segment fault in __kmp_get_global_thread_id", D159324), first released
    in **18.1.0**.
+3. **"Can't open SHM2" in sandboxed processes.** libomp 12 to 15 abort at startup with
+   `OMP: Error #179: Function Can't open SHM2 failed` (`#178` in 12 and 13) when
+   `shm_open` is denied, e.g. in sandboxed apps. Fixed by
+   [dafebd5b5a08](https://github.com/llvm/llvm-project/commit/dafebd5b5a08dde25f5f52f65cac54bd6ec0ecde)
+   ("[OpenMP] Create a temp file in /tmp if /dev/shm is not accessible") and follow-ups,
+   first released in **16.0.0**.
 
-Release builds tested on macOS 27, Apple M5 Pro (x86_64 under Rosetta 2). The two bugs
-were each bisected to the commits above.
+Release builds tested on macOS 27, Apple M5 Pro (x86_64 under Rosetta 2). The first two bugs
+were each bisected to the commits above. `test_package.cpp` (in this directory) is the conan
+recipe's test used for bug 2.
 
 | libomp | repro (bug 1) | stress | test_package, Debug arm64 (bug 2) |
 |---|---|---|---|
