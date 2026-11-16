@@ -423,7 +423,7 @@ post-destroot {
     }
 }
 
-variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -594,8 +594,11 @@ variant vmaf description {Enable VMAF perceptual video quality assessment} {
                     port:libvmaf
 }
 
-default_variants-append \
+# Natron: +natronmini doesn't bundle libvmaf
+if {![variant_isset natronmini]} {
+    default_variants-append \
                     +vmaf
+}
 
 if {![variant_isset rav1e]} {
     notes-append "Support for rav1e now disabled by default; enable via +rav1e"

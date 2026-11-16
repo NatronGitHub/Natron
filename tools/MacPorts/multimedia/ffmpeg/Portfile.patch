@@ -1,5 +1,5 @@
 --- Portfile.orig	2026-11-16 10:49:37
-+++ Portfile	2026-11-16 10:49:37
++++ Portfile	2026-11-16 11:50:10
 @@ -97,6 +97,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
@@ -81,11 +81,13 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -386,6 +423,46 @@
+@@ -384,6 +421,46 @@
+     foreach f [glob ${worksrcpath}/doc/*.txt] {
+         file copy $f ${destroot}${port_docdir}
      }
- }
- 
-+variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++}
++
++variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 +
 +    depends_lib-delete \
 +                    port:libiconv \
@@ -123,11 +125,9 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
-+}
-+
+ }
+ 
  variant x11 {
-     # enable x11grab_xcb input device
-     depends_lib-append \
 @@ -448,6 +525,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
@@ -143,3 +143,16 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
+@@ -509,8 +594,11 @@
+                     port:libvmaf
+ }
+ 
+-default_variants-append \
++# Natron: +natronmini doesn't bundle libvmaf
++if {![variant_isset natronmini]} {
++    default_variants-append \
+                     +vmaf
++}
+ 
+ if {![variant_isset rav1e]} {
+     notes-append "Support for rav1e now disabled by default; enable via +rav1e"
