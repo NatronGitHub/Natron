@@ -321,9 +321,11 @@ step_update() {
     if [ -f "$LOGDIR/ffmpeg-novmaf.pending" ] || port -q installed ffmpeg 2>/dev/null | grep '(active)' | grep -q '+vmaf'; then
         echo "===== reinstalling ffmpeg without +vmaf"
         touch "$LOGDIR/ffmpeg-novmaf.pending"
-        if port -q installed ffmpeg 2>/dev/null | grep -q .; then
-            $PORT -f uninstall ffmpeg
-        fi
+        # uninstall every installed version (e.g. an inactive 8.1.2 next to the active 9.x):
+        # "port uninstall ffmpeg" refuses to choose when there are several
+        for v in $(port -q installed ffmpeg 2>/dev/null | awk '{print $2}'); do
+            $PORT -f uninstall ffmpeg "$v"
+        done
         $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
         rm -f "$LOGDIR/ffmpeg-novmaf.pending"
         # libvmaf is no longer needed by anything
