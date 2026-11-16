@@ -315,6 +315,13 @@ step_update() {
         echo "===== upgrading $p"
         $PORT upgrade "$p"
     done
+    # FFmpeg 9's default +vmaf pulls libvmaf into the bundle: +natronmini no longer selects it,
+    # but "upgrade" keeps the installed variants, so reinstall an ffmpeg that has +vmaf.
+    if port -q installed ffmpeg 2>/dev/null | grep '(active)' | grep -q '+vmaf'; then
+        echo "===== reinstalling ffmpeg without +vmaf"
+        $PORT -f uninstall ffmpeg
+        $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
+    fi
     # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
