@@ -873,7 +873,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
+    // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
+    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );

@@ -1280,9 +1280,9 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
                 }
                 int inputNb = foundClip->second;
 
-    #       ifdef OFX_DEBUG_ACTIONS
+#       ifdef OFX_DEBUG_ACTIONS
                 std::cout << it->first << "->" << outArgs.getStringProperty(depthParamName) << "," << outArgs.getStringProperty(componentParamName) << "," << outArgs.getDoubleProperty(parParamName) << " ";
-    #       endif
+#       endif
 
                 defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
                 ImagePlaneDesc plane, pairedPlane;
