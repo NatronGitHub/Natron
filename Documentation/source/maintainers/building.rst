@@ -90,6 +90,39 @@ The qmake build does **not** yet have an equivalent switch and targets Qt 5.
 Completing and stabilizing Qt 6 support is an active work item; see
 :ref:`maint-qt6`.
 
+Shiboken2 and PySide2 without CMake config files
+------------------------------------------------
+
+With Qt 5, CMake first looks for the Shiboken2 and PySide2 CMake config files
+(``Shiboken2Config.cmake``, ``PySide2Config.cmake``; point CMake at them with
+``Shiboken2_DIR``/``PySide2_DIR`` or ``CMAKE_PREFIX_PATH``). Some installs have
+none: PySide2 built with ``setup.py``, such as MacPorts' ``py310-pyside2``, and
+the PyPI wheels. If neither config package is found, CMake asks
+``Python3_EXECUTABLE`` where the ``shiboken2``, ``shiboken2_generator`` and
+``PySide2`` modules are (``cmake/PySide2FromPython.cmake``), and uses the
+libraries, headers, typesystems and generator in their ``site-packages``
+directories. This replaces the paths that the qmake build gets from
+``config.pri`` (e.g. ``tools/jenkins/include/natron/OSX.pri``):
+
+.. list-table::
+   :header-rows: 1
+
+   * - qmake (``config.pri``)
+     - CMake
+   * - ``SHIBOKEN=shiboken2-$$PYVER``
+     - ``-DSHIBOKEN2_GENERATOR=/path/to/shiboken2`` (default: the binary in
+       ``site-packages/shiboken2_generator``)
+   * - ``INCLUDEPATH``, ``LIBS`` and ``QMAKE_RPATHDIR`` under
+       ``$$PYTHON_SITE_PACKAGES``
+     - automatic, from ``-DPython3_EXECUTABLE=/path/to/python3.10``
+   * - ``TYPESYSTEMPATH``
+     - automatic (``site-packages/PySide2/typesystems``)
+
+For example, with MacPorts::
+
+    cmake -S . -B build -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+        -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+
 Two compile definitions set in the CMake build are worth knowing about because
 they affect how you must write code:
 
