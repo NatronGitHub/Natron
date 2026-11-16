@@ -14,8 +14,8 @@
 -Libs: -L${libdir} -lImath${libsuffix}
 +Libs: -L${libdir} -lImath
  Cflags: -I${includedir} -I${includedir}/Imath
-+++ b/src/Imath/CMakeLists.txt
 --- a/src/Imath/CMakeLists.txt
++++ b/src/Imath/CMakeLists.txt
 @@ -146,7 +146,8 @@
        COMMENT "Copying resource files to Imath.framework/Resources in build directory"
      )
