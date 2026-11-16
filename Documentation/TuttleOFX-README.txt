@@ -134,7 +134,7 @@ git clone https://github.com/NatronGitHub/openfx-io.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
 git clone https://github.com/NatronGitHub/Natron.git
 # grab the latest openfx source
-for i in openfx* openfx-io/IOSupport/SequenceParsing  Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update -i -r; git submodule foreach git pull origin master); done
+for i in openfx* openfx-io/IOSupport/SequenceParsing  Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update --init --recursive; git submodule foreach git pull origin master); done
 
 - compile OpenFX plugins
 
