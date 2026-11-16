@@ -586,7 +586,7 @@ diff -ur a/libs/libmv/libmv/autotrack/tracks.h b/libs/libmv/libmv/autotrack/trac
 diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging.h
 --- a/libs/libmv/libmv/logging/logging.h	2016-03-21 18:40:15.000000000 +0100
 +++ b/libs/libmv/libmv/logging/logging.h	2016-05-20 11:55:42.000000000 +0200
-@@ -23,9 +23,20 @@
+@@ -23,9 +23,22 @@
  
  #include <glog/logging.h>
  
@@ -597,7 +597,7 @@ diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging
 +#ifdef DEBUG
 +//#define TRACE_LIB_MV 1
 +#endif
-+
+ 
 +#ifdef TRACE_LIB_MV
 +#define LIBMV_LOG(severity) DLOG(severity)
 +#else
@@ -606,10 +606,12 @@ diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging
 +#endif
 +
 +#define LG LIBMV_LOG(INFO)
-+#define V0 LIBMV_LOG(INFO)
-+#define V1 LIBMV_LOG(INFO)
-+#define V2 LIBMV_LOG(INFO)
- 
++
++// V0, V1 and V2 used to be defined here as aliases for LG. Nothing in libmv or
++// in Natron ever used them, and Qt6 names a template parameter V2 in
++// qnumeric.h, so any translation unit including this header before QtCore
++// failed to compile.
++
  #endif  // LIBMV_LOGGING_LOGGING_H
 diff -ur a/libs/libmv/libmv/tracking/track_region.cc b/libs/libmv/libmv/tracking/track_region.cc
 --- a/libs/libmv/libmv/tracking/track_region.cc	2016-03-21 18:40:15.000000000 +0100
