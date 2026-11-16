@@ -66,6 +66,53 @@
 
 NATRON_NAMESPACE_ENTER
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// Return the available geometry of the screen to use for a window saved at (x, y).
+// The saved position is kept on whichever connected screen contains it, which may be
+// left of or above the primary screen (negative coordinates on the virtual desktop).
+// Only if no connected screen contains it (e.g. a monitor was unplugged) is the
+// primary screen used.
+QRect
+screenGeometryForPosition(int x,
+                          int y)
+{
+    const QPoint pos(x, y);
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    for (QScreen* screen : screens) {
+        if ( screen && screen->geometry().contains(pos) ) {
+            return screen->availableGeometry();
+        }
+    }
+    QScreen* primary = QGuiApplication::primaryScreen();
+
+    return primary ? primary->availableGeometry() : QRect();
+}
+
+// Restore a window's saved geometry, making sure it fits on the screen it was saved on
+// and that at least 50x50 pixels of it are visible.
+void
+restoreWindowGeometry(QWidget* window,
+                      int x,
+                      int y,
+                      int w,
+                      int h)
+{
+    const QRect screen = screenGeometryForPosition(x, y);
+
+    if ( screen.isEmpty() ) {
+        window->resize(w, h);
+        window->move( QPoint(x, y) );
+
+        return;
+    }
+    window->resize( std::min( w, screen.width() ), std::min( h, screen.height() ) );
+    window->move( QPoint( MathUtils::clamp( x, screen.left(), screen.right() - 50 ),
+                          MathUtils::clamp( y, screen.top(), screen.bottom() - 50 ) ) );
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 void
 Gui::createDefaultLayout1()
 {
@@ -196,8 +243,6 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
-        QScreen* desktop = QGuiApplication::primaryScreen();
-        QRect screen = desktop->availableGeometry();
 
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
@@ -240,14 +285,8 @@ Gui::restoreLayout(bool wipePrevious,
                 window = floatingWindow;
             }
 
-            ///Restore geometry
-            int w = std::min( (*it)->w, screen.width() );
-            int h = std::min( (*it)->h, screen.height() );
-            window->resize(w, h);
-            // If the screen size changed, make sure at least 50x50 pixels of the window are visible
-            int x = MathUtils::clamp( (*it)->x, screen.left(), screen.right() - 50 );
-            int y = MathUtils::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
-            window->move( QPoint(x, y) );
+            ///Restore geometry, on the screen it was saved on if it is still connected
+            restoreWindowGeometry( window, (*it)->x, (*it)->y, (*it)->w, (*it)->h );
         }
 
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
@@ -281,8 +320,7 @@ Gui::restoreLayout(bool wipePrevious,
                 }
             }
             assert(fWindow);
-            fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-            fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
+            restoreWindowGeometry( fWindow, (*it)->x, (*it)->y, (*it)->w, (*it)->h );
         }
     }
 } // restoreLayout
