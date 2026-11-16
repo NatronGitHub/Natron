@@ -2598,6 +2598,8 @@ RotoPaint::onOverlayPenDown(double time,
         pushUndoCommand(cmd);
         _imp->ui->builtBezier = cmd->getCurve();
         assert(_imp->ui->builtBezier);
+        // Re-render the node when the pen is released, otherwise the current frame keeps its stale image (issue #510)
+        _imp->ui->evaluateOnPenUp = true;
         _imp->ui->state = eEventStateBuildingBezierControlPointTangent;
         didSomething = true;
         break;
@@ -2892,6 +2894,7 @@ RotoPaint::onOverlayPenMotion(double time,
         assert(_imp->ui->builtBezier);
         bool isOpenBezier = _imp->ui->selectedTool == eRotoToolOpenBezier;
         pushUndoCommand( new MakeBezierUndoCommand(_imp->ui, _imp->ui->builtBezier, isOpenBezier, false, dx, dy, time) );
+        _imp->ui->evaluateOnPenUp = true;
         didSomething = true;
         break;
     }
