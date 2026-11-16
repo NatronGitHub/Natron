@@ -799,6 +799,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     if (knob) {
         inputFileKnob = std::dynamic_pointer_cast<KnobFile>(knob);
     }
+
+    // If no decoder could be created (e.g. the decoder plug-in saved in the project is not installed),
+    // the knobs of the default reader replaced ours and the filename was reset: restore it, so that
+    // it is not lost when the project is saved, and the error message tells which file could not be read.
+    if ( !node && !filename.empty() ) {
+        KnobFilePtr fileKnob = inputFileKnob.lock();
+        if ( fileKnob && (fileKnob->getValue() != filename) ) {
+            fileKnob->setValue(filename);
+        }
+    }
 } // ReadNodePrivate::createReadNode
 
 void
@@ -1181,6 +1191,14 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             propName += "_";
             propName += kOfxImageEffectFileParamName;
             pattern = args.getProperty<std::string>(propName);
+        }
+        if ( pattern.empty() ) {
+            // The node may have been loaded from a project although no decoder could be created
+            // (see onKnobsAboutToBeLoaded()): keep the filename that was loaded.
+            KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
+            if (fileKnob) {
+                pattern = fileKnob->getValue();
+            }
         }
     }
     _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );
