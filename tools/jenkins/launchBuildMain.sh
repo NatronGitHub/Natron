@@ -204,14 +204,6 @@ echo "Qt config:"
 echo "QT_VERSION_MAJOR=${QT_VERSION_MAJOR}"
 echo "QTDIR=${QTDIR}"
 echo "QMAKE=${QMAKE}"
-# A wrong QTDIR otherwise surfaces much later as a missing Qt header during the
-# shiboken run, which is a long way from the actual cause.
-if ! "$QMAKE" -query QT_VERSION > /dev/null 2>&1; then
-    (>&2 echo "Error: $QMAKE is not usable.")
-    (>&2 echo "Set QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
-    exit 1
-fi
-echo "$QMAKE works ($("$QMAKE" -query QT_VERSION))"
 
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
@@ -263,6 +255,20 @@ fi
 if [ -z "${GIT_URL_IS_NATRON:-}" ]; then
     GIT_URL_IS_NATRON=0
     isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
+fi
+
+# A wrong QTDIR otherwise surfaces much later as a missing Qt header during the
+# shiboken run, which is a long way from the actual cause. Plug-in CI builds
+# (GIT_URL_IS_NATRON != 1, TYPE=PLUGIN_CI) do not need Qt, so they only
+# get a warning.
+if "$QMAKE" -query QT_VERSION > /dev/null 2>&1; then
+    echo "$QMAKE works ($("$QMAKE" -query QT_VERSION))"
+elif [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+    (>&2 echo "Error: $QMAKE is not usable.")
+    (>&2 echo "Set NATRON_QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
+    exit 1
+else
+    (>&2 echo "Warning: $QMAKE is not usable (not needed for plug-in builds).")
 fi
 
 
