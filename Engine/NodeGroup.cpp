@@ -1323,6 +1323,32 @@ NodeGroup::initializeKnobs()
 
 }
 
+// Call onInputChanged() on every input of every output node that is connected to groupNode.
+// An output node appears once per link in getOutputs(), and may be connected to groupNode
+// through several of its inputs.
+static void
+notifyGroupOutputsInputChanged(const NodePtr& groupNode)
+{
+    std::set<NodePtr> outputs;
+    {
+        const NodesWList& outputsList = groupNode->getOutputs();
+        for (NodesWList::const_iterator it = outputsList.begin(); it != outputsList.end(); ++it) {
+            NodePtr output = it->lock();
+            if (output) {
+                outputs.insert(output);
+            }
+        }
+    }
+    for (std::set<NodePtr>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        int nInputs = (*it)->getNInputs();
+        for (int idx = 0; idx < nInputs; ++idx) {
+            if ( (*it)->getRealInput(idx) == groupNode ) {
+                (*it)->onInputChanged(idx);
+            }
+        }
+    }
+}
+
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)
 {
@@ -1368,16 +1394,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
-    }
+    notifyGroupOutputsInputChanged(thisNode);
 } // NodeGroup::notifyNodeDeactivated
 
 void
@@ -1404,16 +1421,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         }
     }
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
-    }
+    notifyGroupOutputsInputChanged(thisNode);
 }
 
 void
