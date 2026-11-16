@@ -68,25 +68,56 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-// Return the available geometry of the screen to use for a window saved at (x, y).
-// The saved position is kept on whichever connected screen contains it, which may be
-// left of or above the primary screen (negative coordinates on the virtual desktop).
-// Only if no connected screen contains it (e.g. a monitor was unplugged) is the
-// primary screen used.
+// Return the available geometry of the screen to use for a window saved with frame
+// position (x, y) and size (w, h). This is the connected screen that shows the largest
+// part of the window, which may be left of or above the primary screen (negative
+// coordinates on the virtual desktop). The frame's top-left corner alone is not enough:
+// it can be a few pixels outside the screen (invisible resize borders on Windows, a
+// maximized window), or in a gap between screens of different sizes.
+// If the window overlaps no screen, the screen nearest to it is used, so a window saved
+// on a monitor that was since unplugged comes back on a remaining one.
 QRect
-screenGeometryForPosition(int x,
-                          int y)
+screenGeometryForWindow(int x,
+                        int y,
+                        int w,
+                        int h)
 {
-    const QPoint pos(x, y);
+    const QRect win( x, y, std::max(w, 1), std::max(h, 1) );
     const QList<QScreen*> screens = QGuiApplication::screens();
+    QScreen* best = NULL;
+    qint64 bestArea = 0;
     for (QScreen* screen : screens) {
-        if ( screen && screen->geometry().contains(pos) ) {
-            return screen->availableGeometry();
+        if (!screen) {
+            continue;
+        }
+        const QRect inter = screen->geometry().intersected(win);
+        const qint64 area = inter.isEmpty() ? 0 : (qint64)inter.width() * inter.height();
+        if (area > bestArea) {
+            bestArea = area;
+            best = screen;
         }
     }
-    QScreen* primary = QGuiApplication::primaryScreen();
+    if (!best) {
+        // no overlap: take the screen whose center is nearest to the window's center
+        const QPoint c = win.center();
+        qint64 bestDist = -1;
+        for (QScreen* screen : screens) {
+            if (!screen) {
+                continue;
+            }
+            const QPoint d = screen->geometry().center() - c;
+            const qint64 dist = (qint64)d.x() * d.x() + (qint64)d.y() * d.y();
+            if ( (bestDist < 0) || (dist < bestDist) ) {
+                bestDist = dist;
+                best = screen;
+            }
+        }
+    }
+    if (!best) {
+        best = QGuiApplication::primaryScreen();
+    }
 
-    return primary ? primary->availableGeometry() : QRect();
+    return best ? best->availableGeometry() : QRect();
 }
 
 // Restore a window's saved geometry, making sure it fits on the screen it was saved on
@@ -98,7 +129,7 @@ restoreWindowGeometry(QWidget* window,
                       int w,
                       int h)
 {
-    const QRect screen = screenGeometryForPosition(x, y);
+    const QRect screen = screenGeometryForWindow(x, y, w, h);
 
     if ( screen.isEmpty() ) {
         window->resize(w, h);
@@ -320,6 +351,9 @@ Gui::restoreLayout(bool wipePrevious,
                 }
             }
             assert(fWindow);
+            if (!fWindow) {
+                continue;
+            }
             restoreWindowGeometry( fWindow, (*it)->x, (*it)->y, (*it)->w, (*it)->h );
         }
     }
