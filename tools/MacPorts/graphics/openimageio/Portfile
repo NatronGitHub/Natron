@@ -203,7 +203,7 @@ configure.args-append   -DUSE_PYTHON=OFF
 # Natron: OpenVDB off unless the openvdb variant is selected (don't pick it up just because it is installed)
 configure.args-append   -DUSE_OPENVDB:BOOL=FALSE
 # Natron: likewise FFmpeg (the ffmpeg PortGroup always adds port:ffmpeg8, a second FFmpeg next to the
-# pinned port:ffmpeg that openfx-io uses), OpenCV, Ptex, DICOM and JPEG XL: off unless their variant is selected
+# port:ffmpeg that openfx-io uses), OpenCV, Ptex, DICOM and JPEG XL: off unless their variant is selected
 configure.args-append   -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE -DUSE_PTEX:BOOL=FALSE \
                         -DUSE_DICOM:BOOL=FALSE -DUSE_JXL:BOOL=FALSE
 # the ffmpeg PortGroup (re)adds its dependency in a callback, so remove it in a later one
