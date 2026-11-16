@@ -3264,6 +3264,14 @@ Settings::doOCIOStartupCheckIfNeeded()
         // switching to the default config loses nothing, so Yes is the default answer. Otherwise the
         // user chose a non-default config on purpose: only replace it if they explicitly answer Yes.
         StandardButtonEnum defaultButton = eStandardButtonNo;
+        // the default config, if it is bundled with this installation
+        int defaultIndex = -1;
+        for (unsigned i = 0; i < entries.size(); ++i) {
+            if (entries[i].id == NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+                defaultIndex = i;
+                break;
+            }
+        }
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
             defaultButton = eStandardButtonYes;
@@ -3281,17 +3289,32 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if ( customFile.isEmpty() ) {
                 warnText = tr("\"%1\" is selected as the OCIO config in the preferences, but no custom OpenColorIO configuration file is set. "
-                              "Would you like to set it to the default config (%2)?").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+                              "Would you like to set it to the default config (%2)?").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
             } else {
                 warnText = tr("The custom OpenColorIO configuration file selected in the preferences does not exist:\n%1\n"
                               "Would you like to set the OCIO config to the default config (%2)? "
-                              "The custom file path is kept in the preferences.").arg(customFile).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+                              "The custom file path is kept in the preferences.").arg( customFile, QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
             }
             defaultButton = eStandardButtonYes;
         } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = tr("The current OCIO config selected in the preferences (%1) is not the default one (%2), would you like to set it to the default config?\n"
-                          "Answer No to keep the current config.").arg( QString::fromUtf8( entries[entry_i].id.c_str() ) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+                          "Answer No to keep the current config.").arg( QString::fromUtf8( entries[entry_i].id.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
+            return;
+        }
+
+        if ( (defaultIndex == -1) && (defaultButton == eStandardButtonNo) ) {
+            // a usable non-default config is selected and the default one isn't available: nothing to offer
+            return;
+        }
+        if (defaultIndex == -1) {
+            // the default config isn't bundled (e.g. a build without the OpenColorIO-Configs folder):
+            // switching to it is impossible, so don't ask, just tell the user what to do
+            Dialogs::warningDialog( "OCIO config", tr("%1\n\n"
+                                                      "The %2 OCIO config could not be found, probably because the OpenColorIO-Configs folder "
+                                                      "that should be bundled with %3 is missing. Set a custom OpenColorIO configuration file "
+                                                      "in the Color Management preferences.").arg( QString::fromUtf8( warnText.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+
             return;
         }
 
@@ -3306,20 +3329,13 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
 
         if (reply == eStandardButtonYes) {
-            int defaultIndex = -1;
-            for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
-                    defaultIndex = i;
-                    break;
-                }
-            }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting( _ocioConfigKnob.get() );
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
+                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
             }
         }
     }
