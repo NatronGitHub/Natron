@@ -52,7 +52,8 @@ removeFileExtension(QString & filename)
  * - '*' matches any sequence of characters, and '?' any single character,
  *   including '/';
  * - "[...]" is a character set and "[^...]" a negated set ('!' is literal);
- * - every other character is literal, including the backslash (for a
+ * - every other character is literal, including the backslash, which never
+ *   escapes anything: "\\*" is a backslash followed by a wildcard (for a
  *   backslash followed by another character, Qt5's QRegExp wanted two
  *   backslashes in the string, which was a bug).
  * QRegularExpression::wildcardToRegularExpression() is not a drop-in
@@ -64,7 +65,7 @@ wildcardToRegularExpression(const QString & wildcard)
 {
     QString rx;
     QString literal; // run of literal characters, escaped when flushed
-    const int n = wildcard.size();
+    const int n = int( wildcard.size() );
     int i = 0;
 
     while (i < n) {

@@ -820,7 +820,9 @@ PreferencesPanel::filterPlugins(const QString & txt)
         // themselves wildcards ('*', '?', "[...]").
         QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            wildcard.push_back( QLatin1Char('*') );
+            if ( !txt[i].isLowSurrogate() ) { // keep surrogate pairs (e.g. emoji) together
+                wildcard.push_back( QLatin1Char('*') );
+            }
             wildcard.push_back(txt[i]);
         }
         wildcard.push_back( QLatin1Char('*') );
