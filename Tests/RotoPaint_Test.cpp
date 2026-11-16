@@ -297,8 +297,9 @@ TEST_F(RotoPaintOverlayTest, PencilStrokeEvaluatesNodeOnPenUp)
     EXPECT_NE(_node->getHashValue(), hashBeforeSecondPenUp);
 }
 
-// Same for a closed bezier: a point added by a click is rendered once the pen is released.
-TEST_F(RotoPaintOverlayTest, BezierPointEvaluatesNodeOnPenUp)
+// A closed bezier is not rendered before it is finished (see RotoContextPrivate::renderBezier()): adding a point
+// to it must not re-render the node. FinishingBezierByChangingToolEvaluatesNode checks that finishing it does.
+TEST_F(RotoPaintOverlayTest, UnfinishedBezierPointDoesNotEvaluateNodeOnPenUp)
 {
     if (!_havePlugins) {
         return;
@@ -314,9 +315,11 @@ TEST_F(RotoPaintOverlayTest, BezierPointEvaluatesNodeOnPenUp)
 
     BezierPtr bezier = getDrawnBezier();
     ASSERT_TRUE( bool(bezier) );
+    EXPECT_FALSE( bezier->isOpenBezier() );
+    EXPECT_FALSE( bezier->isCurveFinished() );
     EXPECT_EQ(2, bezier->getControlPointsCount());
-    EXPECT_GT(_context->getAge(), ageBeforePenUp);
-    EXPECT_NE(_node->getHashValue(), hashBeforePenUp);
+    EXPECT_EQ(_context->getAge(), ageBeforePenUp);
+    EXPECT_EQ(_node->getHashValue(), hashBeforePenUp);
 }
 
 // Choosing another tool of the same group finishes the closed bezier being drawn, which makes it renderable
