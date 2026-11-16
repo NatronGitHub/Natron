@@ -265,7 +265,7 @@ step_sync() {
 
 # Ports pinned in the overlay (older than upstream): MacPorts never downgrades by itself,
 # so reinstall them (same variants) when the installed version differs from the overlay's.
-PINNED_PORTS="ffmpeg libraw"
+PINNED_PORTS="libraw"
 step_pins() {
     local p want have variants vfile
     for p in $PINNED_PORTS; do
@@ -315,6 +315,20 @@ step_update() {
         echo "===== upgrading $p"
         $PORT upgrade "$p"
     done
+    # FFmpeg 9's default +vmaf pulls libvmaf into the bundle: +natronmini no longer selects it,
+    # but "upgrade" keeps the installed variants, so reinstall an ffmpeg that has +vmaf.
+    # The marker makes an interrupted reinstall resumable (ffmpeg uninstalled but not reinstalled).
+    if [ -f "$LOGDIR/ffmpeg-novmaf.pending" ] || port -q installed ffmpeg 2>/dev/null | grep '(active)' | grep -q '+vmaf'; then
+        echo "===== reinstalling ffmpeg without +vmaf"
+        touch "$LOGDIR/ffmpeg-novmaf.pending"
+        if port -q installed ffmpeg 2>/dev/null | grep -q .; then
+            $PORT -f uninstall ffmpeg
+        fi
+        $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
+        rm -f "$LOGDIR/ffmpeg-novmaf.pending"
+        # libvmaf is no longer needed by anything
+        $PORT -N uninstall libvmaf 2>/dev/null || true
+    fi
     # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
