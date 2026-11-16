@@ -11,10 +11,11 @@ graphic, a square logo, an anamorphic background. This page explains how Natron
 describes the size of an image, how each node decides the size of its output, and
 how to change it with the Reformat node and its relatives.
 
-The words used here (format, pixel aspect ratio, region of definition, region of
-interest, render scale, field order) are the same as in the
+Most of the words used here (pixel aspect ratio, region of definition, region
+of interest, render scale, field order) come from the
 `OpenFX standard <https://openeffects.org>`_, which defines how Natron talks to
-its plug-ins.
+its plug-ins. The **format** is not part of that standard: it is a Natron
+extension to OpenFX, which plug-ins such as Reformat and Crop understand.
 
 
 Format and region of definition
@@ -47,9 +48,9 @@ what a Write node renders when its **Format Type** is set to
 The region of definition
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The **region of definition** (RoD, also called the *bounding box* or *bbox*)
-is the area where the image actually has pixels. It does not have to match the
-format:
+The **region of definition** (RoD, often called the *bounding box* or *bbox*
+in compositing software) is the area where the image actually has pixels. It
+does not have to match the format:
 
 - It can be **smaller** than the format. A Rectangle of 200x100 pixels in an HD
   project only has pixels inside that rectangle. Everything else is
@@ -59,30 +60,28 @@ format:
   it partly or completely outside the frame. Those pixels are kept, so that
   if you later move the image back, nothing is lost.
 
-When the region of definition differs from the format, the Viewer draws it as a
-dashed rectangle, with its coordinates at two corners.
+When the region of definition of the image it displays differs from its
+format, the Viewer draws it as a dashed rectangle, with its coordinates at two
+corners. The Viewer only shows the rectangles of the node it is connected to:
+to see the region of definition of an element, view that element's node.
 
 .. note::
 
    Both rectangles are listed in the **Info** tab of each node's settings
    panel, as **Format (pixels)** and **Region of Definition**.
    The format is given in pixels, while the region of definition is given in
-   *canonical coordinates*, which means "pixels after correcting for the pixel
-   aspect ratio". For square-pixel images the two units are the same.
+   *canonical coordinates*, which means "pixels at full resolution (render
+   scale 1, as if proxy mode were off), after correcting for the pixel aspect
+   ratio". For square-pixel images the two units are the same.
 
 The region of interest
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A third rectangle appears while rendering. The **region of interest** (RoI) is
-the part of an input image that a node needs in order to compute the area it
-was asked for. A color correction needs exactly the same area from its input,
-a Blur needs a slightly bigger one, and a Transform that zooms in needs a
-smaller one.
-
-Natron works backwards from the Viewer or the Write node: it only computes the
-pixels that are actually needed downstream. You rarely have to think about this,
-but it explains why zooming in the Viewer, or cropping early in the tree, makes
-interactive work faster.
+Natron works backwards from the Viewer or the Write node, and only computes the
+pixels that are actually needed downstream. The part of an input that a node
+needs is called its **region of interest** (RoI). You rarely have to think
+about it, but it explains why zooming in the Viewer, or cropping early in the
+tree, makes interactive work faster.
 
 
 How Natron decides a node's output format
@@ -93,13 +92,22 @@ Each node picks its output format automatically, following simple rules:
 1. **Readers** use the format stored in the file they read (its size and pixel
    aspect ratio). A 4K EXR gives a 4K format, whatever the project settings
    say.
-2. **Generators**, the nodes without image inputs such as Constant,
-   Checkerboard, Rectangle or Text, use the **project format** by default.
-   Many of them have an **Extent** parameter that lets you choose another
-   format or a custom size.
-3. **All other nodes** use the format of their first connected main input.
-   For example, a Merge takes the format of its **B** input, and a Blur keeps
-   the format of its source.
+2. **Most other nodes** use the format of their first connected input. More
+   precisely, Natron looks at the inputs in order and takes the format of the
+   first connected input that is not optional. If no such input is connected,
+   it takes the format of the first connected optional input. If nothing is
+   connected at all, it uses the **project format**.
+
+   For example, a Blur keeps the format of its source. A Merge takes the
+   format of its **B** input, because B is its first input; if B is not
+   connected, the format of **A** is used.
+3. **Generators** such as Constant, CheckerBoard or Rectangle have an
+   optional **Source** input. When nothing is connected to it, they follow
+   the rule above and use the project format; when an image is connected, they
+   use its format. Many of them also have an **Extent** parameter that lets you
+   choose another format or a custom size. The Rectangle's **Extent** is
+   **Size** by default, so its format comes from its Source, or from the
+   project when the Source is not connected.
 4. A few nodes are designed to **change the format**: Reformat, Crop (with its
    **Reformat** option), Resize, and NoOp (with **Set Format**). They are
    described below.
@@ -116,7 +124,7 @@ the :ref:`project settings <compositing-projects-setup>`. Despite its name, it
 is *not* the format of every node. It is only a default, used:
 
 - as the default workspace size of the Viewers when nothing is connected;
-- as the default format of generators;
+- as the format of nodes that have no input connected, such as generators;
 - as the default output format of Write nodes, whose **Format Type** is
   **Project Format** unless you change it to **Input Format** or
   **Fixed Format**.
@@ -125,9 +133,13 @@ In OpenFX terms, the project format gives the *project size* that plug-ins
 see. Plug-ins use it, for example, to place their default controls in the
 middle of the frame.
 
-Set the project format at the start of a project, normally to the resolution of
-your main plate. Changing it later is possible, but it can move or resize the
-output of generators and Write nodes that follow the project format.
+By default, the first Read node created in a project sets the project format
+to the format of the image it reads. This is controlled by the
+**First image read set project format** option, in the **Project Setup**
+section of the Preferences (on by default). Otherwise, set the project format
+at the start of a project, normally to the resolution of your main plate.
+Changing it later is possible, but it can move or resize the output of
+generators and Write nodes that follow the project format.
 
 .. tip::
 
@@ -149,7 +161,7 @@ resizes its content to match. Use it to:
 - create a lower-resolution version of a shot, for review or for the web;
 - convert anamorphic footage to square pixels, or the reverse;
 - fit a portrait photo or a logo into a landscape frame;
-- mirror or rotate an image by 90 degrees without any blurring.
+- mirror or rotate an image by 90 degrees.
 
 All the parameters are listed in the :ref:`Reformat node reference
 <net.sf.openfx.Reformat>`. The main ones are described here.
@@ -166,12 +178,21 @@ The **Type** parameter says how the new format is chosen:
   from this menu.
 - **To Box**: type a width and height in **Size**, and a
   **Pixel Aspect Ratio**. If **Force This Shape** is checked, the output
-  format is exactly that box. If it is not checked, the image is scaled
-  (following **Resize Type**) to fit in the box, but the output format keeps
-  the proportions of the resized image, so nothing is cut.
+  format is exactly that box. If it is left unchecked (the default), the image
+  is scaled (following **Resize Type**) to fit in the box, but the output
+  format keeps the proportions of the resized image, so nothing is cut.
 - **Scale**: multiply the size by a factor, for example 0.5 for half size or 2
-  for double size. Check **Uniform** to use the same factor for width and
-  height. The size is rounded to a whole number of pixels.
+  for double size. **Scale** shows a single value, used for both the width and
+  the height; to use different factors, click the small **2** button next to
+  it to expand it into separate X and Y values. The size is rounded to a whole number of
+  pixels. Note that with this type, the size that is scaled is the size of the
+  source's region of definition, not of its format: a Blur or a Transform
+  before the Reformat changes the result.
+
+The input size used by the other types is the source's *format*. Check
+**Use Source RoD** to use its *region of definition* instead, for example to
+resize exactly the area that has pixels, after a Crop that did not change the
+format.
 
 Resize Type: how the image fits in the new format
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -209,12 +230,22 @@ Flip, Flop and Turn
 
 - **Flip** mirrors the image upside down.
 - **Flop** mirrors the image left to right.
-- **Turn** rotates the image 90 degrees counter-clockwise, and swaps the width
-  and height of the format.
+- **Turn** rotates the image 90 degrees counter-clockwise. The image is then
+  fitted into the output format like any other source, following
+  **Resize Type**. The output format itself only swaps its width and height
+  when **Type** is **Scale**, or **To Box** with **Force This Shape**
+  unchecked. With **To Project Format** (the default) or **To Format**, the
+  output keeps the chosen format, and only the image inside it is rotated.
+
+Use **Turn**, for example, for footage that was shot with the camera held
+vertically.
 
 These options move whole pixels. Combined with **Resize Type** set to
-**None** they give an exact result, without any softening. Use **Turn**, for
-example, for footage that was shot with the camera held vertically.
+**None**, they give an exact result, without any softening, as long as the
+image is not shifted by half a pixel. This happens when **Center** is checked
+and the difference between the source and output widths (or heights) is an
+odd number of pixels; uncheck **Center**, or use sizes that differ by an even
+number of pixels.
 
 Preserve BBox
 ~~~~~~~~~~~~~
@@ -242,6 +273,8 @@ Scaling an image means computing new pixels from the old ones. The
 - **Impulse** copies the nearest pixel. It is fast and keeps hard edges, but
   looks blocky when enlarging. Use it for mattes or ID passes, where values
   must not be mixed.
+- **Box** averages all the source pixels that fall inside each output pixel.
+  It is a good choice when shrinking an image a lot.
 - **Bilinear** gives a soft result, and is fast.
 - **Cubic** (the default) is a good general-purpose choice.
 - **Keys**, **Simon** and **Rifman** add more and more sharpening. They keep
@@ -252,8 +285,14 @@ Scaling an image means computing new pixels from the old ones. The
 
 Some filters can create values slightly below 0 or above 1 near sharp edges.
 Check **Clamp** to prevent this, for example when reformatting a matte.
-**Black outside** fills the area around the image with black. It is useful
-when a scaled-down image does not cover the whole frame.
+
+Outside the region of definition, the image is always transparent black.
+**Black outside** only changes what happens at the edges of the image. When
+it is unchecked (the default), the filter repeats the edge pixels, so the
+edges stay sharp. When it is checked, the edges fade to transparent black
+over one pixel, which gives an antialiased border; the region of definition
+then grows by one pixel. Check it when the scaled image does not cover the
+whole frame and will be placed over another image.
 
 Pixel aspect ratio and anamorphic footage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -265,8 +304,10 @@ same shape:
 1. Add a Reformat node after the Read node.
 2. Set **Type** to **To Box**.
 3. Set **Size** to 3656 x 1556 and **Pixel Aspect Ratio** to 1.
-4. Set **Resize Type** to **Distort**. Here it only "unsqueezes" the
-   image, because the displayed shape stays the same.
+4. Optionally, set **Resize Type** to **Distort**. Here it only "unsqueezes"
+   the image, because the displayed shape stays the same. Since the box has
+   exactly the displayed shape of the source, the default **Width** gives the
+   same result.
 
 The image is now stored with square pixels, and looks the same in the Viewer.
 
@@ -277,20 +318,23 @@ Workflow: conforming a plate to the shot resolution
 A typical example: the shot is delivered in HD (1920x1080), but one of the
 background plates is a 4K (3840x2160) image and a logo is a 1000x1000 PNG.
 
-1. Open the project settings (press **S** in the Node Graph) and set the
-   **Project Format** to "HD 1920x1080".
+1. Open the project settings (press **S** in the Node Graph) and check (or
+   set) that the **Project Format** is "HD 1920x1080". If the first image you
+   read was not HD, the project format was set to its size, and you have to
+   change it here.
 2. Select the 4K Read node, and add a Reformat node (**Transform > Reformat**).
    Leave **Type** on **To Project Format** and **Resize Type** on **Width**.
    The plate is scaled down to 1920x1080. Because both images are 16:9,
    nothing is cut.
 3. Select the logo's Read node, and add a second Reformat node. Set **Type** to
-   **To Box**, **Size** to 400 x 400, uncheck **Force This Shape**, and set
-   **Resize Type** to **Fit**. The logo is now 400x400 pixels.
-4. Merge the logo (**A** input) over the plate (**B** input). The Merge takes
-   the format of its **B** input, so the result is in HD. Use a Transform node
-   after the logo's Reformat to place it in the frame.
-5. Connect the Viewer to the Merge, and check that the solid rectangle
-   shows "HD" and that the logo's dashed bounding box is where you expect it.
+   **To Box**, **Size** to 400 x 400, leave **Force This Shape** unchecked,
+   and set **Resize Type** to **Fit**. The logo is now 400x400 pixels.
+4. Add a Transform node after the logo's Reformat to place it in the frame.
+   Connect the Viewer to this Transform, and check that the dashed rectangle
+   (the logo's region of definition) is where you expect it.
+5. Merge the logo (**A** input) over the plate (**B** input). The Merge takes
+   the format of its **B** input, so the result is in HD. Connect the Viewer
+   to the Merge, and check that the solid rectangle shows "HD".
 6. In the Write node, leave **Format Type** on **Project Format**, or set it to
    **Input Format** to render exactly the format of the Merge.
 
@@ -334,6 +378,10 @@ one that matches what you want to change:
   or pixel aspect ratio.
 - **Project settings**: the **Project Format** sets the default for
   generators, Viewers and Write nodes, as explained above.
+
+
+Other things that affect image size
+###################################
 
 Proxy mode and render scale
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -389,7 +437,7 @@ Rectangle node whose width grows from 0 to the full width of the Read1 image
 over the first 100 frames, set this expression on the first dimension of the
 Rectangle's **Size** parameter::
 
-    thisGroup.Read1.getOutputFormat().width() * min(frame, 100) / 100.
+    thisGroup.Read1.getOutputFormat().width() * min(frame, 100) / 100.0
 
 To place an element at the center of a node's frame, use
 ``thisNode.getInput(0).getOutputFormat()`` and take half its width and height.
@@ -402,4 +450,3 @@ necessarily the format of the image you are working on.
 
 .. toctree::
    :maxdepth: 2
-
