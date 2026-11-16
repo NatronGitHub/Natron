@@ -3260,10 +3260,37 @@ Settings::doOCIOStartupCheckIfNeeded()
         int entry_i = _ocioConfigKnob->getValue();
         std::vector<ChoiceOption> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
+        // When the selected config is invalid or unusable (custom config without an existing file),
+        // switching to the default config loses nothing, so Yes is the default answer. Otherwise the
+        // user chose a non-default config on purpose: only replace it if they explicitly answer Yes.
+        StandardButtonEnum defaultButton = eStandardButtonNo;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            defaultButton = eStandardButtonYes;
+        } else if (entries[entry_i].id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            // A custom config file was explicitly selected: don't ask if that file exists.
+            std::string file;
+            try {
+                file = _customOcioConfigFile->getValue();
+            } catch (...) {
+                // ignore exceptions
+            }
+            QString customFile = QString::fromUtf8( file.c_str() );
+            if ( !customFile.isEmpty() && QFile::exists(customFile) ) {
+                return;
+            }
+            if ( customFile.isEmpty() ) {
+                warnText = tr("\"%1\" is selected as the OCIO config in the preferences, but no custom OpenColorIO configuration file is set. "
+                              "Would you like to set it to the default config (%2)?").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            } else {
+                warnText = tr("The custom OpenColorIO configuration file selected in the preferences does not exist:\n%1\n"
+                              "Would you like to set the OCIO config to the default config (%2)? "
+                              "The custom file path is kept in the preferences.").arg(customFile).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            }
+            defaultButton = eStandardButtonYes;
         } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            warnText = tr("The current OCIO config selected in the preferences (%1) is not the default one (%2), would you like to set it to the default config?\n"
+                          "Answer No to keep the current config.").arg( QString::fromUtf8( entries[entry_i].id.c_str() ) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
         }
@@ -3271,7 +3298,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         bool stopAsking = false;
         StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", warnText, false,
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                                eStandardButtonYes,
+                                                                defaultButton,
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking);
