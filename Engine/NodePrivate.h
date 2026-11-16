@@ -39,8 +39,9 @@
 
 NATRON_NAMESPACE_ENTER
 
-/*The output node was connected from inputNumber to this...*/
-typedef std::map<NodeWPtr, int32_t, std::owner_less<NodeWPtr>> DeactivatedState;
+/*The output node was connected from inputNumber to this...
+  One entry per link: an output node may be connected to several of its inputs.*/
+typedef std::vector<std::pair<NodeWPtr, int32_t> > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<NodeWPtr> InputsV;
 

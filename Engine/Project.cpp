@@ -29,6 +29,7 @@
 #include <algorithm> // min, max
 #include <ios>
 #include <limits>
+#include <set>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
@@ -2785,14 +2786,21 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to this node through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = (*it)->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == *it) {
+                        tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                    }
+                }
             }
 
             const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();
