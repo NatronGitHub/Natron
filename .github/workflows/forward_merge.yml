@@ -1,10 +1,15 @@
 name: Forward-merge RB-2.6 into RB-2.7
 
 # Every change merged into RB-2.6 that isn't Qt5-specific must also reach RB-2.7 (the Qt6 branch).
-# After each push to RB-2.6, this merges RB-2.6 into the branch of a single, long-lived pull
-# request "Merge RB-2.6 into RB-2.7". A maintainer reviews it and merges it with a merge commit,
-# reverting or adapting Qt5-only changes in it if needed. If the merge conflicts, an issue is
-# opened or updated instead, and the conflicts must be resolved by hand on that branch.
+# This keeps one pull request open from RB-2.6 to RB-2.7. GitHub updates it by itself on every push
+# to RB-2.6, and the Tests workflow runs on it (pull_request "synchronize" events come from the
+# person who pushed to RB-2.6). A maintainer merges it with a merge commit; Qt5-only changes are
+# then reverted or adapted on RB-2.7.
+#
+# Nothing is pushed by this workflow: GITHUB_TOKEN may not push commits that touch
+# .github/workflows, and RB-2.6 must never receive merge commits from RB-2.7.
+# If the two branches conflict, an issue explains how to merge them by hand on a separate branch
+# (never with GitHub's "Resolve conflicts" button, which would commit RB-2.7 into RB-2.6).
 
 on:
   push:
@@ -13,100 +18,73 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write        # push the merge branch
-  pull-requests: write   # open the merge pull request
+  contents: read
+  pull-requests: write   # open the forward-merge pull request
   issues: write          # report conflicts
-  actions: write         # start the Tests workflow on the merge branch
 
 concurrency:
   group: forward-merge-RB-2.6-RB-2.7
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   SOURCE: RB-2.6
   TARGET: RB-2.7
-  MERGE_BRANCH: merge-rb26-into-rb27
 
 jobs:
   forward-merge:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.1
-        with:
-          fetch-depth: 0
-
-      - name: Merge
-        id: merge
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Open the pull request, or check it for conflicts
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "$SOURCE" "$TARGET"
-          if git merge-base --is-ancestor "origin/$SOURCE" "origin/$TARGET"; then
-            echo "$TARGET already contains $SOURCE"; echo "result=up-to-date" >> "$GITHUB_OUTPUT"; exit 0
+          title_conflict="Forward-merge of $SOURCE into $TARGET has conflicts"
+          ahead=$(gh api "repos/$GH_REPO/compare/$TARGET...$SOURCE" --jq '.ahead_by')
+          if [ "$ahead" = "0" ]; then
+            echo "$TARGET already contains $SOURCE"
+            exit 0
           fi
-          # Continue an existing merge branch (it may hold hand-made conflict resolutions),
-          # else start from the target branch.
-          if git ls-remote --exit-code --heads origin "$MERGE_BRANCH" >/dev/null; then
-            git fetch origin "$MERGE_BRANCH"
-            git checkout -B "$MERGE_BRANCH" "origin/$MERGE_BRANCH"
-            git merge --no-edit "origin/$TARGET" || { git merge --abort; echo "result=conflict" >> "$GITHUB_OUTPUT"; exit 0; }
-          else
-            git checkout -B "$MERGE_BRANCH" "origin/$TARGET"
-          fi
-          if git merge --no-ff -m "Merge $SOURCE into $TARGET" "origin/$SOURCE"; then
-            git push origin "$MERGE_BRANCH"
-            echo "result=merged" >> "$GITHUB_OUTPUT"
-          else
-            git merge --abort
-            echo "result=conflict" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Open or update the pull request
-        if: steps.merge.outputs.result == 'merged'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          pr=$(gh pr list --head "$MERGE_BRANCH" --base "$TARGET" --state open --json number --jq '.[0].number // empty')
+          pr=$(gh pr list --head "$SOURCE" --base "$TARGET" --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr" ]; then
-            gh pr create --head "$MERGE_BRANCH" --base "$TARGET" --title "Merge $SOURCE into $TARGET" --body "Automatic forward-merge of $SOURCE into $TARGET (the Qt6 branch), updated after every push to $SOURCE.
+            body="Automatic forward-merge of $SOURCE into $TARGET (the Qt6 branch). GitHub keeps this pull request up to date with every push to $SOURCE.
 
           Before merging:
-          - check that the Tests run on this branch passes;
-          - revert or adapt any Qt5-only change (PySide2, the MacPorts \`qt5\` ports, Qt5 workarounds);
-          - merge with a **merge commit**, not squash or rebase, so that the next forward-merge only brings new commits."
-          else
-            gh pr comment "$pr" --body "Updated with $SOURCE at ${GITHUB_SHA::10}."
+          - check that the Tests run passes;
+          - merge with a **merge commit**, never squash or rebase, so that the next forward-merge only brings new commits;
+          - then revert or adapt any Qt5-only change (PySide2, the MacPorts \`qt5\` ports, Qt5 workarounds) in a follow-up commit or pull request on $TARGET.
+
+          If GitHub reports conflicts, **don't** use its \"Resolve conflicts\" button: it would commit $TARGET into $SOURCE. Follow the instructions in the conflict issue instead."
+            gh pr create --head "$SOURCE" --base "$TARGET" --title "Merge $SOURCE into $TARGET" --body "$body"
+            pr=$(gh pr list --head "$SOURCE" --base "$TARGET" --state open --json number --jq '.[0].number // empty')
           fi
-          # Pushes and PRs made with GITHUB_TOKEN don't trigger other workflows: start the tests explicitly.
-          gh workflow run ci.yml --ref "$MERGE_BRANCH" || echo "could not start the Tests workflow"
+          # GitHub computes mergeability asynchronously
+          state=UNKNOWN
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            state=$(gh pr view "$pr" --json mergeable --jq '.mergeable')
+            [ "$state" != "UNKNOWN" ] && break
+            sleep 10
+          done
+          echo "pull request #$pr: mergeable=$state"
+          issue=$(gh issue list --state open --label func:buildsystem --json number,title --jq "map(select(.title==\"$title_conflict\"))[0].number // empty")
+          if [ "$state" = "CONFLICTING" ]; then
+            head=$(gh api "repos/$GH_REPO/commits/$SOURCE" --jq '.sha[0:10]')
+            if [ -z "$issue" ]; then
+              gh issue create --label func:buildsystem --title "$title_conflict" --body "Pull request #$pr (merge $SOURCE into $TARGET) has conflicts, at $SOURCE $head. Resolve them on a separate branch, never on $SOURCE:
 
-      - name: Report a conflict
-        if: steps.merge.outputs.result == 'conflict'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          title="Forward-merge of $SOURCE into $TARGET has conflicts"
-          body="Merging $SOURCE (${GITHUB_SHA::10}) into $TARGET has conflicts, so the automatic merge pull request could not be updated.
-
-          To resolve:
           \`\`\`
           git fetch origin
-          git checkout $MERGE_BRANCH 2>/dev/null || git checkout -b $MERGE_BRANCH origin/$TARGET
-          git merge origin/$TARGET
-          git merge origin/$SOURCE   # resolve the conflicts, keeping $TARGET's Qt6 code
-          git push origin $MERGE_BRANCH
+          git checkout -B merge-$SOURCE-into-$TARGET origin/$TARGET
+          git merge origin/$SOURCE    # resolve the conflicts, keeping $TARGET's Qt6 code
+          git push origin merge-$SOURCE-into-$TARGET
           \`\`\`
-          Then open (or update) the pull request from \`$MERGE_BRANCH\` to \`$TARGET\`, and close this issue."
-          issue=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
-          if [ -z "$issue" ]; then
-            gh issue create --title "$title" --body "$body" --label func:buildsystem
-          else
-            gh issue comment "$issue" --body "Still conflicting with $SOURCE at ${GITHUB_SHA::10}."
+
+          Then open a pull request from \`merge-$SOURCE-into-$TARGET\` to \`$TARGET\` and merge it with a merge commit. #$pr then only shows the commits pushed to $SOURCE since then. This issue is closed automatically when there are no more conflicts."
+            else
+              gh issue comment "$issue" --body "Still conflicting at $SOURCE $head."
+            fi
+          elif [ -n "$issue" ] && [ "$state" = "MERGEABLE" ]; then
+            gh issue close "$issue" --comment "No more conflicts: #$pr can be merged."
           fi
