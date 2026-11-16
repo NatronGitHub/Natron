@@ -27,6 +27,7 @@
 
 #include <algorithm> // min, max
 #include <limits>
+#include <set>
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -1292,14 +1293,21 @@ extractTreesFromNodes(const std::list<NodeGuiPtr> & nodes,
             ExtractedTree tree;
             tree.output.node = *it;
             NodePtr n = (*it)->getNode();
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to n through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = n->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(n);
-                tree.output.outputs.push_back( std::make_pair(idx, output) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == n) {
+                        tree.output.outputs.push_back( std::make_pair(idx, output) );
+                    }
+                }
             }
 
             const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
@@ -1509,16 +1517,16 @@ GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
 
-    for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-        NodePtr outputNode = it->first.lock();
+    for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+        NodePtr outputNode = it->outputNode.lock();
         if (!outputNode) {
             continue;
         }
-        NodePtr input = it->second.inputNode.lock();
+        NodePtr input = it->inputNode.lock();
         if (!input) {
             continue;
         }
-        outputNode->replaceInput(input, it->second.inputIdx);
+        outputNode->replaceInput(input, it->inputIdx);
     }
 
 
@@ -1739,20 +1747,23 @@ GroupFromSelectionCommand::redo()
                 int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode().get());
                 assert(inputIdx != -1);
                 output->replaceInput(isGrp->getNode(), inputIdx);
-                OutputLink& link = _outputLinks[*it2];
-                link.inputNode = foundOriginalOutputNode->getNode();
+                // One entry per link: output may be connected to several of its inputs.
+                OutputLink link;
+                link.outputNode = output;
                 link.inputIdx = inputIdx;
+                link.inputNode = foundOriginalOutputNode->getNode();
+                _outputLinks.push_back(link);
             }
         } // for all trees
     } // !_firstRedoCalled
 
     if (_firstRedoCalled) {
-        for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-            NodePtr outputNode = it->first.lock();
+        for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+            NodePtr outputNode = it->outputNode.lock();
             if (!outputNode) {
                 continue;
             }
-            outputNode->replaceInput(isGrp->getNode(), it->second.inputIdx);
+            outputNode->replaceInput(isGrp->getNode(), it->inputIdx);
         }
     }
 

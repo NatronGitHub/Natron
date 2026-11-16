@@ -2967,7 +2967,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         if (dc) {
             int inputNb = output->getInputIndex(this);
             if (inputNb != -1) {
-                _imp->deactivatedState.insert( make_pair(*it, inputNb) );
+                _imp->deactivatedState.push_back( std::make_pair(*it, inputNb) );
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
@@ -3087,11 +3087,10 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            NodePtr outputHasInput = output->getInput(it->second);
-            if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
-                assert(ok);
-                Q_UNUSED(ok);
+            if ( output->getRealInput(it->second) ) {
+                int dc = output->disconnectInput(it->second);
+                assert(dc == it->second);
+                Q_UNUSED(dc);
             }
 
             ///and connect the output to this node
