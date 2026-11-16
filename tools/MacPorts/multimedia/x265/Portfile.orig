@@ -13,11 +13,10 @@ PortGroup           legacysupport 1.1
 legacysupport.newest_darwin_requires_legacy 9
 
 name                x265
-bitbucket.setup     multicoreware x265_git 4.1
-revision            0
-checksums           rmd160  15133609f4b6226ef2679fcf40d9ea6297963cc9 \
-                    sha256  a31699c6a89806b74b0151e5e6a7df65de4b49050482fe5ebf8a4379d7af8f29 \
-                    size    1725279
+bitbucket.setup     multicoreware x265_git 4.2
+checksums           rmd160  b20a6fa7247ef4567769dab054610a9c044c6362 \
+                    sha256  40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210 \
+                    size    1833442
 
 categories          multimedia
 license             GPL-2+

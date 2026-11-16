@@ -185,6 +185,7 @@ struct ViewerGL::Implementation
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
     bool setColorPickerCursor; //< was the color picker cursor set?
+    bool setOverlayCursor; //< was a cursor requested by an OpenFX overlay set?
 
     /////// currentViewerInfo
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/

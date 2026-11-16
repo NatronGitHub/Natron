@@ -105,7 +105,7 @@ For each architecture / operating system, you can either download a stable relea
 There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
 
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md)
+- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 

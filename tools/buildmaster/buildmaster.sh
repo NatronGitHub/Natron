@@ -474,8 +474,8 @@ while [ "$FINISHED" = "0" ]; do
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** START unit tests" >> "$ILOG"
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** START unit tests" >> "$ULOG"
                     # idiff needs libraw dll which is not in the same dir as other dlls
-                    if [ ! -f "${TMP_BINARIES_PATH}/bin/libraw_r-16.dll" ]; then
-                        cp "${LIBRAW_PATH}/bin/libraw_r-16.dll" "${TMP_BINARIES_PATH}/bin/"
+                    if [ ! -f "${TMP_BINARIES_PATH}/bin/libraw_r-25.dll" ]; then
+                        cp "${LIBRAW_PATH}/bin/libraw_r-25.dll" "${TMP_BINARIES_PATH}/bin/"
                     fi
                     #echo "*** Debug:"
                     #ls -l "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/Resources" "$TMP_BINARIES_PATH/Resources/OpenColorIO-Configs"

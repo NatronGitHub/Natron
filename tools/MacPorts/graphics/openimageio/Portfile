@@ -3,9 +3,8 @@
 PortSystem              1.0
 PortGroup               github 1.0
 PortGroup               cmake 1.1
+PortGroup               ffmpeg 1.0
 PortGroup               active_variants 1.1
-PortGroup               compiler_blacklist_versions 1.0
-PortGroup               boost 1.0
 
 name                    openimageio
 categories              graphics
@@ -20,14 +19,15 @@ set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 set port_latest 1
 
 if {${port_latest}} {
-    github.setup        AcademySoftwareFoundation OpenImageIO 2.5.10.1 v
-    revision            2
-    checksums           rmd160  acca3794870850f6d39e41e62e9370bf6ff9565b \
-                        sha256  8f6a547f6a5d510737ba436f867043db537def65f0fdb14ec30e5a185b619f93 \
-                        size    52061055
+    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+    # Natron: revision bumped to rebuild against OpenColorIO 2.6 (4) and libraw 0.22.3 +gpl2 (5)
+    revision            5
+    checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                        sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                        size    56133013
 } else {
     github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
-    revision            16
+    revision            21
     checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
                         sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
                         size    29116032
@@ -37,27 +37,61 @@ if {${port_latest}} {
 
 github.tarball_from     archive
 
-patchfiles-append oiio-2.0.8-invalidatespec.patch
-patchfiles-append oiio-2.0.8-atomic-load.patch
-patchfiles-append oiio-2.3.20-strnlen.patch
-patchfiles-append oiio-2.4.6-sysutil.patch
-patchfiles-append oiio-2.4.6-filesystem.patch
-
-patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
+if {${port_latest}} {
+    # Natron: do not clear subimages in invalidate_spec() (thread safety)
+    patchfiles-append   oiio-3.1-invalidatespec.patch
+    # The OIIO 2.x Natron patches (oiio-2.0.8-*, oiio-2.3.20-strnlen,
+    # oiio-2.4.6-*, patch-2.4.5-cmake-disable-wall-werror) are not applied to 3.1:
+    # the legacy-macOS ones only matter below macOS 10.13 (10.9 for atomic-load) and do not apply,
+    # and STOP_ON_WARNING already defaults to OFF on OIIO release branches.
+}
 
 if {${port_latest}} {
+    # Natron: openvdb is only pulled in by the openvdb variant (+natron conflicts with it)
     depends_lib-append  port:imath \
-                        port:openexr
+                        port:libxml2 \
+                        port:openexr \
+                        port:onetbb \
+                        port:OpenJPH \
+                        port:tcp_wrappers \
+                        path:lib/libssl.dylib:openssl
+
+    ffmpeg.version      8
+
+    set port_libfmt         libfmt12
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    depends_lib-append      port:${port_libfmt}
 } else {
+    PortGroup           boost 1.0
+
     patchfiles-append   patch-FindOpenJpeg.cmake.diff
     patchfiles-append   patch-libraw-0.21.0.diff
     patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
 
     depends_lib-append  port:field3d \
-                        port:openexr2
+                        port:openexr2 \
+                        port:squish \
+                        port:tbb
 
     configure.pkg_config_path-prepend \
                         ${prefix}/libexec/openexr2/lib/pkgconfig
+
+    # https://trac.macports.org/ticket/69842
+    configure.args-append       -DUSE_OPENVDB=OFF
+
+    #configure.args-append       -DUSE_TBB=OFF
+    configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+
+    #configure.args-append       -DUSE_FFMPEG=OFF
+    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
+
+    # NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
+    set port_libfmt         libfmt9
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
+    depends_lib-append      port:${port_libfmt}
 }
 
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
@@ -71,6 +105,9 @@ configure.args-append   -DCMAKE_CXX_STANDARD=17
 
 compiler.thread_local_storage yes
 
+# Use OpenGL framework instead of mesa
+configure.pre_args-delete   -DCMAKE_FIND_FRAMEWORK=LAST
+
 configure.cxxflags-append \
                         -Wno-deprecated-declarations \
                         -Wno-unknown-warning-option
@@ -80,12 +117,6 @@ if {[string match *clang* ${configure.compiler}]} {
     configure.cxxflags-append \
                         -Wno-error=unknown-warning-option
 }
-
-# NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
-set port_libfmt         libfmt9
-cmake.module_path-prepend \
-                        ${prefix}/lib/${port_libfmt}/cmake
-configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
 
 # Don't treat clang warnings as errors
 configure.args-append   -DSTOP_ON_WARNINGS=OFF
@@ -98,13 +129,12 @@ configure.args-append   -DUSE_CCACHE=OFF
 configure.args-append   -DBUILD_MISSING_DEPS=OFF \
                         -DBUILD_MISSING_FMT=OFF
 
-depends_lib-append      port:robin-map \
-                        port:zlib \
+depends_build-append    port:robin-map
+
+depends_lib-append      port:zlib \
                         port:bzip2 \
                         port:libpng \
-                        port:tiff \
-                        port:squish \
-                        port:${port_libfmt}
+                        port:tiff
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:
@@ -148,29 +178,6 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
     #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
 
-configure.args-append \
-    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-    -DBOOST_ROOT=${prefix} \
-    -DUSE_QT:BOOL=FALSE \
-    -DUSE_PYTHON:BOOL=FALSE \
-    -DUSE_PYTHON3:BOOL=FALSE \
-    -DUSE_FIELD3D:BOOL=FALSE \
-    -DUSE_FFMPEG:BOOL=FALSE \
-    -DUSE_OPENJPEG:BOOL=FALSE \
-    -DUSE_OCIO:BOOL=FALSE \
-    -DUSE_OPENCV:BOOL=FALSE \
-    -DUSE_OPENSSL:BOOL=FALSE \
-    -DUSE_FREETYPE:BOOL=FALSE \
-    -DUSE_GIF:BOOL=TRUE \
-    -DUSE_HEIF:BOOL=TRUE \
-    -DUSE_PTEX:BOOL=FALSE \
-    -DUSE_LIBRAW:BOOL=TRUE \
-    -DUSE_OPENGL:BOOL=FALSE \
-    -DUSE_WEBP:BOOL=TRUE \
-    -DUSE_JXL:BOOL=FALSE \
-    -DBUILD_FMT_FORCE:BOOL=TRUE \
-    -DSTOP_ON_WARNING:BOOL=FALSE
- 
 # optional components
 
 if {${os.platform} eq "darwin" && ${os.major} < 11} {
@@ -193,8 +200,21 @@ variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolori
 }
 
 configure.args-append   -DUSE_PYTHON=OFF
+# Natron: OpenVDB off unless the openvdb variant is selected (don't pick it up just because it is installed)
+configure.args-append   -DUSE_OPENVDB:BOOL=FALSE
+# Natron: likewise FFmpeg (the ffmpeg PortGroup always adds port:ffmpeg8, a second FFmpeg next to the
+# port:ffmpeg that openfx-io uses), OpenCV, Ptex, DICOM and JPEG XL: off unless their variant is selected
+configure.args-append   -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE -DUSE_PTEX:BOOL=FALSE \
+                        -DUSE_DICOM:BOOL=FALSE -DUSE_JXL:BOOL=FALSE
+# the ffmpeg PortGroup (re)adds its dependency in a callback, so remove it in a later one
+proc natron_no_ffmpeg {} {
+    if {![variant_isset ffmpeg]} {
+        depends_lib-delete  port:ffmpeg[option ffmpeg.version]
+    }
+}
+port::register_callback natron_no_ffmpeg
 
-set pythons_suffixes    {39 310 311 312}
+set pythons_suffixes    {310 311 312 313 314}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -228,7 +248,7 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 if {${set_python_default}} {
-    default_variants        +python312
+    default_variants        +python314
 }
 
 #configure.args-append       -DUSE_FFMPEG=OFF
@@ -236,13 +256,7 @@ variant ffmpeg description {Add FFmpeg support.} {
     configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
     configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
 if {${port_latest}} {
-    set ffmpeg_ver 6
-
-    #configure.args-append       -DUSE_FFMPEG=OFF
-    depends_lib-append          port:ffmpeg${ffmpeg_ver}
-
-    configure.pkg_config_path-prepend \
-                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
+    # the ffmpeg PortGroup (ffmpeg.version above) provides port:ffmpeg8 and its paths
 } else {
     #configure.args-append       -DUSE_FFMPEG=OFF
     depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
@@ -289,8 +303,8 @@ depends_lib-append          port:freetype
     configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
 }
 
-#configure.args-append       -DUSE_GIF=OFF
-depends_lib-append          port:giflib
+configure.args-append       -DUSE_GIF=OFF
+# depends_lib-append          port:giflib
 
 #configure.args-append       -DUSE_HEIF=OFF
 depends_lib-append          port:libheif
@@ -340,7 +354,10 @@ depends_lib-append          port:dcmtk
     configure.args-append -DUSE_DICOM:BOOL=TRUE
 }
 
-#configure.args-append       -DUSE_WEBP=OFF
-depends_lib-append          port:webp
+configure.args-append       -DUSE_WEBP=OFF
+# depends_lib-append          port:webp
 
-github.livecheck.regex      {([0-9.]+)}
+# TODO: Add this functionality to github portgroup
+livecheck.url               https://api.github.com/repos/${github.author}/${github.project}/tags?per_page=200
+livecheck.curloptions
+livecheck.regex             "\"name\": \"v(\[0-9\.\]+)\","

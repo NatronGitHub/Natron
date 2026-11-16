@@ -86,8 +86,8 @@ if [ "$FAIL" = "0" ]; then
         export FONTCONFIG_PATH="$UNIT_TMP/Resources/etc/fonts/fonts.conf"
         echo "$(date '+%Y-%m-%d %H:%M:%S') *** START unit tests" >> "$ULOG"
         # idiff needs libraw dll which is not in the same dir as other dlls
-        if [ ! -f "${TMP_BINARIES_PATH}/bin/libraw_r-16.dll" ]; then
-            cp "${LIBRAW_PATH}/bin/libraw_r-16.dll" "${TMP_BINARIES_PATH}/bin/"
+        if [ ! -f "${TMP_BINARIES_PATH}/bin/libraw_r-25.dll" ]; then
+            cp "${LIBRAW_PATH}/bin/libraw_r-25.dll" "${TMP_BINARIES_PATH}/bin/"
         fi
 	
         env PATH="${TMP_BINARIES_PATH}/bin:$PATH:${FFMPEG_PATH}/bin:${LIBRAW_PATH}/bin" NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/OFX/Plugins" OCIO="$TMP_BINARIES_PATH/Resources/OpenColorIO-Configs/blender/config.ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg.exe" COMPARE="${SDK_HOME}/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$UNIT_TMP/bin/NatronRenderer.exe" >> "$ULOG" 2>&1 || FAIL=$?

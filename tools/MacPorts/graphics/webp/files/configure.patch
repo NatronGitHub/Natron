@@ -1,0 +1,22 @@
+--- configure.orig	2024-04-12 15:50:43.000000000 -0500
++++ configure	2024-04-20 23:58:10.000000000 -0500
+@@ -14766,8 +14766,8 @@
+     darwin*)
+       # Special case for OSX builds. Append these to give the user a chance to
+       # override with --with-gl*
+-      glut_cflags="$glut_cflags|-framework GLUT -framework OpenGL"
+-      glut_ldflags="$glut_ldflags|-framework GLUT -framework OpenGL"
++      glut_cflags="-framework GLUT -framework OpenGL"
++      glut_ldflags="-framework GLUT -framework OpenGL"
+       # quiet deprecation warnings for glut
+       SAVED_CFLAGS="$CFLAGS"
+           CFLAGS="-Werror -Wno-deprecated-declarations"
+@@ -14804,7 +14804,7 @@
+       none) ;;
+       *) CPPFLAGS="$flag $CPPFLAGS";;
+     esac
+-           for ac_header in GL/glut.h GLUT/glut.h OpenGL/glut.h
++           for ac_header in GLUT/glut.h OpenGL/glut.h
+ do :
+   as_ac_Header=`printf "%s\n" "ac_cv_header_$ac_header" | $as_tr_sh`
+ ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

@@ -1,0 +1,28 @@
+--- Source/WTF/wtf/FastMalloc.cpp
++++ Source/WTF/wtf/FastMalloc.cpp
+@@ -93,6 +93,10 @@
+ #include <malloc/malloc.h>
+ #endif
+ 
++#if OS(DARWIN) && CPU(ARM64)
++#include <arm/param.h>
++#endif
++
+ #ifndef NO_TCMALLOC_SAMPLES
+ #ifdef WTF_CHANGES
+ #define NO_TCMALLOC_SAMPLES
+@@ -628,7 +632,13 @@
+ // sense.  In particular, if kMaxSize increases, you may have to
+ // increase kNumClasses as well.
+ #if OS(DARWIN)
+-#    define K_PAGE_SHIFT PAGE_SHIFT
++#    if CPU(X86_64)
++#        define K_PAGE_SHIFT I386_PGSHIFT
++#    elif CPU(ARM64)
++#        define K_PAGE_SHIFT PGSHIFT
++#    else
++#        define K_PAGE_SHIFT PAGE_SHIFT
++#    endif
+ #    if (K_PAGE_SHIFT == 12)
+ #        define K_NUM_CLASSES 68
+ #    elif (K_PAGE_SHIFT == 14)

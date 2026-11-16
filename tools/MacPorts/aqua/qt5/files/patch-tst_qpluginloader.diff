@@ -1,0 +1,20 @@
+--- tests/auto/corelib/plugin/qpluginloader/tst_qpluginloader.cpp.orig	2015-05-30 18:33:03.000000000 -0700
++++ tests/auto/corelib/plugin/qpluginloader/tst_qpluginloader.cpp	2015-05-30 18:34:54.000000000 -0700
+@@ -311,7 +311,7 @@
+
+ void tst_QPluginLoader::loadMachO_data()
+ {
+-#ifdef Q_OF_MACH_O
++#if defined(QT_BUILD_INTERNAL) && defined(Q_OF_MACH_O)
+     QTest::addColumn<int>("parseResult");
+
+     QTest::newRow("/dev/null") << int(QMachOParser::NotSuitable);
+@@ -347,7 +347,7 @@
+
+ void tst_QPluginLoader::loadMachO()
+ {
+-#ifdef Q_OF_MACH_O
++#if defined(QT_BUILD_INTERNAL) && defined(Q_OF_MACH_O)
+     QFile f(QFINDTESTDATA(QTest::currentDataTag()));
+     QVERIFY(f.open(QIODevice::ReadOnly));
+     QByteArray data = f.readAll();

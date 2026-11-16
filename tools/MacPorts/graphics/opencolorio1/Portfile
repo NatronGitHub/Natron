@@ -8,6 +8,10 @@ PortGroup           boost 1.0
 boost.depends_type  build
 
 github.setup        AcademySoftwareFoundation OpenColorIO 1.1.1 v
+# GitHub tarballs extract to <author>-<project>-<hash>; tarball_from enables
+# extract.rename so the source is renamed to ${worksrcdir}. Without this the
+# patch phase runs in the wrong directory ("No file to patch").
+github.tarball_from tarball
 name                opencolorio1
 categories          graphics
 maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer

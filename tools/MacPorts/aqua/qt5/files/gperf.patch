@@ -1,0 +1,15 @@
+Fix build with gperf ≥ 3.2
+
+--- src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py
++++ src/3rdparty/chromium/third_party/blink/renderer/build/scripts/gperf.py
+@@ -38,8 +38,8 @@
+         # -Wimplicit-fallthrough needs an explicit fallthrough statement,
+         # so replace gperf's /*FALLTHROUGH*/ comment with the statement.
+         # https://savannah.gnu.org/bugs/index.php?53029
+-        gperf_output = gperf_output.replace('/*FALLTHROUGH*/',
+-                                            '  FALLTHROUGH;')
++        #gperf_output = gperf_output.replace('/*FALLTHROUGH*/',
++        #                                    '  FALLTHROUGH;')
+         # -Wpointer-to-int-cast warns about casting pointers to smaller ints
+         # Replace {(int)(long)&(foo), bar} with
+         # {static_cast<int>(reinterpret_cast<uintptr_t>(&(foo)), bar}
