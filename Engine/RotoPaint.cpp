@@ -2598,6 +2598,12 @@ RotoPaint::onOverlayPenDown(double time,
         pushUndoCommand(cmd);
         _imp->ui->builtBezier = cmd->getCurve();
         assert(_imp->ui->builtBezier);
+        // Re-render the node when the pen is released, otherwise the current frame keeps its stale image (issue #510).
+        // This also covers the tangent drag that may follow (eEventStateBuildingBezierControlPointTangent).
+        // A closed bezier is only rendered once finished, and finishing it evaluates the node.
+        if (isOpenBezier) {
+            _imp->ui->evaluateOnPenUp = true;
+        }
         _imp->ui->state = eEventStateBuildingBezierControlPointTangent;
         didSomething = true;
         break;
