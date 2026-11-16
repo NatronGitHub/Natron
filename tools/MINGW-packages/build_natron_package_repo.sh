@@ -60,6 +60,17 @@ for pkg_dir in ${PKGS}; do
 
       # Remove any package files from previous builds.
       rm -f mingw-w64-x86_64-*-any.pkg.tar.*
+
+      # Download and verify the sources first, and retry that once: the
+      # ffmpeg.org download has timed out several times. makepkg resumes the
+      # partial download. Only the download is retried; a build failure below
+      # still fails immediately.
+      if ! makepkg-mingw --verifysource --noconfirm; then
+        echo "Downloading the sources of ${PACKAGE_NAME} failed, retrying once ..."
+        sleep 30
+        makepkg-mingw --verifysource --noconfirm
+      fi
+
       time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm
 
       echo "Build complete."
