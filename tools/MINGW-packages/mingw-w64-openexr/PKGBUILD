@@ -3,7 +3,7 @@
 _realname=openexr
 pkgbase=mingw-w64-natron_${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-natron_${_realname}")
-pkgver=3.4.4
+pkgver=3.4.18
 pkgrel=99.1
 pkgdesc='A high dynamic-range image file format library (mingw-w64)'
 arch=('any')
@@ -33,10 +33,10 @@ replaces=(
   "${MINGW_PACKAGE_PREFIX}-ilmbase"
   "${MINGW_PACKAGE_PREFIX}-pyilmbase"
 )
-source=("https://github.com/openexr/openexr/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
+source=("https://github.com/AcademySoftwareFoundation/openexr/releases/download/v${pkgver}/${_realname}-${pkgver}.tar.gz"
         0006-cmake-soversion.patch
         0007-export-TypedAttribute-value.patch)
-sha256sums=('91fc5670f13fe7d9d3b7ae0fe695e3cc813200839084eae6497459e7f650d876'
+sha256sums=('7672d84ec396a2b23a5c3d67bab3a2703a9e220c7f569495a555ec2940e79f31'
             '5653da878ebbf5f3087bb529213931b48e151aef082b34e19d189e22be0411e7'
             '204777b48cde1c4d390789f10c5e429d5295be701f68a7937a90d0ecf271c048')
 
