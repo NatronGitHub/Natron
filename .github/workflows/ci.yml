@@ -78,8 +78,8 @@ jobs:
       - name: Download Plugins
         run: |
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
-          unzip openfx-io-build-ubuntu_22-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+          unzip openfx-io-build-ubuntu_24-testing.zip
           cd ..
 
       - name: Build Unix (debug)
@@ -212,8 +212,8 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
-          unzip openfx-io-build-windows_latest-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+          unzip openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
           PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
