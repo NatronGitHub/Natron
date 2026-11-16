@@ -1,0 +1,11 @@
+--- src/3rdparty/chromium/build/config/compiler/BUILD.gn	2024-09-27 21:58:44
++++ src/3rdparty/chromium/build/config/compiler/BUILD.gn	2024-09-27 22:00:31
+@@ -318,6 +318,8 @@
+       "-Wno-parentheses-equality",
+       "-Wno-tautological-compare",
+       "-Wno-thread-safety-attributes",
++      "-Wno-enum-constexpr-conversion",
++      "-Wno-unused-but-set-variable"
+     ]
+   }
+ 

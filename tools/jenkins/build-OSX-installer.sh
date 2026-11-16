@@ -1393,83 +1393,52 @@ fi
 
 # Name the portable archive to the name of the application
 mv "${PORTABLE_DIRNAME}.app" "${APP_NAME}.app"
-hdiutil create -srcfolder "${APP_NAME}.app" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -volname "${APP_NAME}" "${DMG_TMP}"
-DIRNAME="$(hdiutil attach "${DMG_TMP}" | grep -F /dev/disk| grep -F Apple_HFS|${GSED} -e 's@.*/Volumes@/Volumes@')"
-if [ -z "${DIRNAME:-}" ]; then
-    echo "Error: cannot find disk image mount point"
-    exit 1
-fi
-DISK="$(echo "$DIRNAME" | ${GSED} -e s@/Volumes/@@)"
+# --- Build the styled DMG without Finder/AppleScript (no TCC dependency) ---
+# Historically the window background and icon layout were applied by driving
+# Finder via AppleScript (osascript). That requires GUI Automation (TCC)
+# permission and fails in headless/CI or unprivileged sessions with a
+# "-10004 privilege violation". We now write the .DS_Store layout directly with
+# dmgbuild (https://dmgbuild.readthedocs.io), which needs no Finder.
+# dmgbuild availability is verified early by launchBuildMain.sh; installation is
+# documented in INSTALL_MACOS.md ("macOS packaging tools").
 
-# copy the background image
-mkdir "/Volumes/${DISK}/.background"
+# reduce contrast / brighten the background image (unchanged behaviour)
 DMG_BACK_NAME="$(basename "${DMG_BACK}")"
-# use ImageMagick to reduce contrast and brighten the image
-oiiotool -i "${DMG_BACK}" --powc 0.3 -o "/Volumes/${DISK}/.background/${DMG_BACK_NAME}"
+DMG_BACK_TMP="$(pwd)/dmg-background-${DMG_BACK_NAME}"
+oiiotool -i "${DMG_BACK}" --powc 0.3 -o "${DMG_BACK_TMP}"
 
-# already copied the application during "hdiutil create"
-#(cd Natron/App; tar cf - ${APP}) | (cd "$DIRNAME"; tar xvf -)
-
-# create an alias to Applications
-ln -sf /Applications "/Volumes/${DISK}/Applications"
-
-# dmg window dimensions
+# window size follows the background image; icon layout unchanged
+# (104px icons, app at (120,180), Applications alias at (400,180))
 dmg_width=$(identify -format '%w' "${DMG_BACK}")
 dmg_height=$(identify -format '%h' "${DMG_BACK}")
-dmg_topleft_x=200
-dmg_topleft_y=200
-dmg_bottomright_x=$((dmg_topleft_x + dmg_width))
-dmg_bottomright_y=$((dmg_topleft_y + dmg_height))
 
-#create the view of the dmg with the alias to Applications
-cat > tmpScript <<EOT
-tell application "Finder"
-tell disk "$DISK"
-open
-set current view of container window to icon view
-set toolbar visible of container window to false
-set statusbar visible of container window to false
-set the bounds of container window to {${dmg_topleft_x}, ${dmg_topleft_y}, ${dmg_bottomright_x}, ${dmg_bottomright_y}}
-set theViewOptions to the icon view options of container window
-set arrangement of theViewOptions to not arranged
-set icon size of theViewOptions to 104
-set background picture of theViewOptions to file ".background:${DMG_BACK_NAME}"
-set position of item "${APP_NAME}.app" of container window to {120, 180}
-set position of item "Applications" of container window to {400, 180}
-# Force saving changes to the disk by closing and opening the window
-close
-open
-update without registering applications
-delay 5
-eject
-delay 5
-end tell
-end tell
+cat > dmgbuild_settings.py <<EOT
+import os.path
+app = os.path.abspath("${APP_NAME}.app")
+appname = os.path.basename(app)
+format = "UDBZ"                      # bzip2-compressed, as before
+volume_name = "${APP_NAME}"
+files = [app]
+symlinks = {"Applications": "/Applications"}
+background = os.path.abspath("${DMG_BACK_TMP}")
+window_rect = ((200, 200), (${dmg_width}, ${dmg_height}))
+default_view = "icon-view"
+show_icon_preview = False
+icon_size = 104
+icon_locations = {appname: (120, 180), "Applications": (400, 180)}
 EOT
 
-# On Jenkins, this may fail once with the following error, the workaround is to re-run the script a second time.
-# execution error: Finder got an error: Can’t get disk "Test DMG". (-1728)
-FAIL=0
-osascript tmpScript || FAIL=1
-if [ "${FAIL}" = "1" ]; then
-    FAIL=0
-    hdiutil attach "${DMG_TMP}"
-    osascript tmpScript
-fi
+rm -f "${DMG_FINAL}"
+dmgbuild -s dmgbuild_settings.py "${APP_NAME}" "${DMG_FINAL}"
+rm -f dmgbuild_settings.py "${DMG_BACK_TMP}"
 
-rm tmpScript
-
-# convert to compressed image, delete temp image
-# UDBZ (bzip2) is supported on OS X >= 10.4
-hdiutil convert "${DMG_TMP}" -format UDBZ -o "${DMG_FINAL}"
-
-"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" -i "${BUNDLE_ID}" "${DMG_FINAL}"
+"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" -i "${BUNDLE_ID}" "${DMG_FINAL}" || echo "Warning: codesign of ${DMG_FINAL} failed (no signing identity?); continuing unsigned."
 
 # Rename to the original portable dir name so that the unit tests script can be the same
 # than the one used for other platforms
 mv "${APP_NAME}.app" "${PORTABLE_DIRNAME}.app"
 
-rm -rf "${DMG_TMP}"
+# (dmgbuild manages its own temporary image; there is no DMG_TMP to remove)
 #rm -rf splashscreen.*
 
 

@@ -1,0 +1,13 @@
+--- Portfile.orig	2026-11-15 17:34:26
++++ Portfile	2026-11-15 17:34:26
+@@ -88,6 +88,10 @@
+ 
+     # Backport fix for bundled libpng
+     patchfiles-append   patch-qtwebengine-libpng.diff
++
++    # Natron: the macOS 27 SDK no longer declares the kSBXProfile* constants
++    # in <sandbox.h> (libsystem_sandbox still exports them)
++    patchfiles-append   patch-qtwebengine-sandbox-kSBXProfile-macos27.diff
+ 
+     # fixes for newer LLVM/Clang; Sequoia or newer
+     if {${os.platform} eq "darwin" && ${os.major} >= 24} {

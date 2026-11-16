@@ -30,6 +30,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h" // Key
+#include "Global/QtCompat.h"
 
 #include "Engine/RenderStats.h"
 #include "Engine/ViewIdx.h"
@@ -91,6 +92,19 @@ public:
     bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
     bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+
+    /**
+     * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
+     * cursors), from the current requests of the overlays that received the last pen or key
+     * event: the overlay that caught the event wins, else the first non-default request in
+     * dispatch order. Returns false for the default (viewer) cursor.
+     **/
+    bool getOverlaysCursor(QCursor* cursor);
+
+private:
+    bool getOverlayCursorFor(const NodePtr& node, QCursor* cursor);
+
+public:
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
@@ -467,7 +481,7 @@ private:
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;

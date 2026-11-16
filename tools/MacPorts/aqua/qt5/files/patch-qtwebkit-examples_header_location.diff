@@ -1,0 +1,55 @@
+--- examples/webkitwidgets/domtraversal/window.ui.orig	2017-05-10 10:07:37.000000000 -0700
++++ examples/webkitwidgets/domtraversal/window.ui	2018-12-14 16:26:12.000000000 -0700
+@@ -81,7 +81,7 @@
+   <customwidget>
+    <class>QWebView</class>
+    <extends>QWidget</extends>
+-   <header>QtWebKitWidgets/QWebView</header>
++   <header>QWebView</header>
+   </customwidget>
+  </customwidgets>
+  <resources/>
+--- examples/webkitwidgets/simpleselector/window.ui.orig	2017-05-10 10:07:37.000000000 -0700
++++ examples/webkitwidgets/simpleselector/window.ui	2018-12-14 16:26:43.000000000 -0700
+@@ -64,7 +64,7 @@
+   <customwidget>
+    <class>QWebView</class>
+    <extends>QWidget</extends>
+-   <header>QtWebKit/QWebView</header>
++   <header>QWebView</header>
+   </customwidget>
+  </customwidgets>
+  <resources/>
+--- examples/webkitwidgets/previewer/previewer.ui.orig	2017-05-10 10:07:37.000000000 -0700
++++ examples/webkitwidgets/previewer/previewer.ui	2018-12-14 16:27:18.000000000 -0700
+@@ -74,7 +74,7 @@
+   <customwidget>
+    <class>QWebView</class>
+    <extends>QWidget</extends>
+-   <header>QtWebKit/QWebView</header>
++   <header>QWebView</header>
+   </customwidget>
+  </customwidgets>
+  <resources/>
+--- examples/webkitwidgets/xmlpatterns/qobjectxmlmodel/forms/mainwindow.ui.orig	2017-05-10 10:07:37.000000000 -0700
++++ examples/webkitwidgets/xmlpatterns/qobjectxmlmodel/forms/mainwindow.ui	2018-12-14 16:28:01.000000000 -0700
+@@ -188,7 +188,7 @@
+   <customwidget>
+    <class>QWebView</class>
+    <extends>QWidget</extends>
+-   <header>QtWebKit/QWebView</header>
++   <header>QWebView</header>
+   </customwidget>
+  </customwidgets>
+  <resources/>
+--- examples/webkitwidgets/formextractor/formextractor.ui.orig	2017-05-10 10:07:37.000000000 -0700
++++ examples/webkitwidgets/formextractor/formextractor.ui	2018-12-14 16:28:40.000000000 -0700
+@@ -151,7 +151,7 @@
+   <customwidget>
+    <class>QWebView</class>
+    <extends>QWidget</extends>
+-   <header>QtWebKit/QWebView</header>
++   <header>QWebView</header>
+   </customwidget>
+  </customwidgets>
+  <resources/>

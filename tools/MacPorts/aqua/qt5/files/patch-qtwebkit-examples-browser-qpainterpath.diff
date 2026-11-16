@@ -1,0 +1,10 @@
+--- examples/webkitwidgets/browser/searchlineedit.cpp.orig	2020-12-13 16:11:46.000000000 -0800
++++ examples/webkitwidgets/browser/searchlineedit.cpp	2020-12-13 16:14:09.000000000 -0800
+@@ -34,6 +34,7 @@
+ #include "searchlineedit.h"
+ 
+ #include <QtGui/QPainter>
++#include <QtGui/QPainterPath>
+ #include <QtGui/QMouseEvent>
+ #include <QtWidgets/QMenu>
+ #include <QtWidgets/QStyle>

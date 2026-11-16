@@ -361,7 +361,7 @@ TimeLineGui::paintGL()
         double screenPixelRatio = _imp->viewerTab->getViewer()->getScreenPixelRatio();
         if (screenPixelRatio != _imp->_screenPixelRatio) {
             _imp->_screenPixelRatio = screenPixelRatio;
-            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio, QFont::Bold));
         }
     }
     assert(_imp->_textFont);
@@ -1007,7 +1007,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 } // TimeLineGui::mouseMoveEvent
 
 void
-TimeLineGui::enterEvent(QEvent* e)
+TimeLineGui::enterEvent(QtCompat::QEnterEvent* e)
 {
     _imp->alphaCursor = true;
     update();

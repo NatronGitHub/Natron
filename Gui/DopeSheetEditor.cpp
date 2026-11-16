@@ -264,7 +264,7 @@ DopeSheetEditor::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-DopeSheetEditor::enterEvent(QEvent *e)
+DopeSheetEditor::enterEvent(QtCompat::QEnterEvent *e)
 {
     enterEventBase();
     QWidget::enterEvent(e);

@@ -234,7 +234,10 @@ else
     QMAKE_FLAGS_EXTRA+=(CONFIG+=openmp)
 fi
 
-if [ -d "$CUSTOM_BUILDS_PATH/osmesa" ]; then
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    # OSMESA_PATH and LLVM_PATH were set from OSMESA_PREFIX and LLVM_PREFIX by common.sh
+    :
+elif [ -d "$CUSTOM_BUILDS_PATH/osmesa" ]; then
     LLVM_PATH="$CUSTOM_BUILDS_PATH/llvm"
     OSMESA_PATH="$CUSTOM_BUILDS_PATH/osmesa"
 elif [ -d "/opt/osmesa" ]; then

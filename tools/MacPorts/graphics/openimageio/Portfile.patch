@@ -1,68 +1,43 @@
---- Portfile.orig	2024-07-19 15:40:09
-+++ Portfile	2024-07-19 16:50:43
-@@ -17,6 +17,7 @@
+--- Portfile.orig	2026-11-16 10:49:36
++++ Portfile	2026-11-16 15:08:07
+@@ -16,10 +16,12 @@
  
  # Keep this condition the same in the opencolorio, openimageio, and osl ports.
  set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 +set port_latest 1
  
  if {${port_latest}} {
-     github.setup        AcademySoftwareFoundation OpenImageIO 2.5.10.1 v
-@@ -36,41 +37,27 @@
- 
+     github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+-    revision            3
++    # Natron: revision bumped to rebuild against OpenColorIO 2.6 (4) and libraw 0.22.3 +gpl2 (5)
++    revision            5
+     checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                         sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                         size    56133013
+@@ -36,10 +38,19 @@
  github.tarball_from     archive
  
--if {${port_latest}} {
--    depends_lib-append  port:imath \
--                        port:openexr \
--                        port:openvdb \
--                        port:onetbb
--    #configure.args-append       -DUSE_TBB=OFF
--    configure.args-append       -DTBB_ROOT=${prefix}/libexec/onetbb
-+patchfiles-append oiio-2.0.8-invalidatespec.patch
-+patchfiles-append oiio-2.0.8-atomic-load.patch
-+patchfiles-append oiio-2.3.20-strnlen.patch
-+patchfiles-append oiio-2.4.6-sysutil.patch
-+patchfiles-append oiio-2.4.6-filesystem.patch
- 
--    set ffmpeg_ver 6
-+patchfiles-append   patch-2.4.5-cmake-disable-wall-werror.diff
- 
--    #configure.args-append       -DUSE_FFMPEG=OFF
--    depends_lib-append          port:ffmpeg${ffmpeg_ver}
--
--    configure.pkg_config_path-prepend \
--                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
+ if {${port_latest}} {
++    # Natron: do not clear subimages in invalidate_spec() (thread safety)
++    patchfiles-append   oiio-3.1-invalidatespec.patch
++    # The OIIO 2.x Natron patches (oiio-2.0.8-*, oiio-2.3.20-strnlen,
++    # oiio-2.4.6-*, patch-2.4.5-cmake-disable-wall-werror) are not applied to 3.1:
++    # the legacy-macOS ones only matter below macOS 10.13 (10.9 for atomic-load) and do not apply,
++    # and STOP_ON_WARNING already defaults to OFF on OIIO release branches.
++}
++
 +if {${port_latest}} {
-+    depends_lib-append  port:imath \
-+                        port:openexr
- } else {
-     patchfiles-append   patch-FindOpenJpeg.cmake.diff
-     patchfiles-append   patch-libraw-0.21.0.diff
-     patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
- 
-     depends_lib-append  port:field3d \
--                        port:openexr2 \
--                        port:tbb
-+                        port:openexr2
- 
-     configure.pkg_config_path-prepend \
-                         ${prefix}/libexec/openexr2/lib/pkgconfig
--
--    # https://trac.macports.org/ticket/69842
--    configure.args-append       -DUSE_OPENVDB=OFF
--
--    #configure.args-append       -DUSE_TBB=OFF
--    configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
--
--    #configure.args-append       -DUSE_FFMPEG=OFF
--    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
- }
- 
- # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
-@@ -119,16 +106,77 @@
-                         port:squish \
-                         port:${port_libfmt}
++    # Natron: openvdb is only pulled in by the openvdb variant (+natron conflicts with it)
+     depends_lib-append  port:imath \
+                         port:libxml2 \
+                         port:openexr \
+-                        port:openvdb \
+                         port:onetbb \
+                         port:OpenJPH \
+                         port:tcp_wrappers \
+@@ -125,15 +136,54 @@
+                         port:libpng \
+                         port:tiff
  
 +# we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 +# tested with openimageio 1.4.6rc1:
@@ -106,29 +81,6 @@
 +    #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 +}
 +
-+configure.args-append \
-+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-+    -DBOOST_ROOT=${prefix} \
-+    -DUSE_QT:BOOL=FALSE \
-+    -DUSE_PYTHON:BOOL=FALSE \
-+    -DUSE_PYTHON3:BOOL=FALSE \
-+    -DUSE_FIELD3D:BOOL=FALSE \
-+    -DUSE_FFMPEG:BOOL=FALSE \
-+    -DUSE_OPENJPEG:BOOL=FALSE \
-+    -DUSE_OCIO:BOOL=FALSE \
-+    -DUSE_OPENCV:BOOL=FALSE \
-+    -DUSE_OPENSSL:BOOL=FALSE \
-+    -DUSE_FREETYPE:BOOL=FALSE \
-+    -DUSE_GIF:BOOL=TRUE \
-+    -DUSE_HEIF:BOOL=TRUE \
-+    -DUSE_PTEX:BOOL=FALSE \
-+    -DUSE_LIBRAW:BOOL=TRUE \
-+    -DUSE_OPENGL:BOOL=FALSE \
-+    -DUSE_WEBP:BOOL=TRUE \
-+    -DUSE_JXL:BOOL=FALSE \
-+    -DBUILD_FMT_FORCE:BOOL=TRUE \
-+    -DSTOP_ON_WARNING:BOOL=FALSE
-+ 
  # optional components
  
  if {${os.platform} eq "darwin" && ${os.major} < 11} {
@@ -136,13 +88,12 @@
                          -DUSE_QT=OFF
      # configure.args-append -DUSE_OPENGL=OFF
 -} else {
--    PortGroup           qt5 1.0
+-    PortGroup           qt6 1.0
 -
--    qt5.min_version     5.6
  }
  
  if {[string match *gcc* ${configure.compiler}] \
-@@ -137,6 +185,13 @@
+@@ -142,7 +192,27 @@
                          -latomic
  }
  
@@ -154,10 +105,24 @@
 +}
 +
  configure.args-append   -DUSE_PYTHON=OFF
++# Natron: OpenVDB off unless the openvdb variant is selected (don't pick it up just because it is installed)
++configure.args-append   -DUSE_OPENVDB:BOOL=FALSE
++# Natron: likewise FFmpeg (the ffmpeg PortGroup always adds port:ffmpeg8, a second FFmpeg next to the
++# port:ffmpeg that openfx-io uses), OpenCV, Ptex, DICOM and JPEG XL: off unless their variant is selected
++configure.args-append   -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE -DUSE_PTEX:BOOL=FALSE \
++                        -DUSE_DICOM:BOOL=FALSE -DUSE_JXL:BOOL=FALSE
++# the ffmpeg PortGroup (re)adds its dependency in a callback, so remove it in a later one
++proc natron_no_ffmpeg {} {
++    if {![variant_isset ffmpeg]} {
++        depends_lib-delete  port:ffmpeg[option ffmpeg.version]
++    }
++}
++port::register_callback natron_no_ffmpeg
  
- set pythons_suffixes    {38 39 310 311 312}
-@@ -176,16 +231,44 @@
-     default_variants        +python312
+ set pythons_suffixes    {310 311 312 313 314}
+ 
+@@ -181,16 +251,38 @@
+     default_variants        +python314
  }
  
 +#configure.args-append       -DUSE_FFMPEG=OFF
@@ -165,13 +130,7 @@
 +    configure.args-delete       -DUSE_FFMPEG:BOOL=FALSE
 +    configure.args-append       -DUSE_FFMPEG:BOOL=TRUE
 +if {${port_latest}} {
-+    set ffmpeg_ver 6
-+
-+    #configure.args-append       -DUSE_FFMPEG=OFF
-+    depends_lib-append          port:ffmpeg${ffmpeg_ver}
-+
-+    configure.pkg_config_path-prepend \
-+                        ${prefix}/libexec/ffmpeg${ffmpeg_ver}/lib/pkgconfig
++    # the ffmpeg PortGroup (ffmpeg.version above) provides port:ffmpeg8 and its paths
 +} else {
 +    #configure.args-append       -DUSE_FFMPEG=OFF
 +    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
@@ -201,7 +160,7 @@
  set opencv_ver 4
  if {${os.platform} eq "darwin" && ${os.major} < 11} {
      # opencv4 does not build on 10.6 and earlier.
-@@ -195,9 +278,16 @@
+@@ -200,9 +292,16 @@
      configure.args-append   -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
                              -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
  }
@@ -216,9 +175,9 @@
 +    configure.args-append -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_DIRS=${prefix}/include/freetype2
 +}
  
- #configure.args-append       -DUSE_GIF=OFF
- depends_lib-append          port:giflib
-@@ -206,16 +296,49 @@
+ configure.args-append       -DUSE_GIF=OFF
+ # depends_lib-append          port:giflib
+@@ -211,16 +310,49 @@
  depends_lib-append          port:libheif
  
  #configure.args-append       -DUSE_PTEX=OFF
@@ -266,5 +225,5 @@
 +    configure.args-append -DUSE_DICOM:BOOL=TRUE
 +}
  
- #configure.args-append       -DUSE_WEBP=OFF
- depends_lib-append          port:webp
+ configure.args-append       -DUSE_WEBP=OFF
+ # depends_lib-append          port:webp

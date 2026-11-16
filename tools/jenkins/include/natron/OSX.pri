@@ -18,8 +18,8 @@ equals(QT_MAJOR_VERSION, 5) {
 }
 
 macx:openmp {
-  # libomp 12+ has a bug on macOS when lanching tasks from a background thread,
-  # see tools/MacPorts/lang/libomp/README.md
+  # libomp 12-15 had bugs with OpenMP on non-OpenMP threads; fixed since libomp 13/16/18
+  # (see tools/MacPorts/lang/libomp/README.md). MacPorts' current libomp is used.
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
   # These are set on the command-line, do not try to override it
   # search for 'printStatusMessage "Building Natron..."' in build-natron.sh

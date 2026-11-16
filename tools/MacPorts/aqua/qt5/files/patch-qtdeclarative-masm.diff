@@ -1,0 +1,49 @@
+--- src/3rdparty/masm/stubs/wtf/unicode/Unicode.h.b	2020-10-27 01:02:12.000000000 -0700
++++ src/3rdparty/masm/stubs/wtf/unicode/Unicode.h	2021-05-21 16:24:59.000000000 -0700
+@@ -42,7 +42,7 @@
+ #include <QChar>
+ 
+ typedef unsigned char LChar;
+-typedef unsigned short UChar;
++typedef char16_t UChar;
+ typedef int32_t UChar32;
+ 
+ namespace Unicode {
+@@ -53,16 +53,18 @@
+     inline UChar toUpper(UChar ch) {
+         return QChar::toUpper(ch);
+     }
+-    inline UChar32 u_tolower(UChar32 ch) {
++    // this is a terribly fughly way to go about working around
++    //  problems with icu's macros that alter the u_tolower() name.
++    inline UChar32 qt5_u_tolower(UChar32 ch) {
+         return QChar::toLower(ch);
+     }
+-    inline UChar32 u_toupper(UChar32 ch) {
++    inline UChar32 qt5_u_toupper(UChar32 ch) {
+         return QChar::toUpper(ch);
+     }
+ }
+ 
+-using Unicode::u_toupper;
+-using Unicode::u_tolower;
++using Unicode::qt5_u_toupper;
++using Unicode::qt5_u_tolower;
+ 
+ #define U16_IS_LEAD(ch) QChar::isHighSurrogate((ch))
+ #define U16_IS_TRAIL(ch) QChar::isLowSurrogate((ch))
+--- src/3rdparty/masm/yarr/YarrInterpreter.cpp.b	2020-10-27 01:02:12.000000000 -0700
++++ src/3rdparty/masm/yarr/YarrInterpreter.cpp	2021-05-21 16:24:19.000000000 -0700
+@@ -1719,8 +1719,10 @@
+     void atomPatternCharacter(UChar32 ch, unsigned inputPosition, unsigned frameLocation, Checked<unsigned> quantityMaxCount, QuantifierType quantityType)
+     {
+         if (m_pattern.ignoreCase()) {
+-            UChar32 lo = u_tolower(ch);
+-            UChar32 hi = u_toupper(ch);
++            // this is a terribly fughly way to go about working around
++            //  problems with icu's macros that alter the u_tolower() name.
++            UChar32 lo = qt5_u_tolower(ch);
++            UChar32 hi = qt5_u_toupper(ch);
+ 
+             if (lo != hi) {
+                 m_bodyDisjunction->terms.append(ByteTerm(lo, hi, inputPosition, frameLocation, quantityMaxCount, quantityType));

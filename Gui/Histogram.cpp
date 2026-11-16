@@ -1483,7 +1483,7 @@ Histogram::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-Histogram::enterEvent(QEvent* e)
+Histogram::enterEvent(QtCompat::QEnterEvent* e)
 {
     enterEventBase();
     QOpenGLWidget::enterEvent(e);

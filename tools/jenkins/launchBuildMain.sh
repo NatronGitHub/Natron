@@ -159,6 +159,26 @@ echo "OBJECTIVE_CC                      : \"${OBJECTIVE_CC:-}\""
 echo "OBJECTIVE_CXX                     : \"${OBJECTIVE_CXX:-}\""
 echo "-----------------------------------------------------------------------"
 
+# --- Early macOS packaging-dependency check ---------------------------------
+# Packaging (build-OSX-installer.sh) runs late in the build. Verify the extra
+# macOS packaging tools now so we fail fast instead of after a multi-hour build.
+# Any NEW macOS build dependency should be added here and documented in
+# INSTALL_MACOS.md ("macOS packaging tools").
+if [ "${PKGOS:-}" = "OSX" ]; then
+    macos_missing=""
+    for macos_tool in dmgbuild oiiotool identify; do
+        command -v "$macos_tool" >/dev/null 2>&1 || macos_missing="$macos_missing $macos_tool"
+    done
+    if [ -n "$macos_missing" ]; then
+        echo "Error: missing required macOS packaging tool(s):$macos_missing"
+        echo "  dmgbuild -> sudo port install py310-dmgbuild && sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
+        echo "  oiiotool -> sudo port install openimageio    (DMG background processing)"
+        echo "  identify -> sudo port install ImageMagick    (DMG background dimensions)"
+        echo "See INSTALL_MACOS.md, section 'macOS packaging tools'."
+        exit 1
+    fi
+fi
+
 # Source known git repositories
 source gitRepositories.sh
 
@@ -557,10 +577,21 @@ if [ "${INSTALLER_OS}" = "OSX" ]; then
         10.13.*) INSTALLER_OS="macOS1013";; 
         10.14.*) INSTALLER_OS="macOS1014";; 
         10.15.*) INSTALLER_OS="macOS1015";; 
-        11.*) INSTALLER_OS="macOS11";; 
-        12.*) INSTALLER_OS="macOS12";; 
-        13.*) INSTALLER_OS="macOS13";; 
-        14.*) INSTALLER_OS="macOS14";; 
+        11.*) INSTALLER_OS="macOS11";;
+        12.*) INSTALLER_OS="macOS12";;
+        13.*) INSTALLER_OS="macOS13";;
+        14.*) INSTALLER_OS="macOS14";;
+        15.*) INSTALLER_OS="macOS15";;
+        16.*) INSTALLER_OS="macOS16";;
+        # Apple switched to year-based version numbers with macOS 26 (Tahoe, 2025);
+        # there is no macOS 17..25. List a few future years explicitly.
+        26.*) INSTALLER_OS="macOS26";;
+        27.*) INSTALLER_OS="macOS27";;
+        28.*) INSTALLER_OS="macOS28";;
+        29.*) INSTALLER_OS="macOS29";;
+        30.*) INSTALLER_OS="macOS30";;
+        # Fallback for any unlisted/future release: use macOS<major>.
+        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
     esac
 
     case "${BITS}" in

@@ -38,6 +38,8 @@
 
 #include <QOpenGLWidget>
 
+#include "Global/QtCompat.h"
+
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -460,6 +462,14 @@ public:
         Q_EMIT selectionCleared();
     }
 
+public:
+    /**
+     * @brief Show the cursor requested by the OpenFX overlays (see ViewerTab::getOverlaysCursor()),
+     * or restore the viewer's cursor if they all request the default one.
+     * Called after each pen event dispatched to the overlays, unless the viewer shows its own cursor.
+     **/
+    void updateOverlayCursor();
+
 Q_SIGNALS:
 
     /**
@@ -494,7 +504,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
 

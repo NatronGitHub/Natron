@@ -8,6 +8,7 @@ mingw-w64-natron-setup
 mingw-w64-imath
 mingw-w64-openexr
 mingw-w64-libraw-gpl2
+mingw-w64-libraw-lgpl
 mingw-w64-opencolorio2-git
 mingw-w64-openimageio
 mingw-w64-seexpr-git
@@ -18,7 +19,9 @@ mingw-w64-poppler
 mingw-w64-imagemagick
 mingw-w64-osmesa
 mingw-w64-dump_syms
+mingw-w64-natron-build-deps-common
 mingw-w64-natron-build-deps-qt5
+mingw-w64-natron-build-deps-qt6
 "
 
 source "${BUILD_SCRIPT_DIR}/natron_repo_common.sh"

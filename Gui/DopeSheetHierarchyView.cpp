@@ -130,7 +130,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
                                             QItemSelection *selection) const
 {
     int row = 0;
-    QModelIndex childIndex = index.model()->index(row, 0);
+    QModelIndex childIndex = index.model()->index(row, 0, index);
 
     while ( childIndex.isValid() ) {
         if ( !selection->contains(childIndex) ) {
@@ -143,7 +143,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
         }
 
         ++row;
-        childIndex = index.model()->index(row, 0);
+        childIndex = index.model()->index(row, 0, index);
     }
 }
 
@@ -187,7 +187,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
         QModelIndex index = (*it);
         bool selectParent = true;
         int row = 0;
-        QModelIndex childIndexIt = index.model()->index(row, 0);
+        QModelIndex childIndexIt = index.model()->index(row, 0, index);
 
         while ( childIndexIt.isValid() ) {
             if ( childIndexIt.data(QT_ROLE_CONTEXT_IS_ANIMATED).toBool() ) {
@@ -199,7 +199,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
             }
 
             ++row;
-            childIndexIt = index.model()->index(row, 0);
+            childIndexIt = index.model()->index(row, 0, index);
         }
 
         if ( (flags & QItemSelectionModel::Select && selectParent) ) {

@@ -1,0 +1,11 @@
+--- qmake/generators/makefile.cpp.orig	2018-12-03 04:15:26.000000000 -0700
++++ qmake/generators/makefile.cpp	2018-12-22 06:02:13.000000000 -0700
+@@ -3423,7 +3423,7 @@
+         t << "-I${includedir}";
+     if (target_mode == TARG_MAC_MODE && project->isActiveConfig("lib_bundle")
+         && libDir != QLatin1String("/Library/Frameworks")) {
+-            t << " -F${libdir}";
++            t << " -F${libdir} -I${prefix}/include";
+     }
+     t << Qt::endl;
+ 
