@@ -174,8 +174,13 @@ protected:
         // Every shape is backed by OpenFX nodes (see RotoDrawableItem::createNodes()).
         _havePlugins = isPluginAvailable(PLUGINID_OFX_MERGE) && isPluginAvailable(PLUGINID_OFX_ROTO);
         if (!_havePlugins) {
-            std::cout << "Skipping: the RotoPaint tests need the " PLUGINID_OFX_MERGE " and " PLUGINID_OFX_ROTO
-                " plug-ins (openfx-misc), found through OFX_PLUGIN_PATH" << std::endl;
+            // The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
+            // so say clearly that they did not run, as OSGLContext_Test does.
+            // TODO: Convert to GTEST_SKIP() when gtest updated.
+            const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+            std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
+                      << ": plug-ins not found (needs " PLUGINID_OFX_MERGE " and " PLUGINID_OFX_ROTO
+                " from openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
 
             return;
         }
