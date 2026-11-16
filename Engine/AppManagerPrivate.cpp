@@ -35,6 +35,7 @@
 #endif
 #include <cstddef>
 #include <cstdlib>
+#include <cstring> // strcmp
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -52,6 +53,7 @@ GCC_DIAG_ON(unused-parameter)
 #include <QProcess>
 #include <QTemporaryFile>
 #include <QCoreApplication>
+#include <QDir>
 #include <QLocalServer>
 #include <QLocalSocket>
 
@@ -262,16 +264,13 @@ AppManagerPrivate::AppManagerPrivate()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , onWayland(false)
     , renderingContextPool()
     , openGLRenderers()
 {
     setMaxCacheFiles();
 
     runningThreadsCount = 0;
-
-#if defined(__NATRON_LINUX__)
-    onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY") && !qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND");
-#endif
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -745,9 +744,88 @@ post_gl_call(const char *name,
 
 #endif // debug
 
+#if defined(__NATRON_LINUX__)
+// Guess whether Qt will use its Wayland platform plugin. This has to be known before
+// the QApplication is created (see AppManager::loadFromArgs()), so this follows the
+// rules of QGuiApplicationPrivate::createPlatformIntegration() in Qt 5.15 and Qt 6.
+// When Qt runs on XWayland (the xcb platform), WAYLAND_DISPLAY is usually set too,
+// but the off-screen OpenGL context must then use GLX, not Wayland/EGL (issue #1001).
+static bool
+qtPlatformIsWayland(int argc,
+                    char* const* argv)
+{
+    if ( !qEnvironmentVariableIsSet("WAYLAND_DISPLAY") ) {
+        return false;
+    }
+
+    // An explicit choice: the -platform command-line option, else QT_QPA_PLATFORM.
+    // It may be a list of platforms to try ("wayland;xcb"), each with options ("xcb:foo").
+    QByteArray platformName = qgetenv("QT_QPA_PLATFORM");
+    for (int i = 1; i < argc; ++i) {
+        const char* arg = argv[i];
+        if (!arg || arg[0] != '-') {
+            continue;
+        }
+        if (arg[1] == '-') { // startsWith("--")
+            ++arg;
+        }
+        if ( (std::strcmp(arg, "-platform") == 0) && (i + 1 < argc) && argv[i + 1] ) {
+            ++i;
+            platformName = argv[i];
+        }
+    }
+    bool wayland;
+    if ( !platformName.isEmpty() ) {
+        wayland = platformName.trimmed().startsWith("wayland");
+    } else {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        // Qt 6 tries Wayland first when WAYLAND_DISPLAY is set.
+        wayland = true;
+#else
+        // Qt 5 uses xcb unless XDG_SESSION_TYPE is "wayland", which it ignores on GNOME.
+        wayland = false;
+        if (qgetenv("XDG_SESSION_TYPE") == "wayland") {
+            const QByteArray currentDesktop = qgetenv("XDG_CURRENT_DESKTOP").toLower();
+            const QByteArray sessionDesktop = qgetenv("XDG_SESSION_DESKTOP").toLower();
+            wayland = !currentDesktop.contains("gnome") && !sessionDesktop.contains("gnome");
+        }
+#endif
+    }
+    if (!wayland) {
+        return false;
+    }
+
+    // Qt falls back to xcb if it has no Wayland platform plugin (official Natron builds
+    // only ship the xcb plugin).
+    const QStringList paths = QCoreApplication::libraryPaths();
+    for (QStringList::const_iterator it = paths.begin(); it != paths.end(); ++it) {
+        QDir platformsDir( *it + QString::fromUtf8("/platforms") );
+        if ( !platformsDir.entryList(QStringList( QString::fromUtf8("libqwayland*") ), QDir::Files).isEmpty() ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+#endif // __NATRON_LINUX__
+
 void
 AppManagerPrivate::initGLAPISpecific()
 {
+#if defined(__NATRON_LINUX__)
+    // Use the Wayland (EGL) off-screen context only if Qt itself runs on Wayland.
+    // The headless NatronRenderer has no Qt platform, so it uses Wayland whenever
+    // WAYLAND_DISPLAY is set.
+    // NATRON_DISABLE_WAYLAND forces X11 (GLX) in all cases.
+    if ( qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND") ) {
+        onWayland = false;
+    } else if ( appPTR->isBackground() ) {
+        onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY");
+    } else {
+        onWayland = qtPlatformIsWayland( nArgs, commandLineArgsUtf8.empty() ? NULL : &commandLineArgsUtf8.front() );
+    }
+#endif
 #ifdef Q_OS_WIN32
     // scoped_ptr
     wglInfo.reset(new OSGLContext_wgl_data);
