@@ -61,37 +61,22 @@ Concrete work items (audited)
 The following are the actual Qt6-incompatible usages found in the tree today.
 Counts are occurrences; see the named files.
 
-``QRegExp`` → ``QRegularExpression`` (highest-effort item)
-    ``QRegExp`` is removed from Qt 6 core (it survives only in the ``Qt5Compat``
-    module, which is not a long-term option). **~33 uses across 16 files.**
-    Engine: ``FileSystemModel.cpp`` (3), ``Markdown.cpp`` (3), ``Project.cpp``
-    (2), ``OutputEffectInstance.cpp`` (2), ``NodeDocumentation.cpp`` (1),
-    ``Node.cpp`` (1), ``CLArgs.cpp`` (1). Gui: ``ScriptTextEdit.cpp`` (6) +
-    ``.h`` (1), ``RenderStatsDialog.cpp`` (3), ``FileTypeMainWindow_win.cpp``
-    (3), ``NodeGraph45.cpp`` (2), ``NodeCreationDialog.cpp`` (2),
-    ``PreferencesPanel.cpp`` (1), ``ViewerGL.cpp`` (1), ``SequenceFileDialog.h``
-    (1). ``QRegularExpression`` has different semantics (anchoring, ``exactMatch``
-    has no direct equivalent — use ``^…$`` or ``anchoredPattern()``), so each
-    site needs review, not a blind substitution. ``QRegularExpression`` exists in
-    Qt 5.15 too, so most conversions can be made **unconditionally** and will
-    keep Qt 5 working.
+Done: removed Qt APIs that have a Qt 5.15 equivalent (PR #1084)
+    These were replaced **unconditionally**, so the Qt 5 build uses the same
+    code:
 
-``QDesktopWidget`` / ``QApplication::desktop()`` → ``QScreen`` (audit ~6 files)
-    Removed in Qt 6. Referenced in ``GuiApplicationManager10.cpp`` (active — used
-    for logical DPI), ``MessageBox.cpp``, ``Histogram.cpp``,
-    ``NodeCreationDialog.cpp``, ``CurveWidget.cpp`` and ``ViewerGLPrivate.cpp`` —
-    but audit each: several of these references are already commented out or
-    partly migrated (``CurveWidget.cpp``, for example, already uses
-    ``QGuiApplication::primaryScreen()`` in live code and only has a dead
-    ``QDesktopWidget`` comment). For the remaining live uses, replace with
-    ``QGuiApplication::screens()`` / ``QWidget::screen()`` /
-    ``screen()->geometry()``. These APIs exist in Qt 5.15, so the change can be
-    unconditional.
-
-``QWidget::setMargin`` → ``setContentsMargins``
-    A ``QLayout::setMargin(0)`` call in ``Gui/MessageBox.cpp`` (inside a
-    non-Qt6 ``#else`` branch today). Deprecated; replace with
-    ``setContentsMargins(0,0,0,0)``, which works on both Qt 5 and Qt 6.
+    - ``QRegExp`` → ``QRegularExpression`` (about 33 uses in 16 files). No
+      ``QRegExp`` is left. The semantic differences that matter are listed in
+      the note below.
+    - ``QDesktopWidget`` / ``QApplication::desktop()`` → ``QScreen``. The only
+      live use was the logical DPI in ``GuiApplicationManager10.cpp``, which
+      now reads ``QGuiApplication::primaryScreen()`` (falling back to 72 dpi
+      when there is no screen, as ``QDesktopWidget`` did). The remaining
+      mentions are in comments.
+    - ``QLayout::setMargin(0)`` → ``setContentsMargins(0, 0, 0, 0)``.
+    - ``QVariant::type()`` / ``QVariant::Url`` → ``userType()`` /
+      ``QMetaType::QUrl``, and ``QFontMetrics::width()`` →
+      ``horizontalAdvance()`` (Qt 5.11+).
 
 Enum / ``QFlags`` scoping and the Python bindings (issue #854)
     Qt 6 (and PySide6) are stricter about scoped enums and ``QFlags``. Issue
@@ -101,10 +86,6 @@ Enum / ``QFlags`` scoping and the Python bindings (issue #854)
     that stores Qt flags as ``int`` (e.g. through ``QVariant``), and make sure
     the ``typesystem_*.xml`` files expose the flag types correctly to
     Shiboken6/PySide6. Regenerate the bindings with the Qt6 toolchain.
-
-``QVariant`` API (1 site)
-    One ``QVariant::Type`` use; Qt 6 deprecates ``QVariant::Type`` in favor of
-    ``QMetaType``. Localized fix.
 
 Shiboken6 / PySide6 binding regeneration
     Switch the binding generation to Shiboken6/PySide6 when ``NATRON_QT6`` is on
@@ -132,7 +113,9 @@ The replacements below were **compiled against both Qt 5.15 and Qt 6** (Qt
 5.15.19 and Qt 6.11.1 on macOS, ``clang++ -std=c++17 -fsyntax-only``, exit code
 0 on both). They use only APIs present in both versions, so they can be applied
 **unconditionally** — no ``#if QT_VERSION`` guard is needed, and the Qt 5 build
-keeps working.
+keeps working. The ``QtCompat::wildcardToRegularExpression()`` snippet was
+checked against Qt 5.15.19's ``QRegExp::Wildcard`` on a set of patterns and
+strings; it only uses ``QRegularExpression`` APIs that exist since Qt 5.12.
 
 ``QApplication::desktop()->screenGeometry()`` → primary ``QScreen``::
 
@@ -159,20 +142,28 @@ keeps working.
 ``QRegExp`` capture (e.g. the backup-suffix regex in ``Project.cpp``)::
 
     // before:  QRegExp rx("\\.~(\\d+)~$"); rx.lastIndexIn(s); QString n = rx.cap(1);
-    // after:
-    QRegularExpression rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    // after (\z: PCRE's $ also matches before a final newline):
+    QRegularExpression rx(QString::fromUtf8("\\.~(\\d+)~\\z"));
     QRegularExpressionMatch m = rx.match(s);
     QString n = m.hasMatch() ? m.captured(1) : QString();
 
-``QRegExp`` wildcard (the ``QRegExp::WildcardUnix`` case in
-``NodeCreationDialog.cpp`` — the one site that needs real thought)::
+``QRegExp`` wildcard (``QRegExp::Wildcard`` in the Find Node and Render Stats
+filters)::
 
-    // before:  QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
-    // after:
-    QRegularExpression expr(
-        QRegularExpression::wildcardToRegularExpression(pattern),
-        QRegularExpression::CaseInsensitiveOption);
+    // before:  QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::Wildcard);
+    //          bool matched = expr.exactMatch(text);
+    // after (anchored, '*' and '?' also match '/'):
+    QRegularExpression expr(QtCompat::wildcardToRegularExpression(pattern),
+                            QRegularExpression::CaseInsensitiveOption);
     bool matched = expr.match(text).hasMatch();
+
+Do **not** use ``QRegularExpression::wildcardToRegularExpression()`` for these:
+it is path-aware (``*`` and ``?`` do not match ``/``, so ``*Grade*`` would not
+match ``Color/Grade``), and it reads ``[!a]`` as a negated set, even with Qt
+6.6's ``NonPathWildcardConversion``. It is fine for file names, as in
+``FileSystemModel.cpp``. Where the wildcard was only built as ``*c*h*a*r*`` from
+typed text (Tab menu, Preferences plug-in filter), join
+``QRegularExpression::escape()`` of each character with ``.*`` instead.
 
 ``QLayout::setMargin(0)`` (in ``MessageBox.cpp``) → ``setContentsMargins``::
 
@@ -185,16 +176,21 @@ keeps working.
    to match. ``QRegularExpression::match()`` is find-anywhere and has no
    ``exactMatch`` equivalent. So where the old code used ``indexIn``, the direct
    ``match()`` is correct; where it used ``exactMatch``, anchor the pattern with
-   ``\A…\z`` (or ``QRegularExpression::anchoredPattern()``). Review each of the
-   16 sites for which mode it relied on.
+   ``\A…\z`` (or ``QRegularExpression::anchoredPattern()``).
+
+   Other differences to keep in mind: ``\w``, ``\b`` and ``\d`` are
+   ASCII-only unless ``QRegularExpression::UseUnicodePropertiesOption`` is set
+   (QRegExp was Unicode-aware); ``$`` also matches before a final newline (use
+   ``\z``); and ``.`` does not match newlines unless
+   ``QRegularExpression::DotMatchesEverythingOption`` is set.
 
 Suggested sequence
 ------------------
 
 1. **Land the unconditional API modernizations first** (``QRegExp`` →
    ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``, ``setMargin``,
-   ``QVariant::Type``). These improve the Qt 5 build too and shrink the eventual
-   Qt6 diff. Verify the Qt 5 build and test suite stay green.
+   ``QVariant::Type``). Done in PR #1084. These improve the Qt 5 build too and
+   shrink the eventual Qt6 diff.
 2. **Bring the qmake build to parity** with CMake's ``NATRON_QT6`` switch so
    both build systems can select Qt 6.
 3. **Get a clean Qt 6 compile** with ``-DNATRON_QT6=ON``, fixing residual
