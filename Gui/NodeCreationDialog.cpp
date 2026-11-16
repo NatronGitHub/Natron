@@ -144,21 +144,24 @@ CompleterLineEdit::filterText(const QString & txt)
             sl.push_front(it->second.second);
         }
     } else {
+        // Match the typed characters in order, with anything in between:
+        // "grd" gives "g.*r.*d".
         QString pattern;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if (i > 0) {
+                pattern += QLatin1String(".*");
+            }
+            pattern += QRegularExpression::escape( QString(txt[i]) );
         }
-        pattern.push_back( QLatin1Char('*') );
-        // The pattern is wildcarded at both ends, so the anchored conversion
-        // matches exactly what exactMatch() and contains() did.
-        QRegularExpression expr(QRegularExpression::wildcardToRegularExpression(pattern),
-                                QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
 
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
+        // exactMatch() used to match the whole name.
+        const QRegularExpression exprWhole( QRegularExpression::anchoredPattern( QLatin1String(".*") + pattern + QLatin1String(".*") ),
+                                            QRegularExpression::CaseInsensitiveOption );
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            QRegularExpressionMatch match = expr.match(it->second.first);
+            QRegularExpressionMatch match = exprWhole.match(it->second.first);
             if ( match.hasMatch() ) {
                 QStringList& matchedForLength =  matchOrdered[match.capturedLength()];
                 matchedForLength.push_front(it->second.second);

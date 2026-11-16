@@ -25,6 +25,7 @@
 #include <QString>
 #include <QUrl>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 NATRON_NAMESPACE_ENTER
 
@@ -44,6 +45,70 @@ removeFileExtension(QString & filename)
 
     //qDebug() << "->" << filename << fi.suffix();
     return extension;
+}
+
+/* Convert a wildcard pattern to an anchored QRegularExpression pattern, with
+ * the semantics of the QRegExp::Wildcard syntax, which is gone in Qt6:
+ * - '*' matches any sequence of characters, and '?' any single character,
+ *   including '/';
+ * - "[...]" is a character set and "[^...]" a negated set ('!' is literal);
+ * - every other character is literal, including the backslash (for a
+ *   backslash followed by another character, Qt5's QRegExp wanted two
+ *   backslashes in the string, which was a bug).
+ * QRegularExpression::wildcardToRegularExpression() is not a drop-in
+ * replacement: it is path-aware ('*' and '?' do not match '/'), and it reads
+ * "[!...]" as a negated set, even with Qt 6.6's NonPathWildcardConversion.
+ * As with QRegExp, an unterminated '[' gives an invalid expression. */
+inline QString
+wildcardToRegularExpression(const QString & wildcard)
+{
+    QString rx;
+    QString literal; // run of literal characters, escaped when flushed
+    const int n = wildcard.size();
+    int i = 0;
+
+    while (i < n) {
+        const QChar c = wildcard.at(i++);
+        if ( ( c != QLatin1Char('*') ) && ( c != QLatin1Char('?') ) && ( c != QLatin1Char('[') ) ) {
+            literal += c;
+            continue;
+        }
+        rx += QRegularExpression::escape(literal);
+        literal.clear();
+        if ( c == QLatin1Char('*') ) {
+            rx += QLatin1String(".*");
+        } else if ( c == QLatin1Char('?') ) {
+            rx += QLatin1Char('.');
+        } else {
+            // Character set: copy it, escaping the punctuation, which may be
+            // special inside a PCRE set ('\\', '[', "[:alpha:]"...) but was
+            // literal for QRegExp. '-' still denotes a range.
+            rx += QLatin1Char('[');
+            if ( ( i < n ) && ( wildcard.at(i) == QLatin1Char('^') ) ) {
+                rx += QLatin1Char('^');
+                ++i;
+            }
+            if ( ( i < n ) && ( wildcard.at(i) == QLatin1Char(']') ) ) {
+                // a leading ']' is a member of the set
+                rx += QLatin1String("\\]");
+                ++i;
+            }
+            while ( ( i < n ) && ( wildcard.at(i) != QLatin1Char(']') ) ) {
+                const QChar s = wildcard.at(i++);
+                if ( !s.isLetterOrNumber() && !s.isSurrogate() && ( s != QLatin1Char('-') ) ) {
+                    rx += QLatin1Char('\\');
+                }
+                rx += s;
+            }
+            if (i < n) {
+                rx += QLatin1Char(']');
+                ++i;
+            }
+        }
+    }
+    rx += QRegularExpression::escape(literal);
+
+    return QRegularExpression::anchoredPattern(rx);
 }
 
 // Define compatibility typedefs so code builds with Qt5 & Qt6

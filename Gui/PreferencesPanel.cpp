@@ -42,6 +42,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QHeaderView>
 #include <QPainter>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -813,16 +814,16 @@ PreferencesPanel::filterPlugins(const QString & txt)
             it->item->setExpanded(false);
         }
     } else {
+        // Match the typed characters in order, with anything in between:
+        // "grd" gives "g.*r.*d".
         QString pattern;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if (i > 0) {
+                pattern += QLatin1String(".*");
+            }
+            pattern += QRegularExpression::escape( QString(txt[i]) );
         }
-        pattern.push_back( QLatin1Char('*') );
-        // The pattern is wildcarded at both ends, so the anchored conversion
-        // matches exactly what the unanchored contains() did.
-        QRegularExpression expr(QRegularExpression::wildcardToRegularExpression(pattern),
-                                QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {

@@ -369,8 +369,9 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-    // wildcardToRegularExpression() anchors, which is what exactMatch() did.
-    QRegularExpression exp(QRegularExpression::wildcardToRegularExpression(
+    // QtCompat::wildcardToRegularExpression() anchors, which is what
+    // exactMatch() did, and lets '*' match '/', unlike Qt's function.
+    QRegularExpression exp(QtCompat::wildcardToRegularExpression(
                                _imp->matchWhole->isChecked() ? filter :
                                ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ) ),
                            sensitivity == Qt::CaseInsensitive ?

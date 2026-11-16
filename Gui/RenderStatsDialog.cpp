@@ -36,6 +36,8 @@
 #include <QItemSelectionModel>
 #include <QRegularExpression>
 
+#include "Global/QtCompat.h"
+
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -1010,13 +1012,14 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
-        QRegularExpression nameExpr(QRegularExpression::wildcardToRegularExpression(nameFilter),
+        // QtCompat::wildcardToRegularExpression() anchors, like exactMatch() did.
+        QRegularExpression nameExpr(QtCompat::wildcardToRegularExpression(nameFilter),
                                     QRegularExpression::CaseInsensitiveOption);
         if ( !nameExpr.isValid() ) {
             return;
         }
 
-        QRegularExpression idExpr(QRegularExpression::wildcardToRegularExpression(pluginIDFilter),
+        QRegularExpression idExpr(QtCompat::wildcardToRegularExpression(pluginIDFilter),
                                   QRegularExpression::CaseInsensitiveOption);
         if ( !idExpr.isValid() ) {
             return;
