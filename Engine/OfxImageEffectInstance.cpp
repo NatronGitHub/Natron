@@ -1153,8 +1153,6 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
 
     /// set the default for those
 
-    /// is there multiple bit depth support? Depends on host, plugin and context
-    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
 
     //Set the output frame rate according to what input clips have. Several inputs with different frame rates should be
     //forbidden by the host.
@@ -1205,7 +1203,9 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         outArgs.setStringProperty( componentParamName.c_str(), ofxClipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
         const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) );
-        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
+        // always writable: the plug-in "must set [it] to one of the pixel depths both the host and plugin supports"
+        // (OFX spec); a read-only property made plug-ins fail with openfx #91
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, false, bitDepthStr.c_str()};
         outArgs.createProperty(specDep);
 
         OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,          "1"};
