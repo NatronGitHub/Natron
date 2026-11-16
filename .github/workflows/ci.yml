@@ -2,6 +2,9 @@ name: Tests
 
 on:
   workflow_dispatch: {}
+  # nightly macOS build of the default branch, skipped if it didn't change in the last 25 hours
+  schedule:
+  - cron: '17 3 * * *'
   # one run per change: push only on the main and release branches and on tags,
   # feature branches run through their pull request
   push:
@@ -29,7 +32,7 @@ concurrency:
 
 jobs:
   unix_test:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -122,7 +125,7 @@ jobs:
         run: exit 1
 
   win-test:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -229,13 +232,38 @@ jobs:
         if: steps.run-windows-tests.outcome == 'failure'
         run: exit 1
 
+  changes:
+    # nightly runs only: did the default branch change in the last 25 hours?
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Check for recent commits
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
+          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   macos-test:
     # Built with MacPorts (as the official macOS binaries), never Homebrew.
     # The Natron-only dependencies come from MacPorts binary archives; the
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
+    # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
+    # Windows: its tests are allowed to fail until #1147 is fixed, so only require that it ran.
+    needs: [changes, unix_test, win-test]
+    if: >-
+      !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result != 'cancelled' && needs.win-test.result != 'skipped' &&
+       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.10
     runs-on: macos-15
     timeout-minutes: 360
