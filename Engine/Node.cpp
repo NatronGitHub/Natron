@@ -43,6 +43,7 @@
 #include <QTextStream>
 #include <QFile>
 #include <QRegExp>
+#include <QRandomGenerator>
 
 #include <ofxNatron.h>
 
@@ -120,7 +121,33 @@ using std::shared_ptr;
 // protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
+// Advance the knobs age after a change of the node's parameters. knobsAgeMutex must be locked for writing.
+//
+// The age is mixed into the node hash, which keys the RAM, disk and viewer caches. The disk and viewer caches
+// persist across sessions, and the age is saved in the project. Simply incrementing the loaded age would reproduce,
+// in a new session, ages (and hashes) that were already reached in an earlier session (for example one that was
+// closed without saving), but with different parameter values: the persistent caches would then return images
+// computed with those other values (#1124). The first change after a load thus jumps to a random 64-bit age, and the
+// following changes increment it, so that hashes stay reproducible for the saved state of a project (its cached
+// images remain usable after reopening it) but are unique to the session as soon as a parameter changes.
+void
+advanceKnobsAge(U64* age,
+                bool* isUniqueToSession)
+{
+    if (*isUniqueToSession) {
+        ++*age;
+    } else {
+        *age = QRandomGenerator::global()->generate64();
+        *isUniqueToSession = true;
+    }
 
+    ///if the age of an effect somehow reaches the maximum age (will never happen)
+    ///handle it by clearing the cache and resetting the age to 0.
+    if ( *age == std::numeric_limits<U64>::max() ) {
+        appPTR->clearAllCaches();
+        *age = 0;
+    }
+}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -1253,6 +1280,8 @@ Node::setKnobsAge(U64 newAge)
         if (changed) {
             _imp->knobsAge = newAge;
         }
+        // newAge comes from a serialization or from the master node: the next change must give a fresh age (#1124)
+        _imp->knobsAgeIsUniqueToSession = false;
     }
     if (changed) {
         Q_EMIT knobsAgeChanged(newAge);
@@ -1265,31 +1294,17 @@ Node::incrementKnobsAge_internal()
 {
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
     }
 }
 
 void
 Node::incrementKnobsAge()
 {
-    U32 newAge;
+    U64 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
         newAge = _imp->knobsAge;
     }
     Q_EMIT knobsAgeChanged(newAge);
