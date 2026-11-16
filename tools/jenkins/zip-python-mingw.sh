@@ -18,10 +18,11 @@ PACMAN_CACHE="/var/cache/pacman/pkg"
 
 # Stdlib packages to embed. Plain top-level modules are picked up by the *.py
 # glob below, so only directories belong here. Watch for modules that turn into
-# packages between releases: pathlib did so in 3.13, string and sysconfig in
+# packages between releases: pathlib and sysconfig did so in 3.13, string in
 # 3.14. They stop being covered by the glob and silently vanish from the zip
 # unless they are listed here. Entries that no longer exist are skipped, so
-# names kept for older Pythons (lib2to3, msilib, dropped in 3.13) are harmless.
+# names kept for older Pythons are harmless (both lib2to3, deprecated since
+# 3.11, and msilib, removed by PEP 594, are gone in 3.13).
 PYDIRS="
 asyncio
 collections
@@ -72,8 +73,9 @@ if [ ! -d "${SRC}" ]; then
 fi
 
 for dir in ${PYDIRS}; do
-    # PYDIRS is a fixed list but the stdlib keeps shrinking: PEP 594 dropped
-    # lib2to3 and msilib in 3.13. Treat an absent module as expected.
+    # PYDIRS is a fixed list but the stdlib keeps shrinking: Python 3.13
+    # removed lib2to3 (deprecated) and msilib (PEP 594). Treat an absent module
+    # as expected.
     if [ -d "${SRC}/${dir}" ]; then
         cp -a "${SRC}/${dir}" "${EMBED}/"
     else

@@ -277,8 +277,12 @@ else
     else
         PYSIDE_MAJOR="$QT_VERSION_MAJOR"
     fi
-    catDll libpyside${PYSIDE_MAJOR}
-    catDll libshiboken${PYSIDE_MAJOR}
+    # findDll globs "<name>*.dll", so "libpyside6" would also pick up
+    # libpyside6qml. The main DLLs carry the Python extension suffix after a
+    # dot (libpyside6.cp313-mingw_x86_64_ucrt_gnu.dll and the like), so
+    # match "libpyside6." and "libshiboken6." to get exactly the main DLL.
+    catDll libpyside${PYSIDE_MAJOR}.
+    catDll libshiboken${PYSIDE_MAJOR}.
 fi
 
 # gcc

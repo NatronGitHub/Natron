@@ -70,11 +70,16 @@ function checkoutRepository() {
         REPO_COMMIT=$(git rev-parse HEAD)
         echo "done, got commit $REPO_COMMIT"
     else
-        # The clone is shallow and holds only the branch tip, so ask for the
-        # pinned commit before checking it out. Needs the full 40 character sha:
-        # GitHub rejects an abbreviated one with "not our ref".
-        $TIMEOUT 1800 $GIT fetch --depth 1 origin "$REPO_COMMIT"
-        $GIT checkout "$REPO_COMMIT"
+        # A fresh clone is shallow and holds only the branch tip, so ask for
+        # the pinned commit before checking it out. Needs the full 40 character
+        # sha: GitHub rejects an abbreviated one with "not our ref". Only fetch
+        # when the commit is missing, so that an existing full clone
+        # (DEBUG_SCRIPTS=1) is not made shallow. set -e is off here (the
+        # function is called with "|| FAIL=$?"), hence the explicit returns.
+        if ! $GIT cat-file -e "${REPO_COMMIT}^{commit}" 2> /dev/null; then
+            $TIMEOUT 1800 $GIT fetch --depth 1 origin "$REPO_COMMIT" || return 1
+        fi
+        $GIT checkout "$REPO_COMMIT" || return 1
     fi
 
 

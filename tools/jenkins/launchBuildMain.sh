@@ -261,14 +261,26 @@ fi
 # shiboken run, which is a long way from the actual cause. Plug-in CI builds
 # (GIT_URL_IS_NATRON != 1, TYPE=PLUGIN_CI) do not need Qt, so they only
 # get a warning.
-if "$QMAKE" -query QT_VERSION > /dev/null 2>&1; then
-    echo "$QMAKE works ($("$QMAKE" -query QT_VERSION))"
-elif [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
-    (>&2 echo "Error: $QMAKE is not usable.")
-    (>&2 echo "Set NATRON_QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
-    exit 1
+# The Qt major version is checked too: when qt5-base is missing, the
+# unsuffixed qmake found on PATH may be Qt6's.
+qmake_error=""
+if qmake_qt_version=$("$QMAKE" -query QT_VERSION 2> /dev/null) && [ -n "$qmake_qt_version" ]; then
+    if [ "${qmake_qt_version%%.*}" = "$QT_VERSION_MAJOR" ]; then
+        echo "$QMAKE works (Qt $qmake_qt_version)"
+    else
+        qmake_error="$QMAKE is the qmake of Qt $qmake_qt_version, not Qt ${QT_VERSION_MAJOR}."
+    fi
 else
-    (>&2 echo "Warning: $QMAKE is not usable (not needed for plug-in builds).")
+    qmake_error="$QMAKE is not usable."
+fi
+if [ -n "$qmake_error" ]; then
+    if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+        (>&2 echo "Error: $qmake_error")
+        (>&2 echo "Set NATRON_QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
+        exit 1
+    else
+        (>&2 echo "Warning: $qmake_error (Qt is not needed for plug-in builds.)")
+    fi
 fi
 
 
