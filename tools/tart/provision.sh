@@ -307,6 +307,8 @@ step_update() {
         echo "WARNING: overlay is out of date with upstream (see $LOGDIR/check.txt); reintegrate it on the host first"
     fi
     step_sync
+    # pinned ports first, so that their dependents are upgraded against the right versions
+    step_pins
     local outdated
     outdated=$(port -q echo outdated | awk '{print $1}')
     for p in $outdated; do
