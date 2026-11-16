@@ -1,19 +1,16 @@
 name: Build pacman repo
 
+# The package repository is a release artifact: built on demand, or for (pre-)release tags.
+# Run it by hand (workflow_dispatch) after changing tools/MINGW-packages.
 on:
   workflow_dispatch: {}
-  pull_request:
-    paths:
-      - 'tools/MINGW-packages/**'
-      - '.github/workflows/build_pacman_repo.yml'
   push:
-    paths:
-      - 'tools/MINGW-packages/**'
-      - '.github/workflows/build_pacman_repo.yml'
+    tags:
+    - 'v*'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 env:
   cache-name: cache-natron-repo
@@ -22,6 +19,7 @@ jobs:
   build_repo:
     name: Build pacman repo
     runs-on: windows-2022
+    timeout-minutes: 360
     defaults:
       run:
         shell: msys2 {0}

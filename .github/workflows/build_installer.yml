@@ -1,8 +1,15 @@
 name: Build Installer
 
+# Installers are release artifacts: built on demand or for (pre-)release tags only.
 on:
   workflow_dispatch: {}
   push:
+    tags:
+    - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 permissions:
   contents: read
@@ -15,6 +22,7 @@ jobs:
   win-installer:
     name: Windows Installer
     runs-on: windows-2022
+    timeout-minutes: 300
     defaults:
       run:
         shell: msys2 {0}
@@ -124,6 +132,7 @@ jobs:
   win-installer-breakpad:
     name: Windows Installer (with Breakpad crash reporting)
     runs-on: windows-2022
+    timeout-minutes: 300
     defaults:
       run:
         shell: msys2 {0}
