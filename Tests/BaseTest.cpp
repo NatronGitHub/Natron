@@ -308,6 +308,42 @@ TEST_F(BaseTest, SetValues)
     }
 }
 
+// #1124: the node hash keys the disk and viewer caches, which persist across sessions. Reloading a project
+// restores the saved knobs age: changing a parameter after that must not give the hash that a different change
+// gave in an earlier session (closed without saving) from the same saved state.
+TEST_F(BaseTest, HashAfterReload)
+{
+    NodePtr generator = createNode(_generatorPluginID);
+
+    ASSERT_TRUE(generator.get() != NULL);
+    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
+    KnobDouble* slope = dynamic_cast<KnobDouble*>( knob.get() );
+    ASSERT_TRUE(slope != 0);
+
+    const U64 savedAge = generator->getKnobsAge();
+    const U64 savedHash = generator->getHashValue();
+
+    // first session: change the parameter, then "close without saving"
+    slope->setValue(0.25);
+    const U64 firstSessionHash = generator->getHashValue();
+    EXPECT_NE(firstSessionHash, savedHash);
+
+    // reopen: the saved age (and thus the saved hash) is restored
+    slope->setValue(0.);
+    generator->setKnobsAge(savedAge);
+    EXPECT_EQ(generator->getHashValue(), savedHash);
+
+    // second session: a different change must give a different hash
+    slope->setValue(0.75);
+    EXPECT_NE(generator->getHashValue(), savedHash);
+    EXPECT_NE(generator->getHashValue(), firstSessionHash);
+
+    // later changes in the same session still change the hash
+    const U64 secondSessionHash = generator->getHashValue();
+    slope->setValue(0.5);
+    EXPECT_NE(generator->getHashValue(), secondSessionHash);
+}
+
 ///High level test: simple node connections test
 TEST_F(BaseTest, SimpleNodeConnections) {
     ///create the generator
