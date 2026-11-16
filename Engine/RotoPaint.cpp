@@ -2594,10 +2594,18 @@ RotoPaint::onOverlayPenDown(double time,
         }
 
         bool isOpenBezier = _imp->ui->selectedTool == eRotoToolOpenBezier;
-        MakeBezierUndoCommand* cmd = new MakeBezierUndoCommand(_imp->ui, _imp->ui->builtBezier, isOpenBezier, true, pos.x(), pos.y(), time);
+        // Keep a reference to the command until its curve is read: without an undo stack (no node GUI),
+        // pushUndoCommand() runs redo() and destroys the command right away.
+        std::shared_ptr<MakeBezierUndoCommand> cmd = std::make_shared<MakeBezierUndoCommand>(_imp->ui, _imp->ui->builtBezier, isOpenBezier, true, pos.x(), pos.y(), time);
         pushUndoCommand(cmd);
         _imp->ui->builtBezier = cmd->getCurve();
         assert(_imp->ui->builtBezier);
+        // Re-render the node when the pen is released, otherwise the current frame keeps its stale image (issue #510).
+        // This also covers the tangent drag that may follow (eEventStateBuildingBezierControlPointTangent).
+        // A closed bezier is only rendered once finished, and finishing it evaluates the node.
+        if (isOpenBezier) {
+            _imp->ui->evaluateOnPenUp = true;
+        }
         _imp->ui->state = eEventStateBuildingBezierControlPointTangent;
         didSomething = true;
         break;
