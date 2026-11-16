@@ -177,6 +177,11 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
+    // Plug-in writes to properties that are read-only for plug-ins (e.g. a clip's
+    // kOfxImageClipPropDepth in contexts where Natron can't handle multiple depths) were
+    // silently accepted before openfx #91: warn instead of failing the action, so that
+    // existing third-party plug-ins keep working.
+    OFX::Host::Property::setPluginReadOnlyPolicy(OFX::Host::Property::ePluginReadOnlyWarn);
     _imp->imageEffectPluginCache = std::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
@@ -868,7 +873,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
+    // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
+    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );

@@ -184,7 +184,9 @@ OfxImageEffectInstance::createInstanceAction()
     std::cout << "OFX: " << (void*)this << "->" << kOfxActionCreateInstance << "()->" << StatStr(st) << std::endl;
 #       endif
 
-    if (st == kOfxStatOK) {
+    // kOfxStatReplyDefault means "the action was ignored, but all was well anyway" (OFX spec):
+    // the instance exists and must get kOfxActionDestroyInstance and kOfxActionInstanceChanged
+    if ( (st == kOfxStatOK) || (st == kOfxStatReplyDefault) ) {
         _created = true;
     }
 
@@ -1151,8 +1153,6 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
 
     /// set the default for those
 
-    /// is there multiple bit depth support? Depends on host, plugin and context
-    bool multiBitDepth = canCurrentlyHandleMultipleClipDepths();
 
     //Set the output frame rate according to what input clips have. Several inputs with different frame rates should be
     //forbidden by the host.
@@ -1203,7 +1203,9 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         outArgs.setStringProperty( componentParamName.c_str(), ofxClipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
         const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) );
-        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
+        // always writable: the plug-in "must set [it] to one of the pixel depths both the host and plugin supports"
+        // (OFX spec); a read-only property made plug-ins fail with openfx #91
+        OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, false, bitDepthStr.c_str()};
         outArgs.createProperty(specDep);
 
         OFX::Host::Property::PropSpec specPAR = {parParamName.c_str(),         OFX::Host::Property::eDouble, 1, false,          "1"};
@@ -1255,63 +1257,71 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
         /// ouch
         return eStatusFailed;
     } else {
-        /// OK, go pump the components/depths back into the clips themselves
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
-             it != _clips.end();
-             ++it) {
-            OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (!clip) {
-                continue;
-            }
+        // The plug-in may have set invalid values (e.g. NaN), in which case reading the out-args
+        // throws OFX::Host::Property::Exception, which is not a std::exception: treat it as a failure.
+        try {
+            /// OK, go pump the components/depths back into the clips themselves
+            for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
+                 it != _clips.end();
+                 ++it) {
+                OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+                assert(clip);
+                if (!clip) {
+                    continue;
+                }
 
-            std::string componentParamName = "OfxImageClipPropComponents_" + it->first;
-            std::string depthParamName = "OfxImageClipPropDepth_" + it->first;
-            std::string parParamName = "OfxImageClipPropPAR_" + it->first;
-            std::map<OfxClipInstance*, int>::iterator foundClip = clipInputs.find(clip);
-            assert( foundClip != clipInputs.end() );
-            if ( foundClip == clipInputs.end() ) {
-                continue;
-            }
-            int inputNb = foundClip->second;
+                std::string componentParamName = "OfxImageClipPropComponents_" + it->first;
+                std::string depthParamName = "OfxImageClipPropDepth_" + it->first;
+                std::string parParamName = "OfxImageClipPropPAR_" + it->first;
+                std::map<OfxClipInstance*, int>::iterator foundClip = clipInputs.find(clip);
+                assert( foundClip != clipInputs.end() );
+                if ( foundClip == clipInputs.end() ) {
+                    continue;
+                }
+                int inputNb = foundClip->second;
 
 #       ifdef OFX_DEBUG_ACTIONS
-            std::cout << it->first << "->" << outArgs.getStringProperty(depthParamName) << "," << outArgs.getStringProperty(componentParamName) << "," << outArgs.getDoubleProperty(parParamName) << " ";
+                std::cout << it->first << "->" << outArgs.getStringProperty(depthParamName) << "," << outArgs.getStringProperty(componentParamName) << "," << outArgs.getDoubleProperty(parParamName) << " ";
 #       endif
 
-            defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
-            ImagePlaneDesc plane, pairedPlane;
-            std::string ofxComponentsType = outArgs.getStringProperty(componentParamName);
-            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(ofxComponentsType, &plane, &pairedPlane);
-            defaultPrefs.setNComps( inputNb, plane.getNumComponents() );
+                defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
+                ImagePlaneDesc plane, pairedPlane;
+                std::string ofxComponentsType = outArgs.getStringProperty(componentParamName);
+                ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(ofxComponentsType, &plane, &pairedPlane);
+                defaultPrefs.setNComps( inputNb, plane.getNumComponents() );
 
-            if (plane.isColorPlane()) {
-                defaultPrefs.setComponentsType( inputNb, kNatronColorPlaneID);
-            } else if (plane.getChannelsLabel() == kNatronMotionComponentsLabel) {
-                defaultPrefs.setComponentsType( inputNb, kNatronMotionComponentsLabel);
-            } else if (plane.getChannelsLabel() == kNatronDisparityComponentsLabel) {
-                defaultPrefs.setComponentsType( inputNb, kNatronDisparityComponentsLabel);
-            } else {
-                defaultPrefs.setComponentsType( inputNb, ofxComponentsType);
+                if (plane.isColorPlane()) {
+                    defaultPrefs.setComponentsType( inputNb, kNatronColorPlaneID);
+                } else if (plane.getChannelsLabel() == kNatronMotionComponentsLabel) {
+                    defaultPrefs.setComponentsType( inputNb, kNatronMotionComponentsLabel);
+                } else if (plane.getChannelsLabel() == kNatronDisparityComponentsLabel) {
+                    defaultPrefs.setComponentsType( inputNb, kNatronDisparityComponentsLabel);
+                } else {
+                    defaultPrefs.setComponentsType( inputNb, ofxComponentsType);
+                }
+
+                defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
             }
 
-            defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
+
+            defaultPrefs.setOutputFrameRate( outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate) );
+            defaultPrefs.setOutputFielding( OfxClipInstance::ofxFieldingToNatronFielding( outArgs.getStringProperty(kOfxImageClipPropFieldOrder) ) );
+            defaultPrefs.setOutputPremult( OfxClipInstance::ofxPremultToNatronPremult( outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication) ) );
+            defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
+            defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
+            int formatV[4];
+            outArgs.getIntPropertyN(kOfxImageClipPropFormat, formatV, 4);
+            RectI format;
+            format.x1 = formatV[0];
+            format.y1 = formatV[1];
+            format.x2 = formatV[2];
+            format.y2 = formatV[3];
+            defaultPrefs.setOutputFormat(format);
+        } catch (const OFX::Host::Property::Exception &e) {
+            qDebug() << "getClipPreferences: invalid property value returned by the plug-in, status" << e.getStatus();
+
+            return eStatusFailed;
         }
-
-
-        defaultPrefs.setOutputFrameRate( outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate) );
-        defaultPrefs.setOutputFielding( OfxClipInstance::ofxFieldingToNatronFielding( outArgs.getStringProperty(kOfxImageClipPropFieldOrder) ) );
-        defaultPrefs.setOutputPremult( OfxClipInstance::ofxPremultToNatronPremult( outArgs.getStringProperty(kOfxImageEffectPropPreMultiplication) ) );
-        defaultPrefs.setIsContinuous(outArgs.getIntProperty(kOfxImageClipPropContinuousSamples) != 0);
-        defaultPrefs.setIsFrameVarying(outArgs.getIntProperty(kOfxImageEffectFrameVarying) != 0);
-        int formatV[4];
-        outArgs.getIntPropertyN(kOfxImageClipPropFormat, formatV, 4);
-        RectI format;
-        format.x1 = formatV[0];
-        format.y1 = formatV[1];
-        format.x2 = formatV[2];
-        format.y2 = formatV[3];
-        defaultPrefs.setOutputFormat(format);
 
 #       ifdef OFX_DEBUG_ACTIONS
         std::cout << outArgs.getDoubleProperty(kOfxImageEffectPropFrameRate) << ","
