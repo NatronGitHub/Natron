@@ -1,0 +1,112 @@
+name: Forward-merge RB-2.6 into RB-2.7
+
+# Every change merged into RB-2.6 that isn't Qt5-specific must also reach RB-2.7 (the Qt6 branch).
+# After each push to RB-2.6, this merges RB-2.6 into the branch of a single, long-lived pull
+# request "Merge RB-2.6 into RB-2.7". A maintainer reviews it and merges it with a merge commit,
+# reverting or adapting Qt5-only changes in it if needed. If the merge conflicts, an issue is
+# opened or updated instead, and the conflicts must be resolved by hand on that branch.
+
+on:
+  push:
+    branches:
+    - RB-2.6
+  workflow_dispatch: {}
+
+permissions:
+  contents: write        # push the merge branch
+  pull-requests: write   # open the merge pull request
+  issues: write          # report conflicts
+  actions: write         # start the Tests workflow on the merge branch
+
+concurrency:
+  group: forward-merge-RB-2.6-RB-2.7
+  cancel-in-progress: false
+
+env:
+  SOURCE: RB-2.6
+  TARGET: RB-2.7
+  MERGE_BRANCH: merge-rb26-into-rb27
+
+jobs:
+  forward-merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Merge
+        id: merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$SOURCE" "$TARGET"
+          if git merge-base --is-ancestor "origin/$SOURCE" "origin/$TARGET"; then
+            echo "$TARGET already contains $SOURCE"; echo "result=up-to-date" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Continue an existing merge branch (it may hold hand-made conflict resolutions),
+          # else start from the target branch.
+          if git ls-remote --exit-code --heads origin "$MERGE_BRANCH" >/dev/null; then
+            git fetch origin "$MERGE_BRANCH"
+            git checkout -B "$MERGE_BRANCH" "origin/$MERGE_BRANCH"
+            git merge --no-edit "origin/$TARGET" || { git merge --abort; echo "result=conflict" >> "$GITHUB_OUTPUT"; exit 0; }
+          else
+            git checkout -B "$MERGE_BRANCH" "origin/$TARGET"
+          fi
+          if git merge --no-ff -m "Merge $SOURCE into $TARGET" "origin/$SOURCE"; then
+            git push origin "$MERGE_BRANCH"
+            echo "result=merged" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the pull request
+        if: steps.merge.outputs.result == 'merged'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list --head "$MERGE_BRANCH" --base "$TARGET" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$pr" ]; then
+            gh pr create --head "$MERGE_BRANCH" --base "$TARGET" --title "Merge $SOURCE into $TARGET" --body "Automatic forward-merge of $SOURCE into $TARGET (the Qt6 branch), updated after every push to $SOURCE.
+
+          Before merging:
+          - check that the Tests run on this branch passes;
+          - revert or adapt any Qt5-only change (PySide2, the MacPorts \`qt5\` ports, Qt5 workarounds);
+          - merge with a **merge commit**, not squash or rebase, so that the next forward-merge only brings new commits."
+          else
+            gh pr comment "$pr" --body "Updated with $SOURCE at ${GITHUB_SHA::10}."
+          fi
+          # Pushes and PRs made with GITHUB_TOKEN don't trigger other workflows: start the tests explicitly.
+          gh workflow run ci.yml --ref "$MERGE_BRANCH" || echo "could not start the Tests workflow"
+
+      - name: Report a conflict
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="Forward-merge of $SOURCE into $TARGET has conflicts"
+          body="Merging $SOURCE (${GITHUB_SHA::10}) into $TARGET has conflicts, so the automatic merge pull request could not be updated.
+
+          To resolve:
+          \`\`\`
+          git fetch origin
+          git checkout $MERGE_BRANCH 2>/dev/null || git checkout -b $MERGE_BRANCH origin/$TARGET
+          git merge origin/$TARGET
+          git merge origin/$SOURCE   # resolve the conflicts, keeping $TARGET's Qt6 code
+          git push origin $MERGE_BRANCH
+          \`\`\`
+          Then open (or update) the pull request from \`$MERGE_BRANCH\` to \`$TARGET\`, and close this issue."
+          issue=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -z "$issue" ]; then
+            gh issue create --title "$title" --body "$body" --label func:buildsystem
+          else
+            gh issue comment "$issue" --body "Still conflicting with $SOURCE at ${GITHUB_SHA::10}."
+          fi
