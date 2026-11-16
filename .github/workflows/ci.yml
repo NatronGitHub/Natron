@@ -219,7 +219,14 @@ jobs:
           unzip openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
-          PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # MSYS2's Python (>= 3.11) loads extension modules with
+          # LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores PATH: only the
+          # directory of the executable is searched. python.exe lives in
+          # ${MINGW_PREFIX}/bin next to the DLLs, but Tests.exe is in build/Tests,
+          # so lib-dynload/binascii.pyd (needed by zipfile, imported by shiboken2)
+          # cannot find zlib1.dll (#1147). PYTHONLEGACYWINDOWSDLLLOADING=1
+          # (an MSYS2 Python extension) restores the PATH search.
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
         if: always()
