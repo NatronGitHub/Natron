@@ -5,8 +5,9 @@ License: MPL2
 Upstream version: 3.4.0
 Local modifications: none
 
-The tree under Eigen/ is upstream 3.4.0 with the per-directory CMakeLists.txt
-files removed, nothing else. Run eigen-update.sh to refresh it.
+The tree under Eigen/ is upstream 3.4.0, unmodified. Run eigen-update.sh to
+refresh it. (The script also deletes any CMakeLists.txt under Eigen/; 3.3.x
+shipped some, 3.4.0 has none, so that step is only defensive.)
 
 Earlier revisions were taken from Blender's extern/ folder and carried a
 patches/blender.diff plus a note about an OpenMP fix for MSVC2015. Neither was
