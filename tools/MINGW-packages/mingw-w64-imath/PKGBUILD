@@ -65,8 +65,8 @@ package() {
   find "${pkgdir}${MINGW_PREFIX}/lib/cmake" -type f -name '*.cmake' \
       -exec sed -i -e "s|${PREFIX_WIN}|\$\{_IMPORT_PREFIX\}|g" {} \;
 
-  # Fix pkgconfig files
-  if [[ ${CARCH} != i686 ]]; then
+  # Fix pkgconfig files (PyImath.pc only exists when built with -DPYTHON=ON, see build())
+  if [[ ${MINGW_PACKAGE_PREFIX} != *-clang-* && ${CARCH} != i686 ]]; then
     sed -i -e "s|${PREFIX_WIN}|\$\{prefix\}|g" "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/PyImath.pc
   fi
 
