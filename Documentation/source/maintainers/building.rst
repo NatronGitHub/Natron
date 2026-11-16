@@ -155,6 +155,59 @@ Build type, sanitizers and debugging
   AddressSanitizer build (see the messages at the bottom of ``Project.pro``),
   and ``CONFIG+=enable-breakpad`` to build with the Breakpad crash reporter.
 
+macOS app bundle and install layout
+-----------------------------------
+
+On macOS, both builds produce ``App/Natron.app`` in the build tree with the
+same contents: ``Info.plist`` generated from ``App/NatronInfo.plist.in``
+(version, ``fr.inria.Natron`` bundle identifier, ``natronIcon.icns``, the
+``.ntp``/``.nps``/``.nl`` document types), ``PkgInfo`` (``APPLNtrn``), the
+icons ``natronIcon.icns`` and ``natronProjectIcon_osx.icns`` in
+``Contents/Resources``, and ``Contents/Resources/etc/fonts`` (``fonts.conf``
+generated from ``Gui/Resources/etc/fonts/fonts.conf.in``, plus ``conf.d``).
+The OpenColorIO configs are copied to
+``Contents/Resources/OpenColorIO-Configs`` when they are available (qmake:
+``OpenColorIO-Configs/`` in the source tree; CMake: ``NATRON_OCIO_CONFIGS_DIR``).
+``NatronRenderer``, ``natron-python`` and ``Tests`` are plain executables,
+outside the bundle. The CMake build keeps the double quotes of the
+``Info.plist`` XML declaration, which qmake's ``QMAKE_SUBSTITUTES`` strips
+(issue #1074).
+
+``cmake --install`` supports two layouts, selected with
+``NATRON_INSTALL_LAYOUT``:
+
+- ``FHS`` (default on Linux and Windows): ``bin/Natron``,
+  ``bin/NatronRenderer``, ``bin/natron-python``, the ``.desktop``, AppStream,
+  MIME and icon files in ``share/``, and the OpenColorIO configs in
+  ``share/OpenColorIO-Configs``. This is what qmake's ``make install`` does.
+- ``PORTABLE`` (default on macOS): the layout of the binary installers built
+  by ``tools/jenkins/build-*-installer.sh``. On Linux and Windows: ``bin/``
+  (executables), ``Resources/etc/fonts`` (``fonts.conf`` and ``conf.d``),
+  ``Resources/OpenColorIO-Configs``, ``Resources/pixmaps`` (Linux PNG or
+  Windows ICO icons), ``Resources/stylesheets/mainstyle.qss``,
+  ``Plugins/PyPlugs`` and ``docs/natron/LICENSE.txt``. On macOS, the same
+  inside ``Natron.app/Contents``: the executables in ``MacOS/``, everything
+  else in ``Resources/`` and ``Plugins/PyPlugs``. The installer scripts still
+  add the third-party libraries, Qt, Python and the OpenFX plug-ins.
+
+The ``Tests`` binary is only installed by
+``cmake --install <build> --component Tests``.
+
+.. list-table:: qmake CONFIG flag → CMake option (bundle and install)
+   :header-rows: 1
+
+   * - qmake
+     - CMake
+   * - ``make install`` (``INSTALLS``)
+     - ``-DNATRON_INSTALL_LAYOUT=FHS``
+   * - the copy commands of ``tools/jenkins/build-natron.sh``
+     - ``-DNATRON_INSTALL_LAYOUT=PORTABLE``
+   * - ``OpenColorIO-Configs/`` in the source tree
+     - ``-DNATRON_OCIO_CONFIGS_DIR=<dir>`` (default: ``OpenColorIO-Configs/``
+       in the source tree, if present)
+   * - ``OCIO.files`` in ``OpenColorIO-Configs.pri``
+     - ``-DNATRON_OCIO_CONFIGS="blender;natron;nuke-default"``
+
 Code style and the pre-commit hook
 ----------------------------------
 
