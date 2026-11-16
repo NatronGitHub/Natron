@@ -1495,7 +1495,13 @@ MakeBezierUndoCommand::redo()
     BezierCPPtr cp = _newCurve->getControlPointAtIndex(_lastPointAdded);
     BezierCPPtr fp = _newCurve->getFeatherPointAtIndex(_lastPointAdded);
     roto->setSelection( _newCurve, std::make_pair(cp, fp) );
-    roto->autoSaveAndRedraw();
+    if (_firstRedoCalled) {
+        // Redo after an undo: the point is back, so the node must be rendered again (undo() evaluates too).
+        roto->evaluate(true);
+    } else {
+        // First redo, while the user is drawing: the node is evaluated on pen up (see RotoPaint::onOverlayPenUp()).
+        roto->autoSaveAndRedraw();
+    }
     _firstRedoCalled = true;
 } // redo
 
