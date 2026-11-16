@@ -3,11 +3,17 @@
 _realname=x264
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+# This package coexists with MSYS2's libx264 (formerly x264-git), which ships a
+# different ABI (libx264-165.dll, needed by libheif) and the same headers,
+# import library and pkg-config file. Only the ABI-versioned DLL is installed in
+# ${MINGW_PREFIX}/bin, where it cannot clash with libx264's DLL. Everything
+# else, including the headers, the import library and x264.pc, goes to the
+# private prefix ${MINGW_PREFIX}/natron_x264, which only natron_ffmpeg-gpl2
+# uses to build. So it neither provides nor replaces libx264. It still
+# conflicts with the old x264-git package, which shipped libx264-164.dll too.
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
-replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
 pkgver=0.164.r3094.bfc87b7
-pkgrel=99.1
+pkgrel=99.2
 pkgdesc="Library for encoding H264/AVC video streams (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32' 'clangarm64')
@@ -51,7 +57,7 @@ build() {
   mkdir -p "${srcdir}/build-${MINGW_CHOST}"
   cd "${srcdir}/build-${MINGW_CHOST}"
   ../${_realname}/configure \
-    --prefix=${MINGW_PREFIX} \
+    --prefix=${MINGW_PREFIX}/natron_x264 \
     --host=${MINGW_CHOST} \
     --enable-static \
     --enable-shared \
@@ -63,4 +69,8 @@ build() {
 package() {
   cd "${srcdir}/build-${MINGW_CHOST}"
   make DESTDIR="${pkgdir}" install
+  # Ship only the ABI-versioned DLL in the shared bin directory, so that it is
+  # found at run time and bundled by the installer (genDllVersions.sh).
+  mkdir -p "${pkgdir}${MINGW_PREFIX}/bin"
+  mv "${pkgdir}${MINGW_PREFIX}/natron_x264/bin"/libx264-*.dll "${pkgdir}${MINGW_PREFIX}/bin/"
 }
