@@ -46,6 +46,10 @@ set_property(CACHE NATRON_INSTALL_LAYOUT PROPERTY STRINGS FHS PORTABLE)
 if(NOT NATRON_INSTALL_LAYOUT MATCHES "^(FHS|PORTABLE)$")
     message(FATAL_ERROR "NATRON_INSTALL_LAYOUT must be FHS or PORTABLE, not \"${NATRON_INSTALL_LAYOUT}\"")
 endif()
+# Installed binaries keep the paths of the libraries they were linked with outside the build tree
+# (Qt, PySide2/Shiboken2, MacPorts or system libraries): CMake drops the build RPATH at install time.
+# The installer scripts then bundle those libraries and rewrite the paths (macdeployqt, patchelf...).
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 if(EXISTS "${PROJECT_SOURCE_DIR}/OpenColorIO-Configs")
     set(NATRON_DEFAULT_OCIO_CONFIGS_DIR "${PROJECT_SOURCE_DIR}/OpenColorIO-Configs")
 else()
