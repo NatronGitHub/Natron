@@ -29,11 +29,25 @@ GUEST_PROXY=socks5h://127.0.0.1:$GUEST_PROXY_PORT   # as seen from the guest
 # destinations the guest may reach through the proxy (OpenSSH >= 8.7)
 GUEST_PROXY_ALLOW=${GUEST_PROXY_ALLOW:-"*:80 *:443"}
 
-# cloned VMs share host keys and get new addresses: don't pin host keys (host-only network)
+# per-user runtime files (sockets, address cache, logs): not in the shared /tmp
+TART_RUN=${TART_RUN:-${TMPDIR:-/tmp}/natron-tart}
+mkdir -p "$TART_RUN" && chmod 700 "$TART_RUN"
+
+# cloned VMs share host keys and get new addresses: don't pin host keys (host-only network).
+# -F /dev/null: the user's ~/.ssh/config (agent forwarding, ProxyCommand...) never applies to the guest
 tart_sshopts() { # vm
-    echo "-i $TART_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
-         "-o ServerAliveInterval=60 -o ControlPath=/tmp/natron-tart-$1.sock"
+    echo "-F /dev/null -i $TART_KEY -o IdentitiesOnly=yes -o ForwardAgent=no -o ForwardX11=no" \
+         "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
+         "-o ServerAliveInterval=60 -o ControlPath=$TART_RUN/$1.sock"
 }
+
+# one run at a time: clones share their IPv6 link-local address, and a WIP must not be provisioned twice
+tart_lock() {
+    mkdir "$TART_RUN/lock" 2>/dev/null ||
+        die "another natron-sdk.sh/natron-build.sh run holds $TART_RUN/lock (remove it if that run is gone)"
+    TART_LOCKED=1
+}
+tart_unlock() { [ "${TART_LOCKED:-0}" = 1 ] && rmdir "$TART_RUN/lock" 2>/dev/null; TART_LOCKED=0; }
 
 log() { echo "[$(date '+%F %T')] $*"; }
 die() { echo "Error: $*" >&2; exit 1; }
@@ -68,7 +82,7 @@ vm_bridge() {
     echo bridge100
 }
 
-vm_addr_cache() { echo "/tmp/natron-tart-$1.addr"; }
+vm_addr_cache() { echo "$TART_RUN/$1.addr"; }
 
 vm_find_addr() { # vm : IPv4 if the guest gets a lease, else its IPv6 link-local address
     local i a
@@ -76,7 +90,7 @@ vm_find_addr() { # vm : IPv4 if the guest gets a lease, else its IPv6 link-local
         if a=$(tart ip "$1" 2>/dev/null); then echo "$a"; return 0; fi
         # give DHCP a minute before falling back to IPv6
         if [ "$i" -gt 6 ]; then
-            a=$(tart exec "$1" /sbin/ifconfig en0 2>/dev/null | awk '/inet6 fe80/{sub(/%.*/,"",$2); print $2; exit}')
+            a=$(tart exec "$1" /sbin/ifconfig en0 2>/dev/null | awk '/inet6 fe80/{sub(/%.*/,"",$2); print $2; exit}') || a=
             if [ -n "$a" ]; then echo "$a%$(vm_bridge)"; return 0; fi
         fi
         sleep 10
@@ -118,7 +132,7 @@ vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master c
     [ -f "$TART_KEY" ] || ssh-keygen -q -t ed25519 -N "" -C "natron-tart" -f "$TART_KEY"
     if ! vm_running "$vm"; then
         log "starting $vm"
-        nohup tart run --no-graphics "$vm" > "/tmp/tart-$vm.log" 2>&1 &
+        nohup tart run --no-graphics "$vm" > "$TART_RUN/$vm.log" 2>&1 &
     fi
     vm_find_addr "$vm" > "$(vm_addr_cache "$vm")"
     addr=$(vm_addr "$vm")
@@ -127,7 +141,7 @@ vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master c
             ok=1; break
         fi
         command -v sshpass > /dev/null || die "sshpass is needed once to install the SSH key (brew install hudochenkov/sshpass/sshpass)"
-        if sshpass -p admin ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
+        if sshpass -p admin ssh -F /dev/null -o ForwardAgent=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
                -o ConnectTimeout=5 -o PubkeyAuthentication=no admin@"$addr" \
                "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" \
                < "$TART_KEY.pub" 2>/dev/null; then
@@ -136,7 +150,7 @@ vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master c
         sleep 5
     done
     [ "$ok" = 1 ] || die "cannot log into $vm at $addr"
-    sock=/tmp/natron-tart-$vm.sock
+    sock=$TART_RUN/$vm.sock
     if ! ssh $(tart_sshopts "$vm") -O check admin@"$addr" 2>/dev/null; then
         rm -f "$sock"   # stale socket of a killed master
         ssh $(tart_sshopts "$vm") -fN -M -o ExitOnForwardFailure=yes \
@@ -155,10 +169,8 @@ vm_stop() { # vm
     ssh $(tart_sshopts "$1") -O exit admin@dummy 2>/dev/null || true
     if vm_running "$1"; then
         log "stopping $1"
-        if [ -s "$(vm_addr_cache "$1")" ]; then
-            ssh $(tart_sshopts "$1") -o ControlPath=none -o ConnectTimeout=10 admin@"$(cat "$(vm_addr_cache "$1")")" \
-                "sudo shutdown -h now" > /dev/null 2>&1 || true
-        fi
+        # by name (tart exec), not by address: never shut down another VM with the same address
+        tart exec "$1" sudo -n shutdown -h now > /dev/null 2>&1 || true
         for _ in $(seq 60); do vm_running "$1" || break; sleep 5; done
         vm_running "$1" && tart stop "$1"
     fi
@@ -174,7 +186,7 @@ vm_sync() { # vm : copy tools/ of the Natron checkout (tracked files, with local
     (cd "$NATRON_SRC" && git ls-files -z tools) |
         vm_rsync "$vm" "$NATRON_SRC/" Documents/third_party/Natron/ --from0 --files-from=-
     if [ -d "$OSMESA_INSTALL_SRC" ]; then
-        (cd "$OSMESA_INSTALL_SRC" && git ls-files -z -c -o --exclude-standard -- . ':!CLAUDE.md' ':!build') |
+        (cd "$OSMESA_INSTALL_SRC" && git ls-files -z -c -- . ':!CLAUDE.md') |
             vm_rsync "$vm" "$OSMESA_INSTALL_SRC/" Documents/third_party/osmesa-install/ --from0 --files-from=-
     else
         vm_ssh "$vm" "[ -d Documents/third_party/osmesa-install ] || ALL_PROXY=$GUEST_PROXY git clone https://github.com/devernay/osmesa-install.git Documents/third_party/osmesa-install"

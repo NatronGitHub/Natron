@@ -35,7 +35,7 @@ tools/tart/natron-sdk.sh push ghcr.io/<org>/natron-sdk-sequoia:<tag>   # optiona
 
 Both `create` and `update` work on a copy named `natron-sdk-sequoia-wip`. The image is replaced only when every step succeeded, and the previous image is kept as `natron-sdk-sequoia-prev`.
 
-If a step fails, the `-wip` VM is left running. Fix the cause on the host (for example in `tools/MacPorts`), then resume with `natron-sdk.sh create`, for both `create` and `update`: steps that already succeeded are skipped, and `REDO="step…"` re-runs some of them. The logs are in `~admin/provision-logs/<step>.log` inside the VM. To look at them, source `tart-common.sh` and run `vm_ssh natron-sdk-sequoia-wip`.
+If a step fails, the `-wip` VM is left running. Fix the cause on the host (for example in `tools/MacPorts`), then resume with `natron-sdk.sh create`, for both `create` and `update` (an interrupted update is finished first): steps that already succeeded are skipped, and `REDO="step…"` re-runs some of them. `update` re-runs only new steps and the steps you name: after adding a port to an existing step (e.g. `libs`), run `natron-sdk.sh update libs`. The logs are in `~admin/provision-logs/<step>.log` inside the VM. To look at them, source `tart-common.sh` and run `vm_ssh natron-sdk-sequoia-wip`.
 
 Before `update`, reintegrate upstream MacPorts changes into the overlay on the host (`tools/MacPorts/check.sh`, see `tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`). The `update` step only warns when the overlay is out of date.
 
@@ -54,7 +54,7 @@ Only one Natron VM can run at a time: clones of an image share their IPv6 link-l
 
 ## Settings
 
-Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. Versions that need bumping over time are at the top of `provision.sh`: `MACPORTS_VERSION` and the Python version (3.10) used in the steps.
+Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` is at the top of `provision.sh`; the Python version (3.10) is spelled out in `step_python_qt` and `step_fixups`. Runtime files (SSH sockets, address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`), and only one `natron-sdk.sh` or `natron-build.sh` runs at a time (lock in that directory).
 
 ## Networking
 

@@ -17,7 +17,8 @@ set -euo pipefail
 WIP=$SDK_IMAGE-wip
 
 # on failure the -wip VM is left running so that "create" can resume it; close the SSH master
-trap 'ssh $(tart_sshopts "$WIP") -O exit admin@dummy 2>/dev/null || true' EXIT
+tart_lock
+trap 'ssh $(tart_sshopts "$WIP") -O exit admin@dummy 2>/dev/null || true; tart_unlock' EXIT
 
 finish() { # replace $SDK_IMAGE with $WIP, keep the old one as -prev
     vm_provision "$WIP" -- cleanup
@@ -47,14 +48,15 @@ create)
     ;;
 update)
     vm_exists "$SDK_IMAGE" || { echo "$SDK_IMAGE does not exist, run '$0 create' first"; exit 1; }
-    vm_exists "$WIP" && { echo "$WIP exists (interrupted run?): resume it with '$0 create' (REDO=\"step...\" to re-run done steps), or delete it with 'tart stop $WIP; tart delete $WIP'"; exit 1; }
+    vm_exists "$WIP" && { echo "$WIP exists (interrupted run?): resume it with '$0 create' (an interrupted update is finished first; REDO=\"step...\" re-runs done steps), or delete it with 'tart stop $WIP; tart delete $WIP'"; exit 1; }
     tart clone "$SDK_IMAGE" "$WIP"
     vm_configure "$WIP"
     vm_start "$WIP"
     vm_sync "$WIP"
     shift
     vm_provision "$WIP" -- update
-    vm_provision "$WIP" REDO="$*"  # installs anything newly added to the SDK steps, re-runs STEPs
+    vm_provision "$WIP" REDO="$*"  # runs SDK steps not yet in the image (new steps) and the given STEPs;
+                                   # a port added to an existing step needs that step named here
     finish
     ;;
 push)

@@ -28,13 +28,16 @@ while getopts "b:to:ki:h" opt; do
     esac
 done
 
+tart_lock
+trap tart_unlock EXIT   # replaced by cleanup once the clone exists
 vm_exists "$SDK_IMAGE" || { echo "SDK image $SDK_IMAGE not found: run natron-sdk.sh create (or tart pull it)"; exit 1; }
 VM=natron-build-$(date +%Y%m%d-%H%M%S)-$$
 OUT=${OUT:-$PWD/natron-builds/$VM}
 
 cleanup() {
     vm_stop "$VM" || true
-    if [ "$KEEP" = 0 ]; then tart delete "$VM" || true; else log "kept VM $VM"; fi
+    if [ "$KEEP" = 0 ]; then tart delete "$VM" || log "Warning: could not delete $VM"; else log "kept VM $VM"; fi
+    tart_unlock
 }
 
 log "cloning $SDK_IMAGE into $VM"
@@ -51,5 +54,9 @@ mkdir -p "$OUT"
 vm_rsync_back "$VM" provision-logs/ "$OUT/logs/" || true
 vm_rsync_back "$VM" Development/workspace/builds_archive/ "$OUT/" || true
 ls -lR "$OUT" | grep -E '\.dmg|tests\.txt|failures\.zip' || true
+if [ "$status" = 0 ] && ! ls "$OUT"/*/*/*.dmg > /dev/null 2>&1; then
+    log "Error: the build succeeded but no DMG was copied to $OUT: keeping $VM"
+    status=1; KEEP=1
+fi
 [ "$status" = 0 ] && log "build OK" || log "build FAILED (status $status), see $OUT/logs/build.log"
 exit "$status"

@@ -228,6 +228,23 @@ step_python_qt() {
     [ -f $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10 ]
 }
 
+# Idempotent fixes of installed files that a port upgrade may undo, and the port selections
+# (step_osmesa temporarily selects python27). Never marked done: re-run on every create/update.
+step_fixups() {
+    [ -e /opt/local/include/minizip-ng ] || sudo ln -s . /opt/local/include/minizip-ng
+    sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
+    sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
+    sudo port select --set python python310
+    sudo port select --set python3 python310
+    sudo port select --set sphinx py310-sphinx
+    local py=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
+    [ -e $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10 ] ||
+        sudo ln -s shiboken2 $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10
+    sudo ln -sf shiboken2-3.10 /opt/local/bin/shiboken2
+    [ -e /opt/local/Library/lib ] || sudo ln -s Frameworks /opt/local/Library/lib
+    if [ -x /opt/local/bin/dmgbuild-3.10 ]; then sudo ln -sf dmgbuild-3.10 /opt/local/bin/dmgbuild; fi
+}
+
 step_dmgtools() {
     $PORT install py310-dmgbuild
     # the port only installs dmgbuild-3.10 (no port select group)
@@ -280,6 +297,8 @@ step_pins() {
 
 # Update an existing SDK image: refresh MacPorts and the overlay, upgrade outdated ports.
 step_update() {
+    # resumable: "natron-sdk.sh create" re-runs the update while this marker exists
+    date '+%F %T' > "$LOGDIR/update.pending"
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
     ports_https_source
@@ -296,6 +315,7 @@ step_update() {
     done
     # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
+    rm -f "$LOGDIR/update.pending"
 }
 
 # Shrink the image (build directories, downloaded sources), and remove the sources synced
@@ -322,13 +342,16 @@ step_build() {
     ls "$WORKSPACE"/builds_archive/natron_github_RB2/1/*.dmg
 }
 
-SDK_STEPS="disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools"
+SDK_STEPS="disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools fixups"
 # steps that are never marked done (they are meant to be re-run)
-NO_MARKER_STEPS="disk sync pins update cleanup build"
+NO_MARKER_STEPS="disk sync pins update fixups cleanup build"
 mkdir -p "$LOGDIR"
 # REDO="step ...": forget that these steps were done (e.g. after fixing a step)
 for s in ${REDO:-}; do rm -f "$LOGDIR/$s.done"; done
-for s in ${*:-$SDK_STEPS}; do
+steps=${*:-$SDK_STEPS}
+# an interrupted "update" is finished before the other steps (natron-sdk.sh create resumes it)
+if [ -z "${*:-}" ] && [ -f "$LOGDIR/update.pending" ]; then steps="update $steps"; fi
+for s in $steps; do
     if [ -f "$LOGDIR/$s.done" ]; then echo "== $s: already done"; continue; fi
     mark=1; case " $NO_MARKER_STEPS " in *" $s "*) mark=0 ;; esac
     echo "== $s: started $(date '+%F %T') (log: $LOGDIR/$s.log)"
