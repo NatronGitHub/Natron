@@ -1665,8 +1665,8 @@ public:
      * @brief The cursor currently requested by the overlay interact of this effect
      * (OFX interact cursors, NatronGitHub/openfx#4).
      * Returns false if the overlay requests the default cursor (or there is no overlay).
-     * If customImage is not empty, it is a PNG file (absolute, or relative to the plug-in
-     * resources) and hotSpotX/Y are in pixels of the 1x image; otherwise cursor is set.
+     * If customImage is not empty, it is the name (without directory) of a PNG file in the plug-in
+     * resources, and hotSpotX/Y are in pixels of the 1x image; otherwise cursor is set.
      * The viewer polls this after each event dispatched to the overlays: unlike change
      * notifications, this also works when several overlays or viewers share the cursor.
      **/

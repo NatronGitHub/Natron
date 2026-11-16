@@ -95,10 +95,16 @@ public:
 
     /**
      * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
-     * cursors), from the current request of each overlay: the first non-default request, in
-     * the order the overlays receive events. Returns false if all of them request the default.
+     * cursors), from the current requests of the overlays that received the last pen or key
+     * event: the overlay that caught the event wins, else the first non-default request in
+     * dispatch order. Returns false for the default (viewer) cursor.
      **/
     bool getOverlaysCursor(QCursor* cursor);
+
+private:
+    bool getOverlayCursorFor(const NodePtr& node, QCursor* cursor);
+
+public:
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 

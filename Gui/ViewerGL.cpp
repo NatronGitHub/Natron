@@ -2491,8 +2491,8 @@ ViewerGL::penMotionInternal(int x,
         }
         updateOverlayCursor();
     } else {
-        // the viewer shows its own cursor (wipe or user RoI handle)
-        _imp->setOverlayCursor = false;
+        // the viewer shows its own cursor (wipe or user RoI handle): reset it when nobody asks for one
+        _imp->setOverlayCursor = true;
     }
 
     return true;
@@ -4596,6 +4596,15 @@ ViewerGL::updateOverlayCursor()
         return;
     }
     QCursor cursor;
+    if (!_imp->overlay) {
+        // overlays hidden: their cursor must not stay
+        if (_imp->setOverlayCursor) {
+            unsetCursor();
+            _imp->setOverlayCursor = false;
+        }
+
+        return;
+    }
     if ( _imp->viewerTab->getOverlaysCursor(&cursor) ) {
         setCursor(cursor);
         _imp->setOverlayCursor = true;
