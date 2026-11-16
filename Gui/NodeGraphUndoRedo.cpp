@@ -1144,6 +1144,8 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> newChildren, oldChildren;
         getListAsShared(_newChildren, newChildren);
@@ -1190,6 +1192,8 @@ LoadNodePresetsCommand::redo()
     }
 
     internalNode->loadKnobs(*_newSerializations.front(), true);
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> oldChildren, newChildren;
         getListAsShared(_oldChildren, oldChildren);
