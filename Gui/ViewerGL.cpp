@@ -2065,7 +2065,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease, QtEnumConvert::fromQtModifiers( e->modifiers() )) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, _imp->pressureOnRelease, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() )) ) {
         mustRedraw = true;
     }
     updateOverlayCursor();
