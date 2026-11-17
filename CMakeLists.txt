@@ -34,6 +34,99 @@ option(NATRON_QT6 "use Qt6" OFF)
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
+# Install layout ("cmake --install"), see Documentation/source/maintainers/building.rst.
+# FHS is the default on every platform, and installs the same files to the same places as before
+# NATRON_INSTALL_LAYOUT existed. The installer scripts (tools/jenkins) pass -DNATRON_INSTALL_LAYOUT=PORTABLE.
+set(NATRON_INSTALL_LAYOUT "FHS" CACHE STRING
+    "install layout: FHS (bin/, share/, for Linux distributions and developers) or PORTABLE (the layout of the binary installers: bin/, Resources/, Plugins/ on Linux and Windows; everything inside Natron.app on macOS)")
+set_property(CACHE NATRON_INSTALL_LAYOUT PROPERTY STRINGS FHS PORTABLE)
+if(NOT NATRON_INSTALL_LAYOUT MATCHES "^(FHS|PORTABLE)$")
+    message(FATAL_ERROR "NATRON_INSTALL_LAYOUT must be FHS or PORTABLE, not \"${NATRON_INSTALL_LAYOUT}\"")
+endif()
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/OpenColorIO-Configs")
+    set(NATRON_DEFAULT_OCIO_CONFIGS_DIR "${PROJECT_SOURCE_DIR}/OpenColorIO-Configs")
+else()
+    set(NATRON_DEFAULT_OCIO_CONFIGS_DIR "")
+endif()
+set(NATRON_OCIO_CONFIGS_DIR "${NATRON_DEFAULT_OCIO_CONFIGS_DIR}" CACHE PATH
+    "directory containing the OpenColorIO-Configs to bundle and install (https://github.com/NatronGitHub/OpenColorIO-Configs); empty: none")
+set(NATRON_OCIO_CONFIGS "blender;natron;nuke-default" CACHE STRING
+    "OpenColorIO configs from NATRON_OCIO_CONFIGS_DIR to bundle and install")
+
+# Install directories, relative to CMAKE_INSTALL_PREFIX. Defaults depend on the layout;
+# each one can be overridden with -D<name>=<dir>. They are STRING, not PATH: CMake would turn
+# a relative PATH given on the command line into an absolute path.
+# Natron looks for its resources relative to its executable:
+#   OpenColorIO configs: ../Resources/OpenColorIO-Configs (all platforms),
+#                        ../share/OpenColorIO-Configs and /usr/share/OpenColorIO-Configs (Linux)
+#                        (Engine/Settings.cpp)
+#   fontconfig:          ../Resources/etc/fonts (Engine/AppManager.cpp)
+#   PyPlugs:             ../Plugins/PyPlugs, and /usr/share/Natron/Plugins on Linux (Engine/AppManager.cpp)
+if(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE" AND APPLE)
+    set(_bundledir ".")
+    set(_bindir "Natron.app/Contents/MacOS")
+    set(_resourcesdir "Natron.app/Contents/Resources")
+    set(_pyplugsdir "Natron.app/Contents/Plugins/PyPlugs")
+    set(_docdir "")
+    # tools/jenkins/build-OSX-installer.sh runs Tests from Natron.app/Contents/MacOS (and removes
+    # it before signing), and its relative rpaths only resolve from there.
+    set(_testsdir "Natron.app/Contents/MacOS")
+elseif(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
+    set(_bundledir ".")
+    set(_bindir "bin")
+    set(_resourcesdir "Resources")
+    set(_pyplugsdir "Plugins/PyPlugs")
+    set(_docdir "docs/natron")
+    set(_testsdir "bin")
+else()
+    set(_bundledir "${CMAKE_INSTALL_BINDIR}")
+    set(_bindir "${CMAKE_INSTALL_BINDIR}")
+    if(WIN32)
+        # On Windows, Natron only looks in ../Resources (see above).
+        set(_resourcesdir "Resources")
+    else()
+        set(_resourcesdir "")
+    endif()
+    if(APPLE OR WIN32)
+        set(_pyplugsdir "")
+    else()
+        set(_pyplugsdir "${CMAKE_INSTALL_DATADIR}/Natron/Plugins")
+    endif()
+    set(_docdir "")
+    set(_testsdir "${CMAKE_INSTALL_BINDIR}")
+endif()
+if(NATRON_INSTALL_LAYOUT STREQUAL "FHS" AND NOT WIN32 AND NOT APPLE)
+    set(_ociodir "${CMAKE_INSTALL_DATADIR}/OpenColorIO-Configs")
+elseif(_resourcesdir)
+    set(_ociodir "${_resourcesdir}/OpenColorIO-Configs")
+else()
+    set(_ociodir "") # macOS FHS: the configs are inside Natron.app
+endif()
+set(NATRON_INSTALL_BUNDLEDIR "${_bundledir}" CACHE STRING "install directory of Natron.app (macOS)")
+set(NATRON_INSTALL_BINDIR "${_bindir}" CACHE STRING "install directory of Natron, NatronRenderer and natron-python")
+set(NATRON_INSTALL_RESOURCESDIR "${_resourcesdir}" CACHE STRING "install directory of the resources (stylesheets, fonts, pixmaps); empty: none")
+set(NATRON_INSTALL_PYPLUGSDIR "${_pyplugsdir}" CACHE STRING "install directory of the bundled PyPlugs; empty: none")
+set(NATRON_INSTALL_OCIODIR "${_ociodir}" CACHE STRING "install directory of the OpenColorIO configs; empty: none (macOS: they are in Natron.app)")
+set(NATRON_INSTALL_DOCDIR "${_docdir}" CACHE STRING "install directory of LICENSE.txt; empty: none")
+set(NATRON_INSTALL_TESTSDIR "${_testsdir}" CACHE STRING "install directory of Tests (cmake --install <build> --component Tests)")
+# The defaults above depend on NATRON_INSTALL_LAYOUT: when it changes, reset the ones the user didn't set.
+if(DEFINED _NATRON_INSTALL_LAYOUT_USED AND NOT _NATRON_INSTALL_LAYOUT_USED STREQUAL NATRON_INSTALL_LAYOUT)
+    foreach(_v BUNDLEDIR BINDIR RESOURCESDIR PYPLUGSDIR OCIODIR DOCDIR TESTSDIR)
+        if("${NATRON_INSTALL_${_v}}" STREQUAL "${_NATRON_INSTALL_${_v}_DEFAULT}")
+            string(TOLOWER "${_v}" _lv)
+            string(REGEX REPLACE "dir$" "" _lv "${_lv}")
+            set(NATRON_INSTALL_${_v} "${_${_lv}dir}" CACHE STRING "" FORCE)
+        endif()
+    endforeach()
+endif()
+foreach(_v BUNDLEDIR BINDIR RESOURCESDIR PYPLUGSDIR OCIODIR DOCDIR TESTSDIR)
+    string(TOLOWER "${_v}" _lv)
+    string(REGEX REPLACE "dir$" "" _lv "${_lv}")
+    set(_NATRON_INSTALL_${_v}_DEFAULT "${_${_lv}dir}" CACHE INTERNAL "")
+endforeach()
+set(_NATRON_INSTALL_LAYOUT_USED "${NATRON_INSTALL_LAYOUT}" CACHE INTERNAL "")
+
 set(IS_DEBUG_BUILD OFF)
 if(CMAKE_BUILD_TYPE MATCHES "^(debug|Debug|DEBUG)$")
     set(IS_DEBUG_BUILD ON)
@@ -58,6 +151,40 @@ if(WIN32)
     set(Python3_FIND_REGISTRY NEVER)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
+
+# RPATH of the installed binaries (CMake drops the build-tree RPATH at install time).
+if(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
+    # The installers bundle the libraries next to the binaries: only relative paths,
+    # so that no build machine path (MacPorts, SDK) is searched on the user's machine.
+    # On macOS the PySide2/Shiboken2 libraries are bundled in their site-packages directories,
+    # as tools/jenkins/build-OSX-installer.sh does.
+    if(APPLE)
+        set(_natron_rpath "@loader_path/../Frameworks")
+        if(Python3_VERSION_MAJOR AND Python3_VERSION_MINOR)
+            set(_natron_pysite "@loader_path/../Frameworks/Python.framework/Versions/${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+            # The installer script must bundle the same Python version (its PYVER).
+            message(STATUS "PORTABLE install: PySide rpaths use the bundled Python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR} (must match PYVER of the installer script)")
+            if(NATRON_QT6)
+                list(APPEND _natron_rpath "${_natron_pysite}/shiboken6" "${_natron_pysite}/PySide6")
+            else()
+                list(APPEND _natron_rpath "${_natron_pysite}/shiboken2" "${_natron_pysite}/PySide2")
+            endif()
+        endif()
+    else()
+        set(_natron_rpath "$ORIGIN/../lib")
+    endif()
+    if(NOT DEFINED CMAKE_INSTALL_RPATH)
+        set(CMAKE_INSTALL_RPATH "${_natron_rpath}")
+    endif()
+    if(NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_PATH)
+        set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+    endif()
+elseif(NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_PATH)
+    # FHS: installed binaries keep the paths of the libraries they were linked with outside the
+    # build tree (Qt, PySide2/Shiboken2, MacPorts libraries), so that they run where they are
+    # installed. Pass -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=OFF to install without them.
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Explicitly setting SHIBOKEN_PYTHON_LIBRARIES variable to avoid PYTHON_DEBUG_LIBRARY-NOTFOUND
@@ -85,9 +212,17 @@ if(NATRON_QT6)
     set(PYSIDE_LIB PySide6::pyside6)
 else()
     find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
-    find_package(Shiboken2 5.15 CONFIG REQUIRED COMPONENTS libshiboken2 shiboken2)
-
-    find_package(PySide2 5.15 CONFIG REQUIRED COMPONENTS pyside2)
+    find_package(Shiboken2 5.15 CONFIG QUIET COMPONENTS libshiboken2 shiboken2)
+    find_package(PySide2 5.15 CONFIG QUIET COMPONENTS pyside2)
+    if(NOT Shiboken2_FOUND AND NOT PySide2_FOUND)
+        # No CMake config files (PySide2 built with setup.py, e.g. MacPorts' py*-pyside2,
+        # or the download.qt.io wheels): locate them from the Python installation.
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PySide2FromPython.cmake)
+        _natron_pyside2_from_python(5.15)
+    elseif(NOT Shiboken2_FOUND OR NOT PySide2_FOUND)
+        message(FATAL_ERROR "Found only one of the Shiboken2 (${Shiboken2_FOUND}) and PySide2 (${PySide2_FOUND}) "
+            "CMake config packages: set Shiboken2_DIR and PySide2_DIR to matching installs.")
+    endif()
     set(QT_VERSION_MAJOR 5)
     set(PYSIDE_VERSION_MAJOR 2)
 
@@ -99,6 +234,21 @@ else()
     set(SHIBOKEN_EXE Shiboken2::shiboken2)
     set(SHIBOKEN_LIB Shiboken2::libshiboken)
     set(PYSIDE_LIB PySide2::pyside2)
+endif()
+
+# With Qt frameworks (macOS), the Qt include directories are <prefix>/lib/QtCore.framework[/Headers],
+# so the shiboken parser needs -F<prefix>/lib to resolve <QtCore/qnamespace.h> and the like.
+# Qt5 only for now: the Qt6 build is not tested with Qt frameworks.
+set(SHIBOKEN_QT_FRAMEWORK_ARGS)
+if(NOT NATRON_QT6)
+    foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
+        if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
+            list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    if(SHIBOKEN_QT_FRAMEWORK_ARGS)
+        list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
+    endif()
 endif()
 
 if(IS_DEBUG_BUILD AND WIN32)

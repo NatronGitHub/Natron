@@ -33,7 +33,7 @@ set(PYENGINE_HEADER PySide${PYSIDE_VERSION_MAJOR}_Engine_Python.h)
 set(shiboken_args
     "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
-    "-I." "-I.." "-I../Global" "-I../libs/OpenFX/include" ${PYENGINE_INCS}
+    "-I." "-I.." "-I../Global" "-I../libs/OpenFX/include" ${PYENGINE_INCS} ${SHIBOKEN_QT_FRAMEWORK_ARGS}
     "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYENGINE_OUT}"
     "${PYENGINE_HEADER}" "typesystem_engine.xml")
 
@@ -91,6 +91,11 @@ target_link_libraries(NatronEngine
 if(WIN32)
     #System library is required on windows to map network share names from drive letters
     target_link_libraries(NatronEngine PRIVATE mpr)
+endif()
+if(APPLE)
+    # Global/ProcInfo.cpp uses CoreFoundation, Engine/OSGLContext_mac.cpp uses CGL
+    # (global.pri links these frameworks into every qmake target).
+    target_link_libraries(NatronEngine PRIVATE "-framework CoreFoundation" "-framework OpenGL")
 endif()
 
 target_include_directories(NatronEngine

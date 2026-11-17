@@ -10,6 +10,8 @@ The official macOS binaries are built with [MacPorts](https://www.macports.org) 
 
 [Homebrew](https://brew.sh) can also be used for development builds (see [Homebrew](#homebrew)). It is not used for releases, because MacPorts is easier to customize.
 
+Natron is built with **CMake** (see [Building with CMake](#building-with-cmake)). The qmake build is deprecated: on RB-2.6 the release scripts (`launchBuildMain.sh`, and `tools/tart/provision.sh`, which drives it) still build Natron with qmake, until they move to CMake (#1181); it will be removed in a future release.
+
 The workflow around the release build is documented in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`). That covers keeping MacPorts up to date, the overlay maintenance, signing, and the test suite.
 
 ## Before you start
@@ -113,7 +115,7 @@ grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf || e
 
 Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change, including after a `git pull` or a branch switch, and before installing or upgrading ports: an out-of-date `PortIndex` makes MacPorts resolve the overlay ports with stale versions.
 
-`./check.sh` (in the same directory) often reports obsolete Portfiles right after a `port selfupdate`: you can still use the committed overlay. Reintegrating it with upstream is a maintainer task, see "Reintegrating upstream Portfiles into the overlay" in `Documentation/source/maintainers/build-macos.rst`.
+`./check.sh` (in the same directory; `--all` to check every overlay port, not only the installed ones) often reports obsolete Portfiles right after a `port selfupdate`: you can still use the committed overlay. It also warns when `/opt/MacPorts-Natron` differs from your checkout, meaning `./sync.sh` must be re-run. Reintegrating it with upstream is a maintainer task, see "Reintegrating upstream Portfiles into the overlay" in `Documentation/source/maintainers/build-macos.rst`.
 
 #### 4. OSMesa and LLVM
 
@@ -260,7 +262,7 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
     ./launchBuildMain.sh
 ```
 
-`launchBuildMain.sh` checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
+`launchBuildMain.sh` still builds Natron with the deprecated qmake build on RB-2.6; this will change when the release scripts move to CMake (#1181). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
 The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
 
@@ -444,7 +446,18 @@ mkdir -p ~/OFX/Natron-release && cd ~/OFX/Natron-release
 ln -sf ~/src/openfx-io/IO/Darwin-64-release/IO.ofx.bundle ~/src/openfx-misc/*/Darwin-64-release/*.ofx.bundle .
 ```
 
-Natron itself builds with qmake and the MacPorts Qt 5 (see [Building with qmake](#building-with-qmake-for-qt4-and-qt5) below for `config.pri`):
+Natron itself builds with CMake, the system (Xcode) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
+
+```Shell
+cd $NATRON_SRC
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
+    -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+cmake --build build -j$(sysctl -n hw.ncpu)
+```
+
+The application is then `build/App/Natron.app`. The release scripts still use the deprecated qmake build, with the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`). It is not quite the same build: OSMesa (`enable-osmesa`) and OpenMP (`openmp`) have no CMake option yet.
 
 ```Shell
 cd $NATRON_SRC
@@ -462,8 +475,10 @@ The OCIO configuration comes from the OpenColorIO-Configs download (see [Downloa
 env FONTCONFIG_FILE=$NATRON_SRC/Gui/Resources/etc/fonts/fonts.conf \
     OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio \
     OFX_PLUGIN_PATH=~/OFX/Natron-release NATRON_PLUGIN_PATH=$NATRON_SRC/Gui/Resources/PyPlugs \
-    App/Natron.app/Contents/MacOS/Natron
+    build/App/Natron.app/Contents/MacOS/Natron
 ```
+
+(with the qmake build, the application is `App/Natron.app`).
 
 Clear the OFX plugin cache (`~/Library/Caches/INRIA/Natron`) after rebuilding plugins. The plugin reference pages of the documentation are generated with `tools/genStaticDocs.sh` (see `Documentation/README-Natron-documentation.md`).
 
@@ -503,6 +518,15 @@ brew unlink qt
 brew install gnu-sed
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/pyside2.pc
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/shiboken2.pc
+```
+
+#### Building with CMake (untested)
+
+Pointing `CMAKE_PREFIX_PATH` at the formulae should work if `pyside@2` has CMake config files; otherwise also pass `-DPython3_EXECUTABLE` for the Python that `pyside@2` was built for, so that CMake finds PySide2 through it (`cmake/PySide2FromPython.cmake`). This is not tested; the supported way is [MacPorts](#on-macports).
+
+```Shell
+cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix expat);$(brew --prefix qt@5);$(brew --prefix pyside@2)"
+cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
 #### Python2 (optional)
@@ -697,7 +721,30 @@ curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
-## Building with qmake (for Qt4 and Qt5)
+## Building with CMake
+
+CMake is the supported build. It builds with Qt 5 and PySide2 by default; `-DNATRON_QT6=ON` selects Qt 6 and PySide6 (not covered by the macOS CI). Other options: `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`, `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`). `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` installs a self-contained `Natron.app`, as the release scripts will (see `Documentation/source/maintainers/building.rst`).
+
+### On MacPorts
+
+MacPorts' `py310-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Xcode) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
+
+```Shell
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+cmake --build build -j$(sysctl -n hw.ncpu)
+(cd build && env OFX_PLUGIN_PATH=$HOME/OFX/Natron-release OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio ctest -V)
+```
+
+These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that CI has no OFX plug-ins: it leaves `OFX_PLUGIN_PATH` unset and skips the tests that need them with `GTEST_FILTER='-BaseTest.*'` in the `ctest` environment.
+
+The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK for both the configure and the build, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. The same applies to the qmake build.
+
+## Deprecated: building with qmake
+
+*The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
 
 ### Add the config.pri file
 
@@ -913,20 +960,11 @@ On MacPorts, this would look like:
 launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 ```
 
-## Building with cmake (Qt5 only)
-
-### On homebrew
-
-```Shell
-mkdir build
-cd build
-cmake .. -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/expat;/opt/homebrew/opt/qt@5;/opt/homebrew/opt/pyside@2" -DPYTHON_FRAMEWORK_LIBRARIES=/opt/homebrew/Frameworks/Python.framework/Versions/3.9/lib
-make -j
-```
-
 ## Testing
 
-The unit tests build with the same qmake as Natron (see "Developing with the MacPorts SDK"), from `$NATRON_SRC`:
+With CMake, the unit tests are built with Natron (`NATRON_BUILD_TESTS`, on by default) and run with `ctest` (see [Building with CMake](#building-with-cmake)).
+
+With the deprecated qmake build, they build with the same qmake as Natron (see "Developing with the MacPorts SDK"), from `$NATRON_SRC`:
 
 ```Shell
 cd $NATRON_SRC/Tests

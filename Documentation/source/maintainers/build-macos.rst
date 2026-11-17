@@ -6,8 +6,10 @@ Building and Packaging Natron on macOS
 This chapter documents how the **official macOS binaries and ``.dmg`` are
 produced** — the MacPorts-based release/packaging build driven by
 ``tools/jenkins/launchBuildMain.sh``. It is the packaging counterpart to
-:ref:`maint-building` (which explains the qmake/CMake source builds used for
-day-to-day development).
+:ref:`maint-building` (which explains the CMake source build used for
+day-to-day development). On RB-2.6, ``launchBuildMain.sh`` still builds Natron
+with the deprecated qmake build, until the release scripts move to CMake
+(`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_).
 
 The full, copy-pasteable dependency setup lives at the repository root in
 ``INSTALL_MACOS.md``. This chapter explains the *workflow* around it: preparing
@@ -127,9 +129,7 @@ of some MacPorts ports. A port that also exists upstream has three files:
 
 Ports that exist only in the overlay (for example ``graphics/seexpr211`` or
 the older ``openimageio*`` versions) have no ``Portfile.orig`` or
-``Portfile.patch``. A few directories have a ``Portfile.orig`` and
-``Portfile.patch`` but no ``Portfile``: they are leftovers of ports that were
-removed from the overlay, which MacPorts ignores (#1194 removes them). Patches to the port's sources live in ``files/``, and
+``Portfile.patch``. Patches to the port's sources live in ``files/``, and
 MacPorts applies them with ``-p0``.
 
 The upstream ports tree is the one MacPorts downloads with ``port selfupdate``:
@@ -144,10 +144,12 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
        cd $NATRON_SRC/tools/MacPorts
        ./check.sh
 
-   For each port whose upstream Portfile no longer matches ``Portfile.orig``,
-   ``check.sh`` prints the port and the file dates, and, for ports that have
-   a ``Portfile.patch``, the command to reintegrate it. It also lists ``files/`` patches that upstream added or
-   changed.
+   ``check.sh`` compares the overlay ports that are installed (all of them
+   with ``--all``) with their upstream MacPorts counterparts, by content. It
+   lists the ports whose upstream Portfile no longer matches
+   ``Portfile.orig``, with the command to reintegrate them; the ``files/``
+   entries that upstream added or changed; the ``files/`` entries that no
+   Portfile uses; and whether ``/opt/MacPorts-Natron`` needs a ``./sync.sh``.
 
 #. **Reintegrate each listed port.** The usual commands are the ones
    ``check.sh`` prints; spelled out, with ``P`` the port directory::
@@ -166,12 +168,17 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
    missing or changed, and check that Natron's own ``files/`` patches still
    apply to the new upstream version.
 
-   **Pinned ports are the exception.** Some ports are deliberately kept at a
-   version other than upstream's (the table is in ``INSTALL_MACOS.md``,
-   section 11; today ``graphics/libraw`` and ``graphics/opencolorio``). For
-   them, only update ``Portfile.orig`` (the first ``cp``) and keep the
-   ``Portfile``. Syntax or compatibility fixes from upstream can still be
-   copied into it by hand.
+   **Pinned ports are the exception.** A port directory with a ``PINNED`` file
+   is deliberately kept at a version other than upstream's (the table is in
+   ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw`` and
+   ``graphics/opencolorio``). The file says which kind of pin it is:
+   ``ahead`` (our version is newer than upstream's: unpin it, by deleting
+   ``PINNED`` and taking upstream's Portfile, as soon as upstream's version
+   is greater than or equal to ours, which ``check.sh`` reports as
+   "upstream caught up") or ``older`` (held back until the reason is gone).
+   For pinned ports, ``check.sh`` only prints the ``Portfile.orig`` update:
+   keep the ``Portfile``. Syntax or compatibility fixes from upstream can
+   still be copied into it by hand.
 
 #. **Regenerate the patches,** so that each ``Portfile.patch`` is again the
    difference between ``Portfile.orig`` and ``Portfile``::

@@ -66,13 +66,17 @@ The tools for diagnosing a Natron bug are spread across the code base; this is
 the consolidated list (several are referenced from the P0 leads in
 :ref:`maint-issue-triage`):
 
-- **Debug build.** Build with ``CMAKE_BUILD_TYPE=Debug`` (or qmake
-  ``CONFIG+=debug``). This defines ``DEBUG`` and enables **floating-point
-  exception trapping** at startup (``Global/FloatingPointExceptions.h``), so a
-  stray ``NaN`` or division by zero aborts at the source instead of silently
-  polluting the image pipeline.
-- **AddressSanitizer.** The qmake build supports ``CONFIG+=addresssanitizer``
-  (see the notes at the bottom of ``Project.pro``) — the fastest way into
+- **Debug build.** Build with ``-DCMAKE_BUILD_TYPE=Debug`` (with the
+  deprecated qmake build: ``CONFIG+=debug``). This defines ``DEBUG`` and
+  enables **floating-point exception trapping** at startup
+  (``Global/FloatingPointExceptions.h``), so a stray ``NaN`` or division by
+  zero aborts at the source instead of silently polluting the image pipeline.
+- **AddressSanitizer.** With CMake, configure with
+  ``-DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer"``,
+  ``-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"`` and
+  ``-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address``
+  (the deprecated qmake build has ``CONFIG+=addresssanitizer``, see the notes
+  at the bottom of ``Project.pro``) — the fastest way into
   use-after-free and destruction-order bugs such as the teardown crashes
   (#795/#1029/#1057).
 - **Thread sanitizer / stuck-thread backtraces.** For deadlocks and stalls
