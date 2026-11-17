@@ -94,6 +94,11 @@ if(NATRON_OCIO_CONFIGS_DIR)
         endif()
     endforeach()
 endif()
+if(NOT NATRON_OCIO_CONFIG_DIRS AND NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
+    # also covers an empty NATRON_OCIO_CONFIGS_DIR (no OpenColorIO-Configs in the source tree)
+    message(FATAL_ERROR "PORTABLE install without OpenColorIO configs: set NATRON_OCIO_CONFIGS_DIR "
+        "to a checkout of https://github.com/NatronGitHub/OpenColorIO-Configs (and NATRON_OCIO_CONFIGS)")
+endif()
 
 if(APPLE)
     # Natron.app, as built by App/App.pro (QMAKE_INFO_PLIST, ICON,

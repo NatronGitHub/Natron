@@ -217,8 +217,9 @@ The ``Tests`` binary is only installed by
 (``bin/``; with ``PORTABLE`` on macOS, ``Natron.app/Contents/MacOS``, where its
 relative RPATHs resolve and where ``build-OSX-installer.sh`` runs it).
 
-With ``PORTABLE``, a missing OpenColorIO config is an error, so that a release
-can't silently ship without one; with ``FHS`` it is a warning. Set
+With ``PORTABLE``, a missing OpenColorIO config is an error, and so is an empty
+``NATRON_OCIO_CONFIGS_DIR``, so that a release can't silently ship without
+them; with ``FHS`` a missing config is a warning. Set
 ``NATRON_OCIO_CONFIGS`` to the configs to bundle, e.g.
 ``-DNATRON_OCIO_CONFIGS="blender;nuke-default"`` with the OCIO 2.0 configs,
 which have no ``natron`` config (``build-natron.sh`` drops it the same way).
