@@ -127,6 +127,9 @@ public:
 #if NATRON_ENABLE_TRIMAP
     ///Fill with 2 the roi
     void markForRendering(const RectI & roi);
+
+    ///Set to 0 the pixels marked as being rendered (2), and return how many there were
+    std::size_t clearPixelsBeingRendered();
 #endif
 
     void clear(const RectI& roi) { markFor(roi, 0); }

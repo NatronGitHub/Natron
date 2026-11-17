@@ -250,12 +250,14 @@ public:
     void markImageAsBeingRendered(const ImagePtr & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
 
     /**
-     * @brief Wait until the portions of roi in img that other threads are rendering are done.
-     * renderedRects are the rectangles this thread marked with markImageAsBeingRendered() and has
-     * finished rendering: they are marked as rendered before waiting, else they would still be
-     * PIXEL_UNAVAILABLE in the bitmap and this thread would wait for its own pixels (see #811).
+     * @brief Mark as rendered the rectangles of img that this thread marked with markImageAsBeingRendered()
+     * and has finished rendering, and wake up the threads waiting for them.
+     * This must be called before waitForImageBeingRenderedElsewhere(): until unmarkImageAsBeingRendered()
+     * these rectangles are PIXEL_UNAVAILABLE, and the thread would wait for its own pixels (see #811).
      **/
-    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img, const std::list<RectI>& renderedRects);
+    void markImageRectsAsRendered(const ImagePtr & img, const std::list<RectI>& rects);
+
+    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img);
 
     void unmarkImageAsBeingRendered(const ImagePtr & img, const std::list<RectI>& rects, bool renderFailed);
 #endif
