@@ -2275,7 +2275,7 @@ NodeGui::copyFrom(const NodeGuiSerialization & obj,
     obj.getColor(&r, &g, &b);
     setCurrentColor( QColor::fromRgbF(r, g, b) );
     if (obj.getOverlayColor(&overlayR, &overlayG, &overlayB)) {
-        setOverlayColor( QColor::fromRgbF(overlayR, overlayB, overlayG) );
+        setOverlayColor( QColor::fromRgbF(overlayR, overlayG, overlayB) );
     }
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
     if (restorePreview) {
