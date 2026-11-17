@@ -3221,9 +3221,10 @@ void
 OfxEffectInstance::onInteractViewportSelectionCleared()
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
-    // Every node with a viewer context gets the viewer's selection signals: only the node whose
-    // settings panel is open (so whose overlay is drawn) uses the selection, as in RotoPaint.
-    if ( !k || !getNode()->isSettingsPanelVisible() ) {
+    // Unlike updates (see onInteractViewportSelectionUpdated), a clear is sent to every node, as
+    // in RotoPaint: a selection made while the panel was open must not survive a click on empty
+    // space made after the panel was closed.
+    if (!k) {
         return;
     }
     double propV[4] = {0, 0, 0, 0};
@@ -3239,6 +3240,8 @@ void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
+    // Every node with a viewer context gets the viewer's selection signals: only the node whose
+    // settings panel is open (so whose overlay is drawn) uses the rectangle, as in RotoPaint.
     if ( !k || !getNode()->isSettingsPanelVisible() ) {
         return;
     }
