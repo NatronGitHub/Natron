@@ -1,75 +1,326 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
 Tracking and stabilizing
 ========================
 
-.. toctree::
-   :maxdepth: 2
+The :ref:`Tracker <fr.inria.built-in.Tracker>` node follows one or more
+points of an image over time. It uses the tracker of the libmv library, which
+comes from Blender. The tracks can then be used to:
 
-Workflow Summary
+- **stabilize** the image, so that the tracked points stay still;
+- **match-move** another image or a Roto shape, so that it follows the tracked
+  points;
+- remove or add **jitter** (camera shake).
+
+This page first shows how to track points with the Tracker, then how the
+tracks are turned into a Transform or a CornerPin.
+
+
+Tracking points
+---------------
+
+Creating the Tracker
+~~~~~~~~~~~~~~~~~~~~
+
+1. Select the node whose image contains the features to track (usually a Read
+   node), and create a Tracker node from the **Transform** group of the
+   toolbar, or press :kbd:`Tab` in the Node Graph and type "Tracker".
+2. Connect a Viewer to the Tracker and open its properties panel. While the
+   panel is open, the Viewer shows the Tracker tools in a toolbar above the
+   image, and the tracks over the image.
+3. In the **Transform** tab, keep **Motion Type** set to **None** while you
+   track. In this mode the Tracker passes its input through unchanged, so the
+   Viewer shows the image that the tracks follow.
+
+Adding tracks
+~~~~~~~~~~~~~
+
+Look for small, contrasted features that stay visible during the shot:
+corners, dots, the corner of a window. Avoid reflections, straight edges along
+which the pattern could slide, and features that are hidden by another object
+for part of the shot.
+
+To add a track, do one of:
+
+- hold :kbd:`Ctrl` + :kbd:`Alt` (:kbd:`Cmd` + :kbd:`Alt` on macOS) and click
+  on the feature in the Viewer;
+- turn on the **Add Track** button in the Viewer toolbar, then click in the
+  Viewer once for each new track;
+- click the **+** button below the track table in the properties panel.
+
+A track that is not selected is drawn as a cross on its center. A selected
+track shows:
+
+- the **center**: the point that is tracked;
+- the **pattern** (the inner rectangle): the part of the image around the
+  center that the tracker looks for in the other frames;
+- the **search window** (the outer rectangle): how far from its previous
+  position the tracker searches for the pattern in the next frame. Make it
+  larger for fast motion; a larger search window is slower to track;
+- the path of the center over the tracked frames.
+
+Drag the center to move the track, and drag the corners and the middle of the
+edges of the rectangles to resize the pattern and the search window. The
+default sizes of new tracks are set by **Default Pattern Size** and **Default
+Search Area Size** in the **Tracking** tab.
+
+Dragging the center with :kbd:`Ctrl` (:kbd:`Cmd` on macOS) held moves an
+**offset** instead: the track keeps following the same pattern, but the point
+it outputs is shifted by the offset. This is useful when the point you need
+cannot be tracked itself, for example because it leaves the frame or is
+hidden. The **Reset Offset** button removes the offset.
+
+The track table in the properties panel lists all tracks, with their
+**Enabled** checkbox, label, **Motion-Model**, center, offset and error. You
+can select tracks in the table or in the Viewer: click a track,
+:kbd:`Shift` + click to add it to the selection, or drag a selection
+rectangle. The buttons below the table add, remove, select all and reset
+tracks, and **Average** creates a new track that is the average of the
+selected tracks.
+
+The tracks are drawn in the overlay color of the Tracker, which can be changed
+with the overlay color button at the top of its properties panel. Tracks that
+are disabled at the current frame are drawn darker.
+
+Choosing how a track is searched
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The **Motion model** of each track (in the table, or **Default Motion
+Model** for new tracks) tells the tracker how the pattern may change from one
+frame to the next: translation only (the default), translation with rotation
+and/or scale, affine, or perspective. Use the simplest model that matches the
+motion of the feature. The other models are slower, and are only needed when
+the pattern rotates, changes size or is distorted noticeably during the shot.
+
+The other parameters of the **Tracking** tab apply to all tracks:
+
+- **Track Red**, **Track Green**, **Track Blue**: the channels used to compare
+  the pattern with the image.
+- **Max. Error**: a track fails on a frame if its error (1 minus the
+  normalized cross-correlation between the pattern and the image) is above this
+  value.
+- **Maximum Iterations**, **Use Brute-Force Pre-track**, **Normalize
+  Intensities**, **Pre-blur Sigma**: settings of the libmv tracker. Normalize
+  Intensities helps when the lighting changes during the shot.
+- **Animate Enabled**: when checked, the **Enabled** parameter of a track is
+  turned off at the frames where the track fails, so that the track is not
+  used to compute the transform where it is wrong. You can then add new tracks
+  to replace it.
+- **Use Pattern Matching**: track with the TrackerPM plug-in (a simpler
+  pattern-matching method, with its own **Score Type**) instead of libmv.
+
+Running the tracker
+~~~~~~~~~~~~~~~~~~~
+
+Select the tracks to track, then use the tracking buttons of the Viewer
+toolbar. Only the selected tracks that are enabled are tracked.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Button
+     - Default shortcut
+     - What it does
+   * - Track Backward
+     - :kbd:`Z`
+     - Track backward, up to the first frame of the timeline.
+   * - Track Previous
+     - :kbd:`X`
+     - Track one frame backward.
+   * - Stop Tracking
+     - :kbd:`Esc`
+     - Stop the current tracking.
+   * - Track Next
+     - :kbd:`C`
+     - Track one frame forward.
+   * - Track Forward
+     - :kbd:`V`
+     - Track forward, up to the last frame of the timeline.
+   * - Track Range
+     -
+     - Ask for a first frame, a last frame and a step, then track over that
+       range.
+   * - Track All Keyframes
+     - :kbd:`Ctrl` + :kbd:`V`
+     - Track across all the pattern keyframes of the selected tracks.
+   * - Track Current Keyframe
+     - :kbd:`Ctrl` + :kbd:`C`
+     - Track only over the pattern keyframes around the current frame.
+
+These shortcuts work when the Viewer has the keyboard focus (click in it
+first), and can be changed in the Shortcut Editor
+(**Edit > Preferences > Shortcut Editor**).
+
+The other buttons of the toolbar are:
+
+- **Clear Animation**, **Clear Animation Backward**, **Clear Animation
+  Forward**: delete the tracked positions of the selected tracks, at all frames,
+  or before or after the current frame.
+- **Refresh Viewer**: redraw the image at each tracked frame, not only the
+  tracks. Tracking is faster when this is off.
+- **Center Viewer**: keep the selected tracks at the center of the Viewer
+  during tracking.
+- **Create Keyframe On Move**: when on (the default), moving a track in the
+  Viewer sets a pattern keyframe (see below).
+- **Show Error**: color the path of each track by its error at each frame,
+  from green (good match) to red (bad match).
+- **Set Keyframe On Pattern**, **Remove Keyframe On Pattern**: add or remove a
+  pattern keyframe on the selected tracks at the current frame.
+- **Reset Offset**, **Reset Track**: remove the offset, or reset the pattern,
+  the search window and the animation of the selected tracks.
+- **Mag. Window Size**: the size of the magnified view of the selected track.
+
+While a track is selected, the Viewer also shows a magnified view of its
+pattern, and thumbnails of its pattern keyframes. Click a thumbnail to go to
+that frame.
+
+Fixing a track with pattern keyframes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The tracker looks for the pattern as it appears at a **pattern keyframe**.
+The first one is set when the track is created. When a feature changes over
+the shot (it turns, gets bigger, the light changes), a single reference is no
+longer enough, and the track drifts or fails.
+
+To fix it:
+
+1. Go to the frame where the track starts drifting.
+2. Move the track back onto the feature in the Viewer. With **Create Keyframe
+   On Move** on, this sets a pattern keyframe at this frame. You can also use
+   **Set Keyframe On Pattern**.
+3. Track again from this frame, or use **Track All Keyframes** to track
+   between the keyframes.
+
+Between two pattern keyframes, the tracker uses the pattern of the nearest
+one. The pattern keyframes of the selected tracks are shown on the timeline.
+Above the track table, "Track keyframe: N of M" shows them, with buttons to go
+to the previous or next pattern keyframe, and to add, remove or clear them.
+
+
+Using the tracks
 ----------------
 
-In order to track a planar shape and move a Roto mask or a texture corresponding to that shape:
+Stabilizing and match-moving
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Track some points inside your mask (shape)
-- In the Transform tab, set the transform to CornerPin and to match-move
-- Disable the CornerPin and set the from points of the corner pin at the reference frame where you want your object to move in (basically the bounding box of the shape to track)
-- Export to CornerPin
-- Append your CornerPin to the Roto node 
+The **Transform** tab turns the tracks into a transformation:
 
-In a future version we will have a planar tracker that will do that automatically for you in a single click. 
+- **Motion Type**:
 
-Detailed Usage
---------------
+  - **None**: the Tracker is a pass-through (use it while tracking);
+  - **Stabilize**: transform the input image so that the tracked points stay
+    still;
+  - **Match-Move**: transform an image so that it follows the tracked points;
+  - **Remove Jitter**: keep the overall motion but remove its high
+    frequencies (the shake), by averaging over **Jitter Period** frames;
+  - **Add Jitter**: apply only the high frequencies of the motion, to add a
+    camera shake that follows the original one.
 
-To link parameters in Natron, it is the same as in Nuke except that you drag and drop the widget of a parameter onto another one by holding the control key (or cmd on macOS).
+- **Transform Type**: **Transform** (translation, rotation and scale) or
+  **CornerPin** (the default, a perspective transform, see
+  :ref:`tracking-model`).
+- **Reference Frame**: the frame at which the transform is the identity, for
+  example the frame where the element to match-move is in the right place.
+  **Set to Current Frame** sets it to the current frame.
 
-The tracker works differently than the Nuke tracker regarding the "Transform" part. For the tracking itself, almost everything is the same. Basically, in Nuke they can only output a CornerPin with exactly 4 points, and they map 1 track to each corner of the CornerPin. For the Transform node they may use 1 (translation only), 2, or N points to find the final transformation, however that will never be something other than a `similarity <https://en.wikipedia.org/wiki/Similarity_(geometry)>`_, which means that it cannot handle perspective deformation.
+Press **Compute** to compute the transform from the tracks. When **Compute
+Transform Automatically** is checked, it is also computed when tracking ends,
+and whenever a parameter that affects it changes.
 
-In Natron, we offer the possibility to compute a CornerPin with N points, that is an `homography <https://en.wikipedia.org/wiki/Homography>`_, which encompasses all distortion-free perspective transforms.
+The Tracker can apply the transform to its own input, which is how you
+stabilize the tracked image. You can also export the transform to another
+node: in the **Export** section of the Transform tab, press **Export** to
+create a :ref:`CornerPin <net.sf.openfx.CornerPinPlugin>` or a
+:ref:`Transform <net.sf.openfx.TransformPlugin>` node (depending on
+**Transform Type**) next to the Tracker. **Motion Type** must not be None.
+The new node is not connected: insert it in the branch that must move, for
+example after the Roto node or the image to match-move, before it is merged
+onto the plate.
 
-This is much better, because the more tracks you use to compute that CornerPin, the more robust it will be.
+- **Link**: when checked, the parameters of the new node are linked to the
+  Tracker, so they follow any change made later in the Tracker. When unchecked,
+  they are a copy.
+- **Use Current Frame**: when checked, the exported node is the identity at the
+  current frame instead of the reference frame.
 
-An homography is typically used to contain information about a perspective deformation, whereas a similarity is more constrained: a similarity is translation, rotation and uniform scale.
+Match-moving a Roto shape or a texture on a flat surface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In The Transform tab, this is what we call "the model". 
-Basically, the problem we are trying to solve is to fit a model (i.e. similarity or homography) so it is the closest to the N point correspondences. Each correspondence is the position of a track at the reference frame and its position at the tracked time. 
+To make a Roto mask or an image follow a flat surface (a wall, a screen, a
+sign):
 
-Hence the more correspondences you have (i.e. the more tracks), the more robust the homography is in the region where you tracked features.
+1. Track several points on the surface, all in the same plane.
+2. In the Transform tab, set **Motion Type** to **Match-Move** and
+   **Transform Type** to **CornerPin**, and set the **Reference Frame** to the
+   frame where the shape is drawn or the image is placed.
+3. Check **Disable Transform**, so that the Viewer shows the input unchanged
+   while you edit the CornerPin points.
+4. At the reference frame, set the **From** points of the CornerPin controls,
+   for example to the bounding box of the Roto shape. **Set to Input Rod**
+   sets them to the rectangle of the input image.
+5. Press **Compute** if the transform is not computed automatically, then
+   **Export** with **Link** checked.
+6. Insert the exported CornerPin after the Roto node or the texture.
 
-The *Fitting error* parameter (in the Transform tab) is an indication of how much difference there is in pixels between the reference point on which we applied the computed transformation and the original tracked point. This is the RMS (root mean square) error across all tracks, and gives an estimate of the quality of the model found in pixel units. 
+See :doc:`compositing-rotopaint` for drawing the shapes, and
+:doc:`compositing-transform` for the transform nodes. To link parameters by
+hand, drag a parameter onto another one while holding :kbd:`Ctrl`
+(:kbd:`Cmd` on macOS).
 
-For each tracked frame, the *correspondences* we use to compute the CornerPin are the tracks that are *enabled* at this frame (i.e. the Enabled parameter is checked at this time) and that have a keyframe on the center (i.e. they successfully tracked). 
 
-When you press *Compute*, it computes the model (CornerPin/Transform) with all the tracks that meet the aforementioned requirements *over all keyframes*.
+.. _tracking-model:
 
-When *Compute Transform Automatically* is checked, whenever a parameter that has an effect on the output model is changed, this will recompute the Corner/Pin transform *over all keyframes* again.
- 
-The parameters that have an effect on the output model are:
+How the transform is computed
+-----------------------------
 
-- The motion type
-- The Transform Type (i.e. Similarity or Homography)
-- The Reference Frame 
-- Jitter Period
-- Smooth: this can be used to smooth the resulting curve to remove some of the noise in the high frequencies of the CornerPin/Transform. Note that in "Add Jitter" mode, you can increase High frequencies to simulate a camera shake that follows the original camera movements.
-- Robust model: this is quite complicated, but in short: When trying to find a model that *best fits* all correspondences, you may have correspondences that are just wrong (bad tracking for example). These bad correspondences are called *outliers*, and this parameter when checked tells  we should not take into account those outliers to compute the final model. In most cases this should be checked. However sometimes, the user may have for example required to compute an homography (i.e. CornerPin), but the given tracked points (correspondences) just cannot make-up an homography. In this case, if the parameter were to be checked, it would fail to compute a model. If you uncheck this, it will take into account all the points and compute a model that averages the motion of all correspondences.
+A Transform computed from tracks is a
+`similarity <https://en.wikipedia.org/wiki/Similarity_(geometry)>`_:
+translation, rotation and uniform scale. It cannot represent a change of
+perspective. A CornerPin can: it is a
+`homography <https://en.wikipedia.org/wiki/Homography>`_, which covers all
+the perspective transforms of a plane, without lens distortion. One track is
+enough to compute a CornerPin, but at least four are needed to capture a
+perspective change.
 
-Also when *Compute Transform Automatically* is checked, the model will be computed automatically when the tracking ends.
+The Tracker does not map one track to each corner. It looks for the model
+(the similarity or the homography) that best fits all the tracks. At each
+frame, each track gives a correspondence: its position at the reference frame
+and its position at that frame. The model kept is the one closest to all
+these correspondences. The more tracks you use, the more robust the result
+is in the area covered by the tracks.
 
-We cannot compute the model after each track step (i.e. during tracking) because the model at each frame depends on the model at other frames since we may smooth the curve or add jitter. 
+The correspondences used at a frame come from the tracks that are enabled at
+that frame (the **Enabled** parameter, which can be animated) and that have a
+tracked position at that frame.
 
-So all in all it works differently than Nuke, the whole transformation computation can be more robust and happens as a second pass after the tracking is actually done.
+**Fitting Error (px)** shows, for each frame, how far in pixels the tracked
+points are from the reference points moved by the computed model (a root mean
+square over all tracks). It estimates the quality of the model. A warning
+("Incorrect model") is shown when it reaches **Warn If Error Is Above**.
 
-One last thing: to compute the CornerPin in the "Transform" tab of the tracker, the **to** points are computed using the **from** points as reference. 
+The transform is computed as a second step, after tracking, over all the
+tracked frames at once, because the result at one frame depends on the other
+frames when smoothing or jitter is used. The parameters that change the result
+are:
 
-Basically what happens is that the tracking outputs a transformation matrix at each frame. Then when computing the model, this matrix is applied to the **from** points at each frame in order to obtain the **to** points.
+- **Motion Type**;
+- **Transform Type** (Transform or CornerPin);
+- **Reference Frame**;
+- **Jitter Period**;
+- **Smooth**: average the result over this number of frames, to remove high
+  frequency noise. In Add Jitter mode, you can raise the high frequencies to
+  simulate a camera shake that follows the original camera motion;
+- **Robust Model**: when checked, tracks that do not fit the model (wrong
+  tracks, called *outliers*) are ignored when computing it. Keep it checked in
+  most cases. If the tracked points cannot be described by the chosen model
+  (for example points that are not on one plane, for a CornerPin), the
+  computation may fail; unchecking it uses all the tracks, and gives a model
+  that averages their motion;
+- the **Enabled** parameter of each track.
 
-So if you were to change the reference points (i.e. the **from** points) with the *Set to input RoD* for example, then you would need to recompute the model at all frames, because the **to** points would just not be the same. 
-
-The work is usually done in two steps:
-
-- First, disable the CornerPin so that even if the viewer is connected to the Tracker there is no deformation going on, and set the **from** points to be the RoD (bounding box) of the Roto shape at the reference frame.
-- Then, export the CornerPin. It just links the parameters of the CornerPin to the ones in the tracker, so if you change something in the tracker transform tab the changes will reflect onto the CornerPin.
-
-Basically what the Planar tracker will do in the future is automatically do all the steps for you: it will place markers inside the mask for you, track them and output a CornerPin from the bounding box of the roto shape.
+For a CornerPin, the **To** points are computed from the **From** points: at
+each frame, the transformation found from the tracks is applied to the From
+points to get the To points. If you change the From points (for example with
+**Set to Input Rod**), the transform must be computed again for all frames.
