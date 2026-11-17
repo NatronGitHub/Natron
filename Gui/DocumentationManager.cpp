@@ -27,6 +27,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QUrl>
 GCC_ONLY_DIAG_OFF(class-memaccess)
 #include <QVector>
 GCC_ONLY_DIAG_ON(class-memaccess)
@@ -256,7 +257,7 @@ DocumentationManager::handler(QHttpRequest *req,
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
                 QStringList split = options.at(i).split( QString::fromUtf8("=") );
                 if (split.length() > 0) {
-                    QString pluginID = split.takeLast();
+                    QString pluginID = QUrl::fromPercentEncoding( split.takeLast().toUtf8() ); // the group pages percent-encode it
                     if ( !pluginID.isEmpty() ) {
                         Plugin* plugin = 0;
                         try {
@@ -308,7 +309,7 @@ DocumentationManager::handler(QHttpRequest *req,
             }
         }
         if ( body.isEmpty() ) {
-            QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
+            QString notFoundHtml = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
                                                  "<html>"
                                                  "<head>"
                                                  "<title>Plugin not found</title>"
@@ -328,7 +329,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                  "</div>"
                                                  "</body>"
                                                  "</html>");
-            body = parser(notFound, docDir).toUtf8();
+            body = parser(notFoundHtml, docDir).toUtf8();
         }
     } else if ( page == QString::fromUtf8("_prefsLive.html") ) {
         SettingsPtr settings = appPTR->getCurrentSettings();
@@ -430,7 +431,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     const QString& plugID = i.value();
                     const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
-                        items.append( listItem.arg( QString::fromUtf8("/_plugin.html?id=") + plugID.toHtmlEscaped() ).arg( plugName.toHtmlEscaped() ) );
+                        items.append( listItem.arg( QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8( QUrl::toPercentEncoding(plugID) ) ).arg( plugName.toHtmlEscaped() ) );
                     }
                 }
             }
@@ -506,7 +507,7 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     }
     if ( body.isEmpty() ) {
-        QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
+        QString notFoundHtml = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
                                              "<html>"
                                              "<head>"
                                              "<title>%1</title>"
@@ -524,7 +525,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                              "</div>"
                                              "</body>"
                                              "</html>").arg( tr("Page not found") );
-        body = parser(notFound, docDir).toUtf8();
+        body = parser(notFoundHtml, docDir).toUtf8();
         status = 404;
     }
 
