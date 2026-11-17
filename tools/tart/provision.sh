@@ -128,8 +128,8 @@ ports_https_source() {
 
 step_overlay() {
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
+    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
+    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with this upstream tree (see $LOGDIR/check.txt)"
     fi
     sudo mkdir -p /opt/MacPorts-Natron
@@ -263,12 +263,24 @@ step_sync() {
     grep -q "Ports failed:[[:space:]]*0" "$LOGDIR/sync-portindex.txt" || { echo "portindex failed on the overlay"; return 1; }
 }
 
-# Ports pinned in the overlay (older than upstream): MacPorts never downgrades by itself,
-# so reinstall them (same variants) when the installed version differs from the overlay's.
-PINNED_PORTS="libraw"
+# Ports pinned in the overlay: the port directories with a PINNED file
+# (tools/MacPorts/README.txt), pinned either ahead of upstream (a newer version)
+# or held at an older one. MacPorts never downgrades, and an "ahead" port may
+# have been installed from upstream before, so reinstall a pinned port whenever
+# its installed version differs from the overlay's.
+pinned_ports() {
+    local f d n
+    for f in "$NATRON"/tools/MacPorts/*/*/PINNED; do
+        [ -f "$f" ] || continue
+        d=$(dirname "$f")
+        n=$(awk '$1 == "name" {print $2; exit}' "$d/Portfile" 2>/dev/null)
+        case "$n" in ''|*'$'*|*'['*) n=$(basename "$d") ;; esac
+        echo "$n"
+    done
+}
 step_pins() {
-    local p want have variants vfile
-    for p in $PINNED_PORTS; do
+    local p v want have variants vfile
+    for p in $(pinned_ports); do
         vfile=$LOGDIR/pins-$p.variants
         have=$(port -q installed "$p" 2>/dev/null | awk '/\(active\)/{print $2}')
         if [ -z "$have" ]; then
@@ -287,7 +299,10 @@ step_pins() {
                 variants=$(echo "$have" | sed -e 's/^@[^+]*//' -e 's/+/ +/g')
                 echo "$variants" > "$vfile"
                 echo "$p: installed $have, overlay has $want: reinstalling with$variants"
-                $SUDO port -v -N -f uninstall "$p"
+                # one version at a time: with several installed, "port uninstall $p" refuses to choose
+                for v in $(port -q installed "$p" | awk '{print $2}'); do
+                    $SUDO port -v -N -f uninstall "$p" "$v"
+                done
                 $PORT install "$p" $variants
                 ;;
         esac
@@ -302,8 +317,8 @@ step_update() {
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
+    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
+    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with upstream (see $LOGDIR/check.txt); reintegrate it on the host first"
     fi
     step_sync

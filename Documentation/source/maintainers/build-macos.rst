@@ -104,14 +104,21 @@ When upstream MacPorts moves, re-synchronise carefully:
 
        sudo port selfupdate
 
-#. **Find outdated overlay files.** ``check.sh`` compares each file in the
-   overlay against its upstream MacPorts counterpart and lists what changed::
+#. **Find outdated overlay files.** ``check.sh`` compares the overlay ports
+   that are installed (all of them with ``--all``) against their upstream
+   MacPorts counterparts, by content, and lists what changed, which
+   ``files/`` entries are unused, and whether ``/opt/MacPorts-Natron`` needs
+   a ``./sync.sh``::
 
        cd .../Natron/tools/MacPorts
        ./check.sh
 
 #. **Update each outdated file** following ``check.sh``'s per-file instruction,
-   **resolving conflicts manually**. Respect the local pins — for a frozen port
+   **resolving conflicts manually**. Respect the local pins: a ``PINNED`` file
+   in the port directory says ``ahead`` (our version is newer than upstream's;
+   unpin it when ``check.sh`` reports "upstream caught up") or ``older`` (held
+   back until the reason is gone), and ``check.sh`` then prints only the
+   ``Portfile.orig`` update — for a frozen port
    only the *effective* Portfile (version/checksums) is frozen; syntax and
    compatibility fixes are allowed, and ``Portfile.orig`` still tracks upstream.
 
