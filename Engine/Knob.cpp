@@ -3808,9 +3808,20 @@ void
 KnobHelper::resetMaster(int dimension)
 {
     assert(dimension >= 0);
+    QWriteLocker l(&_imp->mastersMutex);
     _imp->masters[dimension].second.reset();
     _imp->masters[dimension].first = -1;
-    _imp->ignoreMasterPersistence = false;
+    // ignoreMasterPersistence applies to the whole knob: only reset it when no dimension is slaved anymore.
+    bool hasMaster = false;
+    for (std::size_t i = 0; i < _imp->masters.size(); ++i) {
+        if ( _imp->masters[i].second.lock() ) {
+            hasMaster = true;
+            break;
+        }
+    }
+    if (!hasMaster) {
+        _imp->ignoreMasterPersistence = false;
+    }
 }
 
 bool
@@ -4385,7 +4396,7 @@ KnobHelper::removeListener(KnobI* listener,
 
             bool hasDimensionListening = false;
             for (std::size_t i = 0; i < it->second.size(); ++i) {
-                if (it->second[listenerDimension].isListening) {
+                if (it->second[i].isListening) {
                     hasDimensionListening = true;
                     break;
                 }

@@ -1768,7 +1768,7 @@ Knob<T>::unSlaveInternal(int dimension,
             break;
         }
     }
-    if (!stillSlavedToMaster && masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
+    if (!stillSlavedToMaster && masterHelper && masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
                              _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec, int, int, bool) ) );
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),

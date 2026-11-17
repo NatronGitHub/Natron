@@ -318,3 +318,52 @@ TEST_F(KnobSlaveTest, UnlinkOneDimensionOthersStillFollowTheMaster)
     EXPECT_EQ( 1, ownKeyCount(_slave, 1) );
     EXPECT_EQ( 260., ownKeyTime(_slave, 1) );
 }
+
+// After unlinking one of two dimensions linked to the same master, the master still lists the knob as a listener
+// of the other dimension: value changes are still propagated, and deleting the master still unlinks it.
+TEST_F(KnobSlaveTest, UnlinkOneDimensionKeepsTheOtherListening)
+{
+    KnobDoublePtr master = AppManager::createKnob<KnobDouble>(_masterNode->getEffectInstance().get(), std::string("offset"), 2);
+    master->setName("offset");
+
+    createSlave(2);
+    ASSERT_TRUE( _slave->slaveTo(0, master, 0) );
+    ASSERT_TRUE( _slave->slaveTo(1, master, 1) );
+    _slave->unSlave(0, true);
+
+    KnobI::ListenerDimsMap listeners;
+    master->getListeners(listeners);
+    KnobI::ListenerDimsMap::iterator found = listeners.find(_slave);
+    ASSERT_TRUE( found != listeners.end() );
+    ASSERT_EQ( 2, (int)found->second.size() );
+    EXPECT_FALSE( found->second[0].isListening );
+    EXPECT_TRUE( found->second[1].isListening );
+
+    // A non-animated value change of the master reaches the still linked dimension 1, not dimension 0.
+    master->setValue(5., ViewSpec::all(), 1);
+    EXPECT_EQ( 5., _slave->getRawValue(1) );
+    master->setValue(7., ViewSpec::all(), 0);
+    EXPECT_EQ( 0., _slave->getRawValue(0) );
+
+    // Deleting the master unlinks dimension 1.
+    _masterNode->getEffectInstance()->deleteKnob(master.get(), true);
+    EXPECT_FALSE( _slave->isSlave(1) );
+    EXPECT_FALSE( bool(_slave->getMaster(1).second) );
+    EXPECT_TRUE( _slave->isEnabled(1) );
+}
+
+// The "ignore master persistence" flag (used by the tracker's multi-instance links) applies to the whole knob:
+// a partial unlink must not make the remaining link persistent.
+TEST_F(KnobSlaveTest, PartialUnlinkKeepsIgnoreMasterPersistence)
+{
+    createSlave(2);
+    ASSERT_TRUE( _slave->slaveTo(0, _master, 0, true /*ignoreMasterPersistence*/) );
+    ASSERT_TRUE( _slave->slaveTo(1, _master, 1, true /*ignoreMasterPersistence*/) );
+    EXPECT_TRUE( _slave->isMastersPersistenceIgnored() );
+
+    _slave->unSlave(0, true);
+    EXPECT_TRUE( _slave->isMastersPersistenceIgnored() );
+
+    _slave->unSlave(1, true);
+    EXPECT_FALSE( _slave->isMastersPersistenceIgnored() );
+}
