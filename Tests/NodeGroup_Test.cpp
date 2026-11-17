@@ -92,7 +92,7 @@ public:
                 std::this_thread::sleep_for( std::chrono::milliseconds(100) );
             }
             if (!_done) {
-                std::cerr << testName << ": deadlock (no progress after 60 s)" << std::endl;
+                std::cerr << testName << ": deadlock? (total time of 60 s exceeded)" << std::endl;
                 std::abort();
             }
         });
@@ -198,11 +198,16 @@ TEST(NodeGroup, DeactivateGroupInputDoesNotDeadlockWithRenderThread)
     connectGroupInputs();
     ASSERT_EQ( source, dot->getInput(0) ); // through inputB and the group
 
+    std::atomic<bool> unexpectedInput(false);
     {
         Watchdog watchdog("NodeGroup.DeactivateGroupInputDoesNotDeadlockWithRenderThread");
-        // What a render thread does when it pulls an image through inputB.
-        RenderThreadLoop renderThread([&dot]() {
-            (void)dot->getInput(0);
+        // What a render thread does when it pulls an image through inputB: it gets the source, or nothing
+        // while the inputs of the group are being changed.
+        RenderThreadLoop renderThread([&dot, &source, &unexpectedInput]() {
+            NodePtr input = dot->getInput(0);
+            if ( input && (input != source) ) {
+                unexpectedInput = true;
+            }
         });
 
         // What the main thread does when the user deletes inputA (and undoes it).
@@ -214,7 +219,9 @@ TEST(NodeGroup, DeactivateGroupInputDoesNotDeadlockWithRenderThread)
         }
     }
 
+    EXPECT_FALSE(unexpectedInput) << "The render thread got an input of the group that is not the source";
     EXPECT_EQ(2, groupNode->getNInputs());
+    EXPECT_EQ( source, dot->getInput(0) );
     // Destroy the source first: removing a GroupInput loses the connections of the following inputs of the
     // group, which leaves stale outputs on the source (a separate, pre-existing bug), and destroying the source
     // after the group would then reach the destroyed group.

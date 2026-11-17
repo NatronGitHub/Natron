@@ -407,13 +407,13 @@ Node::isInputOnlyAlpha(int inputNb) const
 {
     assert(_imp->inputsInitialized);
 
-    // Called by render threads, while the main thread may change inputsComponents (initializeInputs())
-    std::list<ImagePlaneDesc> inputSupportedComps;
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        assert( inputNb >= 0 && inputNb < (int)_imp->inputsComponents.size() );
-        inputSupportedComps = _imp->inputsComponents[inputNb];
+    // Called by render threads, while the main thread may change inputsComponents (initializeInputs()).
+    // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size().
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputsComponents.size() ) ) {
+        return false;
     }
+    const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[inputNb];
 
     return (inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1);
 }
@@ -1133,7 +1133,7 @@ Node::disconnectInput(int inputNumber)
     {
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
-             ( inputNumber > (int)_imp->inputs.size() ) ||
+             ( inputNumber >= (int)_imp->inputs.size() ) ||
              ( !useGuiValues && !_imp->inputs[inputNumber].lock() ) ||
              ( useGuiValues && !_imp->guiInputs[inputNumber].lock() ) ) {
             return -1;

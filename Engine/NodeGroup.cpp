@@ -1372,21 +1372,28 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                 }
             }
         }
+        ///The input must have been tracked before
+        assert(inputNb != -1);
         if (inputNb != -1) {
             ///Also disconnect the real input
             thisNode->disconnectInput(inputNb);
 
+            // disconnectInput() runs the Python inputChanged callback and emits signals: look for the
+            // GroupInput again instead of reusing inputNb.
             {
                 QMutexLocker k(&_imp->nodesLock);
-                assert( inputNb < (int)_imp->inputs.size() && _imp->inputs[inputNb].lock() == node );
-                _imp->inputs.erase(_imp->inputs.begin() + inputNb);
+                for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+                    if (it->lock() == node) {
+                        _imp->inputs.erase(it);
+                        break;
+                    }
+                }
+                ///Sync gui inputs
+                _imp->guiInputs = _imp->inputs;
             }
             thisNode->initializeInputs();
-
-            return;
         }
-        ///The input must have been tracked before
-        assert(false);
+        // Fall through: sync the gui inputs/outputs and notify the outputs of the group.
     }
 
     {
