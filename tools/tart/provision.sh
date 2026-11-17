@@ -261,6 +261,8 @@ step_sync() {
     (cd "$NATRON/tools/MacPorts" && ./sync.sh) > "$LOGDIR/sync-portindex.txt" 2>&1
     tail -5 "$LOGDIR/sync-portindex.txt"
     grep -q "Ports failed:[[:space:]]*0" "$LOGDIR/sync-portindex.txt" || { echo "portindex failed on the overlay"; return 1; }
+    # an empty or partial overlay also gives "Ports failed: 0": check that MacPorts really uses it
+    port file openimageio | grep -q '^/opt/MacPorts-Natron/' || { echo "overlay not used (port file openimageio)"; return 1; }
 }
 
 # Ports pinned in the overlay: the port directories with a PINNED file
