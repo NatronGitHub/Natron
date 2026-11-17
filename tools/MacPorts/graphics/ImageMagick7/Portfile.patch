@@ -1,6 +1,6 @@
 --- Portfile.orig	2026-11-17 22:49:35
-+++ Portfile	2026-11-17 22:50:16
-@@ -156,6 +156,60 @@
++++ Portfile	2026-11-17 23:12:28
+@@ -156,6 +156,63 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -19,7 +19,10 @@
 +    configure.args-replace  --enable-shared --disable-shared
 +    configure.args-replace  --with-modules --without-modules
 +    # the configuration files are built into the library: the bundled plug-in
-+    # doesn't read them from ${prefix}
++    # doesn't read them from ${prefix}. The --with-frozenpaths and
++    # --with-gs-font-dir (urw-fonts) of the main configure.args are harmless with
++    # it: they only name the delegate programs and the Ghostscript fonts, which
++    # openfx-arena doesn't use.
 +    configure.args-append   --enable-zero-configuration
 +    configure.args-replace  --enable-opencl --disable-opencl
 +    depends_lib-delete      port:djvulibre port:jbigkit path:include/turbojpeg.h:libjpeg-turbo \

@@ -7,10 +7,12 @@
 # lcms2 (ICC profiles in ReadPSD), freetype and fontconfig (text), zlib, bzip2 and xz (compressed
 # layers), libpng. Shared, unlike macOS and Windows: build-Linux-installer.sh bundles the libraries.
 MAGICK7_VERSION=7.1.2-36
+# sha256 of the GitHub release tarball (the same file as tools/MINGW-packages/mingw-w64-imagemagick)
+MAGICK7_SHA256=410cab5ed416329290e77cbd7833a76502671ea25a42d1cfe010f9067b27c2d6
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+    MAGICK7_SHA256= # (not checked)
 fi
-MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 #MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
 # (imagemagick.org/archive/releases only keeps the latest releases)
@@ -18,21 +20,27 @@ MAGICK7_SITE="https://github.com/ImageMagick/ImageMagick/releases/download/${MAG
 if download_step; then
     download "$MAGICK7_SITE" "$MAGICK7_TAR"
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; }; }; then
+# The full installed version (e.g. 7.1.2-36): pkg-config only gives 7.1.2, which wouldn't
+# trigger a rebuild for a new patch level.
+magick7_installed_version() {
+    local h="$SDK_HOME/magick7/include/ImageMagick-7/MagickCore/version.h"
+    [ -s "$h" ] || return 0
+    echo "$(sed -n 's/^#define MagickLibVersionText *"\(.*\)"/\1/p' "$h")$(sed -n 's/^#define MagickLibAddendum *"\(.*\)"/\1/p' "$h")"
+}
+if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(magick7_installed_version)" != "$MAGICK7_VERSION" ]; }; }; then
     start_build
+    if [ -n "${MAGICK7_SHA256:-}" ] && [ "$(sha256sum "$SRC_PATH/$MAGICK7_TAR" | cut -d' ' -f1)" != "$MAGICK7_SHA256" ]; then
+        (>&2 echo "Error: $SRC_PATH/$MAGICK7_TAR: sha256 mismatch (expected $MAGICK7_SHA256)")
+        exit 1
+    fi
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
-    #if [ "${MAGICK_CL:-}" = "1" ]; then
-    #  MAGICK_CL_OPT="--with-x --enable-opencl"
-    #else
-    MAGICK_CL_OPT="--without-x"
-    #fi
     MAGICK_CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1"
     if [ -f /etc/centos-release ] && grep -q "release 6"  /etc/centos-release; then
         # 6.9.10-80 and later fail on CentOS 6 with "undefined reference to `aligned_alloc'"
         MAGICK_CFLAGS="$MAGICK_CFLAGS -UMAGICKCORE_HAVE_STDC_ALIGNED_ALLOC"
     fi
-    env CFLAGS="$BF $MAGICK_CFLAGS" CXXFLAGS="$BF $MAGICK_CFLAGS" ./configure --prefix=$SDK_HOME/magick7 --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --with-lzma --without-openexr --without-pango --with-png --without-rsvg --without-tiff --without-webp --without-xml --with-zlib --with-bzlib --disable-static --enable-shared --enable-hdri --enable-openmp --with-freetype --with-fontconfig --without-modules --without-heic --without-jxl --without-raw --without-raqm --without-uhdr --without-dmr --without-zip --without-zstd --without-wmf --without-perl --disable-opencl --enable-zero-configuration ${MAGICK_CL_OPT:-}
+    env CFLAGS="$BF $MAGICK_CFLAGS" CXXFLAGS="$BF $MAGICK_CFLAGS" ./configure --prefix=$SDK_HOME/magick7 --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --with-lzma --without-openexr --without-pango --with-png --without-rsvg --without-tiff --without-webp --without-xml --with-zlib --with-bzlib --disable-static --enable-shared --enable-hdri --enable-openmp --with-freetype --with-fontconfig --without-modules --without-heic --without-jxl --without-raw --without-raqm --without-uhdr --without-dmr --without-zip --without-zstd --without-wmf --without-perl --disable-opencl --without-x --enable-zero-configuration
     make -j${MKJOBS}
     make install
     popd

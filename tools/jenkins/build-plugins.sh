@@ -16,8 +16,8 @@ updateBuildOptions
 
 # openfx-misc, openfx-io and openfx-arena use their CMake builds when available
 # (set MISC_USE_MAKE=1, IO_USE_MAKE=1 or ARENA_USE_MAKE=1 to use their Makefiles instead).
-# openfx-arena is built with ImageMagick 7 (MAGICK7_PREFIX, see common.sh; ARENA_ALLOW_IM6=1
-# allows ImageMagick 6).
+# openfx-arena is built with Natron's ImageMagick 7 (MAGICK7_PREFIX, see common.sh;
+# ARENA_ALLOW_ANY_MAGICK=1 allows another one, e.g. ImageMagick 6).
 
 
 BUILD_IO=1
@@ -462,27 +462,40 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
 
     # ImageMagick 7 (MAGICK7_PREFIX, see common.sh), for the CMake and the make builds: its
     # pkg-config files come first, only for this build (as LibRaw's for openfx-io). Natron 2.6
-    # ships openfx-arena with ImageMagick 7; ImageMagick 6 only with ARENA_ALLOW_IM6=1.
+    # ships openfx-arena with Natron's ImageMagick 7 build (Q32 HDRI, static on macOS and
+    # Windows): another ImageMagick (6, or a stock Q16 build such as MSYS2's or Homebrew's)
+    # is only accepted with ARENA_ALLOW_ANY_MAGICK=1.
     arena_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
     if [ -n "${MAGICK7_PREFIX:-}" ]; then
         export PKG_CONFIG_PATH="${MAGICK7_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
     fi
     arena_magick_version="$(pkg-config --modversion Magick++ 2>/dev/null || true)"
+    arena_magick_libname="$(pkg-config --variable=libname Magick++ 2>/dev/null || true)"
+    arena_magick_prefix="$(pkg-config --variable=prefix Magick++ 2>/dev/null || true)"
     arena_im=""
+    arena_magick_ok=0
     case "$arena_magick_version" in
         7.*)
             arena_im=7
-            ;;
-        *)
-            if [ "${ARENA_ALLOW_IM6:-}" != "1" ]; then
-                echo "Error: openfx-arena needs ImageMagick 7, but pkg-config finds Magick++ ${arena_magick_version:-(none)} (PKG_CONFIG_PATH=${PKG_CONFIG_PATH:-})."
-                echo "Install it (macOS: sudo port install ImageMagick7 +natron -x11 -openexr; Linux SDK: include/scripts/pkg/imagemagick7.sh; Windows: natron_imagemagick), set MAGICK7_PREFIX, or set ARENA_ALLOW_IM6=1 to build with ImageMagick 6."
-                exit 1
+            case "$arena_magick_libname" in
+                *Q32HDRI*) arena_magick_ok=1;;
+            esac
+            if [ -n "${MAGICK7_PREFIX:-}" ]; then
+                case "$arena_magick_prefix/" in
+                    "${MAGICK7_PREFIX%/}/"*) arena_magick_ok=1;;
+                esac
             fi
-            echo "Warning: building openfx-arena with ImageMagick ${arena_magick_version:-(none)} (ARENA_ALLOW_IM6=1), not ImageMagick 7"
             ;;
     esac
-    echo "Info: openfx-arena uses ImageMagick $arena_magick_version ($(pkg-config --variable=prefix Magick++ 2>/dev/null || true))"
+    if [ "$arena_magick_ok" != 1 ]; then
+        if [ "${ARENA_ALLOW_ANY_MAGICK:-}" != "1" ]; then
+            echo "Error: openfx-arena needs Natron's ImageMagick 7 (Q32 HDRI, in MAGICK7_PREFIX=${MAGICK7_PREFIX:-}), but pkg-config finds Magick++ ${arena_magick_version:-(none)} (${arena_magick_libname:-no libname}, prefix ${arena_magick_prefix:-none}; PKG_CONFIG_PATH=${PKG_CONFIG_PATH:-})."
+            echo "Install it (macOS: sudo port install ImageMagick7 +natron -x11 -openexr; Linux SDK: include/scripts/pkg/imagemagick7.sh; Windows: natron_imagemagick), set MAGICK7_PREFIX, or set ARENA_ALLOW_ANY_MAGICK=1 to build with this ImageMagick."
+            exit 1
+        fi
+        echo "Warning: building openfx-arena with ImageMagick ${arena_magick_version:-(none)} (${arena_magick_libname:-}), not Natron's ImageMagick 7 (ARENA_ALLOW_ANY_MAGICK=1)"
+    fi
+    echo "Info: openfx-arena uses ImageMagick $arena_magick_version ($arena_magick_libname, $arena_magick_prefix)"
 
     # openfx-arena builds with openfx's CMake helpers since openfx-arena#72. Use them when
     # available, unless ARENA_USE_MAKE=1 forces the Makefiles.

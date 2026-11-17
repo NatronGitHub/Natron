@@ -350,7 +350,7 @@ step_update() {
         $PORT -N uninstall libvmaf 2>/dev/null || true
     fi
     # ImageMagick 7 for openfx-arena (Natron 2.6), for the images created before step_libs had it
-    if ! port -q installed ImageMagick7 2>/dev/null | grep -q '(active)'; then
+    if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
         echo "===== installing ImageMagick7 +natron"
         $PORT install ImageMagick7 +natron -x11 -openexr
     fi
