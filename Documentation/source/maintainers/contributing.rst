@@ -19,16 +19,60 @@ effort is not duplicated.
 Branches
 --------
 
-- ``master`` is the main development branch.
-- Each supported stable release has its own branch, named ``RB-x.y`` (for
-  example ``RB-2.6``). Bug fixes for a release go onto that branch.
+- Each supported release has its own branch, named ``RB-x.y``. **RB-2.6** is
+  the current release branch: bug fixes and new features for Natron 2.x go
+  there.
+- ``master`` holds older development work (last updated in 2021) and is not
+  where current work happens. Don't open pull requests against it.
 - Fork the repository, make your change on a topic branch, and open a pull
-  request against the appropriate branch (usually the current ``RB-x.y`` for
-  fixes, or ``master`` for new development).
+  request against RB-2.6, unless the rules below send it to RB-2.7.
 
 Follow the existing pull-request template
 (``.github/PULL_REQUEST_TEMPLATE.md``) and reference the issue(s) your change
 addresses.
+
+.. _maint-qt-branches:
+
+Qt 5 and Qt 6 across the release branches
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Natron moves from Qt 5 to Qt 6 in three steps:
+
+- **RB-2.6** (current release) builds with Qt 5, which the releases use, and
+  also with Qt 6 (CMake option ``-DNATRON_QT6=ON``). It gets as much Qt 6
+  support as possible, **as long as Qt 5 keeps working exactly as before**:
+  same behaviour, same build. It is compiled as C++17 with Qt 5 and as C++20
+  with Qt 6, so code must compile under both standards.
+- **RB-2.7** is the Qt 6 branch, compiled as C++20. While RB-2.6 is
+  maintained, RB-2.7 keeps as much Qt 5 support as possible (builds, version
+  guards, ``Global/QtCompat.h`` shims), so that changes made on RB-2.6 keep
+  merging into it cleanly.
+- **RB-2.8** drops Qt 5 entirely: Qt 5 code paths, ``QT_VERSION_CHECK``
+  guards, Qt 5 shims and the Qt 5 build configurations go away there.
+
+Where to open a pull request:
+
+- **Bug fixes, features, and Qt 6 changes that leave Qt 5 unchanged:**
+  RB-2.6.
+- **Qt 5-specific changes** (changes that only make sense with Qt 5, such as
+  PySide2 fixes, the MacPorts ``aqua/qt5`` ports, or workarounds for Qt 5
+  bugs): RB-2.6 as well. When they reach RB-2.7, the maintainers keep, adapt
+  or revert them there.
+- **Qt 6 changes that cannot keep Qt 5 working unchanged:** RB-2.7. This is
+  the only case where a pull request targets RB-2.7 directly.
+- **Changes that only remove Qt 5 support** (dropping guards, shims, or the
+  Qt 5 builds): these wait for RB-2.8, which doesn't exist yet. Open an issue
+  instead of a pull request.
+
+You don't need to open the same pull request twice. RB-2.6 is *forward
+merged* into RB-2.7: a workflow (``.github/workflows/forward_merge.yml``)
+keeps a "Merge RB-2.6 into RB-2.7" pull request open and up to date, and a
+maintainer merges it, resolves any conflicts, and adapts the Qt 5-specific
+changes on RB-2.7.
+
+When a pull request mixes these kinds of changes, split it along the same
+lines. Smaller pull requests, one topic each, are much easier to review and
+test on both Qt versions.
 
 Code style
 ----------

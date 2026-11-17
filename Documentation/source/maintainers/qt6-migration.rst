@@ -10,6 +10,12 @@ Support?", and the Qt5 tracker `#827 <https://github.com/NatronGitHub/Natron/iss
 This chapter is the concrete migration plan, based on an audit of the current
 source tree.
 
+Which branch a Qt 6 change goes to is decided by its effect on Qt 5. RB-2.6
+gets Qt 6 support only if Qt 5 keeps working exactly as before. RB-2.7 gets
+the changes that need to break Qt 5, while keeping as much Qt 5 support as
+possible as long as RB-2.6 is maintained. RB-2.8 drops Qt 5. See
+:ref:`the branch rules in Contributing <maint-qt-branches>` for details.
+
 .. note::
 
    Migration status and the occurrence counts below reflect an audit of the
@@ -209,6 +215,7 @@ Suggested sequence
 Keeping Qt 5 working
 --------------------
 
+This applies to RB-2.6 and RB-2.7; Qt 5 is dropped only on RB-2.8.
 Qt 5.15 is the floor. Every change above either uses an API present in both
 5.15 and 6.x (so no guard is needed) or is guarded by ``QT_VERSION``. Do not
 drop the Qt 5 path until the Qt 6 build has shipped and been validated on all
