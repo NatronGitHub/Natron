@@ -167,9 +167,13 @@ and the PDF with::
 The Developers Guide includes the OpenFX documentation of the ``libs/OpenFX``
 submodule (``Documentation/source/_ext/natron_openfx.py`` copies it into
 ``devel/openfx/``, which git ignores). It needs the submodule
-(``git submodule update --init libs/OpenFX``) and Doxygen; without them, those
-pages are placeholders. Read the Docs builds HTML, PDF and ePub on every push
-(see ``.readthedocs.yaml``).
+(``git submodule update --init libs/OpenFX``), breathe and Doxygen; without
+them, or with ``NATRON_DOCS_OPENFX=0`` (which the installers set, to keep the
+documentation bundled with Natron small), those pages are placeholders.
+
+Read the Docs builds HTML, PDF and ePub for each push to a release branch
+(see ``.readthedocs.yaml``), but only the HTML for a pull request: check the
+PDF and ePub locally when a change can affect them.
 
 Diagrams
 ~~~~~~~~
@@ -195,18 +199,21 @@ that they can be reviewed and updated like the rest of the text. For example::
 - Quote labels that contain punctuation (``A["Engine/ (NatronEngine)"]``);
   ``<br/>`` breaks a line.
 
-The HTML pages render the diagrams in the browser (the ``mermaid_version`` of
-``conf.py``, loaded from a CDN). The PDF and ePub need pictures, which
-`mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a headless
-Chrome. To get them locally, install it once with Node.js 20 or later::
+The pictures come from the Node.js packages of ``Documentation/package.json``
+(versions locked in ``package-lock.json``). Install them once, with Node.js 20
+or later::
 
     cd Documentation
-    npm install    # uses package.json; node_modules/ is ignored by git
+    npm ci    # node_modules/ is ignored by git
 
-``_ext/natron_mermaid.py`` finds ``mmdc`` on the ``PATH`` or in
-``Documentation/node_modules/.bin``, and checks that it works before the PDF
-or ePub build. If it doesn't, these formats show the diagram source instead, and
-the build log says why (look for ``mermaid:``).
+The HTML pages draw the diagrams in the browser, with the mermaid.js of
+``node_modules`` (copied to ``_static/mermaid/``, so the offline documentation
+and the one bundled with Natron work too). The PDF and ePub need pictures,
+which `mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a
+headless Chrome; ``_ext/natron_mermaid.py`` checks that it works before the PDF
+or ePub build. Without sphinxcontrib-mermaid or ``node_modules``, or if
+mermaid-cli doesn't work, the diagrams are shown as source, and the build log
+says why (look for ``mermaid:``).
 
 Two rules from ``Documentation/README-Natron-documentation.md`` are important:
 

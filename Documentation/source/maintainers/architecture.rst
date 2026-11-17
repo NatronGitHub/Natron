@@ -43,16 +43,19 @@ libraries; **each layer may depend only on the layers below it.**
 
 The diagram shows the CMake targets of these layers and what each one links.
 ``natron-python`` is a plain Python interpreter (``Py_Main``): it shares a few
-``Global/`` helpers with Natron but does not link the Engine.
+``Global/`` helpers with Natron but does not link the Engine. ``HostSupport``
+is compiled from the sources of ``libs/OpenFX``.
 
 .. mermaid::
    :alt: Natron links NatronGui; NatronGui and NatronRenderer link
-         NatronEngine; NatronEngine links HostSupport, which is built from the
-         libs/OpenFX sources, and embeds Python; natron-python links only
-         Python. NatronGui implements the interfaces that NatronEngine declares
-         in its *I.h headers.
-   :caption: Layers and executables. Solid arrows: "links". Dashed arrow: the
-             GUI implements the Engine's ``*I.h`` interfaces.
+         NatronEngine; NatronEngine links HostSupport, which is compiled from
+         the libs/OpenFX sources, embeds Python, and links the bundled ceres,
+         libmv, openMVG, hoedown and libtess; NatronGui also links qhttpserver;
+         natron-python links only Python. NatronGui implements the interfaces
+         that NatronEngine declares in its *I.h headers.
+   :caption: Layers and executables. Solid arrows: "links". Dotted arrows:
+             HostSupport is compiled from libs/OpenFX; the GUI implements the
+             Engine's ``*I.h`` interfaces.
 
    flowchart TB
        subgraph apps ["Executables"]
@@ -65,14 +68,20 @@ The diagram shows the CMake targets of these layers and what each one links.
        HostSupport["HostSupport/<br/>HostSupport"]
        OpenFX["libs/OpenFX<br/>OFX headers and host support sources"]
        Python(["Python"])
+       subgraph bundled ["Bundled libraries (libs/)"]
+           EngineLibs["ceres, libmv, openMVG,<br/>hoedown, libtess"]
+           qhttpserver["qhttpserver"]
+       end
 
        App --> Gui
        Gui --> Engine
+       Gui --> qhttpserver
        Renderer --> Engine
        Engine --> HostSupport
-       HostSupport --> OpenFX
+       Engine --> EngineLibs
        Engine --> Python
        PythonBin --> Python
+       HostSupport -. "compiled from" .-> OpenFX
        Gui -. "implements NodeGuiI, KnobGuiI, ..." .-> Engine
 
 The golden rule is that **dependencies only point downward**. ``Gui`` knows

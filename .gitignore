@@ -243,7 +243,6 @@ Documentation/html
 Documentation/pdf
 # documentation build tools and generated inputs (see Documentation/source/_ext)
 Documentation/node_modules/
-Documentation/package-lock.json
 Documentation/openfx-doxygen/
 Documentation/source/devel/openfx/
 Engine.xcodeproj/

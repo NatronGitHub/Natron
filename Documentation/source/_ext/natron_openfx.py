@@ -7,8 +7,9 @@ submodule. A toctree can only list documents under the Sphinx source
 directory, so ``prepare()``, called from conf.py:
 
 1. copies ``Guide/``, ``Reference/`` and ``ReleaseNotes/`` into
-   ``devel/openfx/`` (ignored by git; file times are kept, so incremental
-   builds only re-read what changed);
+   ``devel/openfx/`` (ignored by git), through a temporary directory: only
+   the files that changed are rewritten, so incremental builds only read
+   again what changed;
 2. runs Doxygen on ``libs/OpenFX/include`` (as OpenFX's own build does),
    writing the XML to ``Documentation/openfx-doxygen/`` (also ignored), and
    generates the breathe API pages (``Reference/api/``);
@@ -18,33 +19,43 @@ directory, so ``prepare()``, called from conf.py:
 4. returns the breathe configuration, the ``exclude_patterns`` and an
    ``|openfx_commit|`` substitution.
 
-If the submodule is not checked out, or Doxygen is missing, it writes short
-placeholder pages instead, so that the rest of the documentation still builds.
+If the submodule is not checked out, breathe or Doxygen is missing, or
+``NATRON_DOCS_OPENFX=0`` (the documentation bundled with Natron), it writes
+short placeholder pages instead, so that the rest of the documentation still
+builds and its links to these pages still resolve.
 """
 
+import filecmp
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 SUBDIRS = ("Guide", "Reference", "ReleaseNotes")
 
+ONLINE = "https://natron.readthedocs.io/en/rb-2.6/devel/openfx.html"
+
 PLACEHOLDER = """\
-{title}
+{orphan}{title}
 {underline}
 
 .. note::
 
-   This part of the documentation comes from the ``libs/OpenFX`` submodule,
-   which could not be included in this build: {reason}.
-   See the `NatronGitHub/openfx repository
+   This part of the documentation comes from the OpenFX documentation of
+   the ``libs/OpenFX`` submodule, which is not included in this build:
+   {reason}. Read it in the `online documentation <{online}>`_, or in the
+   `NatronGitHub/openfx repository
    <https://github.com/NatronGitHub/openfx/tree/master/Documentation/sources>`_.
 """
 
-TITLES = {
-    "Guide": "OpenFX Programming Guide",
-    "Reference": "OpenFX reference",
-    "ReleaseNotes": "OpenFX Release Notes",
+# The placeholder pages: the indexes of the toctree, and the pages that
+# Natron's own pages link to.
+PLACEHOLDERS = {
+    "Guide/index.rst": "OpenFX Programming Guide",
+    "Reference/index.rst": "OpenFX reference",
+    "ReleaseNotes/index.rst": "OpenFX Release Notes",
+    "Reference/ofxForkExtensions.rst": "Extensions in the NatronGitHub fork",
 }
 
 
@@ -61,15 +72,39 @@ def _git_commit(path):
         return None
 
 
-def _write_placeholders(dest, reason):
+def _write_placeholders(stage, reason):
     _log("OpenFX documentation not included: " + reason)
-    shutil.rmtree(dest, ignore_errors=True)
-    for sub in SUBDIRS:
-        os.makedirs(os.path.join(dest, sub))
-        title = TITLES[sub]
-        with open(os.path.join(dest, sub, "index.rst"), "w", encoding="utf-8") as f:
-            f.write(PLACEHOLDER.format(title=title, underline="=" * len(title),
-                                       reason=reason))
+    for rel, title in PLACEHOLDERS.items():
+        path = os.path.join(stage, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(PLACEHOLDER.format(
+                orphan="" if rel.endswith("index.rst") else ":orphan:\n\n",
+                title=title, underline="=" * len(title), reason=reason,
+                online=ONLINE))
+
+
+def _sync(stage, dest):
+    """Make dest a copy of stage, rewriting only the files that changed, so
+    that Sphinx only reads again the pages that changed."""
+    keep = set()
+    for dirpath, _dirnames, filenames in os.walk(stage):
+        for name in filenames:
+            src = os.path.join(dirpath, name)
+            rel = os.path.relpath(src, stage)
+            keep.add(rel)
+            out = os.path.join(dest, rel)
+            if os.path.isfile(out) and filecmp.cmp(src, out, shallow=False):
+                continue
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            shutil.copy2(src, out)
+    for dirpath, _dirnames, filenames in os.walk(dest, topdown=False):
+        for name in filenames:
+            path = os.path.join(dirpath, name)
+            if os.path.relpath(path, dest) not in keep:
+                os.remove(path)
+        if not os.listdir(dirpath) and dirpath != dest:
+            os.rmdir(dirpath)
 
 
 def _newest_mtime(top):
@@ -103,10 +138,8 @@ def _run_doxygen(include_dir, outdir):
 def prepare(confdir):
     natron = os.path.normpath(os.path.join(confdir, "..", ".."))
     ofx = os.path.join(natron, "libs", "OpenFX")
-    src = os.path.join(ofx, "Documentation", "sources")
     dest = os.path.join(confdir, "devel", "openfx")
-    doxygen_out = os.path.normpath(os.path.join(confdir, "..", "openfx-doxygen"))
-    result = {"breathe_projects": {}, "rst_epilog": ""}
+    result = {"breathe_projects": {}, "rst_epilog": "", "exclude_patterns": []}
 
     # (an uninitialized submodule is an empty directory, in which git would
     # report Natron's own commit)
@@ -114,13 +147,40 @@ def prepare(confdir):
     result["rst_epilog"] = ".. |openfx_commit| replace:: ``%s``\n" % (
         commit[:12] if commit else "unknown")
 
+    with tempfile.TemporaryDirectory() as stage:
+        xml = _stage(confdir, ofx, stage)
+        if xml:
+            _log("included the OpenFX documentation of libs/OpenFX at %s" % commit)
+            result["breathe_projects"] = {"ofx_reference": xml}
+            # Only used through ".. include::" in ofxCoreAPI.rst.
+            result["exclude_patterns"] = ["devel/openfx/Reference/ofxLoadingSequence.rst"]
+        _sync(stage, dest)
+    return result
+
+
+def _stage(confdir, ofx, stage):
+    """Write the pages of devel/openfx/ into stage; return the Doxygen XML
+    directory, or None if only placeholders were written."""
+    src = os.path.join(ofx, "Documentation", "sources")
+    if os.environ.get("NATRON_DOCS_OPENFX", "1") == "0":
+        # tools/jenkins/gen-natron-doc.sh: keep the documentation bundled
+        # with Natron small (the OpenFX part is about 10 MB of HTML).
+        _write_placeholders(stage, "it is left out of the documentation "
+                            "bundled with Natron (``NATRON_DOCS_OPENFX=0``)")
+        return None
     if not os.path.isfile(os.path.join(src, "Reference", "index.rst")):
-        _write_placeholders(dest, "the submodule is not checked out "
-                            "(run ``git submodule update --init libs/OpenFX``)")
-        return result
+        _write_placeholders(stage, "the submodule is not checked out "
+                            "(``git submodule update --init libs/OpenFX``)")
+        return None
+    try:
+        import breathe  # noqa: F401
+    except ImportError:
+        _write_placeholders(stage, "breathe is not installed (``pip install -r "
+                            "Documentation/source/requirements.txt``)")
+        return None
     if shutil.which("doxygen") is None:
-        _write_placeholders(dest, "Doxygen is not installed")
-        return result
+        _write_placeholders(stage, "Doxygen is not installed")
+        return None
 
     try:
         version = subprocess.run(["doxygen", "--version"], capture_output=True,
@@ -132,29 +192,25 @@ def prepare(confdir):
                  "declarations); use Doxygen 1.17 or earlier" % version)
     except (OSError, IndexError, ValueError):
         pass
+    doxygen_out = os.path.normpath(os.path.join(confdir, "..", "openfx-doxygen"))
     try:
         xml = _run_doxygen(os.path.join(ofx, "include"), doxygen_out)
+        for sub in SUBDIRS:
+            shutil.copytree(os.path.join(src, sub), os.path.join(stage, sub),
+                            ignore=shutil.ignore_patterns("api", "*.pyc", "__pycache__"))
+        # The breathe API pages, as OpenFX's Documentation/build.sh makes them.
+        subprocess.run([sys.executable, "-m", "breathe.apidoc", "-p", "ofx_reference",
+                        "-m", "--force", "-q",
+                        "-g", "class,interface,struct,union,file,namespace,group",
+                        "-o", os.path.join(stage, "Reference", "api"), xml],
+                       check=True, stdout=subprocess.DEVNULL)
     except (OSError, subprocess.CalledProcessError) as e:
-        _write_placeholders(dest, "Doxygen failed (%s)" % e)
-        return result
-
-    # Fresh copy (removes pages deleted upstream), keeping file times.
-    shutil.rmtree(dest, ignore_errors=True)
-    for sub in SUBDIRS:
-        shutil.copytree(os.path.join(src, sub), os.path.join(dest, sub),
-                        ignore=shutil.ignore_patterns("api", "*.pyc", "__pycache__"))
-    # The breathe API pages, as OpenFX's Documentation/build.sh makes them.
-    subprocess.run([sys.executable, "-m", "breathe.apidoc", "-p", "ofx_reference",
-                    "-m", "--force", "-q",
-                    "-g", "class,interface,struct,union,file,namespace,group",
-                    "-o", os.path.join(dest, "Reference", "api"), xml],
-                   check=True, stdout=subprocess.DEVNULL)
-    _adapt(dest)
-    _log("included the OpenFX documentation of libs/OpenFX at %s" % commit)
-    result["breathe_projects"] = {"ofx_reference": xml}
-    # Only used through ".. include::" in ofxCoreAPI.rst.
-    result["exclude_patterns"] = ["devel/openfx/Reference/ofxLoadingSequence.rst"]
-    return result
+        shutil.rmtree(stage)
+        os.makedirs(stage)
+        _write_placeholders(stage, "Doxygen or breathe.apidoc failed (%s)" % e)
+        return None
+    _adapt(stage)
+    return xml
 
 
 # The "Complete Reference Index" (doxygenindex) of OpenFX's DoxygenIndex.rst
@@ -179,10 +235,8 @@ Auto-generated Reference Index
 
 
 def _rewrite(path, text):
-    st = os.stat(path)
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
-    os.utime(path, (st.st_atime, st.st_mtime))  # unchanged for Sphinx
 
 
 def _adapt(dest):
