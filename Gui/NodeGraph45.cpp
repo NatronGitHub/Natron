@@ -655,6 +655,9 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const NodeCollectionPtr& group,
                                      std::list<std::pair<std::string, NodeGuiPtr> >& createdNodes)
 {
+    // Previews are not computed while the node tree is created: compute those of the created nodes
+    // when this function returns, including on error. Declared before createNodeTree.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( getGui()->getApp(), group );
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
         NodeClipBoard clipboard;

@@ -876,7 +876,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
     }
 
     {
-        QMutexLocker k(&_imp->activatedMutex);
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
         _imp->isBeingDestroyed = true;
     }
 
