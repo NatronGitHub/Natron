@@ -470,7 +470,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
             {
 
-                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                // Extension 7 of ofxNatron.h: the plug-in declares an Int parameter named
+                // kNatronOfxParamSelectionRectangleState. Natron used to look up the name of the
+                // kNatronOfxImageEffectSelectionRectangle property instead, so also accept a
+                // parameter with that name, in case a plug-in was written against that behaviour.
+                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxParamSelectionRectangleState);
+                if (!foundSelKnob) {
+                    foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                }
                 if (foundSelKnob) {
                     KnobIntPtr isIntKnob = std::dynamic_pointer_cast<KnobInt>(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
@@ -3222,7 +3229,14 @@ OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bo
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    k->setValue(onRelease ? 2 : 1);
+    int state = onRelease ? 2 : 1;
+    if (k->getValue() == state) {
+        // setValue() doesn't notify the plug-in when the value doesn't change, but the
+        // rectangle did: during a drag the state stays 1. Call instanceChanged anyway.
+        k->evaluateValueChange(0, k->getCurrentTime(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+    } else {
+        k->setValue(state);
+    }
 }
 
 NATRON_NAMESPACE_EXIT
