@@ -158,7 +158,9 @@ elseif(WIN32)
     if (NOT MSVC)
         add_compile_options(-municode)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            # compile and link, like qmake's win32-g++ mkspec
             add_compile_options(-mthreads)
+            add_link_options(-mthreads)
         endif()
         # Only Natron itself is a GUI program (WIN32_EXECUTABLE in App/CMakeLists.txt,
         # which adds -mwindows). NatronRenderer, natron-python and Tests are
