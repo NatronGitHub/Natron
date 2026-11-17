@@ -14,7 +14,8 @@ updateBuildOptions
 
 #MAKEFLAGS_VERBOSE="V=1" # verbose build
 
-# Enable to use cmake to build instead of regular Makefiles. Untested for a while
+# Enable to use cmake to build openfx-misc instead of its Makefiles (old, untested CMake path).
+# openfx-io uses its CMake build by default (set IO_USE_MAKE=1 to use its Makefiles).
 CMAKE_PLUGINS=0
 
 
@@ -285,38 +286,66 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
 
     #Always bump git commit, it is only used to version-stamp binaries
 
-    if [ "$CMAKE_PLUGINS" = "1" ] && [ -f CMakeLists.txt ] && [ -d openfx/cmake ]; then
+    # openfx-io builds with openfx's CMake helpers (add_ofx_plugin, ofx_deploy_bundle) since
+    # openfx-io#102. Use them when available, unless IO_USE_MAKE=1 forces the Makefiles.
+    if [ "${IO_USE_MAKE:-}" != "1" ] && [ -f CMakeLists.txt ] && grep -q 'ofx_deploy_bundle' CMakeLists.txt; then
         echo "Info: build openfx-io using cmake..."
-        # Use CMake if available
-        mkdir build
-        cd build
-        CMAKE_LDFLAGS=""
+        # $CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"): CMake needs the
+        # compiler alone, the -std=... becomes OFX_CXX_STANDARD, and the other flags go to
+        # CMAKE_CXX_FLAGS.
+        io_cxx_words=($CXX)
+        io_cxx="${io_cxx_words[0]}"
+        io_cxx_flags=""
+        io_cxx_std=""
+        # (index loop: macOS /bin/bash 3.2 with set -u rejects expanding an empty array slice)
+        for ((i = 1; i < ${#io_cxx_words[@]}; i++)); do
+            w="${io_cxx_words[$i]}"
+            case "$w" in
+                -std=c++1z|-std=gnu++1z|-std=c++17|-std=gnu++17) io_cxx_std=17;;
+                -std=c++2a|-std=gnu++2a|-std=c++20|-std=gnu++20) io_cxx_std=20;;
+                -std=c++2b|-std=gnu++2b|-std=c++23|-std=gnu++23) io_cxx_std=23;;
+                -std=*) echo "Error: unsupported C++ standard in CXX=$CXX"; exit 1;;
+                *) io_cxx_flags="$io_cxx_flags $w";;
+            esac
+        done
+        if [ -z "$io_cxx_std" ]; then
+            # C++ standard policy: C++17 with Qt5, C++20 with Qt6
+            if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then io_cxx_std=20; else io_cxx_std=17; fi
+        fi
+        io_cc_words=(${CC:-})
+        io_cmake_args=(
+            -S . -B build
+            -DCMAKE_BUILD_TYPE="$([ "$COMPILE_TYPE" = "relwithdebinfo" ] && echo RelWithDebInfo || echo Release)"
+            -DCMAKE_CXX_COMPILER="$io_cxx"
+            -DCMAKE_CXX_FLAGS="${io_cxx_flags# } ${CXXFLAGS_EXTRA}"
+            -DOFX_CXX_STANDARD="$io_cxx_std"
+            -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH"
+            -DPLUGIN_INSTALLDIR="OFX/Plugins"
+            -DCMAKE_PREFIX_PATH="$SDK_HOME"
+            -DSEEXPR_HOME="$SDK_HOME"
+            -DFFMPEG_PKG_CONFIG_PATH="${FFMPEG_PKG_CONFIG_PATH:-}"
+            -DBUILD_TESTING=OFF
+        )
+        if [ -n "${io_cc_words[0]:-}" ]; then
+            io_cmake_args+=(-DCMAKE_C_COMPILER="${io_cc_words[0]}")
+        fi
+        if [ -n "${BUILDID:-}" ]; then
+            io_cmake_args+=(-DCMAKE_SHARED_LINKER_FLAGS="${BUILDID}" -DCMAKE_MODULE_LINKER_FLAGS="${BUILDID}")
+        fi
         if [ "$PKGOS" = "OSX" ]; then
-            UNIVERSAL='-DCMAKE_OSX_ARCHITECTURES="x86_64;i386"'
+            # make the bundle self-contained, as the Makefile's release builds do (osxDeploy.sh)
+            io_cmake_args+=(-DOFX_DEPLOY_BUNDLES=ON)
+        fi
+        if command -v ninja >/dev/null 2>&1; then
+            io_cmake_args+=(-G Ninja)
         elif [ "$PKGOS" = "Windows" ]; then
-            MSYS='-G"MSYS Makefiles"'
-            CMAKE_LDFLAGS="-static -Wl,--build-id"
+            io_cmake_args+=(-G "MSYS Makefiles")
         fi
-        IO_DEPENDS_PATH=""
-        IO_OIIO_LIB=""
-        IO_SEEXPR_LIB=""
-        if [ "$PKGOS" = "OSX" ]; then
-            IO_DEPENDS_PATH="${MACPORTS}"
-            IO_OIIO_LIB="lib/libOpenImageIO.dylib"
-            IO_SEEXPR_LIB="lib/libSeExpr.dylib"
-        else
-            IO_DEPENDS_PATH="${SDK_HOME}"
-            IO_OIIO_LIB="lib/libOpenImageIO.so"
-            IO_SEEXPR_LIB="lib/libSeExpr.so"
-            if [ "$PKGOS" = "Windows" ]; then
-                 IO_OIIO_LIB="bin/libOpenImageIO.dll"
-                 IO_SEEXPR_LIB="bin/libSeExpr.dll"
-            fi
-        fi
+        rm -rf build
         set -x
-        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBITS="${BITS}" -DOpenImageIO_INCLUDE_DIR="${IO_DEPENDS_PATH}/include" -DOpenImageIO_LIBRARY="${IO_DEPENDS_PATH}/${IO_OIIO_LIB}" -DSEEXPR_INCLUDE_DIRS="${IO_DEPENDS_PATH}/include" -DSEEXPR_LIBRARIES="${IO_DEPENDS_PATH}/${IO_SEEXPR_LIB}" ${UNIVERSAL:-}
-        make -j"${MKJOBS}"
-        make install
+        cmake "${io_cmake_args[@]}"
+        cmake --build build -j"${MKJOBS}"
+        cmake --install build
         set +x
         echo "Info: build openfx-io using cmake... done!"
     else
