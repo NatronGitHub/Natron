@@ -56,6 +56,10 @@ if [ -z "${WITH_MARIADB+x}" ]; then
     fi
 fi
 
+# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 (default: 14, i.e. GCC 14.2,
+# as in the VFX Reference Platform CY2026)
+GCC_TOOLSET="${GCC_TOOLSET:-14}"
+
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
@@ -196,6 +200,14 @@ EOF
                 DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
             fi
             DTSYUM+="yum -y install devtoolset-${DTS} && "
+        fi
+        if [ "${ROCKY:-0}" = 8 ]; then
+            # Rocky Linux 8's system GCC (8.5) has incomplete C++17 and no C++20 support:
+            # use the gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026),
+            # available for x86_64 and aarch64. The system GCC is still used to build
+            # the installer's static Qt 4 and qtifw (see DTSSDK below).
+            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} && "
+            DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\""
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
@@ -635,7 +647,36 @@ elif [ "${CENTOS:-7}" = 8 ]; then
     GCC_VERSION=8.3.1
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ "${ROCKY:-0}" = 8 ]; then
-    GCC_VERSION=8.4.1
+    # gcc-toolset-${GCC_TOOLSET} (installed with dnf, see the Dockerfile generation above)
+    DTSSDK="source scl_source enable gcc-toolset-${GCC_TOOLSET} && "
+    if dobuild; then
+        case " ${X_SCLS:-} " in
+            *" gcc-toolset-${GCC_TOOLSET} "*)
+                ;;
+            *)
+                # not enabled yet (e.g. this script is run outside of the Dockerfile)
+                if [ -f "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable" ]; then
+                    set +u
+                    source "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable"
+                    set -u
+                fi
+                ;;
+        esac
+    fi
+    if dobuild; then
+        GCC_VERSION=$(gcc -dumpfullversion)
+        if version_gt "$GCC_VERSION" 13.99; then
+            # GCC 14 turned obsolete C constructs into errors (implicit function
+            # declarations, implicit int, int-conversion, incompatible pointer types),
+            # and many of the older packages of the SDK still have some, e.g. libffi 3.4.4
+            # on aarch64. Make them warnings again. These options are C-only: g++ just
+            # prints a warning when they appear in CXXFLAGS.
+            GCC14_CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+            BF="$BF $GCC14_CFLAGS"
+        fi
+    else
+        GCC_VERSION="${GCC_TOOLSET}"
+    fi
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
     DTSSDK="source scl_source enable devtoolset-${DTS} && "
@@ -954,6 +995,7 @@ ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
 $SDKPREP
 $DOCKER_ENV
+${DOCKER_ENV_TOOLSET:-}
 
 COPY \\
     common.sh \\
@@ -987,6 +1029,10 @@ EOF
     DTSENABLE=
     if [ -n "${DTS:-}" ]; then
         DTSENABLE="scl enable devtoolset-${DTS} "
+    elif [ "${ROCKY:-0}" = 8 ]; then
+        # gcc-toolset-${GCC_TOOLSET} is also first in PATH (see ENV above), so that
+        # "docker run <image> bash -c ..." uses it too.
+        DTSENABLE="scl enable gcc-toolset-${GCC_TOOLSET} "
     fi
     cat <<EOF
 CMD ${DTSENABLE}launchBuildMain.sh
