@@ -42,11 +42,13 @@ options=('strip' 'buildflags' '!debug')
 source=(https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz
         0000-workaround-ansidecl-h-PTR-define-conflict.patch
         0002-mingw-putenv.patch
+        0003-mingw-no-msvc-manifest-flag.patch
         oiio-3.1-invalidatespec.patch
        )
 sha256sums=('92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013'
             '9e4e21333676268a91c0f4e7676aeab7658e5f748e7e5cfe43a92f0fd7931229'
             'a03bcafded0808f9894d26b55a2bf26e69ce0676bf73d8a512ec1546de16ca34'
+            '3c96f69cc8c1317ecc0cac1f61b727142dda982c0a0f8b1d69e0241b48ccac19'
             '91085ca7ff87e6427751d5b5ee48bc92a8c555925fc7077935d32f530c9472c8'
            )
 
@@ -61,10 +63,12 @@ apply_patch_with_msg() {
 
 prepare() {
   cd ${srcdir}/OpenImageIO-${pkgver}
-  # MinGW fixes, from MSYS2's openimageio
+  # MinGW fixes: 0000 and 0002 from MSYS2's openimageio; 0003 passes the
+  # MSVC-only /MANIFEST:NO link flag only to MSVC (OIIO 3.1 passes it to MinGW's ld too)
   apply_patch_with_msg \
     0000-workaround-ansidecl-h-PTR-define-conflict.patch \
-    0002-mingw-putenv.patch
+    0002-mingw-putenv.patch \
+    0003-mingw-no-msvc-manifest-flag.patch
   # Natron: do not clear subimages in invalidate_spec() (thread safety), as on macOS
   patch -Nbp0 -i "${srcdir}/oiio-3.1-invalidatespec.patch"
 }
