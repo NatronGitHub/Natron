@@ -3229,7 +3229,9 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
 
-    k->setValue(0);
+    // The state is already 0 at creation and after every clear: force the notification
+    // (hasChanged = true), so that the plug-in always hears that the selection was cleared.
+    k->setValue(0, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
 }
 
 
