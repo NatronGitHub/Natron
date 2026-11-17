@@ -21,7 +21,19 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] 
     #fi
     # --enable-avx2 requires a modern assembler (Support in binutils (gas/objdump) available from v2.21, CentOS 6.4 has 2.20):
     # /tmp/ccX8Quod.s:86: Error: no such instruction: `vpermpd $177,%ymm0,%ymm0'
-    env CFLAGS="$BF -DFFTWCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DFFTWCORE_EXCLUDE_DEPRECATED=1" ./configure --prefix="$SDK_HOME" --enable-shared --enable-threads --enable-sse2 --enable-avx $enableavx512 -enable-avx-128-fma
+    case "$ARCH" in
+        x86_64|i686)
+            FFTW_SIMD=( "--enable-sse2" "--enable-avx" $enableavx512 "--enable-avx-128-fma" )
+            ;;
+        aarch64)
+            # NEON is always available on aarch64 (single and double precision since fftw 3.3.9)
+            FFTW_SIMD=( "--enable-neon" )
+            ;;
+        *)
+            FFTW_SIMD=()
+            ;;
+    esac
+    env CFLAGS="$BF -DFFTWCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DFFTWCORE_EXCLUDE_DEPRECATED=1" ./configure --prefix="$SDK_HOME" --enable-shared --enable-threads "${FFTW_SIMD[@]}"
     make -j${MKJOBS}
     make install
     popd

@@ -24,8 +24,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.
         source "$HOME/.cargo/env"
         if [ "$ARCH" = "x86_64" ]; then
             RUSTFLAGS="-C target-cpu=x86-64"
-        else
+        elif [ "$ARCH" = "i686" ]; then
             RUSTFLAGS="-C target-cpu=i686"
+        else
+            RUSTFLAGS="-C target-cpu=generic"
         fi
         export RUSTFLAGS
     fi

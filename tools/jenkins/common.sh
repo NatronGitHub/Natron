@@ -84,6 +84,7 @@ if [ "$PKGOS" = "Linux" ]; then
     if [ -z "${ARCH:-}" ]; then
         case $(uname -m) in
             i?86) ARCH=i686 ;;
+            arm64) ARCH=aarch64 ;; # e.g. when generating a Dockerfile on macOS
             *) ARCH=$(uname -m) ;;
         esac
         export ARCH
@@ -91,9 +92,10 @@ if [ "$PKGOS" = "Linux" ]; then
     
     if [ "$ARCH" = "i686" ]; then
         BITS=32
-    elif [ "$ARCH" = "x86_64" ]; then
+    elif [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then
         BITS=64
     else
+        (>&2 echo "Error: unsupported Linux architecture: $ARCH")
         exit 1
     fi
     SDK_HOME="/opt/Natron-$SDK_VERSION"
@@ -489,10 +491,11 @@ elif [ "$PKGOS" = "OSX" ]; then
 fi
 export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
 
+# Qt may not be installed yet, e.g. when building the SDK or generating its Dockerfile
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    QT_VERSION=$(pkg-config --modversion QtCore)
+    QT_VERSION=$(pkg-config --modversion QtCore 2>/dev/null || true)
 else
-    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core 2>/dev/null || true)
 fi
 QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 

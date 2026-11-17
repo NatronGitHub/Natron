@@ -155,13 +155,16 @@ EOF
             PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
             ARCH=i686
         elif [ -n "${ROCKY+x}" ]; then
+            # rockylinux/rockylinux images are multi-arch (amd64, arm64): the
+            # architecture is the one of the image (docker build --platform),
+            # and common.sh takes it from uname -m inside the container.
             DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
             PREYUM=
-            ARCH=x86_64
+            ARCH=
         else
             DOCKER_BASE="centos:${CENTOS}"
             PREYUM=
-            ARCH=x86_64
+            ARCH=
         fi
         # Also install a recent Developer Toolset to get C++11 support while building GCC
         # yum -y install centos-release-scl && \\
@@ -203,8 +206,8 @@ FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
-ARG ARCH=$ARCH
-ARG SETARCH="$LINUX32"
+${ARCH:+ARG ARCH=$ARCH
+}ARG SETARCH="$LINUX32"
 RUN ${PREYUM}${DTSYUM}\\
     yum -y install gcc gcc-c++ ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && \\
     yum clean all
@@ -221,7 +224,7 @@ EOF
         else
             DOCKER_BASE="ubuntu:${UBUNTU}"
             LINUX32=
-            ARCH=x86_64
+            ARCH=
         fi
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
@@ -230,8 +233,8 @@ FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
-ARG ARCH=$ARCH
-ARG SETARCH="$LINUX32"
+${ARCH:+ARG ARCH=$ARCH
+}ARG SETARCH="$LINUX32"
 $SDKPREP
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
@@ -277,7 +280,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-*-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -518,7 +521,9 @@ function git_clone_branch_or_tag() {
 function untar() {
     if dobuild; then
         echo "*** extracting $1"
-        tar xf "$1"
+        # --no-same-owner: some tarballs have uids that are not mapped in rootless
+        # docker/podman user namespaces ("Cannot change ownership to uid ...")
+        tar --no-same-owner -xf "$1"
     fi
 }
 
@@ -563,7 +568,7 @@ if dobuild; then
         mkdir -v  "$SDK_HOME"/libexec
         mkdir -pv "$SDK_HOME"/share/man/man{1..8}
         case $(uname -m) in
-            x86_64) ln -sfv lib "$SDK_HOME"/lib64 ;;
+            x86_64|aarch64|ppc64le) ln -sfv lib "$SDK_HOME"/lib64 ;;
         esac
     fi
 
@@ -936,7 +941,7 @@ checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
-RUN xz $SDK_HOME/var/log/Natron-Linux-x86_64-SDK/*
+RUN xz $SDK_HOME/var/log/Natron-Linux-*-SDK/*
 FROM $DOCKER_BASE
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
