@@ -1357,27 +1357,40 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
     NodePtr thisNode = getNode();
 
-    {
-        QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
-        if (isInput) {
+    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+    if (isInput) {
+        // Disconnect the real input and re-initialize the inputs of the group without holding nodesLock:
+        // they take the inputsMutex of the group node and of the nodes inside the group, and render threads
+        // take nodesLock while holding these (see #814). _imp->inputs is only modified by the main thread.
+        int inputNb = -1;
+        {
+            QMutexLocker k(&_imp->nodesLock);
             for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr input = _imp->inputs[i].lock();
-                if (node == input) {
-                    ///Also disconnect the real input
-
-                    thisNode->disconnectInput(i);
-
-
-                    _imp->inputs.erase(_imp->inputs.begin() + i);
-                    thisNode->initializeInputs();
-
-                    return;
+                if (_imp->inputs[i].lock() == node) {
+                    inputNb = (int)i;
+                    break;
                 }
             }
-            ///The input must have been tracked before
-            assert(false);
         }
+        if (inputNb != -1) {
+            ///Also disconnect the real input
+            thisNode->disconnectInput(inputNb);
+
+            {
+                QMutexLocker k(&_imp->nodesLock);
+                assert( inputNb < (int)_imp->inputs.size() && _imp->inputs[inputNb].lock() == node );
+                _imp->inputs.erase(_imp->inputs.begin() + inputNb);
+            }
+            thisNode->initializeInputs();
+
+            return;
+        }
+        ///The input must have been tracked before
+        assert(false);
+    }
+
+    {
+        QMutexLocker k(&_imp->nodesLock);
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
@@ -1406,19 +1419,22 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 
     NodePtr thisNode = getNode();
 
+    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
         if (isInput) {
             _imp->inputs.push_back(node);
             _imp->guiInputs.push_back(node);
-            thisNode->initializeInputs();
         }
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
         if (isOutput) {
             _imp->outputs.push_back(node);
             _imp->guiOutputs.push_back(node);
         }
+    }
+    if (isInput) {
+        // Without holding nodesLock (see notifyNodeDeactivated() and #814)
+        thisNode->initializeInputs();
     }
     ///Notify outputs of the group nodes that their inputs may have changed
     notifyGroupOutputsInputChanged(thisNode);
@@ -1484,24 +1500,24 @@ NodePtr
 NodeGroup::getRealInputForInput(bool useGuiConnexions,
                                 const NodePtr& input) const
 {
+    int inputNb = -1;
     {
         QMutexLocker k(&_imp->nodesLock);
-        if (!useGuiConnexions) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                if (_imp->inputs[i].lock() == input) {
-                    return getNode()->getInput(i);
-                }
-            }
-        } else {
-            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-                if (_imp->guiInputs[i].lock() == input) {
-                    return getNode()->getGuiInput(i);
-                }
+        const std::vector<NodeWPtr>& inputs = useGuiConnexions ? _imp->guiInputs : _imp->inputs;
+        for (U32 i = 0; i < inputs.size(); ++i) {
+            if (inputs[i].lock() == input) {
+                inputNb = (int)i;
+                break;
             }
         }
     }
+    if (inputNb == -1) {
+        return NodePtr();
+    }
 
-    return NodePtr();
+    // Call getInput() without holding nodesLock: it takes the group node's inputsMutex, and the main thread
+    // takes nodesLock while holding it (see #814).
+    return useGuiConnexions ? getNode()->getGuiInput(inputNb) : getNode()->getInput(inputNb);
 }
 
 void
