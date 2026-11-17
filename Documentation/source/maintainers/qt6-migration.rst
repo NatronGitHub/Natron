@@ -51,9 +51,10 @@ necessary by ``#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)``. Prefer, in order:
    ``#if`` blocks through business logic.
 3. **A localized ``#if QT_VERSION`` block** only when a shim is impractical.
 
-Do the same for the two build systems: extend the qmake build with a
-``CONFIG+=qt6`` (or ``QT_MAJOR_VERSION``-driven) path mirroring what CMake's
-``NATRON_QT6`` already does, so both build systems can target either Qt.
+The Qt 6 build is the CMake one (``-DNATRON_QT6=ON``). The qmake build is
+deprecated (`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_): it
+has a partial ``QT_MAJOR_VERSION``-driven Qt 6 path, but can't generate the
+Qt 6 Python bindings, and gets no further Qt 6 work.
 
 Concrete work items (audited)
 -----------------------------
@@ -96,8 +97,8 @@ Shiboken6 / PySide6 binding regeneration
 
 Module/include changes
     ``QOpenGLWidget`` lives in the ``OpenGLWidgets`` module in Qt 6 (CMake
-    already appends it). The qmake build must add ``QT += openglwidgets`` under
-    a Qt6 condition. Audit ``QtOpenGL`` includes generally, since that module was
+    already appends it); the deprecated qmake build adds ``QT += openglwidgets``
+    under a Qt 6 condition. Audit ``QtOpenGL`` includes generally, since that module was
     reorganized in Qt 6.
 
 Lower-risk, non-blocking cleanups
@@ -191,8 +192,8 @@ Suggested sequence
    ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``, ``setMargin``,
    ``QVariant::Type``). Done in PR #1084. These improve the Qt 5 build too and
    shrink the eventual Qt6 diff.
-2. **Bring the qmake build to parity** with CMake's ``NATRON_QT6`` switch so
-   both build systems can select Qt 6.
+2. *(Dropped: bringing the qmake build to Qt 6 parity. qmake is deprecated,
+   and CMake's* ``NATRON_QT6`` *is the Qt 6 build.)*
 3. **Get a clean Qt 6 compile** with ``-DNATRON_QT6=ON``, fixing residual
    compile errors with ``QtCompat.h`` shims or narrow ``#if QT_VERSION`` guards.
 4. **Regenerate and fix the PySide6 bindings**; resolve #854-class enum/flag

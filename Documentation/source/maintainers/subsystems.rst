@@ -55,9 +55,11 @@ Natron ships an **out-of-process crash reporter** built on
 relevant trees are ``BreakpadClient`` (the in-process client that installs the
 exception handler and writes a minidump), and ``CrashReporter`` /
 ``CrashReporterCLI`` (the separate reporter process that catches the dump and
-lets the user submit it). It is enabled in the qmake build with
+lets the user submit it). It is enabled in the deprecated qmake build with
 ``CONFIG+=enable-breakpad`` (see ``breakpadpro.pri`` / ``breakpadclient.pri`` and
-``README_breakpad.md``).
+``README_breakpad.md``). The CMake build doesn't build it: Breakpad is to be
+replaced by sentry-native/Crashpad
+(`#1183 <https://github.com/NatronGitHub/Natron/issues/1183>`_).
 
 Because so many open issues are unreproducible "random crashes"
 (`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_), keeping this
@@ -98,7 +100,7 @@ Resources
 Icons, shaders, fonts, stylesheets, OpenColorIO configs, MIME data and bundled
 PyPlugs are embedded through Qt's resource system: ``Gui/GuiResources.qrc``
 indexes the files under ``Gui/Resources/`` (``Images``, ``Fonts``,
-``Stylesheets``, ``PyPlugs``, …), and CMake's ``AUTORCC`` (or qmake's rcc step)
+``Stylesheets``, ``PyPlugs``, …), and CMake's ``AUTORCC`` (or the deprecated qmake build's rcc step)
 compiles them into the binary. Reference embedded files with ``:/`` paths. Add
 new assets to the ``.qrc`` so they are packaged.
 

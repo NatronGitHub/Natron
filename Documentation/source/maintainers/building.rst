@@ -3,22 +3,26 @@
 Building Natron from Source
 ===========================
 
-Natron has **two parallel build systems**. Both are checked in and both are
-kept working; which one you use depends on your platform and taste.
+Natron is built with **CMake**. The entry point is ``CMakeLists.txt`` at the
+repository root, with one ``CMakeLists.txt`` per module. It requires CMake ≥
+3.16.7. The CI builds and tests Natron with CMake on Linux, macOS and Windows.
 
-- **qmake** — the traditional build. The entry point is ``Project.pro`` at the
-  repository root, which is a ``TEMPLATE = subdirs`` project pulling in every
-  module and bundled library. Shared configuration lives in ``global.pri`` and
-  ``libs.pri``; platform dependency locations are in ``config-macports.pri`` and
-  ``config-homebrew.pri``.
-
-- **CMake** — a newer, increasingly preferred build. The entry point is
-  ``CMakeLists.txt`` at the root, with one ``CMakeLists.txt`` per module. It
-  requires CMake ≥ 3.16.
+The **qmake** build is **deprecated** (`#1181
+<https://github.com/NatronGitHub/Natron/issues/1181>`_). Its entry point is
+``Project.pro``, a ``TEMPLATE = subdirs`` project pulling in every module and
+bundled library; shared configuration lives in ``global.pri`` and
+``libs.pri``, and the platform dependency locations in ``config.pri`` (examples:
+``config-macports.pri``, ``config-homebrew.pri``,
+``tools/jenkins/include/natron/*.pri``). On RB-2.6 it still works, and the
+release scripts in ``tools/jenkins`` still use it, until they move to CMake. It
+will be removed in a future release, first on RB-2.7, once installers built
+with CMake have been shown to be equivalent. Running qmake prints a warning to
+that effect.
 
 CMake picks up every ``.cpp`` and ``.h`` in ``Engine/`` and ``Gui/``, while
-``Engine/Engine.pro`` and ``Gui/Gui.pro`` list them by name. When you add or
-remove a source file, update the ``.pro`` file too;
+``Engine/Engine.pro`` and ``Gui/Gui.pro`` list them by name. As long as the
+qmake build exists, when you add or remove a source file, update the ``.pro``
+file too;
 ``tools/utils/checkQmakeSources.py`` (run by the Linux CI job) reports any
 mismatch.
 
@@ -32,9 +36,9 @@ mismatch.
 .. note::
 
    If you touch the source layout — add a file, add a module, rename something —
-   you must update **both** build systems (the relevant ``*.pro``/``*.pri`` and
-   the relevant ``CMakeLists.txt``). A change that only updates one will break
-   the build on the other platforms.
+   update the relevant ``CMakeLists.txt`` and, while the deprecated qmake build
+   exists, the relevant ``*.pro``/``*.pri`` as well: the release scripts still
+   build with qmake on RB-2.6.
 
 Platform-specific, step-by-step instructions (including how to obtain the
 third-party dependencies) live at the repository root in ``INSTALL_LINUX.md``,
@@ -44,8 +48,9 @@ chapter explains the *structure* of the build so those instructions make sense.
 Modules and their build order
 -----------------------------
 
-``Project.pro`` declares the module dependency graph explicitly. Reading it is
-the fastest way to understand how the pieces fit together::
+The qmake ``Project.pro`` declares the module dependency graph explicitly
+(the CMake build gets the same order from the targets' link dependencies).
+Reading it is the fastest way to understand how the pieces fit together::
 
     glog.depends     = gflags
     ceres.depends    = glog gflags
@@ -92,8 +97,9 @@ The CMake build already exposes a Qt version switch::
   **PySide6**, and additionally requires the ``OpenGLWidgets`` component
   (``QOpenGLWidget`` moved into its own module in Qt 6).
 
-The qmake build does **not** yet have an equivalent switch and targets Qt 5.
-Completing and stabilizing Qt 6 support is an active work item; see
+The deprecated qmake build targets Qt 5. It has a partial Qt 6 path (selected
+by the Qt of the ``qmake`` you run), but it can't generate the Qt 6 Python
+bindings and won't get further Qt 6 work: use CMake for Qt 6. Completing and stabilizing Qt 6 support is an active work item; see
 :ref:`maint-qt6`.
 
 Shiboken2 and PySide2 without CMake config files
@@ -151,9 +157,11 @@ Build type, sanitizers and debugging
   ``Global/FloatingPointExceptions.h`` and the ``main()`` functions) so that a
   stray ``NaN`` or division by zero aborts immediately instead of silently
   propagating through the image pipeline.
-- The qmake build supports ``CONFIG+=addresssanitizer`` for an
-  AddressSanitizer build (see the messages at the bottom of ``Project.pro``),
-  and ``CONFIG+=enable-breakpad`` to build with the Breakpad crash reporter.
+- For an AddressSanitizer build with CMake, pass the flags yourself, e.g.
+  ``-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address``.
+  The deprecated qmake build has ``CONFIG+=addresssanitizer`` (see the messages
+  at the bottom of ``Project.pro``), and ``CONFIG+=enable-breakpad`` to build
+  with the Breakpad crash reporter, which the CMake build doesn't build.
 
 macOS app bundle and install layout
 -----------------------------------

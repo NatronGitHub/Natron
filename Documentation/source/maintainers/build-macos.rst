@@ -6,8 +6,10 @@ Building and Packaging Natron on macOS
 This chapter documents how the **official macOS binaries and ``.dmg`` are
 produced** — the MacPorts-based release/packaging build driven by
 ``tools/jenkins/launchBuildMain.sh``. It is the packaging counterpart to
-:ref:`maint-building` (which explains the qmake/CMake source builds used for
-day-to-day development).
+:ref:`maint-building` (which explains the CMake source build used for
+day-to-day development). On RB-2.6, ``launchBuildMain.sh`` still builds Natron
+with the deprecated qmake build, until the release scripts move to CMake
+(`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_).
 
 The full, copy-pasteable dependency setup lives at the repository root in
 ``INSTALL_MACOS.md``. This chapter explains the *workflow* around it: preparing
