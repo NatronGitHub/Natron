@@ -66,11 +66,10 @@ Use a Write node with a ``.mov``, ``.mp4`` or ``.mkv`` file name, select the
 - **Pref. Pixel Coding**: ``YUV420``. This is what players and web sites
   expect. The default, ``YUV422``, makes files that many players cannot
   decode.
-- **Bit Depth**: ``10``, if your x265 supports it. Check the result in
-  **Selected Pixel Coding**, which should read ``YUV420/10``. If it does not,
-  your x265 has no 10-bit support: set **Bit Depth** to ``8`` and check that
-  it reads ``YUV420/8``, or uncheck **Alpha** if it shows a format with
-  alpha.
+- **Bit Depth**: ``10``. Check the result in **Selected Pixel Coding**,
+  which should read ``YUV420/10``. If your x265 has no 10-bit support,
+  WriteFFmpeg uses the highest bit depth that it has, and it reads
+  ``YUV420/8``: the file is then 8-bit.
 - **Output Quality**: the quality target (x265's constant rate factor, CRF).
   ``High Quality`` (CRF 20) or ``Perceptually Lossless`` (CRF 17) are good
   choices for delivery. If you select ``None``, the **Bitrate** parameter is
