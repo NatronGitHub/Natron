@@ -97,44 +97,101 @@ maintained in ``INSTALL_MACOS.md`` — follow it there rather than duplicating i
 Keeping the local MacPorts up to date
 -------------------------------------
 
-Natron pins some ports in the overlay (e.g. ``libraw`` is held at 0.22.3 with a patch).
-When upstream MacPorts moves, re-synchronise carefully:
+The step-by-step routine (update MacPorts, check the overlay, upgrade the
+ports, reclaim disk space, rebuild and test) and the procedure after a macOS
+upgrade are in ``INSTALL_MACOS.md``, section "11. Keeping MacPorts up to date".
+This section covers the maintainer part of it: bringing Natron's overlay up to
+date when upstream MacPorts changes one of its ports.
 
-#. **Update MacPorts itself**::
+.. _maint-macos-overlay-reintegrate:
+
+Reintegrating upstream Portfiles into the overlay
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Natron's overlay, ``tools/MacPorts/<category>/<port>/``, holds modified copies
+of some MacPorts ports. A port that also exists upstream has three files:
+
+``Portfile``
+   What MacPorts uses: the upstream Portfile plus Natron's changes.
+``Portfile.orig``
+   The upstream Portfile it was last synchronised with.
+``Portfile.patch``
+   Natron's changes, as ``diff -u Portfile.orig Portfile``.
+
+Ports that exist only in the overlay (for example ``graphics/seexpr211`` or
+the older ``openimageio*`` versions) have no ``Portfile.orig`` or
+``Portfile.patch``. Patches to the port's sources live in ``files/``, and
+MacPorts applies them with ``-p0``.
+
+The upstream ports tree is the one MacPorts downloads with ``port selfupdate``:
+``/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports``,
+or ``/opt/local/var/macports/sources/distfiles.macports.org/ports`` when the
+default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
+``check.sh`` finds it by itself.
+
+#. **Update MacPorts and list what changed upstream**::
 
        sudo port selfupdate
-
-#. **Find outdated overlay files.** ``check.sh`` compares each file in the
-   overlay against its upstream MacPorts counterpart and lists what changed::
-
        cd .../Natron/tools/MacPorts
        ./check.sh
 
-#. **Update each outdated file** following ``check.sh``'s per-file instruction,
-   **resolving conflicts manually**. Respect the local pins — for a frozen port
-   only the *effective* Portfile (version/checksums) is frozen; syntax and
-   compatibility fixes are allowed, and ``Portfile.orig`` still tracks upstream.
+   For each port whose upstream Portfile no longer matches ``Portfile.orig``,
+   ``check.sh`` prints the port, the file dates, and the command to
+   reintegrate it. It also lists ``files/`` patches that upstream added or
+   changed.
 
-#. **Regenerate the Portfile patch** for any port that carries a
-   ``Portfile.orig`` / ``Portfile.patch`` pair and whose ``Portfile`` you had to
-   edit to resolve a conflict::
+#. **Reintegrate each listed port.** With ``$ports`` the upstream tree and
+   ``$P`` the port directory (e.g. ``graphics/openimageio``), the usual
+   commands are the ones ``check.sh`` prints::
 
-       diff -u Portfile.orig Portfile > Portfile.patch
+       cp "$ports/$P/Portfile" "$P/Portfile.orig"
+       cp "$ports/$P/Portfile" "$P/Portfile"
+       (cd "$P" && patch Portfile < Portfile.patch)
 
-   (``tools/MacPorts/skills`` includes a helper to regenerate every
-   ``Portfile.patch`` at once.)
+   That is: take the new upstream Portfile as the baseline, then re-apply
+   Natron's changes on top of it. If ``patch`` reports rejected hunks, open the
+   ``Portfile.rej`` file, apply those changes by hand to ``Portfile`` in the
+   new upstream context, then delete the ``.rej`` and ``.orig`` files that
+   ``patch`` left. Copy the ``files/`` entries that ``check.sh`` reports as
+   missing or changed, and check that Natron's own ``files/`` patches still
+   apply to the new upstream version.
 
-#. **Re-sync the overlay** (``tools/MacPorts/sync.sh``) so the changes reach the live
-   ports tree, then ``portindex``.
+   **Pinned ports are the exception.** Some ports are deliberately kept at a
+   version other than upstream's (the table is in ``INSTALL_MACOS.md``,
+   section 11; today ``graphics/libraw`` and ``graphics/opencolorio``). For
+   them, only update ``Portfile.orig`` (the first ``cp``) and keep the
+   ``Portfile``. Syntax or compatibility fixes from upstream can still be
+   copied into it by hand.
 
-#. **Upgrade the installed ports.** Either:
+#. **Regenerate the patches,** so that each ``Portfile.patch`` is again the
+   difference between ``Portfile.orig`` and ``Portfile``::
 
-   - ``sudo port -v upgrade outdated``, after ``./sync.sh`` (it can trigger long
-     rebuilds of the dependency graph; upgrade port by port if it fails); then
-   - reinstall the pinned ports that came out newer (``sudo port -f uninstall
-     <port>`` and install it again with the same variants), as
-     ``tools/tart/provision.sh`` does in its ``update`` and ``pins`` steps.
-     Re-running ``sudo port install ...`` does not upgrade installed ports.
+       (cd "$P" && diff -u Portfile.orig Portfile > Portfile.patch)
+
+   or, for every port at once::
+
+       skills/macports-natron-upgrade/scripts/regen-portfile-patches.sh .
+
+   This only rewrites ``Portfile.patch`` files, never a ``Portfile``.
+
+#. **Repeat** ``./check.sh`` until it lists nothing.
+
+#. **Publish the overlay and test it**::
+
+       ./sync.sh
+
+   ``sync.sh`` copies the overlay to ``/opt/MacPorts-Natron`` and runs
+   ``portindex``, which must report ``Ports failed: 0``. A failure there is
+   usually a Tcl syntax error in a ``Portfile``. Then upgrade the installed
+   ports (``INSTALL_MACOS.md``, section 11) to check that the reintegrated
+   ports still build, and fix the ``Portfile`` or a ``files/`` patch where they
+   don't (the port's build log is under ``/opt/local/var/macports/logs/``).
+
+#. **Commit the changes,** one commit per port where practical, and mention
+   the upstream version in the message.
+
+``tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`` describes the same
+procedure for running it with an AI coding agent.
 
 Running the build
 ------------------
