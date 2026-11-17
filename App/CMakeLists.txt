@@ -25,6 +25,10 @@ add_executable(Natron ${Natron_SOURCES})
 if(WIN32)
     # GUI subsystem: no console window (qmake's default for an application).
     set_target_properties(Natron PROPERTIES WIN32_EXECUTABLE TRUE)
+    if(MSVC)
+        # Natron defines wmain, not WinMain (App.pro uses /ENTRY too).
+        target_link_options(Natron PRIVATE /ENTRY:wmainCRTStartup)
+    endif()
 endif()
 if(APPLE)
     set_target_properties(Natron PROPERTIES
