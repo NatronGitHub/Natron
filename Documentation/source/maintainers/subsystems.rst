@@ -76,7 +76,8 @@ which is threaded through the render actions (``renderRoI``, ``getFramesNeeded``
 rendered and cached independently. The built-in ``OneViewNode`` extracts a
 single view and ``JoinViewsNode`` combines views. When adding render code, plumb
 ``ViewIdx`` through exactly as the surrounding code does; dropping it silently
-breaks stereo projects.
+breaks stereo projects. The user side is described in
+:doc:`../guide/compositing-stereo`.
 
 Internationalization (i18n)
 ---------------------------
