@@ -26,8 +26,8 @@ For example::
     }
     blur = app.createNode("net.sf.cimg.CImgBlur", -1, app, props)
 
-NodeCreationProperty is the base class of the four types below. You don't create
-it directly.
+NodeCreationProperty is the base class of the four types below. Don't create it
+directly: a plain ``NodeCreationProperty()`` holds no value, and createNode silently ignores it.
 
 The four property types have the same functions. Only the type of the values differs.
 
@@ -58,11 +58,11 @@ The four property types have the same functions. Only the type of the values dif
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These functions exist in each of the four classes above.
+The four classes have the same two functions; only the type of the values differs.
 
 .. method:: IntNodeCreationProperty.setValue(value[, index=0])
 
-    :param value: a value of the property's type
+    :param value: :class:`int`
     :param index: :class:`int`
 
     Sets the value at position *index*. The list of values grows if *index* is past its end.
@@ -70,6 +70,48 @@ These functions exist in each of the four classes above.
 
 .. method:: IntNodeCreationProperty.getValues()
 
-    :rtype: a sequence of values of the property's type
+    :rtype: a sequence of :class:`int`
+
+    Returns all the values of the property.
+
+.. method:: BoolNodeCreationProperty.setValue(value[, index=0])
+
+    :param value: :class:`bool`
+    :param index: :class:`int`
+
+    Sets the value at position *index*. The list of values grows if *index* is past its end.
+    A negative *index* is ignored.
+
+.. method:: BoolNodeCreationProperty.getValues()
+
+    :rtype: a sequence of :class:`bool`
+
+    Returns all the values of the property.
+
+.. method:: FloatNodeCreationProperty.setValue(value[, index=0])
+
+    :param value: :class:`float`
+    :param index: :class:`int`
+
+    Sets the value at position *index*. The list of values grows if *index* is past its end.
+    A negative *index* is ignored.
+
+.. method:: FloatNodeCreationProperty.getValues()
+
+    :rtype: a sequence of :class:`float`
+
+    Returns all the values of the property.
+
+.. method:: StringNodeCreationProperty.setValue(value[, index=0])
+
+    :param value: :class:`str`
+    :param index: :class:`int`
+
+    Sets the value at position *index*. The list of values grows if *index* is past its end.
+    A negative *index* is ignored.
+
+.. method:: StringNodeCreationProperty.getValues()
+
+    :rtype: a sequence of :class:`str`
 
     Returns all the values of the property.

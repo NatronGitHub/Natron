@@ -98,13 +98,14 @@ Member functions description
 
     Returns the channels pretty name. E.g: DisparityLeft instead of XY
 
-.. staticmethod:: ImageLayer.getHash(layer)
+.. method:: ImageLayer.getHash(layer)
 
     :param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
     :rtype: :class:`int`
 
-Returns a hash computed from the components name (e.g. "RGBA") and the channel names
-of *layer*. The layer name itself is not part of the hash.
+This static function is meant to return a hash of the components name (e.g. "RGBA") and of
+the channel names of *layer*, but in Natron 2.6 it always returns 0
+(`issue #1275 <https://github.com/NatronGitHub/Natron/issues/1275>`_). Don't rely on it.
 
 .. method:: ImageLayer.getNoneComponents()
 
