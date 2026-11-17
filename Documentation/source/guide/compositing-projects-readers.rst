@@ -214,9 +214,9 @@ more formats.
    * - GIF
      - ``gif``
      - ReadFFmpeg
-     - (none)
-     - Read as a video, including animated GIFs. ReadOIIO does not read GIF
-       files.
+     - WriteFFmpeg
+     - Read and written as a video, including animated GIFs. ReadOIIO does
+       not read GIF files.
    * - Photoshop
      - ``psd`` (also ``psb``, ``pdd``)
      - :ref:`ReadPSD <net.fxarena.openfx.ReadPSD>` (``psd``), ReadOIIO
