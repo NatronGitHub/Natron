@@ -398,18 +398,63 @@ else
 fi
 
 
+# Print the qmake binary of a Qt prefix, if there is one.
+# MSYS2 renamed Qt5's qmake to qmake-qt5 when it made Qt6 the default Qt
+# (msys2/MINGW-packages 389f888c), so an unsuffixed qmake is now either absent
+# or belongs to a different Qt major version. Probe the suffixed names first.
+find_qmake() {
+    local prefix="$1"
+    local name exe
+    for name in "qmake-qt${QT_VERSION_MAJOR}" "qmake${QT_VERSION_MAJOR}" qmake; do
+        for exe in "$prefix/bin/$name" "$prefix/bin/$name.exe"; do
+            if [ -x "$exe" ]; then
+                echo "$exe"
+                return 0
+            fi
+        done
+    done
+    return 1
+}
+
+QMAKE_IN_SDK_HOME=
 if [ -d "$SDK_HOME/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 elif [ -d "$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}"
-elif [ -x "$SDK_HOME/bin/qmake" ] || [ -x "$SDK_HOME/bin/qmake.exe" ]; then
+elif QMAKE_IN_SDK_HOME=$(find_qmake "$SDK_HOME"); then
     QTDIR="$SDK_HOME"
 else
     (>&2 echo "Warning: Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}")
     (>&2 echo "Info: setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}")
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 fi
-export QTDIR
+
+# The qmake binary can be overridden explicitly with NATRON_QMAKE, e.g. to build
+# against a Qt that does not follow any of the layouts probed above (QTDIR is
+# still the probed one). A QMAKE inherited from the environment is not trusted:
+# it may come from an unrelated tool or shell profile, and would silently take
+# precedence over the probe. It is replaced by the probe result, with a warning
+# when it differs (common.sh is sourced again by child scripts, which inherit
+# the QMAKE exported below, so an identical value is expected and silent).
+if [ -n "$QMAKE_IN_SDK_HOME" ]; then
+    QMAKE_PROBED="$QMAKE_IN_SDK_HOME"
+else
+    QMAKE_PROBED=$(find_qmake "$QTDIR") || QMAKE_PROBED="$QTDIR/bin/qmake"
+fi
+if [ -n "${NATRON_QMAKE:-}" ]; then
+    if [ "${NATRON_QMAKE}" != "${QMAKE:-}" ]; then
+        (>&2 echo "Info: using NATRON_QMAKE=${NATRON_QMAKE} instead of the probed ${QMAKE_PROBED}")
+    fi
+    QMAKE="${NATRON_QMAKE}"
+else
+    if [ -n "${QMAKE:-}" ] && [ "${QMAKE}" != "${QMAKE_PROBED}" ]; then
+        (>&2 echo "Warning: ignoring QMAKE=${QMAKE} from the environment, using ${QMAKE_PROBED}")
+        (>&2 echo "Info: set NATRON_QMAKE to override the qmake binary")
+    fi
+    QMAKE="${QMAKE_PROBED}"
+fi
+unset QMAKE_PROBED
+export QTDIR QMAKE
 
 BOOST_ROOT="$SDK_HOME"
 

@@ -5,7 +5,20 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 [MSYS2](https://sourceforge.net/projects/msys2/) is a unix-like toolchain that can be used to build Windows applications on Windows 8.1/10/11. It provides everything required by Natron and the OFX plug-ins.
 
-Follow the [SDK instructions](tools/MINGW-packages/README.md) to setup your system for building and developing Natron and/or the OFX plug-ins. The rest of this document can be ignored.
+Natron is built with **CMake** in an MSYS2 **UCRT64** shell, with MSYS2's own packages: see [Build](#build). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
+
+The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That SDK still uses a MINGW64 shell and qmake; its move to UCRT64 is tracked in [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need it to build Natron itself.
+
+## Maintaining the Windows build
+
+MSYS2 is a rolling distribution, so the Windows build sometimes breaks with no change in Natron. [tools/MINGW-packages/README.md](tools/MINGW-packages/README.md) describes the known cases ("Toolchain drift") and how to rebuild and publish the Natron package repository ("The package repository"). In short:
+
+- Qt5's qmake is now `qmake-qt5`. `tools/jenkins/common.sh` finds it (`qmake-qt5`, `qmake5`, then `qmake`), and `launchBuildMain.sh` stops early if it doesn't work or is the qmake of another Qt major version. To use another qmake, set `NATRON_QMAKE`; a `QMAKE` inherited from the environment is ignored, with a warning.
+- Two x264 ABIs are installed, and bundled in GPL builds (COMMERCIAL builds: see #1177): `libx264-164.dll` (from `natron_x264`, for `natron_ffmpeg-gpl2`) and `libx264-165.dll` (from MSYS2's `libx264`, for `libheif`). `natron_x264` keeps its headers and import library in `${MINGW_PREFIX}/natron_x264` so that the two packages don't conflict.
+- The installer bundles `libpyside2`/`libshiboken2` for Qt5 and `libpyside6`/`libshiboken6` for Qt6.
+- The bundled Python standard library is listed in `tools/jenkins/zip-python-mingw.sh`. Modules removed from the stdlib (e.g. `lib2to3` and `msilib` in Python 3.13) are skipped, and modules that became packages (`pathlib` and `sysconfig` in 3.13, `string` in 3.14) must be listed there.
+- `mingw-w64-dump_syms` builds only `dump_syms.exe`, because `microdump_stackwalk` doesn't link with GCC 16.
+- The installer workflow downloads `natron_package_repo-<version>.zip` (`<version>` from `tools/MINGW-packages/windows_pacman_repo_version.txt`) from the `windows-mingw-package-repo` release of the repository it runs from, then from NatronGitHub/Natron, and builds the packages locally if neither has it. After an MSYS2 toolchain change (e.g. the `__emutls_v.*` symbols removed when GCC moved to native TLS, or new sonames of libx265 or libbluray), every package must be rebuilt, the zip published, and `windows_pacman_repo_version.txt` bumped.
 
 ### OpenFX
 
@@ -26,6 +39,8 @@ Place it at the root of Natron repository.
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
 
 ### config.pri
+
+***note:*** *`config.pri` is only used by the deprecated qmake build. The CMake build doesn't need it, so you can skip this section.*
 
 The `config.pri` is used to define the locations of the dependencies. It is probably the most
 confusing part of the build process.
@@ -76,6 +91,36 @@ Or in a directory named "Plugins" located in the parent directory where the bina
 
 ## Build
 
+Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows CI job (`.github/workflows/ci.yml`) installs these packages:
+
+    pacman -S --needed git unzip \
+      mingw-w64-ucrt-x86_64-cc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
+      mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-wget \
+      mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-cairo mingw-w64-ucrt-x86_64-fontconfig \
+      mingw-w64-ucrt-x86_64-expat mingw-w64-ucrt-x86_64-python \
+      mingw-w64-ucrt-x86_64-qt5-base mingw-w64-ucrt-x86_64-pyside2 mingw-w64-ucrt-x86_64-shiboken2 \
+      mingw-w64-ucrt-x86_64-python-qtpy \
+      mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
+
+(shiboken2 needs clang and llvm-tools. The release installers are still built in a MINGW64 environment with the SDK above; their move to UCRT64 is tracked in #1133.) Then, from the Natron source directory:
+
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    cmake --build build
+
+Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
+
+To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
+
+    (cd build && PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=$MINGW_PREFIX OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V)
+
+`PYTHONLEGACYWINDOWSDLLLOADING=1` makes MSYS2's Python find its DLLs through `PATH` again, which the tests need (#1147).
+
+`cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
+
+### Deprecated: building with qmake
+
+*The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+
 To build, go into the Natron directory and type:
 
     qmake -r
@@ -92,7 +137,7 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 # Installing with Visual Studio
 
-These instructions are outdated, and the preferred way to compile
+These instructions are outdated (they use the deprecated qmake build), and the preferred way to compile
 Natron on Windows is using MSYS2. Feel free to contribute updated
 Visual Studio instructions.
 

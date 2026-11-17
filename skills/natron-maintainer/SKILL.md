@@ -88,7 +88,7 @@ cmake -S . -B build -DNATRON_QT6=ON           # Qt6.3+PySide6+OpenGLWidgets
 cmake --build build -j
 ctest --test-dir build                        # unit tests (or -DNATRON_BUILD_TESTS=OFF)
 ```
-Build (qmake, Qt5 only today): ``qmake Project.pro && make`` (see ``INSTALL_*.md``).
+The qmake build (``qmake -r Project.pro && make``) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it, and will be removed on RB-2.7 first. qmake doesn't run shiboken, so only CMake builds the Qt6 bindings. Use CMake (see ``INSTALL_*.md``).
 
 Code style (enforced by ``.git-hooks/pre-commit``):
 ```bash
@@ -105,11 +105,14 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
 ## Qt 6 Migration Status (as of 2026)
 
 - **Done:** GL widgets already use ``QOpenGLWidget``; CMake has ``NATRON_QT6``
-  option (Qt6.3/Shiboken6/PySide6); ``QtCompat.h`` has version shims.
-- **To do:** ``QRegExp`` → ``QRegularExpression`` (~16 files);
-  ``QDesktopWidget``/``QApplication::desktop()`` → ``QScreen`` (~6 files);
-  ``setMargin`` → ``setContentsMargins``; regenerate PySide6/Shiboken6 bindings
-  (fixes enum/flag issue #854); bring qmake build to Qt6 parity.
+  option (Qt6.3/Shiboken6/PySide6); ``QtCompat.h`` has version shims;
+  ``QRegExp`` → ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``,
+  ``setMargin`` → ``setContentsMargins`` (PR #1084). For wildcards use
+  ``QtCompat::wildcardToRegularExpression()`` (``*`` matches ``/``), not Qt's
+  path-aware ``QRegularExpression::wildcardToRegularExpression()``; add
+  ``UseUnicodePropertiesOption`` when a pattern uses ``\w``/``\b``/``\d``.
+- **To do:** regenerate PySide6/Shiboken6 bindings (fixes enum/flag issue
+  #854). No Qt6 work on the deprecated qmake build (CMake is the Qt6 build).
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in
   ``QtCompat.h``; else guard with ``#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)``.
 - Full plan: ``Documentation/source/maintainers/qt6-migration.rst``.
@@ -136,4 +139,4 @@ popular features, **P3** polish. Full analysis:
   project files).
 - Making a core value-type a ``QObject`` for signals — use the
   ``KnobSignalSlotHandler`` companion pattern.
-- Editing only one of the two build systems (qmake **and** CMake must stay in sync).
+- Adding or removing a source file in CMake only: while the deprecated qmake build exists, the ``*.pro`` files must list the same sources (``tools/utils/checkQmakeSources.py``).

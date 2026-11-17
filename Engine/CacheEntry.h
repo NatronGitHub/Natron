@@ -144,11 +144,28 @@ public:
 // This is a cache file with a fixed size that is a multiple of the tileByteSize.
 // A bitset represents the allocated tiles in the file.
 // A value of true means that a tile is used by a cache entry.
+// tileByteSize is the size of the tiles of this file. It is set when the file is
+// created and never changes afterwards, so it can be read without locking. It may differ
+// from the current tile size of the cache if the tile size was changed while some
+// entries were still using tiles of this file.
 class TileCacheFile
 {
 public:
+    TileCacheFile()
+        : file()
+        , usedTiles()
+        , tileByteSize(0)
+    {
+    }
+
+    bool hasUsedTiles() const
+    {
+        return std::find(usedTiles.begin(), usedTiles.end(), true) != usedTiles.end();
+    }
+
     MemoryFilePtr file;
     std::vector<bool> usedTiles;
+    std::size_t tileByteSize;
 };
 
 typedef TileCacheFilePtr TileCacheFilePtr;
@@ -494,6 +511,14 @@ public:
         _entry = entry;
         try {
             _cacheFile = entry->allocTile(&_cacheFileDataOffset);
+            if (entry->getElementsCountFromParams() * sizeof(DataType) > _cacheFile->tileByteSize) {
+                // The tile size of the cache changed after this entry was created
+                // (e.g. the viewer tile size or depth setting changed during a render):
+                // the data would not fit in the tile, so fall back on RAM storage.
+                entry->freeTile(_cacheFile, _cacheFileDataOffset);
+                _cacheFile.reset();
+                throw std::length_error("Cache entry does not fit in a tile");
+            }
             _path = _cacheFile->file->path();
         } catch (...) {
             allocateRAM(entry->getElementsCountFromParams());
@@ -602,7 +627,7 @@ public:
         if (_backingFile) {
             _backingFile->flush(MemoryFile::eFlushTypeAsync, 0, 0);
         } else if (_cacheFile && _entry) {
-            _cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _cacheFile->file->data() + _cacheFileDataOffset, _entry->getCacheTileSizeBytes());
+            _cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _cacheFile->file->data() + _cacheFileDataOffset, _cacheFile->tileByteSize);
         }
     }
 
@@ -636,8 +661,8 @@ public:
             if (_backingFile) {
                 return _backingFile->size();
             } else if (_cacheFile) {
-                assert(_entry);
-                return _entry->getCacheTileSizeBytes();
+                // Use the tile size of the file, which may differ from the current tile size of the cache
+                return _cacheFile->tileByteSize;
             } else {
                 return 0;
             }

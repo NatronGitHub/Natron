@@ -17,9 +17,9 @@ Natron is a free, open-source (GPLv2 license) video compositor, similar in funct
 Natron is looking for developers and maintainers! You can help develop and maintain Natron if you have the following skills:
 
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
-- [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
+- [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron is compiled as [C++17](https://en.wikipedia.org/wiki/C%2B%2B17) with Qt 5 and as [C++20](https://en.wikipedia.org/wiki/C%2B%2B20) with Qt 6)
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
-- [Qt](https://www.qt.io/) (Natron builds with Qt4 or Qt5, but does not yet support Qt6)
+- [Qt](https://www.qt.io/) (Natron builds with Qt5; Qt6 support is in progress, see the Maintainer Guide)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
 - Basic knowledge of [Python](<https://en.wikipedia.org/wiki/Python_(programming_language)>)
 
@@ -102,7 +102,7 @@ For each architecture / operating system, you can either download a stable relea
 
 ### Building and installing from source
 
-There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
+There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
 - [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)
@@ -134,11 +134,11 @@ You should start contributing to the Natron project by first picking an easy tas
 
 We coordinate development through the [GitHub issue tracker](https://github.com/NatronGitHub/Natron/issues).
 
-The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.5.
+The stable version is on branch RB-2.6, where bug fixes and new features go. RB-2.7 is the Qt 6 branch. The ["master"](https://github.com/NatronGitHub/Natron/tree/master) branch holds older development work and is not used for current work. See [Contributing in the Maintainer Guide](Documentation/source/maintainers/contributing.rst) for which branch a change goes to.
 
 Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, a version that is no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
 
-Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.5), preferably on the ["RB-2.5"](https://github.com/NatronGitHub/Natron/tree/RB-2.5) branch.
+Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.6), preferably on the ["RB-2.6"](https://github.com/NatronGitHub/Natron/tree/RB-2.6) branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit` hook that verifies code styling before accepting changes. You can add this to your local repository's `.git/hooks/` directory by doing the following:
 

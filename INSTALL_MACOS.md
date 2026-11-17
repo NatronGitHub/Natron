@@ -10,6 +10,8 @@ The official macOS binaries are built with [MacPorts](https://www.macports.org) 
 
 [Homebrew](https://brew.sh) can also be used for development builds (see [Homebrew](#homebrew)). It is not used for releases, because MacPorts is easier to customize.
 
+Natron is built with **CMake** (see [Building with CMake](#building-with-cmake)). The qmake build is deprecated: on RB-2.6 the release scripts (`launchBuildMain.sh`, and `tools/tart/provision.sh`, which drives it) still build Natron with qmake, until they move to CMake (#1181); it will be removed in a future release.
+
 The workflow around the release build is documented in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`). That covers keeping MacPorts up to date, the overlay maintenance, signing, and the test suite.
 
 ## Before you start
@@ -113,7 +115,7 @@ grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf || e
 
 Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change, including after a `git pull` or a branch switch, and before installing or upgrading ports: an out-of-date `PortIndex` makes MacPorts resolve the overlay ports with stale versions.
 
-`./check.sh` (in the same directory) often reports obsolete Portfiles right after a `port selfupdate`: you can still use the committed overlay. Reintegrating it with upstream is a maintainer task, see `tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`.
+`./check.sh` (in the same directory; `--all` to check every overlay port, not only the installed ones) often reports obsolete Portfiles right after a `port selfupdate`: you can still use the committed overlay. It also warns when `/opt/MacPorts-Natron` differs from your checkout, meaning `./sync.sh` must be re-run. Reintegrating it with upstream is a maintainer task, see "Reintegrating upstream Portfiles into the overlay" in `Documentation/source/maintainers/build-macos.rst`.
 
 #### 4. OSMesa and LLVM
 
@@ -260,7 +262,7 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
     ./launchBuildMain.sh
 ```
 
-`launchBuildMain.sh` checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
+`launchBuildMain.sh` still builds Natron with the deprecated qmake build on RB-2.6; this will change when the release scripts move to CMake (#1181). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
 The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
 
@@ -277,30 +279,150 @@ Signing, notarization and the test suite are described in `Documentation/source/
 
 #### 11. Keeping MacPorts up to date
 
-```Shell
-sudo port selfupdate
-cd $NATRON_SRC/tools/MacPorts && ./check.sh   # overlay Portfiles whose upstream changed
-```
+Do this every few weeks, and before a release build. Each step is safe to stop after; the `sudo` steps need your password.
 
-If `check.sh` reports obsolete Portfiles, reintegrate upstream into the overlay first: see `tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`. Some overlay ports are deliberately **pinned** to older versions, and their `Portfile` must be kept when reintegrating (only `Portfile.orig` follows upstream):
+**MacPorts reads Natron's ports only from `/opt/MacPorts-Natron`, which is a copy of the `tools/MacPorts` directory of the checkout you last ran `./sync.sh` from.** If that was an old branch or another worktree, MacPorts silently uses its old Portfiles. So always sync from an up-to-date checkout of the branch you build (step 1), and check the copy (step 3).
 
-| port | pinned version | reason |
-|---|---|---|
-| `graphics/libraw` | 0.22.3 (upstream: 0.22.2) + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch; keep it when reintegrating upstream |
-| `graphics/opencolorio` | 2.6.0 (ahead of upstream) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
+1. **Update the checkout** of the branch you build (usually `RB-2.6`):
 
-Then publish the overlay and upgrade:
+   ```Shell
+   cd $NATRON_SRC && git switch RB-2.6 && git pull
+   ```
 
-```Shell
-./sync.sh
-sudo port -v upgrade outdated
-```
+2. **Use MacPorts, not Homebrew, in this terminal.** Run `port_switch` (see "MacPorts from scratch" above), or `export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin; unset HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY`. Then check that none of these resolve to `/opt/homebrew` or `/usr/local`:
 
-`upgrade outdated` can pull in new dependencies or variants. If it fails or picks up unwanted changes, upgrade port by port, or re-run the install steps above (see `Documentation/source/maintainers/build-macos.rst`).
+   ```Shell
+   which port pkg-config cmake python3
+   ```
 
-FFmpeg 9 enables `+vmaf` by default, except with `+natronmini`. An ffmpeg 9 installed before this overlay change may have `+vmaf`: if `port installed ffmpeg` shows it, reinstall it: `sudo port -f uninstall ffmpeg && sudo port install ffmpeg +gpl2 +highbitdepth +natronmini`.
+3. **Update MacPorts and publish the overlay:**
 
-MacPorts never downgrades a port. If a pinned port was installed in a newer version, uninstall it (`sudo port -f uninstall libraw`) and install it again with the same variants. To reclaim disk space afterwards: `sudo port reclaim`, or `sudo port clean --all installed`. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
+   ```Shell
+   sudo port selfupdate
+   cd $NATRON_SRC/tools/MacPorts
+   ./sync.sh
+   diff -rq -x 'PortIndex*' $NATRON_SRC/tools/MacPorts /opt/MacPorts-Natron
+   ```
+
+   `./sync.sh` must end with `Ports failed: 0`, and the `diff` must print nothing.
+
+4. **Check the overlay against upstream:**
+
+   ```Shell
+   ./check.sh
+   ```
+
+   It lists each overlay Portfile (or `files/` patch) whose upstream version changed, with a suggested command. If it lists anything, bring the overlay up to date first, as described in "Reintegrating upstream Portfiles into the overlay" in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`), commit the result, and run `./sync.sh` again from that checkout. You can also skip this and keep using the committed overlay: it still works, it's just behind upstream.
+
+   Some overlay ports are deliberately **pinned** to a version other than upstream's. Their `Portfile` is kept when reintegrating; only `Portfile.orig` follows upstream:
+
+   | port | pinned version | reason |
+   |---|---|---|
+   | `graphics/libraw` | 0.22.3 (upstream: 0.22.2) + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch |
+   | `graphics/opencolorio` | 2.6.0 (upstream: 2.5.1) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
+
+5. **See what would be upgraded,** now that the overlay is published:
+
+   ```Shell
+   port outdated
+   ```
+
+6. **Upgrade the installed ports:**
+
+   ```Shell
+   sudo port -v upgrade outdated
+   ```
+
+   This can pull in new dependencies or variants, and can take hours when a big port (Qt, LLVM) changed. If it stops on a failure, upgrade the remaining ports one by one, so that one broken port doesn't block the others:
+
+   ```Shell
+   sudo -v; for p in $(port -q echo outdated | awk '{print $1}'); do echo "== $p"; sudo port -v upgrade "$p"; done 2>&1 | tee /tmp/natron-port-upgrade.log
+   ```
+
+   MacPorts never downgrades a port. If a pinned port was installed in a newer version, remove the inactive versions first (`port uninstall` refuses to choose when several versions are installed), then uninstall it and install it again with the variants of install section 7:
+
+   ```Shell
+   sudo port uninstall inactive
+   sudo port -f uninstall libraw && sudo port -v -N install libraw +gpl2
+   ```
+
+   If `port installed ffmpeg` shows `+vmaf`, reinstall it the same way with `+gpl2 +highbitdepth +natronmini`.
+
+7. **Re-apply the install fixups.** An upgrade of the ports concerned can undo them. Re-run the `ln`, `sed`, `port select` and `pip` commands of install sections 7 (the `minizip-ng` link and `sed`, the `libzip.pc` `sed`) and 8 (`port select` for `python`, `python3` and `sphinx`, `pip-3.10 install qtpy==1.11.2`, and the `shiboken2` and `/opt/local/Library/lib` links). They are safe to run again. In tart, the `fixups` step of `tools/tart/provision.sh` re-applies the links, `sed`s and `port select`s after every update (`qtpy` is installed by its `python_qt` step).
+
+8. **Reclaim disk space:**
+
+   ```Shell
+   sudo port uninstall inactive
+   sudo port clean --work --dist installed
+   sudo port reclaim
+   ```
+
+   `port clean --work --dist installed` removes the build directories and the downloaded source archives of the installed ports, and keeps their logs. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
+
+9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py310-pyside2`, `python310`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `poppler`, `cairo`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
+
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+
+#### After a macOS upgrade
+
+A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstall of every port: ports built for the previous macOS may not work any more, and `port selfupdate` doesn't fix that. This follows the [MacPorts migration procedure](https://trac.macports.org/wiki/Migration).
+
+1. **Update Xcode** from the App Store for the new macOS, then redo install section 1 (`xcode-select -s` and `xcodebuild -license accept`).
+
+2. **Install the MacPorts `.pkg` for the new macOS** from <https://www.macports.org/install.php>. It keeps your `/opt/local/etc/macports/sources.conf`. Check that the overlay is still registered (otherwise redo install section 3):
+
+   ```Shell
+   grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf && port file openimageio
+   ```
+
+   `port file openimageio` must print a path under `/opt/MacPorts-Natron`.
+
+3. **Use MacPorts, not Homebrew,** and update the checkout (steps 1 and 2 of "Keeping MacPorts up to date").
+
+4. **Save the list of installed and requested ports,** after removing the inactive versions (otherwise they are reinstalled too), and keep a copy:
+
+   ```Shell
+   sudo port uninstall inactive
+   port -qv installed > ~/myports.txt
+   port echo requested | cut -d ' ' -f 1 | uniq > ~/requested.txt
+   test -s ~/myports.txt && test -s ~/requested.txt && cp ~/myports.txt ~/requested.txt ~/Desktop/
+   ```
+
+   Don't go on unless the `test` succeeded.
+
+5. **Uninstall all ports,** then clean up:
+
+   ```Shell
+   sudo port -fp uninstall installed
+   sudo port reclaim
+   ```
+
+6. **Publish the overlay again,** so that the reinstall uses Natron's ports:
+
+   ```Shell
+   cd $NATRON_SRC/tools/MacPorts && ./sync.sh
+   diff -rq -x 'PortIndex*' $NATRON_SRC/tools/MacPorts /opt/MacPorts-Natron
+   ```
+
+7. **Rebuild OSMesa** if you use it (install section 4). It must be built before the ports that need it, so do it now, before the reinstall.
+
+8. **Reinstall the ports** with MacPorts' `restore_ports.tcl` script, which reinstalls them with the same variants. Download it outside the Natron checkout:
+
+   ```Shell
+   cd /tmp
+   curl --location --remote-name https://github.com/macports/macports-contrib/raw/master/restore_ports/restore_ports.tcl
+   chmod +x restore_ports.tcl
+   sudo ./restore_ports.tcl ~/myports.txt
+   sudo port unsetrequested installed
+   xargs sudo port setrequested < ~/requested.txt
+   ```
+
+   (A file downloaded with a web browser instead of `curl` also needs `xattr -d com.apple.quarantine restore_ports.tcl`.) If a port fails, reinstall it by hand with the commands and variants of install sections 4 to 9, which are the reference for Natron's variants (`ImageMagick +natron`, `ffmpeg +natronmini`, `libraw +gpl2`, ...).
+
+9. **Re-apply the install fixups** (step 7 of "Keeping MacPorts up to date"): `restore_ports.tcl` doesn't restore `port select` choices, `pip` packages or hand-made links.
+
+10. **Check the compiler** (install section 5), then rebuild from a fresh build directory and test (step 9 of "Keeping MacPorts up to date"). A clean rebuild is mandatory after a macOS upgrade.
 
 #### Developing with the MacPorts SDK
 
@@ -324,7 +446,18 @@ mkdir -p ~/OFX/Natron-release && cd ~/OFX/Natron-release
 ln -sf ~/src/openfx-io/IO/Darwin-64-release/IO.ofx.bundle ~/src/openfx-misc/*/Darwin-64-release/*.ofx.bundle .
 ```
 
-Natron itself builds with qmake and the MacPorts Qt 5 (see [Building with qmake](#building-with-qmake-for-qt4-and-qt5) below for `config.pri`):
+Natron itself builds with CMake, the system (Xcode) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
+
+```Shell
+cd $NATRON_SRC
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
+    -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+cmake --build build -j$(sysctl -n hw.ncpu)
+```
+
+The application is then `build/App/Natron.app`. The release scripts still use the deprecated qmake build, with the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`). It is not quite the same build: OSMesa (`enable-osmesa`) and OpenMP (`openmp`) have no CMake option yet.
 
 ```Shell
 cd $NATRON_SRC
@@ -342,8 +475,10 @@ The OCIO configuration comes from the OpenColorIO-Configs download (see [Downloa
 env FONTCONFIG_FILE=$NATRON_SRC/Gui/Resources/etc/fonts/fonts.conf \
     OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio \
     OFX_PLUGIN_PATH=~/OFX/Natron-release NATRON_PLUGIN_PATH=$NATRON_SRC/Gui/Resources/PyPlugs \
-    App/Natron.app/Contents/MacOS/Natron
+    build/App/Natron.app/Contents/MacOS/Natron
 ```
+
+(with the qmake build, the application is `App/Natron.app`).
 
 Clear the OFX plugin cache (`~/Library/Caches/INRIA/Natron`) after rebuilding plugins. The plugin reference pages of the documentation are generated with `tools/genStaticDocs.sh` (see `Documentation/README-Natron-documentation.md`).
 
@@ -383,6 +518,15 @@ brew unlink qt
 brew install gnu-sed
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/pyside2.pc
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/shiboken2.pc
+```
+
+#### Building with CMake (untested)
+
+Pointing `CMAKE_PREFIX_PATH` at the formulae should work if `pyside@2` has CMake config files; otherwise also pass `-DPython3_EXECUTABLE` for the Python that `pyside@2` was built for, so that CMake finds PySide2 through it (`cmake/PySide2FromPython.cmake`). This is not tested; the supported way is [MacPorts](#on-macports).
+
+```Shell
+cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix expat);$(brew --prefix qt@5);$(brew --prefix pyside@2)"
+cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
 #### Python2 (optional)
@@ -577,7 +721,30 @@ curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
-## Building with qmake (for Qt4 and Qt5)
+## Building with CMake
+
+CMake is the supported build. It builds with Qt 5 and PySide2 by default; `-DNATRON_QT6=ON` selects Qt 6 and PySide6 (not covered by the macOS CI). Other options: `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`, `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`). `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` installs a self-contained `Natron.app`, as the release scripts will (see `Documentation/source/maintainers/building.rst`).
+
+### On MacPorts
+
+MacPorts' `py310-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Xcode) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
+
+```Shell
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+cmake --build build -j$(sysctl -n hw.ncpu)
+(cd build && env OFX_PLUGIN_PATH=$HOME/OFX/Natron-release OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio ctest -V)
+```
+
+These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that CI has no OFX plug-ins: it leaves `OFX_PLUGIN_PATH` unset and skips the tests that need them with `GTEST_FILTER='-BaseTest.*'` in the `ctest` environment.
+
+The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK for both the configure and the build, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. The same applies to the qmake build.
+
+## Deprecated: building with qmake
+
+*The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
 
 ### Add the config.pri file
 
@@ -793,20 +960,11 @@ On MacPorts, this would look like:
 launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 ```
 
-## Building with cmake (Qt5 only)
-
-### On homebrew
-
-```Shell
-mkdir build
-cd build
-cmake .. -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/expat;/opt/homebrew/opt/qt@5;/opt/homebrew/opt/pyside@2" -DPYTHON_FRAMEWORK_LIBRARIES=/opt/homebrew/Frameworks/Python.framework/Versions/3.9/lib
-make -j
-```
-
 ## Testing
 
-The unit tests build with the same qmake as Natron (see "Developing with the MacPorts SDK"), from `$NATRON_SRC`:
+With CMake, the unit tests are built with Natron (`NATRON_BUILD_TESTS`, on by default) and run with `ctest` (see [Building with CMake](#building-with-cmake)).
+
+With the deprecated qmake build, they build with the same qmake as Natron (see "Developing with the MacPorts SDK"), from `$NATRON_SRC`:
 
 ```Shell
 cd $NATRON_SRC/Tests

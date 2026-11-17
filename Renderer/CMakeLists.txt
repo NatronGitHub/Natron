@@ -37,4 +37,4 @@ target_include_directories(NatronRenderer
         ../Global
 )
 
-install(TARGETS NatronRenderer DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS NatronRenderer DESTINATION "${NATRON_INSTALL_BINDIR}")

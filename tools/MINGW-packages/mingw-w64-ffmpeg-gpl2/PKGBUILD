@@ -6,7 +6,7 @@ _realname=ffmpeg
 pkgbase="mingw-w64-natron_${_realname}-gpl2"
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2"
 pkgver=4.4.3
-pkgrel=99.1
+pkgrel=99.2
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
@@ -66,6 +66,11 @@ build() {
   # Fix using SRT headers
   CFLAGS+=" -DWIN32"
   CXXFLAGS+=" -DWIN32"
+
+  # natron_x264 keeps its headers, import library and x264.pc in a private
+  # prefix, so that they don't clash with MSYS2's libx264 (a different ABI).
+  # Look there first, so that ffmpeg links libx264-164.dll.
+  export PKG_CONFIG_PATH="${MINGW_PREFIX}/natron_x264/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
 
   CC=${MINGW_PREFIX}/bin/gcc \
   CXX=${MINGW_PREFIX}/bin/g++ \

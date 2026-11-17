@@ -29,6 +29,7 @@ set(Tests_SOURCES
     KnobFile_Test.cpp
     Lut_Test.cpp
     OSGLContext_Test.cpp
+    RotoPaint_Test.cpp
     Tracker_Test.cpp
     wmain.cpp
 )
@@ -50,3 +51,9 @@ target_include_directories(Tests
         google-mock
 )
 add_test(NAME Tests COMMAND Tests)
+
+# Not part of a normal install. The installer scripts install it separately
+# (cmake --install <build> --component Tests) and run it from the bundled tree:
+# in Natron.app/Contents/MacOS on macOS PORTABLE, in bin/ elsewhere.
+install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
+    COMPONENT Tests EXCLUDE_FROM_ALL)

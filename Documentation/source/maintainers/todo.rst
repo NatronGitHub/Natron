@@ -21,20 +21,23 @@ Toolkit and build modernization
 This is a first-class goal with its own chapter, :ref:`maint-qt6`, which is the
 single source of truth for the audited work items and counts. In short: the
 CMake build already has a ``NATRON_QT6`` switch and the viewer already uses
-``QOpenGLWidget``, so the remaining work is bounded — modernize the removed Qt
-APIs (``QRegExp`` → ``QRegularExpression``, ``QDesktopWidget`` → ``QScreen``,
-``setMargin``), bring the qmake build to Qt6 parity, and regenerate the
+``QOpenGLWidget``, and the removed Qt APIs (``QRegExp``, ``QDesktopWidget``,
+``setMargin``) have been replaced (PR #1084), so the remaining work is bounded:
+regenerate the
 PySide6/Shiboken6 bindings (resolving the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_). Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
 
-**Keep the two build systems in sync, and pick a long-term direction (P2).**
-Natron maintains *both* qmake and CMake builds. Every structural change must
-touch both, which is error-prone. Recommendation: treat CMake as the primary
-build (it already leads on Qt 6), keep qmake working during the transition, and
-document a date/criteria for eventually retiring qmake. Until then, add a CI job
-for each so neither silently rots.
+**Retire the qmake build (P2).**
+CMake is the supported build, and the qmake build is deprecated
+(`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_). The plan:
+move the release scripts in ``tools/jenkins`` (Natron and the plug-ins) to
+CMake; remove qmake on RB-2.7 first; remove it on RB-2.6 once each installer
+built with CMake has been shown to be equivalent to the qmake one. Until then,
+keep the ``*.pro``/``*.pri`` files in sync with CMake
+(``tools/utils/checkQmakeSources.py`` checks the source lists in CI). The qmake
+build gets no new features, in particular no further Qt 6 work.
 
 **Modernize CI (P1).**
 Migrate CI from Travis to GitHub Actions
@@ -96,11 +99,10 @@ Recommendation: add regression tests that load a corpus of old ``.ntp`` files
 and assert they still open; require a ``BOOST_CLASS_VERSION`` bump review for any
 ``*Serialization`` change. This directly protects users from data loss.
 
-**Replace deprecated/removed Qt string and regex APIs (P1).**
-Beyond Qt 6 compatibility, ``QRegExp`` and the ``QDesktopWidget`` family are the
-concrete deprecated APIs in use; migrating them (details in :ref:`maint-qt6`)
-improves the Qt 5 build immediately and is low-risk since the replacements exist
-in Qt 5.15.
+**Replace deprecated/removed Qt string and regex APIs (done).**
+``QRegExp`` and the ``QDesktopWidget`` family, the concrete deprecated APIs that
+were in use, were replaced in PR #1084 with APIs that exist in Qt 5.15 (details
+in :ref:`maint-qt6`).
 
 **Reduce the size of the largest translation units (P3).**
 Several files are enormous (``Node.cpp``, ``EffectInstance.cpp`` and

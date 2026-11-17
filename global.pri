@@ -390,6 +390,16 @@ win32-g++ {
       shiboken:  PKGCONFIG += shiboken2
       pyside:    PKGCONFIG += pyside2
     }
+    equals(QT_MAJOR_VERSION, 6) {
+      shiboken:  INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken6)
+      PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside6)
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+      pyside:    INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+      shiboken:  PKGCONFIG += shiboken6
+      pyside:    PKGCONFIG += pyside6
+    }
     equals(QT_MAJOR_VERSION, 4) {
       shiboken:  PKGCONFIG += shiboken-py$$PYV
     	pyside:    PKGCONFIG += pyside-py$$PYV
@@ -440,6 +450,18 @@ unix {
             pyside:   PKGCONFIG += pyside2
             # add QtCore to includes
             PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside2)
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
+            pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets
+        }
+    }
+
+    equals(QT_MAJOR_VERSION, 6) {
+        system(pkg-config --exists pyside6) {
+            shiboken: PKGCONFIG += shiboken6
+            pyside:   PKGCONFIG += pyside6
+            # add QtCore to includes
+            PYSIDE_INCLUDEDIR = $$system(pkg-config --variable=includedir pyside6)
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtCore
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtGui
             pyside:   INCLUDEPATH += $$PYSIDE_INCLUDEDIR/QtWidgets

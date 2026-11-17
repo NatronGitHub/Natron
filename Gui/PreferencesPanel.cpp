@@ -42,10 +42,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QHeaderView>
 #include <QPainter>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
+#include "Global/QtCompat.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -813,13 +815,20 @@ PreferencesPanel::filterPlugins(const QString & txt)
             it->item->setExpanded(false);
         }
     } else {
-        QString pattern;
+        // Match the typed characters in order, with anything in between, as the
+        // QRegExp::WildcardUnix pattern "*g*r*d*" did: the typed characters are
+        // themselves wildcards ('*', '?', "[...]").
+        QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if ( !txt[i].isLowSurrogate() ) { // keep surrogate pairs (e.g. emoji) together
+                wildcard.push_back( QLatin1Char('*') );
+            }
+            wildcard.push_back(txt[i]);
         }
-        pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        wildcard.push_back( QLatin1Char('*') );
+        // anchored: matching the whole label is the same as the old contains()
+        const QString pattern = QtCompat::wildcardToRegularExpression(wildcard);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {
