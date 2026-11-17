@@ -34,9 +34,10 @@ its own Viewer, so that their results can be compared.
    Despill, lp_ChillSpill and DespillMadness side by side.
 
 Each node suppresses the spill a little differently, but the spill mattes they
-produce are very similar. The matte depends on how the spill map is computed
-from the other two channels (for example their average, their maximum or
-their minimum).
+produce are very similar. The spill map depends on how the node compares the
+green channel with the other two channels. In Despill, the **Spillmap Mix**
+parameter sets how red and blue are combined (the default, 0.5, uses their
+average); the community PyPlugs may use other formulas.
 
 Turning the spill map into a matte
 ----------------------------------
@@ -49,7 +50,7 @@ and after ColorLookup:
 .. figure:: _images/tutorials-keying/despill-spillmatte-before.jpg
    :width: 650px
    :align: center
-   :alt: Grey spill matte with soft, noisy edges
+   :alt: Gray spill matte with soft, noisy edges
 
    The spill matte of lp_ChillSpill.
 
@@ -79,22 +80,24 @@ screen is black and the person is white.
 
    The three spill mattes after ColorLookup.
 
-The despill nodes are used here as alternative keyers. In this example a
-second despill node was still needed: the first one used the average of the
-other two channels, and the footage had been converted to a highly compressed
-MP4 file, which left artifacts on the edges.
+The despill nodes are used here as alternative keyers.
 
-This workflow doesn't replace colour-difference keyers, chroma keyers or other
+This workflow doesn't replace color-difference keyers, chroma keyers or other
 dedicated keyers. It complements them, and it can help keep the edges of the
 matte smooth.
 
-Finally, build the composite and colour-correct it. In the node graph below,
-the matte from Despill is inverted (:ref:`Invert <net.sf.openfx.Invert>`),
-softened at the edges (:ref:`ErodeBlur <eu.cimg.ErodeBlur>`) and used as the
-mask of a :ref:`Merge <net.sf.openfx.MergePlugin>`. The result is premultiplied
-(:ref:`Premult <net.sf.openfx.Premult>`), despilled again by a second Despill
-node, and colour-corrected (:ref:`ColorCorrect
-<net.sf.openfx.ColorCorrectPlugin>`).
+Building the composite
+----------------------
+
+In the node graph below, the spill matte from Despill1 is adjusted with
+ColorLookup, inverted (:ref:`Invert <net.sf.openfx.Invert>`) and softened at
+the edges (:ref:`ErodeBlur <eu.cimg.ErodeBlur>`). It is then connected to the
+**A** input of a :ref:`Merge <net.sf.openfx.MergePlugin>` node set to the
+**mask** operation, with the original plate in **B**. The **mask** operation
+multiplies B by the alpha of A, so its output is already premultiplied by the
+matte. The result is then despilled by a second Despill node (Despill2),
+because Despill1 is only used to make the matte: its color output is not used.
+Finally, ColorCorrect adjusts the colors.
 
 .. figure:: _images/tutorials-keying/despill-final.png
    :width: 650px
@@ -102,3 +105,16 @@ node, and colour-corrected (:ref:`ColorCorrect
    :alt: Natron window with the final composite in the left Viewer and the node graph of the Despill branch
 
    The finished shot (left Viewer) and its node graph.
+
+.. note::
+
+   The node graph above also has a Premult node after the Merge. Since the
+   **mask** operation already premultiplies the image, this premultiplies it a
+   second time and darkens the semi-transparent edges: remove it. Better
+   still, despill the plate first, then copy the matte into its alpha channel
+   (with Shuffle, or the **Copy** operation of Merge) and premultiply once
+   with Premult, so that the despill works on unpremultiplied colors.
+
+Footage credits: the footage was filmed at the One Button Studio of the
+University at Buffalo, NY. The screenshots were provided by the author of this
+tutorial, @blackearth2014.

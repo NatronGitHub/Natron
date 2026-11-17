@@ -6,7 +6,7 @@ Hue Keyer
 
 The :ref:`HueKeyer <net.sf.openfx.HueKeyer>` node pulls a key (a mask) from
 the hue of the image: you choose a range of hues, and the node makes those
-colours transparent.
+colors transparent.
 
 Hue and saturation are computed from the RGB values of the source image. For
 each hue, two curves control the result:
@@ -16,7 +16,7 @@ amount
 
 sat_thrsh
    If the saturation of a pixel is below this value, its transparency is
-   gradually reduced. This keeps greys and nearly grey colours opaque.
+   gradually reduced. This keeps grays and nearly gray colors opaque.
 
 .. figure:: _images/tutorials-keying/huekeyer-properties.png
    :width: 400px
@@ -36,8 +36,8 @@ Selecting the hue
 -----------------
 
 First select the hue you want to key. In the Viewer, move the mouse over that
-colour, hold :kbd:`Ctrl` and click. A vertical bar appears in the hue graph of
-HueKeyer at the hue you picked, and stays there.
+color, hold :kbd:`Ctrl` (:kbd:`Cmd` on macOS) and click. A vertical bar
+appears in the hue graph of HueKeyer at the hue you picked, and stays there.
 
 .. figure:: _images/tutorials-keying/huekeyer-hue-selection.png
    :width: 400px
@@ -46,36 +46,44 @@ HueKeyer at the hue you picked, and stays there.
 
    The vertical bar marks the hue picked in the Viewer.
 
-The ``amount`` curve rises before the selected hue and falls after it. Its
-slopes control how gradually the key falls off on each side: move the control
-points to tighten or widen the selection. Double-click on the curve to add
-control points for finer control. You will mostly edit the ``amount`` curve.
-Change it carefully: a small move of a control point can change the key a lot.
+The bar is only an indicator: the ``amount`` curve does not move to it. By
+default, the ``amount`` curve is 1 for green and cyan, so HueKeyer keys those
+hues. To key another hue, move the control points so that the curve is 1
+around the bar and 0 elsewhere. The slopes on each side of the bar control how
+gradually the key falls off: move the control points to tighten or widen the
+selection, and double-click on the curve to add control points for finer
+control. You will mostly edit the ``amount`` curve. Change it carefully: a
+small move of a control point can change the key a lot.
 
 Example: a desaturated rose
 ---------------------------
 
-In this example, HueKeyer keys the pink of a rose, and
-:ref:`HueCorrect <net.sf.openfx.HueCorrect>` desaturates it.
+In this example, the rose is desaturated by
+:ref:`HueCorrect <net.sf.openfx.HueCorrect>`, and HueKeyer makes a mask of the
+rose that can limit other effects to it, or to the rest of the image. The hue
+picked in the Viewer is the green of a leaf, and the ``amount`` curve keeps its
+default shape, so HueKeyer keys the green leaves: they become transparent
+(alpha 0), and the rose stays opaque (alpha 1).
 
-.. figure:: _images/tutorials-keying/huekeyer-demo-source.png
+.. figure:: _images/tutorials-keying/huekeyer-demo-source.jpg
    :width: 600px
    :align: center
    :alt: A pink rose with green leaves
 
    The source image.
 
-.. figure:: _images/tutorials-keying/huekeyer-demo-result.png
+.. figure:: _images/tutorials-keying/huekeyer-demo-result.jpg
    :width: 600px
    :align: center
-   :alt: The same rose, desaturated to grey, with the leaves still green
+   :alt: The same rose, desaturated to gray, with the leaves still green
 
-   The result, with HueKeyer and HueCorrect.
+   The result.
 
 The node graph contains HueKeyer, HueCorrect,
 :ref:`Blur <net.sf.cimg.CImgBlur>`, :ref:`Glow <fr.inria.Glow>` and
 :ref:`ColorCorrect <net.sf.openfx.ColorCorrectPlugin>`. The output of HueKeyer
-is connected to the Mask input of Blur, Glow and ColorCorrect.
+is connected to the Mask inputs of Blur and Glow (in this project the Mask
+input of ColorCorrect is not connected).
 
 .. figure:: _images/tutorials-keying/huekeyer-demo-ui.png
    :width: 650px
@@ -87,29 +95,31 @@ is connected to the Mask input of Blur, Glow and ColorCorrect.
 .. figure:: _images/tutorials-keying/huekeyer-demo-graph.png
    :width: 400px
    :align: center
-   :alt: Node graph: Read, HueCorrect, Blur, Glow, ColorCorrect and Viewer, with HueKeyer feeding the masks
+   :alt: Node graph: Read, HueCorrect, Blur, Glow, ColorCorrect and Viewer, with HueKeyer feeding the masks of Blur and Glow
 
    The node graph.
 
-The mask computed by HueKeyer is used to blur a region of the image. For the
-blur to apply outside the rose rather than inside, enable **Invert Mask** in
-the Blur node.
+A masked effect applies where the mask is opaque (alpha 1), that is, outside
+the keyed hues: here, on the rose. For the blur to apply to the leaves instead
+of the rose, enable **Invert Mask** in the Blur node.
 
 .. figure:: _images/tutorials-keying/huekeyer-demo-mask.png
    :width: 600px
    :align: center
-   :alt: Black and white mask: the rose and some leaves are white
+   :alt: Black and white mask: the rose is white, most of the leaves are black
 
-   The mask computed by HueKeyer.
+   The mask computed by HueKeyer: white where it is opaque (the rose), black
+   where the green hues are keyed.
 
-The final image below only uses HueKeyer and HueCorrect, for the
-desaturation: Blur, Glow and ColorCorrect are disabled. With them enabled, the
-HueKeyer mask limits their effect to the keyed area.
+The final image below only uses HueCorrect: its ``sat`` curve desaturates the
+pink hues, and its own Mask is not used. Blur, Glow and ColorCorrect are
+disabled. With them enabled, the HueKeyer mask limits their effect to the
+opaque part of the mask.
 
-.. figure:: _images/tutorials-keying/huekeyer-demo-final.png
+.. figure:: _images/tutorials-keying/huekeyer-demo-final.jpg
    :width: 600px
    :align: center
-   :alt: The rose in grey, the leaves in green
+   :alt: The rose in gray, the leaves in green
 
    The final image.
 
@@ -132,19 +142,15 @@ HueKeyer and HueCorrect
 
 HueKeyer and HueCorrect use the same kind of hue graph, which makes them a
 good combination: HueKeyer selects the hues, HueCorrect changes them. Unlike
-HueKeyer, HueCorrect has a mask input, so the two can be combined into
-precise colour effects.
-
-.. figure:: _images/tutorials-keying/huecorrect-curves.png
-   :width: 320px
-   :align: center
-   :alt: HueCorrect properties, with the red, sat and lum curves
-
-   The HueCorrect hue graph.
+HueKeyer, HueCorrect has a mask input, so the HueKeyer mask can limit its
+effect, for precise color effects.
 
 .. note::
 
-   HueCorrect is also very useful for spill suppression. If coloured fringes
+   HueCorrect is also very useful for spill suppression. If colored fringes
    remain around the edges of a key, and the despill nodes don't remove them,
    lower the saturation (``sat``) or the suppression curves (``r_sup``,
    ``g_sup``, ``b_sup``) of HueCorrect for the hue of the fringes.
+
+Footage credits: the rose photograph and the screenshots were provided by the
+author of this tutorial, @blackearth2014.
