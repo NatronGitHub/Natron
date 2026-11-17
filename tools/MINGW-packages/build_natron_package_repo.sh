@@ -33,13 +33,14 @@ else
   NATRON_REPO_DIR=$(realpath $1)
 fi
 
-if [[ -z "${MSYSTEM:-}" || "${MSYSTEM}" == MSYS || -z "${MINGW_PACKAGE_PREFIX:-}" ]]; then
-  echo "Run this script from an MSYS2 UCRT64 shell (MSYSTEM=UCRT64)."
+# The packages are only built for UCRT64 (mingw_arch=('ucrt64') in every
+# PKGBUILD): MSYS2's MINGW64 lacks several of their dependencies.
+if [[ "${MSYSTEM:-}" != UCRT64 || -z "${MINGW_PACKAGE_PREFIX:-}" ]]; then
+  echo "Run this script from an MSYS2 UCRT64 shell (MSYSTEM=UCRT64, current: ${MSYSTEM:-unset})."
   exit 1
 fi
-# makepkg-mingw builds for the architectures in MINGW_ARCH: build for the
-# environment of this shell only.
-MINGW_ARCH="${MSYSTEM,,}"
+# makepkg-mingw builds for the architectures in MINGW_ARCH.
+MINGW_ARCH=ucrt64
 echo "Building the Natron packages for ${MSYSTEM} (${MINGW_PACKAGE_PREFIX})."
 
 natron_repo_init ${NATRON_REPO_DIR}

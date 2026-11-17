@@ -181,7 +181,7 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 | `natron_openimageio` 3.1.17.0 | OIIO, the same version as Natron's macOS build, built against `natron_libraw-gpl2` and MSYS2's OpenColorIO, OpenEXR and Imath, without FFmpeg, for openfx-io. |
 | `natron_seexpr-git` 2.11 | SeExpr 2.11 (the SeExpr 1 API), with Natron's build patches, for openfx-io. |
 | `natron_imagemagick` 7.1.2-36 | ImageMagick 7, static, Q32 HDRI, no modules, with Magick++ and OpenMP (libgomp), with only the coders and delegates openfx-arena uses. MSYS2's imagemagick is a shared Q16 build with modules. |
-| `osmesa` (Mesa 25.0.7) | Off-screen Mesa (llvmpipe) and GLU, built by [osmesa-install](https://github.com/devernay/osmesa-install) into `${MINGW_PREFIX}/osmesa`. MSYS2's Mesa no longer has OSMesa. |
+| `osmesa` (Mesa 25.0.7) | Off-screen Mesa (llvmpipe) and GLU, built by [osmesa-install](https://github.com/devernay/osmesa-install) into `${MINGW_PREFIX}/osmesa`. MSYS2's Mesa no longer has OSMesa. It links MSYS2's static LLVM libraries and depends on the exact LLVM version it was built with: **rebuild it on every MSYS2 LLVM update** (until the repository also snapshots MSYS2's own packages, #1133). Only static libraries are shipped. |
 | `natron-setup` | The Inno Setup installer. |
 | `natron-build-deps-common`, `-qt5`, `-qt6` | Meta-packages that install everything needed to build Natron, the plug-ins and the installer. |
 

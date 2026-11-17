@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc="Minimal package set for building Natron installer with Qt6"
 url="https://natrongithub.github.io/"
 arch=("any")
-mingw_arch=('mingw64' 'ucrt64')
+mingw_arch=('ucrt64')
 license=("GPL")
 depends=(
   "git"

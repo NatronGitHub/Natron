@@ -16,11 +16,16 @@ pkgver=0.${gitcommit}.${_osmesa}
 pkgrel=1
 pkgdesc="OSMesa, off-screen Mesa with the llvmpipe driver, and GLU (mingw-w64)"
 arch=('any')
-mingw_arch=('mingw64' 'ucrt64')
+mingw_arch=('ucrt64')
 url="https://github.com/devernay/osmesa-install"
-license=('MIT')
-provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+license=('spdx:MIT' 'spdx:SGI-B-2.0')  # Mesa; GLU
+# OSMesa links MSYS2's static LLVM libraries, which must be the exact LLVM
+# version it was built with: package() pins it. Rebuild this package on every
+# MSYS2 LLVM update.
+depends=("${MINGW_PACKAGE_PREFIX}-llvm"
+         "${MINGW_PACKAGE_PREFIX}-zstd"
+         "${MINGW_PACKAGE_PREFIX}-libxml2"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("git"
              "curl"
              "xz"
@@ -73,6 +78,22 @@ build() {
 }
 
 package() {
+  # pin the exact LLVM version the static libraries were built against
+  local _llvmver=$(pacman -Q "${MINGW_PACKAGE_PREFIX}-llvm" | cut -d' ' -f2 | sed 's/-[^-]*$//')
+  depends=("${MINGW_PACKAGE_PREFIX}-llvm=${_llvmver}"
+           "${MINGW_PACKAGE_PREFIX}-zstd"
+           "${MINGW_PACKAGE_PREFIX}-libxml2"
+           "${MINGW_PACKAGE_PREFIX}-zlib")
+
   mkdir -p "${pkgdir}${MINGW_PREFIX}"
   mv "${MINGW_PREFIX}/osmesa" "${pkgdir}${MINGW_PREFIX}/"
+  local _osmesa_dir="${pkgdir}${MINGW_PREFIX}/osmesa"
+
+  # Only static libraries are built on Windows: don't ship import libraries
+  # without their DLLs (-lopengl32 could otherwise resolve to Mesa's).
+  rm -f "${_osmesa_dir}"/lib/*.dll.a "${_osmesa_dir}"/lib/*.la.bak
+
+  # fix the hard-coded Windows paths (D:/.../ucrt64) in the .pc and .la files
+  local PREFIX_WIN=$(cygpath -m ${MINGW_PREFIX})
+  find "${_osmesa_dir}" \( -name '*.pc' -o -name '*.la' \) -exec sed -i -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" {} \;
 }

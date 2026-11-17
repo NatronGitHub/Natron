@@ -9,7 +9,7 @@ pkgver=3.1.17.0
 pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
-mingw_arch=('mingw64' 'ucrt64')
+mingw_arch=('ucrt64')
 url="https://www.openimageio.org/"
 msys2_repository_url="https://github.com/AcademySoftwareFoundation/OpenImageIO"
 msys2_references=(
@@ -32,11 +32,15 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-openexr"
          "${MINGW_PACKAGE_PREFIX}-imath"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
-         "${MINGW_PACKAGE_PREFIX}-zlib")
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         # with OIIO_INTERNALIZE_FMT=OFF, the public headers include <fmt/format.h>
+         # and OpenImageIOConfig.cmake calls find_dependency(fmt)
+         "${MINGW_PACKAGE_PREFIX}-fmt")
+provides=("${MINGW_PACKAGE_PREFIX}-openimageio")
+conflicts=("${MINGW_PACKAGE_PREFIX}-openimageio")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-ninja"
-             "${MINGW_PACKAGE_PREFIX}-fmt"
              "${MINGW_PACKAGE_PREFIX}-robin-map")
 options=('strip' 'buildflags' '!debug')
 source=(https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz
