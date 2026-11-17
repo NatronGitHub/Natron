@@ -10,6 +10,9 @@ but you can add more with :menuselection:`Display --> New Viewer`
 (:kbd:`Ctrl+I`), for example to look at two parts of the graph at the same
 time.
 
+.. image:: _images/viewer_01.png
+   :width: 600px
+
 The Viewer is not part of the final render: it only shows what the nodes
 upstream of it compute. To write images to disk, use a
 :ref:`Write node <fr.inria.built-in.Write>` (see
@@ -17,14 +20,16 @@ upstream of it compute. To write images to disk, use a
 
 .. note::
 
-   The shortcuts on this page are the default ones. They can be changed in
-   the *Shortcut Editor* page of :menuselection:`Edit --> Preferences`,
-   which also lists the ones not shown here. On macOS, :kbd:`Ctrl` means
-   the :kbd:`Command` key and :kbd:`Alt` means the :kbd:`Option` key.
+   The shortcuts on this page are the default ones. They can be changed
+   in the *Shortcut Editor* section of the Preferences
+   (:menuselection:`Edit --> Preferences`, or
+   :menuselection:`Natron --> Preferences` on macOS), which also lists the
+   ones not shown here. On macOS, :kbd:`Ctrl` means the :kbd:`Command` key
+   and :kbd:`Alt` means the :kbd:`Option` key.
 
 The panel has, from top to bottom:
 
-- two rows of controls (the *top toolbar*): what to display and how;
+- two rows of controls (the *top toolbar*): what is displayed and how;
 - the image area, where the nodes also draw their interactive handles
   (*overlays*: transform handles, roto shapes, trackers, ...);
 - one or two *information bars*;
@@ -37,87 +42,21 @@ Choosing what to view: inputs A and B
 A Viewer node has up to 10 inputs. Connect nodes to them in the node graph,
 by dragging the input arrows of the Viewer node, or with the number keys:
 
-- select a node in the node graph and press :kbd:`1` to :kbd:`0` to connect
-  it to Viewer input 1 to 10 and show it on the **A** side;
-- press :kbd:`Shift+1` to :kbd:`Shift+0` to connect it and show it on the
-  **B** side;
-- with no node selected (or with the Viewer node selected), the same keys
-  only switch the A or B side to that Viewer input.
+- select a node in the node graph and press :kbd:`1` to :kbd:`0` (or
+  :kbd:`Shift+1` to :kbd:`Shift+0`) to connect it to Viewer input 1 to 10
+  and show it on the **A** side;
+- with no node selected (or with the Viewer node selected), :kbd:`1` to
+  :kbd:`0` switch the **A** side to that Viewer input, and :kbd:`Shift+1`
+  to :kbd:`Shift+0` switch the **B** side to it. This is how you show an
+  input that is already connected on the B side. When the Viewer has the
+  keyboard focus, the number keys also only switch inputs.
 
 If your keyboard layout does not have digits on the top row of keys, or with
 some remote display setups, see *Use number keys for the viewer* in the
-:doc:`Preferences </_prefs>`.
+*Viewer* section of the :doc:`Preferences </_prefs>`.
 
 In the top toolbar, the **A** and **B** menus select which of the connected
 inputs is shown on each side. :kbd:`Return` swaps A and B.
-
-
-Comparing A and B: wipe and stack modes
----------------------------------------
-
-The menu between **A** and **B** sets how the two sides are combined. In
-the formulas, *a* is the alpha of A and *d* is the wipe mix factor:
-
-===============  ==========================================================
-``-``            Only A is shown (default).
-``W-Under``      Wipe: A on one side of the wipe line, B on the other side,
-                 mixed with *d*: A(1 - d) + Bd.
-``W-Over``       Wipe, with B over A: A + B(1 - a)d.
-``W-Minus``      Wipe, A minus B.
-``W-OnionSkin``  Wipe, A plus B.
-``S-Under``      Stack: B only, over the whole image.
-``S-Over``       Stack: B over A, A + B(1 - a).
-``S-Minus``      Stack: A minus B.
-``S-OnionSkin``  Stack: A plus B.
-===============  ==========================================================
-
-:kbd:`W` turns the wipe (``W-Under``) on and off.
-
-In the wipe modes, a handle is drawn on the image:
-
-- drag its center to move the wipe line, or press :kbd:`Shift+F` to center
-  it on the mouse pointer;
-- drag the line to rotate it;
-- drag the arc handle to change the mix factor *d*.
-
-When A and B are combined, a second information bar shows the values of the
-B side. The *Automatically enable wipe* preference turns the wipe on when you
-change a Viewer input with the mouse over the Viewer.
-
-
-Layers, channels and alpha
---------------------------
-
-The first three menus of the top toolbar select which data are displayed.
-
-**Layer**
-   The layer (plane) that the Viewer fetches from its input: ``Color.RGBA``,
-   or any other layer produced upstream, such as motion vectors. Its channels
-   are mapped to the red, green, blue and alpha of the Viewer in order (a
-   two-channel ``UV`` layer is shown as red and green).
-   :kbd:`Page Up` and :kbd:`Page Down` switch to the previous and next layer.
-
-**Alpha channel**
-   The channel, from any layer, that is used as alpha when displaying
-   *Alpha* or *Matte* below.
-
-**Display channels**
-   ============  ========  ===================================================
-   Luminance     :kbd:`Y`  A grayscale image of the luminance.
-   RGB                     The color channels (default).
-   Red           :kbd:`R`  Only red, as a grayscale image.
-   Green         :kbd:`G`  Only green.
-   Blue          :kbd:`B`  Only blue.
-   Alpha         :kbd:`A`  The channel chosen in *Alpha channel*.
-   Matte         :kbd:`M`  The RGB image, with the alpha added as a red tint.
-   ============  ========  ===================================================
-
-   Pressing the same key again goes back to RGB. With :kbd:`Shift`
-   (:kbd:`Shift+R`, ...), the setting applies to input A only.
-
-The **checkerboard** button (second row) draws a checkerboard under A
-instead of black, to show transparent areas. Its tile size and colors are set
-in the *Viewer* section of the :doc:`Preferences </_prefs>`.
 
 
 Navigating the image
@@ -144,6 +83,84 @@ When you zoom out, the Viewer renders the image at a lower resolution, which
 is faster.
 
 
+Comparing A and B: wipe and stack modes
+---------------------------------------
+
+The menu between **A** and **B** sets how the two sides are combined. In the
+wipe modes (``W-``), the image is split by the wipe line: one side shows A
+alone, the other side shows the combination of A and B. In the stack modes
+(``S-``), the combination covers the whole image. In every mode except
+``-``, a mix factor *d* (1 by default) sets how much of B is used.
+
+In the formulas, *a* is the alpha of A:
+
+===============  ==========================================================
+``-``            Only A is shown (default).
+``W-Under``      Wipe, A mixed with B: A(1 - d) + Bd. With *d* = 1, B
+                 replaces A on that side.
+``W-Over``       Wipe, A over B: A + Bd(1 - a).
+``W-Minus``      Wipe, A minus B: A - Bd.
+``W-OnionSkin``  Wipe, A plus B: A + Bd.
+``S-Under``      Stack, A mixed with B: A(1 - d) + Bd. With the default
+                 *d* = 1, only B is visible.
+``S-Over``       Stack, A over B: A + Bd(1 - a).
+``S-Minus``      Stack, A minus B: A - Bd.
+``S-OnionSkin``  Stack, A plus B: A + Bd.
+===============  ==========================================================
+
+:kbd:`W` turns the A/B combination off, and back on with the mode used last
+(``W-Under`` the first time).
+
+In every mode except ``-``, a handle is drawn on the image:
+
+- drag its center to move the wipe line, or press :kbd:`Shift+F` to center
+  it on the mouse pointer;
+- drag the line to rotate it;
+- drag the arc handle to change the mix factor *d*.
+
+When A and B are combined, a second information bar shows the values of the
+B side. The *Automatically enable wipe* preference turns the wipe on when you
+change a Viewer input with the mouse over the Viewer.
+
+
+Layers, channels and alpha
+--------------------------
+
+The first three menus of the top toolbar select what is displayed.
+
+**Layer**
+   The layer (plane) that the Viewer fetches from its input: ``Color.RGBA``,
+   or any other layer produced upstream, such as motion vectors. Its channels
+   are mapped to the red, green, blue and alpha of the Viewer in order (a
+   two-channel ``UV`` layer is shown as red and green).
+   :kbd:`Page Up` and :kbd:`Page Down` switch to the previous and next layer.
+
+**Alpha channel**
+   The channel, from any layer, that is used as alpha when displaying
+   *Alpha* or *Matte* below.
+
+**Display channels**
+   ============  ========  ===================================================
+   Luminance     :kbd:`Y`  A grayscale image of the luminance.
+   RGB                     The color channels (default).
+   Red           :kbd:`R`  Only red, as a grayscale image.
+   Green         :kbd:`G`  Only green.
+   Blue          :kbd:`B`  Only blue.
+   Alpha         :kbd:`A`  The channel chosen in *Alpha channel*.
+   Matte         :kbd:`M`  The RGB image, with the alpha added as a red tint
+                           (input A only).
+   ============  ========  ===================================================
+
+   Pressing the same key again goes back to RGB. With :kbd:`Shift`
+   (:kbd:`Shift+Y`, :kbd:`Shift+R`, :kbd:`Shift+G`, :kbd:`Shift+B`,
+   :kbd:`Shift+A`), the setting applies to input A only.
+
+The **checkerboard** button (second row) draws a checkerboard under A
+instead of black, to show transparent areas. It is not drawn under the wipe
+area nor in the stack modes. Its tile size and colors are set in the
+*Viewer* section of the :doc:`Preferences </_prefs>`.
+
+
 Proxy mode
 ----------
 
@@ -157,6 +174,8 @@ detailed, but renders to disk are not affected.
 
 The *Automatically enable proxy when scrubbing the timeline* preference
 turns proxy mode on while you drag in the timeline.
+
+See also :doc:`compositing-projects-proxy`.
 
 
 Region of interest and other render options
@@ -212,7 +231,7 @@ by other nodes, nor the renders.
    your setting.
 
 **Viewer color process**
-   Natron works on linear values. This menu sets the transform from linear
+   Natron works with linear values. This menu sets the transform from linear
    values to the values sent to your monitor: ``sRGB`` (default),
    ``Rec.709``, ``BT1886``, or ``Linear(None)`` (no transform).
 
@@ -308,8 +327,9 @@ The other controls of the player are:
 
 **Turbo mode**
    During playback, only the Viewer is redrawn, so that the rest of the
-   interface does not slow it down. The *Auto-turbo* preference turns it on
-   for every playback.
+   interface does not slow it down. The *Auto-turbo* preference, in the
+   *Nodegraph* section of the :doc:`Preferences </_prefs>`, turns it on for
+   every playback.
 
 **Playback mode**
    What happens at the end of the range: loop, bounce (play back and forth),

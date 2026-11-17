@@ -12,7 +12,7 @@ While working in Natron you can preview your work in many ways:
 - connect the input of the viewer node to the node you want to look
   
    * pick the input arrow of the viewer node
-   * select the node to view then use shortcuts ``0`` to ``9``
+   * select the node to view then use shortcuts ``1`` to ``0``
 - select the quality of the render (full/proxy)
 - start playing
 - the images are rendered in memory
