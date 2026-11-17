@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
 
@@ -99,6 +100,13 @@ public:
      * @brief Get the current mipmapLevel applied by the viewer
      **/
     virtual unsigned int getCurrentMipmapLevel() const { return 0; }
+
+    /**
+     * @brief Get the current state of the keyboard modifiers, for overlay actions that are not
+     * triggered by an input event (draw, gain/lose focus). Actions triggered by an input event
+     * use the modifiers of that event instead.
+     **/
+    virtual KeyboardModifiers getKeyboardModifiers() const { return KeyboardModifiers(); }
 
     /**
      * @brief Returns whether the given rectangle in canonical coords is visible in the viewport
