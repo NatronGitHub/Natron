@@ -173,8 +173,9 @@ CMake: ``NATRON_OCIO_CONFIGS_DIR``). ``NatronRenderer``, ``natron-python`` and
 The differences: the CMake build keeps the double quotes of the ``Info.plist``
 XML declaration, which qmake's ``QMAKE_SUBSTITUTES`` strips (issue #1074);
 qmake also copies ``fonts.conf.in`` and creates an empty
-``Contents/Resources/empty.lproj``, which CMake does not. The installer
-script rebuilds the bundle anyway.
+``Contents/Resources/empty.lproj``, which CMake does not. Neither reaches the
+DMG: the installer script rebuilds the bundle from the executables,
+``Info.plist`` and ``PkgInfo``.
 
 ``cmake --install`` supports two layouts, selected with
 ``NATRON_INSTALL_LAYOUT``:
@@ -213,7 +214,19 @@ Each destination can be overridden: ``NATRON_INSTALL_BUNDLEDIR``,
 
 The ``Tests`` binary is only installed by
 ``cmake --install <build> --component Tests``, to ``NATRON_INSTALL_TESTSDIR``
-(``bin/``, outside ``Natron.app`` on macOS).
+(``bin/``; with ``PORTABLE`` on macOS, ``Natron.app/Contents/MacOS``, where its
+relative RPATHs resolve and where ``build-OSX-installer.sh`` runs it).
+
+With ``PORTABLE``, a missing OpenColorIO config is an error, so that a release
+can't silently ship without one; with ``FHS`` it is a warning. Set
+``NATRON_OCIO_CONFIGS`` to the configs to bundle, e.g.
+``-DNATRON_OCIO_CONFIGS="blender;nuke-default"`` with the OCIO 2.0 configs,
+which have no ``natron`` config (``build-natron.sh`` drops it the same way).
+
+On macOS, the ``PORTABLE`` RPATHs point at the PySide/Shiboken directories of
+the bundled Python framework, for the Python version CMake found (printed at
+configure time). It must be the version the installer script bundles
+(``PYVER``).
 
 .. list-table:: qmake build → CMake option (bundle and install)
    :header-rows: 1

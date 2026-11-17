@@ -85,6 +85,10 @@ if(NATRON_OCIO_CONFIGS_DIR)
     foreach(_ocio IN LISTS NATRON_OCIO_CONFIGS)
         if(IS_DIRECTORY "${NATRON_OCIO_CONFIGS_DIR}/${_ocio}")
             list(APPEND NATRON_OCIO_CONFIG_DIRS "${NATRON_OCIO_CONFIGS_DIR}/${_ocio}")
+        elseif(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
+            # a release must not silently ship without a config
+            message(FATAL_ERROR "OpenColorIO config \"${_ocio}\" not found in NATRON_OCIO_CONFIGS_DIR=${NATRON_OCIO_CONFIGS_DIR} "
+                "(set NATRON_OCIO_CONFIGS to the configs to bundle)")
         else()
             message(WARNING "OpenColorIO config \"${_ocio}\" not found in NATRON_OCIO_CONFIGS_DIR=${NATRON_OCIO_CONFIGS_DIR}")
         endif()
@@ -233,7 +237,9 @@ if(NATRON_INSTALL_LAYOUT STREQUAL "FHS")
 else()
     # PORTABLE: the layout of the binary installers (tools/jenkins/build-*-installer.sh).
     # Not installed here, left to the installer scripts: the DMG background
-    # (Gui/Resources/Images/splashscreen.*) and Contents/Resources/empty.lproj.
+    # (Gui/Resources/Images/splashscreen.*, copied by tools/jenkins/build-natron.sh).
+    # The qmake build also creates Contents/Resources/empty.lproj, but the DMG never
+    # shipped it (build-natron.sh only copies the executables, Info.plist and PkgInfo).
     if(WIN32)
         install(FILES ../Gui/Resources/Images/natronProjectIcon_windows.ico
             DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/pixmaps")

@@ -69,7 +69,9 @@ if(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE" AND APPLE)
     set(_resourcesdir "Natron.app/Contents/Resources")
     set(_pyplugsdir "Natron.app/Contents/Plugins/PyPlugs")
     set(_docdir "")
-    set(_testsdir "bin") # outside Natron.app, like tools/jenkins/build-natron.sh
+    # tools/jenkins/build-OSX-installer.sh runs Tests from Natron.app/Contents/MacOS (and removes
+    # it before signing), and its relative rpaths only resolve from there.
+    set(_testsdir "Natron.app/Contents/MacOS")
 elseif(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
     set(_bundledir ".")
     set(_bindir "bin")
@@ -160,6 +162,8 @@ if(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
         set(_natron_rpath "@loader_path/../Frameworks")
         if(Python3_VERSION_MAJOR AND Python3_VERSION_MINOR)
             set(_natron_pysite "@loader_path/../Frameworks/Python.framework/Versions/${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+            # The installer script must bundle the same Python version (its PYVER).
+            message(STATUS "PORTABLE install: PySide rpaths use the bundled Python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR} (must match PYVER of the installer script)")
             if(NATRON_QT6)
                 list(APPEND _natron_rpath "${_natron_pysite}/shiboken6" "${_natron_pysite}/PySide6")
             else()
