@@ -465,14 +465,18 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         # Same ImageMagick as the make path: the Magick++ found by pkg-config (ImageMagick 6;
         # the SDK's magick7 is not used, see the commented-out IM=7 in the make path), and
         # OpenMP only if that ImageMagick was built with it (the Makefiles keep its -fopenmp,
-        # which the CMake build drops in favour of OFX_USE_OPENMP). AudioCurve: AUTO (built
-        # if pkg-config finds sox), as the Makefiles. Not static on Windows (no MINGW_STATIC),
-        # as the make path.
+        # which the CMake build drops in favour of OFX_USE_OPENMP). Not static on Windows
+        # (no MINGW_STATIC), as the make path.
         arena_openmp=OFF
-        case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
+        case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        ofx_cmake_build -DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp"
+        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp")
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
+            arena_args+=(-DAUDIO=OFF)
+        fi
+        ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
         echo "Info: build openfx-arena using cmake... done!"
     else
         if [ "$PKGOS" = "OSX" ]; then
@@ -481,6 +485,12 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
 
         if [ "$PKGOS" = "Windows" ]; then
             ISWIN=1
+        fi
+        arena_make_audio=""
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve (libsox links GPL libraries). On the command line: Bundle/Makefile's
+            # "AUDIO = ON" (when pkg-config finds sox) overrides the environment.
+            arena_make_audio="AUDIO=OFF"
         fi
 
         echo "Info: build openfx-arena using make..."
@@ -508,7 +518,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
             BITS="${BITS}" \
             LDFLAGS_ADD="${BUILDID:-}" \
             CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} ${arena_make_audio:-}
 
         ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         set +x

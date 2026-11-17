@@ -177,7 +177,7 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `UNIT_TESTS`: Run unit tests after build. Value can be "false" or "true" (for compatibility with jenkins).
 
-`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included.
+`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included. COMMERCIAL builds also leave out openfx-arena's ReadPDF (poppler) and AudioCurve (libsox, which links GPL libraries).
 
 `DISABLE_BREAKPAD`: If set to 1, natron will be built without crash reporting capabilities.
 
