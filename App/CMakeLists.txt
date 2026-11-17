@@ -22,6 +22,10 @@ if(WIN32)
     list(APPEND Natron_SOURCES ../Natron.rc)
 endif()
 add_executable(Natron ${Natron_SOURCES})
+if(WIN32)
+    # GUI subsystem: no console window (qmake's default for an application).
+    set_target_properties(Natron PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 if(APPLE)
     set_target_properties(Natron PROPERTIES
         MACOSX_BUNDLE TRUE
