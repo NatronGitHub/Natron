@@ -14,8 +14,8 @@ Project-wide menu commands:
     :width: 300px
     :align: center
 
-To add a project-wipe menu command to the application's menu-bar, you need to use the
-:func:`addMenuCommand(grouping,function,key,modifiers)<>` of the :ref:`PyGuiApplication<PyGuiApplication>` class
+To add a project-wide menu command to the application's menu-bar, you need to use the
+:func:`addMenuCommand(grouping,function,key,modifiers)<NatronGui.PyGuiApplication.addMenuCommand>` function of the :ref:`PyGuiApplication<PyGuiApplication>` class
 to register it::
 
     def createIconViewer():
@@ -30,7 +30,12 @@ and is not *per-project* unlike most functions that are generally called on the 
 
 .. warning::
 
-    This function can only be called in the startup script **init.py** and will have no effect
-    otherwise. This is not a dynamic function and will not create menu entries on the fly.
+    Call this function from a startup script, preferably **initGui.py** (it is a NatronGui
+    function, so it only exists in GUI mode). The menu entries are created when the main window is
+    built, so calling it later, for example from the Script Editor, has no effect: it does not
+    create menu entries on the fly.
+
+When the user triggers the menu entry, Natron sets the *app* variable to the current
+:ref:`application instance<App>` and then calls the function, which takes no argument.
 
 

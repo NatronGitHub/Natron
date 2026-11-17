@@ -5,7 +5,6 @@ Get selected nodes label
 
 ::
 
-  import os
   import NatronEngine
   from NatronGui import *
 
@@ -24,11 +23,11 @@ Get selected nodes label
       currentLabel = currentNode.getLabel()
 
       # write node label in console
-      os.write(1,'\n' + str(currentLabel) + '\n')
+      print(currentLabel)
 
-This script can now be saved in a .py file and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGuy.py file.
+This script can now be saved in a .py file and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGui.py file.
 
-It can also be can executed directly in Natron's script editor by adding::
+It can also be executed directly in Natron's script editor by adding::
 
   getSelectedNodesLabel()
 
