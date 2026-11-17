@@ -54,5 +54,5 @@ add_test(NAME Tests COMMAND Tests)
 
 # Not part of a normal install; the installer scripts run the tests from the
 # install tree: cmake --install <build> --component Tests
-install(TARGETS Tests DESTINATION "${NATRON_INSTALL_BINDIR}"
+install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
     COMPONENT Tests EXCLUDE_FROM_ALL)

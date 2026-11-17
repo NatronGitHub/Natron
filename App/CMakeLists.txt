@@ -77,7 +77,7 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/fonts.conf.tmp" "${_fonts_conf}")
 configure_file("${CMAKE_CURRENT_BINARY_DIR}/fonts.conf.tmp" "${NATRON_FONTS_CONF}" COPYONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${NATRON_RESOURCES_SOURCE_DIR}/etc/fonts/fonts.conf.in")
-file(GLOB NATRON_FONTS_CONF_D "${NATRON_RESOURCES_SOURCE_DIR}/etc/fonts/conf.d/*")
+file(GLOB NATRON_FONTS_CONF_D CONFIGURE_DEPENDS "${NATRON_RESOURCES_SOURCE_DIR}/etc/fonts/conf.d/*")
 
 # OpenColorIO configs that exist in NATRON_OCIO_CONFIGS_DIR
 set(NATRON_OCIO_CONFIG_DIRS "")
@@ -140,6 +140,26 @@ if(APPLE)
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources/etc/fonts)
     set_source_files_properties(${NATRON_FONTS_CONF_D}
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources/etc/fonts/conf.d)
+    # OpenColorIO-Configs.pri: QMAKE_BUNDLE_DATA += OCIO
+    # (Contents/Resources/OpenColorIO-Configs). As bundle resources, the files
+    # are copied into Natron.app only when they change, and "cmake --install"
+    # installs them with the bundle.
+    foreach(_ocio_dir IN LISTS NATRON_OCIO_CONFIG_DIRS)
+        get_filename_component(_ocio_name "${_ocio_dir}" NAME)
+        file(GLOB_RECURSE _ocio_files CONFIGURE_DEPENDS "${_ocio_dir}/*")
+        foreach(_f IN LISTS _ocio_files)
+            file(RELATIVE_PATH _rel "${_ocio_dir}" "${_f}")
+            get_filename_component(_rel_dir "${_rel}" DIRECTORY)
+            if(_rel_dir)
+                set(_loc "Resources/OpenColorIO-Configs/${_ocio_name}/${_rel_dir}")
+            else()
+                set(_loc "Resources/OpenColorIO-Configs/${_ocio_name}")
+            endif()
+            set_source_files_properties("${_f}" PROPERTIES MACOSX_PACKAGE_LOCATION "${_loc}")
+            list(APPEND NATRON_BUNDLE_FILES "${_f}")
+            list(APPEND Natron_SOURCES "${_f}")
+        endforeach()
+    endforeach()
     source_group("Bundle Resources" FILES ${NATRON_BUNDLE_FILES})
 endif()
 
@@ -148,26 +168,13 @@ if(APPLE)
     get_filename_component(_icon_name "${NATRON_BUNDLE_ICON}" NAME)
     set_target_properties(Natron PROPERTIES
         MACOSX_BUNDLE TRUE
+        # The template from NatronInfo.plist.in uses only these MACOSX_BUNDLE_* properties
+        # (the executable name comes from the target).
         MACOSX_BUNDLE_INFO_PLIST "${NATRON_INFO_PLIST_TEMPLATE}"
-        MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
-        MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME} Copyright (c) 2023 The Natron Developers"
         MACOSX_BUNDLE_ICON_FILE "${_icon_name}"
         MACOSX_BUNDLE_GUI_IDENTIFIER "fr.inria.${PROJECT_NAME}" # QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
-        MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_COPYRIGHT "Copyright (c) 2023 The Natron Developers"
     )
-    # OpenColorIO-Configs.pri: QMAKE_BUNDLE_DATA += OCIO
-    # (Contents/Resources/OpenColorIO-Configs). Copied after each link of
-    # Natron; "cmake --install" copies them again.
-    foreach(_ocio_dir IN LISTS NATRON_OCIO_CONFIG_DIRS)
-        get_filename_component(_ocio_name "${_ocio_dir}" NAME)
-        add_custom_command(TARGET Natron POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${_ocio_dir}"
-                "$<TARGET_BUNDLE_CONTENT_DIR:Natron>/Resources/OpenColorIO-Configs/${_ocio_name}"
-            VERBATIM)
-    endforeach()
 endif()
 target_link_libraries(Natron
     PRIVATE
@@ -183,18 +190,36 @@ target_include_directories(Natron
 )
 
 ############################################
-## Install rules. See NATRON_INSTALL_LAYOUT in the top-level CMakeLists.txt
-## and Documentation/source/maintainers/building.rst.
+## Install rules. See NATRON_INSTALL_LAYOUT and NATRON_INSTALL_*DIR in the
+## top-level CMakeLists.txt, and Documentation/source/maintainers/building.rst.
 install(TARGETS Natron
     BUNDLE DESTINATION "${NATRON_INSTALL_BUNDLEDIR}"
     RUNTIME DESTINATION "${NATRON_INSTALL_BINDIR}")
 
-if(NATRON_OCIO_CONFIG_DIRS)
+# On macOS, the OpenColorIO configs, the icons, fonts.conf and conf.d are
+# already in Natron.app.
+if(NATRON_OCIO_CONFIG_DIRS AND NATRON_INSTALL_OCIODIR AND NOT APPLE)
     install(DIRECTORY ${NATRON_OCIO_CONFIG_DIRS}
         DESTINATION "${NATRON_INSTALL_OCIODIR}")
 endif()
+if(NATRON_INSTALL_RESOURCESDIR AND NOT APPLE)
+    install(FILES "${NATRON_FONTS_CONF}"
+        DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/etc/fonts")
+    install(FILES ${NATRON_FONTS_CONF_D}
+        DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/etc/fonts/conf.d")
+endif()
+if(NATRON_INSTALL_PYPLUGSDIR)
+    install(DIRECTORY ../Gui/Resources/PyPlugs/
+        DESTINATION "${NATRON_INSTALL_PYPLUGSDIR}"
+        PATTERN __pycache__ EXCLUDE
+        PATTERN "*.pyc" EXCLUDE)
+endif()
+if(NATRON_INSTALL_DOCDIR)
+    install(FILES ../LICENSE.txt DESTINATION "${NATRON_INSTALL_DOCDIR}")
+endif()
 
 if(NATRON_INSTALL_LAYOUT STREQUAL "FHS")
+    # Same files as before NATRON_INSTALL_LAYOUT existed (on every platform).
     install(FILES ../Gui/Resources/Applications/fr.natron.Natron.desktop
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     install(FILES ../Gui/Resources/Metainfo/fr.natron.Natron.appdata.xml
@@ -207,26 +232,16 @@ if(NATRON_INSTALL_LAYOUT STREQUAL "FHS")
         DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
 else()
     # PORTABLE: the layout of the binary installers (tools/jenkins/build-*-installer.sh).
-    # On macOS, the icons, fonts.conf and conf.d are already in Natron.app.
-    if(NOT APPLE)
-        install(FILES "${NATRON_FONTS_CONF}"
-            DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/etc/fonts")
-        install(FILES ${NATRON_FONTS_CONF_D}
-            DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/etc/fonts/conf.d")
-        if(WIN32)
-            install(FILES ../Gui/Resources/Images/natronProjectIcon_windows.ico
-                DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/pixmaps")
-        else()
-            install(FILES ../Gui/Resources/Images/natronIcon256_linux.png
-                ../Gui/Resources/Images/natronProjectIcon_linux.png
-                DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/pixmaps")
-        endif()
+    # Not installed here, left to the installer scripts: the DMG background
+    # (Gui/Resources/Images/splashscreen.*) and Contents/Resources/empty.lproj.
+    if(WIN32)
+        install(FILES ../Gui/Resources/Images/natronProjectIcon_windows.ico
+            DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/pixmaps")
+    elseif(NOT APPLE)
+        install(FILES ../Gui/Resources/Images/natronIcon256_linux.png
+            ../Gui/Resources/Images/natronProjectIcon_linux.png
+            DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/pixmaps")
     endif()
     install(FILES ../Gui/Resources/Stylesheets/mainstyle.qss
         DESTINATION "${NATRON_INSTALL_RESOURCESDIR}/stylesheets")
-    install(DIRECTORY ../Gui/Resources/PyPlugs/
-        DESTINATION "${NATRON_INSTALL_PLUGINSDIR}/PyPlugs")
-    if(NATRON_INSTALL_DOCDIR)
-        install(FILES ../LICENSE.txt DESTINATION "${NATRON_INSTALL_DOCDIR}")
-    endif()
 endif()
