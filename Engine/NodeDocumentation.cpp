@@ -25,6 +25,8 @@
 
 #include "NodePrivate.h"
 
+#include <cassert>
+
 #include <QTextStream>
 #include <QFile>
 #include <QRegularExpression>
@@ -467,11 +469,16 @@ OUTPUT:
         // See Documentation/templates for how to grab header/footer from the latest Sphinx version
 
         QString groupString; // %2 in plugin_head: the node group, and its parents
-        for (int i = 0; i < pluginGroup.size(); ++i) {
-            QStringList path = pluginGroup.mid(0, i + 1);
-            groupString += QString::fromUtf8("<li><a href=\"../_group.html?id=%1\">%2</a> &raquo;</li>")
-                           .arg( DocumentationGroups::makeGroupId(path) )
-                           .arg( DocumentationGroups::makeGroupTitle(path) );
+        {
+            DocumentationGroups docGroups;
+            QStringList groupIds = docGroups.getGroupIdsForGrouping(pluginGroup);
+            Q_FOREACH(const QString& groupId, groupIds) {
+                const DocumentationGroups::Group* group = docGroups.getGroup(groupId);
+                assert(group);
+                groupString += QString::fromUtf8("<li><a href=\"../_group.html?id=%1\">%2</a> &raquo;</li>")
+                               .arg(groupId)
+                               .arg( DocumentationGroups::makeGroupTitle(group->path).toHtmlEscaped() );
+            }
         }
 
         QString plugin_head =
@@ -577,7 +584,7 @@ OUTPUT:
         "</body>\n"
         "</html>\n");
 
-        ts << plugin_head.arg(pluginLabel, groupString);
+        ts << plugin_head.arg(pluginLabel.toHtmlEscaped(), groupString);
         QString html = Markdown::convert2html(markdown);
         ts << Markdown::fixNodeHTML(html);
         ts << plugin_foot;

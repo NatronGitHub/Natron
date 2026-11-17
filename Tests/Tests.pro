@@ -54,6 +54,7 @@ SOURCES += \
     NodeGroup_Test.cpp \
     NodePreview_Test.cpp \
     OSGLContext_Test.cpp \
+    PluginGrouping_Test.cpp \
     RotoPaint_Test.cpp \
     Tracker_Test.cpp \
     wmain.cpp

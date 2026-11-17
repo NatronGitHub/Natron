@@ -31,6 +31,7 @@
 #include <iostream>
 
 #include <QCoreApplication>
+#include <QUrl>
 
 #include "Engine/AppManager.h"
 #include "Engine/Plugin.h"
@@ -41,6 +42,23 @@ bool
 DocumentationGroups::isDocumented(const Plugin* plugin)
 {
     return plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() );
+}
+
+QStringList
+DocumentationGroups::normalizeGrouping(const QStringList& grouping)
+{
+    QStringList result;
+    Q_FOREACH(const QString& level, grouping) {
+        QString trimmed = level.trimmed();
+        if ( !trimmed.isEmpty() ) {
+            result << trimmed;
+        }
+    }
+    if ( result.isEmpty() ) {
+        result << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+    }
+
+    return result;
 }
 
 QString
@@ -108,19 +126,33 @@ DocumentationGroups::DocumentationGroups()
         if ( !isDocumented(plugin) ) {
             continue;
         }
-        const QStringList& grouping = plugin->getGrouping();
-        if ( grouping.isEmpty() ) {
-            continue;
-        }
+        const QStringList grouping = normalizeGrouping( plugin->getGrouping() );
         // create the group of each level, and link it to its parent
         QString parentId;
         for (int i = 0; i < grouping.size(); ++i) {
             QStringList path = grouping.mid(0, i + 1);
-            QString id = makeGroupId(path);
-            if ( !_groups.contains(id) ) {
+            QString key = makeGroupId(path);
+            QString id = _idsByKey.value(key);
+            if ( id.isEmpty() ) {
+                // new group: make its id unique, ignoring case
+                id = key;
+                for (int n = 2; ; ++n) {
+                    bool clash = false;
+                    for (QMap<QString, Group>::const_iterator it2 = _groups.constBegin(); it2 != _groups.constEnd(); ++it2) {
+                        if ( it2.key().compare(id, Qt::CaseInsensitive) == 0 ) {
+                            clash = true;
+                            break;
+                        }
+                    }
+                    if (!clash) {
+                        break;
+                    }
+                    id = key + QLatin1Char('-') + QString::number(n);
+                }
+                _idsByKey[key] = id;
                 Group& group = _groups[id];
                 group.path = path;
-                if ( parentId.isEmpty() ) {
+                if (i == 0) {
                     topLevelIds << id;
                 } else {
                     _groups[parentId].subGroupIds << id;
@@ -135,7 +167,7 @@ DocumentationGroups::DocumentationGroups()
     for (QMap<QString, Group>::iterator it = _groups.begin(); it != _groups.end(); ++it) {
         QMap<QString, QString> subGroupsByLabel;
         Q_FOREACH(const QString& id, it->subGroupIds) {
-            subGroupsByLabel[makeGroupLabel(_groups[id].path)] = id;
+            subGroupsByLabel[makeGroupLabel( _groups.value(id).path )] = id;
         }
         it->subGroupIds = subGroupsByLabel.values();
     }
@@ -158,8 +190,8 @@ DocumentationGroups::DocumentationGroups()
     order << QString::fromUtf8("G'MIC"); // openfx-gmic (older versions use "GMIC", which has the same id)
     order << QString::fromUtf8("Extra"); // openfx-arena
     Q_FOREACH(const QString& group, order) {
-        QString id = makeGroupId( QStringList(group) );
-        if ( topLevelIds.contains(id) ) {
+        QString id = _idsByKey.value( makeGroupId( QStringList(group) ) );
+        if ( !id.isEmpty() && topLevelIds.contains(id) ) {
             _topLevelIds << id;
         }
     }
@@ -173,12 +205,38 @@ DocumentationGroups::DocumentationGroups()
 const DocumentationGroups::Group*
 DocumentationGroups::getGroup(const QString& id) const
 {
-    QMap<QString, Group>::const_iterator it = _groups.find( id.contains( QLatin1Char('/') ) ? makeGroupId( id.split( QLatin1Char('/') ) ) : id );
+    QMap<QString, Group>::const_iterator it = _groups.find(id);
     if ( it == _groups.end() ) {
-        return 0;
+        // not an id: try a grouping path, e.g. "G'MIC/Colors" or "Sapphire%20Blur"
+        QString path = QUrl::fromPercentEncoding( id.toUtf8() );
+        QString key = makeGroupId( normalizeGrouping( path.split( QLatin1Char('/') ) ) );
+        QMap<QString, QString>::const_iterator foundKey = _idsByKey.find(key);
+        if ( foundKey == _idsByKey.end() ) {
+            return 0;
+        }
+        it = _groups.find( foundKey.value() );
+        if ( it == _groups.end() ) {
+            return 0;
+        }
     }
 
     return &it.value();
+}
+
+QStringList
+DocumentationGroups::getGroupIdsForGrouping(const QStringList& grouping) const
+{
+    QStringList ids;
+    QStringList path = normalizeGrouping(grouping);
+    for (int i = 0; i < path.size(); ++i) {
+        QString id = _idsByKey.value( makeGroupId( path.mid(0, i + 1) ) );
+        if ( id.isEmpty() ) {
+            return QStringList();
+        }
+        ids << id;
+    }
+
+    return ids;
 }
 
 NATRON_NAMESPACE_EXIT

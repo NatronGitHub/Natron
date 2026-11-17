@@ -57,7 +57,8 @@ DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
     , server(NULL)
 {
-    // list of translatable group names
+    // list of translatable group names: each level of a grouping is translated separately
+    // (see DocumentationGroups::makeGroupLabel())
     // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE);
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE_READERS);
@@ -66,33 +67,27 @@ DocumentationManager::DocumentationManager(QObject *parent)
     (void)QT_TR_NOOP(PLUGIN_GROUP_TIME);
     (void)QT_TR_NOOP(PLUGIN_GROUP_CHANNEL);
     (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Math");
-    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/OCIO");
-    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Transform");
+    (void)QT_TR_NOOP("Math"); // Color/Math
+    (void)QT_TR_NOOP("OCIO"); // Color/OCIO
     (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER "/Merges");
+    (void)QT_TR_NOOP("Matrix"); // Filter/Matrix
+    (void)QT_TR_NOOP("Merges"); // Merge/Merges
     (void)QT_TR_NOOP(PLUGIN_GROUP_KEYER);
     (void)QT_TR_NOOP(PLUGIN_GROUP_MERGE);
     (void)QT_TR_NOOP(PLUGIN_GROUP_TRANSFORM);
     (void)QT_TR_NOOP(PLUGIN_GROUP_3D);
     (void)QT_TR_NOOP(PLUGIN_GROUP_DEEP);
     (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW "/Stereo");
+    (void)QT_TR_NOOP("Stereo"); // Views/Stereo
     (void)QT_TR_NOOP(PLUGIN_GROUP_TOOLSETS);
     (void)QT_TR_NOOP(PLUGIN_GROUP_OTHER);
     (void)QT_TR_NOOP(PLUGIN_GROUP_DEFAULT);
     (void)QT_TR_NOOP(PLUGIN_GROUP_OFX);
-    // openfx-gmic
+    // openfx-gmic ("GMIC" in older versions is displayed "G'MIC" too)
     (void)QT_TR_NOOP("G'MIC");
-    (void)QT_TR_NOOP("GMIC"); // before openfx-gmic used the G'MIC spelling
-    // openfx-arena
+    // openfx-arena (Extra/Color, Extra/Draw, Extra/Filter, Extra/Misc, Extra/Transform use the names above)
     (void)QT_TR_NOOP("Extra");
-    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_COLOR);
-    (void)QT_TR_NOOP("Extra/Distort");
-    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_PAINT);
-    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_FILTER);
-    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_DEFAULT);
-    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_TRANSFORM);
+    (void)QT_TR_NOOP("Distort");
 }
 
 DocumentationManager::~DocumentationManager()
@@ -255,6 +250,7 @@ DocumentationManager::handler(QHttpRequest *req,
     }
 
     // add custom content
+    bool notFound = false; // do not serve a static file
     if ( page == QString::fromUtf8("_plugin.html") ) {
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
@@ -397,14 +393,17 @@ DocumentationManager::handler(QHttpRequest *req,
             Q_FOREACH(const QString &id, docGroups.getTopLevelGroupIds()) {
                 const DocumentationGroups::Group* group = docGroups.getGroup(id);
                 assert(group);
-                items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + id ).arg( DocumentationGroups::makeGroupTitle(group->path) ) );
+                items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + id ).arg( DocumentationGroups::makeGroupTitle(group->path).toHtmlEscaped() ) );
             }
         } else if ( !groupId.isEmpty() ) {
             // a node group page: its sub-groups, then its nodes
             const DocumentationGroups::Group* group = docGroups.getGroup(groupId);
-            if (group) {
-                QString groupLabel = DocumentationGroups::makeGroupLabel(group->path);
-                title = DocumentationGroups::makeGroupTitle(group->path);
+            if (!group) {
+                // unknown group: answer "Page not found", not the static _group.html
+                notFound = true;
+            } else {
+                QString groupLabel = DocumentationGroups::makeGroupLabel(group->path).toHtmlEscaped();
+                title = DocumentationGroups::makeGroupTitle(group->path).toHtmlEscaped();
                 if ( group->subGroupIds.isEmpty() ) {
                     intro = tr("The following sections contain documentation about every node in the %1 group.").arg(groupLabel);
                 } else {
@@ -413,14 +412,17 @@ DocumentationManager::handler(QHttpRequest *req,
                 intro += QLatin1Char(' ') + groupsHelp;
                 nav = navItem.arg( QString::fromUtf8("/_group.html") ).arg( tr("Reference Guide") );
                 nav += navItem.arg( QString::fromUtf8("/_nodes.html") ).arg( tr("Nodes") );
-                for (int i = 1; i < group->path.size(); ++i) {
-                    QStringList parentPath = group->path.mid(0, i);
-                    nav += navItem.arg( QString::fromUtf8("/_group.html?id=") + DocumentationGroups::makeGroupId(parentPath) ).arg( DocumentationGroups::makeGroupTitle(parentPath) );
+                QStringList parentIds = docGroups.getGroupIdsForGrouping(group->path);
+                parentIds.removeLast(); // this group
+                Q_FOREACH(const QString &parentId, parentIds) {
+                    const DocumentationGroups::Group* parent = docGroups.getGroup(parentId);
+                    assert(parent);
+                    nav += navItem.arg( QString::fromUtf8("/_group.html?id=") + parentId ).arg( DocumentationGroups::makeGroupTitle(parent->path).toHtmlEscaped() );
                 }
                 Q_FOREACH(const QString &subGroupId, group->subGroupIds) {
                     const DocumentationGroups::Group* subGroup = docGroups.getGroup(subGroupId);
                     assert(subGroup);
-                    items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + subGroupId ).arg( DocumentationGroups::makeSubGroupTitle(subGroup->path) ) );
+                    items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + subGroupId ).arg( DocumentationGroups::makeSubGroupTitle(subGroup->path).toHtmlEscaped() ) );
                 }
                 for (QMap<QString, QString>::const_iterator i = group->pluginsByLabel.constBegin();
                      i != group->pluginsByLabel.constEnd();
@@ -428,7 +430,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     const QString& plugID = i.value();
                     const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
-                        items.append( listItem.arg( QString::fromUtf8("/_plugin.html?id=") + plugID ).arg(plugName) );
+                        items.append( listItem.arg( QString::fromUtf8("/_plugin.html?id=") + plugID.toHtmlEscaped() ).arg( plugName.toHtmlEscaped() ) );
                     }
                 }
             }
@@ -468,7 +470,7 @@ DocumentationManager::handler(QHttpRequest *req,
 
     int status = 200;
 
-    if ( body.isEmpty() && ( page.endsWith( QString::fromUtf8(".html") ) ||
+    if ( body.isEmpty() && !notFound && ( page.endsWith( QString::fromUtf8(".html") ) ||
                              page.endsWith( QString::fromUtf8(".css") ) ||
                              page.endsWith( QString::fromUtf8(".js") ) ||
                              page.endsWith( QString::fromUtf8(".txt") ) ||

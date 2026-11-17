@@ -49,7 +49,10 @@ NATRON_NAMESPACE_ENTER
  * DocumentationManager (pages generated on the fly by the documentation server),
  * so that both produce the same layout.
  *
- * A group is identified by its id, built from its grouping path: "GMIC/Colors" -> "GMIC_Colors".
+ * A group is identified by its id, built from its grouping path: "GMIC/Colors" -> "GMIC_Colors"
+ * (see makeGroupId()). Two paths with the same id are the same group ("G'MIC" and "GMIC").
+ * If two ids differ only by case, the second one gets a "-2" suffix, so that the file names
+ * don't clash on case-insensitive file systems.
  * Its Sphinx page is "_group<id>.rst", and the documentation server serves it as
  * "_group.html?id=<id>" (or "_group<id>.html").
  **/
@@ -68,6 +71,10 @@ public:
 
     /// Does the Reference Guide document this plug-in?
     static bool isDocumented(const Plugin* plugin);
+
+    /// The grouping used in the Reference Guide: empty levels are removed, and a plug-in
+    /// without a grouping goes to the "Other" group.
+    static QStringList normalizeGrouping(const QStringList& grouping);
 
     /// "GMIC/Colors" -> "GMIC_Colors" (see Plugin::makeGroupingId()). Only ASCII letters and digits
     /// are kept from each level, so that the id is safe in file names and URLs: "G'MIC/Colors" -> "GMIC_Colors" too.
@@ -97,11 +104,17 @@ public:
         return _groups.keys();
     }
 
-    /// The group with that id, or NULL. The id may also be a grouping path ("GMIC/Colors").
+    /// The group with that id, or NULL. The id may also be a grouping path, possibly
+    /// percent-encoded ("G'MIC/Colors", "Sapphire%20Blur").
     const Group* getGroup(const QString& id) const;
 
+    /// The ids of the group of each level of a plug-in grouping (as returned by Plugin::getGrouping()),
+    /// e.g. ("GMIC", "GMIC_Colors"). Empty if the plug-in is not documented.
+    QStringList getGroupIdsForGrouping(const QStringList& grouping) const;
+
 private:
-    QMap<QString, Group> _groups;
+    QMap<QString, Group> _groups; // by id
+    QMap<QString, QString> _idsByKey; // makeGroupId(path) -> id
     QStringList _topLevelIds;
 };
 

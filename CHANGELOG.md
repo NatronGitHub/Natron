@@ -5,6 +5,17 @@
 # History
 
 
+## Version 2.6.0
+
+### Known issues
+
+- openfx-gmic now groups its nodes under "G'MIC" instead of "GMIC". A PyPlug whose grouping starts with "GMIC/" gets its own "GMIC" toolbar button, next to the "G'MIC" one: change its grouping to "G'MIC/...". The documentation lists both under "G'MIC nodes".
+
+### Changes
+
+- Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
+
+
 ## Version 2.5.0
 
 ### Known issues
