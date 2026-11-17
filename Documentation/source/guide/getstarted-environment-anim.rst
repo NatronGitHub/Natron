@@ -249,14 +249,16 @@ The right-click menu also has:
 
   - **Loop** asks for a first and a last frame, and repeats the animation
     between these frames.
-  - **Reverse** writes ``curve(-frame, dimension)``: it mirrors the animation
+  - **Reverse** writes ``curve(-frame, 0)`` (with the dimension number of
+    the curve): it mirrors the animation
     around frame 0, so frame 10 gets the value of frame -10. It does not play
     an animation backwards over its own frame range: with keyframes at
     frames 1 to 21 only, the result is flat. To reverse the animation between
     a first and a last frame, edit the expression to
     ``curve(first + last - frame, dimension)``, for example
     ``curve(22 - frame, dimension)`` for frames 1 to 21.
-  - **Negate** writes ``-curve(frame, dimension)``, which inverts the values.
+  - **Negate** writes ``-curve(frame, 0)`` (with the dimension number of the
+    curve), which inverts the values.
 - **Options** > **Update on mouse release only**: when checked, the image
   is only rendered again when you release the mouse, instead of while you
   drag keyframes.
