@@ -9,9 +9,10 @@ pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 # ${MINGW_PREFIX}/bin, where it cannot clash with libx264's DLL. Everything
 # else, including the headers, the import library and x264.pc, goes to the
 # private prefix ${MINGW_PREFIX}/natron_x264, which only natron_ffmpeg-gpl2
-# uses to build. So it neither provides nor replaces libx264. It still
-# conflicts with the old x264-git package, which shipped libx264-164.dll too.
-conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-git")
+# uses to build. So it neither provides, replaces nor conflicts with libx264.
+# There is no conflicts=(x264-git): MSYS2's x264 package provides x264-git, so
+# that would make it conflict with x264 too. The only file it could share with
+# the old x264-git package, libx264-164.dll, is caught by pacman's file check.
 pkgver=0.164.r3094.bfc87b7
 pkgrel=99.2
 pkgdesc="Library for encoding H264/AVC video streams (mingw-w64)"
