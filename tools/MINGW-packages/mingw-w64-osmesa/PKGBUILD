@@ -91,7 +91,8 @@ package() {
 
   # Only static libraries are built on Windows: don't ship import libraries
   # without their DLLs (-lopengl32 could otherwise resolve to Mesa's).
-  rm -f "${_osmesa_dir}"/lib/*.dll.a "${_osmesa_dir}"/lib/*.la.bak
+  rm -f "${_osmesa_dir}"/lib/*.dll.a
+  find "${_osmesa_dir}" -name "*.bak" -delete
 
   # fix the hard-coded Windows paths (D:/.../ucrt64) in the .pc and .la files
   local PREFIX_WIN=$(cygpath -m ${MINGW_PREFIX})
