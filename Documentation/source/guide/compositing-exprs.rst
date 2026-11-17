@@ -108,9 +108,9 @@ always the same as the name displayed in the interface:
 
 .. note::
 
-   ``get()`` and ``getValue()`` always return the value at the current frame
-   of the timeline, not at ``frame``. They give wrong results when the value
-   is computed at another frame: during a render of several frames, in the
+   ``get()`` and ``getValue()`` return the value at the current frame
+   (usually the frame of the timeline), not at ``frame``. They can give wrong
+   results when the value is computed at another frame, for example in the
    Curve Editor, or when another expression asks for this parameter at
    another frame. Use ``get(frame)`` or ``getValueAtTime(frame, dimension)``
    whenever the value of the other parameter can change over time.
@@ -175,8 +175,8 @@ These variables are defined in every expression:
     random seed depends on the frame, the dimension and the state of the
     node. Changing a parameter of the node, or of a node upstream, gives new
     random values. ``randomInt`` rounds toward zero, so with a negative
-    ``min`` the values are biased toward 0: ``randomInt(-5, 5)`` returns 0
-    more often than the other values.
+    ``min`` the results are uneven: ``randomInt(-5, 5)`` practically never
+    returns -5, and returns 0 twice as often as the other values.
 
 All the functions of the Python ``math`` module can be used directly, for
 example ``sin()``, ``cos()``, ``sqrt()``, ``floor()``, ``pi``. More functions
