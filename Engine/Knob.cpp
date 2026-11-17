@@ -116,7 +116,10 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
-    assert(handler);
+    if (!handler) {
+        // sender() is null if the master was deleted before a queued signal was delivered.
+        return;
+    }
     KnobIPtr master = handler->getKnob();
 
     KnobIPtr knob = getKnob();
@@ -136,7 +139,10 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time,
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
-    assert(handler);
+    if (!handler) {
+        // sender() is null if the master was deleted before a queued signal was delivered.
+        return;
+    }
     KnobIPtr master = handler->getKnob();
 
     KnobIPtr knob = getKnob();
@@ -156,7 +162,10 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewSpec view,
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
-    assert(handler);
+    if (!handler) {
+        // sender() is null if the master was deleted before a queued signal was delivered.
+        return;
+    }
     KnobIPtr master = handler->getKnob();
 
     KnobIPtr knob = getKnob();
@@ -174,7 +183,10 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(ViewSpec view,
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
-    assert(handler);
+    if (!handler) {
+        // sender() is null if the master was deleted before a queued signal was delivered.
+        return;
+    }
     KnobIPtr master = handler->getKnob();
     KnobIPtr knob = getKnob();
     std::vector<int> dims = getDimensionsSlavedTo(knob, master, dimension);

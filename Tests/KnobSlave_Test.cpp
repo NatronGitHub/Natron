@@ -103,14 +103,34 @@ protected:
         _slave->setName("progress");
     }
 
-    static double keyTime(const KnobDoublePtr& knob,
-                          int dimension)
+    // The keyframes of the knob's own curve. KnobI::getKeyFramesCount() and getCurve() without byPassMaster
+    // return those of the master for a slaved dimension, which would not test anything.
+    static int ownKeyCount(const KnobIPtr& knob,
+                           int dimension)
+    {
+        return knob->getCurve(ViewIdx(0), dimension, true /*byPassMaster*/)->getKeyFramesCount();
+    }
+
+    // The time of keyframe 'index' in the knob's own curve.
+    static double ownKeyTime(const KnobIPtr& knob,
+                             int dimension,
+                             int index = 0)
     {
         KeyFrame k;
-        bool ok = knob->getCurve(ViewIdx(0), dimension)->getKeyFrameWithIndex(0, &k);
+        bool ok = knob->getCurve(ViewIdx(0), dimension, true /*byPassMaster*/)->getKeyFrameWithIndex(index, &k);
         EXPECT_TRUE(ok);
 
         return k.getTime();
+    }
+
+    static bool moveKey(const KnobIPtr& knob,
+                        int dimension,
+                        double time,
+                        double dt)
+    {
+        KeyFrame newKey;
+
+        return knob->moveValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, dt, 0., &newKey);
     }
 
     NodePtr _masterNode, _slaveNode;
@@ -123,47 +143,69 @@ TEST_F(KnobSlaveTest, MoveKeyFrameOfUnlinkedMasterDimension)
 {
     createSlave(1);
     ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
-    EXPECT_EQ( 1, _slave->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
 
-    KeyFrame newKey;
-    EXPECT_TRUE( _master->moveValueAtTime(eCurveChangeReasonInternal, 250., ViewSpec::all(), 1, 10., 0., &newKey) );
-    EXPECT_EQ( 260., keyTime(_master, 1) );
+    EXPECT_TRUE( moveKey(_master, 1, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(_master, 1) );
     // The linked dimension did not change.
-    EXPECT_EQ( 250., keyTime(_slave, 0) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
 
-    std::vector<KeyFrame> keys(1, newKey);
+    KeyFrame k;
+    ASSERT_TRUE( _master->getCurve(ViewIdx(0), 1)->getKeyFrameWithIndex(0, &k) );
+    std::vector<KeyFrame> keys(1, k);
     EXPECT_TRUE( _master->moveValuesAtTime(eCurveChangeReasonInternal, ViewSpec::all(), 1, -10., 0., &keys) );
-    EXPECT_EQ( 250., keyTime(_master, 1) );
+    EXPECT_EQ( 250., ownKeyTime(_master, 1) );
 
     static_cast<KnobI*>( _master.get() )->deleteValueAtTime(eCurveChangeReasonInternal, 250., ViewSpec::all(), 1, true);
-    EXPECT_EQ( 0, _master->getKeyFramesCount(ViewIdx(0), 1) );
-    EXPECT_EQ( 1, _slave->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 0, ownKeyCount(_master, 1) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
 
     _master->setValueAtTime(100., 1., ViewSpec::all(), 1);
     _master->removeAnimation(ViewSpec::all(), 1);
-    EXPECT_EQ( 1, _slave->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
 }
 
-// Changes to the linked master dimension are still propagated to the slave.
+// Changes to the linked master dimension are still propagated to the slave's own curve.
 TEST_F(KnobSlaveTest, MoveKeyFrameOfLinkedMasterDimension)
 {
     createSlave(1);
     ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
 
-    KeyFrame newKey;
-    EXPECT_TRUE( _master->moveValueAtTime(eCurveChangeReasonInternal, 250., ViewSpec::all(), 0, 10., 0., &newKey) );
-    EXPECT_EQ( 260., keyTime(_master, 0) );
-    EXPECT_EQ( 260., keyTime(_slave, 0) );
+    EXPECT_TRUE( moveKey(_master, 0, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(_master, 0) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 0) );
 
     _master->setValueAtTime(100., 1., ViewSpec::all(), 0);
-    EXPECT_EQ( 2, _slave->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 2, ownKeyCount(_slave, 0) );
 
     static_cast<KnobI*>( _master.get() )->deleteValueAtTime(eCurveChangeReasonInternal, 260., ViewSpec::all(), 0, true);
-    EXPECT_EQ( 1, _slave->getKeyFramesCount(ViewIdx(0), 0) );
-    EXPECT_EQ( 100., keyTime(_slave, 0) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
+    EXPECT_EQ( 100., ownKeyTime(_slave, 0) );
 
     _master->removeAnimation(ViewSpec::all(), 0);
-    EXPECT_EQ( 0, _slave->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 0, ownKeyCount(_slave, 0) );
+}
+
+// The slave's own (unlinked) dimension 1 keeps its animation when dimension 1 of the master changes:
+// it used to be silently overwritten by a copy of the master's dimension 1.
+TEST_F(KnobSlaveTest, UnlinkedSlaveDimensionKeepsItsAnimation)
+{
+    createSlave(2);
+    _slave->setValueAtTime(10., 1., ViewSpec::all(), 1);
+    _slave->setValueAtTime(20., 2., ViewSpec::all(), 1);
+    ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
+    ASSERT_EQ( 2, ownKeyCount(_slave, 1) );
+
+    EXPECT_TRUE( moveKey(_master, 1, 250., 10.) );
+    _master->setValueAtTime(300., 5., ViewSpec::all(), 1);
+    static_cast<KnobI*>( _master.get() )->deleteValueAtTime(eCurveChangeReasonInternal, 300., ViewSpec::all(), 1, true);
+    _master->removeAnimation(ViewSpec::all(), 1);
+
+    EXPECT_EQ( 2, ownKeyCount(_slave, 1) );
+    EXPECT_EQ( 10., ownKeyTime(_slave, 1, 0) );
+    EXPECT_EQ( 20., ownKeyTime(_slave, 1, 1) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
 }
 
 // A slave dimension linked to another master dimension: the master dimension is mapped to the slave dimension.
@@ -171,17 +213,75 @@ TEST_F(KnobSlaveTest, MoveKeyFrameOfCrossLinkedDimension)
 {
     createSlave(2);
     ASSERT_TRUE( _slave->slaveTo(0, _master, 1) );
-    EXPECT_EQ( 1, _slave->getKeyFramesCount(ViewIdx(0), 0) );
-    EXPECT_EQ( 0, _slave->getKeyFramesCount(ViewIdx(0), 1) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
+    EXPECT_EQ( 0, ownKeyCount(_slave, 1) );
 
-    KeyFrame newKey;
-    EXPECT_TRUE( _master->moveValueAtTime(eCurveChangeReasonInternal, 250., ViewSpec::all(), 1, 10., 0., &newKey) );
-    EXPECT_EQ( 260., keyTime(_slave, 0) );
+    EXPECT_TRUE( moveKey(_master, 1, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 0) );
     // The unlinked slave dimension 1 is left alone.
-    EXPECT_EQ( 0, _slave->getKeyFramesCount(ViewIdx(0), 1) );
+    EXPECT_EQ( 0, ownKeyCount(_slave, 1) );
 
     // Master dimension 0 is not linked to anything in the slave.
-    EXPECT_TRUE( _master->moveValueAtTime(eCurveChangeReasonInternal, 250., ViewSpec::all(), 0, 20., 0., &newKey) );
-    EXPECT_EQ( 260., keyTime(_slave, 0) );
-    EXPECT_EQ( 0, _slave->getKeyFramesCount(ViewIdx(0), 1) );
+    EXPECT_TRUE( moveKey(_master, 0, 250., 20.) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 0) );
+    EXPECT_EQ( 0, ownKeyCount(_slave, 1) );
+}
+
+// Each slave dimension is linked to a different master knob: a change of one master only updates its own
+// slave dimension.
+TEST_F(KnobSlaveTest, TwoMasterKnobs)
+{
+    KnobDoublePtr master2 = AppManager::createKnob<KnobDouble>(_masterNode->getEffectInstance().get(), std::string("size2"), 1);
+    master2->setName("size2");
+    master2->setValueAtTime(300., 0., ViewSpec::all(), 0);
+
+    createSlave(2);
+    ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
+    ASSERT_TRUE( _slave->slaveTo(1, master2, 0) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
+    EXPECT_EQ( 300., ownKeyTime(_slave, 1) );
+
+    EXPECT_TRUE( moveKey(master2, 0, 300., 10.) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
+    EXPECT_EQ( 310., ownKeyTime(_slave, 1) );
+
+    EXPECT_TRUE( moveKey(_master, 0, 250., 20.) );
+    EXPECT_EQ( 270., ownKeyTime(_slave, 0) );
+    EXPECT_EQ( 310., ownKeyTime(_slave, 1) );
+
+    _slave->unSlave(1, false);
+    _slave->unSlave(0, false);
+}
+
+// Several slave dimensions linked to the same master dimension are all updated.
+TEST_F(KnobSlaveTest, SeveralSlaveDimensionsLinkedToOneMasterDimension)
+{
+    createSlave(2);
+    ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
+    ASSERT_TRUE( _slave->slaveTo(1, _master, 0) );
+
+    EXPECT_TRUE( moveKey(_master, 0, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 0) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 1) );
+
+    _master->setValueAtTime(100., 1., ViewSpec::all(), 0);
+    EXPECT_EQ( 2, ownKeyCount(_slave, 0) );
+    EXPECT_EQ( 2, ownKeyCount(_slave, 1) );
+}
+
+// An integer slave of a double master.
+TEST_F(KnobSlaveTest, IntSlaveOfDoubleMaster)
+{
+    KnobIntPtr slave = AppManager::createKnob<KnobInt>(_slaveNode->getEffectInstance().get(), std::string("index"), 1);
+    slave->setName("index");
+    ASSERT_TRUE( slave->slaveTo(0, _master, 0) );
+    EXPECT_EQ( 250., ownKeyTime(slave, 0) );
+
+    EXPECT_TRUE( moveKey(_master, 1, 250., 10.) );
+    EXPECT_EQ( 250., ownKeyTime(slave, 0) );
+
+    EXPECT_TRUE( moveKey(_master, 0, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(slave, 0) );
+
+    slave->unSlave(0, false);
 }
