@@ -12,8 +12,8 @@ Shortcuts and menus
 -------------------
 
 - **Undo**: :kbd:`Ctrl+Z` (:kbd:`Cmd+Z` on macOS).
-- **Redo**: :kbd:`Ctrl+Shift+Z` (:kbd:`Cmd+Shift+Z` on macOS, :kbd:`Ctrl+Y`
-  on Windows).
+- **Redo**: :kbd:`Ctrl+Y` on Windows, :kbd:`Ctrl+Shift+Z` on Linux, and
+  :kbd:`Cmd+Shift+Z` on macOS.
 
 The same commands are at the bottom of the
 :doc:`Edit menu <getstarted-environment-menus>`. Their text tells you which
@@ -25,7 +25,7 @@ Which history is used
 
 Natron keeps one undo history for each of these:
 
-- the :doc:`Node Graph <getstarted-environment-nodegraph>`, and the node graph
+- the :doc:`Node Graph <getstarted-environment-nodegraph>`, and the Node Graph
   of each Group node;
 - the :doc:`properties panel <getstarted-environment-proppanels>` of each
   node;
@@ -40,6 +40,13 @@ parameter after that. Move the pointer over the properties panel of the node
 to undo the parameter change instead. Check the text of the Undo entry in the
 Edit menu if you are not sure what will be undone.
 
+.. note::
+
+   When a text or value field has the keyboard focus, for example while you
+   type a value, the active history does not follow the mouse pointer, and
+   :kbd:`Ctrl+Z` undoes the typing in the field. Press :kbd:`Enter` or click
+   outside the field first.
+
 The properties panel of each node also has **Undo** and **Redo** buttons in its
 header. They always act on the history of that node, wherever the mouse
 pointer is.
@@ -51,16 +58,19 @@ In the Node Graph:
   creating, deleting, moving, renaming, enabling and disabling nodes;
   connecting and disconnecting them, inserting and extracting a node;
   pasting nodes; creating a group from a selection and expanding a group;
-  declone; auto-arranging nodes; resizing a backdrop.
+  de-cloning nodes; auto-arranging nodes; resizing a backdrop.
 
 In a properties panel:
   changing a parameter value, setting and removing keyframes, setting
   an expression, pasting values or animation, resetting parameters to their
-  defaults, loading presets (see :doc:`getstarted-environment-presets`), and
-  renaming the node.
+  defaults, loading presets, and renaming the node. Loading a preset on a
+  Roto, RotoPaint or Tracker node cannot be undone reliably (see
+  :doc:`getstarted-environment-presets`).
 
 In the Viewer:
-  editing :ref:`Roto <fr.inria.built-in.Roto>` and
+  moving the handles that plug-ins draw in the Viewer, such as those of
+  :ref:`Transform <net.sf.openfx.TransformPlugin>` or
+  :ref:`Crop <net.sf.openfx.CropPlugin>`; editing :ref:`Roto <fr.inria.built-in.Roto>` and
   :ref:`RotoPaint <fr.inria.built-in.RotoPaint>` shapes and strokes (drawing
   a shape or a stroke, adding, moving and removing points, moving tangents and
   feathers, transforming a selection, opening or closing a curve), and adding
@@ -72,9 +82,6 @@ In the Curve Editor and the Dope Sheet:
   their interpolation and moving their tangents. In the Dope Sheet, trimming
   and slipping a clip are also undoable.
 
-Some OpenFX plug-ins also add their own changes to the history of their
-properties panel.
-
 Successive changes to the same parameter are merged into a single step: if
 you drag a slider, or type several values in the same field one after the
 other, one Undo restores the value the parameter had before the first change.
@@ -83,18 +90,15 @@ Changes that create a keyframe are not merged.
 Limits
 ------
 
-- The number of steps kept for the Node Graph is set by **Maximum undo/redo
-  for the node graph**, in :menuselection:`Edit --> Preferences --> Nodegraph`
-  (20 by default). Older steps are deleted. Changing this value clears the
-  history of the Node Graph.
 - Some changes are not recorded, and cannot be undone. These include changes
   made by Python scripts, colors set with the color selector or picked from a
   Viewer (see :doc:`getstarted-environment-color`), and changes to the
-  Preferences.
+  Preferences (:menuselection:`Edit --> Preferences...`, in the
+  :menuselection:`Natron` menu on macOS).
 - The history is not saved with the project. When you open a project, its
   history is empty.
 
 If you cannot undo a change, you can go back to the last saved version of the
-project with :menuselection:`File --> Reload Project`, or to an earlier
-version if you saved several (see :menuselection:`File --> New Project
-Version`).
+project with :menuselection:`File --> Reload Project`, or open an earlier
+version with :menuselection:`File --> Open Project...`, if you saved versions
+with :menuselection:`File --> New Project Version`.
