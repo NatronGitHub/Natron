@@ -128,7 +128,7 @@ ports_https_source() {
 
 step_overlay() {
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
+    (cd "$NATRON/tools/MacPorts" && ./check.sh --all || true) | tee "$LOGDIR/check.txt"
     if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with this upstream tree (see $LOGDIR/check.txt)"
     fi
@@ -302,7 +302,7 @@ step_update() {
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
+    (cd "$NATRON/tools/MacPorts" && ./check.sh --all || true) | tee "$LOGDIR/check.txt"
     if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with upstream (see $LOGDIR/check.txt); reintegrate it on the host first"
     fi
