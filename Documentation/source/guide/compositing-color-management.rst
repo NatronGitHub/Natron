@@ -67,21 +67,23 @@ Configurations bundled with Natron
 Natron ships with a set of configurations from the
 `NatronGitHub/OpenColorIO-Configs <https://github.com/NatronGitHub/OpenColorIO-Configs>`_
 repository, installed in the ``Resources/OpenColorIO-Configs`` folder of the
-Natron installation (on Linux, ``/usr/share/OpenColorIO-Configs`` is used
-instead if it exists):
+Natron installation:
 
 - **blender** (the default): the configuration of older Blender versions,
-  with ``Linear`` as the working space, sRGB, Rec.709, log (Cineon-like)
-  and Filmic colorspaces, and the ``sRGB``, ``DCI-P3``, ``Rec709`` and
-  ``XYZ`` displays.
-- **blender-cycles** and **natron**: more recent configurations with a
-  ``Linear sRGB / REC.709 D65`` working space, sRGB, Rec.1886, Rec.709,
-  Rec.2020, log curves (Cineon, Josh Pines log, V-Log in *natron*) and film
+  with ``Linear`` as the working space; sRGB, Rec.709, Cineon and other log
+  (``lg10``, ``lgf``) colorspaces; camera log curves (AlexaV3LogC, SLog3,
+  V-Log, REDLog, CLog...); film and Filmic colorspaces; the ``sRGB``,
+  ``DCI-P3``, ``Rec709`` and ``XYZ`` displays; and the Filmic and film
   emulation looks.
+- **blender-cycles**: a more recent configuration with a
+  ``Linear sRGB / REC.709 D65`` working space, sRGB, AdobeRGB, Cineon and
+  Josh Pines log curves, and many film emulation looks.
+- **natron**: the same base as *blender-cycles*, without the looks, plus
+  Rec.709, Rec.1886 and Rec.2020 curves and V-Log.
 - **nuke-default**: the colorspaces of Nuke's default configuration
   (``linear``, ``sRGB``, ``rec709``, ``Cineon``, gamma curves and many camera
-  log curves: AlexaV3LogC, SLog, REDLog, CLog...). Use it to exchange projects
-  and files with a facility that uses Nuke's defaults.
+  log curves: AlexaV3LogC, SLog3, REDLog, CLog...), and no looks. Use it to
+  exchange projects and files with a facility that uses Nuke's defaults.
 
 No ACES configuration is bundled. To work in ACES, download an ACES
 configuration and use it as a custom configuration (see below).
@@ -89,8 +91,7 @@ configuration and use it as a custom configuration (see below).
 Changing the configuration
 --------------------------
 
-Open the Preferences (**Edit > Preferences...**; on macOS it is in the
-**Natron** menu) and go to the **Color Management** page:
+Open **Edit > Preferences** and go to the **Color Management** page:
 
 **OpenColorIO configuration**
     Choose one of the bundled configurations, or **Custom config** to use your
@@ -138,9 +139,11 @@ paths in the project can refer to the configuration's files as ``[OCIO]/...``
 .. note::
 
    Each Read, Write and OCIO node also has an **OCIO Config File** parameter,
-   which shows the configuration that the node uses. Leave it alone: changing
-   the configuration for a single node is not the intended workflow, and the
-   colorspace menus still show the colorspaces of the global configuration.
+   which shows the configuration that the node uses. Changing it reloads that
+   configuration for this node only and rebuilds its colorspace menus, but it
+   is best left alone: the node then no longer uses the same colorspaces as
+   the rest of the project, and the project depends on a file path that may
+   not exist on another machine. Change the global configuration instead.
 
 
 Reading files: File Colorspace and Output Colorspace
@@ -158,11 +161,13 @@ Each Read node has two colorspace parameters:
 
 When you choose a file, Natron sets **File Colorspace** automatically:
 
-1. If the file name ends with the name of a colorspace of the configuration,
-   right before the extension and after a ``_``, ``-``, ``.`` or space (for
-   example ``plate_v001_lg10.0001.dpx`` with a colorspace named ``lg10``),
-   that colorspace is used. This is the naming convention recommended by
-   OpenColorIO.
+1. If the name of a colorspace of the configuration comes right before the
+   last ``.`` of the file name, after a ``_``, ``-``, ``.`` or space (for
+   example ``plate_lg10.dpx`` with a colorspace named ``lg10``), that
+   colorspace is used. In a numbered sequence such as
+   ``plate_lg10.0001.dpx``, the frame number comes between the colorspace
+   name and the extension, so the name is not detected: set **File
+   Colorspace** by hand.
 2. Otherwise, the colorspace stored in the file's metadata is used, if there
    is one and the configuration has a matching colorspace.
 3. Otherwise, it is guessed from the bit depth and the format: floating-point
@@ -200,7 +205,8 @@ The Write node does the opposite conversion:
 
 **File Colorspace**
     The colorspace to store in the file. As for the Read node, Natron first
-    looks for a colorspace name at the end of the file name. Otherwise it is
+    looks for a colorspace name right before the last ``.`` of the file name
+    (which usually rules out numbered sequences). Otherwise it is
     set from the file format and bit depth: linear for floating-point formats
     such as EXR, Cineon log for 10-, 12- and 16-bit DPX and Cineon files,
     Rec.709 for other 10-, 12- and 16-bit integer formats, and sRGB for 8-bit
@@ -243,15 +249,16 @@ image is not converted twice. Remember that this node is for viewing only:
 connect the Write node above it, not below it, unless you really want the view
 transform baked into the output.
 
-Color pickers in the Viewer return linear values by default (Preferences >
-User Interface > **Linear color pickers**), so the values you pick can be
+Color pickers in the Viewer return linear values by default (**Edit >
+Preferences > User Interface > Linear color pickers**), so the values you pick can be
 typed directly into color parameters. See :doc:`getstarted-environment-color`.
 
 
 The OCIO nodes
 ##############
 
-The OCIO nodes are in the **Color > OCIO** menu of the Nodes toolbar. All of
+The OCIO nodes are in the **Color > OCIO** menu of the
+:doc:`toolbar <getstarted-environment-toolbar>`. All of
 them use the global configuration.
 
 :ref:`OCIOColorSpace <fr.inria.openfx.OCIOColorSpace>`
@@ -280,7 +287,9 @@ them use the global configuration.
 
 :ref:`OCIOLogConvert <fr.inria.openfx.OCIOLogConvert>`
     Converts between the ``scene_linear`` and ``compositing_log`` roles of the
-    configuration (if the configuration defines them).
+    configuration. Of the bundled configurations, only *blender* and
+    *nuke-default* define ``compositing_log``: with *natron* or
+    *blender-cycles* this node cannot be used.
 
 Most of these nodes have an **OCIO config help...** button that lists the
 colorspaces, displays or looks of the current configuration.
@@ -303,8 +312,8 @@ sRGB stills and graphics
 
 Log camera footage
     Set **File Colorspace** to the log curve of the camera (for example
-    ``AlexaV3LogC`` or ``SLog3`` in *nuke-default*, or ``V-Log - V-Gamut`` in
-    *natron*). If the configuration does not have the camera's curve, use a
+    ``AlexaV3LogC`` or ``SLog3`` in *blender* or *nuke-default*, or
+    ``V-Log - V-Gamut`` in *blender* or *natron*). If the configuration does not have the camera's curve, use a
     configuration that does, or convert with a LUT from the camera vendor in an
     OCIOFileTransform node.
 
@@ -329,5 +338,6 @@ ACES
 
 Exchanging files with other applications
     Use the same configuration everywhere: point the ``OCIO`` variable of all
-    the applications to the same file, and use colorspace names at the end of
-    the file names so that every application picks the right colorspace.
+    the applications to the same file. For single files, putting the
+    colorspace name right before the extension lets every application pick the
+    right colorspace.
