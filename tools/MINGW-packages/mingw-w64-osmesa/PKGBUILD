@@ -52,6 +52,8 @@ build() {
     echo "Please remove the existing ${MINGW_PREFIX}/osmesa first!"
     exit 1
   fi
+  # osmesa-install wants an existing, writable prefix.
+  mkdir -p "${MINGW_PREFIX}/osmesa"
 
   env OSMESA_VERSION="${_osmesa}" OSMESA_DRIVER=3 \
     OSMESA_PREFIX="${MINGW_PREFIX}/osmesa" \
