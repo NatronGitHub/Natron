@@ -60,7 +60,7 @@ Example: a desaturated rose
 
 In this example, the rose is desaturated by
 :ref:`HueCorrect <net.sf.openfx.HueCorrect>`, and HueKeyer makes a mask of the
-rose that can limit other effects to it, or to the rest of the image. The hue
+rose that limits other effects to it, or to the rest of the image. The hue
 picked in the Viewer is the green of a leaf, and the ``amount`` curve keeps its
 default shape, so HueKeyer keys the green leaves: they become transparent
 (alpha 0), and the rose stays opaque (alpha 1).
@@ -68,53 +68,56 @@ default shape, so HueKeyer keys the green leaves: they become transparent
 .. figure:: _images/tutorials-keying/huekeyer-demo-source.jpg
    :width: 600px
    :align: center
-   :alt: A pink rose with green leaves
+   :alt: A bright pink rose surrounded by green leaves
 
    The source image.
 
 .. figure:: _images/tutorials-keying/huekeyer-demo-result.jpg
    :width: 600px
    :align: center
-   :alt: The same rose, desaturated to gray, with the leaves still green
+   :alt: The same rose, desaturated to gray and glowing, in front of blurred green leaves
 
-   The result.
+   The result: the rose is gray, sharp and glowing, the leaves are blurred.
 
-The node graph contains HueKeyer, HueCorrect,
-:ref:`Blur <net.sf.cimg.CImgBlur>`, :ref:`Glow <fr.inria.Glow>` and
-:ref:`ColorCorrect <net.sf.openfx.ColorCorrectPlugin>`. The output of HueKeyer
-is connected to the Mask inputs of Blur and Glow (in this project the Mask
-input of ColorCorrect is not connected).
+The node graph is a chain Read1, HueCorrect1,
+:ref:`Blur1 <net.sf.cimg.CImgBlur>`, :ref:`Glow1 <fr.inria.Glow>` and
+:ref:`ColorCorrect1 <net.sf.openfx.ColorCorrectPlugin>`. HueKeyer1 takes its
+Source from Read1, and its output is connected to the Mask inputs of Blur1 and
+Glow1 (the Mask input of ColorCorrect1 is not connected). The settings are:
 
-.. figure:: _images/tutorials-keying/huekeyer-demo-ui.png
-   :width: 650px
-   :align: center
-   :alt: Natron window with the Viewer, the node graph and the HueKeyer and ColorCorrect properties
+- HueCorrect1: the ``sat`` curve has control points at 0 and 1.3 with value 0,
+  at 2 and 4.4 with value 1, and at 5.1 with value 0. On the hue axis, 1 is
+  red, 2 yellow, 3 green, 4 cyan, 5 blue, and 0 (or 6) magenta, so the curve
+  is 0 from violet through magenta and pink to red, and 1 from yellow to cyan.
+  This desaturates the rose and keeps the leaves green. The curve is periodic:
+  6 is the same hue as 0, so don't add control points at both 0 and 6 (with
+  both, HueCorrect outputs invalid values for pure magenta pixels, such as
+  clipped pink highlights).
+- Blur1: **Size** 12, with **Invert Mask** enabled.
+- Glow1 and HueKeyer1: default settings.
+- ColorCorrect1: master **Gamma** 0.9, **Gain** 1.1, **Offset** -0.01.
 
-   The whole project in Natron.
-
-.. figure:: _images/tutorials-keying/huekeyer-demo-graph.png
-   :width: 400px
-   :align: center
-   :alt: Node graph: Read, HueCorrect, Blur, Glow, ColorCorrect and Viewer, with HueKeyer feeding the masks of Blur and Glow
-
-   The node graph.
+.. Screenshots wanted here (not made yet, the previous ones showed a photo that
+   could not be redistributed): the whole Natron window with this project
+   (Viewer on ColorCorrect1, node graph, HueKeyer1 and ColorCorrect1
+   properties), and a close-up of the node graph.
 
 A masked effect applies where the mask is opaque (alpha 1), that is, outside
-the keyed hues: here, on the rose. For the blur to apply to the leaves instead
-of the rose, enable **Invert Mask** in the Blur node.
+the keyed hues: here, on the rose. This is why Glow1 makes the rose glow. In
+Blur1, **Invert Mask** is enabled, so the blur applies to the leaves instead,
+and the rose stays sharp.
 
 .. figure:: _images/tutorials-keying/huekeyer-demo-mask.png
    :width: 600px
    :align: center
-   :alt: Black and white mask: the rose is white, most of the leaves are black
+   :alt: Black and white mask: the rose is white, the leaves are black, the dark background is noisy gray
 
    The mask computed by HueKeyer: white where it is opaque (the rose), black
-   where the green hues are keyed.
+   where the green hues are keyed. The dark, nearly gray background is only
+   partly keyed: the ``sat_thrsh`` curve keeps low-saturation colors opaque.
 
-The final image below only uses HueCorrect: its ``sat`` curve desaturates the
-pink hues, and its own Mask is not used. Blur, Glow and ColorCorrect are
-disabled. With them enabled, the HueKeyer mask limits their effect to the
-opaque part of the mask.
+The final image below only uses HueCorrect: Blur1, Glow1 and ColorCorrect1 are
+disabled, and the Mask input of HueCorrect1 is not used.
 
 .. figure:: _images/tutorials-keying/huekeyer-demo-final.jpg
    :width: 600px
@@ -123,19 +126,13 @@ opaque part of the mask.
 
    The final image.
 
-.. figure:: _images/tutorials-keying/huekeyer-demo-graph-final.png
-   :width: 350px
-   :align: center
-   :alt: Node graph with Blur, Glow and ColorCorrect disabled
-
-   The node graph for the final image: Blur, Glow and ColorCorrect are disabled.
-
 .. figure:: _images/tutorials-keying/huecorrect-properties.png
    :width: 320px
    :align: center
-   :alt: HueCorrect properties, with the sat and lum curves
+   :alt: HueCorrect properties, with the hue curves drawn over the hue spectrum
 
-   The HueCorrect settings used for the desaturation.
+   The HueCorrect properties: lowering the ``sat`` curve for a range of hues
+   desaturates them.
 
 HueKeyer and HueCorrect
 -----------------------
@@ -152,5 +149,14 @@ effect, for precise color effects.
    lower the saturation (``sat``) or the suppression curves (``r_sup``,
    ``g_sup``, ``b_sup``) of HueCorrect for the hue of the fringes.
 
-Footage credits: the rose photograph and the screenshots were provided by the
-author of this tutorial, @blackearth2014.
+Image credits
+-------------
+
+- Rose photograph: `Rose, Hot Pink
+  <https://commons.wikimedia.org/wiki/File:Rose,_Hot_Pink_(52127660426).jpg>`_
+  by Angelos @ Ottawa, from `Flickr
+  <https://www.flickr.com/photos/194609185@N08/52127660426/>`_, dedicated to
+  the public domain (`Public Domain Mark 1.0
+  <https://creativecommons.org/publicdomain/mark/1.0/>`_). Resized; the result
+  and mask images were rendered from it with Natron.
+- Screenshots of Natron: @blackearth2014, the author of this tutorial.

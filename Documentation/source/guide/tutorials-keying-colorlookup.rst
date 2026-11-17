@@ -31,12 +31,30 @@ colors on the edges.
 .. figure:: _images/tutorials-keying/colorlookup-matte.jpg
    :width: 650px
    :align: center
-   :alt: Natron window with the original image, the ChromaKeyer matte and the matte after ColorLookup, and the alpha curve of ColorLookup
+   :alt: A man in front of a green screen, the noisy matte from ChromaKeyer, and the clean matte after ColorLookup
 
    From left to right: the original image, the matte from ChromaKeyer, and the
-   matte after adjusting the alpha curve of ColorLookup. In this screenshot,
-   ChromaKeyer is set to Premultiplied: use Intermediate and a Premult node,
-   as described above, to get correct colors.
+   matte after adjusting the alpha curve of ColorLookup.
+
+In this example, ChromaKeyer1 has a **Key Color** of 0.15, 0.33, 0.10 (linear
+RGB, picked on the screen) and an **Acceptance Angle** of 60. The screen is
+not very saturated, so its matte is noisy and gray, especially on the right,
+where the screen is darker. The alpha curve of ColorLookup1 has control points at (0, 0), (0.45, 0),
+(0.85, 1) and (1, 1): alpha values below 0.45 become 0 and values above 0.85
+become 1. **Clamp Black** and **Clamp White** are enabled. Premult1 follows
+ColorLookup1.
+
+.. figure:: _images/tutorials-keying/colorlookup-result.jpg
+   :width: 400px
+   :align: center
+   :alt: The man, keyed, over a gray background
+
+   The output of Premult1, over a gray background. Some green spill remains on
+   the hair: see the :doc:`despilling tips <tutorials-keying-despill>`.
+
+.. Screenshot wanted here (the previous one showed a photo that could not be
+   redistributed): the properties of ColorLookup1 with the alpha curve
+   selected, and the node graph Read1, ChromaKeyer1, ColorLookup1, Premult1.
 
 .. note::
 
@@ -47,5 +65,12 @@ colors on the edges.
    especially if the monitor isn't calibrated. This check is especially
    useful after adjusting a matte with ColorLookup.
 
-Footage credits: the footage and the screenshot were provided by the author of
-this tutorial, @blackearth2014.
+Image credits
+-------------
+
+- Source photograph: `Peter Alsop
+  <https://commons.wikimedia.org/wiki/File:Peter_Alsop.jpg>`_ by Moose School
+  Productions, from `peteralsop.com
+  <http://peteralsop.com/gallery/peters-headshots>`_, licensed under `CC BY 4.0
+  <https://creativecommons.org/licenses/by/4.0/>`_. Resized; the mattes and
+  the result were rendered from it with Natron.

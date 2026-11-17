@@ -115,6 +115,9 @@ Finally, ColorCorrect adjusts the colors.
    (with Shuffle, or the **Copy** operation of Merge) and premultiply once
    with Premult, so that the despill works on unpremultiplied colors.
 
-Footage credits: the footage was filmed at the One Button Studio of the
-University at Buffalo, NY. The screenshots were provided by the author of this
-tutorial, @blackearth2014.
+Image credits
+-------------
+
+- Footage and screenshots: contributed by Omar Brown (@blackearth2014), the
+  author of this tutorial, who appears in the footage. The footage was filmed
+  at the One Button Studio of the University at Buffalo, NY.
