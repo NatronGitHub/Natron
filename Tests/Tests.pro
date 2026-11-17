@@ -50,6 +50,7 @@ SOURCES += \
     Image_Test.cpp \
     KnobFile_Test.cpp \
     Lut_Test.cpp \
+    NodeGroup_Test.cpp \
     OSGLContext_Test.cpp \
     RotoPaint_Test.cpp \
     Tracker_Test.cpp \

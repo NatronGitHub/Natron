@@ -434,6 +434,23 @@ Node::initializeInputs()
         QMutexLocker l(&_imp->lastRenderStartedMutex);
         _imp->inputIsRenderingCounter.resize(inputCount);
     }
+
+    // Query the components the plug-in accepts before taking inputsMutex: for a group,
+    // NodeGroup::isInputMask() takes the group's nodesLock, and render threads take nodesLock
+    // then inputsMutex (NodeGroup::getRealInputForInput() calls Node::getInput()).
+    // Calling them with inputsMutex held could deadlock (see #814).
+    std::vector<std::list<ImagePlaneDesc> > inputsComponents(inputCount);
+    for (int i = 0; i < inputCount; ++i) {
+        if ( _imp->effect->isInputMask(i) ) {
+            //Force alpha for masks
+            inputsComponents[i].push_back( ImagePlaneDesc::getAlphaComponents() );
+        } else {
+            _imp->effect->addAcceptedComponents(i, &inputsComponents[i]);
+        }
+    }
+    std::list<ImagePlaneDesc> outputComponents;
+    _imp->effect->addAcceptedComponents(-1, &outputComponents);
+
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
@@ -461,18 +478,8 @@ Node::initializeInputs()
 
 
         ///Set the components the plug-in accepts
-        _imp->inputsComponents.resize(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-            _imp->inputsComponents[i].clear();
-            if ( _imp->effect->isInputMask(i) ) {
-                //Force alpha for masks
-                _imp->inputsComponents[i].push_back( ImagePlaneDesc::getAlphaComponents() );
-            } else {
-                _imp->effect->addAcceptedComponents(i, &_imp->inputsComponents[i]);
-            }
-        }
-        _imp->outputComponents.clear();
-        _imp->effect->addAcceptedComponents(-1, &_imp->outputComponents);
+        _imp->inputsComponents.swap(inputsComponents);
+        _imp->outputComponents.swap(outputComponents);
     }
     _imp->inputsInitialized = true;
 
