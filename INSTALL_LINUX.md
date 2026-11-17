@@ -8,6 +8,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 * If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
 * If you are on Debian or a Debian-based system (such as Ubuntu, Linux Mint, KDE Neon, ElementaryOS etc.) see [here](#debian-based) for details
 * If you are willing to try the complete installation process, the instructions are below
+* Natron is built with **CMake** (see [Build](#build)). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release (see [Deprecated: building with qmake](#deprecated-building-with-qmake))
 
 0. [Using Docker](#using-docker)
 1. [Dependencies](#dependencies)
@@ -27,9 +28,10 @@ This file is supposed to guide you step by step to have working (compiling) vers
 2. [Configuration](#configuration)
     - [OpenFX](#openfx)
     - [OpenColorIO-Configs](#download-opencolorio-configs)
-    - [config.pri](#configpri)
+    - [config.pri](#configpri) (qmake only, deprecated)
     - [Nodes](#nodes)
 3. [Build](#build)
+    - [Deprecated: building with qmake](#deprecated-building-with-qmake)
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
@@ -170,6 +172,8 @@ cd OpenColorIO-Configs && rm -v !("blender"|"blender-cycles"|"natron"|"nuke-defa
 
 ### config.pri
 
+***note:*** *`config.pri` is only used by the deprecated qmake build. The CMake build finds the dependencies itself (with pkg-config and the CMake packages of Qt, Shiboken2 and PySide2), so you can skip this section.*
+
 The `config.pri` is used to define the locations of the dependencies. It is probably the most
 confusing part of the build process.
 
@@ -225,6 +229,36 @@ Plugins/
 ```
 
 # Build
+
+Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j$(nproc)
+```
+
+This is what the Linux CI job does on Ubuntu 24.04 (see `.github/workflows/ci.yml`); see [Debian-based](#debian-based) for the packages it installs.
+
+Useful options (add them to the first `cmake` command):
+
+- `-DCMAKE_BUILD_TYPE=Debug`, `Release` or `RelWithDebInfo` (the default).
+- `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2.
+- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests.
+- `-DNATRON_SYSTEM_LIBS=ON` uses the system copies of the libraries that Natron otherwise builds from `libs/`.
+- `-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang` builds with Clang.
+
+To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
+
+```
+cd build
+OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+```
+
+To install, run `cmake --install build --prefix /usr/local` (or another prefix). The default layout is the usual Unix one (`bin/`, `share/`); `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts use. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`) for details.
+
+## Deprecated: building with qmake
+
+***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
 
 To build, go into the Natron directory and type:
 
@@ -282,7 +316,7 @@ sudo pacman -S expat boost-libs gcc
 You will also need additional Boost libraries, cairo, and Qt5 (provided by PySide2). They can be installed with the following command:
 
 ```
-sudo pacman -S boost cairo pyside2 python-pyqt
+sudo pacman -S cmake boost cairo pyside2 python-pyqt
 ```
 
 Then, clone Natron's repo:
@@ -298,7 +332,14 @@ git submodule init
 git submodule update -i --recursive
 ```
 
-And make a build folder:
+Build it with CMake, as described in [Build](#build):
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j$(nproc)
+```
+
+The rest of this section is for the deprecated qmake build. Make a build folder:
 
 ```
 mkdir build && cd build
@@ -368,6 +409,14 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 Installing dependencies using `apt-get` or `apt` should work on
 any Debian-based distribution.
 
+For Ubuntu 24.04 (Python 3.12, Qt 5.15), these are the packages that the Linux CI job installs:
+
+```
+sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qtbase5-dev qtdeclarative5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy libwayland-dev extra-cmake-modules
+```
+
+(`qt5-qmake` is also needed for the deprecated qmake build.)
+
 For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
 
 ```
@@ -386,7 +435,7 @@ For most Debian/Ubuntu-based systems, install the required packages:
 sudo apt install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
-For the Qt4 config.pri use:
+For the Qt4 config.pri (deprecated qmake build) use:
 
 ```
 boost-serialization-lib: LIBS += -lboost_serialization
@@ -442,14 +491,14 @@ On RHEL and derivative distributions you need the EPEL repository:
 Install required packages:
 
 ```
-yum install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+yum install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 or
 ```
-dnf install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 
-Qt4 config.pri:
+Then build with CMake, as described in [Build](#build). For the deprecated qmake build, here is a Qt4 config.pri:
 ```pri
 boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system

@@ -7,6 +7,8 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 Follow the [SDK instructions](tools/MINGW-packages/README.md) to setup your system for building and developing Natron and/or the OFX plug-ins. The rest of this document can be ignored.
 
+Natron is built with **CMake** (see [Build](#build)). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
+
 ### OpenFX
 
 Natron uses the OpenFX API, before building you should make sure it is up to date.
@@ -26,6 +28,8 @@ Place it at the root of Natron repository.
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
 
 ### config.pri
+
+***note:*** *`config.pri` is only used by the deprecated qmake build. The CMake build doesn't need it, so you can skip this section.*
 
 The `config.pri` is used to define the locations of the dependencies. It is probably the most
 confusing part of the build process.
@@ -76,6 +80,37 @@ Or in a directory named "Plugins" located in the parent directory where the bina
 
 ## Build
 
+Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows CI job (`.github/workflows/ci.yml`) installs these packages:
+
+    pacman -S --needed git unzip \
+      mingw-w64-ucrt-x86_64-cc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
+      mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-wget \
+      mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-cairo mingw-w64-ucrt-x86_64-fontconfig \
+      mingw-w64-ucrt-x86_64-expat mingw-w64-ucrt-x86_64-python \
+      mingw-w64-ucrt-x86_64-qt5-base mingw-w64-ucrt-x86_64-pyside2 mingw-w64-ucrt-x86_64-shiboken2 \
+      mingw-w64-ucrt-x86_64-python-qtpy \
+      mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
+
+(shiboken2 needs clang and llvm-tools. The release installers are still built in a MINGW64 environment with the SDK above; their move to UCRT64 is tracked in #1133.) Then, from the Natron source directory:
+
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    cmake --build build
+
+Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
+
+To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
+
+    cd build
+    PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=$MINGW_PREFIX OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+
+`PYTHONLEGACYWINDOWSDLLLOADING=1` makes MSYS2's Python find its DLLs through `PATH` again, which the tests need (#1147).
+
+`cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts use. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
+
+### Deprecated: building with qmake
+
+*The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+
 To build, go into the Natron directory and type:
 
     qmake -r
@@ -92,7 +127,7 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 # Installing with Visual Studio
 
-These instructions are outdated, and the preferred way to compile
+These instructions are outdated (they use the deprecated qmake build), and the preferred way to compile
 Natron on Windows is using MSYS2. Feel free to contribute updated
 Visual Studio instructions.
 
