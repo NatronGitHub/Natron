@@ -1756,7 +1756,19 @@ Knob<T>::unSlaveInternal(int dimension,
     std::pair<int, KnobIPtr> master = getMaster(dimension);
     KnobHelperPtr masterHelper = std::dynamic_pointer_cast<KnobHelper>(master.second);
 
-    if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
+    resetMaster(dimension);
+
+    // The signals of the master knob are connected once for all the dimensions of this knob that are
+    // slaved to it (see KnobHelper::slaveToInternal()): only disconnect them if no other dimension of this
+    // knob is still slaved to the same master.
+    bool stillSlavedToMaster = false;
+    for (int i = 0; i < getDimension(); ++i) {
+        if (getMaster(i).second == master.second) {
+            stillSlavedToMaster = true;
+            break;
+        }
+    }
+    if (!stillSlavedToMaster && masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
                              _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec, int, int, bool) ) );
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
@@ -1767,7 +1779,6 @@ Knob<T>::unSlaveInternal(int dimension,
                              _signalSlotHandler.get(), SLOT( onMasterAnimationRemoved(ViewSpec, int) ) );
     }
 
-    resetMaster(dimension);
     bool hasChanged = false;
     setEnabled(dimension, true);
     if (copyState) {

@@ -285,3 +285,36 @@ TEST_F(KnobSlaveTest, IntSlaveOfDoubleMaster)
 
     slave->unSlave(0, false);
 }
+
+// Unlinking one dimension must not stop the keyframe updates of the other dimensions still linked to the same
+// master knob: the master's signals are connected once per (master, slave) knob pair.
+TEST_F(KnobSlaveTest, UnlinkOneDimensionOthersStillFollowTheMaster)
+{
+    createSlave(2);
+    ASSERT_TRUE( _slave->slaveTo(0, _master, 0) );
+    ASSERT_TRUE( _slave->slaveTo(1, _master, 1) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 1) );
+
+    _slave->unSlave(0, true);
+    EXPECT_FALSE( _slave->isSlave(0) );
+    EXPECT_TRUE( _slave->isSlave(1) );
+
+    // Dimension 1 is still linked: its own curve follows the master.
+    EXPECT_TRUE( moveKey(_master, 1, 250., 10.) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 1) );
+    _master->setValueAtTime(100., 1., ViewSpec::all(), 1);
+    EXPECT_EQ( 2, ownKeyCount(_slave, 1) );
+    static_cast<KnobI*>( _master.get() )->deleteValueAtTime(eCurveChangeReasonInternal, 100., ViewSpec::all(), 1, true);
+    EXPECT_EQ( 1, ownKeyCount(_slave, 1) );
+
+    // Dimension 0 is not linked anymore: it keeps the copy made when it was unlinked.
+    EXPECT_TRUE( moveKey(_master, 0, 250., 20.) );
+    EXPECT_EQ( 1, ownKeyCount(_slave, 0) );
+    EXPECT_EQ( 250., ownKeyTime(_slave, 0) );
+
+    // Once the last dimension is unlinked, the slave does not follow the master anymore.
+    _slave->unSlave(1, true);
+    _master->setValueAtTime(50., 1., ViewSpec::all(), 1);
+    EXPECT_EQ( 1, ownKeyCount(_slave, 1) );
+    EXPECT_EQ( 260., ownKeyTime(_slave, 1) );
+}
