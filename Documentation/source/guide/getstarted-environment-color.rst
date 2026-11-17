@@ -29,7 +29,8 @@ From left to right, a color parameter shows:
 - the value fields, one per channel, or a single field and a slider when the
   channels are folded (see below);
 - a button showing the number of channels (``3`` or ``4``), which folds and
-  unfolds the channels;
+  unfolds the channels. This button only exists when the parameter has a
+  slider;
 - the color swatch, which also turns color picking on and off;
 - the color wheel button, which opens the color selector.
 
@@ -46,8 +47,14 @@ blue, and gray for alpha), and the slider is hidden. Click the button again to
 fold the channels. A parameter whose channels have different values is
 always shown unfolded.
 
-As with other numeric parameters, :kbd:`Alt` + click on the slider resets the
-parameter to its default value.
+.. warning::
+
+   Folding the channels copies the value of the first channel into all the
+   other channels, alpha included, and this cannot be undone. For example, a
+   gain of (1.2, 1.0, 0.8, 1.0) becomes (1.2, 1.2, 1.2, 1.2).
+
+As with other numeric parameters, :kbd:`Alt` + click (:kbd:`Option` + click on
+macOS) on the slider resets the parameter to its default value.
 
 Animating the channels
 ----------------------
@@ -80,9 +87,10 @@ color selector. It contains:
 - a palette of 24 color slots.
 
 The parameter changes as soon as you change the color in the selector.
-The selector only works in the 0 to 1 range: values outside this range are
-clipped when the selector opens. To set a value above 1 or below 0, type it in
-the value fields of the properties panel.
+The selector only works in the 0 to 1 range. As soon as you change the color in
+the selector, all channels are set to values between 0 and 1 (a gain of 2
+becomes 1), even if you only change one channel. To set values outside this
+range, type them in the value fields.
 
 The palette
 ~~~~~~~~~~~
@@ -93,6 +101,7 @@ The palette stores colors that you want to reuse:
   color in the next free slot. When all slots are used, Natron starts again
   from the first slot;
 - click a slot to apply its color;
+- right-click a slot to clear it;
 - **Clear** (or :kbd:`Shift+C`) clears all slots.
 
 All color parameters share the same palette, and Natron keeps it between
@@ -101,44 +110,52 @@ sessions.
 Picking a color in the Viewer
 -----------------------------
 
+While the mouse pointer moves over a Viewer, the information bar at the bottom
+of the Viewer shows the color under the pointer. A tilde (``~``) before the
+values means that the Viewer shows a reduced-resolution image, so the value is
+approximate. Nodes that have curves in their properties panel, such as
+:ref:`ColorLookup <net.sf.openfx.ColorLookupPlugin>`, also show these values
+on their curves. :kbd:`Ctrl` + click (:kbd:`Cmd` + click on macOS) freezes the
+displayed value on the pixel you clicked.
+
 You can set a color parameter from the image shown in a
 :doc:`Viewer <getstarted-environment-viewer>`:
 
 1. Click the color swatch of the parameter. A picker icon is drawn on the
-   swatch, and the viewers show their information bar.
-2. In a viewer, :kbd:`Ctrl` + click (:kbd:`Cmd` + click on macOS) on a pixel
+   swatch, and the Viewers show their information bar.
+2. In a Viewer, :kbd:`Ctrl` + click (:kbd:`Cmd` + click on macOS) on a pixel
    to set the parameter to the color of that pixel. Keep the mouse button
    pressed and move the mouse to pick continuously.
 3. To pick the average color of an area, :kbd:`Ctrl+Shift` + drag
    (:kbd:`Cmd+Shift` + drag on macOS) to draw a rectangle.
-4. When you are done, click the swatch again, or click anywhere in the viewer
+4. When you are done, click the swatch again, or click anywhere in the Viewer
    without a modifier key.
+
+Before your first :kbd:`Ctrl` + click, any mouse press in the Viewer turns the
+picker off, including a middle-button press to pan the image. Plug-in
+overlays (such as the handles of a Transform node) get the click before the
+picker: if a click lands on a handle, it moves the handle instead.
 
 Only one color parameter can pick at a time: turning on the picker of a
 parameter turns off the picker of the previous one. The picked color is set on
 all the channels of the parameter, including alpha when the parameter has an
-alpha channel. Unchecking the picker button of the viewer toolbar (tooltip:
+alpha channel. Turning off the picker button of the Viewer toolbar (tooltip:
 *Show/Hide information bar...*) hides the information bar and also turns off
 any active picker.
-
-:kbd:`Ctrl` + click in a viewer always shows the color under the mouse in
-the information bar of the viewer, even when no parameter is picking. A tilde
-(``~``) before the values means that the viewer shows a reduced-resolution
-image, so the value is approximate. Nodes that have curves in their
-properties panel, such as :ref:`ColorLookup <net.sf.openfx.ColorLookupPlugin>`,
-also show the picked values on their curves.
 
 Linear or displayed colors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, the picked color is the linear value of the pixel, which is what
-the node expects. To pick the value as displayed by the viewer instead (in the
-colorspace of the viewer), uncheck **Linear color pickers** in
-:menuselection:`Edit --> Preferences --> User Interface`.
+the node expects. To pick the value as displayed by the Viewer instead (in the
+colorspace of the Viewer), uncheck **Linear color pickers** in the
+*User Interface* tab of the Preferences (:menuselection:`Edit -->
+Preferences...`, or :menuselection:`Natron --> Preferences...` and
+:kbd:`Cmd+,` on macOS).
 
 Simplified color controls
 -------------------------
 
-Some color parameters, for example those shown in a viewer toolbar, only
+Some color parameters, for example those shown in a Viewer toolbar, only
 show the swatch and the color wheel button. Right-click the swatch to open the
-parameter menu. These parameters cannot pick a color from the viewer.
+parameter menu. These parameters cannot pick a color from the Viewer.
