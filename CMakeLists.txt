@@ -108,6 +108,20 @@ if(IS_DEBUG_BUILD AND WIN32)
     set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS SHIBOKEN_DEFS)
 endif()
 
+# shiboken6 is built with FORCE_LIMITED_API by default, and its imported
+# target then passes Py_LIMITED_API on to everything that links it, including
+# Natron's own Engine and Gui code, which uses the full CPython API. Natron's
+# bindings are embedded modules, so the stable ABI brings nothing: drop the
+# definition and build against the full API. Qt6 only, so that Qt5 compile
+# flags stay exactly as they were.
+if(NATRON_QT6)
+    get_property(_shiboken_defs TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+    if(_shiboken_defs)
+        list(FILTER _shiboken_defs EXCLUDE REGEX "^Py_LIMITED_API")
+        set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS ${_shiboken_defs})
+    endif()
+endif()
+
 #Since in Natron and OpenFX all strings are supposed UTF-8 and that the constructor
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 add_compile_definitions(QT_NO_CAST_FROM_ASCII)

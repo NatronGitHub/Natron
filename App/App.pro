@@ -41,6 +41,8 @@ CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
 QT += gui core opengl network widgets concurrent
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 !noexpat: CONFIG += expat
 

@@ -23,6 +23,8 @@ CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost opengl qt cairo python shiboken pyside 
 QT += gui core network concurrent widgets
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
