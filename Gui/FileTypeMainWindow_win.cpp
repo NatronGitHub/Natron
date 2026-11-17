@@ -89,7 +89,7 @@ DocumentWindow::~DocumentWindow()
 // —— protected slots —————————————————————————
 // —— events ————————————————————————————
 bool
-DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
+DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result)
 {
     MSG* msg = static_cast<MSG*>(message);
     switch (msg->message) {
@@ -233,7 +233,7 @@ DocumentWindow::enableShellOpen()
 // —— private helpers —————————————————————————
 bool
 DocumentWindow::ddeInitiate(MSG* message,
-                            long* result)
+                            NativeEventResult* result)
 {
     if ( ( 0 != LOWORD(message->lParam) ) &&
          ( 0 != HIWORD(message->lParam) ) &&
@@ -258,7 +258,7 @@ DocumentWindow::ddeInitiate(MSG* message,
 
 bool
 DocumentWindow::ddeExecute(MSG* message,
-                           long* result)
+                           NativeEventResult* result)
 {
     // unpack the DDE message
     UINT_PTR unused = 0;
@@ -300,7 +300,7 @@ DocumentWindow::ddeExecute(MSG* message,
 
 bool
 DocumentWindow::ddeTerminate(MSG* message,
-                             long* result)
+                             NativeEventResult* result)
 {
     Q_UNUSED(result);
     // The client or server application should respond by posting a WM_DDE_TERMINATE message.
