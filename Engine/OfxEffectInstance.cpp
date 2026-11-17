@@ -470,10 +470,28 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
             {
 
-                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
-                if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = std::dynamic_pointer_cast<KnobInt>(foundSelKnob);
-                    _imp->selectionRectangleStateKnob = isIntKnob;
+                // Extension 7 of ofxNatron.h: the plug-in declares an Int parameter named
+                // kNatronOfxParamSelectionRectangleState. Natron used to look up the name of the
+                // kNatronOfxImageEffectSelectionRectangle property instead, so also accept a
+                // parameter with that name, in case a plug-in was written against that behaviour.
+                KnobIntPtr selKnob = std::dynamic_pointer_cast<KnobInt>( getKnobByName(kNatronOfxParamSelectionRectangleState) );
+                if (!selKnob) {
+                    selKnob = std::dynamic_pointer_cast<KnobInt>( getKnobByName(kNatronOfxImageEffectSelectionRectangle) );
+                }
+                if (selKnob) {
+                    // The state changes on every mouse move during a drag and doesn't affect the
+                    // image: it must not trigger renders, be saved in the project, or be shown.
+                    // Extension 7 doesn't say so (extension 11 does for the undo/redo parameters),
+                    // so enforce it here, whatever the plug-in declared.
+                    if ( selKnob->getEvaluateOnChange() || selKnob->getIsPersistent() || !selKnob->getIsSecret() ) {
+                        qDebug() << "Warning:" << getNode()->getScriptName_mt_safe().c_str()
+                                 << ": the selection rectangle state parameter should have"
+                                 << "kOfxParamPropEvaluateOnChange=0, kOfxParamPropPersistent=0 and kOfxParamPropSecret=1";
+                    }
+                    selKnob->setEvaluateOnChange(false);
+                    selKnob->setIsPersistent(false);
+                    selKnob->setSecret(true);
+                    _imp->selectionRectangleStateKnob = selKnob;
                 }
             }
             {
@@ -3203,13 +3221,18 @@ void
 OfxEffectInstance::onInteractViewportSelectionCleared()
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
+    // Unlike updates (see onInteractViewportSelectionUpdated), a clear is sent to every node, as
+    // in RotoPaint: a selection made while the panel was open must not survive a click on empty
+    // space made after the panel was closed.
     if (!k) {
         return;
     }
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
 
-    k->setValue(0);
+    // The state is already 0 at creation and after every clear: force the notification
+    // (hasChanged = true), so that the plug-in always hears that the selection was cleared.
+    k->setValue(0, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
 }
 
 
@@ -3217,12 +3240,16 @@ void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
-    if (!k) {
+    // Every node with a viewer context gets the viewer's selection signals: only the node whose
+    // settings panel is open (so whose overlay is drawn) uses the rectangle, as in RotoPaint.
+    if ( !k || !getNode()->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    k->setValue(onRelease ? 2 : 1);
+    // During a drag the state stays 1 while the rectangle changes: force the notification
+    // (hasChanged = true), so that the plug-in gets instanceChanged on every update.
+    k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
 }
 
 NATRON_NAMESPACE_EXIT

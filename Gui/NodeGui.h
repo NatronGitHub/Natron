@@ -160,7 +160,14 @@ public:
     void serialize(NodeGuiSerialization* serializationObject) const;
 
 
-    void copyFrom(const NodeGuiSerialization & obj);
+    /**
+     * @brief Restores the state of the NodeGui from obj. If restorePreview is false, the preview state
+     * is not restored: the caller must call restorePreviewFrom() once the node is complete, because
+     * enabling the preview renders it (see NodeGraphPrivate::pasteNode() and #814).
+     **/
+    void copyFrom(const NodeGuiSerialization & obj, bool restorePreview = true);
+
+    void restorePreviewFrom(const NodeGuiSerialization & obj);
 
 
     NodePtr getNode() const

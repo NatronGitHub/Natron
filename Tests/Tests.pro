@@ -51,6 +51,7 @@ SOURCES += \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     Lut_Test.cpp \
+    NodePreview_Test.cpp \
     OSGLContext_Test.cpp \
     RotoPaint_Test.cpp \
     Tracker_Test.cpp \

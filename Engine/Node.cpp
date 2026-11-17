@@ -3313,18 +3313,31 @@ Node::makePreviewImage(SequenceTime time,
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
-    U64 nodeHash = getHashValue();
-    EffectInstance* effect = 0;
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-    if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance().get();
-    } else {
-        effect = _imp->effect.get();
-    }
-
     if (!_imp->effect) {
         return false;
     }
+    EffectInstancePtr effect;
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+    if (isGroup) {
+        // A group renders through its Output node. A group may have no Output node: the user may
+        // have deleted it, or the group is being pasted/duplicated and its sub-graph is not
+        // created yet (see #814). There is nothing to preview then.
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
+    } else {
+        effect = _imp->effect;
+    }
+    if (!effect) {
+        return false;
+    }
+    // The node that is actually rendered, and thus the root of the render tree: for a group, its
+    // Output node, so that the Output node and the nodes inside the group get the rendering flag,
+    // the thread-local render args, the frame requests and the abort info.
+    NodePtr rootNode = effect->getNode();
+    assert(rootNode);
+    U64 nodeHash = rootNode->getHashValue();
 
     effect->clearPersistentMessage(false);
 
@@ -3345,8 +3358,7 @@ Node::makePreviewImage(SequenceTime time,
     const double par = effect->getAspectRatio(-1);
     const RectI renderWindow = rod.toPixelEnclosing(mipmapLevel, par);
 
-    NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(thisNode);
+    RenderingFlagSetter flagIsRendering(rootNode);
 
 
     {
@@ -3355,14 +3367,14 @@ Node::makePreviewImage(SequenceTime time,
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, effect );
         }
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0), //< preview only renders view 0 (left)
                                                   isRenderUserInteraction, //<isRenderUserInteraction
                                                   isSequentialRender, //isSequential
                                                   abortInfo, // abort info
-                                                  thisNode, // viewer requester
+                                                  rootNode, // tree root
                                                   0, //texture index
                                                   getApp()->getTimeLine().get(), // timeline
                                                   NodePtr(), //rotoPaint node
@@ -3370,7 +3382,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   true, // isDraft
                                                   RenderStatsPtr() );
         FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, thisNode, request);
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, rootNode, request);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -3400,7 +3412,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            requestedComps, //< preview is always rgb...
                                                                                                            depth,
                                                                                                            false,
-                                                                                                           effect,
+                                                                                                           effect.get(),
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
