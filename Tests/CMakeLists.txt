@@ -27,6 +27,7 @@ set(Tests_SOURCES
     Hash64_Test.cpp
     Image_Test.cpp
     KnobFile_Test.cpp
+    KnobSlave_Test.cpp
     Lut_Test.cpp
     OSGLContext_Test.cpp
     RotoPaint_Test.cpp

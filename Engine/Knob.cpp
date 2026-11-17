@@ -74,6 +74,32 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobIPtr& knob)
 {
 }
 
+/*
+ * The onMaster* slots are connected to the signals of every master of the knob, which carry the dimension of
+ * the master that changed. Return the dimensions of the knob that are slaved to that master dimension: there
+ * may be none (the knob may have fewer dimensions than the master, e.g. a 1-D parameter linked to the width of
+ * a 2-D Size parameter, see issue #1018), or they may differ from the master dimension.
+ */
+static std::vector<int>
+getDimensionsSlavedTo(const KnobIPtr& knob,
+                      const KnobIPtr& master,
+                      int masterDimension)
+{
+    std::vector<int> dims;
+
+    if (!knob || !master) {
+        return dims;
+    }
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        std::pair<int, KnobIPtr> m = knob->getMaster(i);
+        if ( (m.second == master) && (m.first == masterDimension) ) {
+            dims.push_back(i);
+        }
+    }
+
+    return dims;
+}
+
 void
 KnobSignalSlotHandler::onAnimationRemoved(ViewSpec view,
                                           int dimension)
@@ -93,8 +119,13 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
     assert(handler);
     KnobIPtr master = handler->getKnob();
 
-    getKnob()->clone(master.get(), dimension);
-    Q_EMIT keyFrameSet(time, view, dimension, reason, added);
+    KnobIPtr knob = getKnob();
+    std::vector<int> dims = getDimensionsSlavedTo(knob, master, dimension);
+
+    for (std::size_t i = 0; i < dims.size(); ++i) {
+        knob->clone(master.get(), dims[i], dimension);
+        Q_EMIT keyFrameSet(time, view, dims[i], reason, added);
+    }
 }
 
 void
@@ -108,8 +139,13 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time,
     assert(handler);
     KnobIPtr master = handler->getKnob();
 
-    getKnob()->clone(master.get(), dimension);
-    Q_EMIT keyFrameRemoved(time, view, dimension, reason);
+    KnobIPtr knob = getKnob();
+    std::vector<int> dims = getDimensionsSlavedTo(knob, master, dimension);
+
+    for (std::size_t i = 0; i < dims.size(); ++i) {
+        knob->clone(master.get(), dims[i], dimension);
+        Q_EMIT keyFrameRemoved(time, view, dims[i], reason);
+    }
 }
 
 void
@@ -123,8 +159,13 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewSpec view,
     assert(handler);
     KnobIPtr master = handler->getKnob();
 
-    getKnob()->clone(master.get(), dimension);
-    Q_EMIT keyFrameMoved(view, dimension, oldTime, newTime);
+    KnobIPtr knob = getKnob();
+    std::vector<int> dims = getDimensionsSlavedTo(knob, master, dimension);
+
+    for (std::size_t i = 0; i < dims.size(); ++i) {
+        knob->clone(master.get(), dims[i], dimension);
+        Q_EMIT keyFrameMoved(view, dims[i], oldTime, newTime);
+    }
 }
 
 void
@@ -135,9 +176,13 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(ViewSpec view,
 
     assert(handler);
     KnobIPtr master = handler->getKnob();
+    KnobIPtr knob = getKnob();
+    std::vector<int> dims = getDimensionsSlavedTo(knob, master, dimension);
 
-    getKnob()->clone(master.get(), dimension);
-    Q_EMIT animationRemoved(view, dimension);
+    for (std::size_t i = 0; i < dims.size(); ++i) {
+        knob->clone(master.get(), dims[i], dimension);
+        Q_EMIT animationRemoved(view, dims[i]);
+    }
 }
 
 /***************** KNOBI**********************/
