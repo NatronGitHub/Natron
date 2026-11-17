@@ -1,47 +1,63 @@
 # Maintainer: The Natron developers
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
-pkgver=2025.5
-pkgrel=1
+pkgver=2026.11
+pkgrel=2
 pkgdesc="Minimal package set for building Natron installer for any version of Qt"
 url="https://natrongithub.github.io/"
 arch=("any")
+mingw_arch=('ucrt64')
 license=("GPL")
 depends=(
   "git"
   "base-devel"
   "${MINGW_PACKAGE_PREFIX}-cc"
+  "${MINGW_PACKAGE_PREFIX}-cmake"
+  "${MINGW_PACKAGE_PREFIX}-ninja"
+  "${MINGW_PACKAGE_PREFIX}-wget"
   # Natron deps
   "${MINGW_PACKAGE_PREFIX}-boost"
   "${MINGW_PACKAGE_PREFIX}-cairo"
 
-  # openfx-misc deps
+  # openfx-misc deps (llvm-config, used by build-plugins.sh with OSMesa)
   "${MINGW_PACKAGE_PREFIX}-osmesa"
-  # openfx-io deps
+  "${MINGW_PACKAGE_PREFIX}-llvm"
+  # openfx-io deps (OpenColorIO, OpenEXR and Imath are MSYS2's own)
   "${MINGW_PACKAGE_PREFIX}-natron_openimageio"
   "${MINGW_PACKAGE_PREFIX}-natron_libraw-lgpl"   # for COMMERCIAL builds (common.sh)
   "${MINGW_PACKAGE_PREFIX}-natron_seexpr-git"
-  "${MINGW_PACKAGE_PREFIX}-natron_poppler"
-  "${MINGW_PACKAGE_PREFIX}-natron_imagemagick"
   "${MINGW_PACKAGE_PREFIX}-natron_ffmpeg-gpl2"
-  # openfx-arena deps
+  "${MINGW_PACKAGE_PREFIX}-fmt"
+  "${MINGW_PACKAGE_PREFIX}-opencolorio"
+  "${MINGW_PACKAGE_PREFIX}-openexr"
+  "${MINGW_PACKAGE_PREFIX}-imath"
+  # openfx-arena deps (poppler and SoX are MSYS2's own)
+  "${MINGW_PACKAGE_PREFIX}-natron_imagemagick"
+  "${MINGW_PACKAGE_PREFIX}-poppler"
+  "${MINGW_PACKAGE_PREFIX}-poppler-data"
+  "${MINGW_PACKAGE_PREFIX}-sox"
   "${MINGW_PACKAGE_PREFIX}-librevenge"
   "${MINGW_PACKAGE_PREFIX}-libzip"
   "${MINGW_PACKAGE_PREFIX}-libcdr"
-  "${MINGW_PACKAGE_PREFIX}-natron_sox"
+  "${MINGW_PACKAGE_PREFIX}-lcms2"
+  "${MINGW_PACKAGE_PREFIX}-fontconfig"
+  "${MINGW_PACKAGE_PREFIX}-pango"
+  "${MINGW_PACKAGE_PREFIX}-librsvg"
+  "${MINGW_PACKAGE_PREFIX}-libxml2"
   # openfx-gmic
   "${MINGW_PACKAGE_PREFIX}-curl"
   "${MINGW_PACKAGE_PREFIX}-fftw"
-  # installer
+  # installer (no crash reporter until #1183: no breakpad, no dump_syms)
   "zip"
   "unzip"
   "${MINGW_PACKAGE_PREFIX}-firebird"
-  "${MINGW_PACKAGE_PREFIX}-breakpad-git"
   "${MINGW_PACKAGE_PREFIX}-pkgconf"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"
   "${MINGW_PACKAGE_PREFIX}-natron-setup"
-  "${MINGW_PACKAGE_PREFIX}-natron_dump_syms"
+  "${MINGW_PACKAGE_PREFIX}-ntldd"   # DLL dependency lists for bundling
+  # No qt-installer-framework: the Windows installer is Inno Setup (natron-setup),
+  # and the Qt IFW installers are being retired in favour of portable zips.
 )
 
 # these should be empty, but saneman in CI complains, so we keep them here

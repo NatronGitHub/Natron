@@ -61,9 +61,9 @@ natron_repo_add_package() {
   fi
 
   local pkg_file=$1
-  cp ${pkg_file} ${REPO_DIR}
-  cd ${REPO_DIR}
-  repo-add -n -p ${REPO_DB_FILENAME} ${pkg_file}
+  cp "${pkg_file}" "${REPO_DIR}"
+  # In a subshell, so that the caller stays in its package directory.
+  (cd "${REPO_DIR}" && repo-add -n -p "${REPO_DB_FILENAME}" "$(basename "${pkg_file}")")
 
   # If the natron repository hasn't been added to pacman.conf yet, do it
   # now since we should now have a valid database with at least one package
