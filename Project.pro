@@ -22,7 +22,7 @@ TEMPLATE = subdirs
 # The qmake build is deprecated: CMake (CMakeLists.txt) is the supported build.
 # qmake still works on RB-2.6, where the release scripts (tools/jenkins) still
 # use it, and will be removed in a future release (first on RB-2.7, see #1181).
-warning("The qmake build of Natron is deprecated and will be removed in a future release. Use CMake instead: see INSTALL_LINUX.md, INSTALL_MACOS.md, INSTALL_WINDOWS.md or INSTALL_FREEBSD.md, and the Maintainer Guide (Documentation/source/maintainers/building.rst).")
+warning("The qmake build of Natron is deprecated and will be removed in a future release. The release scripts in tools/jenkins still use it on RB-2.6, so this warning is expected in their logs. For your own builds, use CMake: see INSTALL_LINUX.md, INSTALL_MACOS.md, INSTALL_WINDOWS.md or INSTALL_FREEBSD.md, and the Maintainer Guide (Documentation/source/maintainers/building.rst).")
 
 CONFIG(enable-breakpad) {
     include(breakpadpro.pri)

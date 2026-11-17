@@ -337,7 +337,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
-The application is then `build/App/Natron.app`. With the deprecated qmake build, which the release scripts still use, the equivalent is (see [Deprecated: building with qmake](#deprecated-building-with-qmake) below for `config.pri`):
+The application is then `build/App/Natron.app`. The release scripts still use the deprecated qmake build, with the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`). It is not quite the same build: OSMesa (`enable-osmesa`) and OpenMP (`openmp`) have no CMake option yet.
 
 ```Shell
 cd $NATRON_SRC
@@ -398,6 +398,15 @@ brew unlink qt
 brew install gnu-sed
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/pyside2.pc
 gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/shiboken2.pc
+```
+
+#### Building with CMake (untested)
+
+Pointing `CMAKE_PREFIX_PATH` at the formulae should work if `pyside@2` has CMake config files; otherwise also pass `-DPython3_EXECUTABLE` for the Python that `pyside@2` was built for, so that CMake finds PySide2 through it (`cmake/PySide2FromPython.cmake`). This is not tested; the supported way is [MacPorts](#on-macports).
+
+```Shell
+cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix expat);$(brew --prefix qt@5);$(brew --prefix pyside@2)"
+cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
 #### Python2 (optional)
@@ -609,18 +618,9 @@ cmake --build build -j$(sysctl -n hw.ncpu)
 (cd build && env OFX_PLUGIN_PATH=$HOME/OFX/Natron-release OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio ctest -V)
 ```
 
-This is what the macOS CI job does (`.github/workflows/ci.yml`). Without OFX plug-ins, skip the tests that need them with `GTEST_FILTER='-BaseTest.*'` in the `ctest` environment.
+These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that CI has no OFX plug-ins: it leaves `OFX_PLUGIN_PATH` unset and skips the tests that need them with `GTEST_FILTER='-BaseTest.*'` in the `ctest` environment.
 
 The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK for both the configure and the build, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. The same applies to the qmake build.
-
-### On homebrew
-
-```Shell
-mkdir build
-cd build
-cmake .. -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/expat;/opt/homebrew/opt/qt@5;/opt/homebrew/opt/pyside@2" -DPYTHON_FRAMEWORK_LIBRARIES=/opt/homebrew/Frameworks/Python.framework/Versions/3.9/lib
-make -j
-```
 
 ## Deprecated: building with qmake
 

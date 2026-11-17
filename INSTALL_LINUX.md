@@ -152,16 +152,16 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz).
 Place it at the root of Natron repository.
 
-***note:*** *If it is named something like: `OpenColorIO-Configs-Natron-v2.4` rename it to `OpenColorIO-Configs`*
+***note:*** *If it is named something like: `OpenColorIO-Configs-Natron-v2.5` rename it to `OpenColorIO-Configs`*
 
 
 ```
-wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz
-tar -xvzf Natron-v2.4.tar.gz
-mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs
+wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
+tar -xvzf Natron-v2.5.tar.gz
+mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
 ***note:*** In order to reclaim disk space, you may keep only the following subfolders : blender\*, natron, nuke-default
@@ -250,11 +250,12 @@ Useful options (add them to the first `cmake` command):
 To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
 
 ```
-cd build
-OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+(cd build && OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V)
 ```
 
-To install, run `cmake --install build --prefix /usr/local` (or another prefix). The default layout is the usual Unix one (`bin/`, `share/`); `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts use. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`) for details.
+The tests open windows: on a machine without a display, run them under `xvfb-run` (package `xvfb`), as the CI job does: `xvfb-run --auto-servernum ctest -V`.
+
+To install, run `cmake --install build --prefix /usr/local` (or another prefix). The default layout is the usual Unix one (`bin/`, `share/`); `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`) for details.
 
 ## Deprecated: building with qmake
 
@@ -409,30 +410,34 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 Installing dependencies using `apt-get` or `apt` should work on
 any Debian-based distribution.
 
-For Ubuntu 24.04 (Python 3.12, Qt 5.15), these are the packages that the Linux CI job installs:
+For Ubuntu 24.04 (Python 3.12, Qt 5.15), these are the packages that the Linux CI job installs (`.github/workflows/ci.yml`), plus `cmake`, which the GitHub runner already has:
 
 ```
-sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qtbase5-dev qtdeclarative5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy libwayland-dev extra-cmake-modules
+sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+  qt5-qmake qtbase5-dev qtdeclarative5-dev \
+  python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
+  libwayland-dev libwayland-client0 libwayland-egl1 \
+  extra-cmake-modules clang
 ```
 
-(`qt5-qmake` is also needed for the deprecated qmake build.)
+(`qt5-qmake` is only needed for the deprecated qmake build.)
 
 For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
 
 ```
-sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
+sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
 ```
 
 For Debian 12, install the following packages instead:
 
 ```
-sudo apt install qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
+sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
 ```
 
 For most Debian/Ubuntu-based systems, install the required packages:
 
 ```
-sudo apt install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
+sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
 For the Qt4 config.pri (deprecated qmake build) use:

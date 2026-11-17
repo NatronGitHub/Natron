@@ -88,7 +88,7 @@ cmake -S . -B build -DNATRON_QT6=ON           # Qt6.3+PySide6+OpenGLWidgets
 cmake --build build -j
 ctest --test-dir build                        # unit tests (or -DNATRON_BUILD_TESTS=OFF)
 ```
-The qmake build (``qmake -r Project.pro && make``, Qt5) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it, and is removed on RB-2.7 first. Use CMake (see ``INSTALL_*.md``).
+The qmake build (``qmake -r Project.pro && make``) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it, and will be removed on RB-2.7 first. qmake doesn't run shiboken, so only CMake builds the Qt6 bindings. Use CMake (see ``INSTALL_*.md``).
 
 Code style (enforced by ``.git-hooks/pre-commit``):
 ```bash

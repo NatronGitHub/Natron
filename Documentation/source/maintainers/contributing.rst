@@ -67,12 +67,14 @@ the consolidated list (several are referenced from the P0 leads in
 :ref:`maint-issue-triage`):
 
 - **Debug build.** Build with ``-DCMAKE_BUILD_TYPE=Debug`` (with the
-  deprecated qmake build: ``CONFIG+=debug``). This defines ``DEBUG`` and enables **floating-point
-  exception trapping** at startup (``Global/FloatingPointExceptions.h``), so a
-  stray ``NaN`` or division by zero aborts at the source instead of silently
-  polluting the image pipeline.
+  deprecated qmake build: ``CONFIG+=debug``). This defines ``DEBUG`` and
+  enables **floating-point exception trapping** at startup
+  (``Global/FloatingPointExceptions.h``), so a stray ``NaN`` or division by
+  zero aborts at the source instead of silently polluting the image pipeline.
 - **AddressSanitizer.** With CMake, configure with
-  ``-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address``
+  ``-DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer"``,
+  ``-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"`` and
+  ``-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address``
   (the deprecated qmake build has ``CONFIG+=addresssanitizer``, see the notes
   at the bottom of ``Project.pro``) — the fastest way into
   use-after-free and destruction-order bugs such as the teardown crashes

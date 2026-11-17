@@ -100,8 +100,8 @@ Resources
 Icons, shaders, fonts, stylesheets, OpenColorIO configs, MIME data and bundled
 PyPlugs are embedded through Qt's resource system: ``Gui/GuiResources.qrc``
 indexes the files under ``Gui/Resources/`` (``Images``, ``Fonts``,
-``Stylesheets``, ``PyPlugs``, …), and CMake's ``AUTORCC`` (or the deprecated qmake build's rcc step)
-compiles them into the binary. Reference embedded files with ``:/`` paths. Add
+``Stylesheets``, ``PyPlugs``, …), and CMake's ``AUTORCC`` (or the deprecated
+qmake build's rcc step) compiles them into the binary. Reference embedded files with ``:/`` paths. Add
 new assets to the ``.qrc`` so they are packaged.
 
 Logging

@@ -17,7 +17,7 @@ Natron is a free, open-source (GPLv2 license) video compositor, similar in funct
 Natron is looking for developers and maintainers! You can help develop and maintain Natron if you have the following skills:
 
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
-- [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
+- [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron is compiled as [C++17](https://en.wikipedia.org/wiki/C%2B%2B17) with Qt 5 and as [C++20](https://en.wikipedia.org/wiki/C%2B%2B20) with Qt 6)
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
 - [Qt](https://www.qt.io/) (Natron builds with Qt5; Qt6 support is in progress, see the Maintainer Guide)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
@@ -102,7 +102,7 @@ For each architecture / operating system, you can either download a stable relea
 
 ### Building and installing from source
 
-There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
+There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
 - [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)

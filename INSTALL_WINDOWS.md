@@ -5,9 +5,9 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 [MSYS2](https://sourceforge.net/projects/msys2/) is a unix-like toolchain that can be used to build Windows applications on Windows 8.1/10/11. It provides everything required by Natron and the OFX plug-ins.
 
-Follow the [SDK instructions](tools/MINGW-packages/README.md) to setup your system for building and developing Natron and/or the OFX plug-ins. The rest of this document can be ignored.
+Natron is built with **CMake** in an MSYS2 **UCRT64** shell, with MSYS2's own packages: see [Build](#build). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
 
-Natron is built with **CMake** (see [Build](#build)). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
+The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That SDK still uses a MINGW64 shell and qmake; its move to UCRT64 is tracked in [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need it to build Natron itself.
 
 ### OpenFX
 
@@ -100,12 +100,11 @@ Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debu
 
 To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
 
-    cd build
-    PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=$MINGW_PREFIX OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+    (cd build && PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=$MINGW_PREFIX OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V)
 
 `PYTHONLEGACYWINDOWSDLLLOADING=1` makes MSYS2's Python find its DLLs through `PATH` again, which the tests need (#1147).
 
-`cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts use. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
+`cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
 
 ### Deprecated: building with qmake
 
