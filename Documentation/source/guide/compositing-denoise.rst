@@ -55,8 +55,14 @@ Basic use:
    locked, DenoiseSharpen outputs the source image unchanged.
 4. Adjust the amount of denoising with *Noise Level Gain*: lower values keep more
    noise and more details, higher values remove more noise and more details.
+   The default, 1, is conservative; 1.1 to 1.2 often looks better.
 
 The noise levels have to be analyzed again when the *Color Model* is changed.
+While the analysis is locked, the color model, the analysis rectangle and the
+*Analyze Noise Levels* button are disabled (and *Output* is enabled only when it
+is locked). To change the color model, uncheck *Lock Analysis and Apply* first,
+then press *Analyze Noise Levels* again (the noise levels are reset when the
+color model changes).
 The default color model, Y'CbCr, works well for most footage: it lets the
 chroma channels (where the eye sees less detail) be denoised more than the
 luminance, with the *Cb Gain* and *Cr Gain* parameters.
@@ -70,15 +76,16 @@ Checking the result:
   example) temporarily: only image details should be sharpened, not noise. Reset
   it to 0 afterwards, unless the image should really be sharpened.
 
-The *Frequency Tuning* parameters control each frequency band separately:
+The *Frequency Tuning* parameters control each frequency band separately.
+All four bands are enabled by default:
 
-- Digital sensor noise is mostly in the high frequencies: *Denoise High
-  Frequencies* alone may be enough.
-- Film grain and noise from compressed footage are coarser: the medium frequencies
-  may also have to be denoised.
-- The low and very low frequency bands should only be enabled if the analysis
-  area is really flat. Otherwise, part of the image is taken for noise, and the
-  result loses contrast and looks blurry.
+- For digital sensor noise, which is mostly in the high frequencies, uncheck all
+  of them except *Denoise High Frequencies*.
+- For film grain or compressed footage, whose noise is coarser, also keep
+  *Denoise Medium Frequencies*.
+- Uncheck *Denoise Low Frequencies* and *Denoise Very Low Frequencies*, or lower
+  their gain, unless the analysis area is really flat. Otherwise, part of the
+  image is taken for noise, and the result loses contrast and looks blurry.
 
 When the shot has no flat area at all, the noise can be analyzed on another clip
 with the same kind of noise (for example, another shot from the same camera and
@@ -98,14 +105,16 @@ denoised plates to disk and read them back in the rest of the project
 Other denoising filters
 -----------------------
 
-Several other nodes of the *Filter* group smooth the image while keeping edges.
+Several other nodes of the *Filter* group smooth the image, most of them while
+keeping edges.
 They have fewer automatic settings than DenoiseSharpen, but may work better on
 some kinds of noise:
 
 - :ref:`Median<net.sf.cimg.CImgMedian>` replaces each pixel by the median of its
   neighborhood. It removes isolated bright or dark pixels, dust and scratches,
-  but also small details. *Size* sets the neighborhood; with a non-zero
-  *Threshold*, only the neighbors that are close in value to the pixel are used.
+  but also small details. *Size* sets the neighborhood. Keep *Threshold* at 0 to
+  remove dust and dead pixels: with a non-zero threshold, only the neighbors that
+  are close in value to the pixel are used, so isolated outliers survive.
 - :ref:`SmoothPatchBased<net.sf.cimg.CImgDenoise>` averages similar patches of the
   image (non-local means). It is good at keeping repeated textures.
 - :ref:`SmoothBilateral<net.sf.cimg.CImgBilateral>` averages neighboring pixels
@@ -126,13 +135,14 @@ denoise only part of the image, or to keep some of the original noise.
 G'MIC filters
 -------------
 
-The G'MIC plug-ins (in the *GMIC* group of the node toolbar) include many
-smoothing and denoising filters, among them:
+The G'MIC plug-ins include many smoothing and denoising filters. The filters
+below are in the *G'MIC/Repair* group of the node toolbar (Add Grain, described
+further down, is in *G'MIC/Degradations*):
 
 - :ref:`G'MIC Smooth NL-Means<eu.gmic.SmoothNLMeans>`,
   :ref:`G'MIC Smooth Patch-Based<eu.gmic.SmoothPatchBased>` and
   :ref:`G'MIC Smooth Patch-PCA<eu.gmic.SmoothPatchPCA>`, which average similar
-  patches (Patch-PCA is by far the slowest);
+  patches (Patch-PCA is the slowest);
 - :ref:`G'MIC Smooth Wavelets<eu.gmic.SmoothWavelets>`, a wavelet-based denoiser;
 - :ref:`G'MIC Smooth Median<eu.gmic.SmoothMedian>`;
 - :ref:`G'MIC Smooth Bilateral<eu.gmic.SmoothBilateral>`,
@@ -169,9 +179,18 @@ with a :ref:`Merge<net.sf.openfx.MergePlugin>` node set to the *from* operation
 (the original in the B input, the denoised plate in the A input: the result is
 B-A). This gives an image of the grain alone. Then add it to the final
 composite with a Merge node set to *plus*. This gives exactly the grain of the
-plate, but only where the composite has not moved the plate: on elements that
-were added, moved or painted, the grain comes from another part of the plate and
-may show the edges of the original image.
+plate, but only where the composite still shows the plate. On elements that
+were added, moved or painted, this is the grain of the hidden part of the plate.
+It also contains any detail the denoiser removed, so faint edges of the original
+image may show through. Grain also depends on brightness: on an element much
+brighter or darker than the plate behind it, this grain is too weak or too
+strong. On such elements, restrict this Merge with its Mask input and use
+synthetic grain instead (below).
+
+With DenoiseSharpen and a *Sharpen Amount* of 0, a single Merge is enough: the
+*Noise* output of DenoiseSharpen is the denoised image minus the source, so a
+Merge set to *from*, with that output in A and the composite in B, adds the
+original grain back.
 
 **Using synthetic grain.** Generate new grain on top of the composite, or only on
 the added elements, and adjust it to match the plate:
@@ -180,10 +199,12 @@ the added elements, and adjust it to match the plate:
   with presets for several Kodak film stocks (sized for 2K scans) and for digital
   noise, and separate size, irregularity and intensity controls for each channel.
 - :ref:`G'MIC Add Grain<eu.gmic.AddGrain>` adds film grain from a set of presets,
-  with controls for the scale, opacity and color of the grain.
+  with controls for the scale, opacity and color of the grain. Check its
+  *Animate Random Seed* parameter (off by default) on image sequences, so that
+  the grain changes at each frame.
 - :ref:`Noise<net.sf.cimg.CImgNoise>` (in the *Draw* group) adds random noise
-  (Gaussian, uniform, salt-and-pepper, Poisson or Rice), which is closer to digital sensor
-  noise than to film grain.
+  (Gaussian, uniform, salt-and-pepper, Poisson or Rice), which is closer to
+  digital sensor noise than to film grain.
 
 To match the grain, compare the composite and the original plate in flat areas,
 channel by channel, at 100% zoom, and on several frames while playing the
