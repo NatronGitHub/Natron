@@ -325,6 +325,9 @@ TEST_F(KnobSlaveTest, UnlinkOneDimensionKeepsTheOtherListening)
 {
     KnobDoublePtr master = AppManager::createKnob<KnobDouble>(_masterNode->getEffectInstance().get(), std::string("offset"), 2);
     master->setName("offset");
+    // This knob is deleted below, and deleteKnob() removes the node's Python attribute for it: declare it first,
+    // as KnobHolder::createDoubleKnob() and the other knob-creating APIs do for a knob added to an existing node.
+    _masterNode->declarePythonFields();
 
     createSlave(2);
     ASSERT_TRUE( _slave->slaveTo(0, master, 0) );
