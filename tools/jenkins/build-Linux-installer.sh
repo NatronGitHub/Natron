@@ -414,7 +414,16 @@ fi
 # The whitelist of python site-packages:
 #python_site_packages=(easy_install.py easy_install.pyc pip pkg_resources PySide README setuptools wheel shiboken.so)
 # Note that pip and dependencies were already installed by get-pip.py
-python_site_packages=(PySide shiboken.so)
+# PySide (Qt4) and PySide2 (Qt5) are both in the SDK: pick the one Natron was built with.
+# The PySide packages go to Plugins/ (which Natron adds to sys.path, see
+# Global/PythonUtils.cpp), with a symbolic link in site-packages.
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    python_site_packages=(PySide shiboken.so)
+    pyside_packages=(PySide)
+else
+    python_site_packages=(PySide2 shiboken2)
+    pyside_packages=(PySide2 shiboken2)
+fi
 
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
@@ -428,14 +437,19 @@ for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
 done
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
-(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/PySide" . )
+for p in "${pyside_packages[@]}"; do
+    mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/$p" "${TMP_PORTABLE_DIR}/Plugins/"
+    (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/$p" . )
+done
+# The PySide2 wheel's own Qt (PySide2/Qt) is not used: the SDK replaced its
+# libraries with links to the SDK's Qt, which is bundled in lib/.
+rm -rf "${TMP_PORTABLE_DIR}/Plugins/PySide2/Qt"
 
 # Remove unused stuff
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${PYTHON_ABIFLAGS}"}
 
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(for p in "${pyside_packages[@]}"; do find "${SDK_HOME}/lib/python${PYVER}/site-packages/$p" -maxdepth 1 -type f -name '*.so*'; done | xargs ldd | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
@@ -448,7 +462,10 @@ done
 
 # Strip pyside and python depends
 if [ "${COMPILE_TYPE}" != "debug" ]; then
-    strip -s "${TMP_PORTABLE_DIR}/Plugins/PySide"/* "${TMP_PORTABLE_DIR}/lib"/python*/* "${TMP_PORTABLE_DIR}/lib"/python*/*/* &>/dev/null || true
+    for p in "${pyside_packages[@]}"; do
+        strip -s "${TMP_PORTABLE_DIR}/Plugins/$p"/* &>/dev/null || true
+    done
+    strip -s "${TMP_PORTABLE_DIR}/lib"/python*/* "${TMP_PORTABLE_DIR}/lib"/python*/*/* &>/dev/null || true
 fi
 
 # Remove pyo files and prune unneeded files using python-exclude file
@@ -457,11 +474,13 @@ find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
 # python zip
-if [ "${USE_QT5:-}" != 1 ]; then
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
     rm -rf "$PYDIR"/site-packages/shiboken2* "$PYDIR"/site-packages/PySide2 || true
 fi
 
-fixrpath "${TMP_PORTABLE_DIR}/Plugins/PySide" "/../../lib"
+for p in "${pyside_packages[@]}"; do
+    fixrpath "${TMP_PORTABLE_DIR}/Plugins/$p" "/../../lib"
+done
 fixrpath "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/lib-dynload ${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages" "/../.."
 
 export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
@@ -480,7 +499,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
     # Install qtpy
-    if [ "${USE_QT5:-}" != 1 ]; then
+    if [ "${QT_VERSION_MAJOR}" = 4 ]; then
         # Qt4 support was dropped after QtPy 1.11.2
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
         # qtpy bug fix for Qt4
@@ -503,7 +522,9 @@ fi
 cp -pPR "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
 cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${LIBS_PACKAGE_PATH}/data/lib/"
 mkdir -p "$LIBS_PACKAGE_PATH/data/Plugins/"
-cp -pPR "${TMP_PORTABLE_DIR}/Plugins/PySide" "$LIBS_PACKAGE_PATH/data/Plugins/"
+for p in "${pyside_packages[@]}"; do
+    cp -pPR "${TMP_PORTABLE_DIR}/Plugins/$p" "$LIBS_PACKAGE_PATH/data/Plugins/"
+done
 
 # Fix RPATH (we don't want to link against system libraries when deployed)
 for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
