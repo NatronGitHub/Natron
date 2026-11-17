@@ -4,8 +4,6 @@
 ExprUtils
 *************
 
-**Inherits** :doc:`Double2DParam`
-
 Synopsis
 --------
 
@@ -17,7 +15,7 @@ Functions
 
 - def :meth:`boxstep<NatronEngine.ExprUtils.boxstep>` (x,a)
 - def :meth:`linearstep<NatronEngine.ExprUtils.linearstep>` (x,a,b)
-- def :meth:`smoothstep<NatronEngine.ExprUtils.boxstep>` (x,a,b)
+- def :meth:`smoothstep<NatronEngine.ExprUtils.smoothstep>` (x,a,b)
 - def :meth:`gaussstep<NatronEngine.ExprUtils.gaussstep>` (x,a,b)
 - def :meth:`remap<NatronEngine.ExprUtils.remap>` (x,source,range,falloff,interp)
 - def :meth:`mix<NatronEngine.ExprUtils.mix>` (x,y,alpha)
@@ -65,7 +63,7 @@ Member functions description
 
      Transitions linearly when a < x < b
 
-.. method:: NatronEngine.ExprUtils.boxstep (x,a,b)
+.. method:: NatronEngine.ExprUtils.smoothstep (x,a,b)
 
     :param x: :class:`float<PySide.QtCore.float>`
     :param a: :class:`float<PySide.QtCore.float>`

@@ -139,14 +139,6 @@ Returns x1, that is the position of the left edge of the rectangle.
 
 Unions this rectangle with *otherRect*. In other words, this rectangle becomes the bounding box of this rectangle and  *otherRect*.
 
-.. method:: NatronEngine.RectD.left()
-
-
-    :rtype: :class:`double<PySide.QtCore.double>`
-
-Returns x1, that is the position of the left edge of the rectangle.
-
-
 .. method:: NatronEngine.RectD.right()
 
 
