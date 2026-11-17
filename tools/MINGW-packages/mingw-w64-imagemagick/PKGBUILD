@@ -1,22 +1,25 @@
 #
-# ImageMagick 6/7 for openfx-arena <https://github.com/NatronGitHub/openfx-arena>
+# ImageMagick 7 for openfx-arena <https://github.com/NatronGitHub/openfx-arena>
 #
+# A static, Q32 HDRI build, without modules, with Magick++ and OpenMP (GCC's
+# libgomp), and only the coders and delegates openfx-arena uses: PSD, XCF
+# (GIMP 2.10 files), BMP, XPM, MIFF, PCX and the built-in pseudo-formats
+# (plasma:, pattern:, gradient:, radial-gradient:), which need no delegate.
+# - lcms2 for the ICC profiles in ReadPSD
+# - freetype and fontconfig for the Text plug-ins (fonts by family name)
+# - zlib, bzip2 and xz for the compressed layers in ReadPSD
+# - libpng for the PNG-based formats
+# MSYS2's own imagemagick is a Q16, shared, modules build, which openfx-arena
+# can't link statically.
 
-# freetype/fontconfig is needed to support Text5 and Polaroid
-# bzip2/xz/zlib is needed to support compressions in ReadPSD
-# lcms2 is needed for color support in ReadPSD
-# libpng should be added for legacy support
-
-# ImageMagick 6 (openfx-arena doesn't support ImageMagick 7), the same version
-# as the MacPorts overlay (tools/MacPorts/graphics/ImageMagick).
-_basever=6.9.13-59
+_basever=7.1.2-36
 pkgver=${_basever//-/.}
 
 _realname=imagemagick
 pkgbase="mingw-w64-natron_${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgrel=1
-pkgdesc="An image viewing/manipulation program, version 6, for openfx-arena (mingw-w64)"
+pkgdesc="An image viewing/manipulation program, static Q32 HDRI build for openfx-arena (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw64' 'ucrt64')
 url="https://www.imagemagick.org/"
@@ -33,111 +36,96 @@ depends=(
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-gcc-libs"  # libgomp (OpenMP)
         )
-options=('strip' '!debug' 'libtool')
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+options=('strip' '!debug' 'libtool' 'staticlibs')
 
-source=(
-        "ImageMagick6-${_basever}.tar.gz::https://github.com/ImageMagick/ImageMagick6/archive/refs/tags/${_basever}.tar.gz"
-        ImageMagick-6-mingw.patch
-        fix-compiler-errors.patch
-       )
-sha256sums=(
-            '867f2194939459047475475f7c15413e46c529acb57f779080298901508cc4e3'
-            '026d8ae551b643ded51f560b3f5db8829854c3ea235f45993da06ba3245219e4'
-            'a50a9562a34f5d8741869ccec1d62f8b55cb2440c574ba0749d8c0e66c724862'
-           )
+source=("https://github.com/ImageMagick/ImageMagick/releases/download/${_basever}/ImageMagick-${_basever}.tar.xz")
+sha256sums=('410cab5ed416329290e77cbd7833a76502671ea25a42d1cfe010f9067b27c2d6')
 
 prepare() {
-  cd ImageMagick6-${_basever}
+  cd ImageMagick-${_basever}
 
-  # don't depend on ltdl
-  sed -i 's#with_ltdl='\''yes'\''#with_ltdl='\''no'\''#g' configure.ac
+  # The static libraries need Winsock: add it to MagickCore's libraries, so
+  # that it also ends up in the Libs.private of the .pc files.
+  sed -i 's#$(MAGICK_DEP_LIBS)#$(MAGICK_DEP_LIBS) -lws2_32#g' MagickCore/Makefile.am
 
-  # mingw fixes
-  patch -p1 -i ${srcdir}/ImageMagick-6-mingw.patch
-  patch -p1 -i ${srcdir}/fix-compiler-errors.patch
-  # (the XCF coder reads GIMP 2.10 files since 6.9.12-76: no gimp210 patch)
-
-  # fix linker
-  sed -i 's#$(MAGICK_DEP_LIBS)#$(MAGICK_DEP_LIBS) -lws2_32#g' magick/Makefile.am
-
-  # update configure
   autoreconf -fi
 }
 
 build() {
   export lt_cv_deplibs_check_method='pass_all'
-  [[ $CARCH = "i686" ]] && EXTRAOPTS="--with-gcc-arch=i686"
-  [[ $CARCH = "x86_64" ]] && EXTRAOPTS="" #EXTRAOPTS="--with-gcc-arch=x86-64"
 
   [[ -d build-${MINGW_CHOST} ]] && rm -rf build-${MINGW_CHOST}
-  
   mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
-  ../ImageMagick6-${_basever}/configure \
+
+  # No modules and no OpenCL, so no libltdl.
+  ../ImageMagick-${_basever}/configure \
     --prefix=${MINGW_PREFIX} \
     --build=${MINGW_CHOST} \
     --host=${MINGW_CHOST} \
     --with-windows-font-dir=c:/Windows/fonts \
     --with-magick-plus-plus=yes \
     --with-quantum-depth=32 \
+    --enable-hdri \
+    --enable-openmp \
+    --enable-zero-configuration \
+    --enable-static \
+    --disable-shared \
+    --without-modules \
+    --disable-opencl \
+    --disable-deprecated \
+    --disable-docs \
     --with-lcms \
-    --with-lzma \
-    --with-zlib \
-    --with-bzlib \
-    --with-png \
     --with-freetype \
     --with-fontconfig \
-    --without-heic \
-    --without-raqm \
-    --without-raw \
-    --without-zstd \
-    --without-dps \
+    --with-zlib \
+    --with-bzlib \
+    --with-lzma \
+    --with-png \
+    --without-autotrace \
     --without-djvu \
+    --without-dmr \
+    --without-dps \
     --without-fftw \
+    --without-flif \
     --without-fpx \
     --without-gslib \
     --without-gvc \
+    --without-heic \
     --without-jbig \
     --without-jpeg \
-    --without-openjp2 \
+    --without-jxl \
     --without-lqr \
     --without-openexr \
+    --without-openjp2 \
     --without-pango \
+    --without-perl \
+    --without-raqm \
+    --without-raw \
     --without-rsvg \
     --without-tiff \
+    --without-uhdr \
     --without-webp \
-    --without-xml \
-    --without-x \
-    --without-modules \
     --without-wmf \
-    --without-autotrace \
-    --without-fpx \
-    --without-jbig \
-    --without-perl \
-    --enable-hdri \
-    --enable-zero-configuration \
-    --enable-static \
-    --disable-opencl \
-    --disable-shared \
-    --disable-deprecated \
-    --disable-legacy-support \
-    --disable-docs \
-    $EXTRAOPTS \
+    --without-x \
+    --without-xml \
+    --without-zip \
+    --without-zstd \
     CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LDFLAGS="${LDFLAGS} -lws2_32"
 
-  make 
-
+  make
 }
 
 package() {
   cd ${srcdir}/build-${MINGW_CHOST}
-  make -j1 DESTDIR="${pkgdir}" install 
+  make -j1 DESTDIR="${pkgdir}" install
 
-  install -Dm644 ${srcdir}/ImageMagick6-${_basever}/LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
-  install -Dm644 ${srcdir}/ImageMagick6-${_basever}/NOTICE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/NOTICE"
+  install -Dm644 ${srcdir}/ImageMagick-${_basever}/LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+  install -Dm644 ${srcdir}/ImageMagick-${_basever}/NOTICE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/NOTICE"
 
   local PREFIX_WIN=$(cygpath -wm ${MINGW_PREFIX})
-  # fix hard-coded pathes in .pc files
-  for _f in "${pkgdir}${MINGW_PREFIX}"\/lib\/pkgconfig\/*.pc; do
+  # fix hard-coded paths in the .pc files
+  for _f in "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/*.pc; do
     sed -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" -i ${_f}
   done
 }
