@@ -1,6 +1,8 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
+.. _compositing-tracking:
+
 Tracking and stabilizing
 ========================
 
@@ -25,10 +27,10 @@ Creating the Tracker
 
 1. Select the node whose image contains the features to track (usually a Read
    node), and create a Tracker node from the **Transform** group of the
-   toolbar, or press :kbd:`Tab` in the Node Graph and type "Tracker".
-2. Connect a Viewer to the Tracker and open its properties panel. While the
-   panel is open, the Viewer shows the Tracker tools in a toolbar above the
-   image, and the tracks over the image.
+   toolbar (see :doc:`getstarted-environment-toolbar`), or press :kbd:`Tab` in the Node Graph and type "Tracker".
+2. Connect a Viewer to the Tracker and open its Properties panel. While the
+   panel is open, the Viewer shows the Tracker tools in the Viewer toolbar
+   above the image, and the tracks over the image.
 3. In the **Transform** tab, keep **Motion Type** set to **None** while you
    track. In this mode the Tracker passes its input through unchanged, so the
    Viewer shows the image that the tracks follow.
@@ -47,7 +49,7 @@ To add a track, do one of:
   on the feature in the Viewer;
 - turn on the **Add Track** button in the Viewer toolbar, then click in the
   Viewer once for each new track;
-- click the **+** button below the track table in the properties panel.
+- click the **+** button below the track table in the Properties panel.
 
 A track that is not selected is drawn as a cross on its center. A selected
 track shows:
@@ -65,13 +67,16 @@ edges of the rectangles to resize the pattern and the search window. The
 default sizes of new tracks are set by **Default Pattern Size** and **Default
 Search Area Size** in the **Tracking** tab.
 
-Dragging the center with :kbd:`Ctrl` (:kbd:`Cmd` on macOS) held moves an
-**offset** instead: the track keeps following the same pattern, but the point
-it outputs is shifted by the offset. This is useful when the point you need
-cannot be tracked itself, for example because it leaves the frame or is
-hidden. The **Reset Offset** button removes the offset.
+The pattern and the search window can be moved away from the center with an
+**offset**. This is useful when the point you need cannot be tracked itself,
+for example because it leaves the frame, is hidden, or has no texture: put the
+center on the point you need, then drag the center with :kbd:`Ctrl`
+(:kbd:`Cmd` on macOS) held to move the pattern onto a nearby feature that can
+be tracked. Only the offset changes: the center, which is the point that the
+track outputs, stays where it is, and follows the motion of the pattern. The
+**Reset Offset** button removes the offset.
 
-The track table in the properties panel lists all tracks, with their
+The track table in the Properties panel lists all tracks, with their
 **Enabled** checkbox, label, **Motion-Model**, center, offset and error. You
 can select tracks in the table or in the Viewer: click a track,
 :kbd:`Shift` + click to add it to the selection, or drag a selection
@@ -80,7 +85,7 @@ tracks, and **Average** creates a new track that is the average of the
 selected tracks.
 
 The tracks are drawn in the overlay color of the Tracker, which can be changed
-with the overlay color button at the top of its properties panel. Tracks that
+with the overlay color button at the top of its Properties panel. Tracks that
 are disabled at the current frame are drawn darker.
 
 Choosing how a track is searched
@@ -143,17 +148,17 @@ toolbar. Only the selected tracks that are enabled are tracked.
      - Ask for a first frame, a last frame and a step, then track over that
        range.
    * - Track All Keyframes
-     - :kbd:`Ctrl` + :kbd:`V`
+     - :kbd:`Ctrl` + :kbd:`V` (:kbd:`Cmd` + :kbd:`V` on macOS)
      - Track across all the pattern keyframes of the selected tracks.
    * - Track Current Keyframe
-     - :kbd:`Ctrl` + :kbd:`C`
+     - :kbd:`Ctrl` + :kbd:`C` (:kbd:`Cmd` + :kbd:`C` on macOS)
      - Track only over the pattern keyframes around the current frame.
 
 These shortcuts work when the Viewer has the keyboard focus (click in it
 first), and can be changed in the Shortcut Editor
-(**Edit > Preferences > Shortcut Editor**).
+(**Edit > Preferences > User Interface > Shortcut Editor**).
 
-The other buttons of the toolbar are:
+The other buttons of the Viewer toolbar are:
 
 - **Clear Animation**, **Clear Animation Backward**, **Clear Animation
   Forward**: delete the tracked positions of the selected tracks, at all frames,
@@ -180,7 +185,9 @@ Fixing a track with pattern keyframes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The tracker looks for the pattern as it appears at a **pattern keyframe**.
-The first one is set when the track is created. When a feature changes over
+When a track is added in the Viewer while **Create Keyframe On Move** is on,
+its first pattern keyframe is set at that frame. Otherwise, the first one is
+set at the frame where the track is first tracked. When a feature changes over
 the shot (it turns, gets bigger, the light changes), a single reference is no
 longer enough, and the track drifts or fails.
 
@@ -225,9 +232,9 @@ The **Transform** tab turns the tracks into a transformation:
   example the frame where the element to match-move is in the right place.
   **Set to Current Frame** sets it to the current frame.
 
-Press **Compute** to compute the transform from the tracks. When **Compute
-Transform Automatically** is checked, it is also computed when tracking ends,
-and whenever a parameter that affects it changes.
+The transform is computed again at the end of every tracking run. Press
+**Compute** to compute it after other changes, or check **Compute Transform
+Automatically** to compute it whenever a parameter that affects it changes.
 
 The Tracker can apply the transform to its own input, which is how you
 stabilize the tracked image. You can also export the transform to another
@@ -241,7 +248,8 @@ onto the plate.
 
 - **Link**: when checked, the parameters of the new node are linked to the
   Tracker, so they follow any change made later in the Tracker. When unchecked,
-  they are a copy.
+  they are a copy. Keep it checked for a match-move, so that the exported node
+  stays up to date when you fix a track or change the reference frame.
 - **Use Current Frame**: when checked, the exported node is the identity at the
   current frame instead of the reference frame.
 
@@ -260,8 +268,8 @@ sign):
 4. At the reference frame, set the **From** points of the CornerPin controls,
    for example to the bounding box of the Roto shape. **Set to Input Rod**
    sets them to the rectangle of the input image.
-5. Press **Compute** if the transform is not computed automatically, then
-   **Export** with **Link** checked.
+5. Press **Compute**, since editing the From points by hand does not
+   recompute the transform, then **Export** with **Link** checked.
 6. Insert the exported CornerPin after the Roto node or the texture.
 
 See :doc:`compositing-rotopaint` for drawing the shapes, and
@@ -280,9 +288,14 @@ A Transform computed from tracks is a
 translation, rotation and uniform scale. It cannot represent a change of
 perspective. A CornerPin can: it is a
 `homography <https://en.wikipedia.org/wiki/Homography>`_, which covers all
-the perspective transforms of a plane, without lens distortion. One track is
-enough to compute a CornerPin, but at least four are needed to capture a
-perspective change.
+the perspective transforms of a plane, without lens distortion.
+
+The number of tracks enabled at a frame limits what can be found at that
+frame. With one track, a Transform or a CornerPin is only a translation. With
+two tracks, both are a similarity. With three tracks, a CornerPin is an
+affine transform (it can also shear and scale differently along two
+directions). A CornerPin needs at least four tracks to include a change of
+perspective.
 
 The Tracker does not map one track to each corner. It looks for the model
 (the similarity or the homography) that best fits all the tracks. At each
@@ -301,7 +314,9 @@ square over all tracks). It estimates the quality of the model. A warning
 ("Incorrect model") is shown when it reaches **Warn If Error Is Above**.
 
 The transform is computed as a second step, after tracking, over all the
-tracked frames at once, because the result at one frame depends on the other
+tracked frames at once (at the end of each tracking run, when **Compute** is
+pressed, or when a parameter changes with **Compute Transform Automatically**
+checked), because the result at one frame depends on the other
 frames when smoothing or jitter is used. The parameters that change the result
 are:
 
