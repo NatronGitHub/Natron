@@ -28,7 +28,8 @@ VERSION_25 = 2.5.0
 VERSION_26 = 2.6.0
 VERSION_30 = 3.0.0
 
-# The version for this branch
+# The version for this branch. It goes into the macOS Info.plist, and must
+# match NATRON_VERSION_* in Global/Macros.h (see LATEST_VERSION_README.txt).
 VERSION = $$VERSION_26
 
 TEMPLATE = app
