@@ -1830,10 +1830,13 @@ Image::halveRoIForDepth(const RectI & roi,
 #ifdef DEBUG_NAN
     assert(!checkForNaNsNoLock(srcRoI));
 #endif
-    dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
-    dstRoI.y1 = (srcRoI.y1 + 1) / 2; // equivalent to ceil(srcRoI.y1/2.0)
-    dstRoI.x2 = srcRoI.x2 / 2; // equivalent to floor(srcRoI.x2/2.0)
-    dstRoI.y2 = srcRoI.y2 / 2; // equivalent to floor(srcRoI.y2/2.0)
+    // Largest enclosed rectangle (see downscaleMipmap() in Image.h).
+    // Use arithmetic shifts, as in RectI::downscalePowerOfTwoLargestEnclosed(): the integer division
+    // truncates towards zero, which is not ceil/floor for negative coordinates.
+    dstRoI.x1 = (srcRoI.x1 + 1) >> 1; // equivalent to ceil(srcRoI.x1/2.0)
+    dstRoI.y1 = (srcRoI.y1 + 1) >> 1; // equivalent to ceil(srcRoI.y1/2.0)
+    dstRoI.x2 = srcRoI.x2 >> 1; // equivalent to floor(srcRoI.x2/2.0)
+    dstRoI.y2 = srcRoI.y2 >> 1; // equivalent to floor(srcRoI.y2/2.0)
 
 
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
@@ -2030,7 +2033,7 @@ Image::halve1DImageForDepth(const RectI & roi,
                 assert( !std::isnan(*src) ); // check for NaN
                 assert( !std::isnan(*(src + rowSize)) ); // check for NaN
 #endif
-                *dst = PIX( (float)( *src + (*src + rowSize) ) / 2. );
+                *dst = PIX( (float)( *src + *(src + rowSize) ) / 2. );
 #ifdef DEBUG_NAN
                 assert( !std::isnan(*dst) ); // check for NaN
 #endif
@@ -2182,15 +2185,19 @@ Image::upscaleMipmapForDepth(const RectI & roi,
     assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
            roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
 
-    const RectI & srcRoi = roi;
-    // The source rectangle, intersected to this image region of definition in pixels and the output bounds.
-    RectI dstRoi = roi.toNewMipmapLevel(fromLevel, toLevel, _par, getRoD());
-    dstRoi.clipIfOverlaps(output->_bounds); //output may be a bit smaller than the upscaled RoI
-    int scale = 1 << (fromLevel - toLevel);
+    // The source rectangle, intersected with the bounds of this image.
+    const RectI srcRoi = roi.intersect(_bounds);
+    const unsigned int levels = fromLevel - toLevel;
+    const int scale = 1 << levels;
+    // The destination rectangle: the upscaled source rectangle, intersected with the region of definition
+    // and with the output bounds (output may be smaller than the upscaled RoI, on any side).
+    RectI dstRoi = srcRoi.toNewMipmapLevel(fromLevel, toLevel, _par, getRoD());
+    dstRoi = dstRoi.intersect( srcRoi.upscalePowerOfTwo(levels) ); // every dst pixel must come from a src pixel in srcRoi
+    dstRoi = dstRoi.intersect(output->_bounds);
 
     assert( output->getComponents() == getComponents() );
 
-    if (_nbComponents == 0) {
+    if ( (_nbComponents == 0) || srcRoi.isNull() || dstRoi.isNull() ) {
         return;
     }
 
@@ -2198,13 +2205,19 @@ Image::upscaleMipmapForDepth(const RectI & roi,
     QReadLocker k2(&_entryLock);
     int srcRowSize = _bounds.width() * _nbComponents;
     int dstRowSize = output->_bounds.width() * _nbComponents;
-    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
+    const int dstRoiRowSize = dstRoi.width() * _nbComponents;
+    // The src pixel (xi, yi) covers the dst pixels [xi*scale, (xi+1)*scale) x [yi*scale, (yi+1)*scale).
+    // Start at the src pixel that covers the first dst pixel, which is not srcRoi.x1/y1 if the output
+    // is cropped on the left/bottom. The arithmetic shift is a floor division, also for negative coordinates.
+    const int xiStart = dstRoi.x1 >> levels;
+    int yi = dstRoi.y1 >> levels;
+    assert(srcRoi.x1 <= xiStart && xiStart < srcRoi.x2 && srcRoi.y1 <= yi && yi < srcRoi.y2);
+    const PIX *src = (const PIX*)pixelAt(xiStart, yi);
     PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
 
     // algorithm: fill the first line of output, and replicate it as many times as necessary
     // works even if dstRoi is not exactly a multiple of srcRoi (first/last column/line may not be complete)
-    int yi = srcRoi.y1;
     int ycount; // how many lines should be filled
     for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
         const PIX * const srcLineStart = src;
@@ -2212,7 +2225,7 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         ycount = scale - (yo - yi * scale); // how many lines should be filled
         ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
-        int xi = srcRoi.x1;
+        int xi = xiStart;
         int xcount = 0; // how many pixels should be filled
         const PIX * srcPix = srcLineStart;
         PIX * dstPixFirst = dstLineBatchStart;
@@ -2220,7 +2233,7 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
             xcount = scale - (xo - xi * scale);
             xcount = std::min(xcount, dstRoi.x2 - xo);
-            //assert(0 < xcount && xcount <= scale);
+            assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
@@ -2241,8 +2254,8 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         // now replicate the line as many times as necessary
         for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
             assert(dstLineStart == (PIX*)output->pixelAt(dstRoi.x1, yo+i));
-            assert(dstLineStart + dstRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
-            std::copy(dstLineBatchStart, dstLineBatchStart + dstRowSize, dstLineStart);
+            assert(dstLineStart + dstRoiRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
+            std::copy(dstLineBatchStart, dstLineBatchStart + dstRoiRowSize, dstLineStart);
         }
     }
 } // upscaleMipmapForDepth
