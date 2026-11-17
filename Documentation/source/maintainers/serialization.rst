@@ -39,7 +39,7 @@ The same classes serialize the node clipboard: ``NodeGraph::copySelectedNodes``
 (``Gui/NodeGraph40.cpp``) writes a ``NodeClipBoard`` to an XML string, which
 is how nodes can be copied between two Natron windows.
 
-There are 25 ``*Serialization.h`` files (22 in ``Engine``, 3 in ``Gui``). A few
+There are 28 ``*Serialization.h`` files (25 in ``Engine``, 3 in ``Gui``). A few
 of them are not about projects: ``CacheSerialization.h``,
 ``ImageSerialization.h``, ``FrameEntrySerialization.h`` and the
 ``*Params*`` ones write the table of contents of the disk caches (see
@@ -55,8 +55,13 @@ stability of the Python API (see :ref:`maint-python`).
 Versions
 --------
 
-Every serialized class has a version, declared at the end of its header with
-``BOOST_CLASS_VERSION``. The convention is to ``#define`` one constant per
+Each versioned class declares its version at the end of its header with
+``BOOST_CLASS_VERSION``. Eight of the ``*Serialization.h`` headers have no
+``BOOST_CLASS_VERSION``: ``Curve``, ``RectI``, ``RectD`` and ``Variant``,
+whose classes are not versioned (their ``serialize`` ignores the version), and
+the cache headers ``Cache``, ``NonKeyParams``, ``ImageParams`` and
+``FrameParams`` (``ImageParams`` is versioned in ``ImageParams.h``). Adding a
+field to an unversioned class needs a ``BOOST_CLASS_VERSION`` first. The convention is to ``#define`` one constant per
 change, and to set the current version to the last one. For example, in
 ``Engine/KnobSerialization.h``::
 
@@ -113,9 +118,12 @@ development build with an unreleased version would then be read wrongly.
 Old and new files
 -----------------
 
-Projects are not forward compatible. ``ProjectSerialization::load`` refuses a
-file written by a more recent Natron, and ``Project::loadProjectInternal``
-turns any loading error into the message "This project was saved with a more
+Projects are not forward compatible, but nothing checks it up front. Only
+files in the old format, which stored the version as a ``NatronVersion``
+string, are refused when they come from a more recent Natron
+(``ProjectSerialization::load``). A newer file in the current format is read
+like any other: it loads if Boost can read it. If reading throws,
+``Project::loadProjectInternal`` reports "This project was saved with a more
 recent version …" when the file's version is newer, or "Unrecognized or
 damaged project file" otherwise.
 

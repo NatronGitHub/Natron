@@ -56,10 +56,12 @@ installed for the duration of a render by ``ParallelRenderArgsSetter`` (and
 ``ViewerParallelRenderArgsSetter``, in ``ViewerInstance.cpp``) and reached
 through the ``TLSHolder`` / ``AppTLS`` machinery.
 
-Every render entry point does the same three things before it calls
+The Viewer and writer frame renders do three things before they call
 ``renderRoI`` (see ``DefaultRenderFrameRunnable::renderFrame`` in
 ``OutputSchedulerThread.cpp`` for writers, and
-``ViewerInstance::renderViewer_internal`` for the Viewer):
+``ViewerInstance::renderViewer_internal`` for the Viewer). Other entry points
+(the tracker, node previews, analysis actions, ``DefaultScheduler::processFrame``)
+only do the first one, without the request pass:
 
 1. Construct a ``ParallelRenderArgsSetter`` for the tree
    (``ParallelRenderArgs.cpp``). Its constructor visits every node upstream of
@@ -70,7 +72,8 @@ Every render entry point does the same three things before it calls
    ``treeRecurseFunctor`` with ``isRenderFunctor`` false) and records, for each
    node, the region of definition, the regions of interest of its inputs and
    the frames it needs.
-3. Store the result in the TLS with ``ParallelRenderArgsSetter::updateNodesRequest()``.
+3. Store the result in the TLS with
+   ``ParallelRenderArgsSetter::updateNodesRequest()``.
    ``renderRoI`` then reuses these results (for example the frames needed)
    instead of calling the actions again.
 
@@ -136,14 +139,9 @@ makes the whole UI feel stuck.
 The cache
 ---------
 
-The cache is what makes real-time playback possible: once a frame (or an
-intermediate result) is computed, it is kept so the next request is instant.
-``AppManager`` owns three caches (node images, ``DiskCache`` node images and
-Viewer textures), all instances of the ``Cache`` template in ``Cache.h``, with
-an in-RAM and an on-disk part. Entries are found by a hash of everything that
-affects the result, so a changed parameter simply produces a new hash. The
-details — keys, eviction, which node outputs are cached, the cleaner threads —
-are in :ref:`maint-cache`.
+Rendered images are kept in the caches owned by ``AppManager`` (node images,
+``DiskCache`` node images and Viewer textures), under a hash that changes
+whenever a parameter or an input changes. See :ref:`maint-cache`.
 
 GPU rendering contexts
 ----------------------
@@ -181,8 +179,7 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
    ``ParallelRenderArgs`` from the TLS.
 
 2. **Region of definition.** ``getRegionOfDefinition_public`` gives the Blur's
-   RoD for these args (unless the caller passed a precomputed one), and the
-   requested RoI is clipped to it, so nothing outside the image is requested.
+   RoD for these args (unless the caller passed a precomputed one).
 
 3. **Pass-through planes.** Planes that the Blur does not produce itself are
    fetched directly from its pass-through input with ``renderRoI``.
@@ -194,16 +191,20 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
 
 5. **Transform concatenation.** If the preference is enabled, consecutive
    transform nodes are merged (``tryConcatenateTransforms``), so the image is
-   resampled only once.
+   resampled only once. Then the RoI is computed: if the effect supports
+   tiles, the requested RoI is clipped to the image bounds; otherwise the RoI
+   becomes the full image bounds.
 
 6. **Cache lookup.** ``shouldCacheOutput`` decides whether the result goes to
    the cache (see :ref:`maint-cache`). The cache key is built from the node
    hash and the args, and ``getImageFromCacheAndConvertIfNeeded`` looks for an
    existing image (in draft mode, the full-quality image is looked up first);
-   an image of a higher resolution can be downscaled. On a full hit,
-   ``renderRoI`` returns immediately. On a partial hit, the image's **bitmap**
+   an image of a higher resolution can be downscaled. The image's **bitmap**
    records which pixels are already valid, so only the missing rectangles are
-   rendered.
+   rendered. A full hit does not return here: it still goes through steps 7
+   and 8, finds nothing left to render, skips the inputs and the render, ends
+   with ``eRenderRoIStatusImageAlreadyRendered`` and still waits for the pixels
+   that other threads are rendering (step 11).
 
 7. **Frames needed.** ``getFramesNeeded_public`` (or the result of the request
    pass) says which frames of which inputs the Blur needs.
@@ -211,8 +212,11 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
 8. **What is left to render.** For a cached image, an
    ``ImageBitMapMarker_RAII`` calls ``markImageAsBeingRendered``: it returns
    the rectangles that are neither rendered nor being rendered by another
-   thread, and marks them as being rendered by this one. ``optimizeRectsToRender``
-   then splits these rectangles and marks the parts that are identity.
+   thread, and marks them as being rendered by this one. Only during a paint
+   stroke, when the effect supports tiles and its inputs include a mask or
+   have different regions of definition (``tryIdentityOptim``),
+   ``optimizeRectsToRender`` splits these rectangles and marks the parts that
+   are identity.
 
 9. **Input images.** ``renderInputImagesForRoI`` asks for the regions of
    interest of the inputs (``getRegionsOfInterest_public``, unless the request

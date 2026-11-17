@@ -85,7 +85,7 @@ Natron ships three binaries:
   in it. Its main use is as Natron's Python package manager
   (``natron-python -m pip install …``); see :ref:`maint-python`.
 
-Because both applications share the Engine, any change you make in ``Engine``
+Because ``Natron`` and ``NatronRenderer`` share the Engine, any change you make in ``Engine``
 must build and behave correctly *without* the GUI. If you find yourself wanting
 to call into ``Gui`` from ``Engine``, that is a signal to use one of the
 abstract interfaces instead (see :ref:`maint-design`).
@@ -218,9 +218,9 @@ classes derive from it than just the Viewer and the writers:
   ``NodeCollection`` (``Engine/NodeGroup.h``). ``WriteNode`` and
   ``TrackerNode`` derive from ``NodeGroup``: they are groups with an internal
   graph.
-- ``ReadNode``, ``RotoPaint`` (and its subclass ``RotoNode``), ``PrecompNode``,
-  ``OneViewNode`` and ``JoinViewsNode`` derive from ``EffectInstance``
-  directly.
+- ``ReadNode``, ``RotoPaint`` (and its subclass ``RotoNode``), ``RotoSmear``
+  (internal, used by smear strokes), ``PrecompNode``, ``OneViewNode`` and
+  ``JoinViewsNode`` derive from ``EffectInstance`` directly.
 
 ``ReadNode`` and ``WriteNode`` are registered only when
 ``NATRON_ENABLE_IO_META_NODES`` is set (it is, in ``Global/Macros.h``), and the
@@ -280,7 +280,11 @@ unless noted):
    ``loadFromArgs()``.
 2. ``loadFromArgs()`` creates the OpenGL context pool and calls
    ``initializeOpenGLFunctionsOnce()`` (before the ``QApplication`` exists, see
-   the comment there), then ``initPython()``, then ``initializeQApp()``, then
+   the comment there), then ``initializeQApp()``, which creates the
+   ``QApplication`` (or ``QCoreApplication``). It then installs Natron's own
+   ``ThreadPool`` as the global ``QThreadPool`` (if ``QT_CUSTOM_THREADPOOL`` is
+   defined), sets ``FONTCONFIG_PATH`` to the bundled fontconfig files if it is
+   not set, and only then calls ``initPython()``, and finally
    ``loadInternal()``.
 
    ``initPython()`` sets up the Python environment, registers the built-in

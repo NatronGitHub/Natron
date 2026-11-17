@@ -44,15 +44,16 @@ this order of precedence:
    returns the *master's* curve unless it is called with
    ``byPassMaster=true``;
 3. the **master's value**, if the dimension is linked to another knob
-   (``getValueFromMaster``; only ``int``, ``bool`` and ``double`` masters are
-   supported);
+   (``getValueFromMaster``: a numeric knob accepts an ``int``, ``bool`` or
+   ``double`` master, a string knob a string master);
 4. its own stored value (``_guiValues`` on the main thread, ``_values`` on other
    threads), clamped to the knob's range if ``clamp`` is true.
 
-``getValueAtTime`` follows the same order for a given time. ``getValue``
-uses the holder's current time: for an effect, that is the time of the render
-in progress on this thread (read from the TLS), or else the timeline's current
-frame (``EffectInstance::getCurrentTime``).
+``getValueAtTime`` uses the same sources for a given time, but checks the
+master before the curve (``KnobImpl.h``). ``getValue`` uses the holder's
+current time: for an effect, that is the time of the render in progress on
+this thread (read from the TLS), or else the timeline's current frame
+(``EffectInstance::getCurrentTime``).
 
 Changing a value
 ----------------
@@ -61,33 +62,43 @@ Changing a value
 if the dimension is animated and the change comes from the user or a plug-in),
 then calls ``KnobHelper::evaluateValueChange``. That brackets the change in
 ``KnobHolder::beginChanges()`` / ``appendValueChange()`` / ``endChanges()``
-(``Knob.cpp``). ``endChanges()`` does the work, once per bracket, for every
-knob changed in it:
+(``Knob.cpp``). ``endChanges()`` does the work:
 
-1. ``KnobHolder::onKnobValueChanged_public`` (main thread only). For an
-   effect, ``EffectInstance::onKnobValueChanged_public`` calls the effect's
-   ``knobChanged`` — for an OpenFX plug-in, the ``kOfxActionInstanceChanged``
-   action (``OfxEffectInstance::knobChanged``) — and then
-   ``Node::onEffectKnobValueChanged`` and the Python ``onParamChanged``
-   callback.
-2. The knob's ``valueChanged`` signal, which refreshes its widget.
-3. ``refreshListenersAfterValueChange``, which updates the knobs that depend
-   on this one (see the next sections).
-4. If the change is *significant* (it affects the image), the holder calls
+1. If the change is *significant* (it affects the image), it first calls
    ``onSignificantEvaluateAboutToBeCalled`` — for an effect, this aborts the
    renders in progress and increments the node's knobs age, which changes its
-   hash (see :ref:`maint-cache`) — then ``evaluate``, which re-renders the
+   hash (see :ref:`maint-cache`).
+2. Then, for each knob changed in the bracket:
+
+   - ``KnobHolder::onKnobValueChanged_public``. For an effect,
+     ``EffectInstance::onKnobValueChanged_public`` calls the effect's
+     ``knobChanged`` — for an OpenFX plug-in, the ``kOfxActionInstanceChanged``
+     action (``OfxEffectInstance::knobChanged``) — and then
+     ``Node::onEffectKnobValueChanged`` and the Python ``onParamChanged``
+     callback. This runs on the calling thread if it is the main thread or if
+     the holder's ``canHandleEvaluateOnChangeInOtherThread()`` returns true;
+     otherwise it is sent to the main thread (``doValueChangeOnMainThread``);
+   - the knob's ``valueChanged`` signal, which refreshes its widget;
+   - ``refreshListenersAfterValueChange``, which updates the knobs that depend
+     on this one (see the next sections).
+3. Finally, when the outermost bracket ends, ``evaluate``, which re-renders the
    Viewers that show the node.
 
-Calling ``beginChanges()`` / ``endChanges()`` yourself around several
-``setValue`` calls groups them, so the plug-in and the Viewer are notified
-only once.
+Brackets nest. Since every ``setValue`` opens and closes its own bracket,
+calling ``beginChanges()`` / ``endChanges()`` yourself around several
+``setValue`` calls does *not* reduce the number of ``knobChanged`` calls: the
+plug-in still gets one ``kOfxActionInstanceChanged`` per value. What it groups
+is the evaluation: ``evaluate`` is deferred until the outermost
+``endChanges()``, so there is only one render.
 
-If the holder cannot take a new value right now — for an effect, during an
-action where OpenFX forbids ``setValue`` (``KnobHolder::isSetValueCurrentlyPossible``)
-— ``setValue`` queues the change (``_setValuesQueue``) and only updates
-``_guiValues``. The queue is applied later by ``dequeueValuesSet``, from
-``Node::dequeueActions()`` on the main thread.
+If the holder cannot take a new value right now, ``setValue`` queues the change
+(``_setValuesQueue``). For an effect, this happens while its node is rendering,
+except in background mode (``EffectInstance::canSetValue``, used by
+``KnobHolder::isSetValueCurrentlyPossible``), so nothing is ever queued in
+``NatronRenderer``. On the main thread, a queued change still updates
+``_guiValues``, calls ``onKnobValueChanged_public`` and emits ``valueChanged``
+right away; ``_values`` and the rest wait. The queue is applied later by
+``dequeueValuesSet``, from ``Node::dequeueActions()`` on the main thread.
 
 Links (slave and master)
 ------------------------
@@ -150,8 +161,9 @@ must leave the other linked dimensions of the same knob working (#1201):
 
 Links are saved in the project as ``MasterSerialization`` entries (node name,
 knob name, dimension; ``Engine/KnobSerialization.h``) and restored by
-``Node::restoreKnobsLinks`` once all the nodes of the project are loaded. A link made with ``ignoreMasterPersistence`` (the
-Tracker's internal links) is not saved. ``Tests/KnobSlave_Test.cpp`` covers
+``Node::restoreKnobsLinks`` once all the nodes of the project are loaded. A
+link made with ``ignoreMasterPersistence`` is not saved; only the old
+multi-instance tracker panel makes such links (``Gui/MultiInstancePanel.cpp``). ``Tests/KnobSlave_Test.cpp`` covers
 these cases on built-in ``Dot`` nodes, without any plug-in; it checks the
 slave's own curves and values (``getCurve(…, true)``, ``getRawValue()``).
 

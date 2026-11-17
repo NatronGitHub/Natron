@@ -59,7 +59,7 @@ Once you recognize a handful of file-name suffixes, the ~600 files in
 
 ``FooFwd.h``
     Forward declarations and smart-pointer typedefs for a whole module.
-    ``Engine/EngineFwd.h`` and ``Gui/GuiFwd.h`` are the master catalogs — start
+    ``Engine/EngineFwd.h`` and ``Gui/GuiFwd.h`` are the main catalogs — start
     there when you meet an unfamiliar type (see below).
 
 ``FooI.h``
@@ -193,8 +193,11 @@ large numbers, and ``Knob<T>`` is a class template, which cannot have a
 ``shared_ptr`` and derive from ``std::enable_shared_from_this``. To give them
 signals anyway, Natron uses a companion object: ``KnobSignalSlotHandler`` is a
 ``QObject`` owned by each knob that emits the knob's signals on its behalf
-(several concrete knob classes, such as ``KnobInt`` or ``KnobChoice``, also
-derive from ``QObject`` for signals of their own). If you need a
+(most concrete knob classes — ``KnobInt``, ``KnobDouble``, ``KnobChoice``,
+``KnobColor``, ``KnobGroup``, ``KnobPage``, ``KnobParametric``, ``KnobTable``
+and its subclasses ``KnobPath`` and ``KnobLayers``, ``KnobFile``,
+``KnobOutputFile`` — also derive from ``QObject`` for signals of their own;
+``KnobBool``, ``KnobButton``, ``KnobSeparator`` and ``KnobString`` don't). If you need a
 non-``QObject`` core class to notify observers, follow this
 "signal-handler companion" pattern rather than converting the class to a
 ``QObject``. See :ref:`maint-knobs`.
