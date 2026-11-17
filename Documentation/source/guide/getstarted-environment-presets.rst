@@ -9,9 +9,9 @@ apply them again to another node of the same type, in the same project or in
 another one. Natron saves presets in files with the ``.nps`` extension.
 
 Presets are managed from the *Settings and presets* menu of the
-:doc:`properties panel <getstarted-environment-proppanels>`: this is the
-button next to the node icon, at the top of the panel (see
-:ref:`Presets_menu`).
+:doc:`properties panel <getstarted-environment-proppanels>` (called the
+*Presets menu* in :ref:`Presets_menu`): this is the button next to the node
+icon, at the top of the panel.
 
 Saving a preset
 ---------------
@@ -40,17 +40,20 @@ node made by the same plug-in: loading a Blur preset on a Grade node shows an
 error and changes nothing.
 
 Loading a preset is a single step in the undo history of the properties
-panel, so you can undo it (see :doc:`getstarted-environment-undoredo`).
+panel, so you can usually undo it (see :doc:`getstarted-environment-undoredo`).
+For Roto, RotoPaint and Tracker nodes, see the warning below.
 
 The two menu entries are disabled for a clone node (created with
-*Clone Nodes*, :kbd:`Alt+K`), whose parameters follow the node it was cloned
-from.
+*Clone Nodes*, :kbd:`Alt+K`, :kbd:`Option+K` on macOS), whose parameters
+follow the node it was cloned from. They are also disabled for the nodes
+inside a PyPlug that has not been made editable.
 
 What a preset contains
 ----------------------
 
-A preset stores all the parameters of the node, on every page of the
-properties panel, including the *Node* page (so the label is restored too):
+A preset stores all the parameters of the node, on every tab of the
+properties panel. This includes the file name of a Read or Write node, and the
+settings of the *Node* tab, such as the label, *Disable* and *Lifetime*:
 
 - the values of the parameters, their animation curves and their
   expressions;
@@ -59,6 +62,13 @@ properties panel, including the *Node* page (so the label is restored too):
 - the shapes and strokes of a :ref:`Roto <fr.inria.built-in.Roto>` or
   :ref:`RotoPaint <fr.inria.built-in.RotoPaint>` node, and the tracks of a
   :ref:`Tracker <fr.inria.built-in.Tracker>` node.
+
+.. warning::
+
+   On a Roto, RotoPaint or Tracker node, loading a preset *adds* the shapes,
+   strokes or tracks of the preset to those already in the node: it does not
+   replace them. Undo does not reliably bring back the previous state either.
+   Load such presets on a new node, and do not rely on Undo.
 
 Loading a preset does not change the name of the node, its position or color
 in the Node Graph, or its connections.
@@ -87,9 +97,12 @@ Copy and paste nodes
 
 PyPlugs
   A Group node can be exported as a Python plug-in, called a PyPlug, with the
-  **Export as PyPlug** button on the *Node* page of its properties
-  panel. A PyPlug re-creates the whole group, and it appears in the
-  :doc:`Toolbar <getstarted-environment-toolbar>` like any other node.
+  **Export as PyPlug** button on the *Node* tab of its properties
+  panel. A PyPlug re-creates the whole group. It appears in the
+  :doc:`Toolbar <getstarted-environment-toolbar>` like any other node, but
+  only after you restart Natron, and only if you saved it in a folder of the
+  PyPlug search path. If the folder you choose is not in the search path, the
+  export dialog offers to add it.
   Use a preset to reuse the settings of one node, and a PyPlug to make a new
   tool out of several nodes. See :ref:`groups` in the Developers Guide.
 
