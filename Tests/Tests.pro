@@ -24,6 +24,7 @@ CONFIG += moc rcc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 QT += gui core opengl network widgets concurrent
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 CONFIG += openmvg-flags glad-flags
 

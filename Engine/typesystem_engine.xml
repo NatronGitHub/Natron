@@ -53,9 +53,11 @@
         </conversion-rule>
     </primitive-type>
 
-    <!--PySide2 declared the CPython types it used in typesystem_core_common.xml
-        and shiboken2 knew PyList on top of those. PySide6 declares none of them,
-        so the ones this typesystem names have to be declared here. -->
+    <!--shiboken6 does not know PyList as a built-in type (it knows PyObject,
+        PyDict and PySequence), and Natron uses PyList as an argument type, so
+        declare it with its check function. shiboken2 knows PyList already:
+        it ignores this entry's check-function (with a warning) and generates
+        the same code. -->
     <custom-type name="PyList" check-function="PyList_Check"/>
 
     <!--std::pair from/to Python pair-->
