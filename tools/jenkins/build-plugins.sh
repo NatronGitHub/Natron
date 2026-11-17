@@ -16,6 +16,8 @@ updateBuildOptions
 
 # openfx-misc, openfx-io and openfx-arena use their CMake builds when available
 # (set MISC_USE_MAKE=1, IO_USE_MAKE=1 or ARENA_USE_MAKE=1 to use their Makefiles instead).
+# openfx-arena is built with ImageMagick 7 (MAGICK7_PREFIX, see common.sh; ARENA_ALLOW_IM6=1
+# allows ImageMagick 6).
 
 
 BUILD_IO=1
@@ -458,21 +460,45 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
     printStatusMessage "Building openfx-arena..."
     cd "$TMP_PATH/openfx-arena"
 
+    # ImageMagick 7 (MAGICK7_PREFIX, see common.sh), for the CMake and the make builds: its
+    # pkg-config files come first, only for this build (as LibRaw's for openfx-io). Natron 2.6
+    # ships openfx-arena with ImageMagick 7; ImageMagick 6 only with ARENA_ALLOW_IM6=1.
+    arena_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
+    if [ -n "${MAGICK7_PREFIX:-}" ]; then
+        export PKG_CONFIG_PATH="${MAGICK7_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    fi
+    arena_magick_version="$(pkg-config --modversion Magick++ 2>/dev/null || true)"
+    arena_im=""
+    case "$arena_magick_version" in
+        7.*)
+            arena_im=7
+            ;;
+        *)
+            if [ "${ARENA_ALLOW_IM6:-}" != "1" ]; then
+                echo "Error: openfx-arena needs ImageMagick 7, but pkg-config finds Magick++ ${arena_magick_version:-(none)} (PKG_CONFIG_PATH=${PKG_CONFIG_PATH:-})."
+                echo "Install it (macOS: sudo port install ImageMagick7 +natron -x11 -openexr; Linux SDK: include/scripts/pkg/imagemagick7.sh; Windows: natron_imagemagick), set MAGICK7_PREFIX, or set ARENA_ALLOW_IM6=1 to build with ImageMagick 6."
+                exit 1
+            fi
+            echo "Warning: building openfx-arena with ImageMagick ${arena_magick_version:-(none)} (ARENA_ALLOW_IM6=1), not ImageMagick 7"
+            ;;
+    esac
+    echo "Info: openfx-arena uses ImageMagick $arena_magick_version ($(pkg-config --variable=prefix Magick++ 2>/dev/null || true))"
+
     # openfx-arena builds with openfx's CMake helpers since openfx-arena#72. Use them when
     # available, unless ARENA_USE_MAKE=1 forces the Makefiles.
     if [ "${ARENA_USE_MAKE:-}" != "1" ] && [ -f CMakeLists.txt ] && grep -q 'ofx_deploy_bundle' CMakeLists.txt; then
         echo "Info: build openfx-arena using cmake..."
-        # Same ImageMagick as the make path: the Magick++ found by pkg-config (ImageMagick 6;
-        # the SDK's magick7 is not used, see the commented-out IM=7 in the make path), and
-        # OpenMP only if that ImageMagick was built with it (the Makefiles keep its -fopenmp,
-        # which the CMake build drops in favour of OFX_USE_OPENMP). AudioCurve: AUTO (built
-        # if pkg-config finds sox), as the Makefiles. Not static on Windows (no MINGW_STATIC),
-        # as the make path.
+        # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp, which
+        # the CMake build drops in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW,
+        # as make IM=7; libomp is looked for next to ImageMagick, then in MacPorts (macOS).
+        # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles. Not static on
+        # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
+        # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
         arena_openmp=OFF
         case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        ofx_cmake_build -DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp"
+        ofx_cmake_build -DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im"
         echo "Info: build openfx-arena using cmake... done!"
     else
         if [ "$PKGOS" = "OSX" ]; then
@@ -487,12 +513,6 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
         ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
         if [ "$ARENA_CHECK" != "" ]; then
-            #if [ "$PKGOS" != "OSX" ]; then
-            #  export PKG_CONFIG_PATH="${SDK_HOME}/magick7/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            #else
-            #  export PKG_CONFIG_PATH="/opt/magick/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            #fi
-            #ARENA_FLAGS="IM=7"
             # Fetch external depends before build
             make -C Bundle lodepng.h
         fi
@@ -501,7 +521,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         env \
             MINGW="${ISWIN:-}" \
             LICENSE="$NATRON_LICENSE" \
-            ${ARENA_FLAGS:-} \
+            IM="$arena_im" \
             CXX="$CXX" \
             CONFIG="${COMPILE_TYPE}" \
             OPTFLAG="${OPTFLAG}" \
@@ -515,6 +535,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
 
         echo "Info: build openfx-arena using make... done!"
     fi
+    export PKG_CONFIG_PATH="$arena_saved_pkg_config_path"
 
     maybe_cleanup_binary_files
 

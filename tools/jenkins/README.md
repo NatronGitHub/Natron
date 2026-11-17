@@ -216,6 +216,10 @@ This should be consistent with the `REMOTE_PREFIX_USER` value passed to the uplo
 
 `MISC_USE_MAKE`, `IO_USE_MAKE`, `ARENA_USE_MAKE`: openfx-misc, openfx-io and openfx-arena are built with their CMake builds when their checkout has one (`build-plugins.sh`, function `ofx_cmake_build`). Set to 1 to build them with their Makefiles instead. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`).
 
+`MAGICK7_PREFIX`: Prefix of the ImageMagick 7 that openfx-arena is built with (its `lib/pkgconfig` is put first in `PKG_CONFIG_PATH` for that build). Defaults to `$SDK_HOME/magick7` on Linux (`include/scripts/pkg/imagemagick7.sh`), `$SDK_HOME/lib/ImageMagick7` on macOS (MacPorts' `ImageMagick7 +natron`, from `tools/MacPorts`), and the MSYS2 prefix on Windows (`natron_imagemagick`, from `tools/MINGW-packages`).
+
+`ARENA_ALLOW_IM6`: `build-plugins.sh` stops if the `Magick++` that pkg-config finds for openfx-arena is not ImageMagick 7. Set to 1 to build openfx-arena with ImageMagick 6 anyway (Natron 2.5's; the output of some plug-ins differs between the two).
+
 `EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
 
