@@ -416,6 +416,14 @@ public:
 
             return img->getBitmapAt(x, y);
         }
+
+        /// The bounds of the image, which can't change while this object lives
+        const RectI& getBounds() const
+        {
+            assert(img);
+
+            return img->_bounds;
+        }
     };
 
     typedef std::shared_ptr<ReadAccess> ReadAccessPtr;
@@ -467,6 +475,14 @@ public:
             assert(img);
 
             return img->getBitmapAt(x, y);
+        }
+
+        /// The bounds of the image, which can't change while this object lives
+        const RectI& getBounds() const
+        {
+            assert(img);
+
+            return img->_bounds;
         }
     };
 
