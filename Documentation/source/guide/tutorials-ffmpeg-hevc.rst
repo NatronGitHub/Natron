@@ -25,7 +25,7 @@ There are two ways to encode HEVC:
   ``ffmpeg`` command-line tool, which gives access to all the encoder
   settings and can add audio. This is the recommended way.
 
-Both use the x265 encoder (``libx265`` in FFmpeg).
+Both normally use the x265 encoder (``libx265`` in FFmpeg).
 
 
 Availability of x265
@@ -47,6 +47,9 @@ and look at the "Supported pixel formats" line: ``yuv420p10le`` means 10-bit
 4:2:0 is available, ``yuv420p12le`` means 12-bit 4:2:0 is available. In
 WriteFFmpeg, the **Show Avail.** button gives the same information.
 
+For now, the macOS builds for Apple Silicon (arm64) include an 8-bit-only
+x265: they can only write 8-bit HEVC.
+
 
 Writing HEVC from Natron
 ------------------------
@@ -56,17 +59,18 @@ Use a Write node with a ``.mov``, ``.mp4`` or ``.mkv`` file name, select the
 ``hev1 H.265 / HEVC (High Efficiency Video Coding) [libx265]`` in the
 **Codec** menu. Then set:
 
-- **Output Components**: ``RGB``. HEVC files for distribution have no alpha
-  channel.
+- **Alpha**: leave it unchecked (the default). HEVC files for distribution
+  have no alpha channel.
 - **File Colorspace**: the display encoding of the video, usually Rec. 709
   (``nuke_rec709`` in the default OpenColorIO config).
 - **Pref. Pixel Coding**: ``YUV420``. This is what players and web sites
   expect. The default, ``YUV422``, makes files that many players cannot
   decode.
 - **Bit Depth**: ``10``, if your x265 supports it. Check the result in
-  **Selected Pixel Coding**, which should read ``YUV420/10``. If it shows
-  another format, such as ``YUVA420`` (with alpha), your x265 has no 10-bit
-  support: set **Bit Depth** to ``8``.
+  **Selected Pixel Coding**, which should read ``YUV420/10``. If it does not,
+  your x265 has no 10-bit support: set **Bit Depth** to ``8`` and check that
+  it reads ``YUV420/8``, or uncheck **Alpha** if it shows a format with
+  alpha.
 - **Output Quality**: the quality target (x265's constant rate factor, CRF).
   ``High Quality`` (CRF 20) or ``Perceptually Lossless`` (CRF 17) are good
   choices for delivery. If you select ``None``, the **Bitrate** parameter is
@@ -74,14 +78,14 @@ Use a Write node with a ``.mov``, ``.mp4`` or ``.mkv`` file name, select the
 - **Encoding Speed**: x265's preset. Slower presets make smaller files at the
   same quality. It is only used when **Output Quality** is not ``None``.
 
-The **Keyframe Interval** and **Max B-Frames** parameters are not used with
+The **Keyframe Interval** and **Max B-Frames** parameters are hidden for
 x265.
 
 The **Lossless** choice of **Output Quality** sets CRF 0, which is *not*
 lossless with x265: it only gives the highest quality. For true lossless
 encoding, also add ``x265-params=lossless=1`` in **Codec Options** (in the
-**Advanced** group). **Codec Options** passes other encoder options too, for
-example ``tune=grain`` or ``x265-params='keyint=48:bframes=4'`` (values that
+**Advanced** group; this parameter is available from Natron 2.6).
+**Codec Options** passes other encoder options too, for example ``tune=grain`` or ``x265-params='keyint=48:bframes=4'`` (values that
 contain a colon must be quoted).
 
 The file is tagged ``hev1``. Apple's players (QuickTime Player, iOS, Safari)
@@ -100,10 +104,13 @@ file without re-encoding (this command also sets the ``hvc1`` tag):
 
 .. code-block:: sh
 
-   ffmpeg -i input.mp4 -c copy -bsf:v hevc_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1 -tag:v hvc1 output.mp4
+   ffmpeg -i input.mp4 -c copy -bsf:v hevc_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1 -color_primaries bt709 -color_trc bt709 -colorspace bt709 -tag:v hvc1 output.mp4
 
-The value 1 means Rec. 709 for all three. WriteFFmpeg does not write audio;
-to add it, see :doc:`tutorials-ffmpeg-audio`.
+The ``hevc_metadata`` filter rewrites the values stored in the HEVC
+bitstream (1 means Rec. 709 for all three), and the ``-color_primaries``,
+``-color_trc`` and ``-colorspace`` options update the copies stored by the
+MP4 or QuickTime container. When copying a stream with ``-c copy``, these
+options do work. WriteFFmpeg does not write audio; to add it, see :doc:`tutorials-ffmpeg-audio`.
 
 
 Encoding an image sequence with ffmpeg
@@ -132,7 +139,10 @@ The options are:
 - ``-pix_fmt yuv420p10le``: 10-bit Y'CbCr 4:2:0 (the "Main 10" profile). Use
   ``yuv420p`` for 8-bit ("Main" profile) if the file must play on old
   devices. ``yuv422p10le``, ``yuv444p10le`` and the 12-bit formats are also
-  available, but few players support them.
+  available, but few players support them. If your x265 is 8-bit only (as in
+  the macOS arm64 builds), ffmpeg does not fail: it prints "auto-selecting
+  format 'yuv420p'" and writes an 8-bit file. Check that ffprobe reports
+  ``profile=Main 10`` (see `Color metadata`_ below).
 - ``-vf "setparams=..."``: the color metadata, see below.
 - ``-tag:v hvc1``: the tag that Apple's players need.
 - ``-movflags +faststart``: put the index at the start of the file, so that
@@ -164,9 +174,16 @@ Other x265 settings can be given with ``-x265-params``, as a list of
 `x265 documentation <https://x265.readthedocs.io/en/master/cli.html>`_ for
 the list.
 
-To add a sound track, add the audio file as a second input and encode it
-too, for example ``-i audio.wav -c:a aac -b:a 192k`` after the first
-``-i`` option. See :doc:`tutorials-ffmpeg-audio` for more.
+To add a sound track, give the audio file as a second input and encode it
+to AAC:
+
+.. code-block:: sh
+
+   ffmpeg -framerate 24 -i render.%04d.tif -i audio.wav -c:v libx265 -preset slow -crf 20 -pix_fmt yuv420p10le -vf "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709" -tag:v hvc1 -c:a aac -b:a 192k -shortest -movflags +faststart output.mp4
+
+``-shortest`` stops the output at the end of the shorter input, so that a
+sound track longer than the images does not add frozen frames at the end.
+See :doc:`tutorials-ffmpeg-audio` for more.
 
 
 Color metadata
@@ -185,10 +202,10 @@ The ``setparams`` filter sets them. For Rec. 709 video:
 
 ffmpeg uses the ``colorspace`` value to convert the RGB images to Y'CbCr, and
 writes all three values in the file. Without it, ffmpeg converts with the
-Rec. 601 matrix and writes no metadata. Use ``setparams`` rather than the
-``-color_primaries``, ``-color_trc`` and ``-colorspace`` output options: with
-FFmpeg 9, ``-color_primaries`` and ``-color_trc`` were ignored when the input
-was an image sequence.
+Rec. 601 matrix and writes no metadata. When encoding, use ``setparams``
+rather than the ``-color_primaries``, ``-color_trc`` and ``-colorspace``
+output options: with FFmpeg 9, ``-color_primaries`` and ``-color_trc`` are
+ignored when the input is an image sequence.
 
 These values only describe the images: they do not convert them. The images
 must already be encoded the way the metadata says, which is why the
@@ -200,7 +217,7 @@ To check the result:
 
    ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,codec_tag_string,profile,pix_fmt,color_range,color_space,color_primaries,color_transfer -of default=noprint_wrappers=1 output.mp4
 
-For the first command above, it prints:
+For the 10-bit MP4 command above, it prints:
 
 .. code-block:: none
 
@@ -216,8 +233,33 @@ For the first command above, it prints:
 ``unknown`` means that a value is missing. To fix the metadata of an existing
 HEVC file without re-encoding, use the ``hevc_metadata`` bitstream filter, as
 shown in the WriteFFmpeg section above. Its values are the numbers defined in
-the HEVC standard: 1 is Rec. 709, 9 is Rec. 2020 (primaries), 16 is PQ
-(transfer function) and 9 is Rec. 2020 non-constant luminance (matrix).
+the HEVC standard:
+
+.. list-table::
+   :header-rows: 1
+
+   * - ``hevc_metadata`` option
+     - Rec. 709
+     - Rec. 2020 / HDR10
+   * - ``colour_primaries``
+     - 1
+     - 9 (Rec. 2020)
+   * - ``transfer_characteristics``
+     - 1
+     - 16 (PQ)
+   * - ``matrix_coefficients``
+     - 1
+     - 9 (Rec. 2020 non-constant luminance)
+
+For example, to mark an existing file as HDR10 (PQ, Rec. 2020):
+
+.. code-block:: sh
+
+   ffmpeg -i input.mp4 -c copy -bsf:v hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9 -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc -tag:v hvc1 output.mp4
+
+This only changes the color metadata: the mastering display and content
+light level metadata of HDR10 are written by x265 when encoding (see
+below).
 
 
 HDR10
@@ -235,9 +277,10 @@ not). Then encode them with:
    ffmpeg -framerate 24 -i render.%04d.tif -c:v libx265 -preset slow -crf 18 -pix_fmt yuv420p10le -vf "setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc" -x265-params "hdr10=1:repeat-headers=1:master-display=G(13250,34500)B(7500,3000)R(34000,16000)WP(15635,16450)L(10000000,1):max-cll=1000,400" -tag:v hvc1 output.mp4
 
 ``master-display`` describes the display used for grading (here a display
-with P3 primaries, a D65 white point and a 1000 cd/m² peak), and ``max-cll``
-gives the maximum and the maximum frame-average brightness of the content, in
-cd/m². Replace them with the values for your content.
+with P3 primaries, a D65 white point and a 1000 cd/m² peak). ``max-cll``
+gives two values in cd/m²: MaxCLL, the brightest pixel of the content, and
+MaxFALL, the highest average brightness of a frame. Replace them with the
+values for your content.
 
 
 Hardware encoders
