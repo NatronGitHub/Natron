@@ -16,6 +16,12 @@ kept working; which one you use depends on your platform and taste.
   ``CMakeLists.txt`` at the root, with one ``CMakeLists.txt`` per module. It
   requires CMake ≥ 3.16.
 
+CMake picks up every ``.cpp`` and ``.h`` in ``Engine/`` and ``Gui/``, while
+``Engine/Engine.pro`` and ``Gui/Gui.pro`` list them by name. When you add or
+remove a source file, update the ``.pro`` file too;
+``tools/utils/checkQmakeSources.py`` (run by the Linux CI job) reports any
+mismatch.
+
 .. note::
 
    **C++17 is required for every build**, not just the CMake one:
@@ -97,7 +103,9 @@ With Qt 5, CMake first looks for the Shiboken2 and PySide2 CMake config files
 (``Shiboken2Config.cmake``, ``PySide2Config.cmake``; point CMake at them with
 ``Shiboken2_DIR``/``PySide2_DIR`` or ``CMAKE_PREFIX_PATH``). Some installs have
 none: PySide2 built with ``setup.py``, such as MacPorts' ``py310-pyside2``, and
-the PyPI wheels. If neither config package is found, CMake asks
+the PySide2 wheels used with a ``shiboken2_generator`` wheel from download.qt.io
+(PyPI has no ``shiboken2_generator``, and its PySide2 wheels bundle their own
+Qt, which Natron must then link too). If neither config package is found, CMake asks
 ``Python3_EXECUTABLE`` where the ``shiboken2``, ``shiboken2_generator`` and
 ``PySide2`` modules are (``cmake/PySide2FromPython.cmake``), and uses the
 libraries, headers, typesystems and generator in their ``site-packages``
@@ -112,9 +120,11 @@ directories. This replaces the paths that the qmake build gets from
    * - ``SHIBOKEN=shiboken2-$$PYVER``
      - ``-DSHIBOKEN2_GENERATOR=/path/to/shiboken2`` (default: the binary in
        ``site-packages/shiboken2_generator``)
-   * - ``INCLUDEPATH``, ``LIBS`` and ``QMAKE_RPATHDIR`` under
-       ``$$PYTHON_SITE_PACKAGES``
+   * - ``INCLUDEPATH`` and ``LIBS`` under ``$$PYTHON_SITE_PACKAGES``
      - automatic, from ``-DPython3_EXECUTABLE=/path/to/python3.10``
+   * - ``QMAKE_RPATHDIR`` under ``$$PYTHON_SITE_PACKAGES``
+     - automatic in the build tree; installed binaries get theirs from the
+       install rules
    * - ``TYPESYSTEMPATH``
      - automatic (``site-packages/PySide2/typesystems``)
 

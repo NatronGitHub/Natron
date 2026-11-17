@@ -89,7 +89,7 @@ else()
     find_package(PySide2 5.15 CONFIG QUIET COMPONENTS pyside2)
     if(NOT Shiboken2_FOUND AND NOT PySide2_FOUND)
         # No CMake config files (PySide2 built with setup.py, e.g. MacPorts' py*-pyside2,
-        # or the PyPI wheels): locate them from the Python installation.
+        # or the download.qt.io wheels): locate them from the Python installation.
         include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PySide2FromPython.cmake)
         _natron_pyside2_from_python(5.15)
     elseif(NOT Shiboken2_FOUND OR NOT PySide2_FOUND)
@@ -111,14 +111,17 @@ endif()
 
 # With Qt frameworks (macOS), the Qt include directories are <prefix>/lib/QtCore.framework[/Headers],
 # so the shiboken parser needs -F<prefix>/lib to resolve <QtCore/qnamespace.h> and the like.
+# Qt5 only for now: the Qt6 build is not tested with Qt frameworks.
 set(SHIBOKEN_QT_FRAMEWORK_ARGS)
-foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
-    if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
-        list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
+if(NOT NATRON_QT6)
+    foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
+        if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
+            list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    if(SHIBOKEN_QT_FRAMEWORK_ARGS)
+        list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
     endif()
-endforeach()
-if(SHIBOKEN_QT_FRAMEWORK_ARGS)
-    list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
 endif()
 
 if(IS_DEBUG_BUILD AND WIN32)

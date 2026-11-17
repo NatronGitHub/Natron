@@ -18,8 +18,9 @@
 
 # Locate Shiboken2 and PySide2 from the Python installation, for installs that
 # have no CMake config files (Shiboken2Config.cmake, PySide2Config.cmake):
-# PySide2 built with setup.py (MacPorts py*-pyside2) or installed from the
-# PyPI wheels (PySide2 + shiboken2 + shiboken2_generator).
+# PySide2 built with setup.py (MacPorts py*-pyside2), or the PySide2 and
+# shiboken2 wheels plus a shiboken2_generator wheel from download.qt.io (PyPI
+# has no shiboken2_generator, and its PySide2 wheels bundle their own Qt).
 #
 # The layout of these installs is, in the site-packages of Python3_EXECUTABLE:
 #   shiboken2/                libshiboken2*.{dylib,so*} (shiboken2*.lib/.dll on Windows)
@@ -34,6 +35,7 @@
 # and sets Shiboken2_FOUND, PySide2_FOUND, PySide2_VERSION.
 #
 # The generator can be overridden with -DSHIBOKEN2_GENERATOR=/path/to/shiboken2.
+# Otherwise only the one in shiboken2_generator is used, never one from PATH.
 
 function(_natron_pyside2_glob out_var dir)
     set(found)
@@ -41,9 +43,10 @@ function(_natron_pyside2_glob out_var dir)
         file(GLOB candidates "${dir}/${pattern}")
         list(SORT candidates)
         foreach(c IN LISTS candidates)
-            # skip Python extension modules (shiboken2.cpython-310-darwin.so)
-            get_filename_component(name "${c}" NAME)
-            if(NOT IS_DIRECTORY "${c}" AND NOT name MATCHES "^(shiboken2|Qt[A-Za-z0-9]*)\\.(cpython|abi3|pypy)")
+            # The patterns never match the Python extension modules
+            # (shiboken2.cpython-310-darwin.so, shiboken2.pyd), only the
+            # libraries (libshiboken2*.dylib/.so*, shiboken2.abi3.dll/.lib).
+            if(NOT IS_DIRECTORY "${c}")
                 set(found "${c}")
                 break()
             endif()
@@ -61,8 +64,10 @@ function(_natron_pyside2_from_python min_version)
     endif()
 
     # Locate the packages without importing them (importing PySide2 loads Qt).
+    # -s -E: ignore the user site-packages and PYTHON* variables, which could
+    # otherwise mix a pip --user PySide2 with the installation's generator.
     execute_process(
-        COMMAND "${Python3_EXECUTABLE}" -c
+        COMMAND "${Python3_EXECUTABLE}" -s -E -c
             "import importlib.util as u\nfor m in ('shiboken2', 'shiboken2_generator', 'PySide2'):\n    s = u.find_spec(m)\n    print(s.submodule_search_locations[0] if s and s.submodule_search_locations else '-')"
         RESULT_VARIABLE res
         OUTPUT_VARIABLE out
@@ -94,11 +99,29 @@ function(_natron_pyside2_from_python min_version)
         list(APPEND missing "the PySide2 module")
     endif()
 
-    # Version, from PySide2/_config.py (written by setup.py)
+    # Versions, from the _config.py that setup.py writes in each package.
+    # The three packages must come from the same build.
     set(version)
-    if(pyside_dir AND EXISTS "${pyside_dir}/_config.py")
-        file(STRINGS "${pyside_dir}/_config.py" version_line REGEX "^version = ")
-        string(REGEX REPLACE "^version = \"([^\"]*)\".*" "\\1" version "${version_line}")
+    foreach(d IN ITEMS "${pyside_dir}" "${shiboken_dir}" "${generator_dir}")
+        set(v)
+        if(d AND EXISTS "${d}/_config.py")
+            file(STRINGS "${d}/_config.py" version_line REGEX "^version = ")
+            string(REGEX REPLACE "^version = \"([^\"]*)\".*" "\\1" v "${version_line}")
+        endif()
+        if(NOT v)
+            if(d)
+                message(WARNING "Shiboken2/PySide2: no version found in ${d}/_config.py")
+            endif()
+        elseif(NOT version)
+            set(version "${v}")
+        elseif(NOT v VERSION_EQUAL version)
+            message(FATAL_ERROR "Shiboken2/PySide2: ${d} is version ${v}, but ${pyside_dir} is ${version}: "
+                "PySide2, shiboken2 and shiboken2_generator must come from the same build.")
+        endif()
+    endforeach()
+    if(pyside_dir AND (EXISTS "${pyside_dir}/Qt/lib" OR EXISTS "${pyside_dir}/Qt5Core.dll"))
+        message(WARNING "Shiboken2/PySide2: ${pyside_dir} bundles its own copy of Qt. Natron must link "
+            "the same Qt as PySide2: point Qt5_DIR at that copy, or use a PySide2 built against your Qt.")
     endif()
 
     # Libraries
@@ -141,12 +164,21 @@ function(_natron_pyside2_from_python min_version)
 
     # The shiboken2 generator and the libshiboken headers come from shiboken2_generator.
     # Prefer the binary in shiboken2_generator over the bin/ wrapper scripts.
+    # A generator found for another interpreter (the cache survives changing
+    # Python3_EXECUTABLE) is looked up again; one set by the user is kept.
     set(generator_doc "shiboken2 generator, used when Shiboken2 has no CMake config files")
-    if(generator_dir)
+    if(SHIBOKEN2_GENERATOR AND SHIBOKEN2_GENERATOR STREQUAL _NATRON_SHIBOKEN2_GENERATOR_FOUND
+       AND NOT _NATRON_SHIBOKEN2_GENERATOR_PYTHON STREQUAL Python3_EXECUTABLE)
+        unset(SHIBOKEN2_GENERATOR CACHE)
+    endif()
+    if(generator_dir AND NOT SHIBOKEN2_GENERATOR)
         find_program(SHIBOKEN2_GENERATOR NAMES shiboken2 PATHS "${generator_dir}"
             NO_DEFAULT_PATH DOC "${generator_doc}")
+        if(SHIBOKEN2_GENERATOR)
+            set(_NATRON_SHIBOKEN2_GENERATOR_FOUND "${SHIBOKEN2_GENERATOR}" CACHE INTERNAL "")
+            set(_NATRON_SHIBOKEN2_GENERATOR_PYTHON "${Python3_EXECUTABLE}" CACHE INTERNAL "")
+        endif()
     endif()
-    find_program(SHIBOKEN2_GENERATOR NAMES shiboken2 DOC "${generator_doc}")
     if(NOT SHIBOKEN2_GENERATOR)
         list(APPEND missing "the shiboken2 generator (shiboken2_generator module, or set SHIBOKEN2_GENERATOR)")
     endif()

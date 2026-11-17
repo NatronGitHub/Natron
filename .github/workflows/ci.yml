@@ -62,6 +62,11 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
+      # No per-PR job builds with qmake any more; at least check that the qmake
+      # project files list the same sources as the CMake build.
+      - name: Check that qmake and CMake build the same sources
+        shell: bash
+        run: python3 tools/utils/checkQmakeSources.py
       - name: Install Linux system packages
         shell: bash
         run: |
@@ -278,7 +283,7 @@ jobs:
       CI: 'True'
       OCIO_CONFIG_VERSION: 2.5
       MACPORTS_VERSION: 2.12.7
-      MACPORTS_CACHE_VERSION: 2
+      MACPORTS_CACHE_VERSION: 1
       MACPORTS_PORTS: >-
         cmake pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
       PYVER: '3.10'
