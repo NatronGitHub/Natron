@@ -28,7 +28,11 @@ pkgver() {
 build() {
   cd ${_realname}
   ./configure
-  make
+  # Only dump_syms is packaged. Building every target also builds the stackwalk
+  # tools, and microdump_stackwalk fails to link under GCC 16 with an undefined
+  # vtable for FastSourceLineResolver::Module, because its target in breakpad's
+  # Makefile.am never lists fast_source_line_resolver.o.
+  make src/tools/windows/dump_syms_dwarf/dump_syms.exe
 }
 
 package() {

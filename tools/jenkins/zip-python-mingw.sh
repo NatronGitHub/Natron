@@ -16,9 +16,17 @@ PY_PKG_FILE="mingw-w64-x86_64-python-${PY_PKG}-any.pkg.tar.zst"
 PY_PKG_URL="https://repo.msys2.org/mingw/x86_64/${PY_PKG_FILE}"
 PACMAN_CACHE="/var/cache/pacman/pkg"
 
+# Stdlib packages to embed. Plain top-level modules are picked up by the *.py
+# glob below, so only directories belong here. Watch for modules that turn into
+# packages between releases: pathlib and sysconfig did so in 3.13, string in
+# 3.14. They stop being covered by the glob and silently vanish from the zip
+# unless they are listed here. Entries that no longer exist are skipped, so
+# names kept for older Pythons are harmless (both lib2to3, deprecated since
+# 3.11, and msilib, removed by PEP 594, are gone in 3.13).
 PYDIRS="
 asyncio
 collections
+compression
 concurrent
 ctypes
 curses
@@ -33,9 +41,12 @@ lib2to3
 logging
 msilib
 multiprocessing
+pathlib
 pydoc_data
 re
 sqlite3
+string
+sysconfig
 tomllib
 unittest
 urllib
@@ -62,7 +73,14 @@ if [ ! -d "${SRC}" ]; then
 fi
 
 for dir in ${PYDIRS}; do
-    cp -a "${SRC}/${dir}" "${EMBED}/"
+    # PYDIRS is a fixed list but the stdlib keeps shrinking: Python 3.13
+    # removed lib2to3 (deprecated) and msilib (PEP 594). Treat an absent module
+    # as expected.
+    if [ -d "${SRC}/${dir}" ]; then
+        cp -a "${SRC}/${dir}" "${EMBED}/"
+    else
+        echo "Note: ${dir} is not part of this Python's stdlib, skipping"
+    fi
 done
 
 mkdir -p "${EMBED}/site-packages"

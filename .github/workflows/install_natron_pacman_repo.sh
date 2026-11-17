@@ -20,7 +20,31 @@ cd ${NATRON_REPO_DIR}
 
 WINDOWS_PACMAN_REPO_VERSION=`cat ${NATRON_DIR}/tools/MINGW-packages/windows_pacman_repo_version.txt`
 ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
-wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/${ZIP_FILENAME}
+
+# Try the repository the build is running from before upstream, so a fork that
+# has rebuilt the packages can publish them on its own release instead of being
+# limited to whatever upstream last shipped. Falling straight through to the
+# upstream release keeps behaviour identical for NatronGitHub itself.
+UPSTREAM_REPO_URL="https://github.com/NatronGitHub/Natron"
+REPO_RELEASE_PATH="releases/download/windows-mingw-package-repo/${ZIP_FILENAME}"
+REPO_URLS=()
+if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
+    REPO_URLS+=("${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY}")
+fi
+if [[ "${REPO_URLS[0]:-}" != "${UPSTREAM_REPO_URL}" ]]; then
+    REPO_URLS+=("${UPSTREAM_REPO_URL}")
+fi
+for repo_url in "${REPO_URLS[@]}"; do
+    echo "Trying ${repo_url}/${REPO_RELEASE_PATH}"
+    # -O always writes to ${ZIP_FILENAME} (never ${ZIP_FILENAME}.1). wget leaves
+    # an empty or truncated file behind on failure, and a truncated zip can also
+    # come from an interrupted transfer, so remove it unless it is a valid zip.
+    if wget --no-verbose -O "${ZIP_FILENAME}" "${repo_url}/${REPO_RELEASE_PATH}" && unzip -tq "${ZIP_FILENAME}" > /dev/null; then
+        echo "Fetched ${ZIP_FILENAME} from ${repo_url}"
+        break
+    fi
+    rm -f "${ZIP_FILENAME}"
+done
 
 if [[ -e ${ZIP_FILENAME} ]]; then
     unzip ${ZIP_FILENAME}

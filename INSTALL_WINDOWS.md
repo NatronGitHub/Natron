@@ -9,6 +9,17 @@ Natron is built with **CMake** in an MSYS2 **UCRT64** shell, with MSYS2's own pa
 
 The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That SDK still uses a MINGW64 shell and qmake; its move to UCRT64 is tracked in [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need it to build Natron itself.
 
+## Maintaining the Windows build
+
+MSYS2 is a rolling distribution, so the Windows build sometimes breaks with no change in Natron. [tools/MINGW-packages/README.md](tools/MINGW-packages/README.md) describes the known cases ("Toolchain drift") and how to rebuild and publish the Natron package repository ("The package repository"). In short:
+
+- Qt5's qmake is now `qmake-qt5`. `tools/jenkins/common.sh` finds it (`qmake-qt5`, `qmake5`, then `qmake`), and `launchBuildMain.sh` stops early if it doesn't work or is the qmake of another Qt major version. To use another qmake, set `NATRON_QMAKE`; a `QMAKE` inherited from the environment is ignored, with a warning.
+- Two x264 ABIs are installed, and bundled in GPL builds (COMMERCIAL builds: see #1177): `libx264-164.dll` (from `natron_x264`, for `natron_ffmpeg-gpl2`) and `libx264-165.dll` (from MSYS2's `libx264`, for `libheif`). `natron_x264` keeps its headers and import library in `${MINGW_PREFIX}/natron_x264` so that the two packages don't conflict.
+- The installer bundles `libpyside2`/`libshiboken2` for Qt5 and `libpyside6`/`libshiboken6` for Qt6.
+- The bundled Python standard library is listed in `tools/jenkins/zip-python-mingw.sh`. Modules removed from the stdlib (e.g. `lib2to3` and `msilib` in Python 3.13) are skipped, and modules that became packages (`pathlib` and `sysconfig` in 3.13, `string` in 3.14) must be listed there.
+- `mingw-w64-dump_syms` builds only `dump_syms.exe`, because `microdump_stackwalk` doesn't link with GCC 16.
+- The installer workflow downloads `natron_package_repo-<version>.zip` (`<version>` from `tools/MINGW-packages/windows_pacman_repo_version.txt`) from the `windows-mingw-package-repo` release of the repository it runs from, then from NatronGitHub/Natron, and builds the packages locally if neither has it. After an MSYS2 toolchain change (e.g. the `__emutls_v.*` symbols removed when GCC moved to native TLS, or new sonames of libx265 or libbluray), every package must be rebuilt, the zip published, and `windows_pacman_repo_version.txt` bumped.
+
 ### OpenFX
 
 Natron uses the OpenFX API, before building you should make sure it is up to date.
