@@ -79,12 +79,16 @@ The Curve editor
 
 This panel allows one to graphically edit the changes in-time of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
 
+See :doc:`Animating parameters <getstarted-environment-anim>`.
+
 The Dopesheet
 ################
 .. image:: _images/dopesheet_01.png
  :width: 600px
 
 This panel allows one to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
+
+See :doc:`Animating parameters <getstarted-environment-anim>`.
 
 The File Browser
 ################

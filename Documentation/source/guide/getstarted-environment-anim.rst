@@ -1,7 +1,7 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-.. _animating-parameters:
+.. _getstarted-environment-anim:
 
 Animating parameters
 ====================
@@ -37,16 +37,17 @@ keyframe:
 
 As soon as a parameter has a keyframe, every change you make to its value
 (by typing a value, dragging its slider, or moving its handle in the viewer)
-creates or updates a keyframe at the current frame. So, to animate a
+creates or updates a keyframe at the current frame. This works per
+dimension: only the animated dimensions of a parameter get new keyframes. So, to animate a
 parameter, set a first keyframe, then move to another frame and change the
 value: a second keyframe is created there.
 
 The background color of a parameter field shows its animation state:
 
 - default background: the parameter is not animated;
-- light blue: the parameter is animated, and there is a keyframe at the
+- bright blue: the parameter is animated, and there is a keyframe at the
   current frame;
-- dull blue: the parameter is animated, and the value at the current frame is
+- greyish blue: the parameter is animated, and the value at the current frame is
   interpolated between keyframes;
 - green: the value comes from an expression (see :doc:`compositing-exprs`).
 
@@ -65,11 +66,13 @@ Some parameters have several values, called *dimensions*: for example the x
 and y of a position, or the r, g, b and a of a color. Each dimension has its
 own animation curve.
 
-When you right-click such a parameter, the menu has two kinds of entries:
+Right-clicking such a parameter gives two kinds of entries:
 
 - entries ending with **(all dimensions)** act on all the values of the
-  parameter at once;
-- the other entries only act on the dimension that you right-clicked.
+  parameter at once. Right-click the label of the parameter to get only
+  these entries;
+- the other entries only act on one dimension. They appear when you
+  right-click the value field of that dimension.
 
 Some parameters, such as colors, show a single value for all their
 dimensions. Click the button showing the number of dimensions, next to the
@@ -153,7 +156,7 @@ Catmull-Rom
 
 Cubic
     The curve is smooth, and its curvature is also continuous at the
-    keyframes. It may overshoot more than Catmull-Rom.
+    keyframes. It may go beyond the values of the keyframes.
 
 Horizontal
     The curve is flat at the keyframe, which gives an *ease in / ease out*
@@ -170,14 +173,15 @@ Break
     The tangents on the left and on the right of the keyframe can be moved
     separately, which makes a corner in the curve.
 
-Parameters with integer, boolean, choice or text values use **Constant**
-interpolation for new keyframes. Choice (menu) parameters can only use
-Constant interpolation.
+Boolean, choice (menu) and text parameters can only use **Constant**
+interpolation. New keyframes on integer parameters also use Constant
+interpolation, but you can change it.
 
 Before the first keyframe and after the last one, the value usually stays
 constant. When the first or last keyframe uses Catmull-Rom or Cubic
-interpolation, or has a tangent edited by hand, the curve continues along
-the slope of that keyframe instead.
+interpolation, or when its outer tangent (the left one on the first keyframe,
+the right one on the last keyframe) was edited by hand, the curve continues
+along that slope instead.
 
 
 The Curve Editor
@@ -220,9 +224,10 @@ Editing keyframes
 - When several keyframes are selected, a box is drawn around them. Drag the
   handles of that box to scale the selection in time or in value.
 - Selecting a keyframe shows its tangents. Drag the end of a tangent to change
-  the slope of the curve at that keyframe: this sets the keyframe
+  the slope of the curve at that keyframe. This sets the keyframe
   interpolation to *Free*, or keeps it as *Break* if the keyframe was already
-  broken.
+  broken. On the first or last keyframe, it sets *Break* instead, unless the
+  keyframe uses Catmull-Rom, Cubic or Free interpolation.
 - When a single keyframe is selected, its frame, value and slopes are
   written next to it. Double-click that text to type new values.
 - **Backspace** deletes the selected keyframes.
@@ -239,9 +244,19 @@ The right-click menu also has:
 - **File**: export curves to a text (ASCII) file, or import them from one,
   with one column per curve.
 - **Predefined**: **Loop**, **Reverse** and **Negate**. These set an
-  expression on the selected curve that repeats a frame range of the
-  animation, plays it backwards, or inverts its values. The keyframes are
+  expression on the selected curve, based on ``curve()``. The keyframes are
   not changed, and clearing the expression restores the original animation.
+
+  - **Loop** asks for a first and a last frame, and repeats the animation
+    between these frames.
+  - **Reverse** writes ``curve(-frame, dimension)``: it mirrors the animation
+    around frame 0, so frame 10 gets the value of frame -10. It does not play
+    an animation backwards over its own frame range: with keyframes at
+    frames 1 to 21 only, the result is flat. To reverse the animation between
+    a first and a last frame, edit the expression to
+    ``curve(first + last - frame, dimension)``, for example
+    ``curve(22 - frame, dimension)`` for frames 1 to 21.
+  - **Negate** writes ``-curve(frame, dimension)``, which inverts the values.
 - **Options** > **Update on mouse release only**: when checked, the image
   is only rendered again when you release the mouse, instead of while you
   drag keyframes.
@@ -277,7 +292,8 @@ that row moves the keyframes of all its children at that frame.
 - When several keyframes are selected, drag the left or right side of the box
   around them to scale them in time.
 - **Ctrl+double-click** in the row of a parameter to add a keyframe at that
-  frame, with the current value of the parameter.
+  frame, with the current value of the parameter. This also moves the
+  timeline to that frame.
 - **Backspace** deletes the selected keyframes; **Ctrl+A** selects all
   keyframes; **F** frames the selection.
 - **Ctrl+C** copies the selected keyframes. **Ctrl+V** pastes them at the
@@ -300,7 +316,8 @@ The Dope Sheet also shows the frame range of some nodes as a bar:
   changes the time offset or the frame range;
 - for :ref:`Retime <net.sf.openfx.Retime>` nodes, the bar shows the frame
   range that the node produces from its input; for groups, it shows the
-  range covered by the nodes inside the group.
+  range covered by the nodes inside the group, and dragging it moves the
+  keyframes and clips of the nodes inside.
 
 
 Linking parameters
@@ -321,7 +338,10 @@ To create a link, do one of the following:
 Hold **Ctrl+Shift** instead of **Ctrl** while dragging to create an
 *expression link*: Natron writes an expression that multiplies the value of
 the source parameter by the animation curve of the target parameter. This
-lets you keep a separate animation on top of the linked value.
+lets you keep a separate animation on top of the linked value. If the target
+parameter has no keyframes, ``curve()`` returns its current value, so the
+result is the source value multiplied by that value: it is 0 if the target
+value was 0.
 
 To remove a link, right-click the linked parameter and choose **Unlink from
 ...**.
