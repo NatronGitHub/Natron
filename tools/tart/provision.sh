@@ -322,13 +322,20 @@ step_pins() {
 }
 
 # An SDK provisioned with an older Python (3.10 until 2026-11-17): install the py$pyv ports
-# (python_qt and dmgtools are idempotent) and switch openimageio's python variant.
-# The fixups step, run after update, then selects python$pyv and re-creates the links.
-# The old pyNNN ports are left installed (nothing uses them; see INSTALL_MACOS.md to remove them).
+# and switch openimageio's python variant. Each check looks at the result of the step, not at
+# a marker, so that an interrupted migration is completed by the next update (python_qt and
+# dmgtools are idempotent). The fixups step, run after update, then selects python$pyv and
+# re-creates the links. The old pyNNN ports are left installed (see INSTALL_MACOS.md to remove them).
 step_python_migrate() {
-    if ! port -q installed py$pyv-pyside2 2>/dev/null | grep -q '(active)'; then
+    local site=/opt/local/Library/Frameworks/Python.framework/Versions/$pyver/lib/python$pyver/site-packages
+    if ! port -q installed py$pyv-pyside2 2>/dev/null | grep -q '(active)' ||
+        ! [ -f $site/shiboken2_generator/shiboken2-$pyver ] ||
+        ! python$pyver -c 'import qtpy, PySide2.QtCore' 2>/dev/null; then
         echo "===== installing the Python $pyver ports"
         step_python_qt
+    fi
+    if ! [ -x /opt/local/bin/dmgbuild-$pyver ]; then
+        echo "===== installing dmgbuild for Python $pyver"
         step_dmgtools
     fi
     if ! port -q installed openimageio 2>/dev/null | grep '(active)' | grep -q "+python$pyv"; then

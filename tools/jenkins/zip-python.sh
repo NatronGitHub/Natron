@@ -23,7 +23,10 @@ if [ "$PYV" = 3 ]; then
         PYVERFULL=3.10.11
     fi
     if [ "$PYVER" = 3.11 ] && version_gt "$PYVERFULL" 3.11.9; then
-        # 3.11.10 and later (security fixes only) don't have embedded zips
+        # 3.11.10 and later (security fixes only) don't have embedded zips.
+        # The bytecode format is the same across 3.11.x, but the bundled stdlib then misses the
+        # fixes of the later releases. TODO: build python${PYVERNODOT}.zip from the SDK's own
+        # stdlib (compileall + zip) instead of downloading it.
         PYVERFULL=3.11.9
     fi
     # curl (unlike wget) honors ALL_PROXY, e.g. a SOCKS proxy in a build VM; -f: fail on HTTP errors

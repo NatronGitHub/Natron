@@ -39,7 +39,7 @@ Prerequisites
   documented in ``INSTALL_MACOS.md``:
 
   - ``dmgbuild`` — ``sudo port install py311-dmgbuild`` and
-    ``sudo ln -s dmgbuild-3.11 /opt/local/bin/dmgbuild`` (or
+    ``sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild`` (or
     ``python3 -m pip install dmgbuild``); writes the DMG ``.DS_Store`` layout
     without Finder/TCC.
   - ``oiiotool`` — from the ``openimageio`` port (DMG background processing).

@@ -395,13 +395,17 @@ If you built Mesa 25.0.7 (install section 4), also `sudo port -v -N install py31
 
 Check that the build sees Python 3.11: `python3 --version`, `ls -l /opt/local/bin/shiboken2`, and `port installed openimageio` (it must show `+python311`). `opencolorio` and `opencolorio1` are installed without Python bindings and need no change. Then rebuild Natron from a **fresh** build directory, with `-DPython3_EXECUTABLE=/opt/local/bin/python3.11` (a build directory configured with Python 3.10 keeps it in its CMake cache), and run the tests (step 9).
 
-Once Natron builds and passes the tests, remove Python 3.10 and everything that uses it. Check first that `port dependents python310` lists only `py310-*` ports (if `openimageio` is listed, the variant switch above didn't happen):
+Once Natron builds and passes the tests, remove Python 3.10 and everything that uses it. Remove the inactive ports first: the variant switch leaves the old `openimageio +python310` installed but inactive, and it would still show up as a dependent of `python310`. Then check that `port rdependents python310` (recursive) lists only `py310-*` ports; if the active `openimageio` is listed, the variant switch above didn't happen, so don't go on:
 
 ```Shell
-port dependents python310
-sudo port uninstall --follow-dependents python310
 sudo port uninstall inactive
+port rdependents python310
+sudo port uninstall --follow-dependents python310
+sudo port uninstall python3_select-310   # the python3 selector entry for 3.10, a dependency of python310
+port echo leaves                         # review: unrequested ports nothing depends on any more
 ```
+
+The `pip`, `cython` and `sphinx` selector entries for 3.10 belong to the `py310-*` ports and go away with them. Uninstall the ports listed by `port echo leaves` only if you don't need them (`sudo port uninstall leaves` removes them all, including build dependencies such as `clang-18` that a later rebuild of `py311-pyside2` would install again).
 
 With tart, `tools/tart/natron-sdk.sh update` does all of this except the removal of Python 3.10 (`step_python_migrate` in `tools/tart/provision.sh`, then its `fixups` step).
 
@@ -1022,9 +1026,9 @@ The render regression tests are in [Natron-Tests](https://github.com/NatronGitHu
 This is not required: with Qt 5, the bindings are generated during the build, and the generated files for Qt 4 are in the repository. You only need this with Qt 4, if you extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
-On MacPorts with qt4-mac, py311-pyside, py311-shiboken:
+Historical, for Qt 4 only (Natron 2.5 and older), with the Python 3.10 it was written for: Shiboken 1.2.4 is not part of the Python 3.11 SDK, and `tools/jenkins/include/scripts/pkg/python3.sh` notes that Python 3.11 breaks it. On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
 ```Shell
-PYVER=3.11 # Set to the python version
+PYVER=3.10 # Set to the python version
 QT_VERSION_MAJOR=4
 rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/*
 
