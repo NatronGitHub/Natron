@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
+
 #include "Node.h"
 #include "Timer.h" // gettimeofday()
 
@@ -318,7 +320,7 @@ public:
     AppInstanceWPtr app; // pointer to the app: needed to access the application's default-project's format
     bool isPartOfProject;
     bool knobsInitialized;
-    bool inputsInitialized;
+    std::atomic<bool> inputsInitialized; // written by the main thread, read by render threads
     mutable QMutex outputsMutex;
     NodesWList outputs, guiOutputs;
     mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them

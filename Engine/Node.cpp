@@ -4377,8 +4377,11 @@ Node::findClosestSupportedComponents(int inputNb,
         QMutexLocker l(&_imp->inputsMutex);
 
         if (inputNb >= 0) {
-            assert( inputNb < (int)_imp->inputsComponents.size() );
-            comps = _imp->inputsComponents[inputNb];
+            // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size():
+            // no supported components then.
+            if ( inputNb < (int)_imp->inputsComponents.size() ) {
+                comps = _imp->inputsComponents[inputNb];
+            }
         } else {
             assert(inputNb == -1);
             comps = _imp->outputComponents;

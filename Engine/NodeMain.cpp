@@ -910,7 +910,10 @@ Node::isSupportedComponent(int inputNb,
     QMutexLocker l(&_imp->inputsMutex);
 
     if (inputNb >= 0) {
-        assert( inputNb < (int)_imp->inputsComponents.size() );
+        // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size()
+        if ( inputNb >= (int)_imp->inputsComponents.size() ) {
+            return false;
+        }
         std::list<ImagePlaneDesc>::const_iterator found =
             std::find(_imp->inputsComponents[inputNb].begin(), _imp->inputsComponents[inputNb].end(), comp);
 
