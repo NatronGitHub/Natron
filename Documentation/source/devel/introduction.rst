@@ -14,3 +14,5 @@ which scripts it runs at startup.
     scriptvslabel.rst
     natronpath.rst
     startupscripts.rst
+    python-environment.rst
+    debugging-python.rst
