@@ -1,91 +1,171 @@
 .. _natronExec:
 
-Natron in command-line
-======================
+Command-line usage (Natron and NatronRenderer)
+==============================================
 
-Natron has 3 different execution modes:
+Natron can be run from the command line, for example to render a project on a render farm,
+to batch-process files with a Python script, or to type Python commands in an interpreter.
+This page lists the command-line options and gives a few recipes.
 
-- The execution of Natron projects (.ntp)
-- The execution of Python scripts that contain commands for Natron
-- An interpreter mode where commands can be given directly to the Python interpreter
+The executables
+---------------
 
-General options:
-----------------
+Natron comes with two executables:
 
-**[--background]** or **[-b]** enables background mode rendering.
- No graphical interface will be shown.
- When using *NatronRenderer* or the *-t* option this argument is implicit and you don't need to use it.
- If using Natron and this option is not specified then it will load the project as if opened from the file menu.
+- **Natron** starts the graphical user interface. With the :option:`-b` option, it runs in
+  background mode, without any window.
+- **NatronRenderer** always runs in background mode. It doesn't need a display, and it doesn't
+  run the startup scripts that build the user interface (:ref:`initGui.py<startupScripts>`).
 
+NatronRenderer is installed next to the Natron executable: in the ``bin`` directory of the
+Linux and Windows installations (``NatronRenderer.exe`` on Windows), and in
+``Natron.app/Contents/MacOS`` on macOS.
 
-**[--interpreter]** or **[-t]** [optional] *<python script file path>* enables Python interpreter mode.
-Python commands can be given to the interpreter and executed on the fly.
-An optional Python script filename can be specified to source a script before the interpreter is made accessible.
-Note that Natron will not start rendering any Write node of the sourced script, you must explicitly start it.
-*NatronRenderer* and *Natron* will do the same thing in this mode, only the *init.py* script will be loaded.
+Run ``NatronRenderer --help`` to print the options of your version.
 
+Execution modes
+---------------
 
-Options for the execution of Natron projects:
----------------------------------------------
+The command line selects one of these modes:
+
+- **GUI mode**: ``Natron [<project or script>]`` opens the user interface. A project (``.ntp``)
+  is loaded as if it were opened from the *File* menu. A Python script is run before the user
+  interface is created, and nothing is rendered.
+- **Background project**: ``NatronRenderer <project.ntp>`` (or ``Natron -b <project.ntp>``)
+  loads the project and renders its Write nodes.
+- **Background script**: ``NatronRenderer <script.py>`` runs a Python script that builds a
+  node graph, then renders its Write nodes (see :ref:`below<cl-python-scripts>`).
+- **Interpreter**: ``NatronRenderer -t [<script.py>]`` runs the optional script, then reads Python
+  commands from the standard input.
+
+In all modes, the Python variable ``app`` points to the application instance (the project).
+
+General options
+---------------
+
+.. option:: -h, --help
+
+   Print the usage and exit.
+
+.. option:: -v, --version
+
+   Print the Natron version, with the git commit and branch it was built from, and exit.
+
+.. option:: -b, --background
+
+   Run in background mode: no user interface is shown. NatronRenderer and :option:`-t` imply it.
+   Without it, Natron loads the project as if it were opened from the *File* menu.
+
+.. option:: -t [<script.py>], --interpreter [<script.py>]
+
+   Interpreter mode: run the optional Python script, then read Python commands from the
+   standard input and execute them. Write nodes are not rendered automatically: call
+   :func:`app.render()<NatronEngine.App.render>` yourself. Only ``init.py`` is run, not
+   ``initGui.py``, even with the Natron executable.
+
+.. option:: -c <PythonCommand>, --cmd <PythonCommand>
+
+   Run a line of Python code before the project is loaded or the script is run. This option can be
+   given several times; the commands run in the order they are given. Use it to pass
+   parameters to a script (see :ref:`the example below<cl-example-python>`).
+
+.. option:: --setting <name>=<value>
+
+   Set the Natron setting (preference) *name* to *value*. The value is a Python expression, so
+   a string must be quoted, as in ``--setting enableOpenGLRendering='"enabled"'``; for a choice
+   setting, the value may also be the index of the option. The names are the script names of the
+   settings, as used by ``natron.getSettings().getParam(name)``. The option can be given several
+   times. The settings are applied after the preferences are read and before the plug-ins are
+   loaded, and when this option is given the settings are **not saved**: the preferences file is
+   left unchanged.
+
+.. option:: --no-settings
+
+   Ignore the preferences file and use the default settings. The settings are not saved either.
+
+.. option:: --opengl <enabled|disabled|foreground>
+
+   Select whether OpenGL rendering is used: ``enabled`` (if available), ``disabled`` (even if a
+   project enables GPU rendering), or ``foreground`` (only when not using NatronRenderer and when
+   rendering runs in the foreground). This is a shortcut for the ``enableOpenGLRendering`` setting.
+
+.. option:: --clear-cache
+
+   Clear the image cache on startup.
+
+.. option:: --clear-openfx-cache
+
+   Clear the OpenFX plug-ins cache on startup, so that all OpenFX plug-ins are loaded again.
+
+.. option:: --export-docs <directory>
+
+   Write the reStructuredText documentation of the loaded nodes and of the preferences to
+   *directory*, and exit. ``tools/genStaticDocs.sh`` uses it to generate the node pages of
+   this documentation.
+
+.. option:: --
+
+   End of the options: what follows is the project or script file name, even if it starts with ``-``.
+
+Rendering a project
+-------------------
 
 ::
 
-    Natron <project file path>
+    NatronRenderer [options] [--] <project.ntp> [<frameRanges>]
 
-**``--writer``** or **``-w``** *<Writer node script name>* [optional] *<filename>* [optional] *<frameRange>* specifies a Write node to render.
-When in background mode, the renderer will only try to render with the node script name following this argument.
-If no such node exists in the project file, the process will abort.
-Note that if you don't pass the *--writer* argument, it will try to start rendering with all the writers in the project.
+.. option:: -w <WriteNode> [<filename>], --writer <WriteNode> [<filename>]
 
-After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g. 10-40).
+   Render only with the Write node whose script name is *WriteNode*. If there is no such node,
+   Natron exits with an error. Without any :option:`-w` option, all the Write nodes of the
+   project are rendered. The option can be given several times to render several Write nodes.
 
+   The optional *filename* replaces the output file name of the Write node. The argument is only
+   taken as a file name if it doesn't look like a frame range and doesn't end with ``.py`` or ``.ntp``.
 
-.. warning::
+.. option:: -i <ReadNode> <filename>, --reader <ReadNode> <filename>
 
-    You may only specify absolute file paths with the *-i* option, things like::
+   Set the file (or image sequence, or video) read by the Read node whose script name is
+   *ReadNode*. If there is no such node, Natron exits with an error.
 
-        NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr
+.. option:: -l <script.py>, --onload <script.py>
 
-    would not work. This would work on the other hand::
+   Run a Python script after the project is created or loaded, and after the
+   *After project created* and *After project loaded* callbacks. This also works in GUI mode.
+   The rules for :ref:`Python scripts<cl-python-scripts>` apply to this script.
 
-        NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr
+.. option:: -s, --render-stats
 
+   Write render statistics for each frame, in a text file next to each rendered image, with the
+   same name and a ``-stats.txt`` suffix. It lists, for each node, the render time and other
+   information, which helps to check or debug a render. It doesn't work when writing video files.
 
-Note that several *``-w``* options can be set to specify multiple Write nodes to render.
+The :option:`-w`, :option:`-i` and :option:`-o` options are only accepted in background mode, and
+:option:`-w` and :option:`-i` are also refused in interpreter mode.
+Node names are script names (see :ref:`autoVar`), so they can't contain spaces or
+other characters that are not allowed in Python names.
 
-.. warning::
+*frameRanges* is a positional argument: one or more frame ranges, separated by commas.
+Each range is one of:
 
-    Note that if specified, then the frame range will be the same for all Write nodes that will render.
+- ``<frame>``: a single frame, e.g. ``57``;
+- ``<firstFrame>-<lastFrame>``: e.g. ``10-40``;
+- ``<firstFrame>-<lastFrame>:<frameStep>``: e.g. ``1-10:2`` renders the frames 1, 3, 5, 7 and 9.
 
-**``--reader``* or **``-i``** <reader node script name> <filename> :
-Specify the input file/sequence/video to load for the given Reader node.
-If the specified reader node cannot be found, the process will abort.
+For example ``1-10:1,20-30:2,40-50`` or ``1329,2450,123,1-10:2``. The same frame ranges are used for
+all the Write nodes.
 
-.. warning::
+.. note::
 
-    You may only specify absolute file paths with the *-i* option, things like::
+    Put the frame ranges after the project file name. Right after ``-w <WriteNode>``, a frame
+    range with a step (``1-10:2``) would be taken as an output file name.
 
-        NatronRenderer -i MyReader ~/pictures.png -w MyWriter rendered###.exr
+Use absolute file paths for the project, the script and the file names given to :option:`-w`
+and :option:`-i`. On Linux and macOS, Natron also expands a leading ``~`` itself, e.g. when the
+file name is quoted. In some shells ``#`` or ``(`` are special characters: quote file names
+such as ``'/FastDisk/Pictures/sequence###.exr'``.
 
-    would not work. This would work on the other hand::
-
-        NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr
-
-
-
-**``--onload``** or **``-l``** *<python script file path>* specifies a Python script to be executed
-after a project is created or loaded.
-Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python function
-set to the callback onProjectLoaded or onProjectCreated.
-The same rules apply to this script as the rules below on the execution of Python scripts.
-
-**``--render-stats``** or **``-s``** Enables render statistics that will be produced for each frame in form of a file located
-next to the image produced by the Writer node, with the same name and a ``-stats.txt`` extension.
-The breakdown contains information about each nodes, render times, etc.
-This option is useful for debugging purposes or to control that a render is working correctly.
-**Please note** that it does not work when writing video files.
-
-Some examples of usage of the tool::
+Examples::
 
     Natron /Users/Me/MyNatronProjects/MyProject.ntp
 
@@ -93,78 +173,57 @@ Some examples of usage of the tool::
 
     NatronRenderer -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp
 
-    NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp
+    NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr /Users/Me/MyNatronProjects/MyProject.ntp 1-100
 
-    NatronRenderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp
+    NatronRenderer -w MyWriter -w MySecondWriter /Users/Me/MyNatronProjects/MyProject.ntp 1-10
 
-    NatronRenderer -w MyWriter 1-10 -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp
+    NatronRenderer -w MyWriter -l /Users/Me/Scripts/onProjectLoaded.py /Users/Me/MyNatronProjects/MyProject.ntp 1-10
 
+An example of a script passed to :option:`--onload`, which creates a Write node in every project
+that is created or loaded (:func:`createWriter()<NatronEngine.App.createWriter>` picks the
+Write plug-in from the file extension)::
 
-Example of a script passed to --onload::
+    writer = app.createWriter("/FastDisk/Pictures/output###.exr")
 
-    import NatronEngine
+.. _cl-python-scripts:
 
-    #Create a writer when loading/creating a project
-    writer = app.createNode("fr.inria.openfx.WriteOIIO")
-
-
-Options for the execution of Python scripts:
----------------------------------------------
+Running a Python script
+-----------------------
 
 ::
 
-    Natron <Python script path>
+    NatronRenderer [options] [--] <script.py> [<frameRanges>]
 
-Note that the following does not apply if the *-t* option was given.
+This doesn't apply to the interpreter mode (:option:`-t`).
 
-The script argument can either be the script of a Group that was exported from the graphical user interface or
-an exported project or even a script written by hand.
-
-When executing a script, Natron first looks for a function with the following signature::
+The script can be a PyPlug (a Group exported from the user interface), an exported
+project, or a script written by hand. Natron first looks for a function with the
+following signature in the script::
 
     def createInstance(app,group):
 
-If this function is found, the script will be imported as a module and it will be executed.
+If the function is found, the script is imported as a module and the function is called.
+The script then only sees the variables passed to *createInstance* and the modules it imports.
+Otherwise, the whole script is run as if it were given to Python, and it can use the
+variables declared by Natron (``app``, ``app1``, the nodes...).
 
-.. warning::
+In both cases, ``app`` is defined and points to the application instance.
+In GUI mode, Natron runs the script before creating the user interface, and doesn't render.
+In background mode, Natron then renders the Write nodes given with :option:`-w`, or the
+Output nodes given with :option:`-o`; without these options, it renders all the Write nodes
+of the graph.
 
-   Note that when imported, the script will not have access to any external variable declared by Natron
-   except the variable passed to the createInstance function.
+.. option:: -o <filename>, --output <filename>
 
-If this function is not found the whole content of the script will be interpreted as though it were given to Python natively.
+   Replace the node named *Output1* in the script with a Write node that writes *filename*, as
+   when a Write node is created in the user interface, and render it. A frame range must be given.
 
-.. note::
+.. option:: -o<N> <filename>, --output<N> <filename>
 
-   In this case the script **can** have access to the external variables declared by Natron.
+   The same, for the node named *Output<N>*: ``-o1`` uses *Output1*, ``-o2`` uses *Output2*, etc.
+   Use it to render several Output nodes.
 
-Either cases, the \"app\" variable will always be defined and pointing to the correct application instance.
-Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
-When in command-line mode (*-b* option or NatronRenderer) you must specify the nodes to render.
-If nothing is specified, all Write nodes that were created in the Python script will be rendered.
-
-You can render specific Write nodes either with the *-w* option as described above or with the following option:
-
-**[--output]** or **[-o]** *<filename>* *<frameRange>* specifies an *Output* node in the script that should be replaced with a *Write* node.
-
-The option looks for a node named *Output1* in the script and will replace it by a *Write* node
-much like when creating a Write node in the user interface.
-
-A filename must be specified, it is the filename of the output files to render.
-Also a frame range must be specified if it was not specified earlier.
-
-This option can also be used to render out multiple Output nodes, in which case it has to be used like this:
-
-**[--output1]** or **[-o1]** looks for a node named *Output1*
-**[--output2]** or **[-o2]** looks for a node named *Output2*
-
-etc...
-
-**-c** or **[ --cmd ]** "PythonCommand" :
-Execute custom Python code passed as a script prior to executing the Python script passed in parameter.
-This option may be used multiple times and each python command will be executed in the order they were given to the command-line.
-
-
-Some examples of usage of the tool::
+Examples::
 
     Natron /Users/Me/MyNatronScripts/MyScript.py
 
@@ -172,27 +231,23 @@ Some examples of usage of the tool::
 
     NatronRenderer -w MyWriter /Users/Me/MyNatronScripts/MyScript.py
 
-    NatronRenderer -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
+    NatronRenderer -o /FastDisk/Pictures/sequence###.exr /Users/Me/MyNatronScripts/MyScript.py 1-100
 
-    NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
+    NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr /Users/Me/MyNatronScripts/MyScript.py 1-100
 
-    NatronRenderer -w MyWriter -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
+    NatronRenderer -w MyWriter -o /FastDisk/Pictures/sequence###.exr /Users/Me/MyNatronScripts/MyScript.py 1-100
 
-    NatronRenderer -w MyWriter /FastDisk/Pictures/sequence.mov 1-100 /Users/Me/MyNatronScripts/MyScript.py -e "print \"Now executing MyScript.py...\""
+    NatronRenderer -c 'print("Now executing MyScript.py...")' -w MyWriter /FastDisk/Pictures/sequence.mov /Users/Me/MyNatronScripts/MyScript.py 1-100
 
-
-
-Options for the execution of the interpreter mode:
----------------------------------------------------
+Using the interpreter
+---------------------
 
 ::
 
-    Natron -t [optional] <Python script path>
+    NatronRenderer -t [--] [<script.py>]
 
-Natron will first source the script passed in argument, if any and then return control to the user.
-In this mode, the user can freely input Python commands that will be interpreted by the Python interpreter shipped with Natron.
-
-Some examples of usage of the tool::
+Natron runs the script given as argument, if any, and then reads Python commands from the
+standard input. Examples::
 
     Natron -t
 
@@ -200,25 +255,56 @@ Some examples of usage of the tool::
 
     NatronRenderer -t /Users/Me/MyNatronScripts/MyScript.py
 
+Order of execution
+------------------
 
+In background mode, Natron does the following, in this order:
 
-Example
-=======
+1. read the preferences (unless :option:`--no-settings` is given), then apply the
+   :option:`--setting` and :option:`--opengl` options;
+2. load the plug-ins, and run the :ref:`startup scripts<startupScripts>` (``init.py``) and
+   load the PyPlugs;
+3. run the :option:`-c` commands;
+4. load the project, or run the Python script;
+5. run the :option:`--onload` script;
+6. apply the :option:`-i` file names, and the :option:`-w` and :option:`-o` options;
+7. render (in interpreter mode, read commands from the standard input instead).
 
-A typical example would be to convert an input image sequence to another format. There are
-multiple ways to do it from the command-line in Natron and we are going to show them all:
+Exit status
+-----------
 
-- Passing a .ntp file to the command line and passing the correct arguments
-- Passing a Python script file to the command-line to setup the graph and render
+NatronRenderer exits with status 0 when it succeeds (and after :option:`-h` or :option:`-v`),
+and with status 1 when the command line is wrong, or when the project or the script can't be loaded
+(for example when a node given to :option:`-w` or :option:`-i` doesn't exist). Check the output
+for errors that happen while frames are rendered.
+
+Example: converting an image sequence
+-------------------------------------
+
+A typical example is converting an image sequence to another format. This can be done with a
+project file or with a Python script.
 
 With a Natron project (.ntp) file
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Let's suppose the user already set up the project in the user interface, with two nodes::
+
+    MyReader ---> MyWriter
+
+The render can then be launched from the command line::
+
+    NatronRenderer -w MyWriter /path/to/myProject.ntp 10-20
+
+The Read and Write file names can be changed from the command line::
+
+    NatronRenderer -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov /path/to/myProject.ntp 10-20
+
+.. _cl-example-python:
 
 With a Python script file
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We would write a customized Python script that we pass to the command-line::
+We write a Python script that we pass to the command line::
 
     #This is the content of myStartupScript.py
 
@@ -232,10 +318,9 @@ We would write a customized Python script that we pass to the command-line::
     #The node will be accessible via app.MyReader after this call
     reader.setScriptName("MyReader")
 
-
     #Set the format type parameter of the Write node to Input Stream Format so that the video
     #is written to the size of the input images and not to the size of the project
-    formatType =  writer.getParam("formatType")
+    formatType = writer.getParam("formatType")
     formatType.setValue(0)
 
     #Connect the Writer to the Reader
@@ -248,71 +333,35 @@ We would write a customized Python script that we pass to the command-line::
     #To use with Natron (Gui) to start render
     #app.render(writer, 10, 20)
 
+To run this script in the background::
 
-To launch this script in the background, you can do it like this::
+    NatronRenderer -w MyWriter /path/to/myStartupScript.py 10-20
 
-    NatronRenderer /path/to/myStartupScript.py -w MyWriter 10-20
+The input sequence and the output file name are fixed in the script. The command-line options
+can change them::
 
-For now the output filename and the input sequence are *static* and would need to be changed
-by hand to execute this script on another sequence.
+    NatronRenderer -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov /path/to/myStartupScript.py 10-20
 
-We can customize the Reader filename and Writer filename parameters using the command-line
-arguments::
+Now let's suppose that the frame rate of the output video must also change for each sequence.
+No command-line option sets it, but the :option:`-c` option runs Python code before the
+script, so it can define variables that the script uses::
 
-    NatronRenderer /path/to/myStartupScript.py -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20
+    NatronRenderer -c "fpsValue=60" -w MyWriter /path/to/myStartupScript.py 10-20
 
-Let's imagine that now we would need to also set the frame-rate of the video in output and
-we would need it to vary for each different sequence we are going to transcode.
-This is for the sake of this example, you could also need to modify other parameters in
-a real use-case.
+with this line added at the end of the script::
 
-Since the fps cannot be specified from the command-line arguments, we could do it in Python with::
+    writer.getParam("fps").set(fpsValue)
 
-    MyWriter.getParam("fps").set(48)
+The Read and Write file names can be passed the same way::
 
-And change the value in the Python script for each call to the command-line, but that would
-require manual intervention.
+    NatronRenderer -c "fpsValue=60" -c "readFileName='/Users/Toto/Sequences/AnotherSequence__####.exr'" -c "writeFileName='/Users/Toto/Sequences/mySequence.mov'" /path/to/myStartupScript.py 10-20
 
-That's where another option from the command-line comes into play: the **``-c``** option
-(or ``--cmd``): It allows one to pass custom Python code in form of a string that will be
-executed before the actual script.
-
-To set the fps from the command-line we could do as such now::
-
-    NatronRenderer /path/to/myStartupScript.py -c "fpsValue=60" -w MyWriter 10-20
-
-Which would require the following modifications to the Python script::
-
-    MyWriter.getParam("fps").set(fpsValue)
-
-We could also set the same way the Reader and Writer file names::
-
-    NatronRenderer /path/to/myStartupScript.py -c "fpsValue=60; readFileName=\"/Users/Toto/Sequences/AnotherSequence__####.exr\"; writeFileName=\"/Users/Toto/Sequences/mySequence.mov\""
-
-And modify the Python script to take into account the new *readFileName* and *writeFileName* parameters::
-
+with the following changes to the script::
 
     ...
     reader = app.createReader(readFileName)
-    writer = app.createNode(writeFileName)
+    writer = app.createWriter(writeFileName)
     ...
+    writer.getParam("fps").set(fpsValue)
 
-
-The **``-c``** option can be given multiple times to the command-line and each command passed will
-be executed once, in the order they were given.
-
-With a Natron project file:
----------------------------
-
-Let's suppose the user already setup the project via the GUI as such:
-
-MyReader--->MyWriter
-
-We can then launch the render from the command-line this way::
-
-    NatronRenderer /path/to/myProject.ntp -w MyWriter 10-20
-
-We can customize the Reader filename and Writer filename parameters using the command-line
-arguments::
-
-    NatronRenderer  /path/to/myProject.ntp -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20
+:option:`-w` is not needed here: without it, all the Write nodes of the graph are rendered.
