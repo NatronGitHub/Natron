@@ -45,8 +45,8 @@ Each row of the panel is one task, with the following columns:
    are written.
 
 **Status**
-   *Queued* (yellow) before the task starts, *Running* (green), *Paused* or
-   *Canceled* (orange), *Finished*, or *Failed* (red).
+   *Queued* (yellow) before the task starts, *Running* (green), *Paused*
+   (orange), *Finished*, or *Failed* (red).
 
 **Controls**
    The buttons to pause, restart or cancel the task (see below).
@@ -70,29 +70,34 @@ plug-ins, are only added to the panel when they are expected to last more
 than a few seconds.
 
 
-Pausing, restarting and cancelling
-----------------------------------
+Pausing, restarting and canceling
+---------------------------------
 
 The **Controls** column has three buttons:
 
 **Pause**
-   Stops the render. Only renders to image
-   sequences can be paused: renders to a movie file (for example with
+   Stops the render. Only renders to image sequences can be paused: renders
+   to a movie file (for example with
    :ref:`WriteFFmpeg <fr.inria.openfx.WriteFFmpeg>`) cannot.
 
 **Restart**
-   Starts a paused render again, from the last frame written. For a finished
-   render, it renders the whole frame range again.
+   Starts a paused or failed render again, from the last frame written (that
+   frame is written again). For a render that finished successfully, it
+   renders the whole frame range again. With *Render in a separate process*
+   (see below), the restarted render uses the project as it is now, so the
+   changes made since the first start are included.
 
 **Cancel**
    Stops the task and removes it from the list. You can also select one or
    more rows and press :kbd:`Delete` or :kbd:`Backspace`.
 
-A render that cannot be paused can only be cancelled.
+A task that cannot be paused can only be canceled, and it is then removed
+from the list.
 
 At the top of the panel, **Remove Finished Tasks** removes the renders from
-the list as soon as they are finished. When it is unchecked, finished renders
-stay in the list, so that you can restart them.
+the list as soon as they finish successfully; failed renders stay in the
+list. When it is unchecked, finished renders stay in the list, so that you
+can restart them.
 
 
 Queuing renders
@@ -142,8 +147,9 @@ in other ways:
 
 To make renders of Write nodes faster, *Turbo mode* (in the player of the
 Viewer) stops redrawing the rest of the interface during renders and
-playback. With the *Auto-turbo* preference, it is turned on automatically
-during renders of Write nodes. See :doc:`getstarted-environment-viewer` for
+playback. With the *Auto-turbo* preference, in the *Nodegraph* section of the
+:doc:`Preferences </_prefs>`, it is turned on automatically during renders of
+Write nodes, except renders in a separate process. See :doc:`getstarted-environment-viewer` for
 the Viewer controls.
 
 
@@ -154,6 +160,8 @@ Render statistics
 render statistics window and collects statistics during the next renders:
 for each node, the time spent, the region of definition, the mipmap level
 (render scale), and whether the node was skipped because it did not change
-its input (identity). This is useful
-to find which nodes make a composition slow. In the Viewer,
-:kbd:`Ctrl+Shift+U` renders the current frame with statistics.
+its input (identity). This is useful to find which nodes make a composition
+slow. By default the statistics are cleared at each frame: check
+**Accumulate** to add them up over several frames, and click **Reset** to
+clear them. In the Viewer, :kbd:`Ctrl+Shift+U` renders the current frame
+with statistics.
