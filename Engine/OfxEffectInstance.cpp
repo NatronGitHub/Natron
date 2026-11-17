@@ -474,13 +474,24 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 // kNatronOfxParamSelectionRectangleState. Natron used to look up the name of the
                 // kNatronOfxImageEffectSelectionRectangle property instead, so also accept a
                 // parameter with that name, in case a plug-in was written against that behaviour.
-                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxParamSelectionRectangleState);
-                if (!foundSelKnob) {
-                    foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                KnobIntPtr selKnob = std::dynamic_pointer_cast<KnobInt>( getKnobByName(kNatronOfxParamSelectionRectangleState) );
+                if (!selKnob) {
+                    selKnob = std::dynamic_pointer_cast<KnobInt>( getKnobByName(kNatronOfxImageEffectSelectionRectangle) );
                 }
-                if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = std::dynamic_pointer_cast<KnobInt>(foundSelKnob);
-                    _imp->selectionRectangleStateKnob = isIntKnob;
+                if (selKnob) {
+                    // The state changes on every mouse move during a drag and doesn't affect the
+                    // image: it must not trigger renders, be saved in the project, or be shown.
+                    // Extension 7 doesn't say so (extension 11 does for the undo/redo parameters),
+                    // so enforce it here, whatever the plug-in declared.
+                    if ( selKnob->getEvaluateOnChange() || selKnob->getIsPersistent() || !selKnob->getIsSecret() ) {
+                        qDebug() << "Warning:" << getNode()->getScriptName_mt_safe().c_str()
+                                 << ": the selection rectangle state parameter should have"
+                                 << "kOfxParamPropEvaluateOnChange=0, kOfxParamPropPersistent=0 and kOfxParamPropSecret=1";
+                    }
+                    selKnob->setEvaluateOnChange(false);
+                    selKnob->setIsPersistent(false);
+                    selKnob->setSecret(true);
+                    _imp->selectionRectangleStateKnob = selKnob;
                 }
             }
             {
@@ -3210,7 +3221,9 @@ void
 OfxEffectInstance::onInteractViewportSelectionCleared()
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
-    if (!k) {
+    // Every node with a viewer context gets the viewer's selection signals: only the node whose
+    // settings panel is open (so whose overlay is drawn) uses the selection, as in RotoPaint.
+    if ( !k || !getNode()->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {0, 0, 0, 0};
@@ -3224,19 +3237,14 @@ void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
-    if (!k) {
+    if ( !k || !getNode()->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    int state = onRelease ? 2 : 1;
-    if (k->getValue() == state) {
-        // setValue() doesn't notify the plug-in when the value doesn't change, but the
-        // rectangle did: during a drag the state stays 1. Call instanceChanged anyway.
-        k->evaluateValueChange(0, k->getCurrentTime(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    } else {
-        k->setValue(state);
-    }
+    // During a drag the state stays 1 while the rectangle changes: force the notification
+    // (hasChanged = true), so that the plug-in gets instanceChanged on every update.
+    k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
 }
 
 NATRON_NAMESPACE_EXIT
