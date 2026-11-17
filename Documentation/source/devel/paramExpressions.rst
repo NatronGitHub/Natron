@@ -79,9 +79,9 @@ again in another project.
 .. warning::
 
     You can reach any node or parameter in the project with the *app1* prefix (or *app*
-    in command-line mode), as in ``app1.Blur1.size``, but don't do it: such expressions
-    break when the project is opened as another instance, and they were seen to read 0 when
-    the project is run with ``NatronRenderer -t``. Use plain node names (``Blur1.size``)
+    in command-line mode), as in ``app1.Blur1.size``, but avoid it: such expressions
+    are not portable, because they break when the project is opened as another instance
+    (``app2``...) or when the nodes are copied into a group. Use plain node names (``Blur1.size``)
     or the ``thisGroup.`` prefix (``thisGroup.Blur1.size``) instead.
 
 
@@ -141,9 +141,12 @@ of :doc:`PythonReference/NatronEngine/AnimatedParam`.
 .. warning::
 
     :func:`setExpression()<NatronEngine.AnimatedParam.setExpression>` does not raise an exception
-    if the expression is invalid (for example a syntax error or a misspelled node name). The
-    parameter then silently falls back to its own value or animation curve. After setting an
-    expression from a script, check that the parameter returns the value you expect.
+    if the expression is invalid (for example a syntax error or a misspelled node name): it
+    returns **False** and doesn't store the expression, so the parameter keeps its own value or
+    animation curve. Always check the return value::
+
+        if not app1.Blur1.size.setExpression("Transform1.translate.get()[0]", False, 0):
+            print("invalid expression")
 
 Writing an expression:
 ----------------------
@@ -214,7 +217,9 @@ Natron can also link parameters without an expression:
 - **Ctrl+drag** (**Cmd+drag** on macOS) a parameter onto another parameter of the same type
   creates a *hard link*: the target parameter takes the value of the source.
 - **Ctrl+Shift+drag** (**Cmd+Shift+drag** on macOS) writes an expression for you on the target,
-  of the form ``thisGroup.Node1.param.getValue() * curve(frame)``.
+  of the form ``app1.Node1.param.getValue() * curve(frame,0)`` for a node of the main node graph,
+  or ``thisGroup.Node1.param.getValue() * curve(frame,0)`` for a node inside a group (the
+  dimension passed to ``curve`` is the target dimension, or ``dimension`` when all dimensions are linked).
 - Right-click a parameter, choose :menuselection:`Copy --> Copy Link`, then right-click the target and choose
   :guilabel:`Paste Link`.
 - From Python, use :func:`slaveTo(otherParam,thisDimension,otherDimension)<NatronEngine.Param.slaveTo>`

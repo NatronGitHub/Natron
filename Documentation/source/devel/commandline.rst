@@ -28,15 +28,15 @@ Execution modes
 
 The command line selects one of these modes:
 
-- **GUI mode**: ``Natron [<project or script>]`` opens the user interface. A project (``.ntp``)
-  is loaded as if it were opened from the *File* menu. A Python script is run before the user
+- **GUI mode**: ``Natron [<project or script>]``, without :option:`-b` or :option:`-t`, opens the
+  user interface. A project (``.ntp``) is loaded as if it were opened from the *File* menu. A Python script is run before the user
   interface is created, and nothing is rendered.
 - **Background project**: ``NatronRenderer <project.ntp>`` (or ``Natron -b <project.ntp>``)
   loads the project and renders its Write nodes.
 - **Background script**: ``NatronRenderer <script.py>`` runs a Python script that builds a
   node graph, then renders its Write nodes (see :ref:`below<cl-python-scripts>`).
-- **Interpreter**: ``NatronRenderer -t [<script.py>]`` runs the optional script, then reads Python
-  commands from the standard input.
+- **Interpreter**: ``NatronRenderer -t [<script.py|project.ntp>]`` runs the optional script, or
+  loads the optional project, then reads Python commands from the standard input.
 
 In all modes, the Python variable ``app`` points to the application instance (the project).
 
@@ -54,11 +54,10 @@ General options
 .. option:: -b, --background
 
    Run in background mode: no user interface is shown. NatronRenderer and :option:`-t` imply it.
-   Without it, Natron loads the project as if it were opened from the *File* menu.
 
-.. option:: -t [<script.py>], --interpreter [<script.py>]
+.. option:: -t [<script.py|project.ntp>], --interpreter [<script.py|project.ntp>]
 
-   Interpreter mode: run the optional Python script, then read Python commands from the
+   Interpreter mode: run the optional Python script, or load the optional project, then read Python commands from the
    standard input and execute them. Write nodes are not rendered automatically: call
    :func:`app.render()<NatronEngine.App.render>` yourself. Only ``init.py`` is run, not
    ``initGui.py``, even with the Natron executable.
@@ -244,10 +243,10 @@ Using the interpreter
 
 ::
 
-    NatronRenderer -t [--] [<script.py>]
+    NatronRenderer -t [--] [<script.py|project.ntp>]
 
-Natron runs the script given as argument, if any, and then reads Python commands from the
-standard input. Examples::
+Natron runs the script, or loads the project, given as argument, if any, and then reads
+Python commands from the standard input. Examples::
 
     Natron -t
 
@@ -267,16 +266,20 @@ In background mode, Natron does the following, in this order:
 3. run the :option:`-c` commands;
 4. load the project, or run the Python script;
 5. run the :option:`--onload` script;
-6. apply the :option:`-i` file names, and the :option:`-w` and :option:`-o` options;
+6. apply the :option:`-w` and :option:`-o` options, then the :option:`-i` file names;
 7. render (in interpreter mode, read commands from the standard input instead).
 
 Exit status
 -----------
 
 NatronRenderer exits with status 0 when it succeeds (and after :option:`-h` or :option:`-v`),
-and with status 1 when the command line is wrong, or when the project or the script can't be loaded
-(for example when a node given to :option:`-w` or :option:`-i` doesn't exist). Check the output
-for errors that happen while frames are rendered.
+and with status 1 when the command line is wrong, or when the project can't be loaded
+(for example when a node given to :option:`-w` or :option:`-i` doesn't exist).
+
+A Python error in the script does **not** set status 1: Natron prints the error and goes on, and
+if the script created a Write node before the error, that Write node is still rendered
+(`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_). Check the output for
+Python errors and for errors that happen while frames are rendered.
 
 Example: converting an image sequence
 -------------------------------------

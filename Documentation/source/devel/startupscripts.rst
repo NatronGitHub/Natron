@@ -30,7 +30,7 @@ All the startup scripts run before any PyPlug is loaded, so a startup script can
 functions and modules that the PyPlugs use.
 
 The startup scripts are run in the ``__main__`` Python module, so the functions they define are
-referenced without a module prefix, e.g. ``natron.setOnProjectCreatedCallback("myCallback")``.
+referenced without a module prefix, e.g. ``NatronEngine.natron.setOnProjectCreatedCallback("myCallback")``.
 
 In GUI mode, Natron prints a line such as ``Info: init.py script found and loaded at ...``
 for each startup script that it runs, in the terminal and in the splash screen.
@@ -50,11 +50,11 @@ error log (:menuselection:`Display --> Show Project Errors Log...`), and Natron 
     will be called only later on, when a project will actually be created.
 
 Examples
-=========
+--------
 
 
 initGui.py
------------
+^^^^^^^^^^^
 
 A complete example of a **initGui.py** can be found :ref:`here<sourcecodeEx>` .
 
@@ -62,7 +62,7 @@ A complete example of a **initGui.py** can be found :ref:`here<sourcecodeEx>` .
 .. _initExample:
 
 init.py
--------
+^^^^^^^
 
 Here is an example of a **init.py** script, featuring:
 

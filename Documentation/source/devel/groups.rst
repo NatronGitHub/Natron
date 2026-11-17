@@ -112,7 +112,7 @@ Exporting a group
 Once your group is setup correctly, you can *export* it as a Python script that Natron will
 generate automatically. We call them *PyPlugs*.
 
-To do so, click the **Export as Python plug-in** button in the "Node" page of the settings panel
+To do so, click the **Export as PyPlug** button in the "Node" page of the settings panel
 of the Group node.
 
 .. figure:: exportButton.png
@@ -166,7 +166,7 @@ and even in the tab menu of the node-graph:
 
 .. note::
 
-    The plug-in ID of the group is the *Plugin ID* that you entered in the export dialog:
+    The plug-in ID of the group is the *Unique ID* that you entered in the export dialog:
     the exported script returns it from its *getPluginID()* function. To create a node using
     the group from a Python script, pass that ID to createNode, e.g.::
 
