@@ -418,13 +418,16 @@ private:
 
     NodeGraph* _graph;
     std::list<NodeGuiWPtr> _originalNodes;
+    // outputNode had its input inputIdx connected to inputNode.
+    // An output node may have several such links, hence a list.
     struct OutputLink
     {
+        NodeWPtr outputNode;
         int inputIdx;
         NodeWPtr inputNode;
     };
-    typedef std::map<NodeWPtr, OutputLink, std::owner_less<NodeWPtr>> OutputLinksMap;
-    OutputLinksMap _outputLinks;
+    typedef std::list<OutputLink> OutputLinks;
+    OutputLinks _outputLinks;
     NodeGuiWPtr _group;
     bool _firstRedoCalled;
     bool _isRedone;

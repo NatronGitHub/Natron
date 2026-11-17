@@ -321,8 +321,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         ///disconnect previous connection
         NodePtr outputNode = nearbyEdge->getDest()->getNode();
         assert(outputNode);
-        int inputNb = outputNode->inputIndex(inputNode);
-        if (inputNb == -1) {
+        // Use the edge's own input: inputNode may be connected to several inputs of outputNode.
+        int inputNb = nearbyEdge->getInputNumber();
+        if ( (inputNb == -1) || (outputNode->getRealInput(inputNb) != inputNode) ) {
             return;
         }
 
@@ -346,7 +347,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(guiApp);
         ProjectPtr project = guiApp->getProject();
         assert(project);
-        bool ok = project->disconnectNodes(inputNode, outputNode);
+        bool ok = outputNode->disconnectInput(inputNb) != -1;
         if (!ok) {
             return;
         }

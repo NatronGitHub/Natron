@@ -29,6 +29,7 @@ set(Tests_SOURCES
     KnobFile_Test.cpp
     Lut_Test.cpp
     OSGLContext_Test.cpp
+    RotoPaint_Test.cpp
     Tracker_Test.cpp
     wmain.cpp
 )
