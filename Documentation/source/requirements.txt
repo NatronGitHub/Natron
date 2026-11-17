@@ -1,3 +1,5 @@
 docutils<0.18
 sphinx-rtd-theme==1.0.0
 sphinx-copybutton==0.4.0
+# mermaid diagrams (see _ext/natron_mermaid.py)
+sphinxcontrib-mermaid==2.1.1

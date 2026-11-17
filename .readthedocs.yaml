@@ -10,10 +10,33 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
+    # mermaid-cli (Documentation/package.json) renders the mermaid diagrams
+    # for the PDF and ePub; the HTML renders them in the browser.
+    nodejs: "20"
     # You can also specify other tool versions:
-    # nodejs: "20"
     # rust: "1.70"
     # golang: "1.20"
+  apt_packages:
+    # the shared libraries of the headless Chrome used by mermaid-cli
+    - libasound2
+    - libatk-bridge2.0-0
+    - libatk1.0-0
+    - libcups2
+    - libdrm2
+    - libgbm1
+    - libnss3
+    - libpango-1.0-0
+    - libxcomposite1
+    - libxdamage1
+    - libxfixes3
+    - libxkbcommon0
+    - libxrandr2
+    - fonts-liberation
+  jobs:
+    post_install:
+      # Only chrome-headless-shell is used: skip the full Chrome download.
+      # If this fails, the PDF and ePub show the diagram sources instead.
+      - cd Documentation && PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm install --no-audit --no-fund --no-package-lock || true
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

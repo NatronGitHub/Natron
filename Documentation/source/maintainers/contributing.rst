@@ -152,15 +152,54 @@ Building this manual
 --------------------
 
 The documentation is `Sphinx <https://www.sphinx-doc.org/>`_ using the Read the
-Docs theme; sources are under ``Documentation/source``. Build the HTML with::
+Docs theme; sources are under ``Documentation/source``. Install the Python
+requirements in a virtual environment, then build the HTML with::
 
+    pip install -r Documentation/source/requirements.txt
     cd Documentation
     sphinx-build -b html source html
 
 and the PDF with::
 
     sphinx-build -b latex source pdf
-    (cd pdf; pdflatex Natron)
+    (cd pdf; latexmk -pdf Natron)
+
+Diagrams
+~~~~~~~~
+
+Write diagrams as `Mermaid <https://mermaid.js.org/>`_ text in a ``mermaid``
+directive (from `sphinxcontrib-mermaid
+<https://github.com/mgaitan/sphinxcontrib-mermaid>`_), not as image files, so
+that they can be reviewed and updated like the rest of the text. For example::
+
+    .. mermaid::
+       :alt: Gui links Engine, Engine links HostSupport.
+       :caption: What links what.
+
+       flowchart TB
+           Gui["Gui/"] --> Engine["Engine/"]
+           Engine --> HostSupport["HostSupport/"]
+
+- Use the diagram types of `Mermaid 11 <https://mermaid.js.org/intro/>`_
+  (``flowchart``, ``sequenceDiagram``, ``classDiagram``, ``stateDiagram-v2``,
+  …), and try them in the `Mermaid live editor <https://mermaid.live/>`_.
+- Always give an ``:alt:`` text that says what the diagram shows, and keep
+  diagrams small: a diagram complements the text, it does not replace it.
+- Quote labels that contain punctuation (``A["Engine/ (NatronEngine)"]``);
+  ``<br/>`` breaks a line.
+
+The HTML pages render the diagrams in the browser (the ``mermaid_version`` of
+``conf.py``, loaded from a CDN). The PDF and ePub need pictures, which
+`mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a headless
+Chrome. To get them locally, install it once with Node.js 20 or later::
+
+    cd Documentation
+    npm install    # uses package.json; node_modules/ is ignored by git
+
+``_ext/natron_mermaid.py`` finds ``mmdc`` on the ``PATH`` or in
+``Documentation/node_modules/.bin``, and checks that it works before the PDF
+or ePub build. If it doesn't, these formats show the diagram source instead, and
+the build log says why (look for ``mermaid:``).
 
 Two rules from ``Documentation/README-Natron-documentation.md`` are important:
 

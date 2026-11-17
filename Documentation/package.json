@@ -1,0 +1,10 @@
+{
+  "name": "natron-documentation-tools",
+  "private": true,
+  "description": "Node.js tools used to build the Natron documentation: mermaid-cli renders the mermaid diagrams to images for the PDF (LaTeX) and ePub builds. The HTML build does not need it.",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "11.17.1",
+    "mermaid": "11.17.2",
+    "puppeteer": "24.43.1"
+  }
+}
