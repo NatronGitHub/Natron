@@ -223,16 +223,26 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
 }
 
 #if NATRON_ENABLE_TRIMAP
+/**
+ * @brief Marks the pixels of the RoI left to render as being rendered by this thread in the bitmaps of the
+ * images of all planes, and releases them when destroyed: as rendered if setRendered() was called, as not
+ * rendered otherwise (render aborted or failed, exception...).
+ **/
 class ImageBitMapMarker_RAII
 {
+    struct MarkedImage
+    {
+        ImagePtr image;
+        std::list<RectI> rects; // the rectangles of image marked as being rendered by this thread
+    };
 
-    std::map<ImagePlaneDesc, EffectInstance::PlaneToRender> _image;
+    std::list<MarkedImage> _images;
     RectI _roi;
     EffectInstance* _effect;
-    std::list<RectI> _rectsToRender;
+    std::list<RectI> _rectsToRender; // the rectangles of all planes
     bool _isBeingRenderedElseWhere;
-    bool _isValid;
-    bool _renderFullScale;
+    bool _rendered;
+    bool _released;
 
 public:
 
@@ -240,86 +250,83 @@ public:
                            bool renderFullScale,
                            const RectI& roi,
                            EffectInstance* effect)
-    : _image(image)
+    : _images()
     , _roi(roi)
     , _effect(effect)
     , _rectsToRender()
     , _isBeingRenderedElseWhere(false)
-    , _isValid(true)
-    , _renderFullScale(renderFullScale)
+    , _rendered(false)
+    , _released(false)
     {
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
+        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = image.begin(); it != image.end(); ++it) {
+            const ImagePtr& cacheImage = renderFullScale ? it->second.fullscaleImage : it->second.downscaleImage;
             if (cacheImage && cacheImage->usesBitMap()) {
-                _effect->_imp->markImageAsBeingRendered(cacheImage, roi, &_rectsToRender, &_isBeingRenderedElseWhere);
+                MarkedImage m;
+                m.image = cacheImage;
+                bool renderedElsewhere = false;
+                _effect->_imp->markImageAsBeingRendered(cacheImage, roi, &m.rects, &renderedElsewhere);
+                _isBeingRenderedElseWhere |= renderedElsewhere;
+                _rectsToRender.insert( _rectsToRender.end(), m.rects.begin(), m.rects.end() );
+                _images.push_back(m);
             }
         }
-
     }
 
+    /// The rectangles to render, for all planes
     const std::list<RectI>& getRectsToRender() const
     {
         return _rectsToRender;
     }
 
-    void invalidate()
+    /// Call when the rectangles returned by getRectsToRender() were successfully rendered
+    void setRendered()
     {
-        _isValid = false;
+        _rendered = true;
     }
 
     /**
-     * @brief Wait for the portions of the RoI that other threads are rendering.
-     * @param rectsRendered true if this thread successfully rendered the rectangles returned by getRectsToRender().
-     * They are then marked as rendered in all planes before waiting: otherwise they would still be
-     * PIXEL_UNAVAILABLE, and this thread would wait for its own pixels, possibly forever (#811).
+     * @brief Release the rectangles marked by this thread (see the destructor), then wait for the portions of
+     * the RoI that other threads are rendering.
+     * The rectangles must be released before waiting: otherwise they would still be PIXEL_UNAVAILABLE, and
+     * this thread would wait for its own pixels, possibly forever (#811).
+     * Returns false if some pixels of the RoI are still not rendered (another thread released pixels without
+     * rendering them, or the render was aborted): the caller must render them.
      **/
-    void waitForPendingRegions(bool rectsRendered)
+    bool waitForPendingRegions()
     {
-        if (!_isBeingRenderedElseWhere || !_isValid) {
-            return;
+        if (!_isBeingRenderedElseWhere) {
+            return true;
         }
-        if (rectsRendered) {
-            for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-                const ImagePtr& cacheImage = _renderFullScale ? it->second.fullscaleImage : it->second.downscaleImage;
-                if (cacheImage && cacheImage->usesBitMap()) {
-                    _effect->_imp->markImageRectsAsRendered(cacheImage, _rectsToRender);
-                }
+        release();
+        bool complete = true;
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            if ( !_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, it->image) ) {
+                complete = false;
             }
         }
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!_renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
-            if (cacheImage && cacheImage->usesBitMap()) {
-                if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage)) {
-                    _isValid = false;
-                }
-            }
-        }
+
+        return complete;
     }
 
     ~ImageBitMapMarker_RAII()
     {
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!_renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
-            if (cacheImage && cacheImage->usesBitMap()) {
-                _effect->_imp->unmarkImageAsBeingRendered(cacheImage, _rectsToRender, !_isValid);
-            }
+        release();
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            _effect->_imp->unmarkImageAsBeingRendered(it->image);
         }
- 
+    }
+
+private:
+
+    void release()
+    {
+        if (_released) {
+            return;
+        }
+        _released = true;
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            _effect->_imp->releaseImageRects(it->image, it->rects, _rendered);
+        }
     }
 };
 #endif // #if NATRON_ENABLE_TRIMAP
@@ -1151,6 +1158,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
          * never be rendered in the copy. In that case, render everything that is not rendered yet in the
          * copy (including those pixels), and mark the copy, not the old image: the guard is created on the
          * copy after the allocation below.
+         * This is decided before the input images are rendered. If another thread grows the cached image in
+         * place meanwhile (bounds only grow), no copy is made and the guard is created on the cached image:
+         * this is harmless, since the rectangles rendered (computed here) contain the ones the guard marks then
+         * (pixels only go from "not rendered" to "being rendered" to "rendered", or back to "not rendered").
          */
         bool willCopyAndResize = false;
         if (args.calledFromGetImage && !planesToRender->useOpenGL) {
@@ -1164,8 +1175,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
         if (willCopyAndResize) {
-            // getRestToRender() treats pixels being rendered by other threads as not rendered
-            isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+            // getRestToRender() treats pixels being rendered by other threads as not rendered. Render what is
+            // missing in any plane, since the guard marks all planes.
+            for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it2 = planesToRender->planes.begin();
+                 it2 != planesToRender->planes.end(); ++it2) {
+                const ImagePtr& planeImage = renderFullScaleThenDownscale ? it2->second.fullscaleImage : it2->second.downscaleImage;
+                if (planeImage) {
+                    std::list<RectI> planeRects;
+                    planeImage->getRestToRender(roi, planeRects);
+                    rectsLeftToRender.insert( rectsLeftToRender.end(), planeRects.begin(), planeRects.end() );
+                }
+            }
         } else {
             // scoped_ptr
             guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
@@ -1183,13 +1203,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( !intersection.isNull() ) {
                 rectsLeftToRender.push_back(intersection);
             }
-#if NATRON_ENABLE_TRIMAP
-            else if (guard) {
-                // Nothing will be rendered: don't leave the rectangles marked by the guard as being
-                // rendered, or this thread would wait for them.
-                guard->invalidate();
-            }
-#endif
+            // If nothing is rendered, the guard releases its rectangles as not rendered.
         }
 
         // If doing opengl renders, we don't allow retrieving partial images from the cache
@@ -1201,6 +1215,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(roi);
+#if NATRON_ENABLE_TRIMAP
+            // The cached images are not rendered into: release their rectangles as not rendered. The guard is
+            // created again on the newly allocated images.
+            guard.reset();
+#endif
             for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
                 //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
                 //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
@@ -1387,11 +1406,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         //Render was aborted
         if (inputCode != eRenderRoIRetCodeOk) {
-#if NATRON_ENABLE_TRIMAP
-            if (guard) {
-                guard->invalidate();
-            }
-#endif
+            // The guard (if any) releases its rectangles as not rendered
             return inputCode;
         }
     }
@@ -1544,12 +1559,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool renderAborted;
 
     renderAborted = aborted();
-#if NATRON_ENABLE_TRIMAP
-    if (renderAborted) {
-        assert(guard);
-        guard->invalidate();
-    }
-#endif // NATRON_ENABLE_TRIMAP
     if (!renderAborted && hasSomethingToRender) {
 
         // eRenderSafetyInstanceSafe means that there is at most one render per instance
@@ -1665,19 +1674,34 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 #if NATRON_ENABLE_TRIMAP
     assert(guard);
-    if ( (renderAborted && renderRetCode != EffectInstance::eRenderRoIStatusImageRendered  && renderRetCode != EffectInstance::eRenderRoIStatusImageAlreadyRendered) ||
-         renderRetCode == eRenderRoIStatusRenderFailed || renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory ) {
-        // The rectangles marked by the guard were not rendered: clear them rather than marking them as
-        // rendered (with eRenderRoIStatusRenderOutOfGPUMemory, before the CPU render below).
-        guard->invalidate();
-    } else {
-        guard->waitForPendingRegions(!renderAborted && renderRetCode == eRenderRoIStatusImageRendered);
+    bool regionsComplete = true;
+    // If the render was aborted or failed (or ran out of GPU memory), or an exception is thrown, the guard
+    // releases its rectangles as not rendered.
+    if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
+        if (renderRetCode == eRenderRoIStatusImageRendered) {
+            guard->setRendered();
+        }
+        regionsComplete = guard->waitForPendingRegions();
+    }
+    guard.reset();
+
+    if (!regionsComplete) {
+        if ( aborted() ) {
+            return eRenderRoIRetCodeAborted;
+        }
+        // Another thread released pixels of the RoI without rendering them (its render was aborted or
+        // failed): render them now. This should converge quickly; give up after a few attempts.
+        if (args.renderAgainCount < 3) {
+            std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
+            ++newArgs->renderAgainCount;
+
+            return renderRoI(*newArgs, outputPlanes);
+        }
+        qDebug() << getScriptName_mt_safe().c_str() << "renderRoI: some pixels of the RoI could not be rendered";
+
+        return eRenderRoIRetCodeFailed;
     }
 #endif // NATRON_ENABLE_TRIMAP
-
-#if NATRON_ENABLE_TRIMAP
-    guard.reset();
-#endif
 
     if ( renderAborted && (renderRetCode != eRenderRoIStatusImageAlreadyRendered) ) {
         ///Return a NULL image

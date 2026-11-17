@@ -577,41 +577,45 @@ EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img, c
         return;
     }
 
-    QMutexLocker k(&imagesBeingRenderedMutex);
-    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
-    if ( found != imagesBeingRendered.end() ) {
-        ImageBeingRenderedPtr ibr = found->second;
-        // Take the reference before releasing imagesBeingRenderedMutex: otherwise unmarkImageAsBeingRendered()
-        // could drop the count to 0 and erase the entry in between, and this thread would use a detached
-        // entry while another thread creates a new one for the same image (#1127).
-        QMutexLocker k2(&ibr->lock);
-        ++(ibr->refCount);
-        k.unlock(); // imagesBeingRenderedMutex
-        img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
-        for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
-            img->markForRendering(*it);
+    ImageBeingRenderedPtr ibr;
+    {
+        // Take the reference under imagesBeingRenderedMutex, where the entry is erased: otherwise
+        // unmarkImageAsBeingRendered() could drop the count to 0 and erase the entry in between, and this
+        // thread would use a detached entry while another thread creates a new one for the same image (#1127).
+        QMutexLocker k(&imagesBeingRenderedMutex);
+        ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
+        if ( found != imagesBeingRendered.end() ) {
+            ibr = found->second;
+        } else {
+            ibr = std::make_shared<Implementation::ImageBeingRendered>();
+            imagesBeingRendered.insert( std::make_pair(img, ibr) );
         }
-    } else {
-        ImageBeingRenderedPtr ibr = std::make_shared<Implementation::ImageBeingRendered>();
         ++ibr->refCount;
-        std::pair<ImageBeingRenderedMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
-        assert(ok.second);
-        Q_UNUSED(ok);
-        k.unlock(); // imagesBeingRenderedMutex
-        QMutexLocker k2(&ibr->lock);
-        img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
-        for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
-            img->markForRendering(*it);
-        }
+    }
+
+    // Look for the pixels left to render and mark them, atomically with respect to the other threads
+    QMutexLocker k2(&ibr->lock);
+    img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
+    for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
+        img->markForRendering(*it);
     }
 }
 
 void
-EffectInstance::Implementation::markImageRectsAsRendered(const ImagePtr & img,
-                                                         const std::list<RectI>& rects)
+EffectInstance::Implementation::releaseImageRects(const ImagePtr & img,
+                                                  const std::list<RectI>& rects,
+                                                  bool rendered)
 {
     if ( !img->usesBitMap() || rects.empty() ) {
         return;
+    }
+    // These pixels belong to this thread (PIXEL_UNAVAILABLE): no need to hold ibr->lock to change them.
+    for (std::list<RectI>::const_iterator it = rects.begin(); it != rects.end(); ++it) {
+        if (rendered) {
+            img->markForRendered(*it);
+        } else {
+            img->clearBitmap(*it);
+        }
     }
     ImageBeingRenderedPtr ibr;
     {
@@ -621,20 +625,10 @@ EffectInstance::Implementation::markImageRectsAsRendered(const ImagePtr & img,
             ibr = found->second;
         }
     }
-    if (!ibr) {
-        // Should not happen since this thread holds a reference, but never leave pixels marked as
-        // being rendered: nobody would ever mark them as rendered.
-        for (std::list<RectI>::const_iterator it = rects.begin(); it != rects.end(); ++it) {
-            img->markForRendered(*it);
-        }
-
-        return;
+    if (ibr) {
+        QMutexLocker kk(&ibr->lock);
+        ibr->cond.wakeAll();
     }
-    QMutexLocker kk(&ibr->lock);
-    for (std::list<RectI>::const_iterator it = rects.begin(); it != rects.end(); ++it) {
-        img->markForRendered(*it);
-    }
-    ibr->cond.wakeAll();
 }
 
 bool
@@ -645,90 +639,57 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
         return true;
     }
     ImageBeingRenderedPtr ibr;
-    QMutexLocker k(&imagesBeingRenderedMutex);
-    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
-    if( found != imagesBeingRendered.end() ) {
-        ibr = found->second;
+    {
+        QMutexLocker k(&imagesBeingRenderedMutex);
+        ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
+        if ( found != imagesBeingRendered.end() ) {
+            ibr = found->second;
+        }
     }
-    if (!ibr) {
-        return true;
-    }
-    k.unlock(); // imagesBeingRenderedMutex
+    // The portions of roi out of the image bounds are always returned as "left to render"
+    const RectI roiInBounds = roi.intersect( img->getBounds() );
     std::list<RectI> restToRender;
     bool isBeingRenderedElseWhere = false;
-    img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
-
+    img->getRestToRender_trimap(roiInBounds, restToRender, &isBeingRenderedElseWhere);
     bool ab = _publicInterface->aborted();
-
-    QMutexLocker kk(&ibr->lock);
-    while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
-        ibr->cond.wait(kk.mutex(), 50);
+    // ibr->lock is not held while reading the bitmap (which takes the image lock): a wake-up can be
+    // missed, hence the timed wait.
+    while (ibr && !ab && isBeingRenderedElseWhere && ibr->refCount > 1) {
+        {
+            QMutexLocker kk(&ibr->lock);
+            ibr->cond.wait(kk.mutex(), 50);
+        }
         restToRender.clear();
         isBeingRenderedElseWhere = false;
-        img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+        img->getRestToRender_trimap(roiInBounds, restToRender, &isBeingRenderedElseWhere);
         ab = _publicInterface->aborted();
     }
-    ///Everything should be rendered now unless we are aborted
-    return restToRender.empty() && !ibr->failed && !ab;
+
+    return restToRender.empty() && !isBeingRenderedElseWhere && !ab;
 }
 
 void
-EffectInstance::Implementation::unmarkImageAsBeingRendered(const ImagePtr & img,
-                                                           const std::list<RectI>& rects,
-                                                           bool renderFailed)
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const ImagePtr & img)
 {
     if ( !img->usesBitMap() ) {
         return;
     }
     ImageBeingRenderedPtr ibr;
-    QMutexLocker k(&imagesBeingRenderedMutex);
-    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
-    if( found != imagesBeingRendered.end() ) {
-        ibr = found->second;
-    }
-    k.unlock(); // imagesBeingRenderedMutex
-    if (!ibr) {
-        // Should not happen since this thread holds a reference, but never leave pixels marked as
-        // being rendered: nobody would ever mark them as rendered.
-        for (std::list<RectI>::const_iterator it = rects.begin(); it!=rects.end();++it) {
-            if (renderFailed) {
-                img->clearBitmap(*it);
-            } else {
-                img->markForRendered(*it);
-            }
-        }
-
-        return;
-    }
-    QMutexLocker kk(&ibr->lock);
-    if (renderFailed) {
-        ibr->failed = true;
-    }
-    for (std::list<RectI>::const_iterator it = rects.begin(); it!=rects.end();++it) {
-        if (renderFailed) {
-            img->clearBitmap(*it);
-        } else {
-            img->markForRendered(*it);
-        }
-    }
-
-    --ibr->refCount;
-    ibr->cond.wakeAll();
-    if (!ibr->refCount) {
-        kk.unlock(); // imagesBeingRenderedMutex must be locked before ibr->lock
-        k.relock(); // imagesBeingRenderedMutex
+    {
+        QMutexLocker k(&imagesBeingRenderedMutex);
         ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
-        // Another thread may have taken a reference on this entry in the meantime: only erase it if
-        // it is still this one and still unused.
-        if ( ( found != imagesBeingRendered.end() ) && (found->second == ibr) ) {
-            kk.relock();
-            const bool unused = !ibr->refCount;
-            kk.unlock();
-            if (unused) {
-                imagesBeingRendered.erase(found); // ibr still holds the entry, so its lock is not deleted yet
-            }
+        if ( found == imagesBeingRendered.end() ) {
+            assert(false); // this thread holds a reference
+            return;
+        }
+        ibr = found->second;
+        if (--ibr->refCount == 0) {
+            imagesBeingRendered.erase(found);
         }
     }
+    // The threads waiting until they are the only user of the image may stop waiting
+    QMutexLocker kk(&ibr->lock);
+    ibr->cond.wakeAll();
 }
 
 #endif \

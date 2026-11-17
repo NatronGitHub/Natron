@@ -30,6 +30,7 @@
 
 #include "EffectInstance.h"
 
+#include <atomic>
 #include <map>
 #include <list>
 #include <string>
@@ -197,16 +198,20 @@ public:
     ActionsCachePtr actionsCache;
 
 #if NATRON_ENABLE_TRIMAP
-    ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
+    /**
+     * Store all images being rendered to avoid 2 threads rendering the same portion of an image.
+     * Locking rules (#1127): refCount is only changed, and the entry only erased, under imagesBeingRenderedMutex.
+     * lock serializes the threads that look for the pixels left to render and mark them as being rendered,
+     * and is the mutex of cond. Never block on lock while holding imagesBeingRenderedMutex.
+     **/
     struct ImageBeingRendered
     {
         QWaitCondition cond;
         QMutex lock;
-        int refCount;
-        bool failed;
+        std::atomic<int> refCount; // written under imagesBeingRenderedMutex, read anywhere
 
         ImageBeingRendered()
-            : cond(), lock(), refCount(0), failed(false)
+            : cond(), lock(), refCount(0)
         {
         }
     };
@@ -247,19 +252,32 @@ public:
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP
+    /**
+     * @brief Take a reference on img for this thread, and mark as being rendered (PIXEL_UNAVAILABLE) the
+     * portions of roi that are neither rendered nor being rendered by another thread. They are returned in
+     * restToRender, and must be released with releaseImageRects(), then the reference dropped with
+     * unmarkImageAsBeingRendered().
+     **/
     void markImageAsBeingRendered(const ImagePtr & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
 
     /**
-     * @brief Mark as rendered the rectangles of img that this thread marked with markImageAsBeingRendered()
-     * and has finished rendering, and wake up the threads waiting for them.
-     * This must be called before waitForImageBeingRenderedElsewhere(): until unmarkImageAsBeingRendered()
-     * these rectangles are PIXEL_UNAVAILABLE, and the thread would wait for its own pixels (see #811).
+     * @brief Mark as rendered (if rendered is true) or as not rendered the rectangles of img that this thread
+     * marked with markImageAsBeingRendered(), and wake up the threads waiting for them.
+     * When the rectangles were rendered, this must be called before waitForImageBeingRenderedElsewhere():
+     * otherwise they are still PIXEL_UNAVAILABLE, and the thread would wait for its own pixels (#811).
      **/
-    void markImageRectsAsRendered(const ImagePtr & img, const std::list<RectI>& rects);
+    void releaseImageRects(const ImagePtr & img, const std::list<RectI>& rects, bool rendered);
 
+    /**
+     * @brief Wait while other threads are rendering portions of roi in img.
+     * Returns true if all of roi (within the bounds of img) is rendered. It returns false if the render was
+     * aborted, or if another thread released pixels without rendering them (its render was aborted or failed):
+     * the caller must then render them itself.
+     **/
     bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img);
 
-    void unmarkImageAsBeingRendered(const ImagePtr & img, const std::list<RectI>& rects, bool renderFailed);
+    /// Drop the reference taken by markImageAsBeingRendered()
+    void unmarkImageAsBeingRendered(const ImagePtr & img);
 #endif
 
     /**
