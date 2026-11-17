@@ -263,27 +263,139 @@ TEST(ImageMipmapTest, UpscaleNegativeBounds)
     }
 }
 
-// Downscaling an image that is one pixel wide goes through Image::halve1DImage().
-TEST(ImageMipmapTest, DownscaleOneColumn)
+// Downscaling an image that is one pixel wide or high goes through Image::halve1DImage().
+// dst pixel p must be the average of the src pixels 2p and 2p+1, also when the image starts
+// at an odd or negative coordinate.
+static void
+checkDownscale1D(bool column, int start, int other)
 {
-    const RectI bounds(-3, -4, -2, 12);
+    const int len = 15;
+    const RectI bounds = column ? RectI(other, start, other + 1, start + len) : RectI(start, other, start + len, other + 1);
     const RectD rod( bounds.x1, bounds.y1, bounds.x2, bounds.y2 );
     Image src(ImagePlaneDesc::getRGBAComponents(), rod, bounds, 0, 1., eImageBitDepthFloat,
               eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
-    for (int y = bounds.y1; y < bounds.y2; ++y) {
-        src.fill(RectI(bounds.x1, y, bounds.x2, y + 1), y, y, y, y);
+    for (int i = start; i < start + len; ++i) {
+        const RectI pix = column ? RectI(other, i, other + 1, i + 1) : RectI(i, other, i + 1, other + 1);
+        src.fill(pix, i, i, i, i);
     }
     const RectI dstBounds = bounds.downscalePowerOfTwoSmallestEnclosing(1);
     Image dst(ImagePlaneDesc::getRGBAComponents(), rod, dstBounds, 1, 1., eImageBitDepthFloat,
               eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
     fillConstant(dst, -1.f);
     src.downscaleMipmap(rod, bounds, 0, 1, false, &dst);
+    // largest enclosed range along the long dimension
+    const RectI enclosed = bounds.downscalePowerOfTwoLargestEnclosed(1);
+    const int p1 = column ? enclosed.y1 : enclosed.x1;
+    const int p2 = column ? enclosed.y2 : enclosed.x2;
+    const int q = other >> 1;
+    ASSERT_LT(p1, p2);
     Image::ReadAccess acc( &dst );
-    for (int y = dstBounds.y1; y < dstBounds.y2; ++y) {
-        const float* p = (const float*)acc.pixelAt(dstBounds.x1, y);
+    for (int p = p1; p < p2; ++p) {
+        const float* pix = (const float*)( column ? acc.pixelAt(q, p) : acc.pixelAt(p, q) );
         for (int c = 0; c < 4; ++c) {
-            // average of the source rows 2y and 2y+1
-            EXPECT_EQ(2 * y + 0.5f, p[c]) << "y=" << y << " c=" << c;
+            // average of the source pixels 2p and 2p+1
+            EXPECT_EQ(2 * p + 0.5f, pix[c]) << "column=" << column << " start=" << start << " other=" << other << " p=" << p << " c=" << c;
         }
+    }
+}
+
+TEST(ImageMipmapTest, DownscaleOneColumn)
+{
+    const int starts[] = { -4, -3, 0, 7 };
+    const int others[] = { -3, 0, 7 };
+    for (int start : starts) {
+        for (int other : others) {
+            checkDownscale1D(true, start, other);
+        }
+    }
+}
+
+TEST(ImageMipmapTest, DownscaleOneRow)
+{
+    const int starts[] = { -4, -3, 0, 7 };
+    const int others[] = { -3, 0, 7 };
+    for (int start : starts) {
+        for (int other : others) {
+            checkDownscale1D(false, start, other);
+        }
+    }
+}
+
+// Downscaling by several levels, where an intermediate level is 1x1, must not assert
+// (halveRoIForDepth used to assert on a 1x1 RoI, and left the pixel unwritten in release).
+TEST(ImageMipmapTest, DownscaleThrough1x1)
+{
+    // A single pixel stays the same at every level.
+    {
+        const RectI bounds(-3, 5, -2, 6);
+        const RectD rod( bounds.x1, bounds.y1, bounds.x2, bounds.y2 );
+        Image src(ImagePlaneDesc::getRGBComponents(), rod, bounds, 0, 1., eImageBitDepthByte,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        src.fill(bounds, 0.4, 0.4, 0.4, 1.);
+        const RectI dstBounds = bounds.downscalePowerOfTwoSmallestEnclosing(3);
+        ASSERT_EQ( 1, dstBounds.area() );
+        Image dst(ImagePlaneDesc::getRGBComponents(), rod, dstBounds, 3, 1., eImageBitDepthByte,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        dst.fill(dstBounds, 1., 1., 1., 1.);
+        src.downscaleMipmap(rod, bounds, 0, 3, false, &dst);
+        Image::ReadAccess sacc( &src );
+        Image::ReadAccess dacc( &dst );
+        const unsigned char* s = (const unsigned char*)sacc.pixelAt(bounds.x1, bounds.y1);
+        const unsigned char* d = (const unsigned char*)dacc.pixelAt(dstBounds.x1, dstBounds.y1);
+        for (int c = 0; c < 3; ++c) {
+            EXPECT_EQ(s[c], d[c]) << "c=" << c;
+        }
+    }
+    // Reviewer's case: 4x2 at level 1 downscaled to level 5 goes through a 1x1 level.
+    // The result is outside the largest enclosed rectangle, so only check that it runs.
+    {
+        const RectI bounds(-13, 8, -9, 10);
+        const RectD rod = bounds.toCanonical_noClipping(1, 1.);
+        Image src(ImagePlaneDesc::getRGBComponents(), rod, bounds, 1, 1., eImageBitDepthByte,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        src.fill(bounds, 0.4, 0.4, 0.4, 1.);
+        const RectI dstBounds = bounds.downscalePowerOfTwoSmallestEnclosing(4);
+        Image dst(ImagePlaneDesc::getRGBComponents(), rod, dstBounds, 5, 1., eImageBitDepthByte,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        src.downscaleMipmap(rod, bounds, 1, 5, false, &dst);
+    }
+}
+
+// Count the pixels of img inside rect that are equal to v (all components).
+static int
+countEqual(const Image& img, const RectI& rect, float v)
+{
+    return rect.area() - countDifferent(img, rect, v);
+}
+
+// The output covers the whole RoD, but the source only covers part of it (e.g. an image that
+// was only rendered in part of its RoD, or a roto stroke that extends left of the previous RoD).
+// Pixels outside the upscaled source must not be written.
+TEST(ImageMipmapTest, UpscaleIntoLargerOutput)
+{
+    const RectD rod(-40, -30, 40, 30);
+    const RectI srcBoundsList[] = {
+        RectI(2, 1, 10, 8),   // top-right of the RoD
+        RectI(-3, -2, 10, 8), // top-right, starting left of / below the origin
+        RectI(-7, -8, 4, 3),  // bottom-left
+        RectI(-4, -3, 5, 4),  // center
+    };
+    const unsigned int level = 2;
+    const RectI dstBounds = rod.toPixelEnclosing(0, 1.);
+    for (const RectI& srcBounds : srcBoundsList) {
+        Image src(ImagePlaneDesc::getRGBAComponents(), rod, srcBounds, level, 1., eImageBitDepthFloat,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        fillConstant(src, 0.5f);
+        Image dst(ImagePlaneDesc::getRGBAComponents(), rod, dstBounds, 0, 1., eImageBitDepthFloat,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        fillConstant(dst, -1.f);
+        src.upscaleMipmap(srcBounds, level, 0, &dst);
+        const RectI covered = srcBounds.upscalePowerOfTwo(level).intersect(dstBounds);
+        ASSERT_FALSE( covered.isNull() );
+        EXPECT_EQ( 0, countDifferent(dst, covered, 0.5f) )
+            << "src=(" << srcBounds.x1 << "," << srcBounds.y1 << "," << srcBounds.x2 << "," << srcBounds.y2 << ")";
+        // everything else is still the sentinel
+        EXPECT_EQ( dstBounds.area() - covered.area(), countEqual(dst, dstBounds, -1.f) )
+            << "src=(" << srcBounds.x1 << "," << srcBounds.y1 << "," << srcBounds.x2 << "," << srcBounds.y2 << ")";
     }
 }

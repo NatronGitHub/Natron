@@ -1795,9 +1795,27 @@ Image::halveRoIForDepth(const RectI & roi,
             (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
             (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
+    ///handle case where there is only 1 pixel: nothing to average, copy it.
+    ///This happens in buildMipmapLevel() when an intermediate level is 1x1.
+    if ( (roi.width() == 1) && (roi.height() == 1) ) {
+        QWriteLocker k1(&output->_entryLock);
+        QReadLocker k2(&_entryLock);
+        const int dstx = roi.x1 >> 1; // floor(roi.x1/2.0)
+        const int dsty = roi.y1 >> 1; // floor(roi.y1/2.0)
+        assert( output->_bounds.contains(dstx, dsty) );
+        const PIX* const src = (const PIX*)pixelAt(roi.x1, roi.y1);
+        PIX* const dst = (PIX*)output->pixelAt(dstx, dsty);
+        assert(src && dst);
+        std::copy(src, src + _nbComponents, dst);
+        if (copyBitMap) {
+            *output->_bitmap.getBitmapAt(dstx, dsty) = *_bitmap.getBitmapAt(roi.x1, roi.y1);
+        }
+
+        return;
+    }
+
     ///handle case where there is only 1 column/row
     if ( (roi.width() == 1) || (roi.height() == 1) ) {
-        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
         halve1DImage(roi, output);
 
         return;
@@ -1999,15 +2017,24 @@ Image::halve1DImageForDepth(const RectI & roi,
 //               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
 //               dstBounds.y2 * 2 == roi.y2)
 //           );
-    int halfWidth = width / 2;
-    int halfHeight = height / 2;
+    // Same as halveRoIForDepth(), along the only dimension that is longer than 1 pixel:
+    // dst pixel p is the average of the aligned src pixels 2p and 2p+1, and only the
+    // largest enclosed range is computed, so that if the roi starts at an odd
+    // coordinate, src pixel roi.x1 (or roi.y1) is not used.
+    // In the other dimension, the dst pixel is the one that contains the src pixel.
     if (height == 1) { //1 row
         assert(width != 1); /// widthxheight can't be 1x1
-
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
+        const int dstx1 = (roi.x1 + 1) >> 1; // ceil(roi.x1/2.0)
+        const int dstx2 = roi.x2 >> 1; // floor(roi.x2/2.0)
+        const int dsty = roi.y1 >> 1; // floor(roi.y1/2.0)
+        if (dstx2 <= dstx1) {
+            return;
+        }
+        assert( dstBounds.contains(dstx1, dsty) && dstBounds.contains(dstx2 - 1, dsty) );
+        const PIX* src = (const PIX*)pixelAt(dstx1 * 2, roi.y1);
+        PIX* dst = (PIX*)output->pixelAt(dstx1, dsty);
         assert(src && dst);
-        for (int x = 0; x < halfWidth; ++x) {
+        for (int x = dstx1; x < dstx2; ++x) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
                 assert( !std::isnan(*src) ); // check for NaN
@@ -2023,24 +2050,31 @@ Image::halve1DImageForDepth(const RectI & roi,
             src += _nbComponents;
         }
     } else if (width == 1) {
+        const int dsty1 = (roi.y1 + 1) >> 1; // ceil(roi.y1/2.0)
+        const int dsty2 = roi.y2 >> 1; // floor(roi.y2/2.0)
+        const int dstx = roi.x1 >> 1; // floor(roi.x1/2.0)
+        if (dsty2 <= dsty1) {
+            return;
+        }
+        assert( dstBounds.contains(dstx, dsty1) && dstBounds.contains(dstx, dsty2 - 1) );
         int rowSize = srcBounds.width() * _nbComponents;
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
+        int dstRowSize = dstBounds.width() * _nbComponents;
+        const PIX* src = (const PIX*)pixelAt(roi.x1, dsty1 * 2);
+        PIX* dst = (PIX*)output->pixelAt(dstx, dsty1);
         assert(src && dst);
-        for (int y = 0; y < halfHeight; ++y) {
+        for (int y = dsty1; y < dsty2; ++y) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
-                assert( !std::isnan(*src) ); // check for NaN
-                assert( !std::isnan(*(src + rowSize)) ); // check for NaN
+                assert( !std::isnan(src[k]) ); // check for NaN
+                assert( !std::isnan(src[k + rowSize]) ); // check for NaN
 #endif
-                *dst = PIX( (float)( *src + *(src + rowSize) ) / 2. );
+                dst[k] = PIX( (float)( src[k] + src[k + rowSize] ) / 2. );
 #ifdef DEBUG_NAN
-                assert( !std::isnan(*dst) ); // check for NaN
+                assert( !std::isnan(dst[k]) ); // check for NaN
 #endif
-                ++dst;
-                ++src;
             }
-            src += rowSize;
+            src += 2 * rowSize;
+            dst += dstRowSize;
         }
     }
 }
@@ -2182,10 +2216,7 @@ Image::upscaleMipmapForDepth(const RectI & roi,
     ///You should not call this function with a level equal to 0.
     assert(fromLevel > toLevel);
 
-    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
-           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
-
-    // The source rectangle, intersected with the bounds of this image.
+    // The source rectangle, intersected with the bounds of this image (roi may be larger or smaller).
     const RectI srcRoi = roi.intersect(_bounds);
     const unsigned int levels = fromLevel - toLevel;
     const int scale = 1 << levels;
