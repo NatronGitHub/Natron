@@ -214,6 +214,8 @@ This should be consistent with the `REMOTE_PREFIX_USER` value passed to the uplo
 
 `DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
 
+`MISC_USE_MAKE`, `IO_USE_MAKE`: openfx-misc and openfx-io are built with their CMake builds when their checkout has one (`build-plugins.sh`, function `ofx_cmake_build`). Set to 1 to build them with their Makefiles instead. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`).
+
 `EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
 
