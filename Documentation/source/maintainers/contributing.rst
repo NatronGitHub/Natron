@@ -168,6 +168,16 @@ Two rules from ``Documentation/README-Natron-documentation.md`` are important:
   anything under ``plugins/``. The per-node pages in ``plugins/`` are generated
   from the plug-ins themselves with ``tools/genStaticDocs.sh`` (which runs
   ``NatronRenderer`` to dump each node's parameters as reStructuredText).
+  The same run generates the Reference Guide page (``_group.rst``), the
+  "Nodes" page (``_nodes.rst``), and one ``_group<id>.rst`` page per node group
+  and sub-group. Each level of a plug-in's OFX grouping is a group (empty
+  levels are skipped, and a plug-in without a grouping goes to "Other"). The
+  ``<id>`` keeps the ASCII letters and digits of each level, drops the other
+  ASCII characters, encodes non-ASCII characters as ``xHHHH``, and joins the
+  levels with ``_`` (``G'MIC/Colors`` gives ``_groupGMIC_Colors.rst``); an id
+  that differs from an existing one only by case gets a ``-2`` suffix. See
+  ``Engine/DocumentationGroups.h``; the in-app documentation server
+  (``Gui/DocumentationManager.cpp``) builds the same pages on the fly.
 - Everything else — the User Guide (``guide/``), the Developers Guide
   (``devel/``) and this Maintainer Guide (``maintainers/``) — is written by
   hand.

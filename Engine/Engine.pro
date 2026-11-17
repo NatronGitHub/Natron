@@ -82,6 +82,7 @@ SOURCES += \
     CurveSerialization.cpp \
     DefaultShaders.cpp \
     DiskCacheNode.cpp \
+    DocumentationGroups.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
@@ -237,6 +238,7 @@ HEADERS += \
     CurveSerialization.h \
     DefaultShaders.h \
     DiskCacheNode.h \
+    DocumentationGroups.h \
     DockablePanelI.h \
     Dot.h \
     EffectInstance.h \
