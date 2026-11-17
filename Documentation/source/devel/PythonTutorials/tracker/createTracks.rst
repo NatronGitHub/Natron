@@ -71,7 +71,7 @@ Notes:
   (``defSearchWinSize``) parameters of the Tracker node, and the default motion model
   by *Default Motion Model* (``defMotionModel``). Setting these parameters before
   calling :func:`createTrack()<NatronEngine.Tracker.createTrack>` has the same
-  effect as the code above.
+  effect as the size and motion-model settings above.
 - :func:`getSelectedTracks()<NatronEngine.Tracker.getSelectedTracks>` returns the
   tracks selected by the user in the Tracker panel or in the viewer, which is
   useful in scripts added to a menu.

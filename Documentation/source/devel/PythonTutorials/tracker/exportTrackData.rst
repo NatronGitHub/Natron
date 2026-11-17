@@ -11,6 +11,8 @@ Tracker node to a CSV file, with one line per track and per tracked frame.
 ::
 
     import csv
+    import os
+    import tempfile
 
     def getTrackedFrames(track):
         # the frames that have a keyframe on both x and y of the center point
@@ -36,7 +38,7 @@ Tracker node to a CSV file, with one line per track and per tracked frame.
                                      center.getValueAtTime(frame, 1),
                                      error.getValueAtTime(frame)])
 
-    exportTracks(app.Tracker1, "/tmp/tracks.csv")
+    exportTracks(app.Tracker1, os.path.join(tempfile.gettempdir(), "tracks.csv"))
 
 The file can be read back into the tracks of another Tracker node. Tracks that
 do not exist yet are created. Each line sets a keyframe on ``centerPoint``.
@@ -44,6 +46,8 @@ do not exist yet are created. Each line sets a keyframe on ``centerPoint``.
 ::
 
     import csv
+    import os
+    import tempfile
 
     def importTracks(trackerNode, filename):
         tracker = trackerNode.getTrackerContext()
@@ -60,7 +64,7 @@ do not exist yet are created. Each line sets a keyframe on ``centerPoint``.
 
     trackerNode = app.createNode("fr.inria.built-in.Tracker")
     trackerNode.connectInput(0, app.getNode("Read1"))
-    importTracks(trackerNode, "/tmp/tracks.csv")
+    importTracks(trackerNode, os.path.join(tempfile.gettempdir(), "tracks.csv"))
 
 The same loops can be used to write any other format, or to read the data of a
 point tracked by another application. The y axis of Natron goes up: data from an

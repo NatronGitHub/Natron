@@ -24,11 +24,12 @@ A few things to know before starting:
   ===================== ===============================================================
   ``centerPoint``       Position of the track (2D, animated by the tracking).
   ``offset``            Offset of the pattern relative to ``centerPoint`` (2D).
-  ``patternBtmLeft``    Bottom-left corner of the pattern, relative to ``centerPoint``.
-                        ``patternBtmRight``, ``patternTopRight`` and ``patternTopLeft``
-                        are the other 3 corners.
+  ``patternBtmLeft``    Bottom-left corner of the pattern, relative to ``centerPoint``
+                        plus ``offset``. ``patternBtmRight``, ``patternTopRight`` and
+                        ``patternTopLeft`` are the other 3 corners.
   ``searchWndBtmLeft``  Bottom-left corner of the search window, relative to
-                        ``centerPoint``. ``searchWndTopRight`` is the top-right corner.
+                        ``centerPoint`` plus ``offset``. ``searchWndTopRight`` is the
+                        top-right corner.
   ``motionModel``       Motion model searched by the tracker (choice).
   ``errorValue``        Tracking error at each tracked frame (1 minus the correlation).
   ``enabled``           Whether the track is used to compute the transform (animatable).
@@ -38,9 +39,11 @@ A few things to know before starting:
   :func:`startTracking()<NatronEngine.Tracker.startTracking>` returns immediately.
   :ref:`runTracking` shows how to wait for the result.
 
-The scripts can be run in the Script Editor of Natron, or saved in a file
-and run with ``NatronRenderer -t script.py``.
-In both cases, ``app`` is the current project.
+The scripts were tested by saving them in a file and running
+``NatronRenderer -t script.py``, where ``app`` is the current project (as in the
+Script Editor of Natron). In that mode, NatronRenderer may not exit when the
+script ends: end the script with ``quit()``. In the Script Editor, ``trackRange``
+(see :ref:`runTracking`) freezes the interface until the tracking ends.
 
 .. toctree::
     :maxdepth: 1

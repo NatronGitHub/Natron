@@ -36,7 +36,10 @@ at the frame where it failed. The tracking stops when all the tracks have failed
         tracker = trackerNode.getTrackerContext()
 
         # set a keyframe on "enabled" where a track fails
-        trackerNode.getParam("autoKeyEnabled").set(True)
+        # (the previous setting is restored at the end)
+        autoKey = trackerNode.getParam("autoKeyEnabled")
+        autoKeyWasOn = autoKey.get()
+        autoKey.set(True)
 
         # track from first to last (included)
         tracker.startTracking(tracks, first, last + 1, True)
@@ -53,6 +56,8 @@ at the frame where it failed. The tracking stops when all the tracks have failed
             # timeout: stop the tracking
             tracker.stopTracking()
 
+        autoKey.set(autoKeyWasOn)
+
         # return the tracks that were tracked up to the last frame
         return [t for t in tracks
                 if t.getParam("centerPoint").getKeyIndex(last, 0) >= 0
@@ -66,11 +71,26 @@ at the frame where it failed. The tracking stops when all the tracks have failed
 
 Notes:
 
-- The tracking parameters of the Tracker node apply to all tracks: the channels
-  used (``trackRed``, ``trackGreen``, ``trackBlue``), *Max. Error* (``maxError``),
-  *Maximum Iterations* (``maxIterations``), *Pre-blur Sigma* (``preBlurSigma``),
-  etc. They are described on the :ref:`Tracker node<fr.inria.built-in.Tracker>`
-  page. Set them before calling ``startTracking``.
+- The *enabled* keyframes set by a failed track stay after the tracking: the
+  track is disabled from the frame where it failed on (until its next keyframe),
+  so it is not used by the transform computed by the Tracker node at those
+  frames. A later ``startTracking`` with *Animate Enabled* on sets a *True*
+  keyframe at its start frame.
+- The tracking parameters of the Tracker node apply to all tracks. Set them before
+  calling ``startTracking``:
+
+  - ``trackRed``, ``trackGreen``, ``trackBlue``: the channels used for tracking.
+  - ``maxError`` (*Max. Error*): the largest error (1 minus the normalized
+    cross-correlation between the pattern and the tracked patch) for which the
+    tracking of a frame is a success.
+  - ``maxIterations`` (*Maximum Iterations*): the maximum number of iterations of
+    the minimization at each frame before the tracker gives up.
+  - ``bruteForcePretTrack`` (*Use Brute-Force Pre-track*): search the translation
+    by brute force before refining it.
+  - ``normalizeIntensities`` (*Normalize Intensities*): normalize the patches by
+    their mean before comparing them (slower).
+  - ``preBlurSigma`` (*Pre-blur Sigma*): the size in pixels of the blur applied to
+    the image before tracking.
 - Keyframes that are already set on ``centerPoint`` before the start frame are used
   to predict the motion of the track.
 - :func:`stopTracking()<NatronEngine.Tracker.stopTracking>` stops the tracking.
@@ -81,6 +101,7 @@ Notes:
 
 .. warning::
 
-   In Natron 2.6 and earlier, ``startTracking`` with ``forward=False`` does not
-   track anything. To track backward, use the *Track Backward* button of the
+   Up to Natron 2.6.x (see `issue #1255
+   <https://github.com/NatronGitHub/Natron/issues/1255>`_), ``startTracking`` with
+   ``forward=False`` does not track anything. To track backward, use the *Track Backward* button of the
    Tracker node.
