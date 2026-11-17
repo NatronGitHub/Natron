@@ -48,7 +48,8 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
             -nomake examples                          \
             -no-rpath                                 \
             -syslog                                   \
-            -skip qtwebengine
+            -skip qtwebengine                         \
+            -skip qtlocation
     make -j${MKJOBS}
     make install
     # Remove references to the build directory from installed library dependency (prl) files by running the following command as the root user: 
