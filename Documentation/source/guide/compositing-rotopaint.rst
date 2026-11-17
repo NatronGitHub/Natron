@@ -1,7 +1,7 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-Using Roto / Rotopaint
+Using Roto / RotoPaint
 ======================
 
 Natron has two vector-based nodes for rotoscoping, rig removal, garbage mattes
@@ -24,10 +24,16 @@ differences are:
 - **Roto** is meant for mattes. Its default tool is the Bezier tool, and by
   default it only draws into the alpha channel.
 
-Both nodes have four optional inputs: **Bg** (the image the shapes are drawn
-over) and **Bg2** to **Bg4**, which the clone and reveal brushes can use as
-sources. In the Node Graph, press :kbd:`O` to create a Roto node and :kbd:`P`
-to create a RotoPaint node.
+Both nodes have eleven optional inputs:
+
+- **Bg**: the image the shapes and strokes are drawn over;
+- **Bg2** to **Bg10**: other images, which the clone and reveal brushes can use
+  as sources;
+- **Mask**: limits where the node changes **Bg**, see `The Mask input`_.
+
+To create the nodes, use the **Draw** group of the
+:doc:`toolbar <getstarted-environment-toolbar>`, or press :kbd:`O` (Roto) or
+:kbd:`P` (RotoPaint) in the Node Graph.
 
 The tools only show in the Viewer while the node's Properties panel is open.
 
@@ -50,8 +56,8 @@ In the following example we mask the person in the picture:
 
 
 
-6. Double-click the Roto node. A toolbar appears on the left side of the Viewer:
-   select the Bezier tool.
+6. Double-click the Roto node. The Viewer toolbar appears on the left side of
+   the Viewer: select the Bezier tool.
 7. Draw the Bezier directly in the Viewer. Click to add a sharp (cusp) point, or
    click and drag to add a smooth point and pull out its tangents.
 8. Close the Bezier by clicking its first point or by pressing :kbd:`Enter`:
@@ -76,7 +82,7 @@ To invert the mask, change the **Operation** of the Merge node to **stencil**:
 The Viewer toolbar
 ******************
 
-The toolbar on the left side of the Viewer groups the tools by role. Click a
+The Viewer toolbar, on the left side of the Viewer, groups the tools by role. Click a
 button to use its current tool, or click and hold it to choose another tool of
 the same group. Each group has a keyboard shortcut, active while the mouse is
 over the Viewer: the first press selects the group, the next presses cycle
@@ -96,7 +102,9 @@ through its tools.
        Feather Points**.
    * - Points edition
      - :kbd:`D`
-     - **Add Points** (click a selected shape to insert a point), **Remove
+     - **Add Points** (click a selected shape to insert a point; with a
+       selection tool, :kbd:`Ctrl+Alt`-click a shape does the same, or
+       :kbd:`Cmd+Alt`-click on macOS), **Remove
        Points**, **Cusp Points** (remove the tangents), **Smooth Points**,
        **Open/Close Shape**, **Remove Feather** (click a point).
    * - Shapes drawing
@@ -135,8 +143,9 @@ Editing shapes
 
 With a selection tool, click a point or a shape to select it, or drag a
 rectangle to select several points. The selected points get a bounding box
-with handles to move and scale them. Press :kbd:`Ctrl` (:kbd:`Cmd` on macOS)
-to switch the handles to rotate and skew, and press it again to switch back.
+with handles to move and scale them. Hold :kbd:`Ctrl` (:kbd:`Cmd` on macOS)
+to switch the handles to rotate and skew; they switch back when you release
+the key.
 These shortcuts work while the mouse is over the Viewer, and most of them are
 also in the right-click menu of the Viewer:
 
@@ -146,8 +155,10 @@ also in the right-click menu of the Viewer:
 
    * - Key
      - Action
-   * - :kbd:`Ctrl+A`
+   * - :kbd:`Ctrl+A` (:kbd:`Cmd+A` on macOS)
      - Select all
+   * - :kbd:`Ctrl+Alt`-click a shape (:kbd:`Cmd+Alt` on macOS)
+     - Insert a point on the shape (with a selection tool)
    * - :kbd:`Backspace`
      - Remove the selected points or shapes
    * - :kbd:`Z` / :kbd:`Shift+Z`
@@ -163,8 +174,8 @@ also in the right-click menu of the Viewer:
    * - :kbd:`T`
      - Show or hide the transform handle of the selected shapes
 
-All these shortcuts can be changed in the Shortcut Editor of the Preferences
-(**Edit > Preferences**).
+All these shortcuts can be changed in
+**Edit > Preferences > User Interface > Shortcut Editor**.
 
 The buttons above the Viewer
 ----------------------------
@@ -220,9 +231,9 @@ a clean plate connected to **Bg2**). With these tools, the buttons above the
 Viewer also show:
 
 - **Source**: *foreground* (the painted result of the items below the stroke),
-  *background* (the image connected to **Bg**, unpainted), or *background 2* and
-  up (**Bg2**, **Bg3**, ...). Choosing the Clone tool selects *background*, the
-  Reveal tool *background 2*.
+  *background* (the image connected to **Bg**, unpainted), or *background2* to
+  *background10* (**Bg2** to **Bg10**). Choosing the Clone tool selects
+  *background*, the Reveal tool *background2*.
 - To set the clone offset, hold :kbd:`Ctrl` (:kbd:`Cmd` on macOS) and drag in
   the Viewer. The source is drawn as a second circle with a cross. **Reset
   Transform** sets the offset back to zero. After painting, the offset of each
@@ -318,6 +329,25 @@ operator. The result is then merged over the **Bg** input, if it is connected.
 - **Premultiply** multiplies the red, green and blue output by the alpha, so
   that the image is black and transparent outside the shapes and strokes. Use
   it only if **Bg** is opaque or unpremultiplied, and only alpha is drawn.
+  For example, to cut a person out of a plate: connect the plate to **Bg** of
+  a Roto node, draw the person's outline (Roto only draws alpha), and check
+  **Premultiply**. The output is the person over black and transparent, ready
+  to be merged *over* a new background.
+
+The Mask input
+--------------
+
+When an image is connected to the **Mask** input, and **Mask** is checked in
+the Properties panel (with the channel to use, alpha by default, next to it),
+the node only changes **Bg** where the mask is white: where the mask is
+black, the output is **Bg** unchanged, and in between the two are mixed. The
+**Mix** parameter does the same for the whole image: at 0 the output is
+**Bg**, at 1 the full result. `Issue #367
+<https://github.com/NatronGitHub/Natron/issues/367>`_ reports cases where the
+Mask input has no effect.
+
+Using a shape as a mask
+-----------------------
 
 To use a Roto shape as a mask for another node, connect the Roto node to the
 **Mask** input of that node, or merge it as shown in `Roto (Mask)`_. See also
