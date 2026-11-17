@@ -1330,7 +1330,11 @@ NodeGui::updatePreviewImage(double time)
 {
     NodePtr node = getNode();
 
-    if ( isVisible() && node && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    // No preview while a node tree is being created (pasted, cloned, PyPlug...): the graph is incomplete, and the
+    // preview thread would render it while the main thread modifies it (see #814). The previews are refreshed
+    // once the tree is created.
+    if ( isVisible() && node && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() &&
+         !node->getApp()->isCreatingNodeTree() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -1352,7 +1356,11 @@ NodeGui::forceComputePreview(double time)
     if ( !node || !node->isActivated() ) {
         return;
     }
-    if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject() ) {
+    // No preview while the project is loading or a node tree is being created (pasted, cloned, PyPlug...):
+    // the graph is incomplete, and the preview thread would render it while the main thread modifies it
+    // (see #814). The previews are refreshed once the project is loaded or the tree is created.
+    if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject() &&
+         !node->getApp()->isCreatingNodeTree() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -2259,24 +2267,33 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 }
 
 void
-NodeGui::copyFrom(const NodeGuiSerialization & obj)
+NodeGui::copyFrom(const NodeGuiSerialization & obj,
+                  bool restorePreview)
 {
     float r, g, b;
     double overlayR, overlayB, overlayG;
     obj.getColor(&r, &g, &b);
     setCurrentColor( QColor::fromRgbF(r, g, b) );
     if (obj.getOverlayColor(&overlayR, &overlayG, &overlayB)) {
-        setOverlayColor( QColor::fromRgbF(overlayR, overlayB, overlayG) );
+        setOverlayColor( QColor::fromRgbF(overlayR, overlayG, overlayB) );
     }
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
-    NodePtr node = getNode();
-    assert(node);
-    if ( node && ( node->isPreviewEnabled() != obj.isPreviewEnabled() ) ){
-        togglePreview();
+    if (restorePreview) {
+        restorePreviewFrom(obj);
     }
     double w, h;
     obj.getSize(&w, &h);
     resize(w, h);
+}
+
+void
+NodeGui::restorePreviewFrom(const NodeGuiSerialization & obj)
+{
+    NodePtr node = getNode();
+    assert(node);
+    if ( node && ( node->isPreviewEnabled() != obj.isPreviewEnabled() ) ) {
+        togglePreview();
+    }
 }
 
 QUndoStackPtr
