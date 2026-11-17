@@ -1,13 +1,39 @@
-Keyer Node or Chromakey Node: Colorlookup node tidbit
-======================================================
-**Using the ColorLookup node for better screen matte control,**
+.. for help on writing/extending this file, see the reStructuredText cheatsheet
+   http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-This is concerning pulling a key using the Keyer Node or Chromakey Node. I have been practicing using the **Colorlookup node** curves to adjust my keys instead of using the *Key Lift* & *Key Gain* when pulling my keys. I find sometimes on certain material you have to crank the acceptance angle higher than I want to and trying to find the best center position in the *Keyer node* to get that good high contrast matte. Sometime the edges may suffer based on the hue you have to pull.
+Refining a Matte with ColorLookup
+=================================
 
-The **Colorlookup node** curves offers you more control over crushing your blacks and expanding your white to get that perfect contrast. You can create anchors and pivot points in the curve to limit which range you want to adjust, rather it be *shadows*, *mid-tones* or *highlights*. The attached image shows a very basic screen shot of what it looks like in action.
+When you pull a key with :ref:`Keyer <net.sf.openfx.KeyerPlugin>` or
+:ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>`, you can adjust the
+contrast of the matte with the curves of a :ref:`ColorLookup
+<net.sf.openfx.ColorLookupPlugin>` node instead of the keyer's own controls,
+such as **Key Lift** and **Key Gain** in ChromaKeyer.
 
-..figure:: _images/keyergraph.jpg
+On some footage you have to raise the **Acceptance Angle** of ChromaKeyer more
+than you'd like, or it is hard to find the right **Center** in Keyer, to get a
+high-contrast matte. The edges can then suffer, depending on the hue you key.
 
-The Key Lift & Key Gain performs great but you don’t have that extra control on the mid tones that may effect your edges. Just remember to insert the Colorlookup node after your keyer/chromakey node and use the Alpha Channel curve to finesse your matte.
+The curves of ColorLookup give you more control to crush the blacks and expand
+the whites of the matte. You can add control points to limit the adjustment to
+the shadows, the midtones or the highlights. Key Lift and Key Gain work well,
+but they don't give that control over the midtones, which affect the edges.
 
-..Note:: Also use your *gamma* switch control at the top of the viewer to do a final check and pass on all your keys. This process is called slamming your *gamma*. Most times to the necked eye we can’t see our *mattes* properly if our monitors are not calibrated for the right *gamma* display. This is most useful when using the curves from the **ColorLookup** node for final adjustments.
+Add a ColorLookup node after the keyer, select the **alpha** curve, and adjust
+it to refine the matte.
+
+.. figure:: _images/tutorials-keying/colorlookup-matte.jpg
+   :width: 650px
+   :align: center
+   :alt: Natron window with the original image, the ChromaKeyer matte and the matte after ColorLookup, and the alpha curve of ColorLookup
+
+   From left to right: the original image, the matte from ChromaKeyer, and the
+   matte after adjusting the alpha curve of ColorLookup (right).
+
+.. note::
+
+   Check every key with a high **gamma** in the Viewer (the gamma control is
+   in the Viewer's top bar). This is often called "slamming the gamma". Many
+   flaws in a matte are invisible at normal gamma, especially if the monitor
+   isn't calibrated. This check is especially useful after adjusting a matte
+   with ColorLookup.

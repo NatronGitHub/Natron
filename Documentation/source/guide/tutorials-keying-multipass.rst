@@ -1,11 +1,53 @@
-Multipass Keying Pipeline
-=========================
+.. for help on writing/extending this file, see the reStructuredText cheatsheet
+   http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
+Multipass Keying
+================
 
-This response may be an overkill of information but here goes. Most chromakeying or pulling keys issues will have to do with lighting and channel noise. Noise is most apparent in the Red and Blue channels. Like I had posted before, using nodes like lp_CleanScreen1 or PxF_ScreenClean1 can help flatten the color range of the green screen. Now there are times when your green screen surface is noisy because of bad lighting period. Then the DenoiseSharpen1 node will come in handy the smooth out the channels to get a decent key. After you have done all of that, applying a multipass Chromakeying workflow should follow in the pipeline. See attached image for visual reference. I had used the screen clean node, DenoiseSharpen1 node and 3 ChromaKeyer nodes in a multipass piping.
+Most problems when pulling a key come from the lighting and from noise in the
+image. Noise is usually strongest in the red and blue channels. Before keying,
+clean up the plate:
 
-..figure:: _images/MPKeying.jpg
+- A screen-cleaning node such as **lp_CleanScreen** or **PxF_ScreenClean**
+  (community PyPlugs from the `natron-plugins
+  <https://github.com/NatronGitHub/natron-plugins>`_ collection) evens out
+  the colour of the green screen.
+- If the screen is noisy because of poor lighting,
+  :ref:`DenoiseSharpen <net.sf.openfx.DenoiseSharpen>` smooths the channels
+  enough to get a decent key.
 
-The Chromakey nodes needs to generate inner core mattes and then additional keys. Each time you need to apply an additional ChromaKeyer node, the Output Mode needs the "Intermediate" option selected Source Alpha "None" selected. This generates the Core Matte (AKA Hard Edges). The second ChromaKeyer Output Mode can be premultiplied if it is the last keyer in the chain or Intermediate for more multipass keying. Rather ChromaKeyer node is the last keyer or use for more multipass keying, the Source Alpha "Add to inside mask" must be selected. Every ChromaKeyer node after the first ChromaKeyer in the pipeline for multipass keying must have these options selected: Output Mode needs the "Intermediate" option selected Source Alpha "Add to inside mask" selected. Only the last ChromaKeyer node in the chain Output Mode should be premultiplied.
+Then key with several :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>`
+nodes in a chain, each one refining the matte of the previous one. The example
+below uses a screen-cleaning node, DenoiseSharpen and three ChromaKeyer nodes.
 
-Sorry for the redundancy. Multipass keying gets a little complex once you need to go pass 3 layers.
+.. figure:: _images/tutorials-keying/multipass-keying.jpg
+   :width: 650px
+   :align: center
+   :alt: Natron window with three keyed mattes in the Viewers and a node graph with three chained ChromaKeyer nodes
+
+   Multipass keying with three ChromaKeyer nodes. The properties of the last
+   one are shown on the right.
+
+Setting up the chain
+--------------------
+
+The first keyer makes the core matte (the hard, solid inside of the
+foreground). Each following keyer adds to it, and the last one makes the final
+image. Set the **Output Mode** and **Source Alpha** parameters of each
+ChromaKeyer as follows:
+
++-----------------------+---------------------+-------------------------+
+| ChromaKeyer           | Output Mode         | Source Alpha            |
++=======================+=====================+=========================+
+| First (core matte)    | Intermediate        | Ignore                  |
++-----------------------+---------------------+-------------------------+
+| Each following one    | Intermediate        | Add to Inside Mask      |
++-----------------------+---------------------+-------------------------+
+| Last                  | Premultiplied       | Add to Inside Mask      |
++-----------------------+---------------------+-------------------------+
+
+With **Intermediate**, the colour is passed through unchanged and the alpha
+holds the key, which is what the next keyer needs. **Add to Inside Mask** adds
+the alpha of the previous keyer to the inside mask (holdout matte) of this
+one. Only the last keyer of the chain should output a **Premultiplied** image.
+With more than three keyers the chain gets harder to follow, so keep it short.

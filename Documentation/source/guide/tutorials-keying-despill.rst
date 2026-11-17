@@ -1,24 +1,104 @@
+.. for help on writing/extending this file, see the reStructuredText cheatsheet
+   http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
+
 Green Screen Despilling Tips
 ============================
 
-This tutorial project was filmed in the One Button Studios at University at Buffalo, NY. I am sure that I have posted this technique or workflow before but I wanted to show more screen shots in a little more detail as to how I use Natron’s green screen Dispeller nodes. Thanks to Frederick and other open source community plugin developers, we have about 3 Dispeller nodes. We all know what the dispeller node does but each one of these nodes has features called " Spillmap to Alpha , Shuffle Spillmatte to Alpha and Output Spill Matte in Alpha ." These are from 3 different nodes but they all do the same thing. These nodes are named Despill, lp_ChillSpill_smp and DespillMadness.
+This tutorial uses footage filmed at the One Button Studio of the University at
+Buffalo, NY. It shows how the despill nodes of Natron can produce a matte, in
+addition to removing the green spill from the foreground.
 
-In the image below I had connected all three despillers in the node graph to create a mini pipeline for basic visual references.
-..figure:: _images/dispell1.png
+Three despill nodes are available, from Natron and from the community:
 
-As you can see each despiller gives you a different suppression result but the matte outcome will be the same, but it’s contingent upon the Algorithm used(Avg, Max, Min). The next image is the spillmatte before using a Colorlookup node to crush and expand the black and white using the ChillSpill node.
+- :ref:`Despill <net.sf.openfx.Despill>`, with the **Spillmap to Alpha**
+  option;
+- **lp_ChillSpill**, with **Shuffle Spillmatte to Alpha**;
+- **DespillMadness**, with **Output Spill Matte in Alpha**.
 
-..figure:: _images/dispell2.jpg
+lp_ChillSpill and DespillMadness are community PyPlugs from the
+`natron-plugins <https://github.com/NatronGitHub/natron-plugins>`_
+collection. The three options do the same thing: they output the spill map
+(the amount of spill removed from each pixel) in the alpha channel.
 
-The next image is with the Colorlookup node crushing and expanding the black and white using the ChillSpill node.
-..figure:: _images/dispell3.png
+The three despill nodes side by side
+------------------------------------
 
-..note:: NOTE: When using the Colorlookup to crush and expand your matte, be sure to have the black clamp and white clamp activated or use a Clamp node. Some of you can push to far and your matte values can generate negative values and etc.
+Here, the three despill nodes are connected to the same source, each one with
+its own Viewer, so that their results can be compared.
 
-The image below is all three Depiller nodes with their spillmap mattes crushed and expanding with the Colorlookup nodes. Also the far left viewer node shows the result of a node processing my Color.RGBA image. You will have to use an invert node to reverse the matte so that it shows the green as the black and the talent (Me) in white. Now I am using the Despillers as an alternative keyer processors. I still have to add another Depiller node because the first spillmap processor performed an Avg algorithm and because this footage was converted to a highly compressed .MP4 format, artifacts on my edges were evident. Follow my node graph pipeline and you can see how powerful Natron’s spillmap matte generators can be having to use any color difference keyers, chromakeyers or color keyers. This workflow does not replace those colorspace designed keyers but it can be added or used as an addition to the professional keyers to help keep your edges and edge mattes smoother.
-..figure:: _images/dispell4.png
+.. figure:: _images/tutorials-keying/despill-three-despillers.png
+   :width: 650px
+   :align: center
+   :alt: Natron window with three Viewers and a node graph with Despill, lp_ChillSpill and DespillMadness side by side
 
-Then you can apply color corrections and etc to finish your shot.
-..figure:: _images/dispell5.png
+   Despill, lp_ChillSpill and DespillMadness side by side.
 
-These are just some of my workflows that I use Natron for in my daily green screen productions.
+Each node suppresses the spill a little differently, but the spill mattes they
+produce are very similar. The matte depends on how the spill map is computed
+from the other two channels (for example their average, their maximum or
+their minimum).
+
+Turning the spill map into a matte
+----------------------------------
+
+The raw spill map has low contrast. A :ref:`ColorLookup
+<net.sf.openfx.ColorLookupPlugin>` node after the despill node can crush the
+blacks and expand the whites. Here is the spill matte of lp_ChillSpill before
+and after ColorLookup:
+
+.. figure:: _images/tutorials-keying/despill-spillmatte-before.jpg
+   :width: 650px
+   :align: center
+   :alt: Grey spill matte with soft, noisy edges
+
+   The spill matte of lp_ChillSpill.
+
+.. figure:: _images/tutorials-keying/despill-spillmatte-after.png
+   :width: 650px
+   :align: center
+   :alt: Clean black and white spill matte
+
+   The same matte after ColorLookup.
+
+.. note::
+
+   When you crush and expand a matte with ColorLookup, enable **Clamp Black**
+   and **Clamp White** in ColorLookup, or add a :ref:`Clamp
+   <net.sf.openfx.Clamp>` node after it. Otherwise steep curves can produce
+   values below 0 or above 1 in the matte.
+
+Below, the spill mattes of the three despill nodes are all adjusted with
+ColorLookup. In the spill matte the screen is white and the person is black:
+use an :ref:`Invert <net.sf.openfx.Invert>` node to get a matte where the
+screen is black and the person is white.
+
+.. figure:: _images/tutorials-keying/despill-mattes.png
+   :width: 650px
+   :align: center
+   :alt: Three Viewers showing black silhouettes on white, one per despill node
+
+   The three spill mattes after ColorLookup.
+
+The despill nodes are used here as alternative keyers. In this example a
+second despill node was still needed: the first one used the average of the
+other two channels, and the footage had been converted to a highly compressed
+MP4 file, which left artifacts on the edges.
+
+This workflow doesn't replace colour-difference keyers, chroma keyers or other
+dedicated keyers. It complements them, and it can help keep the edges of the
+matte smooth.
+
+Finally, build the composite and colour-correct it. In the node graph below,
+the matte from Despill is inverted (:ref:`Invert <net.sf.openfx.Invert>`),
+softened at the edges (:ref:`ErodeBlur <eu.cimg.ErodeBlur>`) and used as the
+mask of a :ref:`Merge <net.sf.openfx.MergePlugin>`. The result is premultiplied
+(:ref:`Premult <net.sf.openfx.Premult>`), despilled again by a second Despill
+node, and colour-corrected (:ref:`ColorCorrect
+<net.sf.openfx.ColorCorrectPlugin>`).
+
+.. figure:: _images/tutorials-keying/despill-final.png
+   :width: 650px
+   :align: center
+   :alt: Natron window with the final composite in the left Viewer and the node graph of the Despill branch
+
+   The finished shot (left Viewer) and its node graph.
