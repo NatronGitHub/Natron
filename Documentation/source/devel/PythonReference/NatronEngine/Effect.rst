@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Effect:
 
 Effect
@@ -45,7 +45,7 @@ Functions
 - def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 - def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 - def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
-- def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
+- def :meth:`isNodeSelected<NatronEngine.Effect.isNodeSelected>` ()
 - def :meth:`isReaderNode<NatronEngine.Effect.isReaderNode>` ()
 - def :meth:`isWriterNode<NatronEngine.Effect.isWriterNode>` ()
 - def :meth:`isOutputNode<NatronEngine.Effect.isOutputNode>` ()
@@ -103,11 +103,11 @@ See :ref:`this section<userParams.details>`
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.Effect.addUserPlane(planeName,channels)
+.. method:: Effect.addUserPlane(planeName,channels)
 
-    :param planeName: :class:`str<NatronEngine.std::string>`
+    :param planeName: :class:`str`
     :param channels: :class:`sequence`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
     Adds a new plane to the Channels selector of the node in its settings panel. When selected,
     the end-user can choose to output the result of the node to this new custom plane.
@@ -123,7 +123,7 @@ Member functions description
 
     This function returns *True* if the layer was added successfully, *False* otherwise.
 
-.. method:: NatronEngine.Effect.beginChanges()
+.. method:: Effect.beginChanges()
 
     Starts a begin/End bracket, blocking all evaluation (=renders and callback onParamChanged) that would be issued due to
     a call to :func:`setValue<NatronEngine.IntParam.setValue>` on any parameter of the Effect.
@@ -148,7 +148,7 @@ Member functions description
         node.endChanges() # This triggers a new render
 
 
-.. method:: NatronEngine.Effect.endChanges()
+.. method:: Effect.endChanges()
 
     Ends a begin/end bracket. If the begin/end bracket recursion reaches 0 and there were calls
     made to :func:`setValue<NatronEngine.IntParam.setValue>` this function will effectively compresss
@@ -159,12 +159,12 @@ Member functions description
 
 
 
-.. method:: NatronEngine.Effect.canConnectInput(inputNumber, node)
+.. method:: Effect.canConnectInput(inputNumber, node)
 
 
-    :param inputNumber: :class:`int<PySide.QtCore.int>`
+    :param inputNumber: :class:`int`
     :param node: :class:`Effect<NatronEngine.Effect>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
 Returns whether the given *node* can be connected at the given *inputNumber* of this
@@ -178,12 +178,12 @@ Effect. This function could return False for one of the following reasons:
     * Connecting *node* would create a cycle in the graph implying that it would create infinite recursions
 
 
-.. method:: NatronEngine.Effect.connectInput(inputNumber, input)
+.. method:: Effect.connectInput(inputNumber, input)
 
 
-    :param inputNumber: :class:`int<PySide.QtCore.int>`
+    :param inputNumber: :class:`int`
     :param input: :class:`Effect<NatronEngine.Effect>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Connects *input* to the given *inputNumber* of this Effect.
 This function calls internally :func:`canConnectInput()<NatronEngine.Effect.canConnectInput>`
@@ -191,10 +191,10 @@ to determine if a connection is possible.
 
 
 
-.. method:: NatronEngine.Effect.destroy([autoReconnect=true])
+.. method:: Effect.destroy([autoReconnect=true])
 
 
-    :param autoReconnect: :class:`bool<PySide.QtCore.bool>`
+    :param autoReconnect: :class:`bool`
 
 Removes this Effect from the current project definitively.
 If *autoReconnect* is True then any nodes connected to this node will try to connect
@@ -202,15 +202,15 @@ their input to the input of this node instead.
 
 
 
-.. method:: NatronEngine.Effect.disconnectInput(inputNumber)
+.. method:: Effect.disconnectInput(inputNumber)
 
 
-    :param inputNumber: :class:`int<PySide.QtCore.int>`
+    :param inputNumber: :class:`int`
 
 Removes any input Effect connected to the given *inputNumber* of this node.
 
 
-.. method:: NatronEngine.Effect.getAvailableLayers()
+.. method:: Effect.getAvailableLayers()
 
     :rtype: :class:`dict`
 
@@ -223,13 +223,13 @@ Removes any input Effect connected to the given *inputNumber* of this node.
     calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
     the Read node, whereas the dict will have for the key "RGBA" the Blur node.
 
-.. method:: NatronEngine.Effect.getBitDepth()
+.. method:: Effect.getBitDepth()
 
     :rtype: :class:`ImageBitDepthEnum<NatronEngine.Natron.ImageBitDepthEnum>`
 
     Returns the bit-depth of the image in output of this node.
 
-.. method:: NatronEngine.Effect.getColor()
+.. method:: Effect.getColor()
 
     :rtype: :class:`tuple`
 
@@ -239,42 +239,43 @@ Returns the color of this node as it appears on the node graph as [R,G,B] 3-dime
 
 
 
-.. method:: NatronEngine.Effect.getCurrentTime()
+.. method:: Effect.getCurrentTime()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 
 Returns the current time of timeline if this node is currently rendering, otherwise
 it returns the current time at which the node is currently rendering for the caller
 thread.
 
-.. method:: NatronEngine.Effect.getOutputFormat()
+.. method:: Effect.getOutputFormat()
 
     :rtype: :class:`RectI<NatronEngine.RectI>`
 
     Returns the output format of this node in pixel units.
 
 
-.. method:: NatronEngine.Effect.getFrameRate()
+.. method:: Effect.getFrameRate()
 
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :rtype: :class:`float`
 
     Returns the frame-rate of the sequence in output of this node.
 
-.. method:: NatronEngine.Effect.getInput(inputNumber)
+.. method:: Effect.getInput(inputNumber)
 
 
-    :param inputNumber: :class:`int<PySide.QtCore.int>`
+    :param inputNumber: :class:`int`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
     Returns the node connected at the given *inputNumber*.
 
 
-.. method:: NatronEngine.Effect.getInput(inputName)
+.. method:: Effect.getInput(inputName)
+    :noindex:
 
 
-:param inputName: :class:`str<PySide.QtCore.QString>`
+:param inputName: :class:`str`
 :rtype: :class:`Effect<NatronEngine.Effect>`
 
     Same as :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` except that the parameter in input
@@ -282,27 +283,27 @@ thread.
 
 
 
-.. method:: NatronEngine.Effect.getLabel()
+.. method:: Effect.getLabel()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the *label* of the node. See :ref:`this section<autoVar>` for a discussion
 of the *label* vs the *script-name*.
 
-.. method:: NatronEngine.Effect.getInputLabel(inputNumber)
+.. method:: Effect.getInputLabel(inputNumber)
 
 
-    :param inputNumber: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :param inputNumber: :class:`int`
+    :rtype: :class:`str`
 
 Returns the label of the input at the given *inputNumber*.
 It corresponds to the label displayed on the arrow of the input in the node graph.
 
-.. method:: NatronEngine.Effect.getMaxInputCount()
+.. method:: Effect.getMaxInputCount()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the number of inputs for the node. Graphically this corresponds to the number
 of arrows in input.
@@ -310,11 +311,11 @@ of arrows in input.
 
 
 
-.. method:: NatronEngine.Effect.getParam(name)
+.. method:: Effect.getParam(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Param<Param>`
+    :param name: :class:`str`
+    :rtype: :class:`Param<NatronEngine.Param>`
 
 
 Returns a :doc:`parameter<Param>` by its script-name or None if
@@ -322,7 +323,7 @@ no such parameter exists.
 
 
 
-.. method:: NatronEngine.Effect.getParams()
+.. method:: Effect.getParams()
 
 
     :rtype: :class:`sequence`
@@ -332,17 +333,17 @@ Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 
 
 
-.. method:: NatronEngine.Effect.getPluginID()
+.. method:: Effect.getPluginID()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 
 Returns the ID of the plug-in that this node instantiate.
 
 
 
-.. method:: NatronEngine.Effect.getPosition()
+.. method:: Effect.getPosition()
 
 
     :rtype: :class:`tuple`
@@ -353,24 +354,24 @@ Note that in background mode, if used, this function will always return [0,0] an
 should NOT be used.
 
 
-.. method:: NatronEngine.Effect.getPremult()
+.. method:: Effect.getPremult()
 
     :rtype: :class:`ImagePremultiplicationEnum<NatronEngine.Natron.ImagePremultiplicationEnum>`
 
     Returns the alpha premultiplication state of the image in output of this node.
 
-.. method:: NatronEngine.Effect.getPixelAspectRatio()
+.. method:: Effect.getPixelAspectRatio()
 
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :rtype: :class:`float`
 
     Returns the pixel aspect ratio of the image in output of this node.
 
 
 
-.. method:: NatronEngine.Effect.getRegionOfDefinition(time,view)
+.. method:: Effect.getRegionOfDefinition(time,view)
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param view: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float`
+    :param view: :class:`int`
     :rtype: :class:`RectD<NatronEngine.RectD>`
 
 Returns the bounding box of the image produced by this effect in canonical coordinates.
@@ -379,7 +380,7 @@ for the "Output".
 This can be useful for example to set the position of a point parameter to the center
 of the region of definition.
 
-.. method:: NatronEngine.Effect.getRotoContext()
+.. method:: Effect.getRotoContext()
 
 
     :rtype: :class:`Roto<NatronEngine.Roto>`
@@ -390,7 +391,7 @@ and :doc:`Layers<Layer>`.
 Most of the nodes don't have a roto context though and this function will return None.
 
 
-.. method:: NatronEngine.Effect.getTrackerContext()
+.. method:: Effect.getTrackerContext()
 
 
     :rtype: :class:`Tracker<NatronEngine.Tracker>`
@@ -401,10 +402,10 @@ Most of the nodes don't have a tracker context though and this function will ret
 
 
 
-.. method:: NatronEngine.Effect.getScriptName()
+.. method:: Effect.getScriptName()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 
 Returns the script-name of this Effect. See :ref:`this<autoVar>` section for more
@@ -412,7 +413,7 @@ information about the script-name.
 
 
 
-.. method:: NatronEngine.Effect.getSize()
+.. method:: Effect.getSize()
 
     :rtype: :class:`tuple`
 
@@ -424,7 +425,7 @@ should not be used.
 
 
 
-.. method:: NatronEngine.Effect.getUserPageParam()
+.. method:: Effect.getUserPageParam()
 
 
     :rtype: :class:`PageParam<NatronEngine.PageParam>`
@@ -433,44 +434,44 @@ should not be used.
 Convenience function to return the user page parameter if this Effect has one.
 
 
-.. method:: NatronEngine.Effect.isUserSelected()
+.. method:: Effect.isNodeSelected()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
     Returns true if this node is selected in its containing nodegraph.
 
 
-.. method:: NatronEngine.Effect.isReaderNode()
+.. method:: Effect.isReaderNode()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
     Returns True if this node is a reader node
 
 
 
-.. method:: NatronEngine.Effect.isWriterNode()
+.. method:: Effect.isWriterNode()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
     Returns True if this node is a writer node
 
-.. method:: NatronEngine.Effect.isOutputNode()
+.. method:: Effect.isOutputNode()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
     Returns True if this node is an output node (which also means that it has no output)
 
-.. method:: NatronEngine.Effect.setColor(r, g, b)
+.. method:: Effect.setColor(r, g, b)
 
 
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
+    :param r: :class:`float`
+    :param g: :class:`float`
+    :param b: :class:`float`
 
 Set the color of the node as it appears on the node graph.
 Note that calling this function will in background mode will do nothing and
@@ -478,10 +479,10 @@ should not be used.
 
 
 
-.. method:: NatronEngine.Effect.setLabel(name)
+.. method:: Effect.setLabel(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
 
 Set the label of the node as it appears in the user interface.
 See :ref:`this<autoVar>` section for an explanation of the difference between the *label* and the
@@ -489,11 +490,11 @@ See :ref:`this<autoVar>` section for an explanation of the difference between th
 
 
 
-.. method:: NatronEngine.Effect.setPosition(x, y)
+.. method:: Effect.setPosition(x, y)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
+    :param x: :class:`float`
+    :param y: :class:`float`
 
 
 Set the position of the node as it appears on the node graph.
@@ -502,11 +503,11 @@ should not be used.
 
 
 
-.. method:: NatronEngine.Effect.setScriptName(scriptName)
+.. method:: Effect.setScriptName(scriptName)
 
 
-    :param scriptName: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param scriptName: :class:`str`
+    :rtype: :class:`bool`
 
 Set the script-name of the node as used internally by Natron.
 See :ref:`this<autoVar>` section for an explanation of the difference between the *label* and the
@@ -534,19 +535,19 @@ but using app1.Blur1 would report the following error::
 
 
 
-.. method:: NatronEngine.Effect.setSize(w, h)
+.. method:: Effect.setSize(w, h)
 
 
-    :param w: :class:`float<PySide.QtCore.double>`
-    :param h: :class:`float<PySide.QtCore.double>`
+    :param w: :class:`float`
+    :param h: :class:`float`
 
 Set the size of the node as it appears on the node graph.
 Note that calling this function will in background mode will do nothing and
 should not be used.
 
-.. method:: NatronEngine.Effect.setSubGraphEditable(editable)
+.. method:: Effect.setSubGraphEditable(editable)
 
-    :param editable: :class:`bool<PySide.QtCore.bool>`
+    :param editable: :class:`bool`
 
 Can be called to disable editing of the group via Natron's graphical user interface.
 This is handy to prevent users from accidentally breaking the sub-graph.
@@ -555,7 +556,7 @@ The user will still be able to see the internal node graph but will not be able 
 unlock it.
 
 
-.. method:: NatronEngine.Effect.setPagesOrder(pages)
+.. method:: Effect.setPagesOrder(pages)
 
     :param pages: :class:`sequence`
 

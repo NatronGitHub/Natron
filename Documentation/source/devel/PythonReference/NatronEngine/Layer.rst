@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Layer:
 
 Layer
@@ -41,7 +41,7 @@ Member functions description
 
 
 
-.. method:: NatronEngine.Layer.addItem(item)
+.. method:: Layer.addItem(item)
 
 
     :param item: :class:`ItemBase<NatronEngine.ItemBase>`
@@ -51,7 +51,7 @@ Adds a new item at the bottom of the layer.
 
 
 
-.. method:: NatronEngine.Layer.getChildren()
+.. method:: Layer.getChildren()
 
 
     :rtype: :class:`sequence`
@@ -61,10 +61,10 @@ Returns a sequence with all :doc:`items<ItemBase>` in the layer.
 
 
 
-.. method:: NatronEngine.Layer.insertItem(pos, item)
+.. method:: Layer.insertItem(pos, item)
 
 
-    :param pos: :class:`int<PySide.QtCore.int>`
+    :param pos: :class:`int`
     :param item: :class:`ItemBase<NatronEngine.ItemBase>`
 
 
@@ -73,7 +73,7 @@ it will be inserted at the bottom of the layer.
 
 
 
-.. method:: NatronEngine.Layer.removeItem(item)
+.. method:: Layer.removeItem(item)
 
 
     :param item: :class:`ItemBase<NatronEngine.ItemBase>`

@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Group:
 
 Group
@@ -38,7 +38,7 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.Group.getChildren()
+.. method:: Group.getChildren()
 
 
     :rtype: :class:`sequence`
@@ -49,10 +49,10 @@ and you'd have to call **getChildren()** on all sub-groups to retrieve their chi
 
 
 
-.. method:: NatronEngine.Group.getNode(fullyQualifiedName)
+.. method:: Group.getNode(fullyQualifiedName)
 
 
-    :param fullySpecifiedName: :class:`str<NatronEngine.std::string>`
+    :param fullySpecifiedName: :class:`str`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
 

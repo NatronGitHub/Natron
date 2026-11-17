@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ImageLayer:
 
 ImageLayer
@@ -24,6 +24,7 @@ Functions
 - def :meth:`getLayerName<NatronEngine.ImageLayer.getLayerName>` ()
 - def :meth:`getComponentsNames<NatronEngine.ImageLayer.getComponentsNames>` ()
 - def :meth:`getComponentsPrettyName<NatronEngine.ImageLayer.getComponentsPrettyName>` ()
+- def :meth:`getHash<NatronEngine.ImageLayer.getHash>` (layer)
 - def :meth:`getNoneComponents<NatronEngine.ImageLayer.getNoneComponents>` ()
 - def :meth:`getRGBAComponents<NatronEngine.ImageLayer.getRGBAComponents>` ()
 - def :meth:`getRGBComponents<NatronEngine.ImageLayer.getRGBComponents>` ()
@@ -55,91 +56,99 @@ Member functions description
 
 
 
-.. method:: NatronEngine.ImageLayer.ImageLayer(layerName,componentsPrettyName,componentsName)
+.. method:: ImageLayer.ImageLayer(layerName,componentsPrettyName,componentsName)
 
 
-    :param layerName: :class:`str<NatronEngine.std::string>`
+    :param layerName: :class:`str`
 
     Make a new image layer with the given layer name, optional components pretty name and
     the set of channels (also called components) in the layer.
 
-.. method:: NatronEngine.ImageLayer.isColorPlane()
+.. method:: ImageLayer.isColorPlane()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
     Returns True if this layer is a color layer, i.e: it is RGBA, RGB or alpha.
     The color layer is what is output by default by all nodes in Natron.
 
 
-.. method:: NatronEngine.ImageLayer.getNumComponents()
+.. method:: ImageLayer.getNumComponents()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
     Returns the number of channels in this layer. Can be between 0 and 4 included.
 
-.. method:: NatronEngine.ImageLayer.getLayerName()
+.. method:: ImageLayer.getLayerName()
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
     Returns the layer name
 
-.. method:: NatronEngine.ImageLayer.getComponentsNames()
+.. method:: ImageLayer.getComponentsNames()
 
     :rtype: :class:`Sequence`
 
     Returns a sequence with all channels in this layer in order
 
-.. method:: NatronEngine.ImageLayer.getComponentsPrettyName()
+.. method:: ImageLayer.getComponentsPrettyName()
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
     Returns the channels pretty name. E.g: DisparityLeft instead of XY
 
-.. method:: NatronEngine.ImageLayer.getNoneComponents()
+.. staticmethod:: ImageLayer.getHash(layer)
+
+    :param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`int`
+
+Returns a hash computed from the components name (e.g. "RGBA") and the channel names
+of *layer*. The layer name itself is not part of the hash.
+
+.. method:: ImageLayer.getNoneComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "none" layer
 
-.. method:: NatronEngine.ImageLayer.getRGBAComponents()
+.. method:: ImageLayer.getRGBAComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "RGBA" layer
 
-.. method:: NatronEngine.ImageLayer.getRGBComponents()
+.. method:: ImageLayer.getRGBComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "RGB" layer
 
-.. method:: NatronEngine.ImageLayer.getAlphaComponents()
+.. method:: ImageLayer.getAlphaComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "Alpha" layer
 
-.. method:: NatronEngine.ImageLayer.getBackwardMotionComponents()
+.. method:: ImageLayer.getBackwardMotionComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "Backward" layer
 
-.. method:: NatronEngine.ImageLayer.getForwardMotionComponents()
+.. method:: ImageLayer.getForwardMotionComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "Forward" layer
 
-.. method:: NatronEngine.ImageLayer.getDisparityLeftComponents()
+.. method:: ImageLayer.getDisparityLeftComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
     Returns the default "DisparityLeft" layer
 
-.. method:: NatronEngine.ImageLayer.getDisparityRightComponents()
+.. method:: ImageLayer.getDisparityRightComponents()
 
     :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 

@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _RectI:
 
 RectI
@@ -46,21 +46,21 @@ x1,x2,y1 and y2 are with integer precision.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.RectI.bottom()
+.. method:: RectI.bottom()
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the bottom edge, that is the
 
 
-.. method:: NatronEngine.RectI.clear()
+.. method:: RectI.clear()
 
 Same as :func:`set<NatronEngine.RectI.set>` (0,0,0,0)
 
-.. method:: NatronEngine.RectI.contains(otherRect)
+.. method:: RectI.contains(otherRect)
 
     :param otherRect: :class:`RectI<NatronEngine.RectI>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if *otherRect* is contained in or equals this rectangle, that is if::
 
@@ -70,129 +70,129 @@ Returns True if *otherRect* is contained in or equals this rectangle, that is if
     otherRect.y2 <= y2
 
 
-.. method:: NatronEngine.RectI.height()
+.. method:: RectI.height()
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the height of the rectangle, that is: y2 - y1
 
 
-.. method:: NatronEngine.RectI.intersect(otherRect)
+.. method:: RectI.intersect(otherRect)
 
     :param otherRect: :class:`RectI<NatronEngine.RectI>`
     :rtype: :class:`RectI<NatronEngine.RectI>`
 
 Returns the intersection between this rectangle and *otherRect*. If the intersection is empty,
-the return value will have the :func:`isNull()<NatronEngine.Rect.isNull>` function return True.
+the return value will have the :func:`isNull()<NatronEngine.RectI.isNull>` function return True.
 
 
 
-.. method:: NatronEngine.RectI.intersects(otherRect)
+.. method:: RectI.intersects(otherRect)
 
     :param otherRect: :class:`RectI<NatronEngine.RectI>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if rectangle and *otherRect* intersect.
 
 
-.. method:: NatronEngine.RectI.isInfinite()
+.. method:: RectI.isInfinite()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if this rectangle is considered to cover an infinite area. Some generator
 effects use this to indicate that they can potentially generate an image of infinite size.
 
 
-.. method:: NatronEngine.RectI.isNull()
+.. method:: RectI.isNull()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns true if x2 <= x1 or y2 <= y1
 
 
 
-.. method:: NatronEngine.RectI.left()
+.. method:: RectI.left()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns x1, that is the position of the left edge of the rectangle.
 
 
 
 
-.. method:: NatronEngine.RectI.merge(otherRect)
+.. method:: RectI.merge(otherRect)
 
 
     :param otherRect: :class:`RectI<NatronEngine.RectI>`
 
 Unions this rectangle with *otherRect*. In other words, this rectangle becomes the bounding box of this rectangle and  *otherRect*.
 
-.. method:: NatronEngine.RectI.right()
+.. method:: RectI.right()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns x2, that is the position of the right edge of the rectangle. x2 is considered to be
 the first element outside the rectangle.
 
 
-.. method:: NatronEngine.RectI.set(x1,y1,x2,y2)
+.. method:: RectI.set(x1,y1,x2,y2)
 
-    :param x1: :class:`int<PySide.QtCore.int>`
-    :param y1: :class:`int<PySide.QtCore.int>`
-    :param x2: :class:`int<PySide.QtCore.int>`
-    :param y2: :class:`int<PySide.QtCore.int>`
+    :param x1: :class:`int`
+    :param y1: :class:`int`
+    :param x2: :class:`int`
+    :param y2: :class:`int`
 
 Set the x1, y1, x2, y2 coordinates of this rectangle.
 
 
 
-.. method:: NatronEngine.RectI.set_bottom(y1)
+.. method:: RectI.set_bottom(y1)
 
 
-    :param y1: :class:`int<PySide.QtCore.int>`
+    :param y1: :class:`int`
 
 Set y1
 
-.. method:: NatronEngine.RectI.set_left(x1)
+.. method:: RectI.set_left(x1)
 
 
-    :param y1: :class:`int<PySide.QtCore.int>`
+    :param y1: :class:`int`
 
 Set x1
 
-.. method:: NatronEngine.RectI.set_right(x2)
+.. method:: RectI.set_right(x2)
 
 
-    :param x2: :class:`int<PySide.QtCore.int>`
+    :param x2: :class:`int`
 
 Set x2
 
 
-.. method:: NatronEngine.RectI.set_top(y2)
+.. method:: RectI.set_top(y2)
 
 
-    :param y2: :class:`int<PySide.QtCore.int>`
+    :param y2: :class:`int`
 
 Set y2
 
 
-.. method:: NatronEngine.RectI.top()
+.. method:: RectI.top()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns y2, that is the position of the top edge of the rectangle.
 y2 is considered to be the first element outside the rectangle.
 
 
-.. method:: NatronEngine.RectI.translate(dx,dy)
+.. method:: RectI.translate(dx,dy)
 
 
-    :param dx: :class:`int<PySide.QtCore.int>`
-    :param dy: :class:`int<PySide.QtCore.int>`
+    :param dx: :class:`int`
+    :param dy: :class:`int`
 
 Moves all edges of the rectangle by *dx*, *dy*, that is::
 
@@ -202,10 +202,10 @@ Moves all edges of the rectangle by *dx*, *dy*, that is::
         y2 += dy;
 
 
-.. method:: NatronEngine.RectI.width()
+.. method:: RectI.width()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the width of the rectangle, that is x2 - x1.
 

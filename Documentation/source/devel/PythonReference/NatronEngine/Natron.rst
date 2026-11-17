@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Natron:
 
 Natron
@@ -12,7 +12,7 @@ This class contains enumerations that are used by some functions of the API to r
 that are more complicated than a simple boolean value.
 
 
-.. attribute:: NatronEngine.Natron.StandardButtonEnum
+.. attribute:: Natron.StandardButtonEnum
 
    Can have the following values:
 
@@ -37,7 +37,7 @@ that are more complicated than a simple boolean value.
    - eStandardButtonReset              = 0x04000000,
    - eStandardButtonRestoreDefaults    = 0x08000000
 
-.. attribute:: NatronEngine.Natron.ImagePlaneDescEnum
+.. attribute:: Natron.ImagePlaneDescEnum
 
    Can have the following values:
 
@@ -47,7 +47,7 @@ that are more complicated than a simple boolean value.
    - eImageComponentRGBA
 
 
-.. attribute:: NatronEngine.Natron.ImageBitDepthEnum
+.. attribute:: Natron.ImageBitDepthEnum
 
    Can have the following values:
 
@@ -56,7 +56,7 @@ that are more complicated than a simple boolean value.
    - eImageBitDepthShort,
    - eImageBitDepthFloat
 
-.. attribute:: NatronEngine.Natron.KeyframeTypeEnum
+.. attribute:: Natron.KeyframeTypeEnum
 
    Can have the following values:
 
@@ -70,7 +70,7 @@ that are more complicated than a simple boolean value.
    - eKeyframeTypeBroken = 7,
    - eKeyframeTypeNone = 8
 
-.. attribute:: NatronEngine.Natron.ValueChangedReasonEnum
+.. attribute:: Natron.ValueChangedReasonEnum
 
    Can have the following values:
 
@@ -89,7 +89,7 @@ that are more complicated than a simple boolean value.
    - eValueChangedReasonRestoreDefault ,
      The param value has been restored to its defaults
 
-.. attribute:: NatronEngine.Natron.AnimationLevelEnum
+.. attribute:: Natron.AnimationLevelEnum
 
    Can have the following values:
 
@@ -97,14 +97,14 @@ that are more complicated than a simple boolean value.
    - eAnimationLevelInterpolatedValue = 1,
    - eAnimationLevelOnKeyframe = 2
 
-.. attribute:: NatronEngine.Natron.OrientationEnum
+.. attribute:: Natron.OrientationEnum
 
    Can have the following values:
 
    - eOrientationHorizontal = 0x1,
    - eOrientationVertical = 0x2
 
-.. attribute:: NatronEngine.Natron.ImagePremultiplicationEnum
+.. attribute:: Natron.ImagePremultiplicationEnum
 
    Can have the following values:
 
@@ -112,7 +112,7 @@ that are more complicated than a simple boolean value.
    - eImagePremultiplicationPremultiplied,
    - eImagePremultiplicationUnPremultiplied,
 
-.. attribute:: NatronEngine.Natron.StatusEnum
+.. attribute:: Natron.StatusEnum
 
    Can have the following values:
 
@@ -120,7 +120,7 @@ that are more complicated than a simple boolean value.
    - eStatusFailed = 1,
    - eStatusReplyDefault = 14
 
-.. attribute:: NatronEngine.Natron.ViewerCompositingOperatorEnum
+.. attribute:: Natron.ViewerCompositingOperatorEnum
 
    Can have the following values:
 
@@ -130,7 +130,7 @@ that are more complicated than a simple boolean value.
    - eViewerCompositingOperatorUnder,
    - eViewerCompositingOperatorWipe
 
-.. attribute:: NatronEngine.Natron.PlaybackModeEnum
+.. attribute:: Natron.PlaybackModeEnum
 
    Can have the following values:
 
@@ -138,12 +138,12 @@ that are more complicated than a simple boolean value.
    - ePlaybackModeBounce,
    - ePlaybackModeOnce
 
-.. attribute:: NatronEngine.Natron.PixmapEnum
+.. attribute:: Natron.PixmapEnum
 
     See `here <https://github.com/NatronGitHub/Natron/blob/master/Global/Enums.h>`_ for
     potential values of this enumeration.
 
-.. attribute:: NatronEngine.Natron.ViewerColorSpaceEnum
+.. attribute:: Natron.ViewerColorSpaceEnum
 
    Can have the following values:
 
