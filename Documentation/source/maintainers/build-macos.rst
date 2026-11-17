@@ -104,8 +104,11 @@ When upstream MacPorts moves, re-synchronise carefully:
 
        sudo port selfupdate
 
-#. **Find outdated overlay files.** ``check.sh`` compares each file in the
-   overlay against its upstream MacPorts counterpart and lists what changed::
+#. **Find outdated overlay files.** ``check.sh`` compares the overlay ports
+   that are installed (all of them with ``--all``) against their upstream
+   MacPorts counterparts, by content, and lists what changed, which
+   ``files/`` entries are unused, and whether ``/opt/MacPorts-Natron`` needs
+   a ``./sync.sh``::
 
        cd .../Natron/tools/MacPorts
        ./check.sh

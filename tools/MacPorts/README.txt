@@ -1,3 +1,12 @@
+Natron's MacPorts overlay. The up-to-date instructions are in INSTALL_MACOS.md
+(installing, ./sync.sh, keeping MacPorts up to date) and in
+Documentation/source/maintainers/build-macos.rst (reintegrating upstream).
+- ./sync.sh copies this directory to /opt/MacPorts-Natron and runs portindex.
+- ./check.sh [--all] compares the overlay with upstream MacPorts and with
+  /opt/MacPorts-Natron (see the comment at the top of check.sh).
+
+The notes below are old and kept for reference.
+
 * Download Macports [dports-dev](http://downloads.natron.fr/Third_Party_Sources/dports-dev.zip)
 
 * Give read/execute permissions to the local repository (replace `USER_NAME` with your user name):
