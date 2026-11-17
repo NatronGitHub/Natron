@@ -45,14 +45,15 @@ Loading footage
 
 There are three ways to load footage into Natron:
 
-- Add a Read Node from the sidebar and select your media:
+- Add a Read node from the :doc:`toolbar <getstarted-environment-toolbar>`
+  (**Image > Read**) and select your media:
 
 .. image:: _images/compositing-Read_node00.png
    :width: 20%
 
 
 
-- In the Node Graph hit 'R' on your keyboard and select your media:
+- In the Node Graph, press :kbd:`R` and select your media:
 
 .. image:: _images/compositing-Read_node02.png
 
@@ -62,13 +63,13 @@ There are three ways to load footage into Natron:
 .. image:: _images/compositing-projects-readers_01.png
 
 
-.. note:: To see the imported footage in the viewer, select the Read Node in the Node Graph and hit 1 on your keyboard.
+.. note:: To see the imported footage in the Viewer, select the Read node in the Node Graph and press :kbd:`1`.
 
 In the file dialog, the files of an image sequence are shown as a single item,
 with the frame range next to the name. Selecting that item loads the whole
 sequence in one Read node.
 
-In the Properties Panel on the right side you can make several adjustments to your Read Node:
+In the Properties panel on the right side you can make several adjustments to your Read node:
 
 .. image:: _images/compositing-Read_node01.png
 
@@ -85,7 +86,7 @@ the extension of the file name. For example, a ``.png`` file is read by
 :ref:`ReadPNG <fr.inria.openfx.ReadPNG>`, a ``.exr`` file by
 :ref:`ReadOIIO <fr.inria.openfx.ReadOIIO>` and a ``.mov`` file by
 :ref:`ReadFFmpeg <fr.inria.openfx.ReadFFmpeg>`. The parameters of that plug-in
-appear in the properties of the Read or Write node, which is why the
+appear in the Properties panel of the Read or Write node, which is why the
 parameters change when you change the file type.
 
 Several plug-ins can often handle the same extension. Each one declares a
@@ -111,8 +112,11 @@ Supported file formats
 
 The table lists the formats that the plug-ins bundled with Natron can read and
 write, and which plug-in is used by default. The exact list depends on how the
-libraries were compiled (see :ref:`compositing-projects-readers-gpl`), and
-plug-ins installed separately can add more formats.
+libraries were compiled: ReadOIIO and WriteOIIO only offer the formats that
+their OpenImageIO library was built with, so some formats (marked "depends on
+the build" below) are missing from some Natron builds. See also
+:ref:`compositing-projects-readers-gpl`. Plug-ins installed separately can add
+more formats.
 
 .. list-table::
    :header-rows: 1
@@ -138,8 +142,8 @@ plug-ins installed separately can add more formats.
    * - Cineon
      - ``cin``
      - ReadOIIO
-     - WriteOIIO
-     - 10-bit log film scans.
+     - (none)
+     - 10-bit log film scans. Read only.
    * - TIFF
      - ``tif``, ``tiff``, ``tx``, ``env``, ``sm``, ``vsm``
      - ReadOIIO
@@ -172,9 +176,9 @@ plug-ins installed separately can add more formats.
      -
    * - BMP
      - ``bmp``
-     - ReadOIIO
+     - :ref:`ReadMisc <fr.inria.openfx.ReadMisc>`
      - WriteOIIO
-     -
+     - ReadOIIO does not read BMP files.
    * - Radiance HDR
      - ``hdr``
      - ReadOIIO
@@ -183,8 +187,9 @@ plug-ins installed separately can add more formats.
    * - PFM
      - ``pfm``
      - :ref:`ReadPFM <fr.inria.openfx.ReadPFM>`
-     - :ref:`WritePFM <fr.inria.openfx.WritePFM>`
-     - 32-bit float.
+     - WriteOIIO
+     - 32-bit float. :ref:`WritePFM <fr.inria.openfx.WritePFM>` can also be
+       selected as the Encoder.
    * - Netpbm
      - ``pbm``, ``pgm``, ``ppm``
      - ReadOIIO
@@ -194,23 +199,30 @@ plug-ins installed separately can add more formats.
      - ``heic``, ``heif``
      - ReadOIIO
      - WriteOIIO
-     - Only if OpenImageIO was built with HEIF support.
+     - Depends on the build (HEIF support in OpenImageIO).
+   * - JPEG XL
+     - ``jxl``
+     - ReadOIIO
+     - WriteOIIO
+     - Depends on the build (JPEG XL support in OpenImageIO).
    * - WebP
      - ``webp``
      - ReadOIIO
-     - (none)
-     -
+     - WriteOIIO
+     - Depends on the build (WebP support in OpenImageIO). The macOS builds
+       do not have it.
    * - GIF
      - ``gif``
-     - ReadOIIO
+     - ReadFFmpeg
      - (none)
-     - For animated GIFs, select ReadFFmpeg as the Decoder.
+     - Read as a video, including animated GIFs. ReadOIIO does not read GIF
+       files.
    * - Photoshop
      - ``psd`` (also ``psb``, ``pdd``)
      - :ref:`ReadPSD <net.fxarena.openfx.ReadPSD>` (``psd``), ReadOIIO
        (``psb``, ``pdd``)
-     - WriteOIIO
-     - ReadPSD gives access to the layers of the file, and can use the
+     - (none)
+     - Read only. ReadPSD gives access to the layers of the file, and can use the
        embedded ICC color profile.
    * - GIMP
      - ``xcf``
@@ -249,14 +261,14 @@ plug-ins installed separately can add more formats.
      - (none)
      - Demosaicing options are in the RAW group of the Read node.
    * - Other OpenImageIO formats
-     - ``dds``, ``fits``, ``f3d``, ``ico``, ``iff``, ``ptex``, ``rla``,
-       ``pic``, ``zfile``
+     - ``dds``, ``fits``, ``ico``, ``iff``, ``ptex``, ``rla``, ``pic``,
+       ``zfile``
      - ReadOIIO
-     - WriteOIIO (except ``dds``, ``f3d``, ``ptex``)
-     -
+     - WriteOIIO (except ``dds`` and ``pic``, which are read only)
+     - Ptex depends on the build; the macOS builds do not have it.
    * - Other ImageMagick formats
-     - ``xpm``, ``miff``
-     - :ref:`ReadMisc <fr.inria.openfx.ReadMisc>`
+     - ``pcx``, ``xpm``, ``miff``
+     - ReadMisc
      - (none)
      -
    * - Video
@@ -267,9 +279,10 @@ plug-ins installed separately can add more formats.
      - :ref:`WriteFFmpeg <fr.inria.openfx.WriteFFmpeg>`
      - See :ref:`compositing-projects-readers-video`.
 
-The complete lists of extensions are in the reference pages of
-:ref:`ReadOIIO <fr.inria.openfx.ReadOIIO>`, :ref:`WriteOIIO <fr.inria.openfx.WriteOIIO>`
-and the other plug-ins.
+The reference pages of :ref:`ReadOIIO <fr.inria.openfx.ReadOIIO>`,
+:ref:`WriteOIIO <fr.inria.openfx.WriteOIIO>` and the other plug-ins list
+their extensions. In ReadOIIO and WriteOIIO, the **OpenImageIO Info...**
+button lists the formats of the OpenImageIO library that your build uses.
 
 Bit depth when writing
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -292,22 +305,17 @@ with a :ref:`Shuffle <net.sf.openfx.ShufflePlugin>` node. See
 To write several layers in one file, set the **Layer(s)** parameter of
 WriteOIIO to **All** and write to OpenEXR.
 
-Natron works with premultiplied images. The Read node outputs premultiplied
-images, and its **File Premult** parameter tells it how the alpha is stored in
-the file. It is guessed from the file, and can be changed if the file says the
-wrong thing. The **Input Premult** parameter of the Write node does the same for
-the image that is written.
+Colorspace and premultiplication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Color spaces
-~~~~~~~~~~~~
+Natron works with linear, premultiplied images: the Read node converts the
+file from its **File Colorspace** and **File Premult**, and the Write node
+converts back to its **File Colorspace** using its **Input Premult**. These
+parameters are guessed from the file type, so check them with log footage and
+with files that do not follow the usual conventions (see
+:ref:`fr.inria.built-in.Read` and :ref:`fr.inria.built-in.Write`).
 
-Natron works in a linear color space. The Read node converts the file from its
-**File Colorspace** to the linear working space, and the Write node converts
-back to the **File Colorspace** of the output file. The default is guessed from
-the file type and bit depth: for example sRGB for 8-bit files and linear for
-EXR files. Check these parameters on every Read and Write node, especially with
-log footage (DPX, Cineon) and with files that do not follow these conventions.
-
+.. _compositing-projects-readers-patterns:
 
 Image sequences and file name patterns
 --------------------------------------
@@ -370,7 +378,7 @@ Proxy files
 
 The **Proxy File** parameter of the Read node can point to a lower-resolution
 version of the same footage. Natron reads it instead of the full-resolution
-files when the proxy mode of the viewer is on. See :doc:`compositing-projects-proxy`.
+files when the proxy mode of the Viewer is on. See :doc:`compositing-projects-proxy`.
 
 
 .. _compositing-projects-readers-video:
@@ -417,6 +425,10 @@ scripts) do not have them:
   the GPL3 pack. The Natron build scripts only enable the GPL2 pack, so AMaZE
   is usually not available either. When an algorithm is not available, the
   **Demosaic** parameter falls back to AHD.
+
+On Windows, there are no non-GPL builds of Natron yet: some of the bundled
+libraries still depend on GPL encoders (see
+`issue #1177 <https://github.com/NatronGitHub/Natron/issues/1177>`_).
 
 The menus of WriteFFmpeg only show the codecs and containers of the FFmpeg
 libraries that Natron uses, so a codec that is missing from the **Codec** menu
