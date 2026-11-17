@@ -35,12 +35,12 @@ again, for example when:
 
 - the node is connected to several other nodes, or it is the active input of a
   Viewer;
-- the settings panel of the node below it is open (you are probably editing
-  that node, so its input is requested many times);
+- the Properties panel of the node below it is open (you are probably
+  editing that node, so its input is requested many times);
 - the node has a preview in the Node Graph;
 - the node's output does not change over time, or the node reads several
   frames of its input (a time blur, a retimer...);
-- **Force caching** is checked in the **Node** tab of the node's settings
+- **Force caching** is checked in the **Node** tab of the node's Properties
   panel. On a Group node, this caches the output of the group;
 - **Aggressive caching** is checked in the preferences (see below): then every
   node is cached.
@@ -76,8 +76,8 @@ starts.
 DiskCache node
 ~~~~~~~~~~~~~~
 
-The :ref:`DiskCache <fr.inria.built-in.DiskCache>` node (in the **Other**
-toolbox) stores the images coming from its input in the disk cache folder, in
+The :ref:`DiskCache <fr.inria.built-in.DiskCache>` node (in the **Other** menu of the
+:doc:`toolbar <getstarted-environment-toolbar>`) stores the images coming from its input in the disk cache folder, in
 full 32-bit floating point. When an image is found in the cache, the nodes
 above the DiskCache are not computed. Like the playback cache, it is kept from
 one session to the next.
@@ -139,16 +139,19 @@ The cache settings are in **Edit > Preferences > Caching**:
 
 **Disk cache path**
    The folder where the playback cache and the DiskCache nodes store their
-   files. Choose your fastest disk. If the field is empty or the folder is not
-   valid, a default folder is used (its path is shown in the tooltip of the
-   parameter). The ``NATRON_DISK_CACHE_PATH`` environment variable, if set,
-   takes precedence over this setting (see :doc:`../_environment`). Changing
-   this setting requires restarting Natron.
+   files. Choose your fastest disk. When this field is set, it is used, even
+   if the ``NATRON_DISK_CACHE_PATH`` environment variable is set. When it is
+   empty, ``NATRON_DISK_CACHE_PATH`` is used if it is set (see
+   :doc:`../_environment`), and otherwise a default folder (its path is shown
+   in the tooltip of the parameter). Changing this setting requires
+   restarting Natron.
 
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache
    folder. Use it if the disk cache seems to take more space than expected, or
-   if Natron seems to show old images.
+   if Natron seems to show old images. Like **Clear All Caches** (see
+   `The Cache menu`_), it also deletes the auto-save files of the open
+   projects: save your projects first.
 
 The full list of preferences is in the Reference Guide: :doc:`../_prefs`.
 
@@ -166,7 +169,7 @@ cores Natron uses:
 
 **Number of parallel renders (0="guess")**
    How many frames are rendered at the same time during playback and when
-   rendering to disk. Leave it to 0, so that Natron chooses it from the current
+   rendering to disk. Leave it at 0, so that Natron chooses it from the current
    CPU usage.
 
 **Effects use the thread-pool**
@@ -174,7 +177,7 @@ cores Natron uses:
    known to happen with The Foundry's Furnace plug-ins).
 
 **Max threads usable per effect (0="guess")**
-   The maximum number of threads that a single node may use. Leave it to 0.
+   The maximum number of threads that a single node may use. Leave it at 0.
 
 
 The Cache menu
@@ -190,8 +193,9 @@ comes from the cache.
    cache.
 
 **Clear Playback Cache**
-   Empties the part of the playback cache that is in RAM. The frames stored on
-   disk are kept.
+   Empties the part of the playback cache that is in RAM. The frames that
+   were only in RAM are lost and are computed again when needed; the frames
+   stored on disk are kept.
 
 **Clear Per-Node Cache**
    Empties the per-node RAM cache and the internal caches of the OpenFX
@@ -199,7 +203,8 @@ comes from the cache.
 
 **Clear All Caches** (:kbd:`Ctrl+Shift+K`, :kbd:`Cmd+Shift+K` on macOS)
    Stops the Viewers, empties all the caches above, then renders the Viewers
-   again. It also deletes the auto-save files of the projects.
+   again. It also deletes the auto-save files of the open projects: save your
+   projects first.
 
 **Clear Plug-ins Load Cache**
    Natron keeps a list of the OpenFX plug-ins it found, so that it starts
@@ -226,13 +231,13 @@ Keeping a large script fast
   Natron renders only what is needed at the current zoom level.
 - **Read image sequences rather than video files.** Decoding a video file can
   be slow, especially with codecs that compress several frames together
-  (H.264, H.265). See :doc:`compositing-projects-readers`.
+  (H.264, H.265). See :doc:`compositing-projects-readers` for the reasons.
 - **Freeze finished branches with a DiskCache node** (see above).
 - **Limit the node previews.** Each preview in the Node Graph is a separate
   render. Uncheck **Preview** in the **Node** tab of the nodes whose preview
   you don't need, or uncheck **View > Toggle Auto Previews** in the Node Graph
   right-click menu so that previews are not refreshed after every change.
-- **Close the settings panels** you don't use: the panel of an edited node
+- **Close the Properties panels** you don't use: the panel of an edited node
   makes Natron cache the images around that node.
 - **Don't carry images larger than needed.** A node whose output is much
   larger than the project format (a large blur, a transform that moves the
@@ -242,8 +247,12 @@ Keeping a large script fast
 - **Give Natron enough RAM, but not all of it.** If the computer becomes slow
   when Natron renders, raise **System RAM to keep free**. If you have a lot of
   RAM and a complex script, try **Aggressive caching**.
-- **GPU rendering.** Some plug-ins can render with OpenGL. This is set in
-  **Edit > Preferences > GPU Rendering > OpenGL Rendering** (only shown when
-  an OpenGL renderer is available). By default, it is
-  enabled in the Natron application and disabled when rendering with
-  NatronRenderer. It only helps with the plug-ins that support it.
+- **Find the slow nodes.** With **Render > Enable Render Statistics**
+  (:kbd:`F2`) on, the **Render statistics** window shows how long each node
+  took to render the frame shown in the Viewer.
+- **GPU rendering.** Some plug-ins can render with OpenGL. Two settings must
+  allow it: **Edit > Preferences > GPU Rendering > OpenGL Rendering** (only
+  shown when an OpenGL renderer is available), and **GPU Rendering** in the
+  **Settings** tab of the project settings, which can enable it, disable it,
+  or disable it only when rendering with NatronRenderer. It only helps with
+  the plug-ins that support it.
