@@ -3328,7 +3328,8 @@ EffectInstance::onOverlayPenDown_public(double time,
                                         const QPointF & pos,
                                         double pressure,
                                         double timestamp,
-                                        PenType pen)
+                                        PenType pen,
+                                        KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3351,10 +3352,10 @@ EffectInstance::onOverlayPenDown_public(double time,
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
             if (!ret) {
-                ret |= onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+                ret |= onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers);
             }
         } else {
-            ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+            ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers);
             if (!ret && drawHostOverlay) {
                 ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
             }
@@ -3418,7 +3419,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          double timestamp,
+                                          KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3441,10 +3443,10 @@ EffectInstance::onOverlayPenMotion_public(double time,
     if (!shouldPreferPluginOverlayOverHostOverlay()) {
         ret = drawHostOverlay ? getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
         if (!ret) {
-            ret |= onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            ret |= onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
         }
     } else {
-        ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+        ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
         if (!ret && drawHostOverlay) {
             ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
@@ -3464,7 +3466,8 @@ EffectInstance::onOverlayPenUp_public(double time,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure,
-                                      double timestamp)
+                                      double timestamp,
+                                      KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3487,10 +3490,10 @@ EffectInstance::onOverlayPenUp_public(double time,
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
             if (!ret) {
-                ret |= onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+                ret |= onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
             }
         } else {
-            ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
             if (!ret && drawHostOverlay) {
                 ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
             }

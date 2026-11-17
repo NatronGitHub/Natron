@@ -2121,7 +2121,7 @@ RotoPaint::drawOverlay(double time,
 } // drawOverlay
 
 void
-RotoPaint::onInteractViewportSelectionCleared()
+RotoPaint::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->ui->isStickySelectionEnabled()  && !_imp->ui->shiftDown) {
         _imp->ui->clearSelection();
@@ -2141,7 +2141,8 @@ RotoPaint::onInteractViewportSelectionCleared()
 
 void
 RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
-                                              bool onRelease)
+                                              bool onRelease,
+                                              KeyboardModifiers /*modifiers*/)
 {
     if ( !onRelease || !getNode()->isSettingsPanelVisible() ) {
         return;
@@ -2257,7 +2258,8 @@ RotoPaint::onOverlayPenDown(double time,
                             const QPointF & pos,
                             double pressure,
                             double timestamp,
-                            PenType pen)
+                            PenType pen,
+                            KeyboardModifiers /*modifiers*/)
 {
     NodePtr node = getNode();
 
@@ -2704,7 +2706,8 @@ RotoPaint::onOverlayPenMotion(double time,
                               const QPointF & /*viewportPos*/,
                               const QPointF & pos,
                               double pressure,
-                              double timestamp)
+                              double timestamp,
+                              KeyboardModifiers /*modifiers*/)
 {
     std::pair<double, double> pixelScale;
 
@@ -3131,7 +3134,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & /*pos*/,
                           double /*pressure*/,
-                          double /*timestamp*/)
+                          double /*timestamp*/,
+                          KeyboardModifiers /*modifiers*/)
 {
     RotoContextPtr context = getNode()->getRotoContext();
 

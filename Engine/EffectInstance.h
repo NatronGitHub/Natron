@@ -1621,13 +1621,13 @@ public:
 
     void drawOverlay_public(double time, const RenderScale & renderScale, ViewIdx view);
 
-    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
     bool onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
@@ -1642,10 +1642,16 @@ public:
     void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInteractViewportSelectionCleared() {}
+    /**
+     * @brief Called when the viewer's selection rectangle is cleared or updated.
+     * @param modifiers The keyboard modifiers of the input event: for a clear, the pen down that
+     * starts the selection rectangle (or the key press that clears it).
+     **/
+    virtual void onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/) {}
 
     virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/,
-                                                    bool /*onRelease*/) {}
+                                                    bool /*onRelease*/,
+                                                    KeyboardModifiers /*modifiers*/) {}
 
     void setDoingInteractAction(bool doing);
 
@@ -2039,7 +2045,8 @@ protected:
                                   const QPointF & /*pos*/,
                                   double /*pressure*/,
                                   double /*timestamp*/,
-                                  PenType /*pen*/) WARN_UNUSED_RETURN
+                                  PenType /*pen*/,
+                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2059,7 +2066,8 @@ protected:
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
                                     double /*pressure*/,
-                                    double /*timestamp*/) WARN_UNUSED_RETURN
+                                    double /*timestamp*/,
+                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2070,7 +2078,8 @@ protected:
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
                                 double /*pressure*/,
-                                double /*timestamp*/) WARN_UNUSED_RETURN
+                                double /*timestamp*/,
+                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }

@@ -157,8 +157,8 @@ NodeViewerContext::~NodeViewerContext()
 void
 NodeViewerContext::createGui()
 {
-    QObject::connect( _imp->viewer, SIGNAL(selectionRectangleChanged(bool)), this, SLOT(updateSelectionFromViewerSelectionRectangle(bool)), Qt::UniqueConnection );
-    QObject::connect( _imp->viewer, SIGNAL(selectionCleared()), this, SLOT(onViewerSelectionCleared()), Qt::UniqueConnection );
+    QObject::connect( _imp->viewer, &ViewerGL::selectionRectangleChanged, this, &NodeViewerContext::updateSelectionFromViewerSelectionRectangle, Qt::UniqueConnection );
+    QObject::connect( _imp->viewer, &ViewerGL::selectionCleared, this, &NodeViewerContext::onViewerSelectionCleared, Qt::UniqueConnection );
     NodeGuiPtr node = _imp->getNode();
     QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
     QObject::connect( node.get(), SIGNAL(settingsPanelMinimized()), this, SLOT(onNodeSettingsPanelMinimized()), Qt::UniqueConnection );
@@ -723,7 +723,8 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
 } // NodeViewerContextPrivate::onToolActionTriggeredInternal
 
 void
-NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease)
+NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease,
+                                                              Qt::KeyboardModifiers modifiers)
 {
     NodeGuiPtr n = _imp->getNode();
 
@@ -736,11 +737,11 @@ NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease)
     }
     RectD rect;
     _imp->viewer->getSelectionRectangle(rect.x1, rect.x2, rect.y1, rect.y2);
-    node->getEffectInstance()->onInteractViewportSelectionUpdated(rect, onRelease);
+    node->getEffectInstance()->onInteractViewportSelectionUpdated( rect, onRelease, QtEnumConvert::fromQtModifiers(modifiers) );
 }
 
 void
-NodeViewerContext::onViewerSelectionCleared()
+NodeViewerContext::onViewerSelectionCleared(Qt::KeyboardModifiers modifiers)
 {
     NodeGuiPtr n = _imp->getNode();
 
@@ -751,7 +752,7 @@ NodeViewerContext::onViewerSelectionCleared()
     if ( !node || !node->isActivated() ) {
         return;
     }
-    node->getEffectInstance()->onInteractViewportSelectionCleared();
+    node->getEffectInstance()->onInteractViewportSelectionCleared( QtEnumConvert::fromQtModifiers(modifiers) );
 }
 
 void

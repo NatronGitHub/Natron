@@ -337,6 +337,11 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
+    // keyboard modifiers in the interact actions and with the selection rectangle (ofxNatron.h
+    // extension 13): HostSupport then declares kNatronOfxInteractPropKeyModifiers on the interact
+    // inArgs and on the effect instances, so this must be set before any instance is created.
+    _properties.setIntProperty(kNatronOfxHostPropInteractKeyModifiers, 1);
+
     // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
     // plus custom PNG cursors from the plug-in resources
     {
