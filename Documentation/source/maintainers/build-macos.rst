@@ -114,7 +114,11 @@ When upstream MacPorts moves, re-synchronise carefully:
        ./check.sh
 
 #. **Update each outdated file** following ``check.sh``'s per-file instruction,
-   **resolving conflicts manually**. Respect the local pins — for a frozen port
+   **resolving conflicts manually**. Respect the local pins: a ``PINNED`` file
+   in the port directory says ``ahead`` (our version is newer than upstream's;
+   unpin it when ``check.sh`` reports "upstream caught up") or ``older`` (held
+   back until the reason is gone), and ``check.sh`` then prints only the
+   ``Portfile.orig`` update — for a frozen port
    only the *effective* Portfile (version/checksums) is frozen; syntax and
    compatibility fixes are allowed, and ``Portfile.orig`` still tracks upstream.
 

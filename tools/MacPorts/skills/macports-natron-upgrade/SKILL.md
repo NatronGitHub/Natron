@@ -42,7 +42,7 @@ From 2021 to 2026-11-15, `lang/libomp` was pinned to 11.1.0. Both upstream bugs 
 
 ## Pinned ports
 
-These overlay ports are deliberately older than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change:
+These overlay ports are deliberately older than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change. Each pinned port has a `PINNED` file: line 1 is the kind, `ahead` (newer than upstream: unpin as soon as upstream catches up, which `check.sh` reports as "upstream caught up: unpin") or `older` (held back until the reason is gone); line 2 is the reason. `check.sh` prints only the `Portfile.orig` update for pinned ports:
 
 | port | pinned | why |
 |---|---|---|
