@@ -189,18 +189,22 @@ vm_stop() { # vm
 vm_sync() { # vm : copy tools/ of the Natron checkout (tracked files, with local changes) and osmesa-install
     local vm=$1
     log "syncing sources into $vm"
-    # The MacPorts overlay must be an exact copy: a file deleted from the checkout (e.g. a port
-    # removed from the overlay) would otherwise survive in the VM and be published again by the
-    # VM's tools/MacPorts/sync.sh. --files-from below can't delete, so start from an empty
-    # directory. Nothing else lives there (provision.sh logs go to ~/provision-logs).
-    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron && rm -rf Documents/third_party/Natron/tools/MacPorts"
+    # tools/ in the VM must be an exact copy of the checkout. A finished image has no copy at all
+    # (provision.sh's cleanup step deletes it), but a -wip VM resumed by `natron-sdk.sh create`
+    # keeps the previous one, and a file deleted from the checkout since then (e.g. a port removed
+    # from the MacPorts overlay) would survive there and be published again by tools/MacPorts/sync.sh.
+    # --files-from below can't delete, so start from an empty tools/. Nothing else lives there
+    # (provision.sh logs go to ~/provision-logs).
+    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron && rm -rf Documents/third_party/Natron/tools"
     # only the files git tracks under tools/ (the build checks out Natron itself from GitHub):
-    # untracked notes or credentials in the checkout never end up in the image
+    # untracked notes or credentials in the checkout never end up in the image. Local changes to
+    # tracked files are copied; to include a new file, `git add -N` it. A tracked file deleted in
+    # the working tree but not yet committed is skipped (--ignore-missing-args).
     (cd "$NATRON_SRC" && git ls-files -z tools) |
-        vm_rsync "$vm" "$NATRON_SRC/" Documents/third_party/Natron/ --from0 --files-from=-
+        vm_rsync "$vm" "$NATRON_SRC/" Documents/third_party/Natron/ --from0 --files-from=- --ignore-missing-args
     if [ -d "$OSMESA_INSTALL_SRC" ]; then
         (cd "$OSMESA_INSTALL_SRC" && git ls-files -z -c -- . ':!CLAUDE.md') |
-            vm_rsync "$vm" "$OSMESA_INSTALL_SRC/" Documents/third_party/osmesa-install/ --from0 --files-from=-
+            vm_rsync "$vm" "$OSMESA_INSTALL_SRC/" Documents/third_party/osmesa-install/ --from0 --files-from=- --ignore-missing-args
     else
         vm_ssh "$vm" "[ -d Documents/third_party/osmesa-install ] || ALL_PROXY=$GUEST_PROXY git clone https://github.com/devernay/osmesa-install.git Documents/third_party/osmesa-install"
     fi
