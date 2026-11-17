@@ -853,7 +853,13 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                     if ( !_imp->fallBackToGLX( e.what() ) ) {
                         throw;
                     }
-                    glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                    const std::string eglError = e.what();
+                    try {
+                        glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                    } catch (const std::exception& e2) {
+                        // Report both failures, not only the last one.
+                        throw std::runtime_error("Wayland/EGL: " + eglError + "; X11/GLX: " + e2.what());
+                    }
                 }
                 if (glContext) {
                     // Make the context current and check its version

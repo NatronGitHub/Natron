@@ -813,8 +813,17 @@ qtPlatformIsWayland(int argc,
 
     // Qt falls back to xcb if it has no Wayland platform plugin (official Natron builds
     // only ship the xcb plugin).
+    // Limitation: plug-in directories set in a qt.conf file ("Plugins=") are not seen here.
     if ( !platformPluginPath.isEmpty() && hasQtWaylandPlugin(platformPluginPath) ) {
         return true;
+    }
+    // Once the application exists, Qt also searches the executable's directory
+    // (<appdir>/platforms), which QCoreApplication::libraryPaths() can't report yet.
+    if ( (argc > 0) && argv[0] ) {
+        const QString appDir = QString::fromUtf8( ProcInfo::applicationDirPath(argv[0]).c_str() );
+        if ( !appDir.isEmpty() && hasQtWaylandPlugin( appDir + QString::fromUtf8("/platforms") ) ) {
+            return true;
+        }
     }
     const QStringList paths = QCoreApplication::libraryPaths();
     for (QStringList::const_iterator it = paths.begin(); it != paths.end(); ++it) {
@@ -844,7 +853,7 @@ AppManagerPrivate::initGLAPISpecific()
     } else if ( appPTR->isBackground() ) {
         onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY");
     } else {
-        onWayland = qtPlatformIsWayland( nArgs, commandLineArgsUtf8.empty() ? NULL : &commandLineArgsUtf8.front() );
+        onWayland = qtPlatformIsWayland( nArgs, commandLineArgsUtf8.empty() ? nullptr : &commandLineArgsUtf8.front() );
     }
 #endif
 #ifdef Q_OS_WIN32
@@ -873,10 +882,11 @@ AppManagerPrivate::fallBackToGLX(const char* reason)
         return false;
     }
     std::cerr << "Wayland/EGL OpenGL context failed (" << reason << "), retrying with X11/GLX." << std::endl;
-    // No OSGLContext_wayland was created, so nothing else refers to the EGL data.
+    // No OSGLContext_wayland was created, so nothing else refers to the EGL display.
+    // Terminate it, but keep libEGL loaded until tearDownGL(): unloading it while
+    // libGL gets loaded may upset a shared GL dispatch library (glvnd).
     if (eglInfo) {
-        OSGLContext_wayland::destroyEGLData( eglInfo.get() );
-        eglInfo.reset();
+        OSGLContext_wayland::destroyEGLData( eglInfo.get(), false /*unloadLibrary*/ );
     }
     onWayland = false;
     glxInfo.reset(new OSGLContext_glx_data);
