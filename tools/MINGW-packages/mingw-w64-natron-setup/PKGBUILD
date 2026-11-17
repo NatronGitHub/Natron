@@ -13,6 +13,7 @@ pkgver=1.0
 pkgrel=3
 pkgdesc="Natron Inno Setup"
 arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
 url="https://github.com/jrsoftware/issrc"
 license=('custom:Modified BSD license')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")

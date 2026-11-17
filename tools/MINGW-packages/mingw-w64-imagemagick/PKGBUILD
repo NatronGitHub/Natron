@@ -17,6 +17,7 @@ pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgrel=5
 pkgdesc="An image viewing/manipulation program (mingw-w64)"
 arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
 url="https://www.imagemagick.org/"
 license=("custom")
 makedepends=("${MINGW_PACKAGE_PREFIX}-autotools"

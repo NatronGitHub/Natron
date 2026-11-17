@@ -10,6 +10,7 @@ pkgver=0.22.3
 pkgrel=1
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
 url="https://www.libraw.org/"
 license=("GPL2")   # LGPL + CDDL, but GPL-2+ with the GPL2 demosaic pack
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"

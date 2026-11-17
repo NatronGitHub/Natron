@@ -8,6 +8,7 @@ pkgver=86.a5f02bb
 pkgrel=4
 pkgdesc="Arithmetic expression language"
 arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
 url="https://github.com/wdas/SeExpr"
 license=('Apache2')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")

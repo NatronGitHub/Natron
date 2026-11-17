@@ -1,11 +1,12 @@
 # Maintainer: The Natron developers
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt6"
-pkgver=2025.5
+pkgver=2026.11
 pkgrel=1
 pkgdesc="Minimal package set for building Natron installer with Qt6"
 url="https://natrongithub.github.io/"
 arch=("any")
+mingw_arch=('mingw64' 'ucrt64')
 license=("GPL")
 depends=(
   "git"
