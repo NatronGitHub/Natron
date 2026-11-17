@@ -3314,15 +3314,23 @@ Node::makePreviewImage(SequenceTime time,
     RectD rod;
     bool isProjectFormat;
     U64 nodeHash = getHashValue();
-    EffectInstance* effect = 0;
+    if (!_imp->effect) {
+        return false;
+    }
+    EffectInstancePtr effect;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance().get();
+        // A group renders through its Output node. A group may have no Output node: the user may
+        // have deleted it, or the group is being pasted/duplicated and its sub-graph is not
+        // created yet (see #814). There is nothing to preview then.
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
     } else {
-        effect = _imp->effect.get();
+        effect = _imp->effect;
     }
-
-    if (!_imp->effect) {
+    if (!effect) {
         return false;
     }
 
@@ -3400,7 +3408,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            requestedComps, //< preview is always rgb...
                                                                                                            depth,
                                                                                                            false,
-                                                                                                           effect,
+                                                                                                           effect.get(),
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;

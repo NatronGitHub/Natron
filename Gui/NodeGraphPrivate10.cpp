@@ -248,11 +248,6 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
-    if (guiSerialization) {
-        gui->copyFrom(*guiSerialization);
-    }
-    QPointF newPos = gui->getPos_mt_safe() + offset;
-    gui->setPosition( newPos.x(), newPos.y() );
 
     if (clone) {
         assert( internalSerialization->getNode() );
@@ -314,6 +309,16 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
             it->second->restoreKnobsLinks(allNodes, *oldNewScriptNamesMapping, false); // may fail
         }
     }
+
+    // Restore the GUI state (color, position, size, preview) only once the node is complete,
+    // including the sub-graph of a group: if the preview is enabled, copyFrom() starts rendering it
+    // on the preview thread, which must not run while the main thread is still creating and
+    // connecting the nodes inside the group (see #814).
+    if (guiSerialization) {
+        gui->copyFrom(*guiSerialization);
+    }
+    QPointF newPos = gui->getPos_mt_safe() + offset;
+    gui->setPosition( newPos.x(), newPos.y() );
 
     return gui;
 } // NodeGraphPrivate::pasteNode
