@@ -79,6 +79,16 @@ DocumentationGroups::makeGroupTitle(const QStringList& path)
     return QCoreApplication::translate("DocumentationManager", "%1 nodes").arg( makeGroupLabel(path) );
 }
 
+QString
+DocumentationGroups::makeSubGroupTitle(const QStringList& path)
+{
+    if ( path.isEmpty() ) {
+        return QString();
+    }
+
+    return QCoreApplication::translate("DocumentationManager", "%1 nodes").arg( groupLevelLabel( path.last() ) );
+}
+
 DocumentationGroups::DocumentationGroups()
 {
     QStringList topLevelIds; // in the order the plug-ins are found

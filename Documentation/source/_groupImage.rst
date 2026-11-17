@@ -8,8 +8,8 @@ The following sections contain documentation about every node in the Image group
 .. toctree::
     :maxdepth: 1
 
-    _groupImage_Readers.rst
-    _groupImage_Writers.rst
+    Readers nodes <_groupImage_Readers.rst>
+    Writers nodes <_groupImage_Writers.rst>
     plugins/net.sf.openfx.CheckerBoardPlugin.rst
     plugins/net.sf.openfx.ColorBars.rst
     plugins/net.sf.openfx.ColorWheel.rst

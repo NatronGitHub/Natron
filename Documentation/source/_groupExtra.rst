@@ -8,10 +8,10 @@ The following sections contain documentation about every node in the Extra group
 .. toctree::
     :maxdepth: 1
 
-    _groupExtra_Color.rst
-    _groupExtra_Distort.rst
-    _groupExtra_Draw.rst
-    _groupExtra_Filter.rst
-    _groupExtra_Misc.rst
-    _groupExtra_Transform.rst
+    Color nodes <_groupExtra_Color.rst>
+    Distort nodes <_groupExtra_Distort.rst>
+    Draw nodes <_groupExtra_Draw.rst>
+    Filter nodes <_groupExtra_Filter.rst>
+    Misc nodes <_groupExtra_Misc.rst>
+    Transform nodes <_groupExtra_Transform.rst>
 

@@ -8,9 +8,9 @@ The following sections contain documentation about every node in the Color group
 .. toctree::
     :maxdepth: 1
 
-    _groupColor_Math.rst
-    _groupColor_OCIO.rst
-    _groupColor_Transform.rst
+    Math nodes <_groupColor_Math.rst>
+    OCIO nodes <_groupColor_OCIO.rst>
+    Transform nodes <_groupColor_Transform.rst>
     plugins/net.sf.openfx.Clamp.rst
     plugins/net.sf.openfx.ColorCorrectPlugin.rst
     plugins/net.sf.openfx.ColorLookupPlugin.rst

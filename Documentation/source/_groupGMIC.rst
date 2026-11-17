@@ -8,24 +8,24 @@ The following sections contain documentation about every node in the G'MIC group
 .. toctree::
     :maxdepth: 1
 
-    _groupGMIC_ArraysTiles.rst
-    _groupGMIC_Artistic.rst
-    _groupGMIC_BlackWhite.rst
-    _groupGMIC_Colors.rst
-    _groupGMIC_Contours.rst
-    _groupGMIC_Deformations.rst
-    _groupGMIC_Degradations.rst
-    _groupGMIC_Details.rst
-    _groupGMIC_Frames.rst
-    _groupGMIC_Frequencies.rst
-    _groupGMIC_Layers.rst
-    _groupGMIC_LightsShadows.rst
-    _groupGMIC_Misc.rst
-    _groupGMIC_Nature.rst
-    _groupGMIC_Others.rst
-    _groupGMIC_Patterns.rst
-    _groupGMIC_Rendering.rst
-    _groupGMIC_Repair.rst
-    _groupGMIC_Various.rst
+    Arrays & Tiles nodes <_groupGMIC_ArraysTiles.rst>
+    Artistic nodes <_groupGMIC_Artistic.rst>
+    Black & White nodes <_groupGMIC_BlackWhite.rst>
+    Colors nodes <_groupGMIC_Colors.rst>
+    Contours nodes <_groupGMIC_Contours.rst>
+    Deformations nodes <_groupGMIC_Deformations.rst>
+    Degradations nodes <_groupGMIC_Degradations.rst>
+    Details nodes <_groupGMIC_Details.rst>
+    Frames nodes <_groupGMIC_Frames.rst>
+    Frequencies nodes <_groupGMIC_Frequencies.rst>
+    Layers nodes <_groupGMIC_Layers.rst>
+    Lights & Shadows nodes <_groupGMIC_LightsShadows.rst>
+    Misc nodes <_groupGMIC_Misc.rst>
+    Nature nodes <_groupGMIC_Nature.rst>
+    Others nodes <_groupGMIC_Others.rst>
+    Patterns nodes <_groupGMIC_Patterns.rst>
+    Rendering nodes <_groupGMIC_Rendering.rst>
+    Repair nodes <_groupGMIC_Repair.rst>
+    Various nodes <_groupGMIC_Various.rst>
     plugins/eu.gmic.AboutGMIC.rst
 

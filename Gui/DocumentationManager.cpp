@@ -420,7 +420,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 Q_FOREACH(const QString &subGroupId, group->subGroupIds) {
                     const DocumentationGroups::Group* subGroup = docGroups.getGroup(subGroupId);
                     assert(subGroup);
-                    items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + subGroupId ).arg( DocumentationGroups::makeGroupTitle(subGroup->path) ) );
+                    items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + subGroupId ).arg( DocumentationGroups::makeSubGroupTitle(subGroup->path) ) );
                 }
                 for (QMap<QString, QString>::const_iterator i = group->pluginsByLabel.constBegin();
                      i != group->pluginsByLabel.constEnd();

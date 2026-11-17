@@ -8,7 +8,7 @@ The following sections contain documentation about every node in the Filter grou
 .. toctree::
     :maxdepth: 1
 
-    _groupFilter_Matrix.rst
+    Matrix nodes <_groupFilter_Matrix.rst>
     plugins/fr.inria.AngleBlur.rst
     plugins/net.sf.cimg.CImgBloom.rst
     plugins/net.sf.cimg.CImgBlur.rst

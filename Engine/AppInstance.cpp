@@ -1584,7 +1584,11 @@ AppInstance::exportDocs(const QString path)
             plugMD.append( QString::fromUtf8("\n\n") );
             plugMD.append(toctree);
             Q_FOREACH(const QString &subGroupId, group->subGroupIds) {
-                plugMD.append( QString::fromUtf8("    _group") + subGroupId + QString::fromUtf8(".rst\n") );
+                // short title in the toctree (sidebar and this page), the sub-group page keeps its full title
+                const DocumentationGroups::Group* subGroup = docGroups.getGroup(subGroupId);
+                assert(subGroup);
+                plugMD.append( QString::fromUtf8("    ") + DocumentationGroups::makeSubGroupTitle(subGroup->path) +
+                               QString::fromUtf8(" <_group") + subGroupId + QString::fromUtf8(".rst>\n") );
             }
             for (QMap<QString, QString>::const_iterator i = group->pluginsByLabel.constBegin();
                  i != group->pluginsByLabel.constEnd();

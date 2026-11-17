@@ -8,7 +8,7 @@ The following sections contain documentation about every node in the Merge group
 .. toctree::
     :maxdepth: 1
 
-    _groupMerge_Merges.rst
+    Merges nodes <_groupMerge_Merges.rst>
     plugins/net.sf.openfx.ContactSheetOFX.rst
     plugins/net.sf.openfx.CopyRectanglePlugin.rst
     plugins/net.sf.openfx.DissolvePlugin.rst

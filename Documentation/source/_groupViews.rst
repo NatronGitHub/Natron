@@ -8,7 +8,7 @@ The following sections contain documentation about every node in the Views group
 .. toctree::
     :maxdepth: 1
 
-    _groupViews_Stereo.rst
+    Stereo nodes <_groupViews_Stereo.rst>
     plugins/fr.inria.built-in.JoinViews.rst
     plugins/fr.inria.built-in.OneView.rst
 

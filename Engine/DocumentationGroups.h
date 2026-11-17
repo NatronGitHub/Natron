@@ -79,6 +79,12 @@ public:
     /// Title of a group page, e.g. "G'MIC / Colors nodes".
     static QString makeGroupTitle(const QStringList& path);
 
+    /// Title of a group in the list of its parent's sub-groups, e.g. "Colors nodes".
+    /// The full title is kept for the page itself, so that the PDF table of contents,
+    /// the breadcrumbs and the search results never show two different groups with the same
+    /// title (e.g. "Color nodes" and "Extra / Color nodes").
+    static QString makeSubGroupTitle(const QStringList& path);
+
     /// Ids of the top-level groups, in the order of the left toolbar (GROUP_ORDER).
     const QStringList& getTopLevelGroupIds() const
     {
