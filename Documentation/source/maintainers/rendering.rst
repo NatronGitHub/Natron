@@ -172,16 +172,26 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
    records which tiles are already valid, so only the missing rectangles are
    rendered.
 
-5. **Concurrency: "being rendered elsewhere".** Before rendering the missing
-   rectangles, the effect marks them via ``markImageAsBeingRendered``. If another
-   thread is already producing an overlapping region, this thread calls
-   ``waitForImageBeingRenderedElsewhere`` instead of rendering it twice, and
-   ``unmarkImageAsBeingRendered`` when done. This is the mechanism that keeps
-   concurrent renders from duplicating work. It also makes this wait a prime
-   suspect for the CPU-idle stall in issue
-   `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_: a thread that
-   blocks here on another thread's tile that never completes would sit idle
-   forever (see :ref:`maint-issue-triage`).
+5. **Concurrency: "being rendered elsewhere".** Before rendering, the effect
+   calls ``markImageAsBeingRendered`` (through ``ImageBitMapMarker_RAII``): the
+   rectangles still to render are marked ``PIXEL_UNAVAILABLE`` in the bitmap,
+   and the rectangles another thread is already rendering are left out. The
+   thread renders its own rectangles, marks them as rendered
+   (``markImageRectsAsRendered``), then waits in
+   ``waitForImageBeingRenderedElsewhere`` for the rectangles of the other
+   threads. ``unmarkImageAsBeingRendered`` runs when the guard is destroyed. It
+   clears the rectangles instead if the render was aborted or failed. This keeps
+   concurrent renders from duplicating work. Until 2.6, a thread waited for its
+   own rectangles, which were only marked as rendered after the wait: two
+   threads waiting on the same image then waited for each other forever, and
+   rendering stopped
+   (`#811 <https://github.com/NatronGitHub/Natron/issues/811>`_). The CPU-idle
+   stall of `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ looks
+   the same (see :ref:`maint-issue-triage`). When ``renderRoI`` is called from
+   ``getImage`` and the cached image is too small, the image is copied into a
+   larger one (``copyAndResizeIfNeeded``) that replaces it in the cache. The
+   pixels other threads are rendering into the old image are cleared in the
+   copy, and this thread renders them itself.
 
 6. **Input images.** For the rectangles it must render, the effect asks which
    inputs and frames it needs (``getRegionsOfInterest``, ``getFramesNeeded``) and

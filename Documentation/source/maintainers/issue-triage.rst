@@ -204,7 +204,11 @@ main window.
 - the "being rendered elsewhere" wait in ``renderRoI``
   (``waitForImageBeingRenderedElsewhere``, see the worked trace in
   :ref:`maint-rendering`), where a thread can block on another thread's tile that
-  never completes.
+  never completes. `#811 <https://github.com/NatronGitHub/Natron/issues/811>`_
+  was a stall of this kind, fixed in 2.6: a render thread waited for its own
+  tiles, and with several parallel renders two such threads waited for each
+  other forever. It matches the #248 workaround (1 or 2 parallel renders always
+  work). Retest #248 projects with 2.6 before looking elsewhere.
 
 The memory/swap angle the reporter mentions suggests it triggers under cache
 pressure, which overlaps with #192. Reproduce headless (``NatronRenderer``) under
