@@ -19,8 +19,23 @@ There are 2 different initialization scripts that Natron will look for in the :r
         This script is only run in GUI mode (that is with the user interface). It should
         initialize all gui-specific stuff like new menus or windows.
 
-All the scripts with the above name found in the search paths will be run in the order
-of the :ref:`search paths<natronPath>`.
+All the scripts with these names that are found in the search paths are run, in this order:
+
+- the :ref:`search paths<natronPath>` are processed one after the other, in their order;
+- each search path is explored depth-first: in each directory, Natron first runs **init.py**, then
+  **initGui.py** (in GUI mode only), and then explores the sub-directories, in alphabetical order.
+
+So the initGui.py of a directory runs before the init.py of the next directory or search path.
+All the startup scripts run before any PyPlug is loaded, so a startup script can define
+functions and modules that the PyPlugs use.
+
+The startup scripts are run in the ``__main__`` Python module, so the functions they define are
+referenced without a module prefix, e.g. ``natron.setOnProjectCreatedCallback("myCallback")``.
+
+In GUI mode, Natron prints a line such as ``Info: init.py script found and loaded at ...``
+for each startup script that it runs, in the terminal and in the splash screen.
+If a startup script raises an exception, the error is written to the terminal and to the
+error log (:menuselection:`Display --> Show Project Errors Log...`), and Natron goes on with the other scripts.
 
 .. warning::
 
@@ -41,7 +56,7 @@ Examples
 initGui.py
 -----------
 
-A complete example of a **iniGui.py** can be found :ref:`here<sourcecodeEx>` .
+A complete example of a **initGui.py** can be found :ref:`here<sourcecodeEx>` .
 
 
 .. _initExample:
