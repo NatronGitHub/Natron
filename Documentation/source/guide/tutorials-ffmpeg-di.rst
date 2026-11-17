@@ -148,31 +148,34 @@ menu, the ProRes profiles are listed by their four-letter codes:
 - ``apcn`` Apple ProRes 422
 - ``apcs`` Apple ProRes 422 LT
 - ``apco`` Apple ProRes 422 Proxy
+- ``ap4x`` Apple ProRes 4444 XQ
 
 For Avid codecs, choose ``AVdn Avid DNxHD / DNxHR / SMPTE VC-3``, then
 select the profile in **DNxHD Codec Profile**. The DNxHR profiles work at
 any resolution. In WriteFFmpeg, the DNxHD profiles only exist for 1920x1080
-and 1280x720 at some frame rates: the profile descriptions in the menu list the bit rate
-used for each frame rate. **DNxHD Output Range** selects between limited
-("video") range, the default, and full range.
+and 1280x720 at some frame rates: the profile descriptions in the menu list
+the bit rate used for each frame rate. **DNxHD Output Range** selects between
+limited ("video") range, the default, and full range: the pixel values are
+written in that range, and the file is tagged with it. Avid tools may expect
+limited range. DNxHR 444 is written as RGB, which is always full range.
 
 WriteFFmpeg picks the pixel format from the profile: 10-bit 4:2:2 for
-ProRes 422 and DNxHR HQX, 10-bit 4:4:4 for ProRes 4444, 10-bit RGB for DNxHR
-444, and 8-bit 4:2:2 for DNxHR LB, SQ and HQ. For DNxHR HQX and 444, the
-menu says 12 bit, but the file is 10-bit. It shows the result in
-**Selected Pixel Coding** and **Bit Depth**. To keep the alpha channel with
-ProRes 4444, check **Alpha** (the input must be RGBA).
+ProRes 422 and DNxHR HQX, 10-bit 4:4:4 for ProRes 4444 and 4444 XQ, 10-bit
+RGB for DNxHR 444, and 8-bit 4:2:2 for DNxHR LB, SQ and HQ. It shows the
+result in **Selected Pixel Coding** and **Bit Depth**. To keep the alpha
+channel with ProRes 4444 or 4444 XQ, check **Alpha** (the input must be
+RGBA).
 
-For the ProRes 422 profiles and DNxHR/DNxHD (except DNxHR 444), WriteFFmpeg
-writes Rec. 709 color metadata when the image height is 720 or more, and
-Rec. 601 metadata (with PAL or NTSC primaries) for smaller images.
-**Write NCLC**, checked by default, also writes them in the QuickTime
-``colr`` atom. For ProRes 4444 and DNxHR 444, it only writes the primaries
-and the transfer function that match the **File Colorspace**, without the
-Y'CbCr matrix.
+For all the ProRes profiles and for DNxHR/DNxHD (except DNxHR 444),
+WriteFFmpeg writes Rec. 709 color metadata when the image height is 720 or
+more, and Rec. 601 metadata (with PAL or NTSC primaries) for smaller images,
+with the Rec. 709 transfer function in both cases. **Write NCLC**, checked by
+default, also writes them in the QuickTime ``colr`` atom. For ProRes, they
+are also written in the header of each frame. For DNxHR 444, it only writes
+the primaries and the transfer function that match the **File Colorspace**.
 
-WriteFFmpeg cannot write ProRes 4444 XQ or MXF files, and it does not write
-audio. Use ``ffmpeg`` for those, as shown below.
+WriteFFmpeg cannot write MXF files, and it does not write audio. Use
+``ffmpeg`` for those, as shown below.
 
 
 Encoding with ffmpeg
