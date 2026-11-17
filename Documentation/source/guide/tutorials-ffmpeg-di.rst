@@ -48,7 +48,7 @@ Choosing a format
      - Yes
      - Grading and film pipelines, usually log or Rec. 709 encoded.
    * - TIFF (``.tif``)
-     - 8 or 16-bit integer, or float, RGB
+     - 8- or 16-bit integer, or float, RGB
      - Yes
      - Interchange with photo and paint applications.
    * - ProRes 422 Proxy, LT, 422, HQ
@@ -57,7 +57,7 @@ Choosing a format
      - Editing. HQ is a good default intermediate; Proxy and LT are for
        offline editing.
    * - ProRes 4444, 4444 XQ
-     - 10 or 12-bit, Y'CbCr 4:4:4
+     - 10- or 12-bit, Y'CbCr 4:4:4
      - Yes
      - Graphics with alpha, grading, high-quality masters.
    * - DNxHR LB, SQ, HQ
@@ -69,9 +69,9 @@ Choosing a format
      - No
      - Grading and finishing.
    * - DNxHD
-     - 8 or 10-bit, Y'CbCr 4:2:2
+     - 8- or 10-bit, Y'CbCr 4:2:2
      - No
-     - Older Avid workflows. Only for 1920x1080 and 1280x720, at a few
+     - Older Avid workflows. Mainly 1920x1080 and 1280x720, at a few
        frame rates.
    * - FFV1 (in ``.mkv``)
      - 8 to 16-bit, Y'CbCr or RGB
@@ -99,7 +99,8 @@ what the next application expects:
   ``nuke_rec709``) when it expects video images. Write 10 bits or more.
 - **ProRes, DNxHR and DNxHD**: these are video formats. The images are
   converted to a display encoding (usually Rec. 709, ``nuke_rec709`` in the
-  default config), then from RGB to Y'CbCr with limited ("video") range.
+  default config), then from RGB to Y'CbCr with limited ("video") range
+  (except DNxHR 444, which stays RGB).
   Use at least 10 bits per component: 8-bit intermediates may show banding
   after grading.
 
@@ -107,8 +108,9 @@ Y'CbCr 4:2:2 codecs keep the color information at half the horizontal
 resolution. Prefer a 4:4:4 codec (ProRes 4444, DNxHR 444) for green-screen
 keys, graphics and text with sharp colored edges.
 
-Only ProRes 4444 and 4444 XQ store an alpha channel. DNxHR and the other ProRes
-profiles drop it. Image sequences (EXR, DPX, TIFF) can store alpha.
+Among these video codecs, only ProRes 4444/4444 XQ and FFV1 store an alpha
+channel. DNxHR and the other ProRes profiles drop it. Image sequences (EXR,
+DPX, TIFF) can store alpha.
 
 Video files also carry color *metadata*: the color primaries, the transfer
 function and the Y'CbCr matrix. These values do not change the pixels, but
@@ -149,21 +151,25 @@ menu, the ProRes profiles are listed by their four-letter codes:
 
 For Avid codecs, choose ``AVdn Avid DNxHD / DNxHR / SMPTE VC-3``, then
 select the profile in **DNxHD Codec Profile**. The DNxHR profiles work at
-any resolution. The DNxHD profiles only exist for 1920x1080 and 1280x720 at
-some frame rates: the profile descriptions in the menu list the bit rate
+any resolution. In WriteFFmpeg, the DNxHD profiles only exist for 1920x1080
+and 1280x720 at some frame rates: the profile descriptions in the menu list the bit rate
 used for each frame rate. **DNxHD Output Range** selects between limited
 ("video") range, the default, and full range.
 
 WriteFFmpeg picks the pixel format from the profile: 10-bit 4:2:2 for
 ProRes 422 and DNxHR HQX, 10-bit 4:4:4 for ProRes 4444, 10-bit RGB for DNxHR
-444, and 8-bit 4:2:2 for DNxHR LB, SQ and HQ. It shows the result in
+444, and 8-bit 4:2:2 for DNxHR LB, SQ and HQ. For DNxHR HQX and 444, the
+menu says 12 bit, but the file is 10-bit. It shows the result in
 **Selected Pixel Coding** and **Bit Depth**. To keep the alpha channel with
-ProRes 4444, set **Output Components** to ``RGBA`` and check **Alpha**.
+ProRes 4444, check **Alpha** (the input must be RGBA).
 
-For ProRes and DNxHR/DNxHD (except DNxHR 444), WriteFFmpeg writes Rec. 709
-color metadata when the image height is 720 or more, and Rec. 601 metadata
-(with PAL or NTSC primaries) for smaller images. **Write NCLC**, checked by
-default, also writes them in the QuickTime ``colr`` atom.
+For the ProRes 422 profiles and DNxHR/DNxHD (except DNxHR 444), WriteFFmpeg
+writes Rec. 709 color metadata when the image height is 720 or more, and
+Rec. 601 metadata (with PAL or NTSC primaries) for smaller images.
+**Write NCLC**, checked by default, also writes them in the QuickTime
+``colr`` atom. For ProRes 4444 and DNxHR 444, it only writes the primaries
+and the transfer function that match the **File Colorspace**, without the
+Y'CbCr matrix.
 
 WriteFFmpeg cannot write ProRes 4444 XQ or MXF files, and it does not write
 audio. Use ``ffmpeg`` for those, as shown below.
@@ -176,8 +182,7 @@ The commands below read a 16-bit TIFF sequence named ``render.0001.tif``,
 ``render.0002.tif``, … rendered by Natron with a Rec. 709 **File
 Colorspace**, and write a 24 fps movie. Replace ``-framerate 24`` with the
 frame rate of your project (for example ``-framerate 24000/1001`` for 23.976
-fps). If the first frame number is larger than 4, give it with
-``-start_number``, for example ``-start_number 1001``.
+fps), and add ``-start_number 1001`` if the first frame is 1001.
 
 All the commands use the same video filter to write the color metadata:
 
@@ -189,8 +194,8 @@ This sets Rec. 709 primaries, transfer function and Y'CbCr matrix. ffmpeg
 uses the matrix to convert RGB to Y'CbCr, then writes all three values in the
 file. Without it, ffmpeg converts with the Rec. 601 matrix and leaves the
 metadata empty. Use ``setparams`` rather than the ``-color_primaries`` and
-``-color_trc`` output options: with FFmpeg 9, these two options were ignored
-when the input was an image sequence, and the file had no primaries or
+``-color_trc`` output options: with FFmpeg 9, these two options are ignored
+when the input is an image sequence, and the file gets no primaries or
 transfer function.
 
 Apple ProRes 422 HQ:
@@ -233,8 +238,8 @@ rewrapped as MXF without re-encoding:
 
    ffmpeg -i output.mov -c copy output.mxf
 
-Avid DNxHD 175x (1920x1080, 23.976 fps, 10-bit). DNxHD has no profile names:
-the encoder picks the variant from the frame size, frame rate, pixel format
+Avid DNxHD 175x, at 1920x1080, 23.976 fps and 10 bits. DNxHD has no
+profile names: the encoder picks the variant from the frame size, frame rate, pixel format
 and bit rate, and fails if the combination does not exist. The ``scale``
 filter resizes the images to 1920x1080 if needed:
 
@@ -247,6 +252,10 @@ Lossless FFV1 in Matroska, for archiving:
 .. code-block:: sh
 
    ffmpeg -framerate 24 -i render.%04d.tif -c:v ffv1 -level 3 -g 1 -slicecrc 1 -pix_fmt yuv422p10le -vf "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709" output.mkv
+
+``-level 3`` selects FFV1 version 3, ``-g 1`` makes every frame a keyframe
+(so that any frame can be decoded on its own), and ``-slicecrc 1`` adds a
+checksum to each slice, so that a damaged file can be detected.
 
 FFV1 is lossless, but the conversion to 10-bit Y'CbCr 4:2:2 is not. To keep
 the RGB values of the 16-bit images exactly, use ``-pix_fmt gbrp16le`` and

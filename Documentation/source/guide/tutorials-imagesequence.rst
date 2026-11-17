@@ -182,15 +182,17 @@ For Digital Intermediate, the `PRORES 4444` codec is a nice choice for MOV conta
 
 It can be done with ffmpeg or in kdenlive/Shotcut importing the TIFF/PNG as sequence.
 
+See :doc:`tutorials-ffmpeg-di` for other digital intermediate formats (ProRes 422, DNxHR, FFV1) and for the color metadata to write.
+
 
 FFmpeg
 ~~~~~~
-``ffmpeg -framerate 30 -i input%03d.tiff -f mov -acodec pcm_s16le -vcodec prores_ks -vprofile 4444 -vendor ap10 -pix_fmt yuva444p10le out.mov``
+``ffmpeg -framerate 30 -i input%03d.tiff -f mov -acodec pcm_s16le -vcodec prores_ks -vprofile 4444 -vendor apl0 -pix_fmt yuva444p10le out.mov``
 
 Shotcut/Kdenlive
 ~~~~~~~~~~~~~~~~
 - A render profile needs to be created first with below profile:
-- ``f=mov acodec=pcm_s16le vcodec=prores_ks vprofile=4444 vendor=ap10 pix_fmt=yuva444p10le qscale=%quality``
+- ``f=mov acodec=pcm_s16le vcodec=prores_ks vprofile=4444 vendor=apl0 pix_fmt=yuva444p10le qscale=%quality``
 - Use TIFF/PNG image as sequence in the timeline.
 - Then Render with this newly created prores 4444 profile.
 
