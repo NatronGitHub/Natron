@@ -59,6 +59,8 @@ fi
 # GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 (default: 14, i.e. GCC 14.2,
 # as in the VFX Reference Platform CY2026)
 GCC_TOOLSET="${GCC_TOOLSET:-14}"
+# SHIBOKEN2_CLANG_VERSION=X.Y.Z libclang version used by shiboken2 on Rocky Linux 8
+SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-18.1.8}"
 
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
@@ -206,8 +208,14 @@ EOF
             # use the gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026),
             # available for x86_64 and aarch64. The system GCC is still used to build
             # the installer's static Qt 4 and qtifw (see DTSSDK below).
-            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} && "
-            DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\""
+            # clang-devel: libclang, for the shiboken2 generator (see pkg/pyside2.sh), which
+            # also needs LLVM_INSTALL_DIR to find clang's builtin headers. Shiboken2 5.15.19,
+            # even with the libclang >= 16 patches, misparses some default arguments with the
+            # current libclang 22 (e.g. QEvent::Type values resolved in the wrong class): pin
+            # libclang 18, as MacPorts does.
+            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION} && "
+            DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
+    LLVM_INSTALL_DIR=/usr"
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl

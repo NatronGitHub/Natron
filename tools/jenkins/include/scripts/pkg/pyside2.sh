@@ -2,35 +2,66 @@
 
 # Install pyside2
 # see https://pypi.org/project/PySide2/
-PYSIDE2_VERSION="5.15.2.1"
+#
+# PySide2 is built from source (shiboken2 module and generator, PySide2 modules,
+# headers, typesystems and CMake config files, as needed to build Natron) on
+# Rocky Linux and on non-x86_64 architectures: PyPI only has x86_64 wheels, and
+# they don't include the shiboken2 generator. Elsewhere, the PyPI wheel is
+# installed, as before.
+# The source build needs libclang (clang-devel, from Rocky Linux's AppStream).
+if [ -n "${ROCKY:-}" ] || [ "${ARCH:-x86_64}" != "x86_64" ]; then
+    PYSIDE2_FROM_SOURCE=1
+    # the latest open-source 5.15 release, with libclang 18 (see the Dockerfile)
+    PYSIDE2_VERSION="5.15.19"
+else
+    PYSIDE2_FROM_SOURCE=0
+    PYSIDE2_VERSION="5.15.2.1"
+fi
 PYSIDE2_VERSION_SHORT="5.15" # ${PYSIDE2_VERSION%.*}
-#PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
-#PYSIDE2_SITE="https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${PYSIDE2_VERSION}-src"
+PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
+PYSIDE2_SITE="https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${PYSIDE2_VERSION}-src"
 
-#if download_step; then
-#    download "$PYSIDE2_SITE" "$PYSIDE2_TAR"
-#fi
-if build_step && { force_build || { [ ! -x "$SDK_HOME/lib/python{PY3_VERSION_SHORT}$/site-packages/PySide2/shiboken2" ] || [ "$($SDK_HOME/lib/python${PY3_VERSION_SHORT}/site-packages/PySide2/shiboken2 --version|head -1 | sed -e 's/^.* v\([^ ]*\)/\1/')" != "$PYSIDE2_VERSION" ]; }; }; then
+if [ "$PYSIDE2_FROM_SOURCE" = 1 ] && download_step; then
+    download "$PYSIDE2_SITE" "$PYSIDE2_TAR"
+fi
+if [ "$PYSIDE2_FROM_SOURCE" = 1 ]; then
+    PYSIDE2_SHIBOKEN2="$SDK_HOME/bin/shiboken2"
+else
+    PYSIDE2_SHIBOKEN2="$SDK_HOME/lib/python${PY3_VERSION_SHORT:-}/site-packages/PySide2/shiboken2"
+fi
+if build_step && { force_build || [ ! -x "$PYSIDE2_SHIBOKEN2" ] || [ "$("$PYSIDE2_SHIBOKEN2" --version | head -1 | sed -e 's/^.* v\([^ ]*\)/\1/')" != "$PYSIDE2_VERSION" ]; }; then
     start_build
-    if false; then
-        # Building from source requires LLVM
+    if [ "$PYSIDE2_FROM_SOURCE" = 1 ]; then
+        # shiboken2 must find clang's builtin headers (stddef.h...), also when building
+        # Natron: the Dockerfile sets LLVM_INSTALL_DIR in the SDK image too.
+        export LLVM_INSTALL_DIR="${LLVM_INSTALL_DIR:-/usr}"
         untar "$SRC_PATH/$PYSIDE2_TAR"
         pushd "pyside-setup-opensource-src-${PYSIDE2_VERSION}"
-        # Don't copy Qt5 tools: 
-        # https://src.fedoraproject.org/rpms/python-pyside2/raw/009100c67a63972e4c5252576af1894fec2e8855/f/pyside2-tools-obsolete.patch
-        #patch -Np1 -i "$INC_PATH"/patches/pyside2/pyside2-tools-obsolete.patch
-
-        #$SDK_HOME/bin/python${PY3_VERSION_SHORT} setup.py install --no-user-cfg build -j8 --verbose-build --qmake=$QT5PREFIX/bin/qmake --cmake=$SDK_HOME/bin/cmake --parallel=${MKJOBS}
+        # libclang >= 16 support (PYSIDE-2288), backported from shiboken6 to 5.15 by
+        # openSUSE, from nixpkgs c1834898eb (pkgs/development/python-modules/pyside2).
+        # Without them, the generated QtGui wrappers don't compile, e.g.
+        # "'DragMove' is not a member of 'QOpenGLShader'". The order matters.
+        for p in "$INC_PATH"/patches/pyside2/shiboken2-clang-*.patch; do
+            patch -Np1 -i "$p"
+        done
         mkdir _build
         pushd _build
         # It's OK to install in $SDK_HOME and not $QT5PREFIX, even if it's qt5-specific,
         # because PySide2 only works with Qt5 anyway.
-        cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  \
-        -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DPYTHON_EXECUTABLE="$PY3_EXE" -GNinja
+        # Modules that are not in the SDK's Qt5 are skipped.
+        cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" \
+            -DCMAKE_PREFIX_PATH="$QT5PREFIX;$SDK_HOME" \
+            -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DPYTHON_EXECUTABLE="$PY3_EXE" -DBUILD_TESTS=OFF \
+            -DMODULES="Core;Gui;Widgets;PrintSupport;Sql;Network;Test;Concurrent;X11Extras;Xml;XmlPatterns;Help;Multimedia;MultimediaWidgets;OpenGL;OpenGLFunctions;Svg;UiTools;Qml;Quick;QuickWidgets" \
+            -GNinja
+        ninja -j"${MKJOBS}"
         ninja install
         popd
         popd
         rm -rf "pyside-setup-opensource-src-${PYSIDE2_VERSION}"
+        # Also install QtPy for better forward-compatibility https://github.com/NatronGitHub/Natron/pull/687
+        # (it was installed with PySide 1.2.4 when that was also built for Python 3)
+        "$PY3_EXE" -m pip install qtpy
     else
         #${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --index-url=http://download.qt.io/snapshots/ci/pyside/${PYSIDE2_VERSION}/latest/ pyside2 --trusted-host download.qt.io
         ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install pyside2=="${PYSIDE2_VERSION}"
