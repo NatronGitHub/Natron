@@ -134,7 +134,7 @@ You should start contributing to the Natron project by first picking an easy tas
 
 We coordinate development through the [GitHub issue tracker](https://github.com/NatronGitHub/Natron/issues).
 
-The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.6. RB-2.7 is the Qt 6 branch (see the Maintainer Guide, "Contributing", for which branch a change goes to).
+The stable version is on branch RB-2.6, where bug fixes and new features go. RB-2.7 is the Qt 6 branch. The ["master"](https://github.com/NatronGitHub/Natron/tree/master) branch holds older development work and is not used for current work. See [Contributing in the Maintainer Guide](Documentation/source/maintainers/contributing.rst) for which branch a change goes to.
 
 Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, a version that is no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
 
