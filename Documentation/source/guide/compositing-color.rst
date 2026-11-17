@@ -7,6 +7,11 @@ How to use Natron color correction nodes and tools to adjust the appearance of t
 When starting out, this information provides a good overview of Natron scopes and color-correction nodes,
 however not all options are covered here.
 
+All these nodes work on the linear images produced by the Read nodes. How
+files are converted to and from that linear working space, how the Viewer
+displays it, and how to choose the OpenColorIO configuration is explained in
+:doc:`compositing-color-management`.
+
 
 
 The nodes
@@ -40,14 +45,13 @@ It is a very powerful tool, capable of replicating the function of many other co
 Its disadvantage is that it requires more processing than many of those nodes.
 The curve of a color lookup can also be a bit more difficult to read than nodes featuring sliders.
 
-**ColorSpace**
+**Colorspace conversion nodes**
 
-Engineers think of color as existing in things called spaces which are mathematical, 3D models the purpose of which is to organise them. Different color spaces serve different purposes: some are meant for printing, some are meant for screen-based work, some are meant for TV. The ColorSpace can move an image from one color space to another. The neat thing about this is that it makes it possible to use channels from exotic color spaces as masks to simple RGB operations or to perform adjustments on images to produce results that would have been impossible in ordinary RGB space. The workflow is: convert from Natron default Linear color space into the color space of your choice, perform your funky magic, then convert back to linear.
-The saturation channel of HSL can, for example, have a contrast adjustment applied to it which could desaturate the less saturated parts of an image and super saturate the remainder. Woot! Try that in Photoshop!
-Lab color space is another useful fellow. It is the quantum physics of the color world and I shall but kiss the shadow of it's vast and complex form. The fascinating thing about this space is that it separates the lightness values of an image (the L channel) from it's hue and saturation (the a and b channel combined). HSL also does this but not nearly so well. You can take the a and b and move them into those of another image.
-The effect of this is similar to image editors hue blend mode. I have found it useful to augment the colorfulness of a dull sky by using the blurred color values from a vivid sunset.
-Try also blurring the a and b channels. This will blur only the hue and saturation components of an image and leave its lightness values alone.
-A novel use for the ColorSpace node can be found in the Assets page (see the Double Rainbows asset).
+Engineers think of color as existing in things called spaces which are mathematical, 3D models the purpose of which is to organise them. Different color spaces serve different purposes: some are meant for printing, some are meant for screen-based work, some are meant for TV. Nodes such as :ref:`RGBToHSL <net.sf.openfx.RGBToHSL>`, :ref:`RGBToHSV <net.sf.openfx.RGBToHSV>` or :ref:`RGB709ToLab <net.sf.openfx.RGB709ToLab>` (and their inverses, such as :ref:`HSLToRGB <net.sf.openfx.HSLToRGB>` and :ref:`LabToRGB709 <net.sf.openfx.LabToRGB709>`) move an image from RGB to another color model. This makes it possible to use the channels of that model as masks for simple RGB operations, or to make adjustments that would be hard to do in RGB. The workflow is: convert from the linear RGB working space to the model of your choice, make the adjustment, then convert back to RGB.
+For example, a contrast adjustment on the saturation channel of HSL desaturates the less saturated parts of an image and increases the saturation of the rest.
+The Lab model separates the lightness of an image (the L channel) from its hue and saturation (the a and b channels), better than HSL does. The a and b channels of one image can be copied into another one, with an effect similar to the hue blend mode of image editors: for example, the blurred colors of a vivid sunset can make a dull sky more colorful.
+Blurring only the a and b channels blurs the hue and saturation of an image and keeps its lightness.
+To convert between colorspaces of the OpenColorIO configuration (log, sRGB, Rec.709...), use :ref:`OCIOColorSpace <fr.inria.openfx.OCIOColorSpace>` instead (see :doc:`compositing-color-management`).
 
 **ColorCorrect***
 
@@ -55,13 +59,15 @@ Artists have for thousands of years been separating the lightness values of thei
 
 **Gamma**
 
-This raises or lowers the middle-ish point of the color curve. The default value is one, with smaller numbers darkening the lower registers and higher numbers lightening them. There is a Gamma node but I find that stand-alone gamma adjustments are best done using ColorLookup so as to give you flexibility over where the ‘grab point‘ of your curve is. Both ColorCorrect and Grade have built in Gamma value sliders.
+This raises or lowers the middle-ish point of the color curve. The default value is one, with smaller numbers darkening the lower registers and higher numbers lightening them. Stand-alone gamma adjustments can also be done with ColorLookup, which gives more control over where the curve is bent. Both ColorCorrect and Grade have built in Gamma value sliders.
 
 **Grade***
 
 This node is a collection of operations that combine to work upon the lightness and hue values of an image. It is mostly a fixer: used for correcting and matching, though of course it can also be used for more aesthetically lavish purposes.
 
 **Histogram**
+
+The histogram is a scope, not a node: open it from the menu at the top left of any pane with **New histogram**. It shows the distribution of the values of the image displayed in a Viewer; right-click it to choose the Viewer, the input (A or B), the display mode and the smoothing.
 
 **HueCorrect***
 
@@ -98,7 +104,8 @@ The Saturation node desaturates an image by averaging its RGB channels.
 More localised control over saturation is offered by the HueCorrect node.
 
 
-
 .. toctree::
    :maxdepth: 2
+
+   compositing-color-management
 
