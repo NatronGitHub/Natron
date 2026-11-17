@@ -72,7 +72,7 @@ Natron installation:
 - **blender** (the default): the configuration of older Blender versions,
   with ``Linear`` as the working space; sRGB, Rec.709, Cineon and other log
   (``lg10``, ``lgf``) colorspaces; camera log curves (AlexaV3LogC, SLog3,
-  V-Log, REDLog, CLog...); film and Filmic colorspaces; the ``sRGB``,
+  V-Log, REDLog, CLog...); Filmic colorspaces; the ``sRGB``,
   ``DCI-P3``, ``Rec709`` and ``XYZ`` displays; and the Filmic and film
   emulation looks.
 - **blender-cycles**: a more recent configuration with a
