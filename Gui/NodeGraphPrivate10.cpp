@@ -92,6 +92,10 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         NodesGuiList newNodesList;
         std::list<std::pair<NodeSerializationPtr, NodePtr> > newNodesMap;
 
+        // Previews are not computed while the node tree is created: compute those of the pasted nodes
+        // when this function returns, including on error. Declared before createNodeTree.
+        RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( _publicInterface->getGui()->getApp(), group.lock() );
+
         std::set<std::string> missingNodePlugins;
 
         ///The script-name of the copy node is different than the one of the original one
@@ -152,29 +156,13 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             newNodesList.front()->getNode()->getEffectInstance()->refreshMetadata_public(true);
         }
 
-        // Now that meta-datas are refreshed, compute preview
-        refreshPreviewsOfCreatedNodes(newNodesList);
+        // The previews are computed by refreshPreviews when this function returns, now that meta-datas are refreshed
 
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
         }
     }
 } // pasteNodesInternal
-
-void
-NodeGraphPrivate::refreshPreviewsOfCreatedNodes(const NodesGuiList& nodes)
-{
-    const double time = _publicInterface->getGui()->getApp()->getTimeLine()->currentFrame();
-
-    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->forceComputePreview(time);
-        NodePtr node = (*it)->getNode();
-        NodeGroup* isGroup = node ? node->isEffectGroup() : 0;
-        if (isGroup) {
-            isGroup->forceRefreshPreviews();
-        }
-    }
-}
 
 // Trim underscore followed by digits at the end of baseName (see #732).
 static

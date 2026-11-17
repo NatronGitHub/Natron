@@ -29,6 +29,7 @@
 #include <fstream>
 #include <limits>
 #include <list>
+#include <set>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -234,6 +235,41 @@ AppInstance::getNodesBeingCreated() const
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->_creatingNodeQueue;
+}
+
+RefreshPreviewsOfCreatedNodes_RAII::RefreshPreviewsOfCreatedNodes_RAII(const AppInstancePtr& app,
+                                                                       const NodeCollectionPtr& collection)
+    : _app(app)
+    , _collection(collection)
+    , _nodesBefore()
+{
+    if (collection) {
+        _nodesBefore = collection->getNodes();
+    }
+}
+
+RefreshPreviewsOfCreatedNodes_RAII::~RefreshPreviewsOfCreatedNodes_RAII()
+{
+    AppInstancePtr app = _app.lock();
+    NodeCollectionPtr collection = _collection.lock();
+
+    if ( !app || !collection || app->isBackground() || app->isCreatingNodeTree() ) {
+        return;
+    }
+    std::set<NodePtr> nodesBefore( _nodesBefore.begin(), _nodesBefore.end() );
+    const double time = app->getTimeLine()->currentFrame();
+    NodesList nodes = collection->getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( !*it || ( nodesBefore.find(*it) != nodesBefore.end() ) ) {
+            continue;
+        }
+        // NodeGui::forceComputePreview() checks that the preview is enabled and the node is activated
+        (*it)->computePreviewImage(time);
+        NodeGroup* isGrp = (*it)->isEffectGroup();
+        if (isGrp) {
+            isGrp->forceRefreshPreviews();
+        }
+    }
 }
 
 bool
@@ -760,6 +796,8 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         ss << moduleName.toStdString() << ".createInstance(app,app)";
 
         {
+            // Declared before createNodeTree, so that the previews are refreshed once the tree is created.
+            RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( shared_from_this(), getProject() );
             std::string output;
             FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
             CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
@@ -780,13 +818,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             }
 
             getProject()->forceComputeInputDependentDataOnAllTrees();
-        } // CreatingNodeTreeFlag_RAII createNodeTree
-
-        // Previews are not computed while a node tree is created (see NodeGui::forceComputePreview()):
-        // compute them now, unless this is part of a larger node tree, which refreshes them once complete.
-        if ( !isCreatingNodeTree() ) {
-            getProject()->forceRefreshPreviews();
-        }
+        } // CreatingNodeTreeFlag_RAII createNodeTree, RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
     } else {
         PythonGILLocker pgl;
 
@@ -865,6 +897,9 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
+    // Computes the previews of the nodes created by the script (the PyPlug and the nodes inside it, or the
+    // nodes created by a toolset) when this function returns, after createNodeTree is destroyed.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews(shared_from_this(), group);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
@@ -948,17 +983,6 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
     bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
     onGroupCreationFinished(node, serialization, autoConnect);
-
-    // Previews are not computed while a node tree is created (see NodeGui::forceComputePreview()):
-    // compute them now, unless this is part of a larger node tree (e.g. pasting nodes or loading a
-    // project), which refreshes them once complete.
-    if ( node && !isCreatingNodeTree() ) {
-        node->computePreviewImage( getTimeLine()->currentFrame() );
-        NodeGroup* isGrp = node->isEffectGroup();
-        if (isGrp) {
-            isGrp->forceRefreshPreviews();
-        }
-    }
 
     return node;
 } // AppInstance::createNodeFromPythonModule
